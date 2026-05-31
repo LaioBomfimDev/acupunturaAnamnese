@@ -16,13 +16,19 @@ export function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+function getNamedOrFirstKey(rawKeys: string | undefined, preferredName = 'default') {
+  if (!rawKeys) return '';
+  const keys = JSON.parse(rawKeys) as Record<string, string>;
+  return keys[preferredName] || Object.values(keys)[0] || '';
+}
+
 export function createServiceClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const secretKeys = Deno.env.get('SUPABASE_SECRET_KEYS');
   let serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!serviceRoleKey && secretKeys) {
-    serviceRoleKey = JSON.parse(secretKeys).default;
+    serviceRoleKey = getNamedOrFirstKey(secretKeys);
   }
 
   if (!supabaseUrl || !serviceRoleKey) {
@@ -43,7 +49,7 @@ export function createAnonClient() {
   let anonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
   if (!anonKey && publishableKeys) {
-    anonKey = JSON.parse(publishableKeys).default;
+    anonKey = getNamedOrFirstKey(publishableKeys);
   }
 
   if (!supabaseUrl || !anonKey) {

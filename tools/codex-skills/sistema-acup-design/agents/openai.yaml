@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sistema Acup Design"
+  short_description: "Design clinico do Sistema Acup"
+  default_prompt: "Use $sistema-acup-design para melhorar a interface do Sistema Acup."

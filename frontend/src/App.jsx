@@ -43,6 +43,7 @@ export default function App() {
   } = useAuth();
   const { selectedPatient } = usePatient();
   const [activeTab, setActiveTab] = useState('Tela inicial');
+  const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
   const { state, selectedMap, updateField, toggle, getSelected, getPulseSelected, setState, setSelectedMap, resetSession } = useClinicState();
   const isHydratingSessionRef = useRef(false);
@@ -155,7 +156,13 @@ export default function App() {
     const commonProps = { state, selectedMap, onToggle: toggle, onUpdate: updateField, analysis };
 
     if (isSuperAdmin) {
-      return <SuperAdminPanel currentUserId={user.id} onSignOut={handleSignOut} />;
+      return (
+        <SuperAdminPanel
+          currentUserId={user.id}
+          activeSection={superAdminSection}
+          onSignOut={handleSignOut}
+        />
+      );
     }
 
     if (activeTab === 'Tela inicial' || !selectedPatient) {
@@ -263,6 +270,8 @@ export default function App() {
         therapist={therapistFirstName}
         profileRole={profile?.role}
         isSuperAdmin={isSuperAdmin}
+        superAdminSection={superAdminSection}
+        onSuperAdminSectionChange={setSuperAdminSection}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
         sessionCount={evolucoes.length}

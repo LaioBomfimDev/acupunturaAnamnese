@@ -8,6 +8,7 @@ import {
   setProfessionalActive,
   updateProfessionalProfile,
 } from '../../services/adminService';
+import { KnowledgeAdminPanel } from './KnowledgeAdminPanel';
 
 const EMPTY_FORM = {
   firstName: '',
@@ -180,7 +181,7 @@ function getActionLabel(action) {
   return labels[action] || action;
 }
 
-export function SuperAdminPanel({ currentUserId }) {
+export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
   const [professionals, setProfessionals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -439,8 +440,8 @@ export function SuperAdminPanel({ currentUserId }) {
       <header className="super-admin-head">
         <div>
           <p className="start-kicker">SuperAdm</p>
-          <h2>Gestão de acesso</h2>
-          <span>Profissionais, credenciais temporárias e liberação operacional.</span>
+          <h2>Painel administrativo</h2>
+          <span>Acessos, profissionais, Biblioteca Viva e auditoria em áreas separadas.</span>
         </div>
         <div className="super-admin-actions">
           <button className="quiet-button" type="button" onClick={load} disabled={loading}>
@@ -449,6 +450,12 @@ export function SuperAdminPanel({ currentUserId }) {
         </div>
       </header>
 
+      <div className="super-admin-content">
+      {activeSection === 'knowledge' ? (
+        <KnowledgeAdminPanel />
+      ) : (
+      <>
+      {activeSection === 'manage' && (
       <div className="admin-stat-grid">
         <div className="security-card admin-stat-card total">
           <span>Perfis</span>
@@ -476,14 +483,17 @@ export function SuperAdminPanel({ currentUserId }) {
           <p>sem acesso clínico</p>
         </div>
       </div>
+      )}
 
-      {(error || success) && (
+      {(activeSection === 'create' || activeSection === 'manage') && (error || success) && (
         <div className={error ? 'inline-error' : 'inline-success'}>
           {error || success}
         </div>
       )}
 
-      <section className="admin-layout">
+      {(activeSection === 'create' || activeSection === 'manage') && (
+      <section className="admin-layout admin-layout-single">
+        {activeSection === 'create' && (
         <form className="admin-create-form" onSubmit={handleSubmit}>
           <div className="start-panel-head">
             <div>
@@ -612,7 +622,9 @@ export function SuperAdminPanel({ currentUserId }) {
             </button>
           </div>
         </form>
+        )}
 
+        {activeSection === 'manage' && (
         <section className="admin-users">
           <div className="start-panel-head">
             <div>
@@ -691,8 +703,11 @@ export function SuperAdminPanel({ currentUserId }) {
             </div>
           )}
         </section>
+        )}
       </section>
+      )}
 
+      {activeSection === 'logs' && (
       <section className="admin-audit">
         <div className="start-panel-head">
           <div>
@@ -726,6 +741,7 @@ export function SuperAdminPanel({ currentUserId }) {
           </div>
         )}
       </section>
+      )}
 
       {selectedLiveProfile && (
         <div className="admin-modal-backdrop admin-profile-backdrop" role="dialog" aria-modal="true">
@@ -921,6 +937,9 @@ export function SuperAdminPanel({ currentUserId }) {
           </form>
         </div>
       )}
+      </>
+      )}
+      </div>
     </section>
   );
 }

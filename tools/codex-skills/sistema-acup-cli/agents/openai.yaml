@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sistema Acup CLI"
+  short_description: "Comandos seguros do Sistema Acup"
+  default_prompt: "Use $sistema-acup-cli para rodar comandos e validar o Sistema Acup."

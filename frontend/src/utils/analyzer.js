@@ -3,9 +3,17 @@
 // Toda a lógica de diagnóstico fica aqui, separada da UI
 // ============================================================
 
-import { protocols, syndromeDetails } from '../data/protocols';
 import { movementData } from '../data/movementsData';
 import { tongueOrganAlterations } from '../data/tongueData';
+import { getPatternDetail, getProtocolForPattern } from '../knowledge/protocolEngine';
+import { evaluateSafety } from '../knowledge/safetyEngine';
+
+const TENSE_PULSE_RE = /(?:^|[^A-Za-zÀ-ÖØ-öø-ÿ0-9_])tenso(?=$|[^A-Za-zÀ-ÖØ-öø-ÿ0-9_])/i;
+
+function matchesClinicalKeyword(text, keyword) {
+  if (keyword === 'tenso') return TENSE_PULSE_RE.test(text);
+  return new RegExp(keyword, 'i').test(text);
+}
 
 // Retorna os itens selecionados de um grupo específico
 export function getSelectedItems(selectedMap, group) {
@@ -57,7 +65,7 @@ export function analyze(state, selectedMap) {
     "Agitação do Shen por Calor": 0
   };
 
-  if (/cefaleia|enxaqueca|tontura|zumbido|irritabilidade|raiva|laterais|fígado|vesícula|em corda|tenso|vermelha/i.test(all))
+  if (/cefaleia|enxaqueca|tontura|zumbido|irritabilidade|raiva|laterais|fígado|vesícula|em corda|vermelha/i.test(all) || TENSE_PULSE_RE.test(all))
     scores["Ascensão do Yang do Fígado"] += 6;
   if (/refluxo|azia|náusea|distensão|constipação|diarreia|frustração|ácido|fígado|estômago|baço|piora ao estresse/i.test(all))
     scores["Qi do Fígado invadindo Baço/Estômago"] += 6;
@@ -70,22 +78,14 @@ export function analyze(state, selectedMap) {
 
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const main = ranked[0][1] ? ranked[0][0] : "Aguardando dados";
-  const protocol = protocols[main] || {
-    body: [], ear: [], moxa: [], laser: [], eletro: [],
-    goal: "Preencha os dados para gerar raciocínio terapêutico."
-  };
-  const detail = syndromeDetails[main] || {
-    root: "Aguardando dados.",
-    manifestation: "Aguardando dados.",
-    eight: "Aguardando classificação.",
-    elements: "Aguardando leitura.",
-    question: "Completar anamnese, língua e pulso."
-  };
+  const protocol = getProtocolForPattern(main);
+  const detail = getPatternDetail(main);
 
   const safety = getSelectedItems(selectedMap, 'seguranca');
+  const safetyAlerts = evaluateSafety({ safetyFlags: safety, clinicalText: all, protocol });
   const confidence = ranked[0][1] >= 12 ? "Alta" : ranked[0][1] >= 6 ? "Moderada" : "Baixa";
 
-  return { main, protocol, detail, safety, ranked, confidence };
+  return { main, protocol, detail, safety, safetyAlerts, ranked, confidence };
 }
 
 // Análise pelos Cinco Movimentos
@@ -126,7 +126,7 @@ export function principleAnalysis(state, selectedMap) {
 
   const result = {};
   Object.entries(pairs).forEach(([k, arr]) => {
-    result[k] = arr.filter(x => new RegExp(x, 'i').test(text)).length;
+    result[k] = arr.filter(x => matchesClinicalKeyword(text, x)).length;
   });
 
   return result;
@@ -191,13 +191,13 @@ export function diagnosticProfile(state, selectedMap) {
   if (/saburra espessa|saburra gordurosa|edema|peso|tipo 6|tipo 7|umidade/i.test(text)) pathogenic.push("Umidade/Fleuma");
   if (/dor fixa|arroxeada|petéquias|estase/i.test(text)) pathogenic.push("Estase de Xue");
   if (/vermelha|amarela|calor|rápido|ressecada/i.test(text)) pathogenic.push("Calor");
-  if (/em corda|tenso|frustração|raiva|estresse/i.test(text)) pathogenic.push("Estagnação de Qi");
+  if (/em corda|frustração|raiva|estresse/i.test(text) || TENSE_PULSE_RE.test(text)) pathogenic.push("Estagnação de Qi");
   if (!pathogenic.length) pathogenic.push("Aguardando confirmação");
 
   const conflicts = [];
   if (/pálida/i.test(text) && /vermelha|vermelho intenso|pontos vermelhos/i.test(text))
     conflicts.push("Língua com sinais simultâneos de deficiência e calor.");
-  if (/fraco|vazio/i.test(text) && /cheio|tenso|em corda/i.test(text))
+  if (/fraco|vazio/i.test(text) && (/cheio|em corda/i.test(text) || TENSE_PULSE_RE.test(text)))
     conflicts.push("Pulso com sinais de deficiência associados a tensão/excesso.");
   if (/frio|busca calor/i.test(text) && /calor|sede|ressecada/i.test(text))
     conflicts.push("Sinais mistos de frio e calor; investigar raiz e manifestação.");

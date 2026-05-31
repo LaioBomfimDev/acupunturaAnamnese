@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Panel } from '../ui/Panel';
-import { bibliotecaData } from '../../data/bibliotecaData';
+import { getKnowledgeCategories, getKnowledgeStats, searchKnowledge } from '../../knowledge/searchIndex';
+import { KM_AGENT_DRAFT_INDEX_URL, getKmAgentDraftStats, getKmAgentDraftTitlePtBr } from '../../knowledge/kmAgentDrafts';
+import { MapCoordinateEditor } from './MapCoordinateEditor';
 
 /* ── Mapeamento de Categorias ──────────────────────────────────────────── */
 const CATEGORY_MAP = {
@@ -12,10 +14,58 @@ const CATEGORY_MAP = {
   'Segurança':{ icon: '⚠️', color: '#ef4444' },
   'Relatório':{ icon: '📄', color: '#6366f1' },
   'Evolução': { icon: '📈', color: '#8b5cf6' },
+  'Mapa':     { icon: '🗺️', color: '#0891b2' },
+  'Rascunhos KM-Agent': { icon: '🧬', color: '#475569' },
 };
+
+const KM_AGENT_DRAFT_CATEGORY = 'Rascunhos KM-Agent';
 
 function getCategoryInfo(catName) {
   return CATEGORY_MAP[catName] || { icon: '📚', color: '#64748b' };
+}
+
+function asSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function kmAgentDraftToCard(item) {
+  return {
+    id: `${item.id}:draft`,
+    cat: KM_AGENT_DRAFT_CATEGORY,
+    title: getKmAgentDraftTitlePtBr(item),
+    tags: [
+      item.code,
+      item.displayCode,
+      item.metadata?.meridianCode,
+      item.metadata?.meridian,
+      item.names?.ko,
+      item.names?.zh,
+      item.names?.en,
+      'rascunho',
+      'KM-Agent',
+    ].filter(Boolean).join(', '),
+    source: 'KM-Agent data/acupoints.csv',
+    txt: [
+      'Rascunho importado. Exige revisão profissional antes de uso clínico.',
+      item.locationPreview ? `Localização: ${item.locationPreview}` : '',
+      item.needlingPreview ? `Needling: ${item.needlingPreview}` : '',
+    ].filter(Boolean).join(' '),
+    entity: item,
+    approvalStatus: 'draft',
+  };
+}
+
+function filterCards(cards, { query, category }) {
+  const normalizedQuery = asSearchText(query);
+  return cards.filter(item => {
+    const categoryMatches = category === 'Todos' || item.cat === category;
+    if (!categoryMatches) return false;
+    if (!normalizedQuery) return true;
+    return asSearchText([item.title, item.txt, item.tags, item.source].join(' ')).includes(normalizedQuery);
+  });
 }
 
 /* ── Componente de Tag (Chip) ───────────────────────────────────────── */
@@ -65,7 +115,7 @@ function KnowledgeCard({ item }) {
           </p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-            {item.tags.split(',').map((tag, idx) => (
+            {String(item.tags || '').split(',').filter(Boolean).map((tag, idx) => (
               <Chip key={idx}>#{tag.trim()}</Chip>
             ))}
           </div>
@@ -79,31 +129,64 @@ function KnowledgeCard({ item }) {
 export function Biblioteca() {
   const [catFilter, setCatFilter] = useState('Todos');
   const [search,    setSearch]    = useState('');
+  const [kmAgentDrafts, setKmAgentDrafts] = useState([]);
+  const [kmAgentLoadState, setKmAgentLoadState] = useState('loading');
 
-  // Obter categorias únicas existentes nos dados
-  const uniqueCategories = [...new Set(bibliotecaData.map(item => item.cat))];
+  useEffect(() => {
+    let cancelled = false;
+    fetch(KM_AGENT_DRAFT_INDEX_URL)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        if (cancelled) return;
+        setKmAgentDrafts(Array.isArray(data) ? data : []);
+        setKmAgentLoadState('ready');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setKmAgentDrafts([]);
+        setKmAgentLoadState('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const draftCards = useMemo(() => kmAgentDrafts.map(kmAgentDraftToCard), [kmAgentDrafts]);
+  const curatedCategories = getKnowledgeCategories();
+  const uniqueCategories = draftCards.length
+    ? [...curatedCategories, KM_AGENT_DRAFT_CATEGORY]
+    : curatedCategories;
+  const stats = getKnowledgeStats();
+  const kmAgentStats = getKmAgentDraftStats(kmAgentDrafts);
 
   /* filtro */
-  const filtered = bibliotecaData.filter(it => {
-    const matchCat = catFilter === 'Todos' || it.cat === catFilter;
-    const searchLower = search.toLowerCase();
-    const matchSearch = !search ||
-      it.title.toLowerCase().includes(searchLower) ||
-      it.txt.toLowerCase().includes(searchLower) ||
-      it.tags.toLowerCase().includes(searchLower);
-    return matchCat && matchSearch;
-  });
+  const curatedFiltered = catFilter === KM_AGENT_DRAFT_CATEGORY
+    ? []
+    : searchKnowledge({ query: search, category: catFilter });
+  const draftFiltered = filterCards(draftCards, { query: search, category: catFilter });
+  const filtered = [...curatedFiltered, ...draftFiltered];
 
   /* contagem por categoria */
-  const counts = Object.fromEntries(uniqueCategories.map(c => [c, bibliotecaData.filter(i => i.cat === c).length]));
+  const counts = Object.fromEntries(uniqueCategories.map(c => {
+    if (c === KM_AGENT_DRAFT_CATEGORY) return [c, draftCards.length];
+    return [c, searchKnowledge({ category: c }).length];
+  }));
+  const totalCards = stats.total + kmAgentStats.total;
 
   return (
     <Panel title="Biblioteca Clínica Viva">
 
       {/* ── descrição da seção ─────────────────────────── */}
       <div className="box" style={{ marginBottom: 20 }}>
-        Base de conhecimento integrada à plataforma Reability MTC. Pesquise por síndromes, órgãos, pontos, técnicas e protocolos de tratamento.
+        Base consultável integrada ao raciocínio clínico: {stats.acupoints} pontos sistêmicos curados, {stats.auricular} pontos auriculares, {stats.patterns} síndromes e {stats.techniques} técnicas. Também há {kmAgentStats.total || '...'} pontos do KM-Agent em rascunho{kmAgentStats.meridians ? `, cobrindo ${kmAgentStats.meridians} meridianos/categorias` : ''}, sem uso clínico automático até revisão profissional.
+        {kmAgentLoadState === 'error' && <span> A base KM-Agent não carregou nesta sessão.</span>}
       </div>
+
+      <MapCoordinateEditor />
 
       {/* ── busca ─────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 18 }}>
@@ -122,7 +205,7 @@ export function Biblioteca() {
           onClick={() => setCatFilter('Todos')}
           style={catFilter === 'Todos' ? { background: 'var(--navy)', color: 'white', borderColor: 'var(--navy)' } : {}}
         >
-          📚 Todos ({bibliotecaData.length})
+          📚 Todos ({totalCards})
         </button>
         {uniqueCategories.map(cat => {
           const info = getCategoryInfo(cat);

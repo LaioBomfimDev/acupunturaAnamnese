@@ -2,8 +2,7 @@ import { Panel } from '../ui/Panel';
 import { CheckGrid } from '../ui/CheckGrid';
 import { pulsePositions } from '../../data/pulseData';
 
-// Imagem extraída do HTML original e salva em public/
-const PULSE_MAP_SRC = '/pulse-map.jpg';
+const PULSE_MAP_SRC = '/maps/hands-palmar.webp';
 
 export function Pulso({ selectedMap, onToggle }) {
   return (
@@ -16,9 +15,9 @@ export function Pulso({ selectedMap, onToggle }) {
 
       <div className="pulse-duo">
         <div className="pulse-card">
-          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Mapa fixo da pulsologia</h3>
-          <img className="pulse-map-fixed" src={PULSE_MAP_SRC} alt="Mapa de pulsologia por posições e órgãos" />
-          <p className="small">Referência visual: lado direito e esquerdo, posições P7/P8/P9 e relação com órgãos/elementos.</p>
+          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Mapa de mãos e punhos</h3>
+          <img className="pulse-map-fixed" src={PULSE_MAP_SRC} alt="Ilustração de mãos e punhos para avaliação do pulso" />
+          <p className="small">Referência visual para posicionamento de punho e palpação do pulso.</p>
         </div>
 
         <div className="pulse-card">

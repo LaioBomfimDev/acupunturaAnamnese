@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sistema Acup"
+  short_description: "Guia de desenvolvimento do Sistema Acup"
+  default_prompt: "Use $sistema-acup para trabalhar com seguranca no projeto Sistema Acup."

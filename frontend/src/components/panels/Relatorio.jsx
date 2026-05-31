@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Panel } from '../ui/Panel';
+import { buildPointEvidence, buildProtocolSummary, buildReferenceList } from '../../knowledge/reportFragments';
 
 /* ── helpers ─────────────────────────────────────────────── */
 function today() {
@@ -20,7 +21,7 @@ const MODOS = ['Resumo clínico', 'Relatório profissional', 'Orientação ao pa
 
 export function Relatorio({ state, analysis, selectedPatient, therapistProfile }) {
   const [modo, setModo] = useState('Resumo clínico');
-  const { main, detail, protocol, safety } = analysis;
+  const { main, detail, protocol, safety, safetyAlerts = [] } = analysis;
 
   const nome    = selectedPatient?.name || state.nome || 'Paciente não informado';
   const idade   = state.idade    ? `${state.idade} anos` : 'idade não informada anos';
@@ -34,10 +35,13 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile }
   const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
   const ultimaEvolucao = evolucoes[evolucoes.length - 1];
 
-  const bodyPts = protocol.body?.length ? protocol.body.join(', ') : 'aguardando dados';
-  const earPts  = protocol.ear?.length  ? protocol.ear.join(', ')  : 'aguardando dados';
-  const moxaPts = protocol.moxa?.length ? protocol.moxa.join(', ') : 'avaliar';
-  const laserPts= protocol.laser?.length? protocol.laser.join(', '): 'avaliar';
+  const protocolSummary = buildProtocolSummary(protocol);
+  const pointEvidence = buildPointEvidence(protocol);
+  const references = buildReferenceList(protocol);
+  const safetyMessages = [
+    ...(safety || []),
+    ...safetyAlerts.map(alert => alert.message),
+  ];
 
   return (
     <Panel title="Relatório final premium">
@@ -56,9 +60,9 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile }
       </div>
 
       {/* ── alerta de segurança ───────────────────────────── */}
-      {safety.length > 0 && (
+      {safetyMessages.length > 0 && (
         <div className="alert no-print" style={{ marginBottom: 16 }}>
-          <b>⚠ Atenção clínica:</b> {safety.join(' • ')}
+          <b>⚠ Atenção clínica:</b> {safetyMessages.join(' • ')}
         </div>
       )}
 
@@ -102,8 +106,14 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile }
             <InlineRow label="8. Princípio terapêutico" value={protocol.goal} fallback="Preencha os dados para gerar raciocínio terapêutico." />
             
             <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
-              <b>9. Protocolo sugerido:</b> sistêmicos: {bodyPts}; auriculoterapia: {earPts}; moxa: {moxaPts}; laser/eletro: {laserPts}.
+              <b>9. Protocolo sugerido:</b> sistêmicos: {protocolSummary.body}; auriculoterapia: {protocolSummary.ear}; moxa: {protocolSummary.moxa}; laser/eletro: {protocolSummary.laser}.
             </p>
+
+            {pointEvidence.length > 0 && (
+              <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
+                <b>9.1. Justificativa dos pontos:</b> {pointEvidence.join(' ')}
+              </p>
+            )}
 
             <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
               <b>10. Evolução longitudinal:</b> {evolucoes.length} sessão(ões) registrada(s).
@@ -114,6 +124,12 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile }
             <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
               <b>11. Observação técnica:</b> as hipóteses constituem apoio ao raciocínio clínico e devem ser validadas pelo profissional responsável.
             </p>
+
+            {references.length > 0 && (
+              <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
+                <b>12. Fontes consultadas pela Biblioteca Viva:</b> {references.join('; ')}.
+              </p>
+            )}
 
             {/* Assinatura */}
             <p style={{ textAlign: 'right', marginTop: 40, lineHeight: 1.8 }}>

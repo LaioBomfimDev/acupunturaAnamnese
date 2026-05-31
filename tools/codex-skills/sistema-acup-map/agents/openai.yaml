@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sistema Acup Mapas"
+  short_description: "Calibracao inteligente de acupontos"
+  default_prompt: "Use $sistema-acup-map para calibrar pontos nos mapas do Sistema Acup."

@@ -19,17 +19,21 @@ function readEnvFile(filePath) {
   );
 }
 
-const env = {
+const fileEnv = {
   ...readEnvFile(resolve(process.cwd(), '.env')),
   ...readEnvFile(resolve(process.cwd(), '.env.local')),
+};
+
+const env = {
+  ...fileEnv,
   ...process.env,
 };
 
 const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
-const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error('Defina VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY em .env.local ou no ambiente.');
+  console.error('Defina VITE_SUPABASE_URL no .env.local e SUPABASE_SERVICE_ROLE_KEY apenas no ambiente temporário do terminal.');
   process.exit(1);
 }
 

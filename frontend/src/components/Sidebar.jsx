@@ -12,6 +12,13 @@ const TABS = [
   'Relatório',
 ];
 
+const SUPER_ADMIN_SECTIONS = [
+  { id: 'create', label: 'Criar acupunturista', description: 'Cadastro e senha' },
+  { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
+  { id: 'knowledge', label: 'Alimentação', description: 'Biblioteca Viva' },
+  { id: 'logs', label: 'Logs', description: 'Auditoria' },
+];
+
 function getInitials(name) {
   return String(name || '?')
     .trim()
@@ -21,9 +28,19 @@ function getInitials(name) {
     .join('');
 }
 
-export function Sidebar({ activeTab, onTabChange, therapist, profileRole, isSuperAdmin, selectedPatient, patientAge, sessionCount, lastVisit }) {
-  const visibleTabs = isSuperAdmin ? ['SuperAdm'] : TABS;
-
+export function Sidebar({
+  activeTab,
+  onTabChange,
+  therapist,
+  profileRole,
+  isSuperAdmin,
+  superAdminSection = 'manage',
+  onSuperAdminSectionChange,
+  selectedPatient,
+  patientAge,
+  sessionCount,
+  lastVisit,
+}) {
   return (
     <aside className="sidebar">
       <div className="logo">
@@ -60,8 +77,18 @@ export function Sidebar({ activeTab, onTabChange, therapist, profileRole, isSupe
         </div>
       ) : null}
 
-      <nav className="nav">
-        {visibleTabs.map(tab => {
+      <nav className={`nav${isSuperAdmin ? ' nav-super-admin' : ''}`}>
+        {isSuperAdmin ? SUPER_ADMIN_SECTIONS.map(section => (
+          <button
+            key={section.id}
+            className={superAdminSection === section.id ? 'active' : ''}
+            onClick={() => onSuperAdminSectionChange?.(section.id)}
+            aria-current={superAdminSection === section.id ? 'page' : undefined}
+          >
+            <span>{section.label}</span>
+            <small>{section.description}</small>
+          </button>
+        )) : TABS.map(tab => {
           const disabled = !selectedPatient && tab !== 'Tela inicial' && tab !== 'SuperAdm';
           return (
           <button

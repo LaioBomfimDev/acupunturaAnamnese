@@ -214,6 +214,31 @@ body {
   color: rgba(255,255,255,.32);
 }
 
+.nav-super-admin button {
+  padding: 13px 16px;
+}
+
+.nav-super-admin button span,
+.nav-super-admin button small {
+  display: block;
+}
+
+.nav-super-admin button span {
+  font-weight: 800;
+}
+
+.nav-super-admin button small {
+  color: rgba(255,255,255,.58);
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 3px;
+}
+
+.nav-super-admin button.active small,
+.nav-super-admin button:hover small {
+  color: rgba(255,255,255,.82);
+}
+
 .main {
   margin-left: 268px;
   padding: 24px 28px 32px;
@@ -1657,6 +1682,37 @@ textarea { min-height: 95px; resize: vertical; }
   font-weight: 700;
 }
 
+.knowledge-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.knowledge-source-note {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, .76);
+  color: var(--navy);
+}
+
+.knowledge-source-note b {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--navy-3);
+}
+
+.knowledge-source-note span,
+.knowledge-source-note small {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 /* ======= PRIMEIRO ACESSO ======= */
 .force-password-screen {
   min-height: 100vh;
@@ -1784,6 +1840,12 @@ textarea { min-height: 95px; resize: vertical; }
   min-height: 42px;
 }
 
+.super-admin-content {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
 .admin-stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -1842,6 +1904,22 @@ textarea { min-height: 95px; resize: vertical; }
 .admin-layout {
   display: grid;
   grid-template-columns: minmax(420px, .82fr) minmax(560px, 1.18fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-knowledge {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-knowledge-layout {
+  display: grid;
+  grid-template-columns: minmax(430px, .92fr) minmax(520px, 1.08fr);
   gap: 20px;
   align-items: start;
 }
@@ -1919,6 +1997,20 @@ textarea { min-height: 95px; resize: vertical; }
   background: linear-gradient(180deg, #fff, #fbfdff);
   border-radius: 8px;
   padding: 14px;
+}
+
+.knowledge-draft-list {
+  max-height: 720px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.knowledge-draft-list .admin-user-row {
+  grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
+}
+
+.knowledge-review-form textarea {
+  min-height: 88px;
 }
 
 .admin-user-button {
@@ -2291,6 +2383,7 @@ textarea { min-height: 95px; resize: vertical; }
   .security-grid,
   .admin-stat-grid,
   .admin-layout,
+  .admin-knowledge-layout,
   .admin-form-grid,
   .admin-toolbar,
   .admin-user-row,

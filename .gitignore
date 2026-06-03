@@ -38,3 +38,8 @@ awesome-codex-skills/
 Reability_MTC_V13_Sistema_Mestre_COMPLETO.html
 tools/knowledge/km-agent-cache/
 tools/acukg-source/
+
+# Local Atlas page renders; use protected storage before deploying full source pages
+frontend/.local-source-assets/
+frontend/public/knowledge/source-assets/atlas-ednea/pages/
+frontend/public/knowledge/source-assets/atlas-ednea/source-index.local.json

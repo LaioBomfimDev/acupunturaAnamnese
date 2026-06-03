@@ -1,4 +1,5 @@
 import { normalizePointCode, displayPointCode } from './aliases';
+import { highConfidenceMapLocations } from './generated/high-confidence-map-locations';
 
 export const CALIBRATED_MAP_LOCATIONS_KEY = 'acup_living_library_map_locations_v1';
 
@@ -143,6 +144,12 @@ export const calibrationPointOptions = [
   'Shen Men', 'Fígado', 'Subcórtex', 'Ansiedade', 'Rim', 'Estômago', 'Baço', 'Endócrino', 'Coração', 'Sono', 'Fome',
 ];
 
+let cachedStoredRaw = null;
+let cachedStoredLocations = null;
+let cachedAllLocations = null;
+let cachedPointLocationIndex = null;
+let cachedStorageSignature = null;
+
 export function getMapAsset(mapId) {
   return mapAssets[mapId] || null;
 }
@@ -154,19 +161,47 @@ function locationIdentity(location) {
   return `${code}::${location.mapId}`;
 }
 
+function locationPointCode(location) {
+  return location.code?.startsWith('auricular:')
+    ? location.code
+    : normalizePointCode(location.code);
+}
+
+function currentStorageSignature() {
+  if (typeof localStorage === 'undefined') return 'server';
+  return localStorage.getItem(CALIBRATED_MAP_LOCATIONS_KEY) || '[]';
+}
+
+function resetLocationCaches() {
+  cachedAllLocations = null;
+  cachedPointLocationIndex = null;
+  cachedStorageSignature = null;
+}
+
 export function readStoredMapLocations() {
   if (typeof localStorage === 'undefined') return [];
+  const raw = currentStorageSignature();
+  if (raw === cachedStoredRaw && cachedStoredLocations) return cachedStoredLocations;
+
   try {
-    const parsed = JSON.parse(localStorage.getItem(CALIBRATED_MAP_LOCATIONS_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw);
+    cachedStoredRaw = raw;
+    cachedStoredLocations = Array.isArray(parsed) ? parsed : [];
+    return cachedStoredLocations;
   } catch {
+    cachedStoredRaw = raw;
+    cachedStoredLocations = [];
     return [];
   }
 }
 
 export function writeStoredMapLocations(locations) {
   if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(CALIBRATED_MAP_LOCATIONS_KEY, JSON.stringify(locations));
+  const raw = JSON.stringify(locations);
+  localStorage.setItem(CALIBRATED_MAP_LOCATIONS_KEY, raw);
+  cachedStoredRaw = raw;
+  cachedStoredLocations = locations;
+  resetLocationCaches();
 }
 
 export function upsertStoredMapLocation(location) {
@@ -187,25 +222,55 @@ export function upsertStoredMapLocation(location) {
 }
 
 export function getAllMapLocations() {
+  const storageSignature = currentStorageSignature();
+  if (cachedAllLocations && cachedStorageSignature === storageSignature) return cachedAllLocations;
+
   const stored = readStoredMapLocations();
   const storedIds = new Set(stored.map(locationIdentity));
-  return [
+  const mappedPointCodes = new Set([
+    ...stored,
+    ...pointLocations,
+  ].map(locationPointCode));
+  cachedAllLocations = [
     ...stored,
     ...pointLocations.filter(location => !storedIds.has(locationIdentity(location))),
+    ...highConfidenceMapLocations.filter(location => {
+      return !storedIds.has(locationIdentity(location)) && !mappedPointCodes.has(locationPointCode(location));
+    }),
   ];
+  cachedStorageSignature = storageSignature;
+  cachedPointLocationIndex = null;
+  return cachedAllLocations;
+}
+
+function getPointLocationIndex() {
+  const storageSignature = currentStorageSignature();
+  if (cachedPointLocationIndex && cachedStorageSignature === storageSignature) return cachedPointLocationIndex;
+
+  const index = new Map();
+  for (const location of getAllMapLocations()) {
+    const keys = location.code?.startsWith('auricular:')
+      ? [location.code.toLowerCase(), location.label?.toLowerCase()].filter(Boolean)
+      : [normalizePointCode(location.code)];
+
+    for (const key of keys) {
+      const current = index.get(key) || [];
+      current.push(location);
+      index.set(key, current);
+    }
+  }
+
+  cachedPointLocationIndex = index;
+  return index;
 }
 
 export function getLocationsForPoint(codeOrLabel) {
   const normalized = normalizePointCode(codeOrLabel);
   const label = String(codeOrLabel || '').trim().toLowerCase();
+  const index = getPointLocationIndex();
+  const matches = index.get(normalized) || index.get(label) || [];
 
-  return getAllMapLocations().filter(location => {
-    if (location.code?.startsWith('auricular:')) {
-      return location.code.toLowerCase() === label || location.label?.toLowerCase() === label;
-    }
-
-    return normalizePointCode(location.code) === normalized;
-  }).map(location => ({
+  return matches.map(location => ({
     ...location,
     label: location.label || displayPointCode(location.code),
   }));

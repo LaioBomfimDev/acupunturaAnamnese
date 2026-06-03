@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { createInitialState, getPatientAge, useClinicState } from './hooks/useClinicState';
 import { useAuth } from './hooks/AuthContext';
 import { usePatient } from './hooks/PatientContext';
@@ -8,27 +8,41 @@ import { buildRandomClinicalFixture } from './utils/testClinicalFixture';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { SaveIndicator } from './components/ui/SaveIndicator';
-import { PainelInicial } from './components/panels/PainelInicial';
-import { Anamnese } from './components/panels/Anamnese';
-import { Lingua } from './components/panels/Lingua';
-import { Pulso } from './components/panels/Pulso';
-import { RaciocinioClinical } from './components/panels/RaciocinioClinical';
-import { Diagnostico } from './components/panels/Diagnostico';
-import { Protocolo } from './components/panels/Protocolo';
-import { Evolucao } from './components/panels/Evolucao';
-import { Biblioteca } from './components/panels/Biblioteca';
-import { Relatorio } from './components/panels/Relatorio';
-import { Login } from './components/panels/Login';
-import { SuperAdminPanel } from './components/panels/SuperAdminPanel';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
 import './App.css';
+
+const lazyPanel = (loader, exportName) => lazy(() => loader().then(module => ({ default: module[exportName] })));
+
+const PainelInicial = lazyPanel(() => import('./components/panels/PainelInicial'), 'PainelInicial');
+const Anamnese = lazyPanel(() => import('./components/panels/Anamnese'), 'Anamnese');
+const Lingua = lazyPanel(() => import('./components/panels/Lingua'), 'Lingua');
+const Pulso = lazyPanel(() => import('./components/panels/Pulso'), 'Pulso');
+const RaciocinioClinical = lazyPanel(() => import('./components/panels/RaciocinioClinical'), 'RaciocinioClinical');
+const Diagnostico = lazyPanel(() => import('./components/panels/Diagnostico'), 'Diagnostico');
+const Protocolo = lazyPanel(() => import('./components/panels/Protocolo'), 'Protocolo');
+const Evolucao = lazyPanel(() => import('./components/panels/Evolucao'), 'Evolucao');
+const Biblioteca = lazyPanel(() => import('./components/panels/Biblioteca'), 'Biblioteca');
+const Relatorio = lazyPanel(() => import('./components/panels/Relatorio'), 'Relatorio');
+const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
+const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
 
 function getFirstName(value) {
   const text = String(value || '').trim();
   if (!text) return 'Profissional';
   if (text.includes('@')) return text.split('@')[0];
   return text.split(/\s+/)[0] || 'Profissional';
+}
+
+function PanelLoading() {
+  return (
+    <div className="panel">
+      <div className="panel-title">Carregando</div>
+      <div className="panel-body">
+        <p className="small">Preparando esta área...</p>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -126,7 +140,11 @@ export default function App() {
   }, [selectedPatient?.id, state, selectedMap]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
-    return <Login />;
+    return (
+      <Suspense fallback={<PanelLoading />}>
+        <Login />
+      </Suspense>
+    );
   }
 
   if (profile?.is_active === false || (!profile && profileError)) {
@@ -318,7 +336,11 @@ export default function App() {
 
         {/* Layout principal: conteúdo + barra lateral de assistente */}
         <div className={`workspace-grid${isHome || isSuperAdminTab ? ' workspace-grid-full' : ''}`}>
-          <section>{renderPanel()}</section>
+          <section>
+            <Suspense fallback={<PanelLoading />}>
+              {renderPanel()}
+            </Suspense>
+          </section>
 
           {!isHome && !isSuperAdminTab && (
           <aside className="no-print">

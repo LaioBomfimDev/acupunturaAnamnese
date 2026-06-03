@@ -1,0 +1,1262 @@
+# Lote 004 de 021 - ST30 a SP4
+
+Use junto com o PDF clinico principal. Preencha em pt-BR, preserve os identificadores e nao transforme sugestoes em aprovacao clinica.
+
+## 61. ST30 - ST30 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST30
+CODIGO WHO: ST30
+CODIGO EXIBIDO: ST30
+MERIDIANO: ST - Estômago
+NOMES: Qichong, Penetrating (Surging) Qi, 氣衝, 기충
+
+### Contexto importado
+
+Localizacao original EN:
+
+In the groin region, at the same level as the superior border of the pubic symphysis, 2 B-cun lateral to the anterior median line, over the femoral artery. Note: ST30 is 5 B-cun inferior to ST25, 2 B-cun lateral to CV2.
+
+Localizacao original KO:
+
+샅부위(groin region), 두덩결합(pubic symphysis) 위모서리와 같은 높이,앞정중선(anterior median line)에서 가쪽으로 2寸, 넙다리동맥(femoral artery)이 뛰는 곳.
+
+Localizacao pt-BR rascunho:
+
+In groin região, no mesmo nível de superior border de pubic symphysis, 2 B-cun lateral à linha mediana anterior, sobre femoral artery. Nota: ST30 is 5 B-cun inferior a ST25, 2 B-cun lateral a CV2.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.3～0.5寸 - 斜刺 0.5～1寸 (鍼尖을 外陰部로 향해 刺入한다. 자침시 동맥을 피하여 출혈되지 않도록 한다.)
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,3 a 0,5 cun
+- Inserção oblíqua: 0,5 a 1 cun (鍼尖을 外陰部로 em direção a 刺入한다. 자침시 동맥을 피하여 출혈되지 않도록 한다.)
+
+Termos nao resolvidos: 鍼尖을, 外陰部로, 刺入한다, 자침시, 동맥을, 피하여, 출혈되지, 않도록, 한다
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: dor abdominal, borborigmo, Hernia, External Genitalia Pain, External Genitalia Swelling, Impotence, dismenorreia, Irregular Menstruation
+Alvos/acoes: regulates: Stomach Qi, regulates: Penetrating Vessels, promotes: Essence, tonifies: Nourishment, regulates: Blood
+Anatomia: located_near groin region, located_near pubic symphysis, located_near anterior median line, located_near femoral artery, superior border of pubic symphysis, same level as pubic symphysis, lateral to anterior median line, inferior to ST25, lateral to CV2, 2 B-cun anterior median line, B-cun ST25, 2 B-cun CV2
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST30
+code: ST30
+displayCode: ST30
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 62. ST31 - ST31 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST31
+CODIGO WHO: ST31
+CODIGO EXIBIDO: ST31
+MERIDIANO: ST - Estômago
+NOMES: Biguan, Thigh Gate (Joint), 髀關, 비관
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the thigh, in the depression among three muscles: the proximal portion of the rectus femoris muscle, the sartorius muscle and the tensor fasciae latae muscle.
+
+Localizacao original KO:
+
+넓적다리 앞쪽면, 넙다리곧은근(rectus femoris muscle) 몸쪽끝, 넙다리빗근(sartorius muscle), 넙다리근막긴장근(tensor fasciae latae muscle)의 세 근육 사이의 오목한 곳.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior de thigh, na depressão among three muscles: proximal portion de rectus femoris muscle, sartorius muscle e tensor fasciae latae muscle.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.8～1.5寸 - 斜刺 1.5寸～2寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,8 a 1,5 cun
+- Inserção oblíqua: 1,5 cun～2 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Thigh Pain, Muscular Atrophy, Motor Impairment, Low Extremity Pain, Low Extremity Numbness
+Alvos/acoes: removes: Channel Obstructions
+Anatomia: located_near thigh, located_near muscles, located_near rectus femoris muscle, located_near sartorius muscle, located_near tensor fasciae latae muscle, located_near patella, located_near anterior superior iliac spine, located_near pubic symphysis, anterior aspect of thigh, proximal portion of rectus femoris muscle, proximal portion of sartorius muscle, proximal portion of tensor fasciae latae muscle, lateral end of the base of patella, lateral end of the base of anterior superior iliac spine, horizontal line of the inferior border of pubic symphysis, connecting patella, connecting anterior superior iliac spine
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST31
+code: ST31
+displayCode: ST31
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 63. ST32 - ST32 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST32
+CODIGO WHO: ST32
+CODIGO EXIBIDO: ST32
+MERIDIANO: ST - Estômago
+NOMES: Futu, Hidden (Crouching) Rabbit, 伏兎, 복토
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterolateral aspect of the thigh, on the line connecting the lateral end of the base of the patella with the anterior superior iliac spine, 6 B-cun superior to the base of the patella.
+
+Localizacao original KO:
+
+넓적다리 앞가쪽면, 위앞엉덩뼈가시(anterior superior iliac spine)와 무릎뼈바닥 가쪽끝(the lateral end of the base of the patella)을 연결하는 선 위, 무릎뼈바닥에서 위쪽으로 6寸.
+
+Localizacao pt-BR rascunho:
+
+On anterolateral face de thigh, on linha que conecta lateral end de base de patella com anterior superior iliac spine, 6 B-cun superior a base de patella.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.5～1寸 - 斜刺 1.5寸～2寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,5 a 1 cun
+- Inserção oblíqua: 1,5 cun～2 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Iliac Region Pain, Lumbar Pain, Knee Coldness, Low Extremity Pain, Low Extremity Motor Impairment, Paralysis, Beriberi
+Alvos/acoes: removes: Channel Obstructions, expels: Wind Heat
+Anatomia: located_near thigh, located_near patella, located_near anterior superior iliac spine, anterolateral aspect of thigh, lateral end of the base of patella, base of patella, connecting patella, superior to patella, 6 B-cun patella
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST32
+code: ST32
+displayCode: ST32
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 64. ST33 - ST33 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST33
+CODIGO WHO: ST33
+CODIGO EXIBIDO: ST33
+MERIDIANO: ST - Estômago
+NOMES: Yinshi, Yin Market, 陰市, 음시
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterolateral aspect of the thigh, lateral to the rectus femoris tendon, 3 B-cun superior to the base of the patella.
+
+Localizacao original KO:
+
+넓적다리 앞가쪽면, 넙다리곧은근힘줄(rectus femoris tendon) 가쪽, 무릎뼈바닥(base of the patella)에서 위쪽으로 3寸.
+
+Localizacao pt-BR rascunho:
+
+On anterolateral face de thigh, lateral a rectus femoris tendon, 3 B-cun superior a base de patella.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.5～0.7寸 - 斜刺 0.7～1寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,5 a 0,7 cun
+- Inserção oblíqua: 0,7 a 1 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Leg Numbness, Leg Soreness, Knee Numbness, Knee Soreness, Knee Motor Impairment, Leg Motor Impairment, Low Extremity Motor Impairment
+Alvos/acoes: courses: Wind, dissipates: Cold, frees: Channels, quickens: Connecting Vessels, disinhibits: Joints
+Anatomia: located_near thigh, located_near rectus femoris tendon, located_near patella, anterolateral aspect of thigh, base of patella, lateral end of the base of patella, lateral to rectus femoris tendon, superior to patella, connecting St32, connecting patella, 3 B-cun patella
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST33
+code: ST33
+displayCode: ST33
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 65. ST34 - ST34 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST34
+CODIGO WHO: ST34
+CODIGO EXIBIDO: ST34
+MERIDIANO: ST - Estômago
+NOMES: Liangqiu, Beam Mound (Hill), 丘, 양구
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterolateral aspect of the thigh, between the vastus lateralis muscle and the lateral border of the rectus femoris tendon, 2 B-cun superior to the base of the patella.
+
+Localizacao original KO:
+
+넓적다리 앞가쪽면, 가쪽넓은근(vastus lateralis muscle)과 넙다리곧은근힘줄(rectus femoris tendon) 가쪽모서리사이, 무릎뼈바닥(base of patellae)에서 위쪽으로 2寸.
+
+Localizacao pt-BR rascunho:
+
+On anterolateral face de thigh, entre vastus lateralis muscle e lateral border de rectus femoris tendon, 2 B-cun superior a base de patella.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.5～1寸 - 斜刺 1～1.5寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,5 a 1 cun
+- Inserção oblíqua: 1 a 1,5 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Knee Numbness, dor no joelho, dor gástrica, Mastitis, Low Extremity Motor Impairment
+Alvos/acoes: subdues: Rebellious Stomach Qi, removes: Channel Obstructions, expels: Damp, expels: Wind
+Anatomia: located_near thigh, located_near vastus lateralis muscle, located_near rectus femoris tendon, located_near patella, anterolateral aspect of thigh, lateral border of rectus femoris tendon, base of patella, superior to patella, inferior to St33, 2 B-cun patella, 1 B-cun St33
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST34
+code: ST34
+displayCode: ST34
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 66. ST35 - ST35 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST35
+CODIGO WHO: ST35
+CODIGO EXIBIDO: ST35
+MERIDIANO: ST - Estômago
+NOMES: Dubi, Calf Nose (Nostril), 犢鼻, 독비
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the knee, in the depression lateral to the patellar ligament. Note: When the knee is flexed, ST35 is located in the depression lateral and inferior to the patella.
+
+Localizacao original KO:
+
+무릎 앞쪽면, 무릎인대(patella ligament)의 가쪽 오목한 곳으로. 무릎을 굽혔을 때, 무릎뼈 아래가쪽 오목한 곳에서 취혈한다.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior de knee, na depressão lateral a patellar ligament. Nota: When knee is flexed, ST35 is located na depressão lateral e inferior a patella.
+
+Tecnica/aguilhamento original:
+
+- 0.3～0.5寸 直刺 - 內膝眼쪽으로 2～2.5寸 透刺
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 0,3 a 0,5 cun Inserção perpendicular
+- 內膝眼쪽 em direção a 2 a 2,5 cun Inserção transfixante
+
+Termos nao resolvidos: 內膝眼쪽
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: dor, Knee Motor Impairment, Knee Numbness, Beriberi
+Alvos/acoes: invigorates: Channels, relieves: Swelling, stops: Pain
+Anatomia: located_near knee, located_near patellar ligament, located_near patella, anterior aspect of knee, lateral to patellar ligament, lateral and inferior to patella
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST35
+code: ST35
+displayCode: ST35
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 67. ST36 - E36 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST36
+CODIGO WHO: ST36
+CODIGO EXIBIDO: E36
+MERIDIANO: ST - Estômago
+NOMES: Zusanli, Three Miles of the Foot, 足三里, 족삼리
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the leg, on the line connecting ST35 with ST41, 3 B-cun inferior to ST35.
+
+Localizacao original KO:
+
+종아리 앞쪽면, 犢鼻(ST35)와 解谿(ST41)를 연결하는 선을 16촌으로 하여, 犢鼻(ST35)에서 아래쪽으로 3寸에 해당됨.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior da perna, na linha que conecta ST35 a ST41, 3 B-cun inferior a ST35.
+
+Tecnica/aguilhamento original:
+
+- 0.5～1.5寸 直刺 - 上方 또는 下方을 향해 1～2寸 사자를 함.
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 0,5 a 1,5 cun Inserção perpendicular
+- superiormente ou inferiormente을 em direção a 1 a 2 cun 사자를 함.
+
+Termos nao resolvidos: 을, 사자를, 함
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: dor gástrica, vomito, soluço, Abdominal Distension, borborigmo, diarreia, Dysentery, constipacao, Mastitis, Enteritiris, Leg Pain, Knee Joint Pain, Beriberi, tontura, insonia, Edema, tosse, asma, Emaciation Due To General Deficiency, Indigestion
+Alvos/acoes: benefits: Stomach, benefits: Spleen, tonifies: Qi, tonifies: Blood, dispels: Cold, strengthens: Body, brightens: Eyes, regulates: Nutritive Qi, regulates: Defensive Qi, regulates: Intestines, raises: Yang, expels: Wind, expels: Damp, resolves: Edema
+Anatomia: located_near leg, located_near tibialis anterior muscle, inferior to ST35, connecting ST35, connecting ST41, 3 B-cun ST35
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST36
+code: ST36
+displayCode: E36
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 68. ST37 - ST37 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST37
+CODIGO WHO: ST37
+CODIGO EXIBIDO: ST37
+MERIDIANO: ST - Estômago
+NOMES: Shangjuxu, Upper Great Emptiness, 上巨虛, 상거허
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the leg, on the line connecting ST35 with ST41, 6 B-cun inferior to ST35.
+
+Localizacao original KO:
+
+종아리 앞쪽면, 犢鼻(ST35)와 解谿(ST41)를 연결하는 선을 16촌으로 하여, 犢鼻(ST35)에서 아래쪽으로 6寸에 해당됨.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior da perna, na linha que conecta ST35 a ST41, 6 B-cun inferior a ST35.
+
+Tecnica/aguilhamento original:
+
+- 0.5～1.5寸 直刺 - 斜刺 1～2寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 0,5 a 1,5 cun Inserção perpendicular
+- Inserção oblíqua: 1 a 2 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Abdominal Distension, dor abdominal, borborigmo, diarreia, Dysentery, constipacao, Enteritiris, Paralysis Due To Stroke, Beriberi
+Alvos/acoes: regulates: Stomach Function, regulates: Intestines Function, eliminates: Damp Heat, dispels: Food Retention, calms: Asthma
+Anatomia: located_near leg, located_near tibialis anterior muscle, anterior aspect of leg, connecting ST35, connecting ST41, inferior to ST35, 6 B-cun ST35
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST37
+code: ST37
+displayCode: ST37
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 69. ST38 - ST38 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST38
+CODIGO WHO: ST38
+CODIGO EXIBIDO: ST38
+MERIDIANO: ST - Estômago
+NOMES: Tiaokou, Narrow (Ribbon) Opening, 條口, 조구
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the leg, on the line connecting ST35 with ST41, 8 B-cun inferior to ST35.
+
+Localizacao original KO:
+
+종아리 앞쪽면, 犢鼻(ST35)와 解谿(ST41)를 연결하는 선을 16촌으로 하여, 犢鼻(ST35)에서 아래쪽으로 8寸에 해당됨.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior da perna, na linha que conecta ST35 a ST41, 8 B-cun inferior a ST35.
+
+Tecnica/aguilhamento original:
+
+- 0.5～1寸 直刺 - 斜刺 1～1.5寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 0,5 a 1 cun Inserção perpendicular
+- Inserção oblíqua: 1 a 1,5 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Knee Numbness, Leg Numbness, Leg Pain, dor no joelho, Leg Soreness, Knee Soreness, Shoulder Motor Impairment, Shoulder Weakness, dor abdominal
+Alvos/acoes: removes: Channel Obstructions
+Anatomia: located_near leg, located_near tibialis anterior muscle, anterior aspect of leg, connecting ST35, connecting ST41, inferior to ST35, same level as St40, 8 B-cun ST35
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST38
+code: ST38
+displayCode: ST38
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 70. ST39 - ST39 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST39
+CODIGO WHO: ST39
+CODIGO EXIBIDO: ST39
+MERIDIANO: ST - Estômago
+NOMES: Xiajuxu, Lower Great Emptiness, 下巨虛, 하거허
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the leg, on the line connecting ST35 with ST41, 9 B-cun inferior to ST35.
+
+Localizacao original KO:
+
+종아리 앞쪽면, 犢鼻(ST35)와 解谿(ST41)를 연결하는 선을 16촌으로 하여, 犢鼻(ST35)에서 아래쪽으로 9寸에 해당됨.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior da perna, na linha que conecta ST35 a ST41, 9 B-cun inferior a ST35.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.5～1寸 - 斜刺 1～1.5寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,5 a 1 cun
+- Inserção oblíqua: 1 a 1,5 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Lower Abdominal Pain, Backache Refer To Testis, Mastitis, Low Extremity Paralysis, Low Extremity Numbness
+Alvos/acoes: regulates: Stomach Function, regulates: Intestines Function, eliminates: Damp Heat, eliminates: Wind Damp, stops: Pain
+Anatomia: located_near leg, located_near tibialis anterior muscle, anterior aspect of leg, connecting ST35, connecting ST41, inferior to ST35, same level as GB35, same level as gB36, 9 B-cun ST35
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST39
+code: ST39
+displayCode: ST39
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 71. ST40 - ST40 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST40
+CODIGO WHO: ST40
+CODIGO EXIBIDO: ST40
+MERIDIANO: ST - Estômago
+NOMES: Fenglong, Abundant Bulge, 豊隆, 풍륭
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterolateral aspect of the leg, lateral border of the tibialis anterior muscle, 8 B-cun superior to the prominence of the lateral malleolus.
+
+Localizacao original KO:
+
+종아리 앞가쪽면, 앞정강근(tibialis anterior muscle)의 가쪽모서리에 있으며, 犢鼻(ST35)와 解谿(ST41)를 연결하는 선을 16촌으로 하여, 가쪽 복사 융기(prominence of the lateral malleolus) 위쪽으로 8寸 부위에 해당됨.
+
+Localizacao pt-BR rascunho:
+
+On anterolateral face de leg, lateral border de tibialis anterior muscle, 8 B-cun superior a prominence de maleolo lateral.
+
+Tecnica/aguilhamento original:
+
+- 0.5～1寸 直刺 - 斜刺 1～1.5寸 (鍼尖을 약간 內側으로 향해 刺入)
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 0,5 a 1 cun Inserção perpendicular
+- Inserção oblíqua: 1 a 1,5 cun (鍼尖을 약간 內側 em direção a em direção a 刺入)
+
+Termos nao resolvidos: 鍼尖을, 약간, 內側, 刺入
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: cefaleia, vertigem, tontura, tosse, asma, Excessive Sputum, dor toracica, constipacao, Mania, Epilepsy, Muscular Atrophy, Low Extremity Motor Impairment, Low Extremity Pain, Low Extremity Paralysis, Low Extremity Swelling
+Alvos/acoes: resolves: Phlegm, resolves: Damp, calms: Asthma, clears: Heat, calms: Mind, clears: Mind, opens: Chest
+Anatomia: located_near leg, located_near tibialis anterior muscle, located_near lateral malleolus, anterolateral aspect of leg, lateral border of tibialis anterior muscle, prominence of lateral malleolus, superior to lateral malleolus, lateral to ST38, 8 B-cun lateral malleolus, one fingerbreadth ST38
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST40
+code: ST40
+displayCode: ST40
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 72. ST41 - ST41 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST41
+CODIGO WHO: ST41
+CODIGO EXIBIDO: ST41
+MERIDIANO: ST - Estômago
+NOMES: Jiexi, Dispersing Stream (Ravine Divide), 解谿, 해계
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the anterior aspect of the ankle, in the depression at the centre of the front surface of the ankle joint, between the tendons of extensor hallucis longus and extensor digitorum longus.
+
+Localizacao original KO:
+
+발목 앞쪽면, 발목관절 앞면 중앙부위로서, 긴엄지폄근힘줄(extensor halluces longus tendon)과 긴발가락폄근힘줄(extensor digitorum longus tendon) 사이 오목한 곳에 위치함.
+
+Localizacao pt-BR rascunho:
+
+Na face anterior de ankle, na depressão at centre de front surface de ankle joint, entre tendons de extensor hallucis longus e extensor digitorum longus.
+
+Tecnica/aguilhamento original:
+
+- 鍼尖을 足根部로 향하여 0.3～0.8寸 直刺
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 鍼尖을 足根部로 향하여 0,3 a 0,8 cun Inserção perpendicular
+
+Termos nao resolvidos: 鍼尖을, 足根部로, 향하여
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Ankle Joint Pain, Muscular Atrophy, Low Extremity Motor Impairment, Low Extremity Paralysis, Low Extremity Pain, Epilepsy, cefaleia, vertigem, tontura, Abdominal Distension, constipacao
+Alvos/acoes: removes: Channel Obstructions, eliminates: Wind, clears: Heat, clears: Mind, brightens: Eyes
+Anatomia: located_near ankle, located_near ankle joint, located_near extensor hallucis longus, located_near extensor digitorum longus, located_near lateral malleolus, located_near medial malleolus, anterior aspect of ankle, centre of the front surface of ankle joint, tendons of extensor hallucis longus, tendons of extensor digitorum longus, prominences of lateral malleolus, prominences of medial malleolus, two tendons dorsum of the foot, between extensor hallucis longus, between extensor digitorum longus, connecting lateral malleolus, connecting medial malleolus, between dorsum of the foot
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST41
+code: ST41
+displayCode: ST41
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 73. ST42 - ST42 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST42
+CODIGO WHO: ST42
+CODIGO EXIBIDO: ST42
+MERIDIANO: ST - Estômago
+NOMES: Chongyang, Rushing (Surging) Yang, 衝陽, 충양
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the dorsum of the foot, at the joint of the base of the second metatarsal bone and the intermediate cuneiform bone, over the dorsalis pedis artery.
+
+Localizacao original KO:
+
+발등의 둘째 발허리뼈(the 2nd metatarsal bone) 바닥과 중간쐐기뼈(intermediate cuneiform bone)의 관절부위에 해당되며, 발등동맥(dorsalis pedis artery)이 뛰는 곳에 취혈함.
+
+Localizacao pt-BR rascunho:
+
+No dorso do pé, at joint de base de second metatarsal bone e intermediate cuneiform bone, sobre a artéria dorsal do pé.
+
+Tecnica/aguilhamento original:
+
+- 足背動靜脈을 피하여 鍼尖을 足背에서 足底를 향해 0.2～0.3寸 直刺
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 足背動靜脈을 피하여 鍼尖을 足背에서 足底를 em direção a 0,2 a 0,3 cun Inserção perpendicular
+
+Termos nao resolvidos: 足背動靜脈을, 피하여, 鍼尖을, 足背에서, 足底를
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Upper Teeth Pain, Dorsum Of Foot Redness, Dorsum Of Foot Swelling, Face Paralysis, Foot Motor Impairment, Foot Muscular Atrophy
+Alvos/acoes: tonifies: Stomach, tonifies: Spleen, calms: Mind, removes: Channel Obstructions
+Anatomia: located_near foot, located_near second metatarsal bone, located_near intermediate cuneiform bone, located_near dorsalis pedis artery, dorsum of foot, joint of the base of second metatarsal bone
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST42
+code: ST42
+displayCode: ST42
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 74. ST43 - ST43 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST43
+CODIGO WHO: ST43
+CODIGO EXIBIDO: ST43
+MERIDIANO: ST - Estômago
+NOMES: Xiangu, Sinking Valley, 陷谷, 함곡
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the dorsum of the foot, between the second and third metatarsal bones, in the depression proximal to the second metatarsophalangeal joint.
+
+Localizacao original KO:
+
+발등, 둘째와 셋째 발허리뼈(the 2nd and 3rd metatarsal bones)의 사이, 둘째 발허리발가락관절(the 2nd metatarsophalangeal joint)의 몸 쪽 오목한 곳.
+
+Localizacao pt-BR rascunho:
+
+No dorso do pé, entre second e third ossos metatarsais, na depressão proximal a second metatarsophalangeal joint.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.3～0.5寸 - 斜刺 0.5～1寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,3 a 0,5 cun
+- Inserção oblíqua: 0,5 a 1 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: General Edema, Face Edema, dor abdominal, borborigmo, Dorsum Of Foot Swelling, Dorsum Of Foot Pain
+Alvos/acoes: eliminates: Wind, eliminates: Heat, removes: Channel Obstructions
+Anatomia: located_near foot, located_near second and third metatarsal bones, located_near second metatarsophalangeal joint, dorsum of foot, between second and third metatarsal bones, proximal to second metatarsophalangeal joint
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST43
+code: ST43
+displayCode: ST43
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 75. ST44 - ST44 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST44
+CODIGO WHO: ST44
+CODIGO EXIBIDO: ST44
+MERIDIANO: ST - Estômago
+NOMES: Neiting, Inner Courtyard, 內庭, 내정
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the dorsum of the foot, between the second and third toes, posterior to the web margin, at the border between the red and white flesh.
+
+Localizacao original KO:
+
+발등 부위, 둘째와 셋째 발가락(the 2nd and 3rd toes) 사이, 발샅 가장자리(web margin) 뒤쪽, 赤白肉際.
+
+Localizacao pt-BR rascunho:
+
+No dorso do pé, entre second e third dedos do pé, posterior a margem interdigital, at border entre pele vermelha e branca.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.2～0.4寸 - 斜刺 0.3～0.8寸 (鍼尖을 上向하여 刺入)
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,2 a 0,4 cun
+- Inserção oblíqua: 0,3 a 0,8 cun (鍼尖을 上em direção a하여 刺入)
+
+Termos nao resolvidos: 鍼尖을, 上, 하여, 刺入
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Toothache, Face Pain, Mouth Deviation, Sore Throat, Epistaxis, dor gástrica, Acid Regurgitation, Abdominal Distension, diarreia, Dysentery, constipacao, Dorsum Of Foot Swelling, Dorsum Of Foot Pain, Febrile Disease
+Alvos/acoes: clears: Heat, eliminates: Fullness, regulates: Qi, stops: Pain, promotes: Digestion, eliminates: Wind
+Anatomia: located_near foot, located_near second and third toes, located_near web margin, located_near red and white flesh, dorsum of foot, between second and third toes, posterior to web margin, between red and white flesh
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST44
+code: ST44
+displayCode: ST44
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 76. ST45 - ST45 - Ponto do meridiano Estômago
+
+IDENTIFICADOR: acupoint:ST45
+CODIGO WHO: ST45
+CODIGO EXIBIDO: ST45
+MERIDIANO: ST - Estômago
+NOMES: Lidui, Sick (Severe) Mouth, 厲兌, 여태
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the second toe, lateral to the distal phalanx, 0.1 F-cun proximallateral to the lateral corner of the second toenail, at the intersection of the vertical line of the lateral border and the horizontal line of the base of the second toenail.
+
+Localizacao original KO:
+
+둘째발가락, 끝마디뼈(distal phalanx)가쪽, 둘째발톱 가쪽 뿌리각(lateral corner of the 2nd toenail)에서 몸가쪽으로 0.1寸.
+
+Localizacao pt-BR rascunho:
+
+On second toe, lateral a falange distal, 0.1 F-cun proximallateral a lateral corner de second toenail, at intersection de vertical linha de lateral border e horizontal linha de base de second toenail.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.1～0.2寸 - 斜刺 0.1～0.2寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,1 a 0,2 cun
+- Inserção oblíqua: 0,1 a 0,2 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Face Swelling, Mouth Deviation, Epistaxis, Toothache, Hoarse Voice, Sore Throat, Abdominal Distension, Foot Coldness, Leg Coldness, Febrile Disease, Dream-Disturbed Sleep, Mania
+Alvos/acoes: calms: Mind, brightens: Eyes, clears: Heart, relieves: Food Retention
+Anatomia: located_near second toe, located_near distal phalanx, located_near second toenail, lateral corner of second toenail, horizontal line of the base of second toenail, lateral to distal phalanx, proximallateral to second toenail, 0.1 f-cun second toenail
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:ST45
+code: ST45
+displayCode: ST45
+title:
+meridianCode: ST
+meridian: Estômago
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 77. SP1 - SP1 - Ponto do meridiano Baço
+
+IDENTIFICADOR: acupoint:SP1
+CODIGO WHO: SP1
+CODIGO EXIBIDO: SP1
+MERIDIANO: SP - Baço
+NOMES: Yinbai, Hidden White, 隱白, 은백
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the great toe, medial to the distal phalanx, 0.1 F-cun proximal-medial to the medial corner of the toenail, at the intersection of the vertical line of the medial border and horizontal line of the base of the toenail.
+
+Localizacao original KO:
+
+엄지발가락, 끝마디뼈(distal phalanx) 안쪽, 엄지발톱 안쪽 뿌리각(medial corner of the toenail)에서 몸 안쪽으로 1分(0.1寸).
+
+Localizacao pt-BR rascunho:
+
+No halux, medial a falange distal, 0.1 F-cun proximal-medial a medial corner de toenail, at intersection de vertical linha de medial border e horizontal linha de base da unha do halux.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.1～0.2寸 - 斜刺 0.1～0.3寸 (鍼尖을 上向하여 刺入) - 三稜鍼으로 點刺出血
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,1 a 0,2 cun
+- Inserção oblíqua: 0,1 a 0,3 cun (鍼尖을 上em direção a하여 刺入)
+- agulha triangular em direção a puntura para sangria
+
+Termos nao resolvidos: 鍼尖을, 上, 하여, 刺入
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Abdominal Distension, Bloody Stool, Menorrhagia, Uterine Bleeding, Mental Disorder, Dream-Disturbed Sleep, Convulsion
+Alvos/acoes: strengthens: Spleen, regulates: Blood, calms: Wind
+Anatomia: located_near great toe, located_near distal phalanx, located_near toenail, medial corner of toenail, horizontal line of the base of toenail, medial to distal phalanx, proximalmedial to toenail, 0.1 f-cun toenail
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:SP1
+code: SP1
+displayCode: SP1
+title:
+meridianCode: SP
+meridian: Baço
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 78. SP2 - SP2 - Ponto do meridiano Baço
+
+IDENTIFICADOR: acupoint:SP2
+CODIGO WHO: SP2
+CODIGO EXIBIDO: SP2
+MERIDIANO: SP - Baço
+NOMES: Dadu, Big Capital (Great Metropolis), 大都, 대도
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the great toe, in the depression distal to the 1st metatarsophalangeal joint, at the border between the red and white flesh.
+
+Localizacao original KO:
+
+엄지발가락, 첫째 발허리발가락관절(the 1st metatarsophalangeal joint)에서 먼 쪽 오목한 곳, 赤白肉際.
+
+Localizacao pt-BR rascunho:
+
+No halux, na depressão distal a 1º metatarsophalangeal joint, at border entre pele vermelha e branca.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.2～0.3寸 - 斜刺 0.3～0.5寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,2 a 0,3 cun
+- Inserção oblíqua: 0,3 a 0,5 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: Abdominal Distension, dor gástrica, constipacao, Febrile Diseases With Anhidrosis
+Alvos/acoes: strengthens: Spleen, promotes: Digestion, clears: Heat
+Anatomia: located_near great toe, located_near first metatarsophalangeal joint, located_near red and white flesh, distal to first metatarsophalangeal joint, between red and white flesh
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:SP2
+code: SP2
+displayCode: SP2
+title:
+meridianCode: SP
+meridian: Baço
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 79. SP3 - BP3 - Ponto do meridiano Baço
+
+IDENTIFICADOR: acupoint:SP3
+CODIGO WHO: SP3
+CODIGO EXIBIDO: BP3
+MERIDIANO: SP - Baço
+NOMES: Taibai, Greater (Supreme) White, 太白, 태백
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the medial aspect of the foot, in the depression proximal to the 1st metatarsophalangeal joint, at the border between the red and white flesh.
+
+Localizacao original KO:
+
+발 안쪽면, 엄지발가락, 첫째 발허리발가락관절(the 1st metatarsophalangeal joint)에서 몸 쪽 오목한 곳의 赤白肉際에 취혈함.
+
+Localizacao pt-BR rascunho:
+
+Na face medial de foot, na depressão proximal a 1º metatarsophalangeal joint, at border entre pele vermelha e branca.
+
+Tecnica/aguilhamento original:
+
+- 0.3～0.5寸 直刺 - 斜刺 0.3～0.5寸
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- 0,3 a 0,5 cun Inserção perpendicular
+- Inserção oblíqua: 0,3 a 0,5 cun
+
+Termos nao resolvidos: nenhum registrado
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: dor gástrica, Abdominal Distension, constipacao, Dysentery, vomito, diarreia, borborigmo, Sluggishness, Beriberi
+Alvos/acoes: strengthens: Spleen, resolves: Damp, strengthens: Spine
+Anatomia: located_near foot, located_near first metatarsophalangeal joint, located_near red and white flesh, medial aspect of foot, proximal to first metatarsophalangeal joint, between red and white flesh
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:SP3
+code: SP3
+displayCode: BP3
+title:
+meridianCode: SP
+meridian: Baço
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+
+---
+
+## 80. SP4 - SP4 - Ponto do meridiano Baço
+
+IDENTIFICADOR: acupoint:SP4
+CODIGO WHO: SP4
+CODIGO EXIBIDO: SP4
+MERIDIANO: SP - Baço
+NOMES: Gongsun, Yellow Emperor, 公孫, 공손
+
+### Contexto importado
+
+Localizacao original EN:
+
+On the medial aspect of the foot, anteroinferior to the base of the 1st metatarsal bone, at the border between the red and white flesh.
+
+Localizacao original KO:
+
+발 안쪽면, 첫째 발허리뼈바닥(base of the 1st metatarsal bone)의 아래앞쪽, 赤白肉際.
+
+Localizacao pt-BR rascunho:
+
+Na face medial de foot, anteroinferior a base de 1º metatarsal bone, at border entre pele vermelha e branca.
+
+Tecnica/aguilhamento original:
+
+- 直刺 0.5～1寸 - 斜刺 1～1.5寸 - 湧泉을 향해 1.5～2寸 透刺
+
+Tecnica/aguilhamento pt-BR rascunho:
+
+- Inserção perpendicular: 0,5 a 1 cun
+- Inserção oblíqua: 1 a 1,5 cun
+- 湧泉을 em direção a 1,5 a 2 cun Inserção transfixante
+
+Termos nao resolvidos: 湧泉을
+
+### Sugestoes AcuKG nao revisadas
+
+Indicacoes: dor gástrica, vomito, Abdominal Distension, dor abdominal, diarreia, Dysentery, borborigmo
+Alvos/acoes: tonifies: Stomach, tonifies: Spleen, regulates: Chong Channels, stops: Bleeding, dispels: Fullness, pacifies: Stomach, removes: Obstructions, regulates: Menses
+Anatomia: located_near foot, located_near first metatarsal bone, located_near red and white flesh, base of first metatarsal bone, medial aspect of foot, anteroinferior to first metatarsal bone, between red and white flesh, distal to first metatarsal bone
+
+### Preencher resposta para este ponto
+
+Mantenha o IDENTIFICADOR exatamente igual. Preencha em pt-BR. Se faltar fonte, deixe vazio e explique na nota.
+
+IDENTIFICADOR: acupoint:SP4
+code: SP4
+displayCode: SP4
+title:
+meridianCode: SP
+meridian: Baço
+techniques:
+locationText:
+actions:
+indications:
+cautions:
+relatedPatterns:
+needling:
+clinicalNote:
+references: PDF principal, pagina/secao:
+confidence: low | medium | high
+requiresHumanReview: true
+

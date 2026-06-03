@@ -1,0 +1,569 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-03T19:04:22.100Z",
+  "approvalMode": "local_only",
+  "approvalMethod": "atlas_extra_operator_request",
+  "counts": {
+    "atlasExtraDefinitions": 70,
+    "matchedKmPoints": 35,
+    "atlasOnlyPoints": 36,
+    "approvedLocalAtlasExtra": 71,
+    "remainingKmWithoutAtlasSource": 20,
+    "sourceIndexItems": 452,
+    "sourceIndexWithImages": 432
+  },
+  "pagesToRender": [
+    871,
+    872,
+    873,
+    874,
+    875,
+    876,
+    877,
+    878,
+    879,
+    880,
+    881,
+    882,
+    883,
+    884,
+    885,
+    886,
+    887,
+    888,
+    889
+  ],
+  "matchedKmPoints": [
+    {
+      "code": "EX-HN1",
+      "atlasName": "Sishencong",
+      "printedPage": 854,
+      "pdfPage": 871
+    },
+    {
+      "code": "EX-HN3",
+      "atlasName": "Yintang",
+      "printedPage": 854,
+      "pdfPage": 871
+    },
+    {
+      "code": "EX-HN4",
+      "atlasName": "Yuyao",
+      "printedPage": 854,
+      "pdfPage": 871
+    },
+    {
+      "code": "EX-HN7",
+      "atlasName": "Qiuhou",
+      "printedPage": 854,
+      "pdfPage": 871
+    },
+    {
+      "code": "EX-HN8",
+      "atlasName": "Shangyingxiang",
+      "printedPage": 855,
+      "pdfPage": 872
+    },
+    {
+      "code": "EX-HN6",
+      "atlasName": "Erjian",
+      "printedPage": 855,
+      "pdfPage": 872
+    },
+    {
+      "code": "EX-HN5",
+      "atlasName": "Taiyang",
+      "printedPage": 855,
+      "pdfPage": 872
+    },
+    {
+      "code": "EX-HN14",
+      "atlasName": "Yinming",
+      "printedPage": 855,
+      "pdfPage": 872
+    },
+    {
+      "code": "EX-HN15",
+      "atlasName": "Bailao",
+      "printedPage": 856,
+      "pdfPage": 873
+    },
+    {
+      "code": "EX-HN11",
+      "atlasName": "Haiquan",
+      "printedPage": 860,
+      "pdfPage": 877
+    },
+    {
+      "code": "EX-HN12",
+      "atlasName": "Jinjin",
+      "printedPage": 860,
+      "pdfPage": 877
+    },
+    {
+      "code": "EX-HN13",
+      "atlasName": "Yuye",
+      "printedPage": 860,
+      "pdfPage": 877
+    },
+    {
+      "code": "EX-CA1",
+      "atlasName": "Zigong",
+      "printedPage": 862,
+      "pdfPage": 879
+    },
+    {
+      "code": "EX-B3",
+      "atlasName": "Yishu",
+      "printedPage": 863,
+      "pdfPage": 880
+    },
+    {
+      "code": "EX-B1",
+      "atlasName": "Dingchuan",
+      "printedPage": 863,
+      "pdfPage": 880
+    },
+    {
+      "code": "EX-B4",
+      "atlasName": "Pigen",
+      "printedPage": 864,
+      "pdfPage": 881
+    },
+    {
+      "code": "EX-B8",
+      "atlasName": "Shiqizhuixia",
+      "printedPage": 864,
+      "pdfPage": 881
+    },
+    {
+      "code": "EX-B7",
+      "atlasName": "Yaoyan",
+      "printedPage": 864,
+      "pdfPage": 881
+    },
+    {
+      "code": "EX-B9",
+      "atlasName": "Yaoqi",
+      "printedPage": 864,
+      "pdfPage": 881
+    },
+    {
+      "code": "EX-B2",
+      "atlasName": "Huatuojiaji",
+      "printedPage": 865,
+      "pdfPage": 882
+    },
+    {
+      "code": "EX-UE4",
+      "atlasName": "Zhongkui",
+      "printedPage": 866,
+      "pdfPage": 883
+    },
+    {
+      "code": "EX-UE3",
+      "atlasName": "Zhongquan",
+      "printedPage": 866,
+      "pdfPage": 883
+    },
+    {
+      "code": "EX-UE7",
+      "atlasName": "Yaotongxue",
+      "printedPage": 866,
+      "pdfPage": 883
+    },
+    {
+      "code": "EX-UE2",
+      "atlasName": "Erbai",
+      "printedPage": 867,
+      "pdfPage": 884
+    },
+    {
+      "code": "EX-UE10",
+      "atlasName": "Sifeng",
+      "printedPage": 867,
+      "pdfPage": 884
+    },
+    {
+      "code": "EX-UE11",
+      "atlasName": "Shixuan",
+      "printedPage": 867,
+      "pdfPage": 884
+    },
+    {
+      "code": "EX-UE9",
+      "atlasName": "Baxie",
+      "printedPage": 868,
+      "pdfPage": 885
+    },
+    {
+      "code": "EX-UE1",
+      "atlasName": "Zhoujian",
+      "printedPage": 868,
+      "pdfPage": 885
+    },
+    {
+      "code": "EX-LE10",
+      "atlasName": "Bafeng",
+      "printedPage": 869,
+      "pdfPage": 886
+    },
+    {
+      "code": "EX-LE2",
+      "atlasName": "Heding",
+      "printedPage": 870,
+      "pdfPage": 887
+    },
+    {
+      "code": "EX-LE7",
+      "atlasName": "Lanweixue",
+      "printedPage": 870,
+      "pdfPage": 887
+    },
+    {
+      "code": "EX-LE5",
+      "atlasName": "Xiyan",
+      "printedPage": 870,
+      "pdfPage": 887
+    },
+    {
+      "code": "EX-LE4",
+      "atlasName": "Xiyan",
+      "printedPage": 870,
+      "pdfPage": 887,
+      "matchEvidence": "A secao Xiyan do Atlas descreve o par medial/lateral do joelho; o ponto medial corresponde ao Neixiyan/EX-LE4 no KM-Agent."
+    },
+    {
+      "code": "EX-LE3",
+      "atlasName": "Baichongwo",
+      "printedPage": 871,
+      "pdfPage": 888
+    },
+    {
+      "code": "EX-LE6",
+      "atlasName": "Dannangxue",
+      "printedPage": 872,
+      "pdfPage": 889
+    }
+  ],
+  "atlasOnlyPoints": [
+    {
+      "code": "ATLAS-EXTRA-ANMIAN",
+      "atlasName": "Anmian",
+      "printedPage": 856,
+      "pdfPage": 873
+    },
+    {
+      "code": "ATLAS-EXTRA-CHIQIAN",
+      "atlasName": "Chiqian",
+      "printedPage": 856,
+      "pdfPage": 873
+    },
+    {
+      "code": "ATLAS-EXTRA-CHONGGU",
+      "atlasName": "Chonggu",
+      "printedPage": 856,
+      "pdfPage": 873
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING",
+      "atlasName": "Jianming",
+      "printedPage": 857,
+      "pdfPage": 874
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING-N-1",
+      "atlasName": "Jianming n. 1",
+      "printedPage": 857,
+      "pdfPage": 874
+    },
+    {
+      "code": "ATLAS-EXTRA-XIAJINGMING",
+      "atlasName": "Xiajingming",
+      "printedPage": 857,
+      "pdfPage": 874
+    },
+    {
+      "code": "ATLAS-EXTRA-SHANGJINGMING",
+      "atlasName": "Shangjingming",
+      "printedPage": 857,
+      "pdfPage": 874
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING-N-2",
+      "atlasName": "Jianming n. 2",
+      "printedPage": 858,
+      "pdfPage": 875
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING-N-3",
+      "atlasName": "Jianming n. 3",
+      "printedPage": 858,
+      "pdfPage": 875
+    },
+    {
+      "code": "ATLAS-EXTRA-SHANGMING",
+      "atlasName": "Shangming",
+      "printedPage": 858,
+      "pdfPage": 875
+    },
+    {
+      "code": "ATLAS-EXTRA-WAIMING",
+      "atlasName": "Waiming",
+      "printedPage": 858,
+      "pdfPage": 875
+    },
+    {
+      "code": "ATLAS-EXTRA-QIANZHENG",
+      "atlasName": "Qianzheng",
+      "printedPage": 859,
+      "pdfPage": 876
+    },
+    {
+      "code": "ATLAS-EXTRA-TINGMIN",
+      "atlasName": "Tingmin",
+      "printedPage": 859,
+      "pdfPage": 876
+    },
+    {
+      "code": "ATLAS-EXTRA-SHANGLIANQUAN",
+      "atlasName": "Shanglianquan",
+      "printedPage": 859,
+      "pdfPage": 876
+    },
+    {
+      "code": "ATLAS-EXTRA-JINGBI",
+      "atlasName": "Jingbi",
+      "printedPage": 859,
+      "pdfPage": 876
+    },
+    {
+      "code": "ATLAS-EXTRA-JIACHENGJIANG",
+      "atlasName": "Jiachengjiang",
+      "printedPage": 860,
+      "pdfPage": 877
+    },
+    {
+      "code": "ATLAS-EXTRA-SHEZHU",
+      "atlasName": "Shezhu",
+      "printedPage": 860,
+      "pdfPage": 877
+    },
+    {
+      "code": "ATLAS-EXTRA-YIJING",
+      "atlasName": "Yijing",
+      "printedPage": 861,
+      "pdfPage": 878
+    },
+    {
+      "code": "ATLAS-EXTRA-WEIBAO",
+      "atlasName": "Weibao",
+      "printedPage": 861,
+      "pdfPage": 878
+    },
+    {
+      "code": "ATLAS-EXTRA-TITUOXUE",
+      "atlasName": "Tituoxue",
+      "printedPage": 861,
+      "pdfPage": 878
+    },
+    {
+      "code": "ATLAS-EXTRA-QIMEN-EXTRA",
+      "atlasName": "Qimen extra",
+      "printedPage": 861,
+      "pdfPage": 878
+    },
+    {
+      "code": "ATLAS-EXTRA-SANJIAOJIU",
+      "atlasName": "Sanjiaojiu",
+      "printedPage": 862,
+      "pdfPage": 879
+    },
+    {
+      "code": "ATLAS-EXTRA-WEISHANGXUE",
+      "atlasName": "Weishangxue",
+      "printedPage": 862,
+      "pdfPage": 879
+    },
+    {
+      "code": "ATLAS-EXTRA-KUIYANGXUE",
+      "atlasName": "Kuiyangxue",
+      "printedPage": 863,
+      "pdfPage": 880
+    },
+    {
+      "code": "ATLAS-EXTRA-XUEYADIAN",
+      "atlasName": "Xueyadian",
+      "printedPage": 863,
+      "pdfPage": 880
+    },
+    {
+      "code": "ATLAS-EXTRA-LUOZHEN",
+      "atlasName": "Luozhen",
+      "printedPage": 866,
+      "pdfPage": 883
+    },
+    {
+      "code": "ATLAS-EXTRA-BICHONG",
+      "atlasName": "Bichong",
+      "printedPage": 867,
+      "pdfPage": 884
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANNEILING-JIANQIAN",
+      "atlasName": "Jianneiling/Jianqian",
+      "printedPage": 868,
+      "pdfPage": 885
+    },
+    {
+      "code": "ATLAS-EXTRA-GENJIN",
+      "atlasName": "Genjin",
+      "printedPage": 869,
+      "pdfPage": 886
+    },
+    {
+      "code": "ATLAS-EXTRA-GENPING",
+      "atlasName": "Genping",
+      "printedPage": 869,
+      "pdfPage": 886
+    },
+    {
+      "code": "ATLAS-EXTRA-NAOQING",
+      "atlasName": "Naoqing",
+      "printedPage": 869,
+      "pdfPage": 886
+    },
+    {
+      "code": "ATLAS-EXTRA-XIXIA",
+      "atlasName": "Xixia",
+      "printedPage": 870,
+      "pdfPage": 887
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANXI",
+      "atlasName": "Jianxi",
+      "printedPage": 871,
+      "pdfPage": 888
+    },
+    {
+      "code": "ATLAS-EXTRA-MAIBU",
+      "atlasName": "Maibu",
+      "printedPage": 871,
+      "pdfPage": 888
+    },
+    {
+      "code": "ATLAS-EXTRA-SIQIANG",
+      "atlasName": "Siqiang",
+      "printedPage": 871,
+      "pdfPage": 888
+    },
+    {
+      "code": "ATLAS-EXTRA-LINGHOU",
+      "atlasName": "Linghou",
+      "printedPage": 872,
+      "pdfPage": 889
+    }
+  ],
+  "remainingKmWithoutAtlasSource": [
+    {
+      "code": "AA1",
+      "title": "AA1 - Ponto do meridiano Auriculoterapia",
+      "meridianCode": "AA"
+    },
+    {
+      "code": "AA2",
+      "title": "AA2 - Ponto do meridiano Auriculoterapia",
+      "meridianCode": "AA"
+    },
+    {
+      "code": "AA3",
+      "title": "AA3 - Ponto do meridiano Auriculoterapia",
+      "meridianCode": "AA"
+    },
+    {
+      "code": "EX-B5",
+      "title": "EX-B5 - Ponto do meridiano EXB",
+      "meridianCode": "EXB"
+    },
+    {
+      "code": "EX-B6",
+      "title": "EX-B6 - Ponto do meridiano EXB",
+      "meridianCode": "EXB"
+    },
+    {
+      "code": "EX-HN2",
+      "title": "EX-HN2 - Ponto do meridiano EXHN",
+      "meridianCode": "EXHN"
+    },
+    {
+      "code": "EX-HN9",
+      "title": "EX-HN9 - Ponto do meridiano EXHN",
+      "meridianCode": "EXHN"
+    },
+    {
+      "code": "EX-HN10",
+      "title": "EX-HN10 - Ponto do meridiano EXHN",
+      "meridianCode": "EXHN"
+    },
+    {
+      "code": "EX-LE1",
+      "title": "EX-LE1 - Ponto do meridiano EXLE",
+      "meridianCode": "EXLE"
+    },
+    {
+      "code": "EX-LE8",
+      "title": "EX-LE8 - Ponto do meridiano EXLE",
+      "meridianCode": "EXLE"
+    },
+    {
+      "code": "EX-LE9",
+      "title": "EX-LE9 - Ponto do meridiano EXLE",
+      "meridianCode": "EXLE"
+    },
+    {
+      "code": "EX-LE11",
+      "title": "EX-LE11 - Ponto do meridiano EXLE",
+      "meridianCode": "EXLE"
+    },
+    {
+      "code": "EX-LE12",
+      "title": "EX-LE12 - Ponto do meridiano EXLE",
+      "meridianCode": "EXLE"
+    },
+    {
+      "code": "EX-UE5",
+      "title": "EX-UE5 - Ponto do meridiano EXUE",
+      "meridianCode": "EXUE"
+    },
+    {
+      "code": "EX-UE6",
+      "title": "EX-UE6 - Ponto do meridiano EXUE",
+      "meridianCode": "EXUE"
+    },
+    {
+      "code": "EX-UE8",
+      "title": "EX-UE8 - Ponto do meridiano EXUE",
+      "meridianCode": "EXUE"
+    },
+    {
+      "code": "SA1",
+      "title": "SA1 - Ponto do meridiano Anatomia de superfície",
+      "meridianCode": "SA"
+    },
+    {
+      "code": "SA2",
+      "title": "SA2 - Ponto do meridiano Anatomia de superfície",
+      "meridianCode": "SA"
+    },
+    {
+      "code": "SA3",
+      "title": "SA3 - Ponto do meridiano Anatomia de superfície",
+      "meridianCode": "SA"
+    },
+    {
+      "code": "SA4",
+      "title": "SA4 - Ponto do meridiano Anatomia de superfície",
+      "meridianCode": "SA"
+    }
+  ]
+}

@@ -148,7 +148,20 @@ Atualize este arquivo quando:
 
 Não remova regras sem motivo claro. Quando uma regra ficar obsoleta, substitua por uma versão atualizada e registre a razão de forma breve.
 
-## 10. Padrão de Comunicação
+## 10. Biblioteca Viva, Fontes Visuais e Mapas
+
+Ao trabalhar com pontos de acupuntura, mapas, KM-Agent, Atlas da Ednéa Martins ou fontes visuais:
+
+- Use `tools/codex-skills/sistema-acup-map` como guia local quando a tarefa envolver coordenadas, mapas corporais, pontos auriculares, inferência de localização ou calibração visual.
+- A fonte clínica primária deve ser preservada com rastreabilidade: título, página impressa, página do PDF, trecho extraído e status de revisão.
+- Imagens ou páginas renderizadas de PDFs clínicos não devem entrar no bundle principal do frontend nem ser carregadas de forma ansiosa. Devem ser tratadas como fonte visual sob demanda, preferencialmente protegida e acessível primeiro em fluxos de Biblioteca Viva/SuperAdm/curadoria.
+- A interface clínica deve mostrar dados curados e objetivos; a imagem da fonte deve aparecer em aba ou painel de "Fonte" para conferência, não como substituta do conteúdo normalizado.
+- Não publique páginas inteiras de material bibliográfico em área pública sem avaliar licença, privacidade, tamanho de deploy e controle de acesso.
+- Ao gerar imagens de páginas do Atlas, use formato otimizado (`webp` quando possível), índice `ponto -> páginas/imagens`, carregamento lazy e metadados de origem.
+- Pontos, relações, cautelas, indicações, imagens de fonte e coordenadas inferidas permanecem em `draft` ou `review` até aprovação profissional explícita.
+- Aprovação em lote por critério de confiança do KM-Agent/Atlas deve ser registrada como `approved_local`, `approvalMode: local_only` e `requiresProfessionalAudit: true`; não migre para Supabase/produção sem etapa separada de auditoria e rastreabilidade.
+
+## 11. Padrão de Comunicação
 
 Ao trabalhar no projeto, a IA deve:
 

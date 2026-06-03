@@ -1,8 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Panel } from '../ui/Panel';
+import {
+  getClinicalKnowledgeReviews,
+  getLocalKnowledgeReviews,
+  mergeKnowledgeReviews,
+} from '../../services/knowledgeAdminService';
 import { getMapAsset, getLocationsForPoint } from '../../knowledge/mapLocations';
-import { getPointFicha, suggestVentosa } from '../../knowledge/protocolEngine';
+import { buildPointDetail } from '../../knowledge/pointDetails';
+import { buildPointRecommendations } from '../../knowledge/pointRecommendationEngine';
+import { suggestVentosa } from '../../knowledge/protocolEngine';
+import {
+  findAtlasEdneaSourceReference,
+  loadAtlasEdneaSourceIndex,
+} from '../../knowledge/sourceReferences';
 import { normalizePointCode } from '../../knowledge/aliases';
+import { PointReviewDialog } from './PointReviewDialog';
 
 function pointKey(point) {
   return point?.code || point?.displayCode || point?.label || point;
@@ -38,7 +50,7 @@ function MapOverlay({ points, mapId, onPointClick }) {
       {locations.map(location => (
         <button
           key={`${location.mapId}-${location.code}`}
-          onClick={() => onPointClick(location.point || location)}
+          onClick={() => onPointClick(location.point || location, { asset, location })}
           title={location.point?.label || location.label}
           type="button"
           style={{
@@ -76,7 +88,7 @@ function chips(arr) {
 
 const TECNICOS = ['Sistêmicos', 'Auriculoterapia', 'Laser', 'Moxa', 'Ventosa', 'Stiper', 'Eletro'];
 
-export function Protocolo({ analysis }) {
+export function Protocolo({ state, selectedMap, analysis }) {
   const { protocol, main, safetyAlerts = [] } = analysis;
   const bodyPoints = protocol.bodyPoints || [];
   const earPoints = protocol.earPoints || [];
@@ -88,6 +100,40 @@ export function Protocolo({ analysis }) {
 
   const [filtros, setFiltros] = useState([]);
   const [pointInfoBox, setPointInfoBox] = useState(null);
+  const [atlasSourceIndex, setAtlasSourceIndex] = useState(null);
+  const [atlasLoadState, setAtlasLoadState] = useState('loading');
+  const [knowledgeReviews, setKnowledgeReviews] = useState(() => getLocalKnowledgeReviews());
+  const pointRecommendations = buildPointRecommendations({ state, selectedMap, analysis, knowledgeReviews });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadAtlasEdneaSourceIndex()
+      .then(data => {
+        if (!cancelled) {
+          setAtlasSourceIndex(data);
+          setAtlasLoadState('ready');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAtlasSourceIndex(null);
+          setAtlasLoadState('error');
+        }
+      });
+
+    getClinicalKnowledgeReviews()
+      .then(reviews => {
+        if (!cancelled) setKnowledgeReviews(reviews);
+      })
+      .catch(() => {
+        if (!cancelled) setKnowledgeReviews(getLocalKnowledgeReviews());
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function toggleFiltro(t) {
     setFiltros(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
@@ -97,9 +143,23 @@ export function Protocolo({ analysis }) {
     return filtros.length === 0 || filtros.includes(t);
   }
 
-  function handleClick(point) {
+  function handleClick(point, markerContext = {}) {
     const key = point?.code || point?.displayCode || point?.label || point?.name || point;
-    setPointInfoBox(getPointFicha(key, main));
+    const freshReviews = mergeKnowledgeReviews(knowledgeReviews, getLocalKnowledgeReviews());
+    const atlasReference = findAtlasEdneaSourceReference(atlasSourceIndex, key);
+    const detail = buildPointDetail({
+      pointKey: key,
+      patternName: main,
+      reviews: freshReviews,
+      atlasReference,
+    });
+
+    setPointInfoBox({
+      asset: markerContext.asset,
+      detail,
+      label: markerContext.location?.label || point?.displayCode || point?.label || detail.displayCode,
+      location: markerContext.location,
+    });
   }
 
   return (
@@ -180,21 +240,6 @@ export function Protocolo({ analysis }) {
 
         <div>
           <div className="tech-card">
-            <h4>Ficha do ponto</h4>
-            {pointInfoBox ? (
-              <>
-                <p><b>{pointInfoBox.name}</b></p>
-                <p><b>Função:</b> {pointInfoBox.role}</p>
-                <p><b>Por que entrou:</b> {pointInfoBox.why}</p>
-                {pointInfoBox.cautions?.length > 0 && <p><b>Cautelas:</b> {pointInfoBox.cautions.join(', ')}</p>}
-                {pointInfoBox.sources?.length > 0 && <p className="small"><b>Fonte:</b> {pointInfoBox.sources.join(' + ')}</p>}
-              </>
-            ) : (
-              <p>Clique em um marcador do corpo ou da orelha para visualizar localização funcional, indicação e justificativa clínica vinda da Biblioteca Viva.</p>
-            )}
-          </div>
-
-          <div className="tech-card">
             <h4>Resumo dos pontos</h4>
             <table className="protocol-table">
               <tbody>
@@ -202,6 +247,37 @@ export function Protocolo({ analysis }) {
                 <tr><td>Aurículo</td><td>{chips(earPoints)}</td></tr>
               </tbody>
             </table>
+          </div>
+
+          <div className="tech-card">
+            <h4>Ranking por evidências</h4>
+            {pointRecommendations.evidence.length > 0 ? (
+              <>
+                <p className="small">
+                  Evidências: {pointRecommendations.evidence.map(item => item.label).join(', ')}.
+                  {' '}Base analisada: {pointRecommendations.candidateStats.candidateCount} pontos ({pointRecommendations.candidateStats.approvedReviewCount} aprovados locais + {pointRecommendations.candidateStats.curatedPointCount} curados).
+                </p>
+                <div className="point-recommendation-list">
+                  {pointRecommendations.recommendations.map(item => (
+                    <button
+                      key={item.point.code}
+                      className="point-recommendation-row"
+                      type="button"
+                      onClick={() => handleClick(item.point)}
+                    >
+                      <span>
+                        <b>{item.point.label}</b>
+                        <small>{item.reasons.slice(0, 3).join(' • ')}</small>
+                        {item.cautions.length > 0 && <em>{item.cautions.join(' • ')}</em>}
+                      </span>
+                      <strong>{item.score}</strong>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="small">Aguardando evidências suficientes na anamnese, língua ou pulso.</p>
+            )}
           </div>
 
           {enabled('Laser') && (
@@ -254,6 +330,13 @@ export function Protocolo({ analysis }) {
       <div className="box" style={{ marginTop: 16 }}>
         <b>Leitura clínica:</b> o protocolo não deve ser aplicado como receita fixa. A seleção final depende de idade, queixa, pulso, língua, tolerância, medicamentos, sinais de alerta e objetivo da sessão.
       </div>
+
+      <PointReviewDialog
+        entry={pointInfoBox}
+        atlasLoadState={atlasLoadState}
+        contextLabel="Protocolo da sessão"
+        onClose={() => setPointInfoBox(null)}
+      />
     </Panel>
   );
 }

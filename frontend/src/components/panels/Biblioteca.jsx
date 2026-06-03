@@ -3,6 +3,12 @@ import { Panel } from '../ui/Panel';
 import { getKnowledgeCategories, getKnowledgeStats, searchKnowledge } from '../../knowledge/searchIndex';
 import { KM_AGENT_DRAFT_INDEX_URL, getKmAgentDraftStats, getKmAgentDraftTitlePtBr } from '../../knowledge/kmAgentDrafts';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
+import { normalizePointCode } from '../../knowledge/aliases';
+import {
+  getDeepCuratedKnowledgeReviews,
+  getHighConfidenceKnowledgeReviews,
+  mergeKnowledgeReviews,
+} from '../../services/knowledgeAdminService';
 
 /* ── Mapeamento de Categorias ──────────────────────────────────────────── */
 const CATEGORY_MAP = {
@@ -15,10 +21,12 @@ const CATEGORY_MAP = {
   'Relatório':{ icon: '📄', color: '#6366f1' },
   'Evolução': { icon: '📈', color: '#8b5cf6' },
   'Mapa':     { icon: '🗺️', color: '#0891b2' },
+  'Aprovados locais': { icon: '✅', color: '#0f766e' },
   'Rascunhos KM-Agent': { icon: '🧬', color: '#475569' },
 };
 
 const KM_AGENT_DRAFT_CATEGORY = 'Rascunhos KM-Agent';
+const LOCAL_APPROVED_CATEGORY = 'Aprovados locais';
 
 function getCategoryInfo(catName) {
   return CATEGORY_MAP[catName] || { icon: '📚', color: '#64748b' };
@@ -55,6 +63,54 @@ function kmAgentDraftToCard(item) {
     ].filter(Boolean).join(' '),
     entity: item,
     approvalStatus: 'draft',
+  };
+}
+
+function asList(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function approvedReviewToCard(review) {
+  const actions = asList(review.actions);
+  const indications = asList(review.indications);
+  const cautions = asList(review.cautions);
+  const displayCode = review.displayCode || review.code || review.atlasName || 'Ponto';
+  const auditText = review.requiresProfessionalAudit
+    ? 'Auditoria profissional final pendente antes de produção.'
+    : '';
+
+  return {
+    id: `${review.id || review.code}:approved-local`,
+    cat: LOCAL_APPROVED_CATEGORY,
+    title: review.title || `${displayCode} - Registro aprovado localmente`,
+    tags: [
+      review.code,
+      review.displayCode,
+      review.atlasName,
+      ...(Array.isArray(review.aliases) ? review.aliases : []),
+      review.meridianCode,
+      review.meridian,
+      review.approvalMode,
+      'Atlas',
+      'approved_local',
+      ...actions,
+      ...indications,
+    ].filter(Boolean).join(', '),
+    source: review.approvalSource || review.source || 'Biblioteca Viva',
+    txt: [
+      review.locationText ? `Localização: ${review.locationText}` : '',
+      actions.length ? `Funções: ${actions.slice(0, 4).join(', ')}.` : '',
+      indications.length ? `Indicações: ${indications.slice(0, 5).join(', ')}.` : '',
+      cautions.length ? `Cautelas: ${cautions.slice(0, 3).join(', ')}.` : '',
+      auditText,
+    ].filter(Boolean).join(' '),
+    entity: review,
+    approvalStatus: 'approved_local',
   };
 }
 
@@ -130,7 +186,9 @@ export function Biblioteca() {
   const [catFilter, setCatFilter] = useState('Todos');
   const [search,    setSearch]    = useState('');
   const [kmAgentDrafts, setKmAgentDrafts] = useState([]);
+  const [approvedReviews, setApprovedReviews] = useState([]);
   const [kmAgentLoadState, setKmAgentLoadState] = useState('loading');
+  const [approvedLoadState, setApprovedLoadState] = useState('loading');
 
   useEffect(() => {
     let cancelled = false;
@@ -155,35 +213,73 @@ export function Biblioteca() {
     };
   }, []);
 
-  const draftCards = useMemo(() => kmAgentDrafts.map(kmAgentDraftToCard), [kmAgentDrafts]);
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      getHighConfidenceKnowledgeReviews(),
+      getDeepCuratedKnowledgeReviews(),
+    ])
+      .then(([highConfidenceReviews, deepCuratedReviews]) => {
+        if (cancelled) return;
+        const mergedReviews = mergeKnowledgeReviews(deepCuratedReviews, highConfidenceReviews);
+        setApprovedReviews(mergedReviews.filter(review => review.status === 'approved_local'));
+        setApprovedLoadState('ready');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setApprovedReviews([]);
+        setApprovedLoadState('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const approvedCards = useMemo(() => approvedReviews.map(approvedReviewToCard), [approvedReviews]);
+  const approvedCodes = useMemo(() => new Set(
+    approvedReviews
+      .map(review => normalizePointCode(review.code || review.displayCode))
+      .filter(Boolean),
+  ), [approvedReviews]);
+  const draftCards = useMemo(() => kmAgentDrafts
+    .filter(item => !approvedCodes.has(normalizePointCode(item.code || item.displayCode)))
+    .map(kmAgentDraftToCard), [approvedCodes, kmAgentDrafts]);
   const curatedCategories = getKnowledgeCategories();
-  const uniqueCategories = draftCards.length
-    ? [...curatedCategories, KM_AGENT_DRAFT_CATEGORY]
-    : curatedCategories;
+  const uniqueCategories = [
+    ...curatedCategories,
+    ...(approvedCards.length ? [LOCAL_APPROVED_CATEGORY] : []),
+    ...(draftCards.length ? [KM_AGENT_DRAFT_CATEGORY] : []),
+  ];
   const stats = getKnowledgeStats();
   const kmAgentStats = getKmAgentDraftStats(kmAgentDrafts);
+  const visibleDraftStats = getKmAgentDraftStats(draftCards.map(card => card.entity));
 
   /* filtro */
-  const curatedFiltered = catFilter === KM_AGENT_DRAFT_CATEGORY
+  const curatedFiltered = [KM_AGENT_DRAFT_CATEGORY, LOCAL_APPROVED_CATEGORY].includes(catFilter)
     ? []
     : searchKnowledge({ query: search, category: catFilter });
+  const approvedFiltered = filterCards(approvedCards, { query: search, category: catFilter });
   const draftFiltered = filterCards(draftCards, { query: search, category: catFilter });
-  const filtered = [...curatedFiltered, ...draftFiltered];
+  const filtered = [...curatedFiltered, ...approvedFiltered, ...draftFiltered];
 
   /* contagem por categoria */
   const counts = Object.fromEntries(uniqueCategories.map(c => {
     if (c === KM_AGENT_DRAFT_CATEGORY) return [c, draftCards.length];
+    if (c === LOCAL_APPROVED_CATEGORY) return [c, approvedCards.length];
     return [c, searchKnowledge({ category: c }).length];
   }));
-  const totalCards = stats.total + kmAgentStats.total;
+  const totalCards = stats.total + approvedCards.length + draftCards.length;
 
   return (
     <Panel title="Biblioteca Clínica Viva">
 
       {/* ── descrição da seção ─────────────────────────── */}
       <div className="box" style={{ marginBottom: 20 }}>
-        Base consultável integrada ao raciocínio clínico: {stats.acupoints} pontos sistêmicos curados, {stats.auricular} pontos auriculares, {stats.patterns} síndromes e {stats.techniques} técnicas. Também há {kmAgentStats.total || '...'} pontos do KM-Agent em rascunho{kmAgentStats.meridians ? `, cobrindo ${kmAgentStats.meridians} meridianos/categorias` : ''}, sem uso clínico automático até revisão profissional.
+        Base consultável integrada ao raciocínio clínico: {stats.acupoints} pontos sistêmicos curados, {stats.auricular} pontos auriculares, {stats.patterns} síndromes e {stats.techniques} técnicas. Também há {approvedCards.length || '...'} registros aprovados localmente e {visibleDraftStats.total || '...'} pontos do KM-Agent ainda em rascunho{kmAgentStats.meridians ? `, cobrindo ${kmAgentStats.meridians} meridianos/categorias` : ''}, sem uso clínico automático até revisão profissional.
         {kmAgentLoadState === 'error' && <span> A base KM-Agent não carregou nesta sessão.</span>}
+        {approvedLoadState === 'error' && <span> As aprovações locais não carregaram nesta sessão.</span>}
       </div>
 
       <MapCoordinateEditor />

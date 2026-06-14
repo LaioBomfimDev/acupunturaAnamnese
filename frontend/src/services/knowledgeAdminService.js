@@ -1,4 +1,5 @@
 import { normalizePointCode } from '../knowledge/aliases';
+import { enrichReviewsWithSymptoms } from '../knowledge/relatedSymptomsEnricher';
 
 const LOCAL_KNOWLEDGE_REVIEWS_KEY = 'acup_living_library_reviews_v1';
 export const HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_URL = '/knowledge/source-assets/atlas-ednea/high-confidence-reviews.json';
@@ -46,11 +47,15 @@ export async function getClinicalKnowledgeReviews() {
     getHighConfidenceKnowledgeReviews(),
   ]);
 
-  return mergeClinicalKnowledgeReviews({
+  const merged = mergeClinicalKnowledgeReviews({
     deepCuratedReviews,
     highConfidenceReviews,
     localReviews: getLocalKnowledgeReviews(),
   });
+
+  // Enriquece com relatedSymptoms inferidos para pontos sem esse campo,
+  // permitindo que approved_local façam match nas EVIDENCE_RULES do engine.
+  return enrichReviewsWithSymptoms(merged);
 }
 
 async function getKnowledgeReviewsFromUrl(url) {

@@ -5,6 +5,10 @@ import {
   getPointByCode,
   getPointLabel,
 } from './knowledgeBase';
+import {
+  getPointPageLanguageNotice,
+  isPointPageContentAllowed,
+} from './sourceLanguagePolicy';
 
 function asList(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -37,25 +41,36 @@ function findApprovedReview(pointKey, reviews = []) {
 function buildFromReview(review, patternName, atlasReference) {
   const normalized = normalizePointCode(review.code || review.displayCode);
   const displayCode = review.displayCode || displayPointCode(normalized);
-  const actions = asClinicalList(review.actions);
-  const relatedPatterns = asClinicalList(review.relatedPatterns);
+  const canShowClinicalContent = isPointPageContentAllowed(review);
+  const languageNotice = getPointPageLanguageNotice(review);
+  const actions = canShowClinicalContent ? asClinicalList(review.actions) : [];
+  const relatedPatterns = canShowClinicalContent ? asClinicalList(review.relatedPatterns) : [];
   const isHighConfidenceApproval = review.approvalMethod === 'bulk_high_confidence_operator_request';
-  const dataOrigin = isHighConfidenceApproval ? 'Biblioteca Viva (alta confiança)' : 'Biblioteca Viva';
+  const dataOrigin = !canShowClinicalContent
+    ? 'Biblioteca Viva (aguardando pt-BR)'
+    : isHighConfidenceApproval
+      ? 'Biblioteca Viva (alta confiança)'
+      : 'Biblioteca Viva';
 
   return {
     code: normalized,
     displayCode,
-    name: review.title || `${displayCode} - Ponto revisado`,
+    name: canShowClinicalContent
+      ? review.title || `${displayCode} - Ponto revisado`
+      : `${displayCode} - Conteudo em curadoria pt-BR`,
     meridian: review.meridian || review.meridianCode || '',
-    locationText: review.locationText || '',
+    locationText: canShowClinicalContent ? review.locationText || '' : '',
     actions,
-    indications: asClinicalList(review.indications),
-    cautions: asClinicalList(review.cautions),
+    indications: canShowClinicalContent ? asClinicalList(review.indications) : [],
+    cautions: canShowClinicalContent ? asClinicalList(review.cautions) : [],
     relatedPatterns,
-    techniques: asClinicalList(review.techniques),
-    needling: isPlaceholderItem(review.needling) ? '' : review.needling || '',
-    clinicalNote: review.clinicalNote || '',
-    why: patternName && relatedPatterns.includes(patternName)
+    techniques: canShowClinicalContent ? asClinicalList(review.techniques) : [],
+    needling: canShowClinicalContent && !isPlaceholderItem(review.needling) ? review.needling || '' : '',
+    clinicalNote: canShowClinicalContent ? review.clinicalNote || '' : languageNotice,
+    languagePolicyNotice: languageNotice,
+    why: !canShowClinicalContent
+      ? `${displayCode} tem fonte vinculada, mas a ficha clinica aguarda sintese pt-BR revisada.`
+      : patternName && relatedPatterns.includes(patternName)
       ? `${displayCode} foi aprovado na Biblioteca Viva e se relaciona com ${patternName}.`
       : `${displayCode} foi aprovado na Biblioteca Viva para consulta clínica.`,
     sources: [

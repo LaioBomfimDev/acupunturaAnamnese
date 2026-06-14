@@ -1,0 +1,935 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-08T01:51:31.901Z",
+  "sourceConfidence": "confidence medium / pending_atlas_review",
+  "reviewStatus": "pending_atlas_review",
+  "calibrationStatus": "draft_auto_medium_confidence",
+  "counts": {
+    "mediumPendingReviews": 90,
+    "requiresProfessionalAuditTrue": 90,
+    "alreadyMappedInPointLocations": 8,
+    "generated": 90,
+    "blocked": 0
+  },
+  "byMap": {
+    "body_back": {
+      "label": "body_back",
+      "count": 28
+    },
+    "body_front": {
+      "label": "body_front",
+      "count": 56
+    },
+    "feet_dorsal": {
+      "label": "feet_dorsal",
+      "count": 5
+    },
+    "hands_palmar": {
+      "label": "hands_palmar",
+      "count": 1
+    }
+  },
+  "blocked": [],
+  "generated": [
+    {
+      "code": "BL4",
+      "xPct": 47.25,
+      "yPct": 12.75,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 4
+    },
+    {
+      "code": "BL8",
+      "xPct": 45.75,
+      "yPct": 16.25,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 8
+    },
+    {
+      "code": "BL10",
+      "xPct": 45,
+      "yPct": 18,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 10
+    },
+    {
+      "code": "BL13",
+      "xPct": 45,
+      "yPct": 30,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 13
+    },
+    {
+      "code": "BL17",
+      "xPct": 45,
+      "yPct": 36.86,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 17
+    },
+    {
+      "code": "BL19",
+      "xPct": 45,
+      "yPct": 40.29,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 19
+    },
+    {
+      "code": "BL21",
+      "xPct": 45,
+      "yPct": 44.67,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 21
+    },
+    {
+      "code": "BL33",
+      "xPct": 46.4,
+      "yPct": 64.4,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 33
+    },
+    {
+      "code": "BL36",
+      "xPct": 47,
+      "yPct": 68,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 36
+    },
+    {
+      "code": "BL43",
+      "xPct": 48.86,
+      "yPct": 76.43,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 43
+    },
+    {
+      "code": "BL45",
+      "xPct": 49.43,
+      "yPct": 76.71,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 45
+    },
+    {
+      "code": "BL49",
+      "xPct": 50.57,
+      "yPct": 77.29,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 49
+    },
+    {
+      "code": "BL50",
+      "xPct": 50.86,
+      "yPct": 77.43,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 50
+    },
+    {
+      "code": "BL52",
+      "xPct": 51.43,
+      "yPct": 77.71,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 52
+    },
+    {
+      "code": "BL57",
+      "xPct": 54,
+      "yPct": 84,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "BL",
+      "number": 57
+    },
+    {
+      "code": "CV1",
+      "xPct": 50,
+      "yPct": 64,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 1
+    },
+    {
+      "code": "CV2",
+      "xPct": 50,
+      "yPct": 61,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 2
+    },
+    {
+      "code": "CV4",
+      "xPct": 50,
+      "yPct": 57.33,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 4
+    },
+    {
+      "code": "CV9",
+      "xPct": 50,
+      "yPct": 49,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 9
+    },
+    {
+      "code": "CV10",
+      "xPct": 50,
+      "yPct": 47,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 10
+    },
+    {
+      "code": "CV13",
+      "xPct": 50,
+      "yPct": 40.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 13
+    },
+    {
+      "code": "CV17",
+      "xPct": 50,
+      "yPct": 31,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 17
+    },
+    {
+      "code": "CV19",
+      "xPct": 50,
+      "yPct": 27.8,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 19
+    },
+    {
+      "code": "CV20",
+      "xPct": 50,
+      "yPct": 26.2,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 20
+    },
+    {
+      "code": "CV21",
+      "xPct": 50,
+      "yPct": 24.6,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 21
+    },
+    {
+      "code": "CV24",
+      "xPct": 50,
+      "yPct": 20,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "high",
+      "meridian": "CV",
+      "number": 24
+    },
+    {
+      "code": "GB14",
+      "xPct": 53.5,
+      "yPct": 17.75,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 14
+    },
+    {
+      "code": "GB15",
+      "xPct": 51.25,
+      "yPct": 18.13,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 15
+    },
+    {
+      "code": "GB16",
+      "xPct": 49,
+      "yPct": 18.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 16
+    },
+    {
+      "code": "GB28",
+      "xPct": 63,
+      "yPct": 58.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 28
+    },
+    {
+      "code": "GB31",
+      "xPct": 64,
+      "yPct": 70,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 31
+    },
+    {
+      "code": "GB32",
+      "xPct": 63.33,
+      "yPct": 71.33,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 32
+    },
+    {
+      "code": "GB35",
+      "xPct": 61.67,
+      "yPct": 77.33,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 35
+    },
+    {
+      "code": "GB37",
+      "xPct": 61,
+      "yPct": 84,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 37
+    },
+    {
+      "code": "GB40",
+      "xPct": 60,
+      "yPct": 93,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 40
+    },
+    {
+      "code": "GB41",
+      "xPct": 60.5,
+      "yPct": 94,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 41
+    },
+    {
+      "code": "GB42",
+      "xPct": 61,
+      "yPct": 95,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 42
+    },
+    {
+      "code": "GB43",
+      "xPct": 61.5,
+      "yPct": 96,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "GB",
+      "number": 43
+    },
+    {
+      "code": "GV4",
+      "xPct": 50,
+      "yPct": 51,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 4
+    },
+    {
+      "code": "GV8",
+      "xPct": 50,
+      "yPct": 42,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 8
+    },
+    {
+      "code": "GV10",
+      "xPct": 50,
+      "yPct": 36.33,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 10
+    },
+    {
+      "code": "GV11",
+      "xPct": 50,
+      "yPct": 33.5,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 11
+    },
+    {
+      "code": "GV12",
+      "xPct": 50,
+      "yPct": 30.67,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 12
+    },
+    {
+      "code": "GV13",
+      "xPct": 50,
+      "yPct": 27.83,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 13
+    },
+    {
+      "code": "GV15",
+      "xPct": 50,
+      "yPct": 21.5,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 15
+    },
+    {
+      "code": "GV22",
+      "xPct": 50,
+      "yPct": 9.5,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 22
+    },
+    {
+      "code": "GV28",
+      "xPct": 50,
+      "yPct": 20,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "high",
+      "meridian": "GV",
+      "number": 28
+    },
+    {
+      "code": "HT5",
+      "xPct": 28,
+      "yPct": 53,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "HT",
+      "number": 5
+    },
+    {
+      "code": "KI3",
+      "xPct": 39,
+      "yPct": 73,
+      "mapId": "feet_dorsal",
+      "view": "dorsal",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 3
+    },
+    {
+      "code": "KI6",
+      "xPct": 43,
+      "yPct": 68,
+      "mapId": "feet_dorsal",
+      "view": "dorsal",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 6
+    },
+    {
+      "code": "KI15",
+      "xPct": 53,
+      "yPct": 53.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 15
+    },
+    {
+      "code": "KI17",
+      "xPct": 53,
+      "yPct": 48.75,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 17
+    },
+    {
+      "code": "KI24",
+      "xPct": 52,
+      "yPct": 32,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 24
+    },
+    {
+      "code": "KI25",
+      "xPct": 51.67,
+      "yPct": 29.67,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 25
+    },
+    {
+      "code": "KI27",
+      "xPct": 51,
+      "yPct": 25,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "KI",
+      "number": 27
+    },
+    {
+      "code": "LI16",
+      "xPct": 35.33,
+      "yPct": 25.33,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LI",
+      "number": 16
+    },
+    {
+      "code": "LI17",
+      "xPct": 38.67,
+      "yPct": 22.67,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LI",
+      "number": 17
+    },
+    {
+      "code": "LR2",
+      "xPct": 39,
+      "yPct": 22,
+      "mapId": "feet_dorsal",
+      "view": "dorsal",
+      "coordinateConfidence": "medium",
+      "meridian": "LR",
+      "number": 2
+    },
+    {
+      "code": "LR5",
+      "xPct": 43,
+      "yPct": 86,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LR",
+      "number": 5
+    },
+    {
+      "code": "LR8",
+      "xPct": 43,
+      "yPct": 76,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LR",
+      "number": 8
+    },
+    {
+      "code": "LR9",
+      "xPct": 44,
+      "yPct": 71.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LR",
+      "number": 9
+    },
+    {
+      "code": "LR12",
+      "xPct": 47,
+      "yPct": 61,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LR",
+      "number": 12
+    },
+    {
+      "code": "LU4",
+      "xPct": 28,
+      "yPct": 40.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LU",
+      "number": 4
+    },
+    {
+      "code": "LU6",
+      "xPct": 24.5,
+      "yPct": 49.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LU",
+      "number": 6
+    },
+    {
+      "code": "LU7",
+      "xPct": 24,
+      "yPct": 54,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LU",
+      "number": 7
+    },
+    {
+      "code": "LU8",
+      "xPct": 24,
+      "yPct": 56.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LU",
+      "number": 8
+    },
+    {
+      "code": "LU9",
+      "xPct": 24,
+      "yPct": 59,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "LU",
+      "number": 9
+    },
+    {
+      "code": "SI9",
+      "xPct": 29,
+      "yPct": 42,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SI",
+      "number": 9
+    },
+    {
+      "code": "SI14",
+      "xPct": 40.67,
+      "yPct": 26,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SI",
+      "number": 14
+    },
+    {
+      "code": "SI15",
+      "xPct": 43,
+      "yPct": 24,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SI",
+      "number": 15
+    },
+    {
+      "code": "SI18",
+      "xPct": 43.5,
+      "yPct": 16.5,
+      "mapId": "body_back",
+      "view": "posterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SI",
+      "number": 18
+    },
+    {
+      "code": "SP1",
+      "xPct": 45,
+      "yPct": 11,
+      "mapId": "feet_dorsal",
+      "view": "dorsal",
+      "coordinateConfidence": "medium",
+      "meridian": "SP",
+      "number": 1
+    },
+    {
+      "code": "SP12",
+      "xPct": 45,
+      "yPct": 58,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SP",
+      "number": 12
+    },
+    {
+      "code": "SP13",
+      "xPct": 45,
+      "yPct": 55,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SP",
+      "number": 13
+    },
+    {
+      "code": "SP16",
+      "xPct": 44,
+      "yPct": 42,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "SP",
+      "number": 16
+    },
+    {
+      "code": "ST5",
+      "xPct": 47.25,
+      "yPct": 18.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 5
+    },
+    {
+      "code": "ST10",
+      "xPct": 45,
+      "yPct": 18,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 10
+    },
+    {
+      "code": "ST11",
+      "xPct": 45,
+      "yPct": 21.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 11
+    },
+    {
+      "code": "ST12",
+      "xPct": 45,
+      "yPct": 25,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 12
+    },
+    {
+      "code": "ST15",
+      "xPct": 45,
+      "yPct": 30,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 15
+    },
+    {
+      "code": "ST17",
+      "xPct": 45,
+      "yPct": 33.33,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 17
+    },
+    {
+      "code": "ST24",
+      "xPct": 47.57,
+      "yPct": 48.71,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 24
+    },
+    {
+      "code": "ST30",
+      "xPct": 53,
+      "yPct": 62,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 30
+    },
+    {
+      "code": "ST38",
+      "xPct": 58.5,
+      "yPct": 81.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 38
+    },
+    {
+      "code": "ST43",
+      "xPct": 60,
+      "yPct": 38,
+      "mapId": "feet_dorsal",
+      "view": "dorsal",
+      "coordinateConfidence": "medium",
+      "meridian": "ST",
+      "number": 43
+    },
+    {
+      "code": "TE4",
+      "xPct": 32,
+      "yPct": 49,
+      "mapId": "hands_palmar",
+      "view": "palmar",
+      "coordinateConfidence": "medium",
+      "meridian": "TE",
+      "number": 4
+    },
+    {
+      "code": "TE11",
+      "xPct": 71,
+      "yPct": 40,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "TE",
+      "number": 11
+    },
+    {
+      "code": "TE12",
+      "xPct": 70,
+      "yPct": 37,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "TE",
+      "number": 12
+    },
+    {
+      "code": "TE15",
+      "xPct": 64.5,
+      "yPct": 26,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "TE",
+      "number": 15
+    },
+    {
+      "code": "TE20",
+      "xPct": 53.5,
+      "yPct": 15.5,
+      "mapId": "body_front",
+      "view": "anterior",
+      "coordinateConfidence": "medium",
+      "meridian": "TE",
+      "number": 20
+    }
+  ]
+}

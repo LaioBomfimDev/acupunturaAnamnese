@@ -1,10 +1,27 @@
 import { APPROVAL_STATUS, KNOWLEDGE_TYPES, TECHNIQUES, createApproval, createSource } from './schema';
 import { displayPointCode, normalizePointCode } from './aliases';
 import { getLocationsForPoint } from './mapLocations';
+import { officialAuricularPdfPoints, auricularPdfSource } from './generated/auricular-pdf-points';
+import { curatedAcupoints } from './generated/curated-body-points';
+import { getCommonlyUsedAuricularMeta, getCommonlyUsedBodyPointMeta } from './commonlyUsedPoints';
 
 const baseSource = createSource('base-clinica-mtc', 'Base clínica MTC + materiais integrativos');
 const atlasSource = createSource('atlas-local', 'Atlas clínico local + revisão profissional');
 const kmAgentSource = createSource('km-agent-acupoints', 'KM-Agent data/acupoints.csv', 'imported');
+
+const baseAuricularSlugs = new Set([
+  'shen-men',
+  'subcortex',
+  'figado',
+  'baco',
+  'estomago',
+  'rim',
+  'endocrino',
+  'ansiedade',
+  'coracao',
+  'sono',
+  'fome',
+]);
 
 function acupoint(data) {
   const code = normalizePointCode(data.code);
@@ -34,7 +51,7 @@ function auricularPoint(data) {
   };
 }
 
-export const acupoints = [
+const manualAcupoints = [
   acupoint({
     code: 'ST36',
     names: { pt: 'Zusanli', en: 'Zusanli' },
@@ -115,6 +132,19 @@ export const acupoints = [
     cautions: ['usar técnica suave e compatível com a sensibilidade local'],
     relatedPatterns: ['Agitação do Shen por Calor'],
     relatedSymptoms: ['ansiedade', 'insônia'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+  acupoint({
+    code: 'EX-HN5',
+    displayCode: 'EX-HN5',
+    names: { pt: 'Taiyang', en: 'Taiyang' },
+    meridian: { code: 'EX', pt: 'Extraordinário', en: 'Extra point' },
+    locationText: 'Região temporal, na depressão cerca de 1 cun posterior ao ponto médio entre a extremidade lateral da sobrancelha e o canto externo do olho.',
+    actions: ['reduzir cefaleia temporal', 'aliviar tensão ocular', 'clarear a visão'],
+    indications: ['enxaqueca', 'cefaleia temporal', 'tensão ocular', 'olhos cansados'],
+    cautions: ['técnica suave; evitar estímulo profundo na região temporal'],
+    relatedPatterns: ['Ascensão do Yang do Fígado'],
+    relatedSymptoms: ['enxaqueca', 'cefaleia', 'tensão ocular'],
     techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
   }),
   acupoint({
@@ -238,7 +268,239 @@ export const acupoints = [
     relatedSymptoms: ['digestão lenta', 'fezes amolecidas', 'fadiga'],
     techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
   }),
+
+  // --- Novos pontos — Fase 1 ---
+
+  acupoint({
+    code: 'LU7',
+    names: { pt: 'Lieque', en: 'Lieque' },
+    meridian: { code: 'LU', pt: 'Pulmão', en: 'Lung' },
+    locationText: 'Região radial do antebraço, 1,5 cun acima da prega do punho, na abertura entre os tendões do braquiorradial e abdutor longo do polegar.',
+    actions: ['abre o Pulmão', 'descende o Qi do Pulmão', 'expele Vento externo', 'abre o Vaso Concepção', 'alivia tosse e dispneia'],
+    indications: ['tosse', 'rinite', 'cefaleia', 'dor cervical', 'dispneia', 'garganta irritada', 'obstrução nasal'],
+    cautions: ['nenhuma contraindicação absoluta; cautela em Yin deficiente com calor vazio'],
+    relatedPatterns: ['Deficiência de Qi do Pulmão'],
+    relatedSymptoms: ['tosse', 'rinite', 'cefaleia', 'dor cervical', 'dispneia', 'falta de ar', 'garganta', 'obstrução nasal'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'LU9',
+    names: { pt: 'Taiyuan', en: 'Taiyuan' },
+    meridian: { code: 'LU', pt: 'Pulmão', en: 'Lung' },
+    locationText: 'Na face palmar do pulso, no sulco radial do pulso, na depressão entre o tendão do músculo abdutor longo do polegar e o rádio.',
+    actions: ['tonifica o Qi e Yin do Pulmão', 'resolve fleuma', 'beneficia os vasos sanguíneos', 'fortalece o Wei Qi'],
+    indications: ['tosse crônica', 'dispneia', 'hemoptise', 'dor no peito', 'pulso fraco', 'pele ressecada'],
+    cautions: ['localizar a artéria radial e não atingi-la; cautela em anticoagulantes'],
+    relatedPatterns: ['Deficiência de Qi do Pulmão'],
+    relatedSymptoms: ['tosse crônica', 'dispneia', 'pele ressecada', 'pulso fraco', 'falta de ar'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'BL13',
+    names: { pt: 'Feishu', en: 'Feishu' },
+    meridian: { code: 'BL', pt: 'Bexiga', en: 'Bladder' },
+    locationText: '1,5 cun lateral à linha mediana posterior, ao nível do processo espinhoso de T3.',
+    actions: ['tonifica o Pulmão', 'descende o Qi rebelde', 'expele vento e frio do Pulmão', 'beneficia a pele'],
+    indications: ['tosse', 'asma', 'bronquite', 'suores noturnos', 'urticária', 'pele com coceira'],
+    cautions: ['agulhar obliquamente em direção à coluna; profundidade segura de 0,5 a 1 cun'],
+    relatedPatterns: ['Deficiência de Qi do Pulmão'],
+    relatedSymptoms: ['tosse', 'asma', 'pele', 'suores noturnos', 'bronquite'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'BL20',
+    names: { pt: 'Pishu', en: 'Pishu' },
+    meridian: { code: 'BL', pt: 'Bexiga', en: 'Bladder' },
+    locationText: '1,5 cun lateral à linha mediana posterior, ao nível do processo espinhoso de T11.',
+    actions: ['fortalece o Baço e o Estômago', 'resolve umidade', 'tonifica o Qi do meio', 'regula o Xue'],
+    indications: ['digestão lenta', 'fadiga', 'distensão abdominal', 'diarreia', 'vômito', 'anemia', 'edema'],
+    cautions: ['agulhar obliquamente; profundidade segura de 0,5 a 1 cun'],
+    relatedPatterns: ['Deficiência de Qi do Baço'],
+    relatedSymptoms: ['fadiga', 'digestão', 'distensão', 'diarreia', 'edema', 'anemia'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'BL23',
+    names: { pt: 'Shenshu', en: 'Shenshu' },
+    meridian: { code: 'BL', pt: 'Bexiga', en: 'Bladder' },
+    locationText: '1,5 cun lateral à linha mediana posterior, ao nível do processo espinhoso de L2.',
+    actions: ['tonifica o Rim', 'fortalece o Yang e Yin do Rim', 'beneficia as orelhas e olhos', 'fortalece a lombar'],
+    indications: ['lombalgia', 'joelhos fracos', 'zumbido', 'surdez', 'impotência', 'infertilidade', 'poliúria', 'edema'],
+    cautions: ['agulhar perpendicular ou levemente oblíquo; 0,8 a 1,2 cun de profundidade'],
+    relatedPatterns: ['Deficiência de Yin do Rim', 'Deficiência de Yang do Rim'],
+    relatedSymptoms: ['lombalgia', 'zumbido', 'joelhos', 'poliúria', 'fadiga profunda', 'edema'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER, TECHNIQUES.ELECTRO],
+  }),
+
+  acupoint({
+    code: 'KI6',
+    names: { pt: 'Zhaohai', en: 'Zhaohai' },
+    meridian: { code: 'KI', pt: 'Rim', en: 'Kidney' },
+    locationText: '1 cun abaixo da ponta do maléolo medial, na depressão abaixo do maléolo medial.',
+    actions: ['nutre o Yin do Rim', 'abre o Vaso Yin', 'acalma a mente', 'umedece a garganta', 'regulariza o útero'],
+    indications: ['insônia', 'garganta seca', 'cansaço', 'ondas de calor', 'menopausa', 'ciclo irregular'],
+    cautions: ['nenhuma contraindicação absoluta; cautela em Yang deficiente'],
+    relatedPatterns: ['Deficiência de Yin do Rim'],
+    relatedSymptoms: ['insônia', 'garganta seca', 'ondas de calor', 'menopausa', 'ciclo irregular', 'yin deficiente'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'KI7',
+    names: { pt: 'Fuliu', en: 'Fuliu' },
+    meridian: { code: 'KI', pt: 'Rim', en: 'Kidney' },
+    locationText: '2 cun acima do ponto KI3, na borda anterior do tendão calcâneo.',
+    actions: ['tonifica o Yang do Rim', 'regula a sudorese', 'resolve edema', 'fortalece a lombar'],
+    indications: ['suores noturnos', 'suores espontâneos', 'edema dos membros', 'poliúria noturna', 'lombalgia por deficiência'],
+    cautions: ['nenhuma contraindicação absoluta'],
+    relatedPatterns: ['Deficiência de Yang do Rim'],
+    relatedSymptoms: ['suores noturnos', 'edema', 'poliúria noturna', 'lombalgia', 'frio nos membros'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'SP10',
+    names: { pt: 'Xuehai', en: 'Xuehai' },
+    meridian: { code: 'SP', pt: 'Baço', en: 'Spleen' },
+    locationText: '2 cun acima da borda superomedial da patela, sobre o músculo vasto medial.',
+    actions: ['regulariza o Xue e a menstruação', 'refresca o Sangue', 'resolve umidade-calor na pele'],
+    indications: ['menstruação irregular', 'cólicas', 'coágulos', 'eczema', 'urticária', 'pele com coceira', 'estase de Xue'],
+    cautions: ['nenhuma contraindicação absoluta; moxa apenas se não houver calor predominante'],
+    relatedPatterns: ['Estagnação de Xue', 'Deficiência de Xue do Fígado'],
+    relatedSymptoms: ['menstruação', 'cólicas', 'coágulos', 'pele', 'coceira', 'eczema', 'urticária'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER, TECHNIQUES.ELECTRO],
+  }),
+
+  acupoint({
+    code: 'ST25',
+    names: { pt: 'Tianshu', en: 'Tianshu' },
+    meridian: { code: 'ST', pt: 'Estômago', en: 'Stomach' },
+    locationText: '2 cun lateral ao umbigo.',
+    actions: ['regula o Intestino Grosso', 'resolve umidade', 'move o Qi e o Xue no abdome'],
+    indications: ['constipação', 'diarreia', 'dor abdominal', 'distensão', 'síndrome do intestino irritável'],
+    cautions: ['evitar em gestantes (estimula o intestino); profundidade 1 a 1,5 cun'],
+    relatedPatterns: ['Deficiência de Qi do Baço', 'Umidade-Calor'],
+    relatedSymptoms: ['constipação', 'diarreia', 'dor abdominal', 'distensão', 'intestino', 'flatulência'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER, TECHNIQUES.ELECTRO],
+  }),
+
+  acupoint({
+    code: 'CV4',
+    names: { pt: 'Guanyuan', en: 'Guanyuan' },
+    meridian: { code: 'CV', pt: 'Vaso Concepção', en: 'Conception Vessel' },
+    locationText: '3 cun abaixo do umbigo, na linha mediana anterior.',
+    actions: ['tonifica o Yuan Qi', 'aquece o Rim', 'fortalece o Yang', 'nutre o Xue', 'regula o útero'],
+    indications: ['fadiga profunda', 'impotência', 'infertilidade', 'menstruação irregular', 'enurese', 'lombalgia por deficiência'],
+    cautions: ['CONTRAINDICADO em gestação (ponto forte de movimentação do Qi); moxa apenas se Yang deficiente'],
+    relatedPatterns: ['Deficiência de Yang do Rim', 'Deficiência de Yin do Rim'],
+    relatedSymptoms: ['fadiga profunda', 'impotência', 'infertilidade', 'frio abdominal', 'yang deficiente'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER, TECHNIQUES.ELECTRO],
+  }),
+
+  acupoint({
+    code: 'CV17',
+    names: { pt: 'Danzhong', en: 'Danzhong' },
+    meridian: { code: 'CV', pt: 'Vaso Concepção', en: 'Conception Vessel' },
+    locationText: 'Na linha mediana anterior, ao nível do 4º espaço intercostal, entre os mamilos.',
+    actions: ['regula o Qi do tórax (Zong Qi)', 'descende o Qi rebelde', 'abre o peito', 'favorece a lactação'],
+    indications: ['dispneia', 'tosse', 'dor no peito', 'palpitações', 'tristeza', 'lactação insuficiente'],
+    cautions: ['agulhar horizontalmente; não agulhar profundamente (risco de pneumotórax)'],
+    relatedPatterns: ['Deficiência de Qi do Pulmão'],
+    relatedSymptoms: ['dispneia', 'tosse', 'dor no peito', 'tristeza', 'palpitações', 'lactação', 'falta de ar'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'GV4',
+    names: { pt: 'Mingmen', en: 'Mingmen' },
+    meridian: { code: 'GV', pt: 'Vaso Governador', en: 'Governor Vessel' },
+    locationText: 'Na linha mediana posterior, na depressão abaixo do processo espinhoso de L2.',
+    actions: ['tonifica o Yang do Rim', 'aquece o Mingmen', 'fortalece a lombar e os joelhos', 'beneficia o Yang em geral'],
+    indications: ['lombalgia por deficiência de Yang', 'frio geral', 'impotência', 'infertilidade por frio', 'diarreia matinal'],
+    cautions: ['agulhar perpendicular 0,5 a 1 cun; moxa é a técnica preferencial'],
+    relatedPatterns: ['Deficiência de Yang do Rim'],
+    relatedSymptoms: ['lombalgia', 'frio', 'impotência', 'yang deficiente', 'diarreia matinal', 'joelhos fracos'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'GV14',
+    names: { pt: 'Dazhui', en: 'Dazhui' },
+    meridian: { code: 'GV', pt: 'Vaso Governador', en: 'Governor Vessel' },
+    locationText: 'Na linha mediana posterior, na depressão abaixo do processo espinhoso de C7.',
+    actions: ['expele vento e calor externo', 'libera a superfície', 'tonifica o Wei Qi', 'refresca o sangue'],
+    indications: ['febre', 'resfriado', 'tosse', 'rigidez cervical', 'epilepsia', 'sudorese com febre'],
+    cautions: ['agulhar perpendicular 0,5 a 1 cun; não agulhar profundamente'],
+    relatedPatterns: [],
+    relatedSymptoms: ['febre', 'resfriado', 'rigidez cervical', 'infecção', 'imunidade', 'tosse com febre'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'GB21',
+    names: { pt: 'Jianjing', en: 'Jianjing' },
+    meridian: { code: 'GB', pt: 'Vesícula Biliar', en: 'Gallbladder' },
+    locationText: 'No ponto médio entre a base do pescoço e o acrômio, no ponto mais alto do trapézio.',
+    actions: ['move o Qi e o Xue', 'relaxa os tendões', 'alivia a tensão cervical-escapular', 'facilita o parto e a lactação'],
+    indications: ['tensão ombro-pescoço', 'cefaleia tensional', 'dificuldade no parto', 'lactação insuficiente'],
+    cautions: ['CONTRAINDICADO em gestação (forte estimulação descendente); profundidade 0,3 a 0,5 cun'],
+    relatedPatterns: ['Ascensão do Yang do Fígado'],
+    relatedSymptoms: ['tensão cervical', 'ombro', 'cefaleia', 'dor no pescoço', 'rigidez'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.MOXA, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
+
+  acupoint({
+    code: 'LI20',
+    names: { pt: 'Yingxiang', en: 'Yingxiang' },
+    meridian: { code: 'LI', pt: 'Intestino Grosso', en: 'Large Intestine' },
+    locationText: 'No sulco nasolabial, ao nível do ponto médio da asa nasal.',
+    actions: ['abre os orifícios nasais', 'expele vento externo', 'beneficia o nariz e olfato'],
+    indications: ['rinite', 'sinusite', 'obstrução nasal', 'anosmia', 'pólipos nasais', 'prurido nasal'],
+    cautions: ['agulhar subcutâneo ou oblíquo; profundidade 0,2 a 0,3 cun; não usar moxa'],
+    relatedPatterns: [],
+    relatedSymptoms: ['rinite', 'sinusite', 'obstrução nasal', 'anosmia', 'prurido nasal', 'nariz'],
+    techniques: [TECHNIQUES.NEEDLE, TECHNIQUES.LASER, TECHNIQUES.STIPER],
+  }),
 ];
+
+// Marca a categoria "Pontos comumente usados" sem excluir nada da base:
+// usuários comuns veem apenas os pontos marcados; o SuperAdm mantém a biblioteca completa.
+function withBodyCommonUsage(point) {
+  const meta = getCommonlyUsedBodyPointMeta(point.code);
+  if (!meta) return { ...point, commonlyUsed: false };
+  return {
+    ...point,
+    commonlyUsed: true,
+    commonUsage: {
+      map: meta.map,
+      mainUse: meta.mainUse,
+      clinicalCategories: meta.clinicalCategories,
+    },
+  };
+}
+
+function withAuricularCommonUsage(point) {
+  const meta = getCommonlyUsedAuricularMeta(point.slug) || getCommonlyUsedAuricularMeta(point.name);
+  if (!meta) return { ...point, commonlyUsed: false };
+  return {
+    ...point,
+    commonlyUsed: true,
+    commonUsage: {
+      map: meta.map,
+      mainUse: meta.mainUse,
+      clinicalCategories: meta.clinicalCategories,
+    },
+  };
+}
+
+export const acupoints = [
+  ...manualAcupoints,
+  ...curatedAcupoints,
+].map(withBodyCommonUsage);
 
 export const auricularPoints = [
   auricularPoint({
@@ -318,7 +580,67 @@ export const auricularPoints = [
     indications: ['compulsão alimentar', 'fome aumentada', 'desejo por doce'],
     relatedPatterns: ['Umidade-Calor', 'Deficiência de Qi do Baço'],
   }),
-];
+  // --- Pontos auriculares da categoria "Pontos comumente usados" sem equivalente no PDF oficial ---
+  auricularPoint({
+    slug: 'utero',
+    name: 'Útero',
+    actions: ['regular ciclo menstrual', 'apoiar região pélvica'],
+    indications: ['cólica menstrual', 'irregularidade do ciclo', 'dor pélvica'],
+    relatedPatterns: ['Estagnação de Xue', 'Deficiência de Xue do Fígado'],
+  }),
+  auricularPoint({
+    slug: 'ovario',
+    name: 'Ovário',
+    actions: ['apoiar eixo hormonal e fertilidade'],
+    indications: ['irregularidade do ciclo', 'fertilidade', 'climatério'],
+    relatedPatterns: ['Deficiência de Yin do Rim'],
+  }),
+  auricularPoint({
+    slug: 'depressao',
+    name: 'Depressão',
+    actions: ['apoio sintomático para humor deprimido e apatia'],
+    indications: ['humor deprimido', 'apatia', 'tristeza'],
+    relatedPatterns: ['Deficiência de Qi do Pulmão', 'Deficiência de Qi do Baço'],
+  }),
+  auricularPoint({
+    slug: 'insonia',
+    name: 'Insônia',
+    actions: ['apoiar início e manutenção do sono'],
+    indications: ['dificuldade de iniciar o sono', 'despertares noturnos'],
+    relatedPatterns: ['Agitação do Shen por Calor', 'Deficiência de Yin do Rim'],
+  }),
+  auricularPoint({
+    slug: 'occipital',
+    name: 'Occipital',
+    actions: ['modular cefaleia e tensão cervical', 'apoiar sono'],
+    indications: ['cefaleia', 'cervicalgia', 'insônia'],
+    relatedPatterns: ['Ascensão do Yang do Fígado'],
+  }),
+  auricularPoint({
+    slug: 'fronte',
+    name: 'Fronte',
+    actions: ['modular cefaleia frontal e ansiedade'],
+    indications: ['cefaleia frontal', 'ansiedade', 'sinusite'],
+    relatedPatterns: ['Agitação do Shen por Calor'],
+  }),
+  auricularPoint({
+    slug: 'talamo',
+    name: 'Tálamo',
+    actions: ['modulação central da dor e sensorial'],
+    indications: ['dor crônica', 'hipersensibilidade', 'queixas neurológicas'],
+    relatedPatterns: ['Estagnação de Xue'],
+  }),
+  // Apenas pontos do padrão chinês oficial (ISO 17316 / WHATC) são expostos nos protocolos e
+  // seleções clínicas padrão. Os pontos complementares ficam preservados em
+  // complementaryAuricularPdfPoints (mesmo arquivo) para uso futuro.
+  ...officialAuricularPdfPoints
+    .filter(point => !baseAuricularSlugs.has(point.slug))
+    .map(point => auricularPoint({
+      ...point,
+      approvalStatus: APPROVAL_STATUS.REVIEW,
+      sources: [auricularPdfSource],
+    })),
+].map(withAuricularCommonUsage);
 
 export const patternDefinitions = {
   'Ascensão do Yang do Fígado': {
@@ -421,6 +743,113 @@ export const patternDefinitions = {
       question: 'Investigar horário da insônia, sonhos, palpitações, sudorese, estimulantes e sinais de calor vazio.',
     },
   },
+
+  // --- Novas síndromes — Fase 1 ---
+
+  'Deficiência de Yin do Rim': {
+    type: KNOWLEDGE_TYPES.PATTERN,
+    name: 'Deficiência de Yin do Rim',
+    tags: ['rim', 'yin', 'calor vazio', 'suores noturnos', 'menopausa', 'insônia', 'zumbido'],
+    protocol: {
+      body: ['KI3', 'KI6', 'SP6', 'CV4', 'BL23'],
+      ear: ['Rim', 'Shen Men', 'Endócrino', 'Ansiedade', 'Sono'],
+      moxa: ['Contraindicada em calor vazio ativo'],
+      laser: ['KI3', 'KI6', 'SP6'],
+      eletro: ['KI3', 'SP6'],
+      goal: 'Nutrir o Yin do Rim, resfriar o calor vazio, ancorar o Yang, acalmar o Shen.',
+    },
+    detail: {
+      root: 'Depleção do Yin renal por envelhecimento, doença crônica, excesso sexual ou calor interno prolongado.',
+      manifestation: 'Calor vazio, suores noturnos, agitação noturna, lombalgia, zumbido, boca seca, insônia, ondas de calor.',
+      eight: 'Interno, Deficiência, Calor vazio.',
+      elements: 'Água (Rim/Bexiga) — depleção do aspecto Yin.',
+      question: 'Investigar presença de suores noturnos, sensação de calor nas palmas/solas, menopausa, sexualidade e histórico de doenças crônicas.',
+    },
+  },
+
+  'Deficiência de Yang do Rim': {
+    type: KNOWLEDGE_TYPES.PATTERN,
+    name: 'Deficiência de Yang do Rim',
+    tags: ['rim', 'yang', 'frio', 'edema', 'poliúria', 'lombalgia', 'fadiga profunda'],
+    protocol: {
+      body: ['CV4', 'GV4', 'BL23', 'KI7', 'ST36'],
+      ear: ['Rim', 'Endócrino', 'Baço', 'Shen Men'],
+      moxa: ['CV4', 'GV4', 'BL23'],
+      laser: ['CV4', 'ST36', 'KI7'],
+      eletro: ['ST36', 'CV4'],
+      goal: 'Tonificar e aquecer o Yang do Rim, fortalecer o Mingmen, resolver edema e frio.',
+    },
+    detail: {
+      root: 'Esgotamento do Yang renal por exposição ao frio, envelhecimento, doença prolongada ou excesso de atividade física.',
+      manifestation: 'Frio geral e nos membros, lombar fria, edema dos membros inferiores, poliúria noturna, fadiga profunda, libido baixa, fezes aquosas.',
+      eight: 'Interno, Deficiência, Frio.',
+      elements: 'Água (Rim/Bexiga) — depleção do aspecto Yang.',
+      question: 'Investigar sensação de frio, poliúria noturna, edema nos membros inferiores, diarreia matinal e libido.',
+    },
+  },
+
+  'Deficiência de Xue do Fígado': {
+    type: KNOWLEDGE_TYPES.PATTERN,
+    name: 'Deficiência de Xue do Fígado',
+    tags: ['fígado', 'xue', 'sangue', 'visão', 'câimbras', 'unhas', 'menstruação escassa'],
+    protocol: {
+      body: ['LR3', 'SP6', 'SP10', 'BL20', 'CV4', 'HT7'],
+      ear: ['Fígado', 'Coração', 'Baço', 'Shen Men', 'Endócrino'],
+      moxa: ['SP6', 'BL20'],
+      laser: ['LR3', 'SP6', 'SP10'],
+      eletro: ['SP6', 'SP10'],
+      goal: 'Nutrir e tonificar o Xue do Fígado, fortalecer o Baço como fonte de Xue, calmar o Shen.',
+    },
+    detail: {
+      root: 'Insuficiência de Sangue por dieta inadequada, perda excessiva de sangue, Baço fraco ou deficiência de Yin prolongada.',
+      manifestation: 'Visão borrada, olhos secos, câimbras, unhas quebradiças, pele ressecada, ansiedade suave, menstruação escassa ou ausente, tontura ao levantar.',
+      eight: 'Interno, Deficiência.',
+      elements: 'Madeira (Fígado/Vesícula) — insuficiência de Xue no Fígado.',
+      question: 'Investigar qualidade da visão, condição das unhas, volume menstrual, câimbras e histórico alimentar.',
+    },
+  },
+
+  'Estagnação de Xue': {
+    type: KNOWLEDGE_TYPES.PATTERN,
+    name: 'Estagnação de Xue',
+    tags: ['xue', 'estase', 'dor fixa', 'coágulos', 'amenorreia', 'língua roxa'],
+    protocol: {
+      body: ['SP10', 'BL17', 'LR3', 'PC6', 'SP6', 'LI4'],
+      ear: ['Shen Men', 'Fígado', 'Coração', 'Endócrino'],
+      moxa: ['SP10', 'BL17 (apenas se houver componente de frio)'],
+      laser: ['SP10', 'BL17', 'LR3'],
+      eletro: ['SP10', 'BL17'],
+      goal: 'Mover e regularizar o Xue, dissolver estase, aliviar dor fixa, regularizar ciclo menstrual.',
+    },
+    detail: {
+      root: 'Estagnação prolongada de Qi evoluindo para Xue, traumatismo, exposição ao frio ou deficiência de Yang.',
+      manifestation: 'Dor fixa e intensa (piora à noite), possível massa palpável, lábios/língua arroxeados, petecias, coágulos menstruais, amenorreia dolorosa.',
+      eight: 'Interno, Excesso (ou Deficiência com estase).',
+      elements: 'Múltiplos elementos — predomínio de estase afetando circulação de Xue.',
+      question: 'Investigar localização e caráter da dor, presença de coágulos menstruais, cor de lábios e língua, histórico de trauma.',
+    },
+  },
+
+  'Deficiência de Qi do Pulmão': {
+    type: KNOWLEDGE_TYPES.PATTERN,
+    name: 'Deficiência de Qi do Pulmão',
+    tags: ['pulmão', 'qi', 'tosse fraca', 'voz baixa', 'resfriados', 'wei qi', 'dispneia'],
+    protocol: {
+      body: ['LU7', 'LU9', 'BL13', 'CV17', 'ST36', 'SP6'],
+      ear: ['Pulmão', 'Baço', 'Shen Men', 'Endócrino'],
+      moxa: ['BL13', 'CV17', 'ST36'],
+      laser: ['LU7', 'LU9', 'CV17'],
+      eletro: ['ST36', 'LU7'],
+      goal: 'Tonificar o Qi do Pulmão, fortalecer o Wei Qi, consolidar a superfície, reduzir susceptibilidade a patógenos externos.',
+    },
+    detail: {
+      root: 'Tosse crônica, tristeza prolongada, dieta inadequada, doença respiratória ou exposição repetida ao frio.',
+      manifestation: 'Tosse fraca, voz baixa, cansaço, dispneia leve ao esforço, sudorese espontânea, resfriados frequentes, pele sem brilho.',
+      eight: 'Interno, Deficiência.',
+      elements: 'Metal (Pulmão/Intestino Grosso) — deficiência de Qi no Pulmão.',
+      question: 'Investigar frequência de resfriados, qualidade da tosse, energia geral, sudorese espontânea e histórico respiratório.',
+    },
+  },
 };
 
 export const techniqueKnowledge = [
@@ -481,6 +910,14 @@ export const staticKnowledge = [
     sources: [createSource('asset-feet-dorsal', 'Imagem WebP local dos pés')],
   },
   {
+    id: 'map:feet-plantar',
+    type: KNOWLEDGE_TYPES.MAP_ASSET,
+    name: 'Pés - planta',
+    tags: ['pé', 'pés', 'planta do pé', 'microssistema', 'mapa', 'KI1'],
+    summary: 'Mapa visual plantar dos pés para consulta e calibração sob demanda, mantendo pontos em rascunho até revisão profissional.',
+    sources: [createSource('asset-feet-plantar', 'Imagem WebP local das plantas dos pés')],
+  },
+  {
     id: 'map:hands-palmar',
     type: KNOWLEDGE_TYPES.MAP_ASSET,
     name: 'Mãos e punhos - palma',
@@ -489,12 +926,28 @@ export const staticKnowledge = [
     sources: [createSource('asset-hands-palmar', 'Imagem WebP local de mãos e punhos')],
   },
   {
-    id: 'map:body-front-back',
+    id: 'map:hands-dorsal',
     type: KNOWLEDGE_TYPES.MAP_ASSET,
-    name: 'Corpo frente e costas',
-    tags: ['corpo', 'frente', 'costas', 'mapa', 'coluna', 'membros'],
-    summary: 'Mapas corporais principais para renderizar pontos sistêmicos em vistas anterior e posterior.',
-    sources: [createSource('asset-body-maps', 'Imagens WebP locais de corpo')],
+    name: 'Mãos e punhos - dorso',
+    tags: ['mão', 'punho', 'dorso da mão', 'antebraço', 'mapa', 'LI4', 'TE5'],
+    summary: 'Mapa dorsal de mãos e punhos para pontos de dorso, espaços interdigitais, punho e antebraço distal.',
+    sources: [createSource('asset-hands-dorsal', 'Imagem WebP local do dorso das mãos e punhos')],
+  },
+  {
+    id: 'map:torso-head-front-back',
+    type: KNOWLEDGE_TYPES.MAP_ASSET,
+    name: 'Torso e cabeça - frente e costas',
+    tags: ['corpo', 'torso', 'cabeça', 'frente', 'costas', 'mapa', 'coluna'],
+    summary: 'Mapas de torso e cabeça para pontos sistêmicos de face, crânio, tórax, abdome, ombro e coluna.',
+    sources: [createSource('asset-torso-head-maps', 'Imagens WebP locais de torso e cabeça')],
+  },
+  {
+    id: 'map:legs-front-back',
+    type: KNOWLEDGE_TYPES.MAP_ASSET,
+    name: 'Pernas - frente e costas',
+    tags: ['perna', 'joelho', 'tornozelo', 'coxa', 'panturrilha', 'mapa', 'ST36', 'SP6'],
+    summary: 'Mapas segmentados de pernas para coordenadas de joelho, coxa, panturrilha e tornozelo sem sobrecarregar o mapa de torso.',
+    sources: [createSource('asset-legs-maps', 'Imagens WebP locais de pernas')],
   },
   {
     id: 'map:ear-lateral',

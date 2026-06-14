@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Panel } from '../ui/Panel';
-import { getKnowledgeCategories, getKnowledgeStats, searchKnowledge } from '../../knowledge/searchIndex';
-import { KM_AGENT_DRAFT_INDEX_URL, getKmAgentDraftStats, getKmAgentDraftTitlePtBr } from '../../knowledge/kmAgentDrafts';
-import { MapCoordinateEditor } from './MapCoordinateEditor';
-import { normalizePointCode } from '../../knowledge/aliases';
+import { askLibrary, LIBRARY_AI_DISCLAIMER } from '../../services/libraryAiService';
+import { getKnowledgeCategories, searchKnowledge } from '../../knowledge/searchIndex';
 import {
-  getDeepCuratedKnowledgeReviews,
-  getHighConfidenceKnowledgeReviews,
-  mergeKnowledgeReviews,
+  KM_AGENT_DRAFT_INDEX_URL,
+  getKmAgentDraftTitlePtBr,
+  getKmAgentLocationPtBr,
+  getKmAgentNeedlingPtBr,
+} from '../../knowledge/kmAgentDrafts';
+import { normalizePointCode } from '../../knowledge/aliases';
+import { commonlyUsedPoints, isCommonlyUsedEntity } from '../../knowledge/commonlyUsedPoints';
+import {
+  getClinicalKnowledgeReviews,
 } from '../../services/knowledgeAdminService';
+import { MapCoordinateEditor } from './MapCoordinateEditor';
 
 /* ── Mapeamento de Categorias ──────────────────────────────────────────── */
 const CATEGORY_MAP = {
@@ -22,11 +27,7 @@ const CATEGORY_MAP = {
   'Evolução': { icon: '📈', color: '#8b5cf6' },
   'Mapa':     { icon: '🗺️', color: '#0891b2' },
   'Aprovados locais': { icon: '✅', color: '#0f766e' },
-  'Rascunhos KM-Agent': { icon: '🧬', color: '#475569' },
 };
-
-const KM_AGENT_DRAFT_CATEGORY = 'Rascunhos KM-Agent';
-const LOCAL_APPROVED_CATEGORY = 'Aprovados locais';
 
 function getCategoryInfo(catName) {
   return CATEGORY_MAP[catName] || { icon: '📚', color: '#64748b' };
@@ -39,33 +40,6 @@ function asSearchText(value) {
     .toLowerCase();
 }
 
-function kmAgentDraftToCard(item) {
-  return {
-    id: `${item.id}:draft`,
-    cat: KM_AGENT_DRAFT_CATEGORY,
-    title: getKmAgentDraftTitlePtBr(item),
-    tags: [
-      item.code,
-      item.displayCode,
-      item.metadata?.meridianCode,
-      item.metadata?.meridian,
-      item.names?.ko,
-      item.names?.zh,
-      item.names?.en,
-      'rascunho',
-      'KM-Agent',
-    ].filter(Boolean).join(', '),
-    source: 'KM-Agent data/acupoints.csv',
-    txt: [
-      'Rascunho importado. Exige revisão profissional antes de uso clínico.',
-      item.locationPreview ? `Localização: ${item.locationPreview}` : '',
-      item.needlingPreview ? `Needling: ${item.needlingPreview}` : '',
-    ].filter(Boolean).join(' '),
-    entity: item,
-    approvalStatus: 'draft',
-  };
-}
-
 function asList(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (!value) return [];
@@ -73,55 +47,6 @@ function asList(value) {
     .split(',')
     .map(item => item.trim())
     .filter(Boolean);
-}
-
-function approvedReviewToCard(review) {
-  const actions = asList(review.actions);
-  const indications = asList(review.indications);
-  const cautions = asList(review.cautions);
-  const displayCode = review.displayCode || review.code || review.atlasName || 'Ponto';
-  const auditText = review.requiresProfessionalAudit
-    ? 'Auditoria profissional final pendente antes de produção.'
-    : '';
-
-  return {
-    id: `${review.id || review.code}:approved-local`,
-    cat: LOCAL_APPROVED_CATEGORY,
-    title: review.title || `${displayCode} - Registro aprovado localmente`,
-    tags: [
-      review.code,
-      review.displayCode,
-      review.atlasName,
-      ...(Array.isArray(review.aliases) ? review.aliases : []),
-      review.meridianCode,
-      review.meridian,
-      review.approvalMode,
-      'Atlas',
-      'approved_local',
-      ...actions,
-      ...indications,
-    ].filter(Boolean).join(', '),
-    source: review.approvalSource || review.source || 'Biblioteca Viva',
-    txt: [
-      review.locationText ? `Localização: ${review.locationText}` : '',
-      actions.length ? `Funções: ${actions.slice(0, 4).join(', ')}.` : '',
-      indications.length ? `Indicações: ${indications.slice(0, 5).join(', ')}.` : '',
-      cautions.length ? `Cautelas: ${cautions.slice(0, 3).join(', ')}.` : '',
-      auditText,
-    ].filter(Boolean).join(' '),
-    entity: review,
-    approvalStatus: 'approved_local',
-  };
-}
-
-function filterCards(cards, { query, category }) {
-  const normalizedQuery = asSearchText(query);
-  return cards.filter(item => {
-    const categoryMatches = category === 'Todos' || item.cat === category;
-    if (!categoryMatches) return false;
-    if (!normalizedQuery) return true;
-    return asSearchText([item.title, item.txt, item.tags, item.source].join(' ')).includes(normalizedQuery);
-  });
 }
 
 /* ── Componente de Tag (Chip) ───────────────────────────────────────── */
@@ -145,7 +70,7 @@ function KnowledgeCard({ item }) {
     <div className="lib-card" style={{
       border: '1px solid var(--line)', background: 'white',
       borderRadius: 18, padding: 16, position: 'relative',
-      borderTop: `3px solid ${catInfo.color}`,
+      borderTop: `3px solid ${item.cardColor || catInfo.color}`,
     }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
         <span style={{ fontSize: 24, paddingTop: 2 }}>{catInfo.icon}</span>
@@ -153,13 +78,22 @@ function KnowledgeCard({ item }) {
           <p style={{ margin: '0 0 6px', fontFamily: 'Georgia, serif', color: 'var(--navy)', fontSize: 18, fontWeight: 700 }}>
             {item.title}
           </p>
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ 
               fontSize: 11, fontWeight: 'bold', color: catInfo.color, 
               border: `1px solid ${catInfo.color}40`, background: `${catInfo.color}15`,
-              borderRadius: 999, padding: '2px 8px', marginRight: 8, textTransform: 'uppercase'
+              borderRadius: 999, padding: '2px 8px', textTransform: 'uppercase'
             }}>
               {item.cat}
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 'bold',
+              color: item.confidence === 'high' ? '#137333' : (item.confidence === 'medium' ? '#b06000' : '#c5221f'),
+              background: item.confidence === 'high' ? '#e6f4ea' : (item.confidence === 'medium' ? '#fef7e0' : '#fce8e6'),
+              border: `1px solid ${item.confidence === 'high' ? '#137333' : (item.confidence === 'medium' ? '#b06000' : '#c5221f')}40`,
+              borderRadius: 999, padding: '2px 8px'
+            }}>
+              {item.statusLabel}
             </span>
             <span style={{ fontSize: 12, color: '#64748b' }}>
               Fonte: {item.source}
@@ -181,14 +115,80 @@ function KnowledgeCard({ item }) {
   );
 }
 
-/* ── Componente Principal ────────────────────────────────── */
+/* ── Pergunte à Biblioteca (IA, Fase 4) ──────────────────────────────── */
+function LibraryAsk({ cards }) {
+  const [question, setQuestion] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  async function handleAsk() {
+    if (!question.trim() || loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await askLibrary(question, cards);
+      setResult(res);
+    } catch (err) {
+      setError(err.message || 'Falha ao consultar a Biblioteca.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const isMock = result?.modelVersion?.startsWith('mock');
+
+  return (
+    <div className="box" style={{ marginBottom: 20, borderColor: 'var(--gold)' }}>
+      <b>Pergunte à Biblioteca (IA)</b>
+      <p className="small" style={{ margin: '4px 0 10px' }}>{LIBRARY_AI_DISCLAIMER}</p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAsk(); } }}
+          placeholder="Ex.: quais pontos para insônia com calor no Coração?"
+          style={{ flex: '1 1 260px', borderRadius: 12, border: '1px solid var(--line)', padding: '10px 14px', fontSize: 14 }}
+        />
+        <button type="button" className="ai-analyze-btn" style={{ margin: 0, whiteSpace: 'nowrap' }} disabled={loading || !question.trim()} onClick={handleAsk}>
+          {loading ? 'Consultando…' : '✦ Perguntar'}
+        </button>
+      </div>
+
+      {error && <div className="alert" style={{ marginTop: 10 }}>{error}</div>}
+
+      {result && (
+        <div style={{ marginTop: 12 }}>
+          {result.warning && <div className="alert" style={{ marginBottom: 8 }}>{result.warning}</div>}
+          <p style={{ margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap', color: '#1f2937' }}>{result.answer}</p>
+          {result.citations?.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <span className="small"><b>Fontes citadas:</b></span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                {result.citations.map((c, i) => (
+                  <span key={i} style={{ fontSize: 11, border: '1px solid var(--line)', borderRadius: 999, padding: '3px 8px', background: 'var(--soft)' }}>{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="small" style={{ marginTop: 8, color: '#94a3b8' }}>
+            {result.usedCount > 0 ? `${result.usedCount} item(ns) da base consultado(s). ` : ''}
+            Modelo: {result.modelVersion}{isMock ? ' (simulado)' : ''}.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Biblioteca() {
+  const [confidenceTab, setConfidenceTab] = useState('high'); // 'high' | 'medium' | 'low'
   const [catFilter, setCatFilter] = useState('Todos');
-  const [search,    setSearch]    = useState('');
+  const [search, setSearch] = useState('');
   const [kmAgentDrafts, setKmAgentDrafts] = useState([]);
-  const [approvedReviews, setApprovedReviews] = useState([]);
+  const [knowledgeReviews, setKnowledgeReviews] = useState([]);
   const [kmAgentLoadState, setKmAgentLoadState] = useState('loading');
-  const [approvedLoadState, setApprovedLoadState] = useState('loading');
+  const [reviewsLoadState, setReviewsLoadState] = useState('loading');
 
   useEffect(() => {
     let cancelled = false;
@@ -216,20 +216,16 @@ export function Biblioteca() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      getHighConfidenceKnowledgeReviews(),
-      getDeepCuratedKnowledgeReviews(),
-    ])
-      .then(([highConfidenceReviews, deepCuratedReviews]) => {
+    getClinicalKnowledgeReviews()
+      .then(reviews => {
         if (cancelled) return;
-        const mergedReviews = mergeKnowledgeReviews(deepCuratedReviews, highConfidenceReviews);
-        setApprovedReviews(mergedReviews.filter(review => review.status === 'approved_local'));
-        setApprovedLoadState('ready');
+        setKnowledgeReviews(reviews);
+        setReviewsLoadState('ready');
       })
       .catch(() => {
         if (cancelled) return;
-        setApprovedReviews([]);
-        setApprovedLoadState('error');
+        setKnowledgeReviews([]);
+        setReviewsLoadState('error');
       });
 
     return () => {
@@ -237,49 +233,210 @@ export function Biblioteca() {
     };
   }, []);
 
-  const approvedCards = useMemo(() => approvedReviews.map(approvedReviewToCard), [approvedReviews]);
-  const approvedCodes = useMemo(() => new Set(
-    approvedReviews
-      .map(review => normalizePointCode(review.code || review.displayCode))
-      .filter(Boolean),
-  ), [approvedReviews]);
-  const draftCards = useMemo(() => kmAgentDrafts
-    .filter(item => !approvedCodes.has(normalizePointCode(item.code || item.displayCode)))
-    .map(kmAgentDraftToCard), [approvedCodes, kmAgentDrafts]);
-  const curatedCategories = getKnowledgeCategories();
-  const uniqueCategories = [
-    ...curatedCategories,
-    ...(approvedCards.length ? [LOCAL_APPROVED_CATEGORY] : []),
-    ...(draftCards.length ? [KM_AGENT_DRAFT_CATEGORY] : []),
-  ];
-  const stats = getKnowledgeStats();
-  const kmAgentStats = getKmAgentDraftStats(kmAgentDrafts);
-  const visibleDraftStats = getKmAgentDraftStats(draftCards.map(card => card.entity));
+  // 1. Cards da base estática curada (todos alta confiança)
+  const curatedCards = useMemo(() => {
+    const categories = getKnowledgeCategories();
+    return categories.flatMap(cat =>
+      searchKnowledge({ category: cat }).map(item => ({
+        id: item.id || `static:${item.code || item.name}`,
+        cat,
+        title: item.name || item.title || item.code || '',
+        confidence: 'high',
+        statusLabel: '✅ Seguro para Uso Clínico',
+        cardColor: '#10b981',
+        tags: [
+          item.code,
+          item.displayCode,
+          ...(item.tags || []),
+          item.category,
+        ].filter(Boolean).join(', '),
+        source: item.sources?.map(s => s.label).join(', ') || 'Base Curada',
+        txt: item.summary || item.description || item.detail?.root || item.locationText || '',
+        entity: item,
+      }))
+    );
+  }, []);
 
-  /* filtro */
-  const curatedFiltered = [KM_AGENT_DRAFT_CATEGORY, LOCAL_APPROVED_CATEGORY].includes(catFilter)
-    ? []
-    : searchKnowledge({ query: search, category: catFilter });
-  const approvedFiltered = filterCards(approvedCards, { query: search, category: catFilter });
-  const draftFiltered = filterCards(draftCards, { query: search, category: catFilter });
-  const filtered = [...curatedFiltered, ...approvedFiltered, ...draftFiltered];
+  // 2. Cards dos reviews (enriquecidos) classificados por confiança
+  const reviewCards = useMemo(() => {
+    return knowledgeReviews.map(review => {
+      const actions = Array.isArray(review.actions) ? review.actions : asList(review.actions);
+      const indications = Array.isArray(review.indications) ? review.indications : asList(review.indications);
+      const cautions = Array.isArray(review.cautions) ? review.cautions : asList(review.cautions);
+      const displayCode = review.displayCode || review.code || review.atlasName || 'Ponto';
 
-  /* contagem por categoria */
-  const counts = Object.fromEntries(uniqueCategories.map(c => {
-    if (c === KM_AGENT_DRAFT_CATEGORY) return [c, draftCards.length];
-    if (c === LOCAL_APPROVED_CATEGORY) return [c, approvedCards.length];
-    return [c, searchKnowledge({ category: c }).length];
-  }));
-  const totalCards = stats.total + approvedCards.length + draftCards.length;
+      let statusLabel = '✅ Seguro para Uso Clínico';
+      let confidence = 'high';
+      let cardColor = '#10b981';
+
+      if (review.status === 'pending_atlas_review') {
+        statusLabel = '⚠️ Em Revisão de Fonte';
+        confidence = 'medium';
+        cardColor = '#f59e0b';
+      } else if (review.status === 'draft_low') {
+        statusLabel = '🚫 Rascunho Bruto - Não seguro';
+        confidence = 'low';
+        cardColor = '#f97316';
+      }
+
+      const category = review.category === 'auriculo' ? 'Aurículo' : 'Ponto';
+
+      return {
+        id: `${review.id || review.code}:review`,
+        cat: category,
+        title: review.title || `${displayCode} - ${review.names?.pt || ''}`,
+        confidence,
+        statusLabel,
+        cardColor,
+        tags: [
+          review.code,
+          review.displayCode,
+          review.atlasName,
+          ...(Array.isArray(review.aliases) ? review.aliases : []),
+          review.meridianCode,
+          review.meridian,
+          ...actions,
+          ...indications,
+        ].filter(Boolean).join(', '),
+        source: review.approvalSource || review.source || 'Biblioteca Viva',
+        txt: [
+          review.locationText ? `Localização: ${review.locationText}` : '',
+          actions.length ? `Funções: ${actions.slice(0, 4).join(', ')}.` : '',
+          indications.length ? `Indicações: ${indications.slice(0, 5).join(', ')}.` : '',
+          cautions.length ? `Cautelas: ${cautions.slice(0, 3).join(', ')}.` : '',
+        ].filter(Boolean).join(' '),
+        entity: review,
+      };
+    });
+  }, [knowledgeReviews]);
+
+  // Códigos de pontos já analisados para evitar duplicação com rascunhos brutos
+  const reviewedCodes = useMemo(() => new Set(
+    knowledgeReviews.map(r => normalizePointCode(r.code || r.displayCode)).filter(Boolean)
+  ), [knowledgeReviews]);
+
+  // 3. Cards de rascunho KM-Agent que não têm review local (todos de baixa confiança)
+  const draftCards = useMemo(() => {
+    return kmAgentDrafts
+      .filter(item => !reviewedCodes.has(normalizePointCode(item.code || item.displayCode)))
+      .map(item => ({
+        id: `${item.id}:draft`,
+        cat: 'Ponto',
+        title: getKmAgentDraftTitlePtBr(item),
+        confidence: 'low',
+        statusLabel: '🚫 Rascunho Bruto - Não seguro',
+        cardColor: '#f97316',
+        tags: [
+          item.code,
+          item.displayCode,
+          item.metadata?.meridianCode,
+          item.metadata?.meridian,
+          'rascunho',
+          'KM-Agent',
+        ].filter(Boolean).join(', '),
+        source: 'KM-Agent data/acupoints.csv',
+        txt: [
+          'Rascunho importado. Exige revisão profissional antes de uso clínico.',
+          getKmAgentLocationPtBr(item) ? `Localização: ${getKmAgentLocationPtBr(item)}` : '',
+          getKmAgentNeedlingPtBr(item) ? `Agulhamento: ${getKmAgentNeedlingPtBr(item)}` : '',
+        ].filter(Boolean).join(' '),
+        entity: item,
+      }));
+  }, [kmAgentDrafts, reviewedCodes]);
+
+  // Unifica todos os cards. Para o usuário comum (esta tela), cards de pontos
+  // ficam restritos à categoria "Pontos comumente usados" — nada é excluído da
+  // base: a biblioteca completa permanece editável no SuperAdm.
+  const allCards = useMemo(() => {
+    const pointCategories = new Set(['Ponto', 'Aurículo']);
+    return [...curatedCards, ...reviewCards, ...draftCards]
+      .filter(card => !pointCategories.has(card.cat) || isCommonlyUsedEntity(card.entity));
+  }, [curatedCards, reviewCards, draftCards]);
+
+  // Contagens por aba de confiança
+  const highCount = useMemo(() => allCards.filter(c => c.confidence === 'high').length, [allCards]);
+  const mediumCount = useMemo(() => allCards.filter(c => c.confidence === 'medium').length, [allCards]);
+  const lowCount = useMemo(() => allCards.filter(c => c.confidence === 'low').length, [allCards]);
+
+  // Cards da aba ativa
+  const cardsByConfidence = useMemo(() => {
+    return allCards.filter(c => c.confidence === confidenceTab);
+  }, [allCards, confidenceTab]);
+
+  // Categorias disponíveis na aba ativa
+  const uniqueCategories = useMemo(() => {
+    return [...new Set(cardsByConfidence.map(c => c.cat))].sort();
+  }, [cardsByConfidence]);
+
+  // Filtro de pesquisa e categoria
+  const filtered = useMemo(() => {
+    return cardsByConfidence.filter(item => {
+      const categoryMatches = catFilter === 'Todos' || item.cat === catFilter;
+      if (!categoryMatches) return false;
+      if (!search.trim()) return true;
+      return asSearchText([item.title, item.txt, item.tags, item.source].join(' ')).includes(asSearchText(search));
+    });
+  }, [cardsByConfidence, catFilter, search]);
+
+  // Contagem por categoria na aba ativa
+  const counts = useMemo(() => {
+    return uniqueCategories.reduce((acc, cat) => {
+      acc[cat] = cardsByConfidence.filter(c => c.cat === cat).length;
+      return acc;
+    }, {});
+  }, [cardsByConfidence, uniqueCategories]);
 
   return (
     <Panel title="Biblioteca Clínica Viva">
 
       {/* ── descrição da seção ─────────────────────────── */}
       <div className="box" style={{ marginBottom: 20 }}>
-        Base consultável integrada ao raciocínio clínico: {stats.acupoints} pontos sistêmicos curados, {stats.auricular} pontos auriculares, {stats.patterns} síndromes e {stats.techniques} técnicas. Também há {approvedCards.length || '...'} registros aprovados localmente e {visibleDraftStats.total || '...'} pontos do KM-Agent ainda em rascunho{kmAgentStats.meridians ? `, cobrindo ${kmAgentStats.meridians} meridianos/categorias` : ''}, sem uso clínico automático até revisão profissional.
+        Base consultável integrada ao raciocínio clínico: {highCount} itens seguros para uso clínico, {mediumCount} em revisão de fonte e {lowCount} rascunhos brutos sem uso clínico automático até revisão profissional do SuperAdm.
+        {' '}Os pontos exibidos aqui pertencem à categoria <b>Pontos comumente usados</b> ({commonlyUsedPoints.length} pontos validados clinicamente); a biblioteca completa permanece editável no SuperAdm.
         {kmAgentLoadState === 'error' && <span> A base KM-Agent não carregou nesta sessão.</span>}
-        {approvedLoadState === 'error' && <span> As aprovações locais não carregaram nesta sessão.</span>}
+        {reviewsLoadState === 'error' && <span> As aprovações locais não carregaram nesta sessão.</span>}
+      </div>
+
+      <LibraryAsk cards={allCards} />
+
+      {/* ── Abas de Nível de Confiança de Uso Clínico ───────────────── */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, borderBottom: '1px solid var(--line)', paddingBottom: 12, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => { setConfidenceTab('high'); setCatFilter('Todos'); }}
+          style={{
+            background: confidenceTab === 'high' ? '#e6f4ea' : 'transparent',
+            color: confidenceTab === 'high' ? '#137333' : 'var(--navy)',
+            border: confidenceTab === 'high' ? '1px solid #137333' : '1px solid var(--line)',
+            borderRadius: 12, padding: '8px 16px', fontWeight: 'bold', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 13
+          }}
+        >
+          🟢 Seguro para Uso Clínico ({highCount})
+        </button>
+        <button
+          onClick={() => { setConfidenceTab('medium'); setCatFilter('Todos'); }}
+          style={{
+            background: confidenceTab === 'medium' ? '#fef7e0' : 'transparent',
+            color: confidenceTab === 'medium' ? '#b06000' : 'var(--navy)',
+            border: confidenceTab === 'medium' ? '1px solid #b06000' : '1px solid var(--line)',
+            borderRadius: 12, padding: '8px 16px', fontWeight: 'bold', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 13
+          }}
+        >
+          🟡 Em Revisão de Fonte ({mediumCount})
+        </button>
+        <button
+          onClick={() => { setConfidenceTab('low'); setCatFilter('Todos'); }}
+          style={{
+            background: confidenceTab === 'low' ? '#fce8e6' : 'transparent',
+            color: confidenceTab === 'low' ? '#c5221f' : 'var(--navy)',
+            border: confidenceTab === 'low' ? '1px solid #c5221f' : '1px solid var(--line)',
+            borderRadius: 12, padding: '8px 16px', fontWeight: 'bold', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 13
+          }}
+        >
+          🟠 Rascunhos Brutos ({lowCount})
+        </button>
       </div>
 
       <MapCoordinateEditor />
@@ -290,7 +447,7 @@ export function Biblioteca() {
           placeholder="🔍 Buscar por título, conteúdo ou tags (ex: baço, ansiedade, E36)..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ borderRadius: 12, border: '1px solid var(--line)', padding: '12px 16px', fontSize: 15 }}
+          style={{ borderRadius: 12, border: '1px solid var(--line)', padding: '12px 16px', fontSize: 14 }}
         />
       </div>
 
@@ -301,7 +458,7 @@ export function Biblioteca() {
           onClick={() => setCatFilter('Todos')}
           style={catFilter === 'Todos' ? { background: 'var(--navy)', color: 'white', borderColor: 'var(--navy)' } : {}}
         >
-          📚 Todos ({totalCards})
+          📚 Todos ({cardsByConfidence.length})
         </button>
         {uniqueCategories.map(cat => {
           const info = getCategoryInfo(cat);
@@ -324,7 +481,7 @@ export function Biblioteca() {
         {filtered.length === 0 ? (
           <div className="box" style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
             <p style={{ fontSize: 32, margin: 0 }}>📭</p>
-            <p style={{ margin: '12px 0 0', fontSize: 16 }}>
+            <p style={{ margin: '12px 0 0', fontSize: 15 }}>
               {search ? `Nenhum resultado encontrado para "${search}"` : 'Nenhum material nesta categoria.'}
             </p>
           </div>

@@ -1,15 +1,16 @@
-import { Suspense, lazy, useState, useEffect, useRef } from 'react';
-import { createInitialState, getPatientAge, useClinicState } from './hooks/useClinicState';
+import { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
+import { createInitialState, getPatientAge, serializeTongueAi, useClinicState } from './hooks/useClinicState';
 import { useAuth } from './hooks/AuthContext';
 import { usePatient } from './hooks/PatientContext';
 import { useSessionPersistence } from './hooks/useSessionPersistence';
-import { analyze } from './utils/analyzer';
+import { analyze, assistantSynthesis } from './utils/analyzer';
 import { buildRandomClinicalFixture } from './utils/testClinicalFixture';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
+import { AssistantDeepDive } from './components/panels/AssistantDeepDive';
 import './App.css';
 
 const lazyPanel = (loader, exportName) => lazy(() => loader().then(module => ({ default: module[exportName] })));
@@ -59,14 +60,21 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
-  const { state, selectedMap, updateField, toggle, getSelected, getPulseSelected, setState, setSelectedMap, resetSession } = useClinicState();
+  const { state, selectedMap, updateField, toggle, setSelection, getSelected, getPulseSelected, setState, setSelectedMap, resetSession, tongueAi, setTongueAi, hydrateTongueAi } = useClinicState();
   const isHydratingSessionRef = useRef(false);
   const lastAutoSaveSnapshotRef = useRef(null);
+  const assistantRailRef = useRef(null);
+  const assistantScrollTimerRef = useRef(null);
+  const isSuperAdminTab = isSuperAdmin;
+  const isHome = !isSuperAdmin && (activeTab === 'Tela inicial' || !selectedPatient);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000 * 30);
     return () => clearInterval(timer);
   }, []);
+
+  // Metadados persistíveis da análise de língua (sem imagens/object URLs)
+  const tongueAiMeta = useMemo(() => serializeTongueAi(tongueAi), [tongueAi]);
 
   // Persistência no Supabase
   const {
@@ -76,7 +84,7 @@ export default function App() {
     loadSession,
     scheduleAutoSave,
     hasPendingChanges,
-  } = useSessionPersistence(selectedPatient?.id, state, selectedMap);
+  } = useSessionPersistence(selectedPatient?.id, state, selectedMap, tongueAiMeta);
 
   useEffect(() => {
     function handleBeforeUnload(event) {
@@ -89,6 +97,31 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasPendingChanges]);
 
+  useEffect(() => {
+    if (isHome || isSuperAdminTab) {
+      return undefined;
+    }
+
+    function handleScroll() {
+      const rail = assistantRailRef.current;
+      if (!rail) return;
+
+      rail.classList.add('assistant-rail-following');
+      window.clearTimeout(assistantScrollTimerRef.current);
+      assistantScrollTimerRef.current = window.setTimeout(() => {
+        rail.classList.remove('assistant-rail-following');
+      }, 220);
+    }
+
+    const rail = assistantRailRef.current;
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.clearTimeout(assistantScrollTimerRef.current);
+      rail?.classList.remove('assistant-rail-following');
+    };
+  }, [isHome, isSuperAdminTab]);
+
   // Carrega sessão salva ao selecionar paciente
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +132,7 @@ export default function App() {
       loadSession({
         setState,
         setSelectedMap,
+        hydrateTongueAi,
         emptyState: createInitialState(selectedPatient),
       }).finally(() => {
         if (!cancelled) {
@@ -125,6 +159,7 @@ export default function App() {
       patientId: selectedPatient?.id || null,
       state,
       selectedMap,
+      tongueAi: tongueAiMeta,
     });
 
     if (!selectedPatient || isHydratingSessionRef.current) {
@@ -137,7 +172,7 @@ export default function App() {
     }
 
     lastAutoSaveSnapshotRef.current = snapshot;
-  }, [selectedPatient?.id, state, selectedMap]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedPatient?.id, state, selectedMap, tongueAiMeta]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
     return (
@@ -169,6 +204,8 @@ export default function App() {
 
   // Motor de análise executado a cada render (leve o suficiente para isso)
   const analysis = analyze(state, selectedMap);
+  // Síntese ao vivo do assistente: leitura ponderada da anamnese como um todo.
+  const synthesis = assistantSynthesis(state, selectedMap);
 
   function renderPanel() {
     const commonProps = { state, selectedMap, onToggle: toggle, onUpdate: updateField, analysis };
@@ -183,7 +220,7 @@ export default function App() {
       );
     }
 
-    if (activeTab === 'Tela inicial' || !selectedPatient) {
+    if (activeTab === 'Tela inicial' || (!selectedPatient && activeTab !== 'Biblioteca')) {
       return (
         <PatientStart
           onCreatePatient={() => setActiveTab('Anamnese')}
@@ -208,8 +245,8 @@ export default function App() {
             onConfirmPendingChanges={confirmPendingChanges}
           />
         );
-      case 'Anamnese':          return <Anamnese {...commonProps} onFillTestAnswers={fillTestAnswers} />;
-      case 'Língua':            return <Lingua {...commonProps} />;
+      case 'Anamnese':          return <Anamnese {...commonProps} onSetSelection={setSelection} onFillTestAnswers={fillTestAnswers} />;
+      case 'Língua':            return <Lingua {...commonProps} onSetSelection={setSelection} tongueAi={tongueAi} onTongueAiChange={setTongueAi} />;
       case 'Pulso':             return <Pulso {...commonProps} />;
       case 'Raciocínio Clínico':return <RaciocinioClinical {...commonProps} />;
       case 'Diagnóstico':       return <Diagnostico {...commonProps} />;
@@ -222,7 +259,7 @@ export default function App() {
           />
         );
       case 'Biblioteca':        return <Biblioteca />;
-      case 'Relatório':         return <Relatorio state={state} analysis={analysis} selectedPatient={selectedPatient} therapistProfile={profile} />;
+      case 'Relatório':         return <Relatorio state={state} analysis={analysis} selectedPatient={selectedPatient} therapistProfile={profile} onUpdate={updateField} />;
       default:                  return <PainelInicial {...commonProps} />;
     }
   }
@@ -236,8 +273,6 @@ export default function App() {
     hour: '2-digit',
     minute: '2-digit',
   });
-  const isSuperAdminTab = isSuperAdmin;
-  const isHome = !isSuperAdmin && (activeTab === 'Tela inicial' || !selectedPatient);
   const patientAge = getPatientAge(selectedPatient) || state.idade;
   const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
   const lastVisit = evolucoes[evolucoes.length - 1]?.data || '';
@@ -249,7 +284,7 @@ export default function App() {
       setActiveTab('SuperAdm');
       return;
     }
-    if (!selectedPatient && tab !== 'Tela inicial') {
+    if (!selectedPatient && tab !== 'Tela inicial' && tab !== 'Biblioteca') {
       setActiveTab('Tela inicial');
       return;
     }
@@ -323,9 +358,11 @@ export default function App() {
         </div>
         )}
 
+        {/* O Relatório tem papel timbrado próprio com os dados da clínica */}
+        {activeTab !== 'Relatório' && (
         <div className="print-header">
           <div>
-            <h1>Reability MTC</h1>
+            <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability MTC'}</h1>
             <p>{activeTab}</p>
           </div>
           <div>
@@ -333,6 +370,7 @@ export default function App() {
             <span>{new Date().toLocaleDateString('pt-BR')}</span>
           </div>
         </div>
+        )}
 
         {/* Layout principal: conteúdo + barra lateral de assistente */}
         <div className={`workspace-grid${isHome || isSuperAdminTab ? ' workspace-grid-full' : ''}`}>
@@ -343,27 +381,88 @@ export default function App() {
           </section>
 
           {!isHome && !isSuperAdminTab && (
-          <aside className="no-print">
+          <aside ref={assistantRailRef} className="assistant-rail no-print">
             {/* IA Assistente */}
-            <div className="panel">
+            <div className="panel assistant-panel assistant-synth-panel">
               <div className="panel-title">IA Assistente</div>
-              <div className="panel-body">
-                <p><b>Hipótese:</b> {analysis.main}</p>
-                <p><b>Confiança:</b> {analysis.confidence}</p>
-                <p><b>Próxima ação:</b> {analysis.detail.question}</p>
-                <p><b>Leitura:</b> {analysis.protocol.goal}</p>
+              <div className="panel-body assistant-synth">
+                <div className="synth-hypo">
+                  <span className="synth-label">Hipótese principal</span>
+                  <strong className="synth-hypo-name">{synthesis.primaryName}</strong>
+                  {synthesis.primaryPercent > 0 && (
+                    <div
+                      className="synth-meter"
+                      role="img"
+                      aria-label={`Convergência de ${synthesis.primaryPercent}%`}
+                    >
+                      <div className="synth-meter-fill" style={{ width: `${synthesis.primaryPercent}%` }} />
+                      <span className="synth-meter-val">{synthesis.primaryPercent}%</span>
+                    </div>
+                  )}
+                  {synthesis.differential && (
+                    <div className="synth-diff">
+                      <span className="synth-diff-name">2º · {synthesis.differential.name}</span>
+                      <span className="synth-diff-pct">{synthesis.differential.percent}%</span>
+                      {synthesis.isOpenDifferential && (
+                        <span className="synth-flag">diferencial aberto</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="synth-confidence">
+                  <span className="synth-label">Confiança</span>
+                  <span className={`synth-badge synth-badge-${synthesis.confidence.level.toLowerCase()}`}>
+                    {synthesis.confidence.level}
+                  </span>
+                  {synthesis.confidence.reason && (
+                    <span className="synth-reason">{synthesis.confidence.reason}</span>
+                  )}
+                </div>
+
+                <div className="synth-block">
+                  <span className="synth-label">Próxima ação</span>
+                  <p>{synthesis.nextAction}</p>
+                </div>
+
+                <div className="synth-block synth-block-reading">
+                  <span className="synth-label">Leitura ao vivo</span>
+                  <p>{synthesis.reading}</p>
+                </div>
+
+                <AssistantDeepDive
+                  state={state}
+                  selectedMap={selectedMap}
+                  synthesis={synthesis}
+                  patientName={selectedPatient?.name || state.nome}
+                />
               </div>
             </div>
 
             {/* Achados rápidos */}
-            <div className="panel">
+            <div className="panel assistant-panel assistant-quick-panel">
               <div className="panel-title">Achados rápidos</div>
-              <div className="panel-body">
-                <p>Sintomas: {getSelected('sintomas').length}</p>
-                <p>Anamnese: {getSelected('queixaEstruturada').length + getSelected('sono').length + getSelected('digestao').length}</p>
-                <p>Língua: {getSelected('lingua').length}</p>
-                <p>Pulso: {getPulseSelected().length}</p>
-                <p>Segurança: {analysis.safety.length}</p>
+              <div className="panel-body synth-quick">
+                <div className="quick-chip">
+                  <b>{getSelected('sintomas').length}</b>
+                  <span>Sintomas</span>
+                </div>
+                <div className="quick-chip">
+                  <b>{getSelected('queixaEstruturada').length + getSelected('sono').length + getSelected('digestao').length}</b>
+                  <span>Anamnese</span>
+                </div>
+                <div className="quick-chip">
+                  <b>{getSelected('lingua').length + getSelected('linguaOrgao').length}</b>
+                  <span>Língua</span>
+                </div>
+                <div className="quick-chip">
+                  <b>{getPulseSelected().length}</b>
+                  <span>Pulso</span>
+                </div>
+                <div className={`quick-chip${analysis.safety.length > 0 ? ' quick-chip-alert' : ''}`}>
+                  <b>{analysis.safety.length}</b>
+                  <span>Segurança</span>
+                </div>
               </div>
             </div>
           </aside>

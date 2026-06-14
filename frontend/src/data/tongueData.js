@@ -55,3 +55,60 @@ export const tongueOrganAlterations = {
     ]
   }
 };
+
+// ============================================================
+// Mapeamento de tags estáveis da IA → itens do checklist acima.
+// A IA (mock ou serviço real) NUNCA referencia o texto literal dos
+// itens: ela retorna tags. Se um rótulo for editado acima, basta
+// atualizar o `item` correspondente aqui — o contrato com o serviço
+// de IA não quebra. Tag sem entrada aqui é exibida como não mapeada
+// na UI e não marca nada.
+// ============================================================
+export const tongueAiTagMap = {
+  // Estômago e Baço (centro)
+  swollen_center:        { organ: "Estômago e Baço", item: "Centro inchado" },
+  teeth_marks:           { organ: "Estômago e Baço", item: "Marcas dentárias nas bordas" },
+  thick_center_coating:  { organ: "Estômago e Baço", item: "Saburra espessa no centro" },
+  greasy_coating:        { organ: "Estômago e Baço", item: "Saburra gordurosa" },
+  pale_center:           { organ: "Estômago e Baço", item: "Centro pálido" },
+  central_cracks:        { organ: "Estômago e Baço", item: "Fissuras centrais" },
+
+  // Coração (ponta)
+  red_tip:               { organ: "Coração", item: "Ponta muito vermelha" },
+  red_dots_tip:          { organ: "Coração", item: "Pontos vermelhos na ponta" },
+  pale_tip:              { organ: "Coração", item: "Ponta pálida" },
+  central_crack_to_tip:  { organ: "Coração", item: "Fissura central alcançando a ponta" },
+
+  // Fígado e Vesícula Biliar (laterais)
+  red_sides:             { organ: "Fígado e Vesícula Biliar", item: "Laterais vermelhas" },
+  purple_sides:          { organ: "Fígado e Vesícula Biliar", item: "Laterais arroxeadas" },
+  swollen_sides:         { organ: "Fígado e Vesícula Biliar", item: "Laterais inchadas" },
+  red_dots_sides:        { organ: "Fígado e Vesícula Biliar", item: "Pontos vermelhos nas laterais" },
+
+  // Pulmão (região anterior)
+  pale_anterior:         { organ: "Pulmão", item: "Região anterior pálida" },
+  white_anterior_coating:{ organ: "Pulmão", item: "Saburra branca na área anterior" },
+  dry_anterior:          { organ: "Pulmão", item: "Ressecamento anterior" },
+
+  // Rins e Bexiga (raiz)
+  no_root_coating:       { organ: "Rins e Bexiga", item: "Raiz sem saburra" },
+  thick_root_coating:    { organ: "Rins e Bexiga", item: "Raiz com saburra espessa" },
+  wet_root:              { organ: "Rins e Bexiga", item: "Raiz muito úmida" },
+
+  // Intestinos (região posterior)
+  yellow_posterior_coating: { organ: "Intestino Grosso e Delgado", item: "Saburra amarela posterior" },
+  greasy_posterior_coating: { organ: "Intestino Grosso e Delgado", item: "Saburra gordurosa posterior" },
+
+  // Sublingual / Estase
+  distended_sublingual_veins: { organ: "Sublingual / Estase", item: "Veias sublinguais dilatadas" },
+  purple_sublingual_veins:    { organ: "Sublingual / Estase", item: "Veias sublinguais arroxeadas" },
+  tortuous_sublingual_veins:  { organ: "Sublingual / Estase", item: "Veias tortuosas" },
+  sublingual_petechiae:       { organ: "Sublingual / Estase", item: "Petéquias sublinguais" },
+};
+
+// Resolve uma tag da IA para { group, item } do checklist, ou null se não mapeada.
+export function resolveTongueAiTag(tag) {
+  const entry = tongueAiTagMap[tag];
+  if (!entry) return null;
+  return { group: `linguaOrgao:${entry.organ}`, organ: entry.organ, item: entry.item };
+}

@@ -4,11 +4,29 @@
 // ============================================================
 
 import { movementData } from '../data/movementsData';
+import { isPulseAssociatedSign } from '../data/pulseData';
 import { tongueOrganAlterations } from '../data/tongueData';
 import { getPatternDetail, getProtocolForPattern } from '../knowledge/protocolEngine';
 import { evaluateSafety } from '../knowledge/safetyEngine';
 
 const TENSE_PULSE_RE = /(?:^|[^A-Za-zÀ-ÖØ-öø-ÿ0-9_])tenso(?=$|[^A-Za-zÀ-ÖØ-öø-ÿ0-9_])/i;
+
+// Palavras-chave por padrão MTC. Fonte única usada tanto pela pontuação binária
+// clássica de `analyze()` (peso +6 se QUALQUER chave casar) quanto pela síntese
+// graduada/ponderada do assistente ao vivo (`assistantSynthesis`).
+// `tense: true` significa que o padrão também é reforçado por pulso tenso.
+const PATTERN_KEYWORDS = [
+  { name: 'Ascensão do Yang do Fígado', tense: true, keywords: ['cefaleia', 'enxaqueca', 'tontura', 'zumbido', 'irritabilidade', 'raiva', 'laterais', 'fígado', 'vesícula', 'em corda', 'vermelha'] },
+  { name: 'Qi do Fígado invadindo Baço/Estômago', keywords: ['refluxo', 'azia', 'náusea', 'distensão', 'constipação', 'diarreia', 'frustração', 'ácido', 'fígado', 'estômago', 'baço', 'piora ao estresse'] },
+  { name: 'Umidade-Calor', keywords: ['saburra amarela', 'saburra gordurosa', 'saburra espessa', 'edema', 'calor', 'umidade', 'tipo 6', 'tipo 7', 'escorregadio', 'álcool', 'odor forte'] },
+  { name: 'Deficiência de Qi do Baço', keywords: ['fadiga', 'marcas de dentes', 'inchada', 'fraco', 'vazio', 'baço', 'estômago', 'digestão', 'edema', 'pálida', 'desejo por doce', 'ruminação'] },
+  { name: 'Agitação do Shen por Calor', keywords: ['ansiedade', 'insônia', 'palpitação', 'agitação', 'ponta', 'coração', 'rápido', 'vermelha', 'sonhos intensos', 'energéticos', 'termogênicos', 'cafeína'] },
+  { name: 'Deficiência de Yin do Rim', keywords: ['suores noturnos', 'calor vazio', 'menopausa', 'ondas de calor', 'boca seca à noite', 'zumbido', 'yin deficiente', 'Deficiência Yin'] },
+  { name: 'Deficiência de Yang do Rim', keywords: ['frio', 'membros frios', 'lombar fria', 'poliúria noturna', 'yang deficiente', 'fadiga profunda', 'Deficiência Yang', 'aversão ao frio', 'diarreia matinal'] },
+  { name: 'Deficiência de Xue do Fígado', keywords: ['visão borrada', 'olhos secos', 'câimbras', 'unhas quebradiças', 'menstruação escassa', 'tontura ao levantar', 'xue do fígado', 'sangue do fígado'] },
+  { name: 'Estagnação de Xue', keywords: ['dor fixa', 'arroxeada', 'petéquias', 'coágulos', 'estase', 'sangue estagnado', 'língua roxa', 'lábios roxos', 'amenorreia', 'dor piora à noite'] },
+  { name: 'Deficiência de Qi do Pulmão', keywords: ['tosse fraca', 'voz baixa', 'resfriados frequentes', 'dispneia leve', 'sudorese espontânea', 'pulmão fraco', 'qi do pulmão', 'pele sem brilho'] },
+];
 
 function matchesClinicalKeyword(text, keyword) {
   if (keyword === 'tenso') return TENSE_PULSE_RE.test(text);
@@ -22,11 +40,38 @@ export function getSelectedItems(selectedMap, group) {
     .map(k => k.split(':').slice(1).join(':'));
 }
 
-// Retorna os achados de pulso formatados para análise
+// Retorna os achados de pulso formatados para análise (qualidades + sinais)
 export function getPulseSelectedItems(selectedMap) {
   return Object.keys(selectedMap)
+    .filter(k => (k.startsWith('pulso:') || k.startsWith('pulsoSinal:')) && selectedMap[k])
+    .map(k => k.replace(/^pulso(Sinal)?:/, '').replaceAll(':', ' '));
+}
+
+function pulseItemLabel(key) {
+  return key.split(':').slice(3).join(':');
+}
+
+// Qualidades palpadas no dedo — evidência objetiva de palpação (peso de pulso).
+// Chaves legadas "pulso:" com texto de sinal associado são reclassificadas como sinais.
+export function getPulseQualityItems(selectedMap) {
+  return Object.keys(selectedMap)
     .filter(k => k.startsWith('pulso:') && selectedMap[k])
-    .map(k => k.replace('pulso:', '').replaceAll(':', ' '));
+    .map(pulseItemLabel)
+    .filter(item => !isPulseAssociatedSign(item));
+}
+
+// Sinais clínicos associados marcados no módulo de pulso — pesam como sintoma.
+export function getPulseAssociatedSignItems(selectedMap) {
+  const fromSignGroup = Object.keys(selectedMap)
+    .filter(k => k.startsWith('pulsoSinal:') && selectedMap[k])
+    .map(pulseItemLabel);
+
+  const fromLegacyGroup = Object.keys(selectedMap)
+    .filter(k => k.startsWith('pulso:') && selectedMap[k])
+    .map(pulseItemLabel)
+    .filter(isPulseAssociatedSign);
+
+  return [...new Set([...fromSignGroup, ...fromLegacyGroup])];
 }
 
 // Junta todo o texto clínico para análise de padrão textual
@@ -57,24 +102,12 @@ export function getAllClinicalText(state, selectedMap) {
 export function analyze(state, selectedMap) {
   const all = getAllClinicalText(state, selectedMap);
 
-  let scores = {
-    "Ascensão do Yang do Fígado": 0,
-    "Qi do Fígado invadindo Baço/Estômago": 0,
-    "Umidade-Calor": 0,
-    "Deficiência de Qi do Baço": 0,
-    "Agitação do Shen por Calor": 0
-  };
-
-  if (/cefaleia|enxaqueca|tontura|zumbido|irritabilidade|raiva|laterais|fígado|vesícula|em corda|vermelha/i.test(all) || TENSE_PULSE_RE.test(all))
-    scores["Ascensão do Yang do Fígado"] += 6;
-  if (/refluxo|azia|náusea|distensão|constipação|diarreia|frustração|ácido|fígado|estômago|baço|piora ao estresse/i.test(all))
-    scores["Qi do Fígado invadindo Baço/Estômago"] += 6;
-  if (/saburra amarela|saburra gordurosa|saburra espessa|edema|calor|umidade|tipo 6|tipo 7|escorregadio|álcool|odor forte/i.test(all))
-    scores["Umidade-Calor"] += 6;
-  if (/fadiga|marcas de dentes|inchada|fraco|vazio|baço|estômago|digestão|edema|pálida|desejo por doce|ruminação/i.test(all))
-    scores["Deficiência de Qi do Baço"] += 6;
-  if (/ansiedade|insônia|palpitação|agitação|ponta|coração|rápido|vermelha|sonhos intensos|energéticos|termogênicos|cafeína/i.test(all))
-    scores["Agitação do Shen por Calor"] += 6;
+  const scores = {};
+  PATTERN_KEYWORDS.forEach(({ name, keywords, tense }) => {
+    const matched = keywords.some(kw => new RegExp(kw, 'i').test(all))
+      || (tense && TENSE_PULSE_RE.test(all));
+    scores[name] = matched ? 6 : 0;
+  });
 
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const main = ranked[0][1] ? ranked[0][0] : "Aguardando dados";
@@ -163,11 +196,30 @@ export function diagnosticProfile(state, selectedMap) {
   const second = sorted[1] || ["", { score: 0, data: { org: "Aguardando dados" } }];
   const text = getAllClinicalText(state, selectedMap);
 
-  const tongue = getSelectedItems(selectedMap, 'lingua').length + getSelectedItems(selectedMap, 'regioesLingua').length;
-  const pulse = getPulseSelectedItems(selectedMap).length;
-  const symptoms = ['sintomas', 'digestao', 'sono', 'dor', 'gineco'].reduce(
-    (acc, g) => acc + getSelectedItems(selectedMap, g).length, 0
+  // Evidência de língua: grupos legados da anamnese + checklist por órgão do
+  // painel Língua (todas as chaves `linguaOrgao:Órgão:Item` casam com o prefixo).
+  const tongue = getSelectedItems(selectedMap, 'lingua').length
+    + getSelectedItems(selectedMap, 'regioesLingua').length
+    + getSelectedItems(selectedMap, 'linguaOrgao').length;
+
+  // Apenas qualidades palpadas contam como evidência de pulso (peso 7);
+  // sinais associados pesam como sintoma (peso 4) e não contam em dobro
+  // quando o mesmo achado já foi marcado na anamnese.
+  const pulse = getPulseQualityItems(selectedMap).length;
+  const symptomItems = ['sintomas', 'digestao', 'sono', 'dor', 'gineco'].flatMap(
+    g => getSelectedItems(selectedMap, g)
   );
+  const normalizeFinding = (item) => String(item)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+  const anamneseFindings = new Set(
+    [...symptomItems, ...getSelectedItems(selectedMap, 'fezes')].map(normalizeFinding)
+  );
+  const pulseSigns = getPulseAssociatedSignItems(selectedMap)
+    .filter(item => !anamneseFindings.has(normalizeFinding(item))).length;
+  const symptoms = symptomItems.length + pulseSigns;
   const emotions = getSelectedItems(selectedMap, 'emocoes').length;
 
   const raw = tongue * 7 + pulse * 7 + symptoms * 4 + emotions * 5;
@@ -218,5 +270,159 @@ export function diagnosticProfile(state, selectedMap) {
     parts: { tongue: tongue * 7, pulse: pulse * 7, symptoms: symptoms * 4, emotions: emotions * 5 },
     conflicts, missing, top, second,
     analysis
+  };
+}
+
+// ============================================================
+// SÍNTESE AO VIVO DO ASSISTENTE
+// Leitura ponderada da anamnese como um todo: pontuação graduada
+// por fonte (língua/pulso valem mais que sintoma relatado), diferencial
+// top-2, confiança real (corrige o limiar "Alta" inalcançável do analyze)
+// e próxima ação derivada do que falta no caso concreto.
+// ============================================================
+
+// Coleta a evidência clínica agrupada por origem, com o peso de cada origem.
+// Pesos coerentes com diagnosticProfile (língua/pulso 7, emoção 5, sintoma 4);
+// texto livre da anamnese entra com peso menor (3) por ser menos estruturado.
+function buildWeightedEvidence(state, selectedMap) {
+  const tongueItems = [
+    ...getSelectedItems(selectedMap, 'lingua'),
+    ...getSelectedItems(selectedMap, 'regioesLingua'),
+    ...Object.keys(tongueOrganAlterations).flatMap(org => getSelectedItems(selectedMap, `linguaOrgao:${org}`)),
+  ];
+  const symptomItems = [
+    ...['sintomas', 'digestao', 'sono', 'dor', 'gineco', 'fezes'].flatMap(g => getSelectedItems(selectedMap, g)),
+    ...getPulseAssociatedSignItems(selectedMap),
+  ];
+  const anamneseItems = [
+    ...['queixaEstruturada', 'historico', 'substanciasUso', 'clima', 'oito', 'substancias'].flatMap(g => getSelectedItems(selectedMap, g)),
+    state.queixa || '',
+    state.historia || '',
+    state.medicacoes || '',
+  ];
+
+  return [
+    { group: 'língua', weight: 7, text: tongueItems.join(' ') },
+    { group: 'pulso', weight: 7, text: getPulseQualityItems(selectedMap).join(' ') },
+    { group: 'emoções', weight: 5, text: getSelectedItems(selectedMap, 'emocoes').join(' ') },
+    { group: 'sintomas', weight: 4, text: symptomItems.join(' ') },
+    { group: 'anamnese', weight: 3, text: anamneseItems.join(' ') },
+  ].filter(src => src.text.trim().length > 0);
+}
+
+// Pontua cada padrão somando o peso da origem de cada achado que casa —
+// assim 3 sinais de Fígado pesam mais que 1, e uma hipótese sustentada por
+// língua + pulso vence uma sustentada só por sintoma relatado.
+function gradePatterns(evidence) {
+  return PATTERN_KEYWORDS.map(({ name, keywords, tense }) => {
+    let score = 0;
+    const hits = [];
+    keywords.forEach(kw => {
+      const re = new RegExp(kw, 'i');
+      evidence.forEach(src => {
+        if (re.test(src.text)) {
+          score += src.weight;
+          hits.push({ term: kw, group: src.group });
+        }
+      });
+    });
+    if (tense) {
+      evidence.forEach(src => {
+        if (TENSE_PULSE_RE.test(src.text)) {
+          score += src.weight;
+          hits.push({ term: 'pulso tenso', group: src.group });
+        }
+      });
+    }
+    return { name, score, hits };
+  }).sort((a, b) => b.score - a.score);
+}
+
+// Quantas origens distintas sustentam a hipótese e em que proporção.
+function summarizeHits(hits) {
+  const counts = {};
+  hits.forEach(h => { counts[h.group] = (counts[h.group] || 0) + 1; });
+  return counts;
+}
+
+export function assistantSynthesis(state, selectedMap) {
+  const profile = diagnosticProfile(state, selectedMap);
+  const { analysis, conflicts = [], missing = [] } = profile;
+
+  const evidence = buildWeightedEvidence(state, selectedMap);
+  const graded = gradePatterns(evidence);
+  const total = graded.reduce((sum, p) => sum + p.score, 0);
+
+  const knownNames = new Set(PATTERN_KEYWORDS.map(p => p.name));
+  const gradedTop = graded[0];
+  const hasEvidence = Boolean(gradedTop && gradedTop.score > 0);
+
+  // Hipótese principal ancorada ao padrão canônico (o mesmo salvo como dx),
+  // quando ele é um dos padrões conhecidos; caso contrário, o líder graduado.
+  const primaryName = knownNames.has(analysis.main)
+    ? analysis.main
+    : (hasEvidence ? gradedTop.name : null);
+  const primary = primaryName ? (graded.find(p => p.name === primaryName) || gradedTop) : null;
+  const differential = graded.find(p => p.score > 0 && p.name !== primaryName) || null;
+
+  const primaryPercent = total && primary ? Math.round((primary.score / total) * 100) : 0;
+  const differentialPercent = total && differential ? Math.round((differential.score / total) * 100) : 0;
+
+  const margin = primary && differential && primary.score > 0
+    ? (primary.score - differential.score) / primary.score
+    : 1;
+  const isOpenDifferential = Boolean(primary && differential && differential.score > 0 && margin < 0.3);
+
+  // Confiança real, considerando volume, diversidade de origens e margem.
+  // "Alta" exige ≥2 origens distintas, ao menos uma objetiva (língua/pulso) e
+  // margem clara sobre o 2º lugar — corrige o limiar morto do analyze().
+  const groupCounts = summarizeHits(primary?.hits || []);
+  const groups = Object.keys(groupCounts);
+  const hasObjective = groups.includes('língua') || groups.includes('pulso');
+  let level = 'Baixa';
+  if (primary && primary.score > 0) {
+    if (groups.length >= 2 && hasObjective && primary.score >= 18 && margin >= 0.3) level = 'Alta';
+    else if (primary.score >= 8 && (groups.length >= 2 || margin >= 0.3)) level = 'Moderada';
+  }
+  const confidenceReason = groups.length
+    ? groups.map(g => `${g} (${groupCounts[g]})`).join(' + ')
+    : '';
+
+  // Próxima ação derivada do caso: desempate quando o diferencial está aberto,
+  // senão o dado faltante mais relevante, senão a pergunta padrão.
+  let nextAction;
+  if (isOpenDifferential && differential) {
+    nextAction = `Para separar ${primaryName} de ${differential.name}, confira língua e pulso`
+      + `${missing.length ? ` e investigue ${missing[0]}` : ' e os sinais que distinguem os dois padrões'}.`;
+  } else if (missing.length) {
+    nextAction = `Falta investigar ${missing[0]} para firmar a hipótese.`;
+  } else {
+    nextAction = analysis.detail?.question || 'Completar anamnese, língua e pulso.';
+  }
+
+  // Leitura ao vivo: os sinais reais que sustentam a hipótese + conflito relevante.
+  let reading;
+  if (!primary || primary.score === 0) {
+    reading = analysis.protocol?.goal || 'Preencha os dados para gerar a leitura.';
+  } else {
+    const terms = [...new Set(primary.hits.map(h => h.term))].slice(0, 5);
+    const n = terms.length;
+    reading = n > 1
+      ? `${n} sinais convergem para ${primaryName}: ${terms.join(', ')}.`
+      : `1 sinal converge para ${primaryName}: ${terms.join(', ')}.`;
+    if (conflicts.length) reading += ` ⚠ ${conflicts[0]}`;
+  }
+
+  return {
+    primaryName: primaryName || 'Aguardando dados',
+    primaryPercent,
+    differential: differential ? { name: differential.name, percent: differentialPercent } : null,
+    isOpenDifferential,
+    confidence: { level, reason: confidenceReason },
+    nextAction,
+    reading,
+    conflicts,
+    evidenceCount: primary ? primary.hits.length : 0,
+    graded,
   };
 }

@@ -7,29 +7,16 @@ import {
 } from '../../services/knowledgeAdminService';
 import { getMapAsset, getLocationsForPoint } from '../../knowledge/mapLocations';
 import { buildPointDetail } from '../../knowledge/pointDetails';
-import { buildPointRecommendations } from '../../knowledge/pointRecommendationEngine';
+import { buildSessionSuggestion } from '../../knowledge/pointRecommendationEngine';
 import { suggestVentosa } from '../../knowledge/protocolEngine';
 import {
   findAtlasEdneaSourceReference,
   loadAtlasEdneaSourceIndex,
 } from '../../knowledge/sourceReferences';
-import { normalizePointCode } from '../../knowledge/aliases';
 import { PointReviewDialog } from './PointReviewDialog';
 
 function pointKey(point) {
   return point?.code || point?.displayCode || point?.label || point;
-}
-
-function samePoint(location, point) {
-  if (!location || !point) return false;
-  if (location.code?.startsWith('auricular:')) {
-    return location.label === point.displayCode || location.label === point.label?.replace(/^Aurículo — /, '');
-  }
-  return normalizePointCode(location.code) === normalizePointCode(point.code || point.displayCode);
-}
-
-function hasMapLocations(points, mapId) {
-  return points.some(point => getLocationsForPoint(pointKey(point)).some(location => location.mapId === mapId));
 }
 
 function MapOverlay({ points, mapId, onPointClick }) {
@@ -37,19 +24,20 @@ function MapOverlay({ points, mapId, onPointClick }) {
   if (!asset) return null;
 
   const locations = points
-    .flatMap(point => getLocationsForPoint(pointKey(point)))
-    .filter(location => location.mapId === mapId)
-    .map(location => ({
-      ...location,
-      point: points.find(point => samePoint(location, point)),
-    }));
+    .flatMap(point => getLocationsForPoint(pointKey(point))
+      .filter(location => location.mapId === mapId)
+      .map((location, index) => ({
+        ...location,
+        markerKey: `${mapId}-${location.code}-${location.xPct}-${location.yPct}-${index}`,
+        point,
+      })));
 
   return (
     <div style={{ position: 'relative' }}>
       <img src={asset.src} alt={asset.label} draggable={false} />
       {locations.map(location => (
         <button
-          key={`${location.mapId}-${location.code}`}
+          key={location.markerKey}
           onClick={() => onPointClick(location.point || location, { asset, location })}
           title={location.point?.label || location.label}
           type="button"
@@ -88,7 +76,52 @@ function chips(arr) {
 
 const TECNICOS = ['Sistêmicos', 'Auriculoterapia', 'Laser', 'Moxa', 'Ventosa', 'Stiper', 'Eletro'];
 
-export function Protocolo({ state, selectedMap, analysis }) {
+const SUGGESTION_GROUP_LABELS = [
+  { id: 'essential', label: 'Essenciais', hint: 'núcleo do protocolo para o padrão principal' },
+  { id: 'complementary', label: 'Complementares', hint: 'apoiam padrões associados e achados fortes' },
+  { id: 'optional', label: 'Opcionais', hint: 'coerentes com o caso, usar conforme objetivo da sessão' },
+];
+
+// Snapshot leve da sugestão gravado no estado clínico: permite comparar depois
+// (na Evolução) o que foi sugerido com o que a profissional realmente usou.
+function snapshotSuggestion(suggestion) {
+  const compact = (item, origem) => ({
+    code: item.point.code,
+    label: item.point.label,
+    group: item.group || 'auricular',
+    score: item.score,
+    origem,
+  });
+  return {
+    sistemicos: suggestion.systemic.map(item => compact(item, 'sistemico')),
+    auriculares: suggestion.auricular.map(item => compact(item, 'auricular')),
+  };
+}
+
+function SuggestionRow({ item, origem, checked, onToggleSelect, onDetail }) {
+  return (
+    <div className="suggestion-row">
+      <label className="suggestion-check">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={() => onToggleSelect(item, origem)}
+        />
+        <span className="suggestion-checkmark" aria-hidden="true" />
+      </label>
+      <button type="button" className="suggestion-info" onClick={() => onDetail(item.point)}>
+        <b>{item.point.label}</b>
+        <small>{item.reasons.slice(0, 3).join(' • ')}</small>
+        {item.cautions.length > 0 && <em>{item.cautions.join(' • ')}</em>}
+      </button>
+      <strong className="suggestion-score" title="Pontuação clínica">{item.score}</strong>
+    </div>
+  );
+}
+
+const SYSTEMIC_PROTOCOL_MAP_ID = 'body_full';
+
+export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
   const { protocol, main, safetyAlerts = [] } = analysis;
   const bodyPoints = protocol.bodyPoints || [];
   const earPoints = protocol.earPoints || [];
@@ -103,7 +136,27 @@ export function Protocolo({ state, selectedMap, analysis }) {
   const [atlasSourceIndex, setAtlasSourceIndex] = useState(null);
   const [atlasLoadState, setAtlasLoadState] = useState('loading');
   const [knowledgeReviews, setKnowledgeReviews] = useState(() => getLocalKnowledgeReviews());
-  const pointRecommendations = buildPointRecommendations({ state, selectedMap, analysis, knowledgeReviews });
+  // Usuário comum trabalha apenas com a categoria "Pontos comumente usados";
+  // a biblioteca completa permanece no SuperAdm.
+  const sessionSuggestion = buildSessionSuggestion({ state, selectedMap, analysis, knowledgeReviews, commonlyUsedOnly: true });
+  const sessaoSugestao = state.sessaoSugestao || { selecionados: [] };
+  const selectedSuggestionCodes = new Set((sessaoSugestao.selecionados || []).map(p => p.code));
+
+  // A seleção fica no estado clínico (persistido com a sessão); nenhum ponto é
+  // obrigatório — a profissional marca apenas o que pretende usar.
+  function toggleSuggestionPoint(item, origem) {
+    const current = sessaoSugestao.selecionados || [];
+    const selecionados = selectedSuggestionCodes.has(item.point.code)
+      ? current.filter(p => p.code !== item.point.code)
+      : [...current, { code: item.point.code, label: item.point.label, origem }];
+
+    onUpdate('sessaoSugestao', {
+      selecionados,
+      sugeridos: snapshotSuggestion(sessionSuggestion),
+      geradoEm: new Date().toISOString(),
+    });
+  }
+  const fullBodyAsset = getMapAsset(SYSTEMIC_PROTOCOL_MAP_ID);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,38 +243,14 @@ export function Protocolo({ state, selectedMap, analysis }) {
 
       <div className="protocol-layout">
         <div>
-          {enabled('Sistêmicos') && (
+          {enabled('Sistêmicos') && fullBodyAsset && (
             <div className="map-card">
-              <h3>Mapa corporal sistêmico</h3>
+              <h3>Mapa corporal</h3>
               <div className="map-stage">
-                <MapOverlay points={bodyPoints} mapId="body_front" onPointClick={handleClick} />
+                <MapOverlay points={bodyPoints} mapId={SYSTEMIC_PROTOCOL_MAP_ID} onPointClick={handleClick} />
               </div>
               <div className="legend">
                 <span><i className="dot" style={{ background: 'var(--gold)' }}></i>Pontos selecionados</span>
-              </div>
-            </div>
-          )}
-          {enabled('Sistêmicos') && hasMapLocations(bodyPoints, 'body_back') && (
-            <div className="map-card">
-              <h3>Mapa corporal posterior</h3>
-              <div className="map-stage">
-                <MapOverlay points={bodyPoints} mapId="body_back" onPointClick={handleClick} />
-              </div>
-            </div>
-          )}
-          {enabled('Sistêmicos') && hasMapLocations(bodyPoints, 'feet_dorsal') && (
-            <div className="map-card">
-              <h3>Mapa dos pés</h3>
-              <div className="map-stage">
-                <MapOverlay points={bodyPoints} mapId="feet_dorsal" onPointClick={handleClick} />
-              </div>
-            </div>
-          )}
-          {enabled('Sistêmicos') && hasMapLocations(bodyPoints, 'hands_palmar') && (
-            <div className="map-card">
-              <h3>Mapa mão/punho</h3>
-              <div className="map-stage">
-                <MapOverlay points={bodyPoints} mapId="hands_palmar" onPointClick={handleClick} />
               </div>
             </div>
           )}
@@ -250,30 +279,59 @@ export function Protocolo({ state, selectedMap, analysis }) {
           </div>
 
           <div className="tech-card">
-            <h4>Ranking por evidências</h4>
-            {pointRecommendations.evidence.length > 0 ? (
+            <h4>Sugestão da sessão</h4>
+            {sessionSuggestion.systemic.length > 0 || sessionSuggestion.auricular.length > 0 ? (
               <>
                 <p className="small">
-                  Evidências: {pointRecommendations.evidence.map(item => item.label).join(', ')}.
-                  {' '}Base analisada: {pointRecommendations.candidateStats.candidateCount} pontos ({pointRecommendations.candidateStats.approvedReviewCount} aprovados locais + {pointRecommendations.candidateStats.curatedPointCount} curados).
+                  Até {sessionSuggestion.limits.systemicLimit} pontos sistêmicos + auriculares opcionais,
+                  montados a partir do protocolo-base, dos {sessionSuggestion.candidateStats.candidateCount} pontos
+                  comumente usados e dos achados de anamnese, língua e pulso.
+                  {' '}Apoio à decisão: marque apenas o que fizer sentido clínico para esta sessão.
                 </p>
-                <div className="point-recommendation-list">
-                  {pointRecommendations.recommendations.map(item => (
-                    <button
-                      key={item.point.code}
-                      className="point-recommendation-row"
-                      type="button"
-                      onClick={() => handleClick(item.point)}
-                    >
-                      <span>
-                        <b>{item.point.label}</b>
-                        <small>{item.reasons.slice(0, 3).join(' • ')}</small>
-                        {item.cautions.length > 0 && <em>{item.cautions.join(' • ')}</em>}
-                      </span>
-                      <strong>{item.score}</strong>
-                    </button>
-                  ))}
-                </div>
+                {sessionSuggestion.evidence.length > 0 && (
+                  <p className="small">Evidências: {sessionSuggestion.evidence.map(item => item.label).join(', ')}.</p>
+                )}
+                {SUGGESTION_GROUP_LABELS.map(group => (
+                  sessionSuggestion.groups[group.id].length > 0 && (
+                    <div key={group.id} className="suggestion-group">
+                      <h5>{group.label} <span>{group.hint}</span></h5>
+                      <div className="point-recommendation-list">
+                        {sessionSuggestion.groups[group.id].map(item => (
+                          <SuggestionRow
+                            key={item.point.code}
+                            item={item}
+                            origem="sistemico"
+                            checked={selectedSuggestionCodes.has(item.point.code)}
+                            onToggleSelect={toggleSuggestionPoint}
+                            onDetail={handleClick}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                ))}
+                {sessionSuggestion.auricular.length > 0 && (
+                  <div className="suggestion-group">
+                    <h5>Auriculares <span>complemento opcional, fora do limite sistêmico</span></h5>
+                    <div className="point-recommendation-list">
+                      {sessionSuggestion.auricular.map(item => (
+                        <SuggestionRow
+                          key={item.point.code}
+                          item={item}
+                          origem="auricular"
+                          checked={selectedSuggestionCodes.has(item.point.code)}
+                          onToggleSelect={toggleSuggestionPoint}
+                          onDetail={handleClick}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(sessaoSugestao.selecionados || []).length > 0 && (
+                  <p className="small suggestion-selected-note">
+                    Selecionados para a sessão: {(sessaoSugestao.selecionados || []).map(p => p.label.split(' — ')[0]).join(', ')}.
+                  </p>
+                )}
               </>
             ) : (
               <p className="small">Aguardando evidências suficientes na anamnese, língua ou pulso.</p>

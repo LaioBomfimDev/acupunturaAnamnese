@@ -1,6 +1,7 @@
 import { getAllClinicalText, getSelectedItems } from '../utils/analyzer';
 import { displayPointCode, normalizePointCode } from './aliases';
-import { acupoints, getKnowledgeSourceLabels } from './knowledgeBase';
+import { acupoints, auricularPoints, getKnowledgeSourceLabels } from './knowledgeBase';
+import { isCommonlyUsedEntity, isCommonlyUsedPointKey } from './commonlyUsedPoints';
 
 const EVIDENCE_RULES = [
   {
@@ -99,6 +100,8 @@ function pointSearchText(point) {
     point.code,
     point.displayCode,
     point.title,
+    point.name,
+    point.mainUse,
     point.names?.pt,
     point.names?.en,
     point.meridian?.pt,
@@ -180,7 +183,7 @@ function reviewToPoint(review) {
   };
 }
 
-export function buildRecommendationCandidates(knowledgeReviews = []) {
+export function buildRecommendationCandidates(knowledgeReviews = [], { commonlyUsedOnly = false } = {}) {
   const byCode = new Map();
 
   for (const point of acupoints) {
@@ -196,12 +199,19 @@ export function buildRecommendationCandidates(knowledgeReviews = []) {
     byCode.set(point.code, point);
   }
 
+  // Visão do usuário comum: restringe a base à categoria "Pontos comumente usados".
+  // A biblioteca completa permanece disponível no SuperAdm e quando o filtro está desligado.
+  const candidates = commonlyUsedOnly
+    ? [...byCode.values()].filter(point => point.commonlyUsed || isCommonlyUsedPointKey(point.code))
+    : [...byCode.values()];
+
   return {
-    candidates: [...byCode.values()],
+    candidates,
     stats: {
       curatedPointCount: acupoints.length,
       approvedReviewCount: approvedReviewCodes.size,
-      candidateCount: byCode.size,
+      candidateCount: candidates.length,
+      commonlyUsedOnly,
     },
   };
 }
@@ -238,19 +248,35 @@ function scorePoint({ point, analysis, evidence, safetyFlags }) {
   const text = pointSearchText(point);
   const mainPattern = analysis?.main || '';
   const protocolCodes = new Set((analysis?.protocol?.bodyCodes || []).map(normalizePointCode));
+  const protocolEarCodes = new Set((analysis?.protocol?.earPoints || []).map(item => item.code).filter(Boolean));
   const rankedPatterns = Array.isArray(analysis?.ranked) ? analysis.ranked : [];
   const reasons = [];
   const cautions = [];
   const matchedEvidence = [];
+  // Sinais usados para classificar a sugestão em essencial/complementar/opcional
+  const signals = {
+    protocolBase: false,
+    mainPattern: false,
+    associatedPattern: false,
+    maxEvidenceWeight: 0,
+  };
   let score = 0;
+  // Priorizar pontos que foram aprovados manualmente pelo profissional
+  if (point.reviewStatus === 'approved_local') {
+    score += 5;
+    addReason(reasons, 'aprovado Biblioteca Viva');
+  }
 
-  if (protocolCodes.has(point.code)) {
+
+  if (protocolCodes.has(point.code) || protocolEarCodes.has(point.code)) {
     score += 7;
+    signals.protocolBase = true;
     addReason(reasons, 'protocolo base');
   }
 
   if ((point.relatedPatterns || []).includes(mainPattern)) {
     score += 7;
+    signals.mainPattern = true;
     addReason(reasons, `padrão principal: ${mainPattern}`);
   }
 
@@ -258,6 +284,7 @@ function scorePoint({ point, analysis, evidence, safetyFlags }) {
     if (!patternScore || patternName === mainPattern) continue;
     if ((point.relatedPatterns || []).includes(patternName)) {
       score += Math.min(4, Math.ceil(patternScore / 2));
+      signals.associatedPattern = true;
       addReason(reasons, `padrão associado: ${patternName}`);
     }
   }
@@ -265,6 +292,7 @@ function scorePoint({ point, analysis, evidence, safetyFlags }) {
   for (const rule of evidence) {
     if (includesAny(text, rule.pointTerms)) {
       score += rule.weight;
+      signals.maxEvidenceWeight = Math.max(signals.maxEvidenceWeight, rule.weight);
       matchedEvidence.push(rule.label);
       addReason(reasons, rule.label);
     }
@@ -279,29 +307,103 @@ function scorePoint({ point, analysis, evidence, safetyFlags }) {
     cautions.push('verificar integridade local antes de estimular');
   }
 
+  const isAuricular = point.category === 'ponto_auricular';
+  const fallbackName = point.names?.pt || point.names?.en || point.name || point.code;
+  const fallbackLabel = isAuricular
+    ? `Aurículo — ${point.name || fallbackName}`
+    : `${point.displayCode || displayPointCode(point.code)} — ${fallbackName}`;
+
   return {
     point: {
       code: point.code,
-      displayCode: point.displayCode || displayPointCode(point.code),
-      label: point.label || `${point.displayCode || displayPointCode(point.code)} — ${point.names?.pt || point.names?.en || point.code}`,
+      displayCode: point.displayCode || point.name || displayPointCode(point.code),
+      label: point.label || fallbackLabel,
       meridian: point.meridian?.pt || '',
       techniques: point.techniques || [],
       sources: getKnowledgeSourceLabels(point),
       reviewStatus: point.reviewStatus || point.approval?.status || '',
       dataOrigin: point.dataOrigin || 'Base curada',
+      category: point.category || 'ponto_sistemico',
     },
     score,
     reasons,
     cautions,
     matchedEvidence,
+    signals,
   };
 }
 
-export function buildPointRecommendations({ state = {}, selectedMap = {}, analysis = {}, knowledgeReviews = [], limit = 8 } = {}) {
+// Limite padrão da sugestão de sessão: 15 pontos sistêmicos; auriculares são
+// listados à parte como complemento opcional, sem consumir o limite sistêmico.
+export const SESSION_SUGGESTION_SYSTEMIC_LIMIT = 15;
+export const SESSION_SUGGESTION_AURICULAR_LIMIT = 6;
+
+function isAuricularPoint(point) {
+  return point.category === 'ponto_auricular' || String(point.code || '').startsWith('auricular:');
+}
+
+// Classificação semântica da sugestão:
+// essential — núcleo da sessão (protocolo-base do padrão ou padrão principal);
+// complementary — apoia padrões associados ou evidência clínica forte;
+// optional — coerente com o caso, preenche o limite sem urgência clínica.
+export function classifySuggestionGroup(item) {
+  if (item.signals?.protocolBase || item.signals?.mainPattern) return 'essential';
+  if (item.signals?.associatedPattern || (item.signals?.maxEvidenceWeight || 0) >= 4) return 'complementary';
+  return 'optional';
+}
+
+// Sugestão da sessão: protocolo-base + ranking dos pontos comumente usados +
+// achados de anamnese/língua/pulso + alertas de segurança. Sempre apoio à
+// decisão da profissional — nunca prescrição automática.
+export function buildSessionSuggestion({
+  state = {},
+  selectedMap = {},
+  analysis = {},
+  knowledgeReviews = [],
+  systemicLimit = SESSION_SUGGESTION_SYSTEMIC_LIMIT,
+  auricularLimit = SESSION_SUGGESTION_AURICULAR_LIMIT,
+  commonlyUsedOnly = true,
+} = {}) {
   const clinicalText = getAllClinicalText(state, selectedMap);
   const evidence = getMatchedEvidence(clinicalText);
   const safetyFlags = getSafetyFlags(state, selectedMap);
-  const { candidates, stats } = buildRecommendationCandidates(knowledgeReviews);
+  const { candidates, stats } = buildRecommendationCandidates(knowledgeReviews, { commonlyUsedOnly });
+
+  const rankCandidates = (list) => list
+    .map(point => scorePoint({ point, analysis, evidence, safetyFlags }))
+    .filter(item => item.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.point.displayCode.localeCompare(b.point.displayCode, 'pt-BR', { numeric: true });
+    });
+
+  const systemic = rankCandidates(candidates.filter(point => !isAuricularPoint(point)))
+    .slice(0, systemicLimit)
+    .map(item => ({ ...item, group: classifySuggestionGroup(item) }));
+
+  const auricularCandidates = auricularPoints
+    .filter(point => !commonlyUsedOnly || isCommonlyUsedEntity(point));
+  const auricular = rankCandidates(auricularCandidates).slice(0, auricularLimit);
+
+  const groups = { essential: [], complementary: [], optional: [] };
+  for (const item of systemic) groups[item.group].push(item);
+
+  return {
+    systemic,
+    groups,
+    auricular,
+    evidence: evidence.map(item => ({ id: item.id, label: item.label })),
+    safetyFlags,
+    candidateStats: stats,
+    limits: { systemicLimit, auricularLimit },
+  };
+}
+
+export function buildPointRecommendations({ state = {}, selectedMap = {}, analysis = {}, knowledgeReviews = [], limit = 8, commonlyUsedOnly = false } = {}) {
+  const clinicalText = getAllClinicalText(state, selectedMap);
+  const evidence = getMatchedEvidence(clinicalText);
+  const safetyFlags = getSafetyFlags(state, selectedMap);
+  const { candidates, stats } = buildRecommendationCandidates(knowledgeReviews, { commonlyUsedOnly });
 
   const recommendations = candidates
     .map(point => scorePoint({ point, analysis, evidence, safetyFlags }))

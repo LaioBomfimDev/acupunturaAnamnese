@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "npm run test:regression",
-    "test:regression": "node --test tests/regression/analyzer.test.mjs",
+    "test:regression": "node --test tests/regression/*.test.mjs",
     "preview": "vite preview",
     "preview:static": "node scripts/serve-dist.cjs",
     "bootstrap:superadmin": "node scripts/bootstrap-super-admin.js"

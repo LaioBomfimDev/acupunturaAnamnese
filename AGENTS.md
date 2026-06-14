@@ -110,7 +110,12 @@ Modelo para novas entradas:
 
 ### Entradas Registradas
 
-Nenhum erro recorrente registrado ainda.
+### 2026-06-12 - Grupo novo de checklist sem peso de evidência no analyzer
+
+- Sintoma: itens do checklist `linguaOrgao:*` (painel Língua) entravam no texto clínico (`getAllClinicalText`), mas não contavam no peso de evidência de língua em `diagnosticProfile` (que somava apenas os grupos legados `lingua` e `regioesLingua`), nem nos contadores do `PainelInicial` e dos "Achados rápidos" do `App.jsx`.
+- Causa: ao criar um novo prefixo de grupo no `selectedMap`, ele foi ligado em um ponto do analyzer e esquecido nos demais. O filtro por `startsWith(grupo + ':')` não falha nem avisa — apenas ignora silenciosamente.
+- Regra nova: todo novo prefixo de grupo de checklist deve ser ligado em TODOS os consumidores do `selectedMap`: (1) `getAllClinicalText`, (2) pesos de `diagnosticProfile` (`parts`), (3) contadores de UI (`PainelInicial.jsx`, "Achados rápidos" em `App.jsx`). Procurar por `getSelectedItems`/`getSelectedCount`/`getSelected` antes de concluir.
+- Teste ou verificação obrigatória: teste de regressão garantindo que marcar um item do novo grupo altera `parts` e `confidence` do `diagnosticProfile` (ver `tests/regression/tongue-ai.test.mjs`, teste "achado aceito pesa como evidência de língua").
 
 ## 7. Boas Práticas de Implementação
 
@@ -122,6 +127,7 @@ Nenhum erro recorrente registrado ainda.
 - Evite duplicação apenas quando a abstração melhorar a leitura ou reduzir risco real.
 - Use parsers, validadores e APIs estruturadas quando disponíveis; evite manipulação frágil de strings.
 - Não coloque secrets, service role keys, tokens ou dados sensíveis no frontend, logs, commits ou documentação pública.
+- Todo texto visível ao usuário é em pt-BR. Atenção especial a pluralizações geradas por código (ex.: "item/itens", nunca "items") e a terminologia clínica consistente com o restante da interface.
 
 ## 8. Cuidados Com Supabase e Dados Clínicos
 
@@ -161,7 +167,37 @@ Ao trabalhar com pontos de acupuntura, mapas, KM-Agent, Atlas da Ednéa Martins 
 - Pontos, relações, cautelas, indicações, imagens de fonte e coordenadas inferidas permanecem em `draft` ou `review` até aprovação profissional explícita.
 - Aprovação em lote por critério de confiança do KM-Agent/Atlas deve ser registrada como `approved_local`, `approvalMode: local_only` e `requiresProfessionalAudit: true`; não migre para Supabase/produção sem etapa separada de auditoria e rastreabilidade.
 
-## 11. Padrão de Comunicação
+## 11. Módulo Língua e IA Assistiva
+
+Regras invariantes do módulo de inspeção da língua (`Lingua.jsx`, `tongueData.js`, `tongueAiService.js`) e de qualquer futura análise assistiva por IA (pulso, face etc.):
+
+### Contrato de tags estáveis
+
+- A IA (mock ou serviço real) NUNCA referencia o texto literal dos rótulos do checklist. Ela retorna tags estáveis (ex.: `swollen_center`), resolvidas por `tongueAiTagMap`/`resolveTongueAiTag` em `frontend/src/data/tongueData.js`.
+- Não renomear rótulos em `tongueOrganAlterations` sem atualizar a entrada correspondente no `tongueAiTagMap`. O teste `tests/regression/tongue-ai.test.mjs` quebra se uma tag apontar para item inexistente — isso é proposital; corrija o mapa, não o teste.
+- Tag sem entrada no mapa não marca nada e aparece como "não mapeada" na UI. Nunca fazer fallback por similaridade de texto.
+
+### IA é assistiva, nunca conduta final
+
+- Achados da IA NÃO entram no diagnóstico automaticamente. O analyzer lê somente o `selectedMap` (achados confirmados pela profissional). Esse desacoplamento é arquitetural e não deve ser quebrado.
+- "Aceitar" um achado usa `setSelection(group, item, true)` do `useClinicState` (marca, nunca desmarca). Não usar `toggle` para aceite — aceitar um item já marcado manualmente não pode desmarcá-lo.
+- "Desfazer" um aceite volta o card a pendente, mas NÃO desmarca itens do checklist — desmarcar é decisão explícita da profissional no checklist.
+- Confiança é exibida em faixas (alta/média/baixa) + inteiro arredondado. Nunca decimais — precisão decimal transmite falsa certeza clínica.
+- Linguagem da UI: "Sugestões da IA para conferência", "achados confirmados pela profissional". Proibido: "diagnóstico definitivo", "tratamento obrigatório", prescrição direta ou qualquer formulação que sugira que a IA "fechou diagnóstico".
+
+### Fotos e dados sensíveis
+
+- Fotos de pacientes (língua ou qualquer imagem clínica) NUNCA viram base64 dentro de `clinical_records` nem entram no bundle do frontend.
+- O estado `tongueAi` (fotos + análise) vive fora de `state`/`selectedMap` no `useClinicState` exatamente para não ser arrastado pelo `useSessionPersistence`. Não mover para dentro de `state`.
+- Object URLs de fotos devem ser revogados (`URL.revokeObjectURL`) ao substituir/remover foto e no reset da sessão.
+- Persistência futura (fase 4): bucket privado `clinical-tongue-photos` no Supabase Storage, caminho `therapist_id/patient_id/data/arquivo.webp`, políticas RLS por terapeuta, remoção de EXIF/GPS antes do upload e compressão para webp no cliente. No registro clínico, apenas metadados (caminho, tipo, data, achados, aceitos/ignorados, versão do modelo).
+- Inferência real (fase 5) roda em microserviço Python separado, atrás do contrato `analyzeTongueImages(photos)` em `frontend/src/services/tongueAiService.js`. O frontend não roda modelos; Edge Function não faz inferência pesada. Trocar mock por real = trocar o corpo dessa função, sem mexer na UI.
+
+### Troca/remoção de foto
+
+- Trocar ou remover qualquer foto invalida a análise vigente (`analysis: null`) — um resultado de IA nunca pode ficar órfão da imagem que o gerou. Os achados já aceitos no checklist permanecem.
+
+## 12. Padrão de Comunicação
 
 Ao trabalhar no projeto, a IA deve:
 

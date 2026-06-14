@@ -8,12 +8,15 @@ import { saveClinicalRecord, getLatestRecord, updateClinicalRecord } from '../se
 
 /**
  * Hook que gerencia a persistência da sessão clínica no Supabase.
- * 
+ *
  * @param {string|null} patientId - UUID do paciente selecionado
  * @param {object} state - Estado do formulário (do useClinicState)
  * @param {object} selectedMap - Mapa de seleções (do useClinicState)
+ * @param {object|null} tongueAiMeta - Metadados da análise de língua
+ *        (serializeTongueAi: caminhos no Storage + achados revisados;
+ *        nunca imagens/base64 — AGENTS.md §11)
  */
-export function useSessionPersistence(patientId, state, selectedMap) {
+export function useSessionPersistence(patientId, state, selectedMap, tongueAiMeta = null) {
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [currentRecord, setCurrentRecord] = useState(null);
@@ -27,7 +30,7 @@ export function useSessionPersistence(patientId, state, selectedMap) {
   }, [patientId]);
 
   // Carrega a sessão mais recente ao selecionar paciente
-  const loadSession = useCallback(async ({ setState, setSelectedMap, emptyState }) => {
+  const loadSession = useCallback(async ({ setState, setSelectedMap, emptyState, hydrateTongueAi }) => {
     if (!patientId) return null;
 
     const loadVersion = loadVersionRef.current + 1;
@@ -52,6 +55,7 @@ export function useSessionPersistence(patientId, state, selectedMap) {
           contato: emptyState.contato,
         });
         setSelectedMap(data.selectedMap || {});
+        hydrateTongueAi?.(data.tongueAi || null);
         setCurrentRecord({ id: record.id, patientId });
         setLastSavedAt(new Date(record.updated_at));
         setHasPendingChanges(false);
@@ -64,6 +68,7 @@ export function useSessionPersistence(patientId, state, selectedMap) {
     if (loadVersion === loadVersionRef.current) {
       setState(emptyState);
       setSelectedMap({});
+      hydrateTongueAi?.(null);
       setLastSavedAt(null);
       setCurrentRecord(null);
       setHasPendingChanges(false);
@@ -78,7 +83,10 @@ export function useSessionPersistence(patientId, state, selectedMap) {
     const isStillActivePatient = () => activePatientIdRef.current === patientId;
 
     if (isStillActivePatient()) setSaveStatus('saving');
+    // tongueAi: apenas metadados (caminho no Storage, achados, status de
+    // revisão, versão do modelo) — imagens nunca entram em clinical_records.
     const sessionData = { state, selectedMap };
+    if (tongueAiMeta) sessionData.tongueAi = tongueAiMeta;
     const recordId =
       currentRecord?.patientId === patientId ? currentRecord.id : null;
 
@@ -106,7 +114,7 @@ export function useSessionPersistence(patientId, state, selectedMap) {
       console.error('Erro ao salvar sessão:', err);
       if (isStillActivePatient()) setSaveStatus('error');
     }
-  }, [patientId, state, selectedMap, currentRecord]);
+  }, [patientId, state, selectedMap, tongueAiMeta, currentRecord]);
 
   // Debounced auto-save (salva 5s após última alteração)
   const scheduleAutoSave = useCallback(() => {

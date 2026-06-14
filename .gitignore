@@ -24,6 +24,8 @@ pnpm-debug.log*
 # Local tooling
 .DS_Store
 Thumbs.db
+.claude/
+.tmp/
 .idea/
 .vscode/*
 !.vscode/extensions.json

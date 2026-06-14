@@ -7,6 +7,8 @@ import react from '@vitejs/plugin-react'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const localAtlasRoot = path.resolve(__dirname, '.local-source-assets', 'atlas-ednea')
 const atlasRoutePrefix = '/knowledge/source-assets/atlas-ednea/'
+const localPdfSourcesRoot = path.resolve(__dirname, '.local-source-assets', 'pdf-sources')
+const pdfSourcesRoutePrefix = '/knowledge/source-assets/pdf-sources/'
 
 function contentTypeFor(filePath) {
   if (filePath.endsWith('.json')) return 'application/json; charset=utf-8'
@@ -14,16 +16,16 @@ function contentTypeFor(filePath) {
   return 'application/octet-stream'
 }
 
-function localAtlasMiddleware(req, res, next) {
+function serveLocalSourceFile({ req, res, next, root, routePrefix }) {
   const requestPath = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname)
-  if (!requestPath.startsWith(atlasRoutePrefix)) {
+  if (!requestPath.startsWith(routePrefix)) {
     next()
     return
   }
 
-  const relativePath = requestPath.slice(atlasRoutePrefix.length)
-  const candidatePath = path.resolve(localAtlasRoot, relativePath)
-  const relativeFromRoot = path.relative(localAtlasRoot, candidatePath)
+  const relativePath = requestPath.slice(routePrefix.length)
+  const candidatePath = path.resolve(root, relativePath)
+  const relativeFromRoot = path.relative(root, candidatePath)
   if (relativeFromRoot.startsWith('..') || path.isAbsolute(relativeFromRoot)) {
     res.statusCode = 403
     res.end('Forbidden')
@@ -46,10 +48,20 @@ function localAtlasSourcesPlugin() {
   return {
     name: 'local-atlas-sources',
     configureServer(server) {
-      server.middlewares.use(localAtlasMiddleware)
+      server.middlewares.use((req, res, next) => {
+        serveLocalSourceFile({ req, res, next, root: localAtlasRoot, routePrefix: atlasRoutePrefix })
+      })
+      server.middlewares.use((req, res, next) => {
+        serveLocalSourceFile({ req, res, next, root: localPdfSourcesRoot, routePrefix: pdfSourcesRoutePrefix })
+      })
     },
     configurePreviewServer(server) {
-      server.middlewares.use(localAtlasMiddleware)
+      server.middlewares.use((req, res, next) => {
+        serveLocalSourceFile({ req, res, next, root: localAtlasRoot, routePrefix: atlasRoutePrefix })
+      })
+      server.middlewares.use((req, res, next) => {
+        serveLocalSourceFile({ req, res, next, root: localPdfSourcesRoot, routePrefix: pdfSourcesRoutePrefix })
+      })
     },
   }
 }

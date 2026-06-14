@@ -33,6 +33,8 @@ const explicitAliases = {
   TE5: 'TE5',
   YINTANG: 'EX-HN3',
   'EX-HN3': 'EX-HN3',
+  TAIYANG: 'EX-HN5',
+  'EX-HN5': 'EX-HN5',
 };
 
 export const canonicalToDisplay = {

@@ -11,6 +11,12 @@ function formatBirthDate(value) {
   return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR');
 }
 
+function getPatientInitials(value) {
+  const words = String(value || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'P';
+  return words.slice(0, 2).map(word => word[0]).join('').toUpperCase();
+}
+
 function getSelectedCount(selectedMap, group) {
   return Object.keys(selectedMap)
     .filter(key => key.startsWith(`${group}:`) && selectedMap[key])
@@ -61,6 +67,7 @@ export function PainelInicial({
   const ultimaEvolucao = evolucoes[evolucoes.length - 1];
   const patientAge = getPatientAge(selectedPatient) || state.idade;
   const patientBirthDate = formatBirthDate(selectedPatient?.birth_date);
+  const patientName = selectedPatient?.name || state.nome || 'Novo atendimento';
   const canDelete = deleteText.trim().toLowerCase() === 'excluir' || deleteText.trim() === 'DELETE';
   const checklistCount =
     getSelectedCount(selectedMap, 'queixaEstruturada') +
@@ -68,6 +75,7 @@ export function PainelInicial({
     getSelectedCount(selectedMap, 'digestao') +
     getSelectedCount(selectedMap, 'dor') +
     getSelectedCount(selectedMap, 'lingua') +
+    getSelectedCount(selectedMap, 'linguaOrgao') +
     getSelectedCount(selectedMap, 'pulso');
   const auditLog = auditState.patientId === selectedPatient?.id
     ? auditState.items
@@ -172,33 +180,57 @@ export function PainelInicial({
   return (
     <Panel title="Painel inicial">
       <div className="summary-hero">
-        <div>
-          <p className="small">Paciente selecionado</p>
-          <h2>{selectedPatient?.name || state.nome || 'Novo atendimento'}</h2>
-          <p>
-            {selectedPatient?.phone || 'Sem telefone'}
-            {patientAge ? ` • ${patientAge} anos` : ''}
-            {patientBirthDate ? ` • nasc. ${patientBirthDate}` : ''}
-          </p>
+        <div className="patient-summary-main">
+          <div className="patient-summary-avatar" aria-hidden="true">
+            {getPatientInitials(patientName)}
+          </div>
+          <div className="patient-summary-content">
+            <p className="small">Paciente selecionado</p>
+            <h2>{patientName}</h2>
+            <div className="patient-summary-meta" aria-label="Dados do paciente">
+              <span>
+                <b>Telefone</b>
+                {selectedPatient?.phone || 'Sem telefone'}
+              </span>
+              <span>
+                <b>Idade</b>
+                {patientAge ? `${patientAge} anos` : 'Não informada'}
+              </span>
+              <span>
+                <b>Nascimento</b>
+                {patientBirthDate || 'Não informado'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="summary-actions">
-          <button className="tag" onClick={openEdit}>
-            Editar cadastro
+        <div className="summary-actions" aria-label="Ações do paciente">
+          <button
+            className="summary-action summary-action-primary"
+            type="button"
+            onClick={() => onNavigate?.('Anamnese')}
+          >
+            <span>Continuar anamnese</span>
+            <small>Ficha clínica</small>
           </button>
-          <button className="primary-button" onClick={() => onNavigate?.('Anamnese')}>
-            Continuar anamnese
+          <button className="summary-action" type="button" onClick={() => onNavigate?.('Evolução')}>
+            <span>Registrar evolução</span>
+            <small>Nova sessão</small>
           </button>
-          <button className="tag" onClick={() => onNavigate?.('Evolução')}>
-            Registrar evolução
+          <button className="summary-action" type="button" onClick={() => onNavigate?.('Relatório')}>
+            <span>Ver relatório</span>
+            <small>Prévia atual</small>
           </button>
-          <button className="tag" onClick={() => onNavigate?.('Relatório')}>
-            Ver relatório
+          <button className="summary-action summary-action-secondary" type="button" onClick={openEdit}>
+            <span>Editar cadastro</span>
+            <small>Dados pessoais</small>
           </button>
           <button
-            className="tag"
+            className="summary-action summary-action-secondary"
+            type="button"
             onClick={handlePatientSwitch}
           >
-            Trocar paciente
+            <span>Trocar paciente</span>
+            <small>Voltar à lista</small>
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Panel } from '../ui/Panel';
+import { summarizeEvolution, REPORT_AI_DISCLAIMER } from '../../services/reportAiService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toNum(v) {
@@ -11,8 +12,34 @@ function createEmptyForm() {
   return {
     data: '', dor: '', sono: '', ansiedade: '',
     energia: '', intestino: '', humor: '',
-    protocolo: '', intercorrencia: '', obs: ''
+    protocolo: '', intercorrencia: '', obs: '',
+    pontosUsados: [], pontoLivre: '', tecnica: '', resposta: ''
   };
+}
+
+// Pontos candidatos ao registro da sessão: o que a profissional selecionou no
+// Protocolo + o restante da sugestão, sem duplicar códigos.
+function buildSessionPointPool(sessaoSugestao) {
+  const pool = [];
+  const seen = new Set();
+  const selectedCodes = new Set((sessaoSugestao.selecionados || []).map(p => p.code));
+
+  const push = (entry, origem) => {
+    if (!entry?.code || seen.has(entry.code)) return;
+    seen.add(entry.code);
+    pool.push({
+      code: entry.code,
+      label: entry.label,
+      origem: entry.origem || origem,
+      selecionadoNoProtocolo: selectedCodes.has(entry.code),
+    });
+  };
+
+  (sessaoSugestao.selecionados || []).forEach(entry => push(entry, entry.origem));
+  (sessaoSugestao.sugeridos?.sistemicos || []).forEach(entry => push(entry, 'sistemico'));
+  (sessaoSugestao.sugeridos?.auriculares || []).forEach(entry => push(entry, 'auricular'));
+
+  return pool;
 }
 
 // ── Barra do radar integrativo ────────────────────────────────────────────────
@@ -62,6 +89,22 @@ export function Evolucao({ state, onUpdate, analysis }) {
   const sessions = Array.isArray(state.evolucoes) ? state.evolucoes : [];
 
   const [form, setForm] = useState(() => createEmptyForm());
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
+
+  async function handleSummarize() {
+    setAiError(null);
+    setAiLoading(true);
+    try {
+      const res = await summarizeEvolution(sessions, { patientName: state.nome });
+      setAiSummary(res);
+    } catch (err) {
+      setAiError(err.message || 'Falha ao resumir a evolução.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   function setSessions(updater) {
     const next = typeof updater === 'function' ? updater(sessions) : updater;
@@ -72,6 +115,52 @@ export function Evolucao({ state, onUpdate, analysis }) {
     setForm(prev => ({ ...prev, [key]: val }));
   }
 
+  const sessaoSugestao = state.sessaoSugestao || {};
+  const pointPool = buildSessionPointPool(sessaoSugestao);
+  const usedCodes = new Set(form.pontosUsados.map(p => p.code));
+  // Pontos digitados livremente também entram na lista (e já marcados)
+  const customPoints = form.pontosUsados.filter(p => p.origem === 'livre');
+
+  function togglePontoUsado(point) {
+    setForm(prev => {
+      const exists = prev.pontosUsados.some(p => p.code === point.code);
+      return {
+        ...prev,
+        pontosUsados: exists
+          ? prev.pontosUsados.filter(p => p.code !== point.code)
+          : [...prev.pontosUsados, { code: point.code, label: point.label, origem: point.origem }],
+      };
+    });
+  }
+
+  function applyProtocolSelection() {
+    const selecionados = (sessaoSugestao.selecionados || [])
+      .map(p => ({ code: p.code, label: p.label, origem: p.origem }));
+    setForm(prev => {
+      const merged = [...prev.pontosUsados];
+      selecionados.forEach(p => {
+        if (!merged.some(existing => existing.code === p.code)) merged.push(p);
+      });
+      return { ...prev, pontosUsados: merged };
+    });
+  }
+
+  // Ponto fora da sugestão: registra o que a profissional realmente considerou
+  // certo — insumo para o aprendizado "sugerido vs usado".
+  function addPontoLivre() {
+    const label = form.pontoLivre.trim();
+    if (!label) return;
+    const code = `livre:${label.toLowerCase().replace(/\s+/g, '-')}`;
+    setForm(prev => {
+      if (prev.pontosUsados.some(p => p.code === code)) return { ...prev, pontoLivre: '' };
+      return {
+        ...prev,
+        pontoLivre: '',
+        pontosUsados: [...prev.pontosUsados, { code, label, origem: 'livre' }],
+      };
+    });
+  }
+
   function addSession() {
     const newSess = {
       sessao: sessions.length + 1,
@@ -80,6 +169,11 @@ export function Evolucao({ state, onUpdate, analysis }) {
       energia: form.energia, intestino: form.intestino, humor: form.humor,
       protocolo: form.protocolo, intercorrencia: form.intercorrencia,
       obs: form.obs,
+      // Snapshot sugerido vs usado: base do aprendizado clínico longitudinal
+      pontosUtilizados: form.pontosUsados,
+      pontosSugeridos: sessaoSugestao.sugeridos || null,
+      tecnica: form.tecnica,
+      resposta: form.resposta,
       dx: analysis.main
     };
     setSessions(prev => [...prev, newSess]);
@@ -130,6 +224,60 @@ export function Evolucao({ state, onUpdate, analysis }) {
             <label>Intestino 0–10<input value={form.intestino} onChange={e => setF('intestino', e.target.value)} type="number" min="0" max="10" /></label>
             <label>Humor 0–10<input value={form.humor} onChange={e => setF('humor', e.target.value)} type="number" min="0" max="10" /></label>
           </div>
+          <div style={{ marginTop:14 }}>
+            <div className="evo-points-header">
+              <b>Pontos trabalhados na sessão</b>
+              {(sessaoSugestao.selecionados || []).length > 0 && (
+                <button type="button" className="tag" onClick={applyProtocolSelection}>
+                  Usar seleção do Protocolo
+                </button>
+              )}
+            </div>
+            {pointPool.length === 0 && customPoints.length === 0 ? (
+              <p className="small">Nenhuma sugestão registrada no Protocolo ainda. Adicione pontos manualmente abaixo.</p>
+            ) : (
+              <div className="evo-point-list">
+                {[...pointPool, ...customPoints].map(point => (
+                  <label key={point.code} className="evo-point-row">
+                    <span className="suggestion-check">
+                      <input
+                        type="checkbox"
+                        checked={usedCodes.has(point.code)}
+                        onChange={() => togglePontoUsado(point)}
+                      />
+                      <span className="suggestion-checkmark" aria-hidden="true" />
+                    </span>
+                    <span className="evo-point-label">
+                      {point.label}
+                      {point.selecionadoNoProtocolo && <small> • selecionado no Protocolo</small>}
+                      {point.origem === 'livre' && <small> • adicionado manualmente</small>}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="evo-point-add">
+              <input
+                value={form.pontoLivre}
+                onChange={e => setF('pontoLivre', e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPontoLivre(); } }}
+                placeholder="Usou um ponto fora da sugestão? Digite aqui (ex.: IG4, C7, Shen Men)"
+              />
+              <button type="button" className="tag" onClick={addPontoLivre}>Adicionar</button>
+            </div>
+          </div>
+
+          <div className="form-grid two" style={{ marginTop:10 }}>
+            <label>
+              Técnica usada
+              <input value={form.tecnica} onChange={e => setF('tecnica', e.target.value)} placeholder="Agulha, laser, moxa, ventosa..." />
+            </label>
+            <label>
+              Resposta do paciente
+              <input value={form.resposta} onChange={e => setF('resposta', e.target.value)} placeholder="Relaxou, dor reduziu, tonturas..." />
+            </label>
+          </div>
+
           <label style={{ marginTop:10, display:'block' }}>
             Protocolo aplicado na sessão
             <textarea value={form.protocolo} onChange={e => setF('protocolo', e.target.value)} />
@@ -166,6 +314,45 @@ export function Evolucao({ state, onUpdate, analysis }) {
         {METRICS.map(m => (
           <TrendCard key={m.key} label={m.label} arr={getArr(m.key)} inverse={m.inverse} />
         ))}
+      </div>
+
+      {/* ── Resumo da evolução por IA ── */}
+      <div className="box" style={{ borderColor: 'var(--gold)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <b>Resumo da evolução (IA)</b>
+            <p className="small" style={{ margin: '4px 0 0' }}>{REPORT_AI_DISCLAIMER}</p>
+          </div>
+          <button
+            type="button"
+            className="ai-analyze-btn"
+            style={{ margin: 0, whiteSpace: 'nowrap' }}
+            disabled={aiLoading || sessions.length < 1}
+            onClick={handleSummarize}
+          >
+            {aiLoading ? 'Resumindo…' : aiSummary ? 'Resumir novamente' : '✦ Resumir evolução com IA'}
+          </button>
+        </div>
+        {sessions.length < 1 && <p className="small" style={{ marginTop: 6 }}>Registre ao menos uma sessão para habilitar.</p>}
+        {aiError && <div className="alert" style={{ marginTop: 10 }}>{aiError}</div>}
+        {aiSummary && (
+          <div style={{ marginTop: 10 }}>
+            {aiSummary.warning && <div className="alert" style={{ marginBottom: 8 }}>{aiSummary.warning}</div>}
+            {aiSummary.paragraphs.map((p, i) => (
+              <p key={i} style={{ margin: '0 0 8px', lineHeight: 1.6 }}>{p}</p>
+            ))}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+              <button
+                type="button"
+                className="tag"
+                onClick={() => navigator.clipboard?.writeText(aiSummary.paragraphs.join('\n\n')).then(() => alert('Resumo copiado!'))}
+              >
+                Copiar resumo
+              </button>
+              <span className="small">Modelo: {aiSummary.modelVersion}{aiSummary.modelVersion?.startsWith('mock') ? ' (simulado)' : ''}.</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Alerta de ciclo ── */}
@@ -208,10 +395,17 @@ export function Evolucao({ state, onUpdate, analysis }) {
                 </td>
                 <td>
                   <b>{s.dx}</b><br />
+                  {Array.isArray(s.pontosUtilizados) && s.pontosUtilizados.length > 0 && (
+                    <span className="small">
+                      Pontos: {s.pontosUtilizados.map(p => String(p.label || '').split(' — ')[0]).join(', ')}<br />
+                    </span>
+                  )}
+                  {s.tecnica && <span className="small">Técnica: {s.tecnica}<br /></span>}
                   <span className="small">{s.protocolo || 'Protocolo não descrito'}</span>
                 </td>
                 <td>
                   {s.intercorrencia || '—'}<br />
+                  {s.resposta && <span className="small">Resposta: {s.resposta}<br /></span>}
                   <span className="small">{s.obs || 'Sem observações.'}</span>
                 </td>
                 <td>

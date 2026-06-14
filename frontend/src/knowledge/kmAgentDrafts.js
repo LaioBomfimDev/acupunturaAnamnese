@@ -1,4 +1,8 @@
 import { displayPointCode, normalizePointCode } from './aliases';
+import {
+  getMtcDraftTranslationMeta,
+  translateMtcDraftTextValue,
+} from './mtcTranslation';
 
 export const KM_AGENT_DRAFT_INDEX_URL = '/knowledge/km-agent/acupoints.index.json';
 export const KM_AGENT_ENRICHED_INDEX_URL = '/knowledge/km-agent/acupoints.enriched.json';
@@ -96,11 +100,18 @@ export function findKmAgentDraftByCode(items, code) {
 }
 
 export function getKmAgentLocationPtBr(item = {}) {
-  return item.location?.ptBr || item.locationPtBr || item.locationPreview || '';
+  return translateMtcDraftTextValue(item.location?.ptBr || item.locationPtBr || item.locationPreview || '');
 }
 
 export function getKmAgentNeedlingPtBr(item = {}) {
-  return item.needling?.ptBr || item.needlingPtBr || item.needlingPreview || '';
+  return translateMtcDraftTextValue(item.needling?.ptBr || item.needlingPtBr || item.needlingPreview || '');
+}
+
+export function getKmAgentAutomaticTranslationMeta(item = {}) {
+  return getMtcDraftTranslationMeta([
+    item.location?.ptBr || item.locationPtBr || item.locationPreview || '',
+    item.needling?.ptBr || item.needlingPtBr || item.needlingPreview || '',
+  ]);
 }
 
 export function getKmAgentTranslationBadges(item = {}) {

@@ -5,6 +5,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../dist');
 const localAtlasRoot = path.resolve(__dirname, '../.local-source-assets/atlas-ednea');
 const atlasRoutePrefix = '/knowledge/source-assets/atlas-ednea/';
+const localPdfSourcesRoot = path.resolve(__dirname, '../.local-source-assets/pdf-sources');
+const pdfSourcesRoutePrefix = '/knowledge/source-assets/pdf-sources/';
 const port = Number(process.env.PORT || 3099);
 
 const contentTypes = {
@@ -39,12 +41,12 @@ function resolveFile(urlPath) {
   return path.join(root, 'index.html');
 }
 
-function resolveLocalAtlasFile(urlPath) {
-  if (!urlPath.startsWith(atlasRoutePrefix)) return null;
+function resolveLocalSourceFile(urlPath, routePrefix, sourceRoot) {
+  if (!urlPath.startsWith(routePrefix)) return null;
 
-  const relativePath = urlPath.slice(atlasRoutePrefix.length);
-  const requestedPath = path.resolve(localAtlasRoot, relativePath);
-  const relativeFromRoot = path.relative(localAtlasRoot, requestedPath);
+  const relativePath = urlPath.slice(routePrefix.length);
+  const requestedPath = path.resolve(sourceRoot, relativePath);
+  const relativeFromRoot = path.relative(sourceRoot, requestedPath);
   if (relativeFromRoot.startsWith('..') || path.isAbsolute(relativeFromRoot)) {
     return { forbidden: true };
   }
@@ -58,21 +60,22 @@ function resolveLocalAtlasFile(urlPath) {
 
 http.createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0]);
-  const localAtlasFile = resolveLocalAtlasFile(urlPath);
-  if (localAtlasFile?.forbidden) {
+  const localSourceFile = resolveLocalSourceFile(urlPath, atlasRoutePrefix, localAtlasRoot)
+    || resolveLocalSourceFile(urlPath, pdfSourcesRoutePrefix, localPdfSourcesRoot);
+  if (localSourceFile?.forbidden) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Forbidden');
     return;
   }
-  if (localAtlasFile?.filePath) {
+  if (localSourceFile?.filePath) {
     res.writeHead(200, {
       'Cache-Control': 'no-store',
-      'Content-Type': contentTypes[path.extname(localAtlasFile.filePath)] || 'application/octet-stream',
+      'Content-Type': contentTypes[path.extname(localSourceFile.filePath)] || 'application/octet-stream',
     });
-    fs.createReadStream(localAtlasFile.filePath).pipe(res);
+    fs.createReadStream(localSourceFile.filePath).pipe(res);
     return;
   }
-  if (urlPath.startsWith(atlasRoutePrefix)) {
+  if (urlPath.startsWith(atlasRoutePrefix) || urlPath.startsWith(pdfSourcesRoutePrefix)) {
     const publicAtlasFile = resolvePublicFile(urlPath);
     if (publicAtlasFile) {
       res.writeHead(200, {

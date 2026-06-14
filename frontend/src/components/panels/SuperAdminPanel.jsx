@@ -8,7 +8,10 @@ import {
   setProfessionalActive,
   updateProfessionalProfile,
 } from '../../services/adminService';
+import { ClinicAdminPanel } from './ClinicAdminPanel';
 import { KnowledgeAdminPanel } from './KnowledgeAdminPanel';
+import { MapCoordinateEditor } from './MapCoordinateEditor';
+import { PdfSourceLearningPanel } from './PdfSourceLearningPanel';
 
 const EMPTY_FORM = {
   firstName: '',
@@ -206,6 +209,35 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [auditError, setAuditError] = useState('');
+
+  // Estados e funções de Calibração de Mapa (solicitações de terapeutas)
+  const [coordinateRequests, setCoordinateRequests] = useState([]);
+
+  function loadCoordinateRequests() {
+    try {
+      const stored = JSON.parse(localStorage.getItem('acup_coordinate_requests_v1') || '[]');
+      setCoordinateRequests(stored.filter(req => !req.resolved));
+    } catch (err) {
+      console.error('Falha ao carregar solicitações de coordenadas:', err);
+    }
+  }
+
+  function resolveCoordinateRequest(requestId) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('acup_coordinate_requests_v1') || '[]');
+      const updated = stored.map(req => req.id === requestId ? { ...req, resolved: true } : req);
+      localStorage.setItem('acup_coordinate_requests_v1', JSON.stringify(updated));
+      loadCoordinateRequests();
+    } catch (err) {
+      console.error('Falha ao resolver solicitação:', err);
+    }
+  }
+
+  useEffect(() => {
+    if (activeSection === 'maps') {
+      loadCoordinateRequests();
+    }
+  }, [activeSection]);
 
   const stats = useMemo(() => ({
     total: professionals.length,
@@ -451,8 +483,50 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       </header>
 
       <div className="super-admin-content">
-      {activeSection === 'knowledge' ? (
+      {activeSection === 'clinics' ? (
+        <ClinicAdminPanel />
+      ) : activeSection === 'knowledge' ? (
         <KnowledgeAdminPanel />
+      ) : activeSection === 'pdf-sources' ? (
+        <PdfSourceLearningPanel />
+      ) : activeSection === 'maps' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <section className="box" style={{ background: '#f8fafc', border: '1px solid var(--line)', borderRadius: 18, padding: 20 }}>
+            <h3 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              📥 Solicitações de Ajuste de Terapeutas
+            </h3>
+            {coordinateRequests.length === 0 ? (
+              <p style={{ color: '#64748b', margin: 0, fontSize: 13 }}>Nenhuma solicitação pendente.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {coordinateRequests.map((req, idx) => (
+                  <div key={idx} style={{
+                    background: 'white', border: '1px solid var(--line)', borderRadius: 12,
+                    padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12
+                  }}>
+                    <div>
+                      <b style={{ color: 'var(--navy)', fontSize: 14 }}>Ponto: {req.pointCode}</b>
+                      <p style={{ margin: '4px 0 0', fontSize: 13, color: '#334155', lineHeight: 1.4 }}>{req.message}</p>
+                      <small style={{ color: '#64748b', display: 'block', marginTop: 4 }}>Solicitado em: {new Date(req.createdAt).toLocaleDateString('pt-BR')}</small>
+                    </div>
+                    <button
+                      className="tag active"
+                      onClick={() => resolveCoordinateRequest(req.id)}
+                      style={{ background: '#e6f4ea', color: '#137333', borderColor: '#137333', cursor: 'pointer', padding: '6px 12px', fontSize: 12, whiteSpace: 'nowrap' }}
+                    >
+                      Marcar como Resolvido
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <MapCoordinateEditor
+            approvalActorRole="super_admin"
+            approvalActorLabel="SuperAdm"
+          />
+        </div>
       ) : (
       <>
       {activeSection === 'manage' && (

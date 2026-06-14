@@ -153,3 +153,40 @@ e sao ignoradas pelo Git. Em desenvolvimento, o Vite serve essa pasta no mesmo
 caminho publico usado pelo app. Esse fluxo serve para curadoria e demonstracao
 local; antes de deploy, mover o armazenamento para um bucket/servico protegido
 ou gerar as imagens sob demanda com controle de acesso.
+
+## Registro de fontes complementares
+
+- `docs/biblioteca-viva-curadoria-416-e-fontes-2026-06-04.md`: estado da
+  curadoria dos 416 registros KM-Agent, diferenca entre base curada e aprovacao
+  local, pendencias por grupo e triagem dos PDFs Langevin/pdf acuup recebidos em
+  2026-06-04.
+- `docs/pdf-source-ingestion-2026-06-05.md`: ingestao local dos novos PDFs
+  recebidos em 2026-06-05, com manifestos, paginas renderizadas, OCR de fallback
+  e gate de idioma para impedir texto nao-pt-BR nas fichas de ponto.
+
+Comando de ingestao local:
+
+```bash
+node tools/knowledge/ingest-local-pdf-sources.mjs --sources all --ocr fallback --render missing --ocrNodeModules C:\tmp\sistema-acup-ocr\node_modules
+```
+
+Comando para varrer todas as paginas ingeridas e gerar conexoes candidatas por
+ponto/fonte/pagina:
+
+```bash
+node tools/knowledge/connect-pdf-source-candidates.mjs
+```
+
+Esse conector gera apenas evidencias locais em `review`, mantendo aprovacao
+clinica automatica em zero. Os resultados ficam em:
+
+- `frontend/.local-source-assets/pdf-sources/source-candidate-links.local.json`
+- `frontend/.local-source-assets/pdf-sources/auricular-candidate-links.local.json`
+- `frontend/.local-source-assets/pdf-sources/source-review-drafts.local.json`
+- `docs/pdf-source-learning-2026-06-05.md`
+
+No SuperAdm, a secao `Fontes PDF` usa esses arquivos para priorizar pontos nao
+respondidos, exibir pagina/trecho, gerar traducao pt-BR preliminar de fonte em
+ingles e mostrar percentuais de confiabilidade. Salvar nessa tela cria apenas
+rascunho local em `review`; aprovacao clinica e migracao para Supabase continuam
+fora desse fluxo.

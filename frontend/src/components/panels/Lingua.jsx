@@ -1,17 +1,381 @@
+import { useEffect, useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { CheckGrid } from '../ui/CheckGrid';
-import { tongueOrganAlterations } from '../../data/tongueData';
+import { usePatient } from '../../hooks/PatientContext';
+import { tongueOrganAlterations, resolveTongueAiTag } from '../../data/tongueData';
+import {
+  analyzeTongueImages,
+  confidenceBand,
+  TONGUE_AI_DISCLAIMER,
+} from '../../services/tongueAiService';
+import {
+  uploadTonguePhoto,
+  getTonguePhotoUrl,
+  deleteTonguePhoto,
+} from '../../services/tongueMediaService';
 
 // Imagem extraída do HTML original e salva em public/
 const TONGUE_MAP_SRC = '/tongue-map.jpg';
 
-export function Lingua({ selectedMap, onToggle }) {
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE_MB = 10;
+
+const FINDING_TYPE_LABELS = {
+  color: 'Cor',
+  coating: 'Saburra',
+  shape: 'Forma',
+  moisture: 'Umidade',
+  sublingual: 'Sublingual',
+};
+
+const UPLOAD_STATUS_LABELS = {
+  uploading: { text: 'Enviando ao armazenamento seguro…', level: 'pending' },
+  uploaded: { text: 'No armazenamento seguro', level: 'ok' },
+  'local-only': { text: 'Apenas neste dispositivo (login local) — não será restaurada ao reabrir', level: 'warn' },
+  error: { text: 'Falha no envio — a foto segue apenas neste dispositivo', level: 'warn' },
+};
+
+function formatSize(bytes) {
+  if (bytes == null) return '';
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Slot de upload de foto: clique para escolher, preview, substituir/remover.
+function PhotoUpload({ label, hint, photo, onSelect, onRemove, onError }) {
+  const inputRef = useRef(null);
+
+  function handleFile(event) {
+    const file = event.target.files?.[0];
+    // Permite reescolher o mesmo arquivo depois de remover
+    event.target.value = '';
+    if (!file) return;
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      onError(`Formato não suportado (${file.type || 'desconhecido'}). Use JPG, PNG ou WEBP.`);
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      onError(`Arquivo acima de ${MAX_SIZE_MB} MB. Reduza a imagem antes de enviar.`);
+      return;
+    }
+
+    onError(null);
+    onSelect(file);
+  }
+
+  const status = photo ? UPLOAD_STATUS_LABELS[photo.uploadStatus] : null;
+
+  return (
+    <div className="tongue-upload-slot">
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+        style={{ display: 'none' }}
+        onChange={handleFile}
+      />
+
+      {photo ? (
+        <div className="tongue-photo-preview">
+          {photo.url ? (
+            <img src={photo.url} alt={label} />
+          ) : (
+            <div className="tongue-photo-loading">Carregando foto salva…</div>
+          )}
+          <div className="tongue-photo-meta">
+            <span className="small">{photo.name}{photo.size != null ? ` · ${formatSize(photo.size)}` : ''}</span>
+            <div className="tongue-photo-actions">
+              <button type="button" className="btn-mini" onClick={() => inputRef.current?.click()}>
+                Substituir
+              </button>
+              <button type="button" className="btn-mini danger" onClick={onRemove}>
+                Remover
+              </button>
+            </div>
+          </div>
+          {status && (
+            <p className={`small tongue-photo-status ${status.level}`}>{status.text}</p>
+          )}
+        </div>
+      ) : (
+        <button type="button" className="upload tongue-upload-btn" onClick={() => inputRef.current?.click()}>
+          <b>{label}</b>
+          <span className="small" style={{ display: 'block', marginTop: 4 }}>{hint}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Card de um achado sugerido pela IA, com aceite parcial por item.
+function FindingCard({ finding, onAccept, onIgnore, onUndo, onToggleTag }) {
+  const band = confidenceBand(finding.confidence);
+  const pct = Math.round(finding.confidence * 100);
+  const isPending = finding.status === 'pending';
+
+  return (
+    <div className={`ai-finding-card ${finding.status}`}>
+      <div className="ai-finding-head">
+        <div>
+          <span className="ai-finding-type">{FINDING_TYPE_LABELS[finding.type] || finding.type}</span>
+          <h4>{finding.title}</h4>
+          <p className="ai-finding-pattern">{finding.pattern}</p>
+        </div>
+        <div className={`ai-confidence ${band.level}`} title={`Confiança estimada: ${pct}%`}>
+          <span className="ai-confidence-label">confiança {band.label}</span>
+          <div className="ai-confidence-bar">
+            <div className="ai-confidence-fill" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="small">{pct}%</span>
+        </div>
+      </div>
+
+      <p className="small" style={{ margin: '8px 0' }}>{finding.explanation}</p>
+
+      <div className="ai-finding-checklist">
+        <span className="small"><b>Itens de checklist sugeridos:</b></span>
+        {finding.suggestedTags.map(tag => {
+          const resolved = resolveTongueAiTag(tag);
+          if (!resolved) {
+            return (
+              <span key={tag} className="small ai-tag-unmapped">
+                ⚠ sugestão não mapeada ({tag}) — ignorada
+              </span>
+            );
+          }
+          const checked = finding.checkedTags.includes(tag);
+          return (
+            <label key={tag} className={`ai-tag-option${isPending ? '' : ' locked'}`}>
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={!isPending}
+                onChange={() => onToggleTag(finding.id, tag)}
+              />
+              <span>{resolved.organ}: <b>{resolved.item}</b></span>
+            </label>
+          );
+        })}
+      </div>
+
+      <div className="ai-finding-actions">
+        {isPending ? (
+          <>
+            <button
+              type="button"
+              className="btn-mini accept"
+              disabled={finding.checkedTags.length === 0}
+              onClick={() => onAccept(finding.id)}
+            >
+              ✓ Aceitar selecionados
+            </button>
+            <button type="button" className="btn-mini" onClick={() => onIgnore(finding.id)}>
+              Ignorar
+            </button>
+          </>
+        ) : (
+          <>
+            <span className={`ai-status-badge ${finding.status}`}>
+              {finding.status === 'accepted'
+                ? `Aceito pela profissional (${finding.acceptedTags.length} ${finding.acceptedTags.length === 1 ? 'item' : 'itens'})`
+                : 'Ignorado'}
+            </span>
+            <button type="button" className="btn-mini" onClick={() => onUndo(finding.id)}>
+              Desfazer
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function Lingua({ selectedMap, onToggle, onSetSelection, tongueAi, onTongueAiChange }) {
+  const { selectedPatient } = usePatient();
+  const [analyzing, setAnalyzing] = useState(false);
+  const [error, setError] = useState(null);
+  // Sequência por slot para descartar uploads que terminam depois de a foto
+  // ter sido trocada/removida (evita estado órfão e arquivo perdido no bucket)
+  const uploadSeqRef = useRef({ top: 0, sublingual: 0 });
+  const fetchingUrlsRef = useRef(new Set());
+
+  const { photos, analysis } = tongueAi;
+
+  // Atualiza metadados de uma foto sem invalidar a análise (conclusão de
+  // upload e resolução de URL assinada não são "troca de foto")
+  function updatePhotoMeta(slot, updater) {
+    onTongueAiChange(prev => {
+      const current = prev.photos[slot];
+      if (!current) return prev;
+      return { ...prev, photos: { ...prev.photos, [slot]: updater(current) } };
+    });
+  }
+
+  // Fotos hidratadas da sessão salva têm `path` mas não `url`:
+  // gera a URL assinada de exibição sob demanda.
+  useEffect(() => {
+    for (const slot of ['top', 'sublingual']) {
+      const photo = photos[slot];
+      if (!photo?.path || photo.url || fetchingUrlsRef.current.has(photo.path)) continue;
+      const path = photo.path;
+      fetchingUrlsRef.current.add(path);
+      getTonguePhotoUrl(path).then(url => {
+        fetchingUrlsRef.current.delete(path);
+        if (!url) return;
+        onTongueAiChange(prev => {
+          const current = prev.photos[slot];
+          if (!current || current.path !== path || current.url) return prev;
+          return { ...prev, photos: { ...prev.photos, [slot]: { ...current, url } } };
+        });
+      });
+    }
+  }, [photos, onTongueAiChange]);
+
+  // Trocar foto: preview imediato, análise invalidada, upload em segundo plano
+  async function handlePhotoSelect(slot, file) {
+    setError(null);
+    const seq = ++uploadSeqRef.current[slot];
+    const previewUrl = URL.createObjectURL(file);
+
+    onTongueAiChange(prev => {
+      const previous = prev.photos[slot];
+      if (previous?.url?.startsWith('blob:')) URL.revokeObjectURL(previous.url);
+      if (previous?.path) deleteTonguePhoto(previous.path);
+      return {
+        ...prev,
+        photos: {
+          ...prev.photos,
+          [slot]: {
+            url: previewUrl,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            path: null,
+            uploadStatus: 'uploading',
+          },
+        },
+        analysis: null,
+      };
+    });
+
+    try {
+      const { path, blob, localOnly } = await uploadTonguePhoto({
+        patientId: selectedPatient?.id,
+        slot,
+        file,
+      });
+      if (uploadSeqRef.current[slot] !== seq) {
+        // Foto trocada/removida durante o envio — descarta o resultado
+        if (path) deleteTonguePhoto(path);
+        return;
+      }
+      const compressedUrl = URL.createObjectURL(blob);
+      URL.revokeObjectURL(previewUrl);
+      updatePhotoMeta(slot, p => ({
+        ...p,
+        url: compressedUrl,
+        size: blob.size,
+        type: 'image/webp',
+        path,
+        uploadedAt: new Date().toISOString(),
+        uploadStatus: localOnly ? 'local-only' : 'uploaded',
+      }));
+    } catch (err) {
+      if (uploadSeqRef.current[slot] !== seq) return;
+      updatePhotoMeta(slot, p => ({ ...p, uploadStatus: 'error' }));
+      setError(err.message || 'Falha ao enviar a foto.');
+    }
+  }
+
+  // Remover foto: invalida análise e apaga o arquivo do Storage (best-effort)
+  function handlePhotoRemove(slot) {
+    uploadSeqRef.current[slot] += 1;
+    onTongueAiChange(prev => {
+      const previous = prev.photos[slot];
+      if (previous?.url?.startsWith('blob:')) URL.revokeObjectURL(previous.url);
+      if (previous?.path) deleteTonguePhoto(previous.path);
+      return { ...prev, photos: { ...prev.photos, [slot]: null }, analysis: null };
+    });
+  }
+
+  async function handleAnalyze() {
+    setError(null);
+    setAnalyzing(true);
+    try {
+      const result = await analyzeTongueImages(photos, { patientId: selectedPatient?.id });
+      onTongueAiChange(prev => ({
+        ...prev,
+        analysis: {
+          ...result,
+          findings: result.findings.map(f => ({
+            ...f,
+            status: 'pending',
+            // Pré-seleciona apenas tags que existem no mapeamento
+            checkedTags: f.suggestedTags.filter(tag => resolveTongueAiTag(tag)),
+            acceptedTags: [],
+          })),
+        },
+      }));
+    } catch (err) {
+      setError(err.message || 'Falha ao analisar as imagens.');
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  function updateFinding(findingId, updater) {
+    onTongueAiChange(prev => {
+      if (!prev.analysis) return prev;
+      return {
+        ...prev,
+        analysis: {
+          ...prev.analysis,
+          findings: prev.analysis.findings.map(f => (f.id === findingId ? updater(f) : f)),
+        },
+      };
+    });
+  }
+
+  function handleToggleTag(findingId, tag) {
+    updateFinding(findingId, f => ({
+      ...f,
+      checkedTags: f.checkedTags.includes(tag)
+        ? f.checkedTags.filter(t => t !== tag)
+        : [...f.checkedTags, tag],
+    }));
+  }
+
+  function handleAccept(findingId) {
+    const finding = analysis?.findings.find(f => f.id === findingId);
+    if (!finding) return;
+    // Marca (nunca desmarca) os itens confirmados no checklist oficial
+    finding.checkedTags.forEach(tag => {
+      const resolved = resolveTongueAiTag(tag);
+      if (resolved) onSetSelection(resolved.group, resolved.item, true);
+    });
+    updateFinding(findingId, f => ({ ...f, status: 'accepted', acceptedTags: [...f.checkedTags] }));
+  }
+
+  function handleIgnore(findingId) {
+    updateFinding(findingId, f => ({ ...f, status: 'ignored' }));
+  }
+
+  // Desfazer volta o card para pendente; itens já marcados no checklist
+  // permanecem — desmarcar é decisão explícita da profissional no checklist.
+  function handleUndo(findingId) {
+    updateFinding(findingId, f => ({ ...f, status: 'pending', acceptedTags: [] }));
+  }
+
+  const pendingCount = analysis?.findings.filter(f => f.status === 'pending').length ?? 0;
+
   return (
     <Panel title="Inspeção da língua">
       <div className="box">
-        <b>Proposta do módulo:</b> a imagem fixa funciona como mapa-guia. A foto do paciente fica
-        ao lado para comparação clínica e, abaixo, o checklist organiza os achados por região/órgão.
-        Assim, a IA cruza mapa + foto + marcações e gera a hipótese energética com mais precisão.
+        <b>Como funciona:</b> envie a foto da língua (e a sublingual, se houver), peça a análise e
+        revise as sugestões da IA. Nada entra no raciocínio clínico automaticamente — apenas os
+        achados que você aceitar marcam o checklist abaixo. As fotos são comprimidas, têm os
+        metadados removidos e ficam em armazenamento privado, vinculadas ao seu acesso.
       </div>
 
       <div className="tongue-duo">
@@ -22,17 +386,89 @@ export function Lingua({ selectedMap, onToggle }) {
         </div>
 
         <div className="tongue-card">
-          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Foto do paciente</h3>
-          <div className="upload" style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            Adicionar foto superior da língua
-          </div>
-          <div className="upload" style={{ marginTop: 12 }}>
-            Adicionar foto sublingual
-          </div>
+          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Fotos do paciente</h3>
+
+          <PhotoUpload
+            label="Adicionar foto superior da língua"
+            hint="JPG, PNG ou WEBP · até 10 MB"
+            photo={photos.top}
+            onSelect={file => handlePhotoSelect('top', file)}
+            onRemove={() => handlePhotoRemove('top')}
+            onError={setError}
+          />
+
+          <PhotoUpload
+            label="Adicionar foto sublingual (opcional)"
+            hint="Face inferior da língua, para avaliação de estase"
+            photo={photos.sublingual}
+            onSelect={file => handlePhotoSelect('sublingual', file)}
+            onRemove={() => handlePhotoRemove('sublingual')}
+            onError={setError}
+          />
+
+          {error && <div className="alert" style={{ marginTop: 10 }}>{error}</div>}
+
+          <button
+            type="button"
+            className="ai-analyze-btn"
+            disabled={!photos.top || analyzing || photos.top.uploadStatus === 'uploading' || photos.sublingual?.uploadStatus === 'uploading'}
+            onClick={handleAnalyze}
+          >
+            {analyzing ? 'Analisando imagens…' : analysis ? 'Analisar novamente' : 'Analisar com IA'}
+          </button>
+          {!photos.top && (
+            <p className="small" style={{ marginTop: 6 }}>
+              Envie ao menos a foto superior para habilitar a análise.
+            </p>
+          )}
+          {(photos.top?.uploadStatus === 'uploading' || photos.sublingual?.uploadStatus === 'uploading') && (
+            <p className="small" style={{ marginTop: 6 }}>
+              Aguardando o envio ao armazenamento seguro…
+            </p>
+          )}
         </div>
       </div>
 
+      {analysis && (
+        <div className="ai-findings-section">
+          <h3>
+            Sugestões da IA para conferência
+            {pendingCount > 0 && <span className="ai-pending-pill">{pendingCount} pendente{pendingCount === 1 ? '' : 's'}</span>}
+          </h3>
+          <p className="small">
+            {TONGUE_AI_DISCLAIMER} Modelo: {analysis.modelVersion}
+            {analysis.modelVersion?.startsWith('mock') ? ' (simulado)' : ''}.
+          </p>
+          {analysis.warning && (
+            <div className="alert" style={{ marginTop: 8 }}>
+              <b>Aviso da análise:</b> {analysis.warning}
+            </div>
+          )}
+          {analysis.findings.length === 0 && (
+            <p className="small" style={{ marginTop: 8 }}>
+              Nenhum achado relatado pela IA para estas fotos.
+            </p>
+          )}
+
+          <div className="ai-findings-grid">
+            {analysis.findings.map(finding => (
+              <FindingCard
+                key={finding.id}
+                finding={finding}
+                onAccept={handleAccept}
+                onIgnore={handleIgnore}
+                onUndo={handleUndo}
+                onToggleTag={handleToggleTag}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <h3 style={{ marginTop: 24 }}>Checklist único por órgão / região do mapa</h3>
+      <p className="small" style={{ marginTop: -6 }}>
+        Achados confirmados pela profissional. Somente o que está marcado aqui entra no diagnóstico.
+      </p>
       <div className="organ-grid">
         {Object.entries(tongueOrganAlterations).map(([organ, data]) => (
           <div key={organ} className="organ-box">
@@ -47,12 +483,6 @@ export function Lingua({ selectedMap, onToggle }) {
             />
           </div>
         ))}
-      </div>
-
-      <div className="box" style={{ marginTop: 16 }}>
-        <b>Leitura assistida:</b> agora a IA não precisa cruzar um achado geral solto com uma região marcada separadamente. 
-        Exemplo: “laterais vermelhas” já pesa diretamente para Fígado/Vesícula; “centro inchado com marcas dentárias” 
-        já pesa para Baço/Estômago; “ponta muito vermelha” já pesa para Coração/Shen.
       </div>
     </Panel>
   );

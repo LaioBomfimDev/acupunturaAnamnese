@@ -5,8 +5,144 @@ import { FieldInput } from '../ui/FieldInput';
 import { checklists } from '../../data/checklists';
 import { usePatient } from '../../hooks/PatientContext';
 import { getPatientAge } from '../../hooks/useClinicState';
+import {
+  suggestAnamneseMarks,
+  confidenceBand,
+  ANAMNESE_AI_DISCLAIMER,
+} from '../../services/anamneseAiService';
 
-export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAnswers }) {
+// Rótulos amigáveis dos grupos do checklist para exibir nas sugestões.
+const GROUP_LABELS = {
+  queixaEstruturada: 'Queixa',
+  historico: 'Histórico',
+  substanciasUso: 'Substâncias',
+  sono: 'Sono',
+  digestao: 'Digestão',
+  gineco: 'Ginecológico',
+  dor: 'Dor',
+  clima: 'Clima',
+  emocoes: 'Emoções',
+  fezes: 'Fezes / eliminação',
+  seguranca: '⚠ Segurança',
+};
+
+// Assistente de IA: lê o texto livre da anamnese e sugere marcações de
+// checklist para a profissional aceitar. Sob demanda (botão), nunca ao vivo.
+function AnamneseAiAssistant({ state, selectedMap, onSetSelection, patientName }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  async function handleSuggest() {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await suggestAnamneseMarks(state, { patientName });
+      setResult({
+        ...res,
+        suggestions: res.suggestions.map((s, i) => ({
+          ...s,
+          id: `${s.group}:${s.item}:${i}`,
+          // Já marcado no checklist conta como aceito de saída.
+          status: selectedMap[`${s.group}:${s.item}`] ? 'accepted' : 'pending',
+        })),
+      });
+    } catch (err) {
+      setError(err.message || 'Falha ao gerar sugestões.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updateSuggestion(id, status) {
+    setResult(prev => prev && ({
+      ...prev,
+      suggestions: prev.suggestions.map(s => (s.id === id ? { ...s, status } : s)),
+    }));
+  }
+
+  function handleAccept(s) {
+    onSetSelection(s.group, s.item, true);
+    updateSuggestion(s.id, 'accepted');
+  }
+
+  const pending = result?.suggestions.filter(s => s.status === 'pending').length ?? 0;
+  const isMock = result?.modelVersion?.startsWith('mock');
+
+  return (
+    <div className="box" style={{ borderColor: 'var(--gold)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <b>Assistente de marcações (IA)</b>
+          <p className="small" style={{ margin: '4px 0 0' }}>{ANAMNESE_AI_DISCLAIMER}</p>
+        </div>
+        <button type="button" className="ai-analyze-btn" disabled={loading} onClick={handleSuggest} style={{ margin: 0, whiteSpace: 'nowrap' }}>
+          {loading ? 'Lendo o texto…' : result ? 'Sugerir novamente' : 'Sugerir marcações com IA'}
+        </button>
+      </div>
+
+      {error && <div className="alert" style={{ marginTop: 10 }}>{error}</div>}
+
+      {result && (
+        <div className="ai-findings-section" style={{ marginTop: 12 }}>
+          <p className="small">
+            Modelo: {result.modelVersion}{isMock ? ' (simulado)' : ''}.
+            {pending > 0 && <span className="ai-pending-pill">{pending} pendente{pending === 1 ? '' : 's'}</span>}
+          </p>
+          {result.warning && (
+            <div className="alert" style={{ marginTop: 8 }}><b>Aviso:</b> {result.warning}</div>
+          )}
+          {result.suggestions.length === 0 && (
+            <p className="small" style={{ marginTop: 8 }}>Nenhuma marcação sugerida para este texto.</p>
+          )}
+
+          <div className="ai-findings-grid">
+            {result.suggestions.map(s => {
+              const band = confidenceBand(s.confidence);
+              const pct = Math.round(s.confidence * 100);
+              const isSeguranca = s.group === 'seguranca';
+              return (
+                <div key={s.id} className={`ai-finding-card ${s.status}`}>
+                  <div className="ai-finding-head">
+                    <div>
+                      <span className="ai-finding-type">{GROUP_LABELS[s.group] || s.group}</span>
+                      <h4 style={isSeguranca ? { color: '#b3261e' } : undefined}>{s.item}</h4>
+                      <p className="ai-finding-pattern small">{s.rationale}</p>
+                    </div>
+                    <div className={`ai-confidence ${band.level}`} title={`Confiança estimada: ${pct}%`}>
+                      <span className="ai-confidence-label">confiança {band.label}</span>
+                      <div className="ai-confidence-bar"><div className="ai-confidence-fill" style={{ width: `${pct}%` }} /></div>
+                      <span className="small">{pct}%</span>
+                    </div>
+                  </div>
+                  <div className="ai-finding-actions">
+                    {s.status === 'pending' ? (
+                      <>
+                        <button type="button" className="btn-mini accept" onClick={() => handleAccept(s)}>✓ Aceitar</button>
+                        <button type="button" className="btn-mini" onClick={() => updateSuggestion(s.id, 'ignored')}>Ignorar</button>
+                      </>
+                    ) : (
+                      <>
+                        <span className={`ai-status-badge ${s.status}`}>
+                          {s.status === 'accepted' ? 'Marcado no checklist' : 'Ignorado'}
+                        </span>
+                        {s.status === 'ignored' && (
+                          <button type="button" className="btn-mini" onClick={() => updateSuggestion(s.id, 'pending')}>Desfazer</button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelection, onFillTestAnswers }) {
   const { selectedPatient, updatePatient } = usePatient();
   const [showGineco, setShowGineco] = useState(false);
   const [editingPatient, setEditingPatient] = useState(false);
@@ -126,6 +262,15 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <FieldInput label="História da queixa / evolução / fatores de piora e melhora" field="historia" value={state.historia} onChange={onUpdate} textarea />
       <h4>Características da queixa</h4>
       <CheckGrid group="queixaEstruturada" items={checklists.queixaEstruturada} selectedMap={selectedMap} onToggle={onToggle} />
+
+      {onSetSelection && (
+        <AnamneseAiAssistant
+          state={state}
+          selectedMap={selectedMap}
+          onSetSelection={onSetSelection}
+          patientName={selectedPatient?.name || state.nome}
+        />
+      )}
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>3. Sono e emoções</h3>
       <div className="alert" style={{ background: '#f8fbff', borderColor: '#c9d8ef', color: '#061F3A' }}>

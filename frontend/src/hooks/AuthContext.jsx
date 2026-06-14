@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { getClinicForProfile } from '../services/clinicService';
 
 const AuthContext = createContext({});
 const LOCAL_FALLBACK_ENABLED = import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === 'true';
@@ -60,6 +61,21 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
 
+  async function loadClinicForProfile(profileData) {
+    if (!profileData) return { clinic: null, clinicLoadError: '' };
+
+    try {
+      const clinic = await getClinicForProfile(profileData);
+      return { clinic, clinicLoadError: '' };
+    } catch (error) {
+      console.error('Erro ao carregar clínica do perfil:', error);
+      return {
+        clinic: null,
+        clinicLoadError: error.message || 'Não foi possível carregar os dados da clínica.',
+      };
+    }
+  }
+
   async function loadProfileForUser(nextUser) {
     setProfileError('');
 
@@ -70,15 +86,28 @@ export const AuthProvider = ({ children }) => {
 
     if (nextUser._isLocal) {
       const localProfile = createLocalProfile(nextUser);
-      setProfile(localProfile);
-      return localProfile;
+      const clinicResult = await loadClinicForProfile(localProfile);
+      const withClinic = { ...localProfile, ...clinicResult };
+      setProfile(withClinic);
+      return withClinic;
     }
 
-    const { data, error } = await supabase
+    const baseColumns = 'id,email,username,full_name,role,phone,document,professional_registration,specialty,clinic_name,is_active,must_change_password,password_changed_at';
+
+    let { data, error } = await supabase
       .from('profiles')
-      .select('id,email,username,full_name,role,phone,document,professional_registration,specialty,clinic_name,is_active,must_change_password,password_changed_at')
+      .select(`${baseColumns},clinic_id`)
       .eq('id', nextUser.id)
       .maybeSingle();
+
+    // Banco ainda sem a migração de clínicas: refaz sem a coluna clinic_id
+    if (error && /clinic_id/i.test(error.message || '')) {
+      ({ data, error } = await supabase
+        .from('profiles')
+        .select(baseColumns)
+        .eq('id', nextUser.id)
+        .maybeSingle());
+    }
 
     if (error) {
       console.error('Erro ao carregar perfil:', error);
@@ -87,8 +116,10 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
 
-    setProfile(data);
-    return data;
+    const clinicResult = await loadClinicForProfile(data);
+    const withClinic = data ? { ...data, ...clinicResult } : data;
+    setProfile(withClinic);
+    return withClinic;
   }
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import {
   KM_AGENT_DRAFT_INDEX_URL,
   getKmAgentLocationPtBr,
   getKmAgentNeedlingPtBr,
+  getKmAgentAutomaticTranslationMeta,
   getKmAgentDraftStats,
   getKmAgentDraftTitlePtBr,
   getKmAgentTranslationBadges,
@@ -13,13 +14,21 @@ import {
   findAtlasEdneaSourceReference,
   loadAtlasEdneaSourceIndex,
 } from '../../knowledge/sourceReferences';
+import { isCommonlyUsedPointKey } from '../../knowledge/commonlyUsedPoints';
 import {
   downloadKnowledgeReviews,
   getDeepCuratedKnowledgeReviews,
+  getHighConfidenceKnowledgeReviews,
   getLocalKnowledgeReviews,
   removeLocalKnowledgeReview,
   saveLocalKnowledgeReview,
 } from '../../services/knowledgeAdminService';
+
+const CONFIDENCE_TABS = [
+  { id: 'high', label: 'Alta automática' },
+  { id: 'medium', label: 'Média' },
+  { id: 'low', label: 'Baixa' },
+];
 
 const EMPTY_REVIEW = {
   actions: '',
@@ -28,6 +37,14 @@ const EMPTY_REVIEW = {
   relatedPatterns: '',
   techniques: 'agulha, laser, stiper',
   clinicalNote: '',
+  names: { pt: '', zh: '' },
+  relatedSymptoms: '',
+  atlasName: '',
+  aliases: '',
+  needlingDepth: '',
+  stimulationDirection: '',
+  approvalNote: '',
+  category: '',
 };
 
 function asSearchText(value) {
@@ -72,6 +89,14 @@ function reviewToForm(review) {
     cautions: Array.isArray(review.cautions) ? review.cautions.join(', ') : review.cautions || '',
     relatedPatterns: Array.isArray(review.relatedPatterns) ? review.relatedPatterns.join(', ') : review.relatedPatterns || '',
     techniques: Array.isArray(review.techniques) ? review.techniques.join(', ') : review.techniques || '',
+    names: review.names || { pt: '', zh: '' },
+    relatedSymptoms: Array.isArray(review.relatedSymptoms) ? review.relatedSymptoms.join(', ') : review.relatedSymptoms || '',
+    aliases: Array.isArray(review.aliases) ? review.aliases.join(', ') : review.aliases || '',
+    atlasName: review.atlasName || '',
+    needlingDepth: review.needlingDepth || '',
+    stimulationDirection: review.stimulationDirection || '',
+    approvalNote: review.approvalNote || '',
+    category: review.category || '',
   };
 }
 
@@ -86,7 +111,15 @@ function formatPageList(pages = []) {
 function getAtlasConfidenceTone(confidence) {
   if (confidence === 'high') return 'active';
   if (confidence === 'medium') return 'pending';
-  return 'blocked';
+  if (confidence === 'loading') return 'pending';
+  return 'warning';
+}
+
+function getAtlasConfidenceLabel(confidence) {
+  if (confidence === 'high') return 'Alta confiança';
+  if (confidence === 'medium') return 'Média confiança';
+  if (confidence === 'loading') return 'Carregando Atlas';
+  return 'Baixa confiança';
 }
 
 function getAtlasStatusLabel(status) {
@@ -167,11 +200,13 @@ export function KnowledgeAdminPanel() {
   const [atlasSourceLoadState, setAtlasSourceLoadState] = useState('loading');
   const [query, setQuery] = useState('');
   const [meridianFilter, setMeridianFilter] = useState('all');
+  const [confidenceTab, setConfidenceTab] = useState('medium');
   const [selectedDraft, setSelectedDraft] = useState(null);
   const [reviewForm, setReviewForm] = useState(() => draftToReviewForm(null));
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviews, setReviews] = useState(() => getLocalKnowledgeReviews());
   const [curatedReviews, setCuratedReviews] = useState([]);
+  const [highConfidenceReviews, setHighConfidenceReviews] = useState([]);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -213,12 +248,19 @@ export function KnowledgeAdminPanel() {
   useEffect(() => {
     let cancelled = false;
 
-    getDeepCuratedKnowledgeReviews()
-      .then(items => {
-        if (!cancelled) setCuratedReviews(items);
+    Promise.all([
+      getDeepCuratedKnowledgeReviews(),
+      getHighConfidenceKnowledgeReviews(),
+    ])
+      .then(([curatedItems, highConfidenceItems]) => {
+        if (cancelled) return;
+        setCuratedReviews(curatedItems);
+        setHighConfidenceReviews(highConfidenceItems.filter(item => item.status === 'approved_local'));
       })
       .catch(() => {
-        if (!cancelled) setCuratedReviews([]);
+        if (cancelled) return;
+        setCuratedReviews([]);
+        setHighConfidenceReviews([]);
       });
 
     return () => {
@@ -272,20 +314,76 @@ export function KnowledgeAdminPanel() {
     });
   }, [drafts, query, meridianFilter]);
 
+  const filteredDraftRows = useMemo(() => {
+    return filteredDrafts.map(item => {
+      const atlasReference = atlasSourceLoadState === 'ready'
+        ? findAtlasEdneaSourceReference(atlasSourceIndex, item.code)
+        : null;
+      const confidence = atlasSourceLoadState === 'ready'
+        ? atlasReference?.confidence || 'low'
+        : 'loading';
+
+      return {
+        atlasReference,
+        confidence,
+        item,
+      };
+    });
+  }, [atlasSourceIndex, atlasSourceLoadState, filteredDrafts]);
+
+  const confidenceCounts = useMemo(() => {
+    return CONFIDENCE_TABS.reduce((counts, tab) => {
+      counts[tab.id] = filteredDraftRows.filter(row => row.confidence === tab.id).length;
+      return counts;
+    }, {});
+  }, [filteredDraftRows]);
+
+  const activeDraftRows = useMemo(() => {
+    if (atlasSourceLoadState !== 'ready') return filteredDraftRows;
+    return filteredDraftRows.filter(row => row.confidence === confidenceTab);
+  }, [atlasSourceLoadState, confidenceTab, filteredDraftRows]);
+
   const selectedExistingReview = reviews.find(item => reviewMatchesCode(item, selectedDraft?.code));
+  const selectedAutomaticReview = highConfidenceReviews.find(item => reviewMatchesCode(item, selectedDraft?.code));
   const selectedCuratedReview = curatedReviews.find(item => reviewMatchesCode(item, selectedDraft?.code));
+  const selectedTranslationMeta = useMemo(
+    () => getKmAgentAutomaticTranslationMeta(selectedDraft || {}),
+    [selectedDraft],
+  );
   const selectedAtlasSource = useMemo(
     () => findAtlasEdneaSourceReference(atlasSourceIndex, selectedDraft?.code),
     [atlasSourceIndex, selectedDraft?.code],
   );
+  const selectedDraftIndex = activeDraftRows.findIndex(row => row.item.id === selectedDraft?.id);
+  const canSelectPreviousDraft = selectedDraftIndex > 0;
+  const canSelectNextDraft = selectedDraftIndex >= 0 && selectedDraftIndex < activeDraftRows.length - 1;
+
+  function getReviewFormForDraft(item) {
+    const existingReview = reviews.find(review => reviewMatchesCode(review, item.code));
+    const automaticReview = highConfidenceReviews.find(review => reviewMatchesCode(review, item.code));
+    const curatedReview = curatedReviews.find(review => reviewMatchesCode(review, item.code));
+    return existingReview
+      ? reviewToForm(existingReview)
+      : automaticReview
+        ? reviewToForm(automaticReview)
+        : curatedReview
+          ? reviewToForm(curatedReview)
+          : draftToReviewForm(item);
+  }
 
   function selectDraft(item) {
-    const existingReview = reviews.find(review => reviewMatchesCode(review, item.code));
-    const curatedReview = curatedReviews.find(review => reviewMatchesCode(review, item.code));
     setSelectedDraft(item);
-    setReviewForm(existingReview ? reviewToForm(existingReview) : curatedReview ? reviewToForm(curatedReview) : draftToReviewForm(item));
+    setReviewForm(getReviewFormForDraft(item));
     setReviewDialogOpen(true);
     setMessage('');
+  }
+
+  function selectDraftByOffset(offset) {
+    if (selectedDraftIndex < 0) return;
+    const nextIndex = Math.min(Math.max(selectedDraftIndex + offset, 0), activeDraftRows.length - 1);
+    const nextDraft = activeDraftRows[nextIndex]?.item;
+    if (!nextDraft || nextDraft.id === selectedDraft?.id) return;
+    selectDraft(nextDraft);
   }
 
   function setField(field, value) {
@@ -302,7 +400,8 @@ export function KnowledgeAdminPanel() {
       enrichment: selectedDraft ? {
         locationTranslationStatus: selectedDraft.location?.translationStatus || null,
         needlingTranslationStatus: selectedDraft.needling?.translationStatus || null,
-        needlingUnresolvedTerms: selectedDraft.needling?.unresolvedTerms || [],
+        needlingUnresolvedTerms: selectedTranslationMeta.unresolvedTerms,
+        automaticPtBrGlossaryHits: selectedTranslationMeta.glossaryHits,
         acukgSummary: selectedDraft.acukgSummary || null,
         provenance: selectedDraft.provenance || [],
       } : null,
@@ -311,6 +410,8 @@ export function KnowledgeAdminPanel() {
       cautions: splitCsv(reviewForm.cautions),
       relatedPatterns: splitCsv(reviewForm.relatedPatterns),
       techniques: splitCsv(reviewForm.techniques),
+      relatedSymptoms: splitCsv(reviewForm.relatedSymptoms),
+      aliases: splitCsv(reviewForm.aliases),
     });
     setReviews(getLocalKnowledgeReviews());
     setReviewForm(prev => ({
@@ -321,6 +422,8 @@ export function KnowledgeAdminPanel() {
       cautions: review.cautions.join(', '),
       relatedPatterns: review.relatedPatterns.join(', '),
       techniques: review.techniques.join(', '),
+      relatedSymptoms: review.relatedSymptoms.join(', '),
+      aliases: review.aliases.join(', '),
     }));
     setMessage(status === 'approved_local' ? 'Ponto marcado como aprovado localmente.' : 'Revisão salva como rascunho.');
   }
@@ -328,7 +431,7 @@ export function KnowledgeAdminPanel() {
   function removeReview(id) {
     removeLocalKnowledgeReview(id);
     setReviews(getLocalKnowledgeReviews());
-      if (selectedDraft) setReviewForm(draftToReviewForm(selectedDraft));
+    if (selectedDraft) setReviewForm(getReviewFormForDraft(selectedDraft));
     setMessage('Revisão local removida.');
   }
 
@@ -377,6 +480,11 @@ export function KnowledgeAdminPanel() {
           <b>{curatedReviews.length}</b>
           <p>sugestões locais</p>
         </div>
+        <div className="security-card admin-stat-card active">
+          <span>Alta confiança</span>
+          <b>{highConfidenceReviews.length}</b>
+          <p>aprovados locais automáticos</p>
+        </div>
       </div>
 
       {message && <div className="inline-success">{message}</div>}
@@ -409,20 +517,42 @@ export function KnowledgeAdminPanel() {
             </select>
           </div>
 
+          <div className="knowledge-confidence-tabs" role="tablist" aria-label="Faixas de confiança Atlas">
+            {CONFIDENCE_TABS.map(tab => {
+              const isActive = confidenceTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`knowledge-confidence-tab ${tab.id}${isActive ? ' active' : ''}`}
+                  onClick={() => setConfidenceTab(tab.id)}
+                >
+                  <span>{tab.label}</span>
+                  <b>{atlasSourceLoadState === 'ready' ? confidenceCounts[tab.id] || 0 : '...'}</b>
+                </button>
+              );
+            })}
+          </div>
+
           {draftLoadState === 'loading' ? (
             <div className="empty-state">Carregando pontos importados...</div>
           ) : draftLoadState === 'error' ? (
             <div className="inline-error">Não foi possível carregar o índice KM-Agent enriquecido.</div>
+          ) : activeDraftRows.length === 0 ? (
+            <div className="empty-state">Nenhum rascunho nesta faixa de confiança com os filtros atuais.</div>
           ) : (
             <div className="admin-user-list knowledge-draft-list">
-              {filteredDrafts.slice(0, 120).map(item => {
+              {activeDraftRows.slice(0, 120).map(({ item, atlasReference, confidence }) => {
                 const hasReview = reviews.some(review => reviewMatchesCode(review, item.code));
+                const hasAutomaticReview = highConfidenceReviews.some(review => reviewMatchesCode(review, item.code));
                 const hasCuratedReview = curatedReviews.some(review => reviewMatchesCode(review, item.code));
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    className={`admin-user-row admin-user-button ${selectedDraft?.id === item.id ? 'selected' : ''}`}
+                    className={`admin-user-row admin-user-button knowledge-confidence-row ${confidence} ${selectedDraft?.id === item.id ? 'selected' : ''}`}
                     onClick={() => selectDraft(item)}
                   >
                     <div className="admin-user-main">
@@ -438,9 +568,16 @@ export function KnowledgeAdminPanel() {
                       </span>
                     </div>
                     <div className="admin-user-meta">
-                      <span className={`admin-status ${hasReview ? 'pending' : 'blocked'}`}>
-                        {hasReview ? 'Em revisão' : hasCuratedReview ? 'Sugestão curada' : 'Rascunho'}
+                      {isCommonlyUsedPointKey(item.code || item.displayCode) && (
+                        <span className="admin-status active">⭐ Comumente usado</span>
+                      )}
+                      <span className={`admin-status ${getAtlasConfidenceTone(confidence)}`}>
+                        {getAtlasConfidenceLabel(confidence)}
                       </span>
+                      <span className={`admin-status ${hasReview ? 'pending' : hasAutomaticReview ? 'active' : hasCuratedReview ? 'pending' : 'blocked'}`}>
+                        {hasReview ? 'Em revisão' : hasAutomaticReview ? 'Aprovado automático' : hasCuratedReview ? 'Sugestão curada' : 'Rascunho'}
+                      </span>
+                      {atlasReference?.referenceLabel && <small>{atlasReference.referenceLabel}</small>}
                     </div>
                   </button>
                 );
@@ -468,7 +605,30 @@ export function KnowledgeAdminPanel() {
                 <h2>{reviewForm.displayCode || selectedDraft.code}</h2>
                 <span>{reviewForm.title || getDraftTitle(selectedDraft)}</span>
               </div>
-              <button className="quiet-button" type="button" onClick={() => setReviewDialogOpen(false)}>Fechar</button>
+              <div className="knowledge-review-dialog-actions">
+                <div className="knowledge-review-nav" aria-label="Navegação entre rascunhos da aba atual">
+                  <button
+                    type="button"
+                    className="knowledge-review-nav-button"
+                    onClick={() => selectDraftByOffset(-1)}
+                    disabled={!canSelectPreviousDraft}
+                    title="Rascunho anterior"
+                  >
+                    ‹
+                  </button>
+                  <span>{selectedDraftIndex >= 0 ? `${selectedDraftIndex + 1}/${activeDraftRows.length}` : '-'}</span>
+                  <button
+                    type="button"
+                    className="knowledge-review-nav-button"
+                    onClick={() => selectDraftByOffset(1)}
+                    disabled={!canSelectNextDraft}
+                    title="Próximo rascunho"
+                  >
+                    ›
+                  </button>
+                </div>
+                <button className="quiet-button" type="button" onClick={() => setReviewDialogOpen(false)}>Fechar</button>
+              </div>
             </div>
 
             {message && <div className="inline-success">{message}</div>}
@@ -481,6 +641,14 @@ export function KnowledgeAdminPanel() {
                   loadState={atlasSourceLoadState}
                 />
 
+                {selectedAutomaticReview && !selectedExistingReview && (
+                  <div className="knowledge-source-note">
+                    <b>Aprovação automática local</b>
+                    <span>Este ponto está no pacote de alta confiança e já entra como approved_local neste ambiente.</span>
+                    <small>Revisão profissional final continua obrigatória antes de migração para Supabase/produção.</small>
+                  </div>
+                )}
+
                 {selectedDraft?.provenance?.length > 0 && (
                   <div className="knowledge-source-note">
                     <b>Proveniência</b>
@@ -488,9 +656,21 @@ export function KnowledgeAdminPanel() {
                   </div>
                 )}
 
-                {selectedDraft?.needling?.unresolvedTerms?.length > 0 && (
+                {selectedTranslationMeta.glossaryHits.length > 0 && (
+                  <div className="knowledge-source-note">
+                    <b>Tradução automática pt-BR</b>
+                    <span>
+                      {selectedTranslationMeta.glossaryHits.length} termos técnicos foram normalizados pelo glossário estático de MTC e agulhamento.
+                    </span>
+                    <small>
+                      Exemplos: {selectedTranslationMeta.glossaryHits.slice(0, 6).map(item => `${item.source} = ${item.ptBr}`).join('; ')}.
+                    </small>
+                  </div>
+                )}
+
+                {selectedTranslationMeta.unresolvedTerms.length > 0 && (
                   <div className="inline-error">
-                    Técnica com termos não resolvidos: {selectedDraft.needling.unresolvedTerms.slice(0, 8).join(', ')}. Revisar antes de aprovar.
+                    Técnica com termos ainda pendentes: {selectedTranslationMeta.unresolvedTerms.slice(0, 8).join(', ')}. Revisar antes de aprovar.
                   </div>
                 )}
 
@@ -566,6 +746,91 @@ export function KnowledgeAdminPanel() {
                   <label className="admin-notes">
                     Agulhamento / técnica
                     <textarea value={reviewForm.needling} onChange={event => setField('needling', event.target.value)} />
+                  </label>
+                  <label className="admin-notes">
+                    Nome em português
+                    <input
+                      value={reviewForm.names?.pt || ''}
+                      onChange={e => setField('names', { ...reviewForm.names, pt: e.target.value })}
+                      placeholder="Ex: Zusanli"
+                    />
+                  </label>
+                  <label className="admin-notes">
+                    Nome em chinês
+                    <input
+                      value={reviewForm.names?.zh || ''}
+                      onChange={e => setField('names', { ...reviewForm.names, zh: e.target.value })}
+                      placeholder="Ex: 足三里"
+                    />
+                  </label>
+                  <label className="admin-notes">
+                    Sintomas relacionados (separados por vírgula)
+                    <textarea
+                      value={reviewForm.relatedSymptoms}
+                      onChange={e => setField('relatedSymptoms', e.target.value)}
+                      placeholder="insônia, cefaleia, fadiga, dor cervical..."
+                      rows={2}
+                    />
+                    <small style={{ display: 'block', marginTop: '4px', opacity: 0.8 }}>Permite que o ponto apareça nas recomendações por sintoma</small>
+                  </label>
+                  <label className="admin-notes">
+                    Nome no Atlas Ednéa
+                    <input
+                      value={reviewForm.atlasName || ''}
+                      onChange={e => setField('atlasName', e.target.value)}
+                      placeholder="Ex: E36, VB34"
+                    />
+                  </label>
+                  <label className="admin-notes">
+                    Aliases (códigos alternativos, separados por vírgula)
+                    <input
+                      value={reviewForm.aliases}
+                      onChange={e => setField('aliases', e.target.value)}
+                      placeholder="Ex: ST36, E36, Estômago36"
+                    />
+                  </label>
+                  <label className="admin-notes">
+                    Profundidade de agulhamento
+                    <input
+                      value={reviewForm.needlingDepth || ''}
+                      onChange={e => setField('needlingDepth', e.target.value)}
+                      placeholder="Ex: 1,0 – 1,5 cun"
+                    />
+                  </label>
+                  <label className="admin-notes">
+                    Direção de estimulação
+                    <input
+                      value={reviewForm.stimulationDirection || ''}
+                      onChange={e => setField('stimulationDirection', e.target.value)}
+                      placeholder="Ex: Tonificação, Sedação"
+                    />
+                  </label>
+                  <label className="admin-notes">
+                    Categoria clínica
+                    <select
+                      value={reviewForm.category || ''}
+                      onChange={e => setField('category', e.target.value)}
+                    >
+                      <option value="">Selecionar...</option>
+                      <option value="ponto_sistemico">Ponto sistêmico</option>
+                      <option value="ponto_especial">Ponto especial</option>
+                      <option value="back_shu">Back-Shu</option>
+                      <option value="front_mu">Front-Mu</option>
+                      <option value="yuan">Yuan (Fonte)</option>
+                      <option value="luo">Luo (Conexão)</option>
+                      <option value="he_mar">He-Mar</option>
+                      <option value="confluente">Confluente</option>
+                      <option value="auriculo">Auricular</option>
+                    </select>
+                  </label>
+                  <label className="admin-notes">
+                    Nota de aprovação
+                    <textarea
+                      value={reviewForm.approvalNote || ''}
+                      onChange={e => setField('approvalNote', e.target.value)}
+                      placeholder="Fonte consultada, justificativa de aprovação, incertezas..."
+                      rows={3}
+                    />
                   </label>
                   <label className="admin-notes">
                     Nota de revisão

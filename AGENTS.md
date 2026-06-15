@@ -110,6 +110,13 @@ Modelo para novas entradas:
 
 ### Entradas Registradas
 
+### 2026-06-15 - Fontes PDF locais sem rota protegida em produção
+
+- Sintoma: a área SuperAdm > Fontes PDF exibiu `HTTP 404` e as páginas/imagens renderizadas dos PDFs não apareciam após deploy, porque os arquivos estavam em `frontend/.local-source-assets` e não eram publicados.
+- Causa: a UI referenciava URLs públicas (`/knowledge/source-assets/...`) para assets bibliográficos que foram corretamente mantidos fora do bundle, mas ainda não havia camada protegida de Storage privado + URL assinada para produção.
+- Regra nova: fontes visuais bibliográficas (PDFs renderizados, páginas webp, OCR/texto e manifestos `.local.json`) nunca devem depender de rota pública em produção. Use bucket privado `knowledge-source-assets`, manifesto `knowledge_source_assets` e Edge Function `knowledge-source-asset-url`; o frontend só pode enviar `assetKey`, nunca `bucket`/`object_path`, e deve ter fallback local apenas em desenvolvimento.
+- Teste ou verificação obrigatória: teste de regressão deve validar sanitização de `assetKey`, bucket privado/RLS do manifesto e que a Edge Function exige `assertSuperAdmin` antes de gerar `createSignedUrl`.
+
 ### 2026-06-12 - Grupo novo de checklist sem peso de evidência no analyzer
 
 - Sintoma: itens do checklist `linguaOrgao:*` (painel Língua) entravam no texto clínico (`getAllClinicalText`), mas não contavam no peso de evidência de língua em `diagnosticProfile` (que somava apenas os grupos legados `lingua` e `regioesLingua`), nem nos contadores do `PainelInicial` e dos "Achados rápidos" do `App.jsx`.

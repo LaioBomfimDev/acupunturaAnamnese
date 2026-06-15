@@ -23,6 +23,7 @@ import {
   removeLocalKnowledgeReview,
   saveLocalKnowledgeReview,
 } from '../../services/knowledgeAdminService';
+import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
 
 const CONFIDENCE_TABS = [
   { id: 'high', label: 'Alta automática' },
@@ -129,8 +130,59 @@ function getAtlasStatusLabel(status) {
 }
 
 function AtlasSourceReferencePanel({ reference, loadState }) {
-  const imageSources = (reference?.imageUrls || []).filter(item => item.url);
-  const hasImages = Boolean(reference?.imageAvailable && imageSources.length);
+  const rawImageSources = useMemo(
+    () => (reference?.imageUrls || []).filter(item => item.url),
+    [reference?.imageUrls],
+  );
+  const sourceImageKey = [
+    reference?.code || '',
+    reference?.referenceLabel || '',
+    rawImageSources.map(item => `${item.pdfPage || ''}:${item.url}`).join('|'),
+  ].join('::');
+  const [sourceImageLoad, setSourceImageLoad] = useState({
+    status: 'idle',
+    key: '',
+    images: [],
+    error: '',
+  });
+  const imageSources = sourceImageLoad.key === sourceImageKey ? sourceImageLoad.images : [];
+  const hasImages = Boolean(reference?.imageAvailable && rawImageSources.length);
+  const imagesLoading = hasImages
+    && (sourceImageLoad.key !== sourceImageKey || sourceImageLoad.status === 'loading');
+  const imagesBlocked = hasImages
+    && sourceImageLoad.key === sourceImageKey
+    && sourceImageLoad.status === 'error';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!rawImageSources.length) {
+      return undefined;
+    }
+
+    Promise.all(rawImageSources.map(async item => ({
+      ...item,
+      originalUrl: item.url,
+      url: await resolveKnowledgeSourceAssetUrl(item.url, { purpose: 'atlas-admin-preview' }),
+    })))
+      .then(images => {
+        if (!cancelled) setSourceImageLoad({ status: 'ready', key: sourceImageKey, images, error: '' });
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setSourceImageLoad({
+            status: 'error',
+            key: sourceImageKey,
+            images: [],
+            error: error.message || 'Fonte visual protegida indisponível.',
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rawImageSources, sourceImageKey]);
 
   if (loadState === 'loading') {
     return (
@@ -177,11 +229,19 @@ function AtlasSourceReferencePanel({ reference, loadState }) {
         <small>Imagem da fonte ainda não renderizada; metadados já indexados para consulta.</small>
       )}
 
-      {hasImages && (
+      {imagesLoading && (
+        <small>Gerando acesso temporário protegido para a imagem da fonte.</small>
+      )}
+
+      {imagesBlocked && (
+        <small>Fonte visual protegida indisponível nesta sessão; verifique o upload no Storage privado.</small>
+      )}
+
+      {hasImages && imageSources.length > 0 && (
         <div className="atlas-source-images">
           {imageSources.map(item => (
             <img
-              key={`${reference.code}-${item.pdfPage}`}
+              key={`${reference.code}-${item.pdfPage}-${item.originalUrl || item.url}`}
               src={item.url}
               alt={`${reference.referenceLabel}, PDF p. ${item.pdfPage}`}
               loading="lazy"

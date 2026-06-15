@@ -1,7 +1,10 @@
 import { normalizePointCode } from '../knowledge/aliases';
 import { enrichReviewsWithSymptoms } from '../knowledge/relatedSymptomsEnricher';
+import { fetchKnowledgeSourceJsonAsset } from './knowledgeSourceAssetService';
 
 const LOCAL_KNOWLEDGE_REVIEWS_KEY = 'acup_living_library_reviews_v1';
+export const HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_ASSET_KEY = 'atlas-ednea/high-confidence-reviews.json';
+export const DEEP_CURATED_KNOWLEDGE_REVIEWS_ASSET_KEY = 'atlas-ednea/deep-curated-reviews.json';
 export const HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_URL = '/knowledge/source-assets/atlas-ednea/high-confidence-reviews.json';
 export const DEEP_CURATED_KNOWLEDGE_REVIEWS_URL = '/knowledge/source-assets/atlas-ednea/deep-curated-reviews.json';
 
@@ -26,11 +29,17 @@ export function mergeKnowledgeReviews(...reviewGroups) {
 }
 
 export async function getHighConfidenceKnowledgeReviews() {
-  return getKnowledgeReviewsFromUrl(HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_URL);
+  return getKnowledgeReviewsFromUrl(
+    HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_URL,
+    HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_ASSET_KEY,
+  );
 }
 
 export async function getDeepCuratedKnowledgeReviews() {
-  return getKnowledgeReviewsFromUrl(DEEP_CURATED_KNOWLEDGE_REVIEWS_URL);
+  return getKnowledgeReviewsFromUrl(
+    DEEP_CURATED_KNOWLEDGE_REVIEWS_URL,
+    DEEP_CURATED_KNOWLEDGE_REVIEWS_ASSET_KEY,
+  );
 }
 
 export function mergeClinicalKnowledgeReviews({
@@ -58,13 +67,16 @@ export async function getClinicalKnowledgeReviews() {
   return enrichReviewsWithSymptoms(merged);
 }
 
-async function getKnowledgeReviewsFromUrl(url) {
+async function getKnowledgeReviewsFromUrl(url, assetKey = '') {
   if (typeof fetch === 'undefined') return [];
 
   try {
-    const response = await fetch(url);
-    if (!response.ok) return [];
-    const data = await response.json();
+    const data = assetKey
+      ? await fetchKnowledgeSourceJsonAsset(assetKey, url)
+      : await fetch(url).then(response => {
+        if (!response.ok) return [];
+        return response.json();
+      });
     if (Array.isArray(data)) return data;
     return Array.isArray(data?.reviews) ? data.reviews : [];
   } catch {

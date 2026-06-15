@@ -1,6 +1,8 @@
 import { normalizePointCode } from './aliases';
+import { fetchKnowledgeSourceJsonAsset } from '../services/knowledgeSourceAssetService';
 
 export const ATLAS_EDNEA_SOURCE_INDEX_URL = '/knowledge/source-assets/atlas-ednea/source-index.json';
+export const ATLAS_EDNEA_LOCAL_SOURCE_INDEX_ASSET_KEY = 'atlas-ednea/source-index.local.json';
 export const ATLAS_EDNEA_LOCAL_SOURCE_INDEX_URL = '/knowledge/source-assets/atlas-ednea/source-index.local.json';
 
 async function fetchSourceIndex(url) {
@@ -11,7 +13,10 @@ async function fetchSourceIndex(url) {
 
 export async function loadAtlasEdneaSourceIndex() {
   try {
-    return await fetchSourceIndex(ATLAS_EDNEA_LOCAL_SOURCE_INDEX_URL);
+    return await fetchKnowledgeSourceJsonAsset(
+      ATLAS_EDNEA_LOCAL_SOURCE_INDEX_ASSET_KEY,
+      ATLAS_EDNEA_LOCAL_SOURCE_INDEX_URL,
+    );
   } catch {
     return fetchSourceIndex(ATLAS_EDNEA_SOURCE_INDEX_URL);
   }

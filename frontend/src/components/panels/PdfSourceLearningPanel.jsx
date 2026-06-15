@@ -4,8 +4,11 @@ import {
   KM_AGENT_DRAFT_INDEX_URL,
 } from '../../knowledge/kmAgentDrafts';
 import {
+  PDF_AURICULAR_CANDIDATE_LINKS_ASSET_KEY,
   PDF_AURICULAR_CANDIDATE_LINKS_URL,
+  PDF_SOURCE_CANDIDATE_LINKS_ASSET_KEY,
   PDF_SOURCE_CANDIDATE_LINKS_URL,
+  PDF_SOURCE_REVIEW_DRAFTS_ASSET_KEY,
   PDF_SOURCE_REVIEW_DRAFTS_URL,
   buildPdfLearningRows,
   filterPdfLearningRows,
@@ -18,6 +21,10 @@ import {
   getLocalKnowledgeReviews,
   saveLocalKnowledgeReview,
 } from '../../services/knowledgeAdminService';
+import {
+  fetchKnowledgeSourceJsonAsset,
+  resolveKnowledgeSourceAssetUrl,
+} from '../../services/knowledgeSourceAssetService';
 
 const FILTERS = [
   { id: 'unanswered', label: 'Nao respondidos' },
@@ -76,10 +83,42 @@ function getLinkImageUrl(link) {
 }
 
 function SourcePreview({ link }) {
+  const imageUrl = getLinkImageUrl(link);
+  const [imageState, setImageState] = useState({ status: 'idle', url: '', source: '' });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!imageUrl) {
+      return undefined;
+    }
+
+    resolveKnowledgeSourceAssetUrl(imageUrl, { purpose: 'pdf-source-preview' })
+      .then(url => {
+        if (!cancelled) setImageState({ status: 'ready', url, source: imageUrl });
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setImageState({
+            status: 'error',
+            url: '',
+            source: imageUrl,
+            message: error.message || 'Fonte visual protegida indisponível.',
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
+
   if (!link) return <div className="empty-state">Selecione uma fonte para conferir pagina e trecho.</div>;
 
   const translated = translatePdfSnippetPtBr(link);
-  const imageUrl = getLinkImageUrl(link);
+  const imageReady = imageState.status === 'ready' && imageState.source === imageUrl;
+  const imageLoading = imageUrl
+    && (imageState.source !== imageUrl || imageState.status === 'loading');
 
   return (
     <section className="pdf-source-preview">
@@ -93,9 +132,25 @@ function SourcePreview({ link }) {
         </span>
       </div>
 
-      {imageUrl ? (
+      {imageLoading ? (
+        <div className="pdf-source-preview-empty">Carregando fonte visual protegida...</div>
+      ) : imageUrl && imageReady ? (
         <div className="pdf-source-preview-frame">
-          <img src={imageUrl} alt={`${sourceLabel(link)}, PDF p. ${getLinkPage(link)}`} loading="lazy" />
+          <img
+            src={imageState.url}
+            alt={`${sourceLabel(link)}, PDF p. ${getLinkPage(link)}`}
+            loading="lazy"
+            onError={() => setImageState({
+              status: 'error',
+              url: '',
+              source: imageState.source,
+              message: 'A URL assinada expirou ou o arquivo não foi encontrado.',
+            })}
+          />
+        </div>
+      ) : imageUrl ? (
+        <div className="pdf-source-preview-empty">
+          Fonte visual protegida indisponível. Verifique o upload no Storage privado.
         </div>
       ) : (
         <div className="pdf-source-preview-empty">Pagina visual indisponivel neste ambiente.</div>
@@ -165,9 +220,9 @@ export function PdfSourceLearningPanel() {
     let cancelled = false;
 
     Promise.all([
-      fetchJson(PDF_SOURCE_CANDIDATE_LINKS_URL),
-      fetchJson(PDF_AURICULAR_CANDIDATE_LINKS_URL),
-      fetchJson(PDF_SOURCE_REVIEW_DRAFTS_URL),
+      fetchKnowledgeSourceJsonAsset(PDF_SOURCE_CANDIDATE_LINKS_ASSET_KEY, PDF_SOURCE_CANDIDATE_LINKS_URL),
+      fetchKnowledgeSourceJsonAsset(PDF_AURICULAR_CANDIDATE_LINKS_ASSET_KEY, PDF_AURICULAR_CANDIDATE_LINKS_URL),
+      fetchKnowledgeSourceJsonAsset(PDF_SOURCE_REVIEW_DRAFTS_ASSET_KEY, PDF_SOURCE_REVIEW_DRAFTS_URL),
       fetchKmAgentRecords(),
       getDeepCuratedKnowledgeReviews(),
       getHighConfidenceKnowledgeReviews(),
@@ -190,7 +245,7 @@ export function PdfSourceLearningPanel() {
       })
       .catch(err => {
         if (cancelled) return;
-        setError(err.message || 'Nao foi possivel carregar fontes PDF locais.');
+        setError(err.message || 'Nao foi possivel carregar fontes PDF protegidas.');
         setLoadState('error');
       });
 
@@ -294,7 +349,7 @@ export function PdfSourceLearningPanel() {
   if (loadState === 'error') {
     return (
       <section className="admin-knowledge pdf-learning-panel">
-        <div className="inline-error">Fontes PDF locais indisponiveis: {error}</div>
+        <div className="inline-error">Fontes PDF protegidas indisponiveis: {error}</div>
       </section>
     );
   }

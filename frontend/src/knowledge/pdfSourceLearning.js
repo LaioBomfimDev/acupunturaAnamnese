@@ -1,5 +1,9 @@
 import { translateMtcDraftText } from './mtcTranslation';
 
+export const PDF_SOURCE_CANDIDATE_LINKS_ASSET_KEY = 'pdf-sources/source-candidate-links.local.json';
+export const PDF_AURICULAR_CANDIDATE_LINKS_ASSET_KEY = 'pdf-sources/auricular-candidate-links.local.json';
+export const PDF_SOURCE_REVIEW_DRAFTS_ASSET_KEY = 'pdf-sources/source-review-drafts.local.json';
+
 export const PDF_SOURCE_CANDIDATE_LINKS_URL = '/knowledge/source-assets/pdf-sources/source-candidate-links.local.json';
 export const PDF_AURICULAR_CANDIDATE_LINKS_URL = '/knowledge/source-assets/pdf-sources/auricular-candidate-links.local.json';
 export const PDF_SOURCE_REVIEW_DRAFTS_URL = '/knowledge/source-assets/pdf-sources/source-review-drafts.local.json';

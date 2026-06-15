@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
 
 function formatPageList(pages = []) {
   return pages.length ? pages.join(', ') : 'sem página';
@@ -49,12 +50,15 @@ export function PointReviewDialog({
   const asset = entry?.asset;
   const location = entry?.location;
   const label = entry?.label || resolvedDetail?.displayCode;
-  const imageSources = (resolvedDetail?.atlasReference?.imageUrls || []).filter(item => item.url);
-  const imageCount = imageSources.length;
+  const rawImageSources = useMemo(
+    () => (resolvedDetail?.atlasReference?.imageUrls || []).filter(item => item.url),
+    [resolvedDetail?.atlasReference?.imageUrls],
+  );
+  const imageCount = rawImageSources.length;
   const sourceImageKey = [
     resolvedDetail?.code || '',
     resolvedDetail?.atlasReference?.referenceLabel || '',
-    imageSources.map(item => `${item.pdfPage || ''}:${item.url}`).join('|'),
+    rawImageSources.map(item => `${item.pdfPage || ''}:${item.url}`).join('|'),
   ].join('::');
 
   const [sourceView, setSourceView] = useState({
@@ -62,6 +66,12 @@ export function PointReviewDialog({
     imageDirection: 1,
     imageKey: '',
     zoomOpen: false,
+  });
+  const [sourceImageLoad, setSourceImageLoad] = useState({
+    status: 'idle',
+    key: '',
+    images: [],
+    error: '',
   });
 
   const hasNav = typeof currentIndex === 'number' && typeof totalCount === 'number';
@@ -72,6 +82,7 @@ export function PointReviewDialog({
   const imageDirection = sourceView.imageKey === sourceImageKey ? sourceView.imageDirection : 1;
   const zoomOpen = sourceView.imageKey === sourceImageKey ? sourceView.zoomOpen : false;
   const safeActiveImageIndex = imageCount ? Math.min(activeImageIndex, imageCount - 1) : 0;
+  const imageSources = sourceImageLoad.key === sourceImageKey ? sourceImageLoad.images : [];
   const activeImage = imageSources[safeActiveImageIndex];
   const activeImageAlt = activeImage
     ? sourceImageLabel(resolvedDetail, label, activeImage, safeActiveImageIndex, imageCount)
@@ -102,6 +113,37 @@ export function PointReviewDialog({
       zoomOpen: current.imageKey === sourceImageKey ? current.zoomOpen : false,
     }));
   }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!rawImageSources.length) {
+      return undefined;
+    }
+
+    Promise.all(rawImageSources.map(async item => ({
+      ...item,
+      originalUrl: item.url,
+      url: await resolveKnowledgeSourceAssetUrl(item.url, { purpose: 'atlas-point-review' }),
+    })))
+      .then(images => {
+        if (!cancelled) setSourceImageLoad({ status: 'ready', key: sourceImageKey, images, error: '' });
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setSourceImageLoad({
+            status: 'error',
+            key: sourceImageKey,
+            images: [],
+            error: error.message || 'Fonte visual protegida indisponível.',
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rawImageSources, sourceImageKey]);
 
   useEffect(() => {
     if (!resolvedDetail) return undefined;
@@ -163,7 +205,12 @@ export function PointReviewDialog({
 
   if (!resolvedDetail) return null;
 
-  const hasAtlasImages = Boolean(resolvedDetail.atlasReference?.imageAvailable && imageSources.length);
+  const hasAtlasImages = Boolean(resolvedDetail.atlasReference?.imageAvailable && rawImageSources.length);
+  const sourceImagesLoading = hasAtlasImages
+    && (sourceImageLoad.key !== sourceImageKey || sourceImageLoad.status === 'loading');
+  const sourceImagesBlocked = hasAtlasImages
+    && sourceImageLoad.key === sourceImageKey
+    && sourceImageLoad.status === 'error';
   const hasClinicalNote = Boolean(resolvedDetail.clinicalNote?.trim());
   const hasMapPreview = Boolean(asset?.src && location);
 
@@ -230,7 +277,12 @@ export function PointReviewDialog({
             </div>
 
             <div className={`point-review-source-frame${hasAtlasImages ? ' has-carousel' : ''}`}>
-              {hasAtlasImages && activeImage ? (
+              {sourceImagesLoading ? (
+                <div className="point-review-source-empty">
+                  <b>Carregando fonte visual</b>
+                  <span>Gerando acesso temporário protegido para a página do Atlas.</span>
+                </div>
+              ) : hasAtlasImages && activeImage ? (
                 <>
                   <div className="point-review-source-carousel" aria-roledescription="carousel">
                     {hasImageCarousel && (
@@ -288,7 +340,7 @@ export function PointReviewDialog({
                       <div>
                         {imageSources.map((item, index) => (
                           <button
-                            key={`${item.url}-${item.pdfPage || index}-pager`}
+                            key={`${item.originalUrl || item.url}-${item.pdfPage || index}-pager`}
                             className={index === safeActiveImageIndex ? 'active' : ''}
                             type="button"
                             onClick={() => selectSourceImage(index)}
@@ -306,7 +358,9 @@ export function PointReviewDialog({
                 <div className="point-review-source-empty">
                   <b>Fonte visual indisponível</b>
                   <span>
-                    {resolvedDetail.atlasReference
+                    {sourceImagesBlocked
+                      ? 'A referência existe, mas o acesso protegido não foi liberado para esta sessão.'
+                      : resolvedDetail.atlasReference
                       ? 'A referência do Atlas existe, mas a imagem renderizada não foi encontrada no índice local.'
                       : 'Este ponto ainda não tem imagem de fonte vinculada ao índice visual.'}
                   </span>

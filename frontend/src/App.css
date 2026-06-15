@@ -483,26 +483,14 @@ body {
 .assistant-rail {
   position: sticky;
   top: 18px;
-  align-self: stretch;
-  height: calc(100vh - 36px);
+  align-self: start;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow: hidden;
+  gap: 22px;
   padding: 2px;
 }
 
 .assistant-rail .assistant-panel { margin-bottom: 0; }
-
-/* IA Assistente ocupa toda a altura disponível do rail (100%, sem scroll) */
-.assistant-synth-panel {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.assistant-quick-panel { flex: 0 0 auto; }
 
 .assistant-panel {
   position: relative;
@@ -540,13 +528,18 @@ body {
   flex: 0 0 auto;
 }
 
-/* ===== IA Assistente — síntese ao vivo ===== */
+/* ===== IA Assistente — síntese ao vivo (tópicos simples) ===== */
 .assistant-synth {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  height: 100%;
-  min-height: 0;
+}
+
+/* Cada tópico separado por uma linha fina */
+.synth-hypo,
+.synth-confidence,
+.synth-block {
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
 }
 
 .synth-label {
@@ -556,20 +549,21 @@ body {
   letter-spacing: .09em;
   text-transform: uppercase;
   color: var(--gold);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .synth-hypo {
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  padding-top: 0;
+  border-top: none;
 }
 
 .synth-hypo-name {
   display: block;
-  font-size: 1.12rem;
-  line-height: 1.25;
+  font-size: 1.1rem;
+  line-height: 1.3;
   font-weight: 800;
   color: var(--navy);
+  overflow-wrap: break-word;
 }
 
 .synth-meter {
@@ -586,7 +580,6 @@ body {
   inset: 0 auto 0 0;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--gold), var(--gold-2));
-  box-shadow: 0 0 12px rgba(240, 189, 83, .45);
   transition: width .5s cubic-bezier(.22, 1, .36, 1);
 }
 
@@ -612,7 +605,7 @@ body {
   color: rgba(6, 26, 49, .72);
 }
 
-.synth-diff-name { font-weight: 600; }
+.synth-diff-name { font-weight: 600; overflow-wrap: break-word; }
 .synth-diff-pct { font-weight: 700; color: var(--navy); }
 
 .synth-flag {
@@ -627,14 +620,14 @@ body {
   border-radius: 999px;
 }
 
-.synth-confidence {
+.synth-confidence { display: block; }
+
+.synth-conf-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
 }
-
-.synth-confidence .synth-label { width: 100%; margin-bottom: 2px; }
 
 .synth-badge {
   font-size: .76rem;
@@ -651,6 +644,7 @@ body {
 .synth-reason {
   font-size: .78rem;
   color: rgba(6, 26, 49, .62);
+  overflow-wrap: break-word;
 }
 
 .synth-block p {
@@ -658,21 +652,8 @@ body {
   font-size: .88rem;
   line-height: 1.5;
   color: var(--navy);
+  overflow-wrap: break-word;
 }
-
-.synth-block-reading {
-  flex: 1 1 auto;
-  min-height: 0;
-  background: linear-gradient(160deg, rgba(213, 163, 59, .08), rgba(255, 250, 240, .4));
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--gold-2);
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-
-.synth-block-reading .synth-label { color: var(--gold); }
-
-.synth-block-reading p { font-size: .9rem; }
 
 /* ===== Aprofundar com IA (Fase 2) ===== */
 .synth-deepdive { border-top: 1px dashed var(--line); padding-top: 10px; }
@@ -5349,11 +5330,12 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* ======= IMPRESSÃO ======= */
 @media print {
-  /* Margem do @page = 0 e a margem real é dada por padding interno do
-     documento. Assim a margem NÃO depende do seletor de margens da caixa
-     de impressão do navegador (que estava achatando o layout). */
+  /* As margens do @page reservam espaço em TODAS as páginas: topo p/ a
+     faixa colorida, base p/ o rodapé institucional. Assim o conteúdo
+     (inclusive a assinatura) nunca passa por baixo do rodapé e não sobra
+     página em branco. Mantenha a opção de margens em "Padrão" ao imprimir. */
   @page {
-    margin: 0;
+    margin: 11mm 14mm 30mm 14mm;
   }
 
   .sidebar,
@@ -5450,25 +5432,26 @@ textarea { min-height: 95px; resize: vertical; }
   }
 
   .report {
-    position: relative;
+    position: static;
     border: 0 !important;
     border-radius: 0 !important;
     background: white !important;
-    /* topo 20mm (1ª pág) · laterais 18mm (todas as págs) · base reserva
-       espaço para o rodapé fixo. A margem mora aqui, não no @page. */
-    padding: 20mm 18mm 40mm !important;
+    /* Sem padding: as margens vêm do @page e reservam espaço em todas as
+       páginas. O conteúdo flui na área útil, entre faixa do topo e rodapé. */
+    padding: 0 !important;
     line-height: 1.5 !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  /* Faixa fina colorida no topo de TODAS as páginas (marca + margem) */
+  /* Faixa colorida no topo de TODAS as páginas, dentro da margem superior
+     (full-bleed: -11mm sobe até a borda física; -14mm abre p/ as laterais). */
   .report-topband {
     display: block;
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: -11mm;
+    left: -14mm;
+    right: -14mm;
     height: 6mm;
     z-index: 25;
     background: linear-gradient(
@@ -5582,18 +5565,20 @@ textarea { min-height: 95px; resize: vertical; }
     color: var(--clinic-accent, #0E2A4A);
   }
 
-  /* Rodapé institucional contido na margem, repetido em todas as páginas.
-     left/right: 0 = borda física (com @page margin 0); o padding interno
-     alinha o conteúdo com a margem do corpo (18mm). */
+  /* Rodapé institucional na margem inferior reservada (30mm), repetido em
+     TODAS as páginas. bottom:-30mm o desce para dentro da margem, abaixo do
+     conteúdo — por isso a assinatura nunca fica coberta. left/right:0 já
+     alinha com o corpo (recuo dado pela margem lateral do @page). */
   .report-print-footer {
     display: block;
     position: fixed;
-    bottom: 0;
+    bottom: -30mm;
     left: 0;
     right: 0;
+    height: 30mm;
     z-index: 20;
     margin: 0 !important;
-    padding: 0 18mm 6mm !important;
+    padding: 3mm 0 5mm !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: white;
@@ -5606,7 +5591,7 @@ textarea { min-height: 95px; resize: vertical; }
   .report-contact-segments {
     display: block;
     height: 2.6mm;
-    margin-bottom: 4mm;
+    margin-bottom: 3mm;
     border-radius: 1.5mm;
     background: linear-gradient(
       90deg,
@@ -5659,8 +5644,8 @@ textarea { min-height: 95px; resize: vertical; }
   }
 
   .report-contact-icon {
-    width: 8.5mm;
-    height: 8.5mm;
+    width: 8mm;
+    height: 8mm;
     border-radius: 50%;
     background: var(--clinic-accent, #0E2A4A);
     color: #fff;
@@ -5669,8 +5654,8 @@ textarea { min-height: 95px; resize: vertical; }
   }
 
   .report-contact-icon svg {
-    width: 5mm;
-    height: 5mm;
+    width: 4.6mm;
+    height: 4.6mm;
   }
 
   .report-contact-icon.address,
@@ -5688,7 +5673,7 @@ textarea { min-height: 95px; resize: vertical; }
     display: flex;
     align-items: center;
     gap: 4mm;
-    margin-top: 4mm;
+    margin-top: 3mm;
   }
 
   .report-contact-baseline-name {

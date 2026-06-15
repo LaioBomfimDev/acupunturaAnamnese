@@ -115,7 +115,13 @@ Modelo para novas entradas:
 - Sintoma: a área SuperAdm > Fontes PDF exibiu `HTTP 404` e as páginas/imagens renderizadas dos PDFs não apareciam após deploy, porque os arquivos estavam em `frontend/.local-source-assets` e não eram publicados.
 - Causa: a UI referenciava URLs públicas (`/knowledge/source-assets/...`) para assets bibliográficos que foram corretamente mantidos fora do bundle, mas ainda não havia camada protegida de Storage privado + URL assinada para produção.
 - Regra nova: fontes visuais bibliográficas (PDFs renderizados, páginas webp, OCR/texto e manifestos `.local.json`) nunca devem depender de rota pública em produção. Use bucket privado `knowledge-source-assets`, manifesto `knowledge_source_assets` e Edge Function `knowledge-source-asset-url`; o frontend só pode enviar `assetKey`, nunca `bucket`/`object_path`, e deve ter fallback local apenas em desenvolvimento.
-- Teste ou verificação obrigatória: teste de regressão deve validar sanitização de `assetKey`, bucket privado/RLS do manifesto e que a Edge Function exige `assertSuperAdmin` antes de gerar `createSignedUrl`.
+- Teste ou verificação obrigatória: teste de regressão deve validar sanitização de `assetKey`, bucket privado/RLS do manifesto e a ordem de autorização da Edge Function (autenticar → membro ativo → escopo por asset → `createSignedUrl`).
+
+### 2026-06-15 - Fontes do Atlas liberadas ao usuário comum (orientação clínica)
+
+- Motivação: ao clicar no ponto, o profissional comum precisa ver a fonte visual do Atlas para se guiar; antes só o SuperAdm via.
+- Regra ajustada: a Edge Function `knowledge-source-asset-url` agora libera `atlas-ednea/*` para **qualquer membro ativo** (`assertActiveMember`), mantendo `pdf-sources/*` e demais prefixos restritos ao SuperAdm (`MEMBER_ACCESSIBLE_PREFIXES`). Continua exigindo sessão válida, sem rota pública, com URL assinada de 5 min e auditoria (`actorRole`/`memberScoped`) — "membro ativo" ≠ "público anônimo", então a regra de não publicar páginas inteiras em área pública continua válida.
+- Atenção de produto: liberar páginas de obra com direitos autorais a todos os usuários logados é decisão de licença do responsável; mantido sob acesso autenticado e auditado para reduzir exposição.
 
 ### 2026-06-12 - Grupo novo de checklist sem peso de evidência no analyzer
 

@@ -76,17 +76,26 @@ test('migration mantém bucket privado e manifesto restrito a SuperAdm', async (
   );
 });
 
-test('Edge Function só assina fonte após autenticação SuperAdm e manifesto allowlist', async () => {
+test('Edge Function só assina fonte após autenticar membro ativo, com escopo por asset e allowlist', async () => {
   const source = await fs.readFile(
     path.join(projectRoot, 'supabase/functions/knowledge-source-asset-url/index.ts'),
     'utf8',
   );
 
-  const superAdminIndex = source.indexOf('assertSuperAdmin(caller.profile)');
+  const authIndex = source.indexOf('getCallerProfile(req');
+  const memberIndex = source.indexOf('assertActiveMember(caller.profile)');
+  const scopeIndex = source.indexOf('isMemberAccessibleAsset(asset.asset_key)');
   const signedUrlIndex = source.indexOf('createSignedUrl');
 
-  assert.ok(superAdminIndex > 0, 'função deve exigir assertSuperAdmin');
-  assert.ok(signedUrlIndex > superAdminIndex, 'URL assinada só pode ser criada depois da autorização');
+  assert.ok(authIndex > 0, 'função deve autenticar a sessão antes de autorizar');
+  assert.ok(memberIndex > authIndex, 'autorização de membro ativo vem depois da autenticação');
+  assert.ok(scopeIndex > memberIndex, 'escopo por asset (não-SuperAdm) vem depois da autorização base');
+  assert.ok(signedUrlIndex > scopeIndex, 'URL assinada só é criada depois de toda a autorização');
+
+  // membro comum só alcança fontes do Atlas; demais fontes seguem restritas ao SuperAdm
+  assert.match(source, /MEMBER_ACCESSIBLE_PREFIXES\s*=\s*\['atlas-ednea\/'\]/);
+  assert.match(source, /!isSuperAdmin\s*&&\s*!isMemberAccessibleAsset/);
+
   assert.match(source, /\.eq\('asset_key', assetKey\)/);
   assert.match(source, /\.eq\('is_active', true\)/);
   assert.doesNotMatch(source, /body\?\.(bucket|objectPath|object_path|path|expiresIn|expires)/);

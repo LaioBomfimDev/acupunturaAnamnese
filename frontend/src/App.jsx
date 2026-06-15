@@ -412,12 +412,14 @@ export default function App() {
 
                 <div className="synth-confidence">
                   <span className="synth-label">Confiança</span>
-                  <span className={`synth-badge synth-badge-${synthesis.confidence.level.toLowerCase()}`}>
-                    {synthesis.confidence.level}
-                  </span>
-                  {synthesis.confidence.reason && (
-                    <span className="synth-reason">{synthesis.confidence.reason}</span>
-                  )}
+                  <div className="synth-conf-row">
+                    <span className={`synth-badge synth-badge-${synthesis.confidence.level.toLowerCase()}`}>
+                      {synthesis.confidence.level}
+                    </span>
+                    {synthesis.confidence.reason && (
+                      <span className="synth-reason">{synthesis.confidence.reason}</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="synth-block">
@@ -425,7 +427,7 @@ export default function App() {
                   <p>{synthesis.nextAction}</p>
                 </div>
 
-                <div className="synth-block synth-block-reading">
+                <div className="synth-block">
                   <span className="synth-label">Leitura ao vivo</span>
                   <p>{synthesis.reading}</p>
                 </div>

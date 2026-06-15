@@ -76,26 +76,17 @@ test('migration mantém bucket privado e manifesto restrito a SuperAdm', async (
   );
 });
 
-test('Edge Function só assina fonte após autenticar membro ativo, com escopo por asset e allowlist', async () => {
+test('Edge Function só assina fonte após autenticação SuperAdm e manifesto allowlist', async () => {
   const source = await fs.readFile(
     path.join(projectRoot, 'supabase/functions/knowledge-source-asset-url/index.ts'),
     'utf8',
   );
 
-  const authIndex = source.indexOf('getCallerProfile(req');
-  const memberIndex = source.indexOf('assertActiveMember(caller.profile)');
-  const scopeIndex = source.indexOf('isMemberAccessibleAsset(asset.asset_key)');
+  const superAdminIndex = source.indexOf('assertSuperAdmin(caller.profile)');
   const signedUrlIndex = source.indexOf('createSignedUrl');
 
-  assert.ok(authIndex > 0, 'função deve autenticar a sessão antes de autorizar');
-  assert.ok(memberIndex > authIndex, 'autorização de membro ativo vem depois da autenticação');
-  assert.ok(scopeIndex > memberIndex, 'escopo por asset (não-SuperAdm) vem depois da autorização base');
-  assert.ok(signedUrlIndex > scopeIndex, 'URL assinada só é criada depois de toda a autorização');
-
-  // membro comum só alcança fontes do Atlas; demais fontes seguem restritas ao SuperAdm
-  assert.match(source, /MEMBER_ACCESSIBLE_PREFIXES\s*=\s*\['atlas-ednea\/'\]/);
-  assert.match(source, /!isSuperAdmin\s*&&\s*!isMemberAccessibleAsset/);
-
+  assert.ok(superAdminIndex > 0, 'função deve exigir assertSuperAdmin');
+  assert.ok(signedUrlIndex > superAdminIndex, 'URL assinada só pode ser criada depois da autorização');
   assert.match(source, /\.eq\('asset_key', assetKey\)/);
   assert.match(source, /\.eq\('is_active', true\)/);
   assert.doesNotMatch(source, /body\?\.(bucket|objectPath|object_path|path|expiresIn|expires)/);
@@ -117,4 +108,40 @@ test('script de sincronização bloqueia anon key e não imprime segredo', async
     'logs não devem imprimir o segredo serviceRoleKey',
   );
   assert.match(source, /Bucket privado/);
+});
+
+test('Atlas público resolve para URL pública permanente do Storage (sem assinar)', async () => {
+  const { resolveKnowledgeSourceAssetUrl, publicAtlasAssetUrl, isPublicAtlasAssetKey } = sourceAssets;
+
+  assert.equal(isPublicAtlasAssetKey('atlas-ednea/pages/page-357.webp'), true);
+  assert.equal(isPublicAtlasAssetKey('pdf-sources/x/pages/page-001.webp'), false);
+
+  const direct = publicAtlasAssetUrl('atlas-ednea/pages/page-357.webp');
+  assert.match(
+    direct,
+    /\/storage\/v1\/object\/public\/knowledge-atlas-public\/atlas-ednea\/pages\/page-357\.webp$/,
+  );
+
+  // Atlas não passa por Edge Function nem URL assinada, mesmo sem fallback local.
+  const resolved = await resolveKnowledgeSourceAssetUrl(
+    '/knowledge/source-assets/atlas-ednea/pages/page-357.webp',
+    { allowLocalFallback: false },
+  );
+  assert.equal(resolved, direct);
+  assert.doesNotMatch(resolved, /token=|[?&]expires/i);
+});
+
+test('migration cria bucket público dedicado do Atlas, sem policy de escrita explorável', async () => {
+  const migration = await fs.readFile(
+    path.join(projectRoot, 'supabase/migrations/20260615_knowledge_atlas_public_bucket.sql'),
+    'utf8',
+  );
+
+  assert.match(migration, /VALUES\s*\(\s*'knowledge-atlas-public'[\s\S]*true[\s\S]*52428800/i);
+  assert.match(migration, /public = true/i);
+  assert.equal(
+    /CREATE POLICY[\s\S]*knowledge-atlas-public/i.test(migration),
+    false,
+    'bucket público não deve ter policy de escrita customizada em storage.objects',
+  );
 });

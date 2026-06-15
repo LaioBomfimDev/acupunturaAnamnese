@@ -416,10 +416,10 @@ export default function App() {
                     <span className={`synth-badge synth-badge-${synthesis.confidence.level.toLowerCase()}`}>
                       {synthesis.confidence.level}
                     </span>
-                    {synthesis.confidence.reason && (
-                      <span className="synth-reason">{synthesis.confidence.reason}</span>
-                    )}
                   </div>
+                  {synthesis.confidence.reason && (
+                    <p className="synth-reason">Sustentada por {synthesis.confidence.reason}</p>
+                  )}
                 </div>
 
                 <div className="synth-block">

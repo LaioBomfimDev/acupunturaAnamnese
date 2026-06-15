@@ -642,7 +642,9 @@ body {
 .synth-badge-baixa { color: rgba(6, 26, 49, .7); background: rgba(6, 26, 49, .07); border: 1px solid var(--line); }
 
 .synth-reason {
+  margin: 9px 0 0;
   font-size: .78rem;
+  line-height: 1.45;
   color: rgba(6, 26, 49, .62);
   overflow-wrap: break-word;
 }
@@ -2459,6 +2461,11 @@ textarea { min-height: 95px; resize: vertical; }
 /* ======= RELATÓRIO ======= */
 .report { background: var(--soft); border: 1px solid var(--line); border-radius: 22px; padding: 28px; line-height: 1.65; }
 .report h2 { text-align: center; font-family: Georgia, serif; }
+
+/* Estrutura do documento (tabela p/ cabeçalho/rodapé fixos por página na
+   impressão). Na tela renderiza como blocos empilhados, sem moldura. */
+.report-sheet { width: 100%; border-collapse: collapse; }
+.report-sheet td { padding: 0; vertical-align: top; }
 
 .report-toolbar,
 .report-actions {
@@ -5330,12 +5337,12 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* ======= IMPRESSÃO ======= */
 @media print {
-  /* As margens do @page reservam espaço em TODAS as páginas: topo p/ a
-     faixa colorida, base p/ o rodapé institucional. Assim o conteúdo
-     (inclusive a assinatura) nunca passa por baixo do rodapé e não sobra
-     página em branco. Mantenha a opção de margens em "Padrão" ao imprimir. */
+  /* Margem uniforme da folha. O cabeçalho/rodapé NÃO dependem dela: o
+     rodapé fica no fluxo do documento (depois da assinatura) e é empurrado
+     para o pé da página via flexbox — funciona em qualquer ajuste de
+     margem da caixa de impressão. */
   @page {
-    margin: 11mm 14mm 30mm 14mm;
+    margin: 12mm;
   }
 
   .sidebar,
@@ -5431,29 +5438,53 @@ textarea { min-height: 95px; resize: vertical; }
     border-radius: 0 !important;
   }
 
+  /* Cadeia de altura 100% p/ a tabela ocupar a página inteira: assim o
+     tfoot (rodapé) gruda no pé mesmo em relatório curto, e o thead
+     (cabeçalho) no topo. Conteúdo longo pagina normalmente entre eles. */
+  html, body { height: 100% !important; }
+  .app { height: 100% !important; display: block !important; }
+  .main { height: 100% !important; }
+  .panel:has(.report),
+  .panel:has(.report) .panel-body { height: 100% !important; }
+
   .report {
+    height: 100% !important;
     position: static;
     border: 0 !important;
     border-radius: 0 !important;
     background: white !important;
-    /* Sem padding: as margens vêm do @page e reservam espaço em todas as
-       páginas. O conteúdo flui na área útil, entre faixa do topo e rodapé. */
     padding: 0 !important;
     line-height: 1.5 !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  /* Faixa colorida no topo de TODAS as páginas, dentro da margem superior
-     (full-bleed: -11mm sobe até a borda física; -14mm abre p/ as laterais). */
+  /* A tabela é o documento: cabeçalho/rodapé repetem por página */
+  .report-sheet {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  /* thead/tfoot repetidos em TODAS as páginas; tbody pagina no meio */
+  .report-sheet-head { display: table-header-group; }
+  .report-sheet-foot { display: table-footer-group; }
+  .report-sheet-head, .report-sheet-foot { break-inside: avoid; }
+
+  /* Margens laterais embutidas (não dependem da caixa de impressão).
+     thead/tfoot acrescentam as margens superior/inferior por página. */
+  .report-sheet-cell { padding: 0 14mm !important; }
+  .report-sheet-cell-head { padding-top: 12mm !important; }
+  .report-sheet-cell-foot { padding-bottom: 12mm !important; vertical-align: bottom; }
+  .report-sheet-cell-body { height: 100%; }
+
+  /* Faixa colorida no topo do cabeçalho */
   .report-topband {
     display: block;
-    position: fixed;
-    top: -11mm;
-    left: -14mm;
-    right: -14mm;
     height: 6mm;
-    z-index: 25;
+    margin: 0 0 7mm;
+    border-radius: 2mm;
     background: linear-gradient(
       90deg,
       var(--clinic-accent-shade, #061a31) 0%,
@@ -5565,24 +5596,17 @@ textarea { min-height: 95px; resize: vertical; }
     color: var(--clinic-accent, #0E2A4A);
   }
 
-  /* Rodapé institucional na margem inferior reservada (30mm), repetido em
-     TODAS as páginas. bottom:-30mm o desce para dentro da margem, abaixo do
-     conteúdo — por isso a assinatura nunca fica coberta. left/right:0 já
-     alinha com o corpo (recuo dado pela margem lateral do @page). */
+  /* Rodapé institucional: vive no tfoot, repetido no pé de TODAS as páginas
+     pelo navegador, com espaço reservado. Nunca cobre o conteúdo nem vira
+     "cabeçalho" da página seguinte. Igual nos 3 modos de relatório. */
   .report-print-footer {
     display: block;
-    position: fixed;
-    bottom: -30mm;
-    left: 0;
-    right: 0;
-    height: 30mm;
-    z-index: 20;
     margin: 0 !important;
-    padding: 3mm 0 5mm !important;
+    padding: 6mm 0 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: white;
-    overflow: hidden;
+    break-inside: avoid;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

@@ -96,14 +96,6 @@ export function assertSuperAdmin(profile: { role?: string; is_active?: boolean; 
     && profile.must_change_password !== true;
 }
 
-// Membro autenticado e em condições de uso clínico: conta ativa e sem troca de
-// senha pendente. Não restringe por papel — usado para liberar fontes visuais de
-// orientação (Atlas) a qualquer profissional logado, sem abrir acesso direto ao Storage.
-export function assertActiveMember(profile: { is_active?: boolean; must_change_password?: boolean }) {
-  return profile.is_active === true
-    && profile.must_change_password !== true;
-}
-
 export function normalizeEmail(email: unknown) {
   return String(email || '').trim().toLowerCase();
 }

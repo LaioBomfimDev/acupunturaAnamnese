@@ -8,16 +8,13 @@
 // Segurança:
 //  * apenas POST;
 //  * exige sessão Supabase válida;
-//  * exige conta ativa e sem troca de senha pendente;
-//  * fontes de orientação do Atlas (atlas-ednea/*) liberadas a qualquer membro ativo;
-//    demais fontes (pdf-sources/*, etc.) continuam restritas ao SuperAdm;
+//  * exige SuperAdm ativo e sem troca de senha pendente;
 //  * não lista assets;
 //  * não aceita bucket, objectPath nem expiração do cliente;
 //  * URL assinada curta, sem logar signedUrl/object_path.
 // ============================================================
 
 import {
-  assertActiveMember,
   assertSuperAdmin,
   corsHeaders,
   createServiceClient,
@@ -30,15 +27,6 @@ const BUCKET_ID = Deno.env.get('KNOWLEDGE_SOURCE_ASSETS_BUCKET') || 'knowledge-s
 const SIGNED_URL_TTL_SECONDS = 5 * 60;
 const MAX_ASSET_KEY_LENGTH = 260;
 const ASSET_KEY_PATTERN = /^[a-z0-9][a-z0-9._/-]{0,259}$/;
-
-// Prefixos de fonte visual que um membro ativo (não-SuperAdm) pode ver. Mantém
-// o material de orientação clínica do Atlas acessível ao profissional logado, sem
-// expor outras fontes bibliográficas que seguem restritas à curadoria.
-const MEMBER_ACCESSIBLE_PREFIXES = ['atlas-ednea/'];
-
-function isMemberAccessibleAsset(assetKey: string) {
-  return MEMBER_ACCESSIBLE_PREFIXES.some(prefix => assetKey.startsWith(prefix));
-}
 
 type KnowledgeSourceAsset = {
   asset_key: string;
@@ -83,10 +71,9 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
-    if (!assertActiveMember(caller.profile)) {
-      return jsonResponse({ error: 'Acesso restrito a usuários ativos autenticados.' }, 403);
+    if (!assertSuperAdmin(caller.profile)) {
+      return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
     }
-    const isSuperAdmin = assertSuperAdmin(caller.profile);
 
     const body = await req.json().catch(() => ({}));
     const assetKey = String(body?.assetKey || '').trim();
@@ -113,9 +100,6 @@ Deno.serve(async (req) => {
       console.error('knowledge-source-asset-url: object_path inseguro no manifesto', asset.asset_key);
       return jsonResponse({ error: 'Manifesto de fonte inválido.' }, 500);
     }
-    if (!isSuperAdmin && !isMemberAccessibleAsset(asset.asset_key)) {
-      return jsonResponse({ error: 'Fonte visual restrita à curadoria.' }, 403);
-    }
 
     const { data: signedData, error: signedError } = await supabaseAdmin.storage
       .from(BUCKET_ID)
@@ -135,8 +119,6 @@ Deno.serve(async (req) => {
         sourceKey: asset.source_key,
         pdfPage: asset.pdf_page,
         purpose: normalizePurpose(body?.purpose),
-        actorRole: caller.profile.role || 'member',
-        memberScoped: !isSuperAdmin,
       },
     });
 

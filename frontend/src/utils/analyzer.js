@@ -345,6 +345,27 @@ function summarizeHits(hits) {
   return counts;
 }
 
+// Rótulos legíveis por origem da evidência: [singular, plural].
+const EVIDENCE_SOURCE_LABELS = {
+  'língua': ['sinal na língua', 'sinais na língua'],
+  'pulso': ['sinal no pulso', 'sinais no pulso'],
+  'emoções': ['sinal emocional', 'sinais emocionais'],
+  'sintomas': ['sintoma', 'sintomas'],
+  'anamnese': ['sinal na anamnese', 'sinais na anamnese'],
+};
+
+// Monta a justificativa da confiança em linguagem clara, da origem mais forte
+// para a mais fraca: ex. "6 sinais na anamnese · 1 sintoma".
+function formatConfidenceReason(groupCounts) {
+  return Object.entries(groupCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([group, count]) => {
+      const labels = EVIDENCE_SOURCE_LABELS[group] || [group, group];
+      return `${count} ${count === 1 ? labels[0] : labels[1]}`;
+    })
+    .join(' · ');
+}
+
 export function assistantSynthesis(state, selectedMap) {
   const profile = diagnosticProfile(state, selectedMap);
   const { analysis, conflicts = [], missing = [] } = profile;
@@ -384,9 +405,7 @@ export function assistantSynthesis(state, selectedMap) {
     if (groups.length >= 2 && hasObjective && primary.score >= 18 && margin >= 0.3) level = 'Alta';
     else if (primary.score >= 8 && (groups.length >= 2 || margin >= 0.3)) level = 'Moderada';
   }
-  const confidenceReason = groups.length
-    ? groups.map(g => `${g} (${groupCounts[g]})`).join(' + ')
-    : '';
+  const confidenceReason = groups.length ? formatConfidenceReason(groupCounts) : '';
 
   // Próxima ação derivada do caso: desempate quando o diferencial está aberto,
   // senão o dado faltante mais relevante, senão a pergunta padrão.

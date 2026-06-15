@@ -97,14 +97,29 @@ export async function getPatient(patientId) {
  * Cria um novo paciente.
  * O therapist_id é preenchido automaticamente com o usuário autenticado.
  */
-function isMissingColumnError(error) {
-  return /column .* does not exist|schema cache|Could not find .* column/i.test(error?.message || '');
+export function isMissingColumnError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /column .* does not exist|schema cache|Could not find .* column/i.test(text);
 }
 
-function normalizeAge(age) {
+export function normalizeAge(age) {
   if (age === undefined || age === null || age === '') return null;
   const parsed = Number.parseInt(age, 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+export function hasSubmittedAge(age) {
+  return age !== undefined && age !== null && String(age).trim() !== '';
+}
+
+export function assertCanFallbackWithoutPatientAge(error, age) {
+  if (!isMissingColumnError(error) || !hasSubmittedAge(age)) return;
+  throw new Error(
+    'Não foi possível salvar a idade do paciente porque a coluna age não está disponível no banco. ' +
+    'Execute a migration supabase/migrations/20260522_patient_age_archive.sql antes de cadastrar idade.'
+  );
 }
 
 export async function createPatient({ name, phone, birthDate, age }) {
@@ -134,8 +149,8 @@ export async function createPatient({ name, phone, birthDate, age }) {
     name,
     phone: phone || null,
     birth_date: birthDate || null,
-    age: normalizedAge,
   };
+  if (hasSubmittedAge(age)) payload.age = normalizedAge;
 
   let { data, error } = await supabase
     .from('patients')
@@ -144,6 +159,7 @@ export async function createPatient({ name, phone, birthDate, age }) {
     .single();
 
   if (error && isMissingColumnError(error)) {
+    assertCanFallbackWithoutPatientAge(error, age);
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')
       .insert({
@@ -197,6 +213,7 @@ export async function updatePatient(patientId, updates) {
     .single();
 
   if (error && isMissingColumnError(error)) {
+    assertCanFallbackWithoutPatientAge(error, updates.age);
     const fallbackPayload = { ...payload };
     delete fallbackPayload.age;
     delete fallbackPayload.archived_at;

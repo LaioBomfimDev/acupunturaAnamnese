@@ -410,30 +410,55 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           '--clinic-accent-soft': accentPalette.soft,
         }}
       >
-        <span className="report-topband" aria-hidden="true" />
-        {letterhead}
+        {/* Estrutura em tabela: thead (cabeçalho) e tfoot (rodapé) são
+            repetidos pelo navegador no topo/pé de TODAS as páginas e têm o
+            espaço reservado, então o texto flui para a próxima página entre
+            eles, sem cobrir a assinatura nem virar "cabeçalho" da página de
+            baixo. Cabeçalho e rodapé fixos por página. */}
+        <table className="report-sheet">
+          <thead className="report-sheet-head">
+            <tr>
+              <td className="report-sheet-cell report-sheet-cell-head">
+                <span className="report-topband" aria-hidden="true" />
+                {letterhead}
+              </td>
+            </tr>
+          </thead>
 
-        {editing ? (
-          <div
-            className="report-body"
-            ref={editableRef}
-            contentEditable
-            suppressContentEditableWarning
-            dangerouslySetInnerHTML={{ __html: draftHtml }}
-          />
-        ) : editedEntry ? (
-          <div
-            className="report-body"
-            ref={reportBodyRef}
-            dangerouslySetInnerHTML={{ __html: sanitizedEditedHtml }}
-          />
-        ) : (
-          <div className="report-body" ref={reportBodyRef}>
-            {generatedBody}
-          </div>
-        )}
+          <tfoot className="report-sheet-foot">
+            <tr>
+              <td className="report-sheet-cell report-sheet-cell-foot">
+                {printFooter}
+              </td>
+            </tr>
+          </tfoot>
 
-        {printFooter}
+          <tbody>
+            <tr>
+              <td className="report-sheet-cell report-sheet-cell-body">
+                {editing ? (
+                  <div
+                    className="report-body"
+                    ref={editableRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    dangerouslySetInnerHTML={{ __html: draftHtml }}
+                  />
+                ) : editedEntry ? (
+                  <div
+                    className="report-body"
+                    ref={reportBodyRef}
+                    dangerouslySetInnerHTML={{ __html: sanitizedEditedHtml }}
+                  />
+                ) : (
+                  <div className="report-body" ref={reportBodyRef}>
+                    {generatedBody}
+                  </div>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* ── botões finais (não imprime) ────────────────────── */}

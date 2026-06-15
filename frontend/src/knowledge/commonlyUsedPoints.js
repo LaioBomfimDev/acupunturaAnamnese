@@ -1,7 +1,8 @@
 // Categoria "Pontos comumente usados" — curadoria clínica validada com mestra em acupuntura.
 // Os usuários comuns visualizam apenas estes pontos no Protocolo e na Biblioteca;
 // a biblioteca completa permanece editável no SuperAdm. Nada é excluído, apenas separado.
-// O campo `map` já indica onde cada ponto entra nos mapas visuais (próximo passo: imagens).
+// O campo `map` indica o grupo anatômico canônico dos mapas visuais.
+// A ordem dos blocos preserva a tabela clínica original; use `map` para exibição/agrupamento.
 
 import { normalizePointCode } from './aliases';
 
@@ -66,11 +67,11 @@ export const commonlyUsedPoints = [
   { id: 52, map: 'Torso e cabeça - costas', code: 'BL34', displayCode: 'B34', name: 'Xialiao', mainUse: 'Cólica, sacro, dor lombopélvica', clinicalCategories: ['ginecológico', 'dor'] },
 
   // ── Pernas - frente ─────────────────────────────────────────────────────
-  { id: 53, map: 'Pernas - frente', code: 'ST30', displayCode: 'E30', name: 'Qichong', mainUse: 'Inguinal, útero, fertilidade', clinicalCategories: ['ginecológico', 'pélvico'] },
-  { id: 54, map: 'Pernas - frente', code: 'ST29', displayCode: 'E29', name: 'Guilai', mainUse: 'Dismenorreia, frio no útero, dor pélvica', clinicalCategories: ['ginecológico', 'dor pélvica'] },
-  { id: 55, map: 'Pernas - frente', code: 'ST28', displayCode: 'E28', name: 'Shuidao', mainUse: 'Edema, bexiga, pélvico', clinicalCategories: ['urinário', 'ginecológico', 'edema'] },
-  { id: 56, map: 'Pernas - frente', code: 'ST25', displayCode: 'E25', name: 'Tianshu', mainUse: 'Intestino, constipação, diarreia, abdome', clinicalCategories: ['digestivo', 'intestinal'] },
-  { id: 57, map: 'Pernas - frente', code: 'ST21', displayCode: 'E21', name: 'Liangmen', mainUse: 'Epigastralgia, digestão lenta', clinicalCategories: ['gástrico', 'digestivo'] },
+  { id: 53, map: 'Torso e cabeça - frente', code: 'ST30', displayCode: 'E30', name: 'Qichong', mainUse: 'Inguinal, útero, fertilidade', clinicalCategories: ['ginecológico', 'pélvico'] },
+  { id: 54, map: 'Torso e cabeça - frente', code: 'ST29', displayCode: 'E29', name: 'Guilai', mainUse: 'Dismenorreia, frio no útero, dor pélvica', clinicalCategories: ['ginecológico', 'dor pélvica'] },
+  { id: 55, map: 'Torso e cabeça - frente', code: 'ST28', displayCode: 'E28', name: 'Shuidao', mainUse: 'Edema, bexiga, pélvico', clinicalCategories: ['urinário', 'ginecológico', 'edema'] },
+  { id: 56, map: 'Torso e cabeça - frente', code: 'ST25', displayCode: 'E25', name: 'Tianshu', mainUse: 'Intestino, constipação, diarreia, abdome', clinicalCategories: ['digestivo', 'intestinal'] },
+  { id: 57, map: 'Torso e cabeça - frente', code: 'ST21', displayCode: 'E21', name: 'Liangmen', mainUse: 'Epigastralgia, digestão lenta', clinicalCategories: ['gástrico', 'digestivo'] },
   { id: 58, map: 'Pernas - frente', code: 'ST34', displayCode: 'E34', name: 'Liangqiu', mainUse: 'Dor aguda no joelho, estômago', clinicalCategories: ['dor', 'joelho', 'gástrico'] },
   { id: 59, map: 'Pernas - frente', code: 'ST35', displayCode: 'E35', name: 'Dubi', mainUse: 'Joelho, osteoartrite, dor patelar', clinicalCategories: ['dor', 'joelho', 'ortopédico'] },
   { id: 60, map: 'Pernas - frente', code: 'ST36', displayCode: 'E36', name: 'Zusanli', mainUse: 'Imunidade, fadiga, digestão, neuro', clinicalCategories: ['digestivo', 'fadiga', 'neuro', 'imunológico'] },
@@ -85,7 +86,7 @@ export const commonlyUsedPoints = [
   { id: 69, map: 'Pernas - frente', code: 'KI7', displayCode: 'R7', name: 'Fuliu', mainUse: 'Sudorese, menopausa, edema', clinicalCategories: ['ginecológico', 'climatério', 'edema'] },
   { id: 70, map: 'Pernas - frente', code: 'GB34', displayCode: 'VB34', name: 'Yanglingquan', mainUse: 'Tendões, espasticidade, joelho, irritabilidade', clinicalCategories: ['dor', 'neuro', 'emocional'] },
   { id: 71, map: 'Pernas - frente', code: 'GB39', displayCode: 'VB39', name: 'Xuanzhong', mainUse: 'Ossos, medula, cervical, dor crônica', clinicalCategories: ['dor', 'neuro', 'ortopédico'] },
-  { id: 72, map: 'Pernas - frente', code: 'LI10', displayCode: 'IG10', name: 'Shousanli', mainUse: 'Tônus, dor em membro superior, fortalecimento', clinicalCategories: ['dor', 'neuro', 'ortopédico'] },
+  { id: 72, map: 'Mãos e punhos - dorso', code: 'LI10', displayCode: 'IG10', name: 'Shousanli', mainUse: 'Tônus, dor em membro superior, fortalecimento', clinicalCategories: ['dor', 'neuro', 'ortopédico'] },
 
   // ── Pernas - costas ─────────────────────────────────────────────────────
   { id: 73, map: 'Pernas - costas', code: 'BL36', displayCode: 'B36', name: 'Chengfu', mainUse: 'Ciatalgia, posterior de coxa, lombar', clinicalCategories: ['dor', 'ciática', 'lombar'] },
@@ -95,13 +96,13 @@ export const commonlyUsedPoints = [
   { id: 77, map: 'Pernas - costas', code: 'BL58', displayCode: 'B58', name: 'Feiyang', mainUse: 'Lombar, ciática, tornozelo', clinicalCategories: ['dor', 'lombar', 'ciática'] },
   { id: 78, map: 'Pernas - costas', code: 'BL60', displayCode: 'B60', name: 'Kunlun', mainUse: 'Lombar, ciática, tornozelo', clinicalCategories: ['dor', 'lombar', 'ciática'] },
   { id: 79, map: 'Pernas - costas', code: 'BL62', displayCode: 'B62', name: 'Shenmai', mainUse: 'Sono, coluna, neuro, Yang Qiao Mai', clinicalCategories: ['sono', 'neuro', 'dor'] },
-  { id: 80, map: 'Pernas - costas', code: 'BL54', displayCode: 'B54', name: 'Zhibian', mainUse: 'Quadril, ciática, dor pélvica', clinicalCategories: ['dor', 'ciática', 'pélvico'] },
+  { id: 80, map: 'Torso e cabeça - costas', code: 'BL54', displayCode: 'B54', name: 'Zhibian', mainUse: 'Quadril, ciática, dor pélvica', clinicalCategories: ['dor', 'ciática', 'pélvico'] },
   { id: 81, map: 'Pernas - costas', code: 'GB30', displayCode: 'VB30', name: 'Huantiao', mainUse: 'Ciatalgia, quadril, lombociatalgia', clinicalCategories: ['dor', 'ciática', 'quadril'] },
-  { id: 82, map: 'Pernas - costas', code: 'GB31', displayCode: 'VB31', name: 'Fengshi', mainUse: 'Coxa lateral, prurido, dor muscular', clinicalCategories: ['dor', 'dermatológico'] },
-  { id: 83, map: 'Pernas - costas', code: 'GB33', displayCode: 'VB33', name: 'Xiyangguan', mainUse: 'Joelho lateral, tendões', clinicalCategories: ['dor', 'joelho', 'ortopédico'] },
+  { id: 82, map: 'Pernas - frente', code: 'GB31', displayCode: 'VB31', name: 'Fengshi', mainUse: 'Coxa lateral, prurido, dor muscular', clinicalCategories: ['dor', 'dermatológico'] },
+  { id: 83, map: 'Pernas - frente', code: 'GB33', displayCode: 'VB33', name: 'Xiyangguan', mainUse: 'Joelho lateral, tendões', clinicalCategories: ['dor', 'joelho', 'ortopédico'] },
   { id: 84, map: 'Pernas - costas', code: 'BL56', displayCode: 'B56', name: 'Chengjin', mainUse: 'Panturrilha, tensão muscular', clinicalCategories: ['dor', 'muscular'] },
   { id: 85, map: 'Pernas - costas', code: 'BL59', displayCode: 'B59', name: 'Fuyang', mainUse: 'Lombar, tornozelo, dor posterior', clinicalCategories: ['dor', 'lombar', 'ortopédico'] },
-  { id: 86, map: 'Pernas - costas', code: 'BL67', displayCode: 'B67', name: 'Zhiyin', mainUse: 'Cefaleia, olhos, obstetrícia com cautela', clinicalCategories: ['cefaleia', 'ocular', 'ginecológico'] },
+  { id: 86, map: 'Pés - dorso', code: 'BL67', displayCode: 'B67', name: 'Zhiyin', mainUse: 'Cefaleia, olhos, obstetrícia com cautela', clinicalCategories: ['cefaleia', 'ocular', 'ginecológico'] },
 
   // ── Mãos e punhos - palma ───────────────────────────────────────────────
   { id: 87, map: 'Mãos e punhos - palma', code: 'PC6', displayCode: 'PC6', name: 'Neiguan', mainUse: 'Ansiedade, náusea, tórax, regulação vagal', clinicalCategories: ['emocional', 'gástrico', 'neurovegetativo'] },
@@ -115,41 +116,41 @@ export const commonlyUsedPoints = [
   { id: 95, map: 'Mãos e punhos - palma', code: 'LU9', displayCode: 'P9', name: 'Taiyuan', mainUse: 'Pulmão, tosse crônica, deficiência', clinicalCategories: ['respiratório', 'fadiga'] },
   { id: 96, map: 'Mãos e punhos - palma', code: 'LU10', displayCode: 'P10', name: 'Yuji', mainUse: 'Garganta, tosse, calor no Pulmão', clinicalCategories: ['respiratório', 'garganta'] },
   { id: 97, map: 'Mãos e punhos - palma', code: 'LU11', displayCode: 'P11', name: 'Shaoshang', mainUse: 'Garganta, emergência, calor', clinicalCategories: ['respiratório', 'garganta', 'emergência'] },
-  { id: 98, map: 'Mãos e punhos - palma', code: 'SI3', displayCode: 'ID3', name: 'Houxi', mainUse: 'Coluna, cervical, occipital, Du Mai', clinicalCategories: ['dor', 'coluna', 'cefaleia'] },
-  { id: 99, map: 'Mãos e punhos - palma', code: 'SP4', displayCode: 'BP4', name: 'Gongsun', mainUse: 'Digestivo, ginecológico, Chong Mai', clinicalCategories: ['digestivo', 'ginecológico'] },
+  { id: 98, map: 'Mãos e punhos - dorso', code: 'SI3', displayCode: 'ID3', name: 'Houxi', mainUse: 'Coluna, cervical, occipital, Du Mai', clinicalCategories: ['dor', 'coluna', 'cefaleia'] },
+  { id: 99, map: 'Pés - planta', code: 'SP4', displayCode: 'BP4', name: 'Gongsun', mainUse: 'Digestivo, ginecológico, Chong Mai', clinicalCategories: ['digestivo', 'ginecológico'] },
 
   // ── Mãos e punhos - dorso ───────────────────────────────────────────────
   { id: 100, map: 'Mãos e punhos - dorso', code: 'LI4', displayCode: 'IG4', name: 'Hegu', mainUse: 'Analgesia geral, face, cabeça, dor aguda', clinicalCategories: ['dor', 'cefaleia', 'orofacial'] },
   { id: 101, map: 'Mãos e punhos - dorso', code: 'LI5', displayCode: 'IG5', name: 'Yangxi', mainUse: 'Punho, dor radial, garganta', clinicalCategories: ['dor', 'punho', 'respiratório'] },
-  { id: 102, map: 'Mãos e punhos - dorso', code: 'LI11', displayCode: 'IG11', name: 'Quchi', mainUse: 'Dor, inflamação, calor, imunidade', clinicalCategories: ['dor', 'inflamação', 'imunológico'] },
-  { id: 103, map: 'Mãos e punhos - dorso', code: 'LI14', displayCode: 'IG14', name: 'Binao', mainUse: 'Braço, ombro, dor muscular', clinicalCategories: ['dor', 'ombro', 'ortopédico'] },
-  { id: 104, map: 'Mãos e punhos - dorso', code: 'LI15', displayCode: 'IG15', name: 'Jianyu', mainUse: 'Ombro, capsulite, limitação de ADM', clinicalCategories: ['dor', 'ombro', 'ortopédico'] },
-  { id: 105, map: 'Mãos e punhos - dorso', code: 'LI16', displayCode: 'IG16', name: 'Jugu', mainUse: 'Ombro, cervical, escápula', clinicalCategories: ['dor', 'ombro', 'cervical'] },
+  { id: 102, map: 'Torso e cabeça - frente', code: 'LI11', displayCode: 'IG11', name: 'Quchi', mainUse: 'Dor, inflamação, calor, imunidade', clinicalCategories: ['dor', 'inflamação', 'imunológico'] },
+  { id: 103, map: 'Torso e cabeça - frente', code: 'LI14', displayCode: 'IG14', name: 'Binao', mainUse: 'Braço, ombro, dor muscular', clinicalCategories: ['dor', 'ombro', 'ortopédico'] },
+  { id: 104, map: 'Torso e cabeça - frente', code: 'LI15', displayCode: 'IG15', name: 'Jianyu', mainUse: 'Ombro, capsulite, limitação de ADM', clinicalCategories: ['dor', 'ombro', 'ortopédico'] },
+  { id: 105, map: 'Torso e cabeça - frente', code: 'LI16', displayCode: 'IG16', name: 'Jugu', mainUse: 'Ombro, cervical, escápula', clinicalCategories: ['dor', 'ombro', 'cervical'] },
   { id: 106, map: 'Mãos e punhos - dorso', code: 'TE3', displayCode: 'TA3', name: 'Zhongzhu', mainUse: 'Cefaleia temporal, ouvido, mão', clinicalCategories: ['cefaleia', 'otológico', 'dor'] },
   { id: 107, map: 'Mãos e punhos - dorso', code: 'TE5', displayCode: 'TA5', name: 'Waiguan', mainUse: 'Dor lateral, cervical, temporal', clinicalCategories: ['dor', 'cefaleia', 'cervical'] },
-  { id: 108, map: 'Mãos e punhos - dorso', code: 'TE14', displayCode: 'TA14', name: 'Jianliao', mainUse: 'Ombro, articulação glenoumeral', clinicalCategories: ['dor', 'ombro', 'ortopédico'] },
-  { id: 109, map: 'Mãos e punhos - dorso', code: 'TE17', displayCode: 'TA17', name: 'Yifeng', mainUse: 'ATM, ouvido, dor facial', clinicalCategories: ['orofacial', 'otológico', 'dor'] },
-  { id: 110, map: 'Mãos e punhos - dorso', code: 'SI9', displayCode: 'ID9', name: 'Jianzhen', mainUse: 'Ombro posterior, escápula', clinicalCategories: ['dor', 'ombro', 'escápula'] },
-  { id: 111, map: 'Mãos e punhos - dorso', code: 'SI10', displayCode: 'ID10', name: 'Naoshu', mainUse: 'Ombro, escápula, dor irradiada', clinicalCategories: ['dor', 'ombro', 'escápula'] },
-  { id: 112, map: 'Mãos e punhos - dorso', code: 'SI11', displayCode: 'ID11', name: 'Tianzong', mainUse: 'Dor escapular, tensão dorsal', clinicalCategories: ['dor', 'escápula', 'dorsal'] },
-  { id: 113, map: 'Mãos e punhos - dorso', code: 'LU7', displayCode: 'P7', name: 'Lieque', mainUse: 'Tosse, rinite, garganta, Wei Qi', clinicalCategories: ['respiratório', 'imunológico', 'garganta'] },
+  { id: 108, map: 'Torso e cabeça - costas', code: 'TE14', displayCode: 'TA14', name: 'Jianliao', mainUse: 'Ombro, articulação glenoumeral', clinicalCategories: ['dor', 'ombro', 'ortopédico'] },
+  { id: 109, map: 'Torso e cabeça - frente', code: 'TE17', displayCode: 'TA17', name: 'Yifeng', mainUse: 'ATM, ouvido, dor facial', clinicalCategories: ['orofacial', 'otológico', 'dor'] },
+  { id: 110, map: 'Torso e cabeça - costas', code: 'SI9', displayCode: 'ID9', name: 'Jianzhen', mainUse: 'Ombro posterior, escápula', clinicalCategories: ['dor', 'ombro', 'escápula'] },
+  { id: 111, map: 'Torso e cabeça - costas', code: 'SI10', displayCode: 'ID10', name: 'Naoshu', mainUse: 'Ombro, escápula, dor irradiada', clinicalCategories: ['dor', 'ombro', 'escápula'] },
+  { id: 112, map: 'Torso e cabeça - costas', code: 'SI11', displayCode: 'ID11', name: 'Tianzong', mainUse: 'Dor escapular, tensão dorsal', clinicalCategories: ['dor', 'escápula', 'dorsal'] },
+  { id: 113, map: 'Mãos e punhos - palma', code: 'LU7', displayCode: 'P7', name: 'Lieque', mainUse: 'Tosse, rinite, garganta, Wei Qi', clinicalCategories: ['respiratório', 'imunológico', 'garganta'] },
 
   // ── Pé - dorso ──────────────────────────────────────────────────────────
-  { id: 114, map: 'Pé - dorso', code: 'LR3', displayCode: 'F3', name: 'Taichong', mainUse: 'Estresse, irritabilidade, dor, cefaleia', clinicalCategories: ['emocional', 'dor', 'cefaleia'] },
-  { id: 115, map: 'Pé - dorso', code: 'LR2', displayCode: 'F2', name: 'Xingjian', mainUse: 'Raiva, calor do Fígado, cefaleia', clinicalCategories: ['emocional', 'cefaleia', 'calor'] },
-  { id: 116, map: 'Pé - dorso', code: 'LR5', displayCode: 'F5', name: 'Ligou', mainUse: 'Genital, prurido, umidade-calor', clinicalCategories: ['ginecológico', 'dermatológico'] },
-  { id: 117, map: 'Pé - dorso', code: 'ST41', displayCode: 'E41', name: 'Jiexi', mainUse: 'Tornozelo, digestivo, agitação', clinicalCategories: ['dor', 'digestivo', 'emocional'] },
-  { id: 118, map: 'Pé - dorso', code: 'ST44', displayCode: 'E44', name: 'Neiting', mainUse: 'Calor no Estômago, refluxo, halitose', clinicalCategories: ['gástrico', 'digestivo'] },
-  { id: 119, map: 'Pé - dorso', code: 'ST45', displayCode: 'E45', name: 'Lidui', mainUse: 'Estômago, calor, fome excessiva', clinicalCategories: ['gástrico', 'metabólico'] },
-  { id: 120, map: 'Pé - dorso', code: 'GB40', displayCode: 'VB40', name: 'Qiuxu', mainUse: 'Tornozelo, vesícula, decisão, dor lateral', clinicalCategories: ['dor', 'ortopédico', 'emocional'] },
-  { id: 121, map: 'Pé - dorso', code: 'GB41', displayCode: 'VB41', name: 'Zulinqi', mainUse: 'Cefaleia lateral, TPM, Dai Mai', clinicalCategories: ['cefaleia', 'ginecológico'] },
-  { id: 122, map: 'Pé - dorso', code: 'KI3', displayCode: 'R3', name: 'Taixi', mainUse: 'Rim, medo, fadiga, lombar', clinicalCategories: ['emocional', 'fadiga', 'dor lombar'] },
-  { id: 123, map: 'Pé - dorso', code: 'KI6', displayCode: 'R6', name: 'Zhaohai', mainUse: 'Insônia, ansiedade, Yin, garganta', clinicalCategories: ['sono', 'emocional', 'garganta'] },
+  { id: 114, map: 'Pés - dorso', code: 'LR3', displayCode: 'F3', name: 'Taichong', mainUse: 'Estresse, irritabilidade, dor, cefaleia', clinicalCategories: ['emocional', 'dor', 'cefaleia'] },
+  { id: 115, map: 'Pés - dorso', code: 'LR2', displayCode: 'F2', name: 'Xingjian', mainUse: 'Raiva, calor do Fígado, cefaleia', clinicalCategories: ['emocional', 'cefaleia', 'calor'] },
+  { id: 116, map: 'Pernas - frente', code: 'LR5', displayCode: 'F5', name: 'Ligou', mainUse: 'Genital, prurido, umidade-calor', clinicalCategories: ['ginecológico', 'dermatológico'] },
+  { id: 117, map: 'Pés - dorso', code: 'ST41', displayCode: 'E41', name: 'Jiexi', mainUse: 'Tornozelo, digestivo, agitação', clinicalCategories: ['dor', 'digestivo', 'emocional'] },
+  { id: 118, map: 'Pés - dorso', code: 'ST44', displayCode: 'E44', name: 'Neiting', mainUse: 'Calor no Estômago, refluxo, halitose', clinicalCategories: ['gástrico', 'digestivo'] },
+  { id: 119, map: 'Pés - dorso', code: 'ST45', displayCode: 'E45', name: 'Lidui', mainUse: 'Estômago, calor, fome excessiva', clinicalCategories: ['gástrico', 'metabólico'] },
+  { id: 120, map: 'Pés - dorso', code: 'GB40', displayCode: 'VB40', name: 'Qiuxu', mainUse: 'Tornozelo, vesícula, decisão, dor lateral', clinicalCategories: ['dor', 'ortopédico', 'emocional'] },
+  { id: 121, map: 'Pés - dorso', code: 'GB41', displayCode: 'VB41', name: 'Zulinqi', mainUse: 'Cefaleia lateral, TPM, Dai Mai', clinicalCategories: ['cefaleia', 'ginecológico'] },
+  { id: 122, map: 'Pés - dorso', code: 'KI3', displayCode: 'R3', name: 'Taixi', mainUse: 'Rim, medo, fadiga, lombar', clinicalCategories: ['emocional', 'fadiga', 'dor lombar'] },
+  { id: 123, map: 'Pés - dorso', code: 'KI6', displayCode: 'R6', name: 'Zhaohai', mainUse: 'Insônia, ansiedade, Yin, garganta', clinicalCategories: ['sono', 'emocional', 'garganta'] },
 
   // ── Pé - planta ─────────────────────────────────────────────────────────
-  { id: 124, map: 'Pé - planta', code: 'KI1', displayCode: 'R1', name: 'Yongquan', mainUse: 'Aterramento, ansiedade intensa, excesso na cabeça', clinicalCategories: ['emocional', 'neuro', 'crise'] },
-  { id: 125, map: 'Pé - planta', code: 'KI2', displayCode: 'R2', name: 'Rangu', mainUse: 'Calor vazio, insônia, menopausa', clinicalCategories: ['climatério', 'sono', 'calor'] },
-  { id: 126, map: 'Pé - planta', code: 'SP1', displayCode: 'BP1', name: 'Yinbai', mainUse: 'Sangramentos, ginecológico, Baço', clinicalCategories: ['ginecológico', 'digestivo'] },
+  { id: 124, map: 'Pés - planta', code: 'KI1', displayCode: 'R1', name: 'Yongquan', mainUse: 'Aterramento, ansiedade intensa, excesso na cabeça', clinicalCategories: ['emocional', 'neuro', 'crise'] },
+  { id: 125, map: 'Pés - planta', code: 'KI2', displayCode: 'R2', name: 'Rangu', mainUse: 'Calor vazio, insônia, menopausa', clinicalCategories: ['climatério', 'sono', 'calor'] },
+  { id: 126, map: 'Pés - planta', code: 'SP1', displayCode: 'BP1', name: 'Yinbai', mainUse: 'Sangramentos, ginecológico, Baço', clinicalCategories: ['ginecológico', 'digestivo'] },
 
   // ── Orelha - lateral (auriculoterapia) ──────────────────────────────────
   { id: 127, map: 'Orelha - lateral', auricularSlug: 'shen-men', name: 'Shen Men', mainUse: 'Ansiedade, dor, sono, modulação central', clinicalCategories: ['emocional', 'dor', 'sono'] },

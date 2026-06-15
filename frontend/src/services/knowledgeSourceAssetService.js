@@ -27,6 +27,25 @@ export function isValidKnowledgeSourceAssetKey(value) {
     && !hasUnsafePathFragment(key);
 }
 
+// Fontes públicas e permanentes (Atlas): servidas por URL pública fixa do Storage,
+// sem URL assinada/expiração e sem passar por Edge Function. Demais prefixos
+// (ex.: pdf-sources) seguem protegidos. Mantém os 2 mundos separados por bucket.
+const PUBLIC_ATLAS_PREFIXES = ['atlas-ednea/'];
+const PUBLIC_ATLAS_BUCKET = import.meta.env?.VITE_PUBLIC_ATLAS_BUCKET || 'knowledge-atlas-public';
+const SUPABASE_BASE_URL = String(import.meta.env?.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+
+export function isPublicAtlasAssetKey(assetKey) {
+  return PUBLIC_ATLAS_PREFIXES.some(prefix => String(assetKey || '').startsWith(prefix));
+}
+
+export function publicAtlasAssetUrl(assetKey) {
+  if (!isValidKnowledgeSourceAssetKey(assetKey)) {
+    throw new Error('Chave de fonte visual inválida.');
+  }
+  const encodedKey = assetKey.split('/').map(part => encodeURIComponent(part)).join('/');
+  return `${SUPABASE_BASE_URL}/storage/v1/object/public/${PUBLIC_ATLAS_BUCKET}/${encodedKey}`;
+}
+
 function currentOrigin() {
   if (typeof window === 'undefined') return '';
   return window.location?.origin || '';
@@ -119,6 +138,13 @@ export async function resolveKnowledgeSourceAssetUrl(value, options = {}) {
   if (!assetKey) throw new Error('Fonte visual inválida.');
 
   const allowLocalFallback = options.allowLocalFallback ?? LOCAL_FALLBACK_ENABLED;
+
+  // Atlas é público e permanente: em dev usa o arquivo local servido pelo Vite;
+  // em produção, a URL pública fixa do Storage. Nunca gera URL assinada.
+  if (isPublicAtlasAssetKey(assetKey)) {
+    return allowLocalFallback ? sourceAssetUrlFromKey(assetKey) : publicAtlasAssetUrl(assetKey);
+  }
+
   if (allowLocalFallback) {
     return sourceAssetUrlFromKey(assetKey);
   }
@@ -139,6 +165,19 @@ export async function fetchKnowledgeSourceJsonAsset(assetKeyOrUrl, fallbackUrl =
   const allowLocalFallback = options.allowLocalFallback ?? LOCAL_FALLBACK_ENABLED;
   const localUrl = fallbackUrl || sourceAssetUrlFromKey(assetKey);
   let localError = null;
+
+  // Manifesto público do Atlas: lê do arquivo local em dev (offline-friendly) e,
+  // se faltar, da URL pública fixa do Storage. Sem Edge Function/URL assinada.
+  if (isPublicAtlasAssetKey(assetKey)) {
+    if (allowLocalFallback) {
+      try {
+        return await fetchJson(localUrl);
+      } catch {
+        // sem arquivo local: cai para a URL pública do Storage
+      }
+    }
+    return fetchJson(publicAtlasAssetUrl(assetKey));
+  }
 
   if (allowLocalFallback) {
     try {

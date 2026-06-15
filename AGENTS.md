@@ -115,13 +115,14 @@ Modelo para novas entradas:
 - Sintoma: a área SuperAdm > Fontes PDF exibiu `HTTP 404` e as páginas/imagens renderizadas dos PDFs não apareciam após deploy, porque os arquivos estavam em `frontend/.local-source-assets` e não eram publicados.
 - Causa: a UI referenciava URLs públicas (`/knowledge/source-assets/...`) para assets bibliográficos que foram corretamente mantidos fora do bundle, mas ainda não havia camada protegida de Storage privado + URL assinada para produção.
 - Regra nova: fontes visuais bibliográficas (PDFs renderizados, páginas webp, OCR/texto e manifestos `.local.json`) nunca devem depender de rota pública em produção. Use bucket privado `knowledge-source-assets`, manifesto `knowledge_source_assets` e Edge Function `knowledge-source-asset-url`; o frontend só pode enviar `assetKey`, nunca `bucket`/`object_path`, e deve ter fallback local apenas em desenvolvimento.
-- Teste ou verificação obrigatória: teste de regressão deve validar sanitização de `assetKey`, bucket privado/RLS do manifesto e a ordem de autorização da Edge Function (autenticar → membro ativo → escopo por asset → `createSignedUrl`).
+- Teste ou verificação obrigatória: teste de regressão deve validar sanitização de `assetKey`, bucket privado/RLS do manifesto e que a Edge Function exige `assertSuperAdmin` antes de gerar `createSignedUrl`.
 
-### 2026-06-15 - Fontes do Atlas liberadas ao usuário comum (orientação clínica)
+### 2026-06-15 - Atlas é público: bucket público, sem URL assinada
 
-- Motivação: ao clicar no ponto, o profissional comum precisa ver a fonte visual do Atlas para se guiar; antes só o SuperAdm via.
-- Regra ajustada: a Edge Function `knowledge-source-asset-url` agora libera `atlas-ednea/*` para **qualquer membro ativo** (`assertActiveMember`), mantendo `pdf-sources/*` e demais prefixos restritos ao SuperAdm (`MEMBER_ACCESSIBLE_PREFIXES`). Continua exigindo sessão válida, sem rota pública, com URL assinada de 5 min e auditoria (`actorRole`/`memberScoped`) — "membro ativo" ≠ "público anônimo", então a regra de não publicar páginas inteiras em área pública continua válida.
-- Atenção de produto: liberar páginas de obra com direitos autorais a todos os usuários logados é decisão de licença do responsável; mantido sob acesso autenticado e auditado para reduzir exposição.
+- Sintoma/decisão: o Atlas da Ednéa é material público e precisa guiar o profissional comum ao clicar no ponto; a camada protegida (Edge Function + URL assinada de 5 min) era complexidade desnecessária e impedia o usuário comum de ver a imagem.
+- Regra nova: fontes do prefixo `atlas-ednea/` (páginas webp + índice) ficam em bucket **público** dedicado `knowledge-atlas-public`, servidas por URL pública fixa (`publicAtlasAssetUrl`), sem Edge Function e sem expiração. Bucket público é só-leitura: sem policy de escrita em `storage.objects`, então não há endpoint dinâmico nem caminho de escrita explorável. As demais fontes (`pdf-sources/*`) permanecem no fluxo protegido (bucket privado + Edge Function + SuperAdm).
+- Atenção: não confundir os dois mundos. Só `atlas-ednea/` é público; o resto continua restrito. A separação é por bucket e por prefixo (`isPublicAtlasAssetKey`).
+- Teste ou verificação obrigatória: teste de regressão deve garantir que `atlas-ednea/*` resolve para a URL pública do bucket (sem `token=`/expiração) e que a migration cria o bucket público sem policy de escrita customizada.
 
 ### 2026-06-12 - Grupo novo de checklist sem peso de evidência no analyzer
 

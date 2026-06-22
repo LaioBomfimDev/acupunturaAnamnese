@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { askLibrary, LIBRARY_AI_DISCLAIMER } from '../../services/libraryAiService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { getKnowledgeCategories, searchKnowledge } from '../../knowledge/searchIndex';
-import {
-  KM_AGENT_DRAFT_INDEX_URL,
-  getKmAgentDraftTitlePtBr,
-  getKmAgentLocationPtBr,
-  getKmAgentNeedlingPtBr,
-} from '../../knowledge/kmAgentDrafts';
-import { normalizePointCode } from '../../knowledge/aliases';
 import { commonlyUsedPoints, isCommonlyUsedEntity } from '../../knowledge/commonlyUsedPoints';
+import { docCorpusCards } from '../../knowledge/generated/doc-corpus';
 import {
   getClinicalKnowledgeReviews,
 } from '../../services/knowledgeAdminService';
+import { isClinicallyActiveKnowledgeReview } from '../../knowledge/reviewSourcePolicy';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
 
 /* ── Mapeamento de Categorias ──────────────────────────────────────────── */
@@ -27,6 +24,8 @@ const CATEGORY_MAP = {
   'Evolução': { icon: '📈', color: '#8b5cf6' },
   'Mapa':     { icon: '🗺️', color: '#0891b2' },
   'Aprovados locais': { icon: '✅', color: '#0f766e' },
+  'Repertório':   { icon: '📘', color: '#0d9488' },
+  'Regra clínica':{ icon: '🧭', color: '#b45309' },
 };
 
 function getCategoryInfo(catName) {
@@ -175,6 +174,15 @@ function LibraryAsk({ cards }) {
             {result.usedCount > 0 ? `${result.usedCount} item(ns) da base consultado(s). ` : ''}
             Modelo: {result.modelVersion}{isMock ? ' (simulado)' : ''}.
           </p>
+          <div className="deepdive-correct-row">
+            <AiCorrectionButton
+              surface={AI_SURFACES.LIBRARY_QA}
+              aiOutput={{ answer: result.answer, citations: result.citations }}
+              contextSnapshot={{ question }}
+              modelVersion={result.modelVersion}
+              label="✎ Corrigir a resposta"
+            />
+          </div>
         </div>
       )}
     </div>
@@ -185,33 +193,8 @@ export function Biblioteca() {
   const [confidenceTab, setConfidenceTab] = useState('high'); // 'high' | 'medium' | 'low'
   const [catFilter, setCatFilter] = useState('Todos');
   const [search, setSearch] = useState('');
-  const [kmAgentDrafts, setKmAgentDrafts] = useState([]);
   const [knowledgeReviews, setKnowledgeReviews] = useState([]);
-  const [kmAgentLoadState, setKmAgentLoadState] = useState('loading');
   const [reviewsLoadState, setReviewsLoadState] = useState('loading');
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(KM_AGENT_DRAFT_INDEX_URL)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-      })
-      .then(data => {
-        if (cancelled) return;
-        setKmAgentDrafts(Array.isArray(data) ? data : []);
-        setKmAgentLoadState('ready');
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setKmAgentDrafts([]);
-        setKmAgentLoadState('error');
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -259,22 +242,26 @@ export function Biblioteca() {
 
   // 2. Cards dos reviews (enriquecidos) classificados por confiança
   const reviewCards = useMemo(() => {
-    return knowledgeReviews.map(review => {
+    return knowledgeReviews.filter(isClinicallyActiveKnowledgeReview).map(review => {
       const actions = Array.isArray(review.actions) ? review.actions : asList(review.actions);
       const indications = Array.isArray(review.indications) ? review.indications : asList(review.indications);
       const cautions = Array.isArray(review.cautions) ? review.cautions : asList(review.cautions);
       const displayCode = review.displayCode || review.code || review.atlasName || 'Ponto';
 
-      let statusLabel = '✅ Seguro para Uso Clínico';
+      let statusLabel = 'Seguro para Uso Clínico';
       let confidence = 'high';
       let cardColor = '#10b981';
 
-      if (review.status === 'pending_atlas_review') {
-        statusLabel = '⚠️ Em Revisão de Fonte';
+      if (review.clinicalActivationBlocked) {
+        statusLabel = 'Rascunho separado';
         confidence = 'medium';
         cardColor = '#f59e0b';
-      } else if (review.status === 'draft_low') {
-        statusLabel = '🚫 Rascunho Bruto - Não seguro';
+      } else if (review.status === 'pending_atlas_review' || review.status === 'review') {
+        statusLabel = 'Em revisão de fonte';
+        confidence = 'medium';
+        cardColor = '#f59e0b';
+      } else if (review.status === 'draft_low' || review.status === 'draft') {
+        statusLabel = 'Rascunho bruto - não seguro';
         confidence = 'low';
         cardColor = '#f97316';
       }
@@ -310,48 +297,15 @@ export function Biblioteca() {
     });
   }, [knowledgeReviews]);
 
-  // Códigos de pontos já analisados para evitar duplicação com rascunhos brutos
-  const reviewedCodes = useMemo(() => new Set(
-    knowledgeReviews.map(r => normalizePointCode(r.code || r.displayCode)).filter(Boolean)
-  ), [knowledgeReviews]);
-
-  // 3. Cards de rascunho KM-Agent que não têm review local (todos de baixa confiança)
-  const draftCards = useMemo(() => {
-    return kmAgentDrafts
-      .filter(item => !reviewedCodes.has(normalizePointCode(item.code || item.displayCode)))
-      .map(item => ({
-        id: `${item.id}:draft`,
-        cat: 'Ponto',
-        title: getKmAgentDraftTitlePtBr(item),
-        confidence: 'low',
-        statusLabel: '🚫 Rascunho Bruto - Não seguro',
-        cardColor: '#f97316',
-        tags: [
-          item.code,
-          item.displayCode,
-          item.metadata?.meridianCode,
-          item.metadata?.meridian,
-          'rascunho',
-          'KM-Agent',
-        ].filter(Boolean).join(', '),
-        source: 'KM-Agent data/acupoints.csv',
-        txt: [
-          'Rascunho importado. Exige revisão profissional antes de uso clínico.',
-          getKmAgentLocationPtBr(item) ? `Localização: ${getKmAgentLocationPtBr(item)}` : '',
-          getKmAgentNeedlingPtBr(item) ? `Agulhamento: ${getKmAgentNeedlingPtBr(item)}` : '',
-        ].filter(Boolean).join(' '),
-        entity: item,
-      }));
-  }, [kmAgentDrafts, reviewedCodes]);
-
-  // Unifica todos os cards. Para o usuário comum (esta tela), cards de pontos
-  // ficam restritos à categoria "Pontos comumente usados" — nada é excluído da
-  // base: a biblioteca completa permanece editável no SuperAdm.
+  // Unifica os cards clínicos. Rascunhos KM-Agent/PDF ficam separados no SuperAdm
+  // e nao entram na Biblioteca clínica comum nem no contexto da IA da Biblioteca.
+  // Os chunks da documentação curada (Repertório/Regra clínica) entram como
+  // confiança média: ficam navegáveis e disponíveis ao "Pergunte à Biblioteca".
   const allCards = useMemo(() => {
     const pointCategories = new Set(['Ponto', 'Aurículo']);
-    return [...curatedCards, ...reviewCards, ...draftCards]
+    return [...curatedCards, ...reviewCards, ...docCorpusCards]
       .filter(card => !pointCategories.has(card.cat) || isCommonlyUsedEntity(card.entity));
-  }, [curatedCards, reviewCards, draftCards]);
+  }, [curatedCards, reviewCards]);
 
   // Contagens por aba de confiança
   const highCount = useMemo(() => allCards.filter(c => c.confidence === 'high').length, [allCards]);
@@ -393,7 +347,6 @@ export function Biblioteca() {
       <div className="box" style={{ marginBottom: 20 }}>
         Base consultável integrada ao raciocínio clínico: {highCount} itens seguros para uso clínico, {mediumCount} em revisão de fonte e {lowCount} rascunhos brutos sem uso clínico automático até revisão profissional do SuperAdm.
         {' '}Os pontos exibidos aqui pertencem à categoria <b>Pontos comumente usados</b> ({commonlyUsedPoints.length} pontos validados clinicamente); a biblioteca completa permanece editável no SuperAdm.
-        {kmAgentLoadState === 'error' && <span> A base KM-Agent não carregou nesta sessão.</span>}
         {reviewsLoadState === 'error' && <span> As aprovações locais não carregaram nesta sessão.</span>}
       </div>
 

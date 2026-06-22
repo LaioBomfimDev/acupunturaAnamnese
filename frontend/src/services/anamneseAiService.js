@@ -39,8 +39,12 @@ const TEXT_FIELDS = [
   ['obsDigestao', 'Observações digestivas'],
   ['obsDor', 'Observações de dor'],
   ['medicacoes', 'Medicações / diagnósticos prévios'],
+  ['atividadeFisica', 'Atividade física'],
   ['dorLocal', 'Localização da dor'],
   ['escalaDor', 'Escala de dor'],
+  ['dorPeriodoReferencia', 'Período de referência da dor'],
+  ['dorRepouso', 'Dor em repouso'],
+  ['dorMovimento', 'Dor em movimento'],
   ['agua', 'Consumo de água'],
 ];
 
@@ -71,6 +75,13 @@ const MOCK_KEYWORDS = [
   { re: /frio|gela/i, group: 'clima', item: 'Piora com frio', confidence: 0.5 },
   { re: /grávid|gravid|gestante|gestação/i, group: 'seguranca', item: 'Gestação', confidence: 0.9 },
   { re: /varfarina|anticoagul|marevan|xarelto/i, group: 'seguranca', item: 'Anticoagulante', confidence: 0.88 },
+  { re: /perda.*peso|emagrec.*sem.*querer/i, group: 'seguranca', item: 'Perda de peso não intencional', confidence: 0.82 },
+  { re: /desmai|síncope|sincope/i, group: 'seguranca', item: 'Desmaio recente', confidence: 0.82 },
+  { re: /queda.*recente|caiu.*recentemente/i, group: 'seguranca', item: 'Queda recente', confidence: 0.78 },
+  { re: /trauma.*recente|acidente.*recente/i, group: 'seguranca', item: 'Trauma recente', confidence: 0.78 },
+  { re: /coagul|sangramento.*fácil|sangramento.*facil/i, group: 'seguranca', item: 'Distúrbio de coagulação', confidence: 0.82 },
+  { re: /câncer|cancer|neoplas/i, group: 'seguranca', item: 'Histórico de câncer', confidence: 0.78 },
+  { re: /cirurgia.*recente|operad[oa].*recentemente/i, group: 'seguranca', item: 'Cirurgia recente', confidence: 0.8 },
   { re: /café|cafeína|cafeina/i, group: 'substanciasUso', item: 'Cafeína', confidence: 0.6 },
 ];
 

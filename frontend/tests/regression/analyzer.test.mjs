@@ -221,6 +221,7 @@ test('ranking por evidências usa ponto aprovado da Biblioteca Viva', () => {
       indications: ['asma', 'tosse', 'dispneia'],
       relatedPatterns: ['Qi em contrafluxo/Pulmão'],
       techniques: ['agulha'],
+      source: 'Atlas dos Pontos de Acupuntura: Guia de Localizacao',
     }],
     limit: 12,
   });
@@ -232,7 +233,7 @@ test('ranking por evidências usa ponto aprovado da Biblioteca Viva', () => {
   assert.equal(result.candidateStats.approvedReviewCount, 1);
 });
 
-test('ranking e ficha do protocolo usam ponto aprovado vindo da curadoria profunda local', () => {
+test('ranking e ficha do protocolo usam ponto aprovado vindo do Atlas', () => {
   const deepCuratedApprovedReview = {
     code: 'ATLAS-EXTRA-RESPIRAR',
     displayCode: 'Respirar Livre',
@@ -245,7 +246,7 @@ test('ranking e ficha do protocolo usam ponto aprovado vindo da curadoria profun
     indications: ['asma', 'tosse', 'dispneia'],
     relatedPatterns: ['Qi em contrafluxo/Pulmão'],
     techniques: ['agulha', 'laser'],
-    source: 'Biblioteca Viva - deep-curated-reviews',
+    source: 'Atlas dos Pontos de Acupuntura: Guia de Localizacao',
   };
   const mergedReviews = knowledgeAdminService.mergeClinicalKnowledgeReviews({
     deepCuratedReviews: [deepCuratedApprovedReview],
@@ -282,6 +283,50 @@ test('ranking e ficha do protocolo usam ponto aprovado vindo da curadoria profun
   assert.equal(popupDetail.name, 'Respirar Livre - revisão profunda aprovada');
   assert.equal(popupDetail.dataOrigin, 'Biblioteca Viva');
   assert.ok(popupDetail.indications.includes('asma'));
+});
+
+test('fonte PDF aprovada antes volta a rascunho clínico e não entra no ranking', () => {
+  const pdfReview = {
+    code: 'ATLAS-EXTRA-PDF',
+    displayCode: 'PDF Antigo',
+    status: 'approved_local',
+    title: 'PDF Antigo - aprovação antiga',
+    actions: ['desce o Qi do Pulmão'],
+    indications: ['asma', 'tosse', 'dispneia'],
+    relatedPatterns: ['Qi em contrafluxo/Pulmão'],
+    source: 'Biblioteca Viva - Fontes PDF',
+    sourceReferences: [{
+      sourceKey: 'sumiko-ear-acupuncture-clinical-treatment',
+      sourceTitle: 'Ear Acupuncture Clinical Treatment',
+      originalLanguage: 'en',
+    }],
+  };
+  const mergedReviews = knowledgeAdminService.mergeClinicalKnowledgeReviews({
+    deepCuratedReviews: [],
+    highConfidenceReviews: [],
+    localReviews: [pdfReview],
+  });
+  const normalizedReview = mergedReviews.find(review => review.code === 'ATLAS-EXTRA-PDF');
+  const state = {
+    queixa: 'Crise de asma com tosse e dispneia.',
+    historia: '',
+    medicacoes: '',
+  };
+  const selectedMap = {};
+  const analysis = analyzer.analyze(state, selectedMap);
+  const result = pointRecommendations.buildPointRecommendations({
+    state,
+    selectedMap,
+    analysis,
+    knowledgeReviews: mergedReviews,
+    limit: 12,
+  });
+
+  assert.equal(normalizedReview.status, 'review');
+  assert.equal(normalizedReview.previousStatus, 'approved_local');
+  assert.equal(normalizedReview.clinicalActivationBlocked, true);
+  assert.equal(result.candidateStats.approvedReviewCount, 0);
+  assert.ok(!result.recommendations.some(item => item.point.code === 'ATLAS-EXTRA-PDF'));
 });
 
 test('ranking por evidências ignora ponto ainda não aprovado', () => {
@@ -325,7 +370,12 @@ test('base clínica do protocolo carrega deep-curated, alta confiança e revisõ
         json: async () => ({
           reviews: [
             { code: 'LU1', status: 'review', title: 'LU1 rascunho profundo' },
-            { code: 'PC6', status: 'approved_local', title: 'PC6 aprovado pela curadoria profunda' },
+            {
+              code: 'PC6',
+              status: 'approved_local',
+              title: 'PC6 aprovado por PDF antigo',
+              source: 'Biblioteca Viva - Fontes PDF',
+            },
           ],
         }),
       };
@@ -336,8 +386,18 @@ test('base clínica do protocolo carrega deep-curated, alta confiança e revisõ
         ok: true,
         json: async () => ({
           reviews: [
-            { code: 'LU1', status: 'approved_local', title: 'LU1 alta confiança' },
-            { code: 'HT7', status: 'approved_local', title: 'HT7 alta confiança' },
+            {
+              code: 'LU1',
+              status: 'approved_local',
+              title: 'LU1 alta confiança',
+              approvalMethod: 'bulk_high_confidence_operator_request',
+            },
+            {
+              code: 'HT7',
+              status: 'approved_local',
+              title: 'HT7 alta confiança',
+              approvalMethod: 'bulk_high_confidence_operator_request',
+            },
           ],
         }),
       };
@@ -348,7 +408,12 @@ test('base clínica do protocolo carrega deep-curated, alta confiança e revisõ
 
   globalThis.localStorage = {
     getItem: () => JSON.stringify([
-      { code: 'LU1', status: 'approved_local', title: 'LU1 revisão manual local' },
+      {
+        code: 'LU1',
+        status: 'approved_local',
+        title: 'LU1 revisão manual antiga de PDF',
+        source: 'Biblioteca Viva - Fontes PDF',
+      },
     ]),
   };
 
@@ -361,8 +426,10 @@ test('base clínica do protocolo carrega deep-curated, alta confiança e revisõ
       knowledgeAdminService.HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_URL,
     ]);
     assert.equal(reviews.length, 3);
-    assert.equal(byCode.get('LU1').title, 'LU1 revisão manual local');
-    assert.equal(byCode.get('PC6').title, 'PC6 aprovado pela curadoria profunda');
+    assert.equal(byCode.get('LU1').title, 'LU1 alta confiança');
+    assert.equal(byCode.get('PC6').title, 'PC6 aprovado por PDF antigo');
+    assert.equal(byCode.get('PC6').status, 'review');
+    assert.equal(byCode.get('PC6').clinicalActivationBlocked, true);
     assert.equal(byCode.get('HT7').title, 'HT7 alta confiança');
   } finally {
     globalThis.fetch = originalFetch;
@@ -391,7 +458,7 @@ test('ficha do ponto prioriza revisão aprovada da Biblioteca Viva', () => {
       relatedPatterns: ['Ascensão do Yang do Fígado'],
       techniques: ['agulha', 'laser'],
       needling: 'Técnica revisada.',
-      source: 'Biblioteca Viva',
+      source: 'Atlas dos Pontos de Acupuntura: Guia de Localizacao',
     }],
     atlasReference: {
       referenceLabel: 'Atlas Ednea Martins, p. 86-87',
@@ -517,6 +584,7 @@ test('ficha do ponto não exibe placeholders de curadoria como dado clínico', (
       indications: ['Indicações não confirmadas nas fontes automáticas; preencher apenas após revisão profissional.'],
       relatedPatterns: ['Padrões MTC não inferidos com segurança; definir pela anamnese e auditoria profissional.'],
       needling: 'Técnica não localizada com fonte suficiente; revisar literatura profissional antes de uso.',
+      source: 'Atlas dos Pontos de Acupuntura: Guia de Localizacao',
     }],
   });
 
@@ -539,6 +607,7 @@ test('ficha do ponto bloqueia conteudo original nao pt-BR sem sintese revisada',
       indications: ['cough'],
       techniques: ['needle'],
       needling: 'Perpendicular insertion.',
+      source: 'Atlas dos Pontos de Acupuntura: Guia de Localizacao',
       languagePolicy: {
         originalLanguage: 'en',
         pointPageLanguage: 'original',

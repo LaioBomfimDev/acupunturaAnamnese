@@ -208,6 +208,13 @@ for (const entry of commonlyUsedPoints) {
 export const commonlyUsedBodyPoints = commonlyUsedPoints.filter(entry => entry.code);
 export const commonlyUsedAuricularPoints = commonlyUsedPoints.filter(entry => entry.auricularSlug);
 
+// Filtro de visualizacao: inclui os pontos auriculares sem interferir na
+// camada de coordenadas corporais autoritativas de commonlyUsedMapLocations.
+export const commonlyUsedMapFilterCodes = new Set([
+  ...commonlyUsedBodyPoints.map(entry => normalizePointCode(entry.code)),
+  ...commonlyUsedAuricularPoints.map(entry => `auricular:${entry.auricularSlug}`),
+]);
+
 export function getCommonlyUsedBodyPointMeta(code) {
   if (!code) return null;
   return bodyMetaByCode.get(normalizePointCode(code)) || null;

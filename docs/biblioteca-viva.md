@@ -170,6 +170,54 @@ Comando de ingestao local:
 node tools/knowledge/ingest-local-pdf-sources.mjs --sources all --ocr fallback --render missing --ocrNodeModules C:\tmp\sistema-acup-ocr\node_modules
 ```
 
+Para novos lotes confiaveis, prefira catalogo local em vez de editar o script.
+O catalogo fica fora do Git/bundle:
+
+```text
+frontend/.local-source-assets/pdf-sources/source-catalog.local.json
+```
+
+Exemplo para ingerir apenas o catalogo atual:
+
+```bash
+node tools/knowledge/ingest-local-pdf-sources.mjs --catalog frontend/.local-source-assets/pdf-sources/source-catalog.local.json --sources all --ocr fallback --render missing --ocrNodeModules C:\tmp\sistema-acup-ocr\node_modules
+```
+
+Cada fonte do catalogo deve declarar `key`, `title`, `authors`,
+`originalLanguage`, `sourceType`, `path`, `trustTier`, `reference` ou nota de
+referencia pendente, `licenseNote` e a politica de ativacao clinica. Mesmo atlas
+confiavel entra primeiro como fonte forte de curadoria/rastreamento; ranking,
+ficha de ponto e IA comum so usam conteudo aprovado explicitamente.
+
+Fontes de lingua/semiologia usam o mesmo catalogo, mas com dominio proprio:
+
+```json
+{
+  "knowledgeDomain": "lingua",
+  "curationTarget": "modulo_lingua",
+  "candidateExtractionPolicy": "source_only_no_point_candidate_scan"
+}
+```
+
+Essa marcacao preserva paginas/trechos/imagens para curadoria do modulo Lingua
+e impede que o conector de pontos sistemicos gere candidatos falsos por
+coincidencia textual.
+
+Fontes de diagnostico, classicos, principios terapeuticos e combinacoes de
+pontos tambem ficam em dominio proprio ate existir um extrator especifico:
+
+```json
+{
+  "knowledgeDomain": "diagnostico",
+  "curationTarget": "raciocinio_clinico_mtc",
+  "candidateExtractionPolicy": "source_only_no_point_candidate_scan"
+}
+```
+
+Elas servem para ensinar o sistema a reconhecer padroes, diferenciar sindromes,
+entender principios e justificar condutas. Mesmo quando citarem pontos, nao
+alimentam ranking, protocolo ou ficha de ponto automaticamente.
+
 Comando para varrer todas as paginas ingeridas e gerar conexoes candidatas por
 ponto/fonte/pagina:
 
@@ -190,3 +238,25 @@ respondidos, exibir pagina/trecho, gerar traducao pt-BR preliminar de fonte em
 ingles e mostrar percentuais de confiabilidade. Salvar nessa tela cria apenas
 rascunho local em `review`; aprovacao clinica e migracao para Supabase continuam
 fora desse fluxo.
+
+### Reset operacional das fontes PDF - 2026-06-16
+
+Decisao: manter os aprendizados dos PDFs legados como evidencia separada, mas
+sem ativacao clinica automatica. A Biblioteca clinica comum e a IA de consulta
+usam base curada + aprovacoes confiaveis do Atlas Ednea; rascunhos KM-Agent,
+PDFs legados, AcuKG e fontes em outros idiomas ficam restritos a SuperAdm /
+Fontes PDF ate nova curadoria.
+
+Regra atual:
+
+- `atlas-ednea/*` continua sendo a fonte visual publica de referencia para
+  pontos aprovados localmente.
+- `pdf-sources/*` permanece como fonte protegida e fila de curadoria, mesmo
+  quando houver paginas publicas ou PDFs publicos.
+- qualquer revisao antiga salva como `approved_local` a partir de PDF/KM-Agent
+  e normalizada como `review` em tempo de execucao, preservando os dados mas
+  impedindo entrada no ranking, ficha do ponto e contexto da IA.
+- novos PDFs confiaveis devem seguir o modelo do Atlas: catalogo da fonte,
+  renderizacao por pagina, texto/OCR, indice ponto -> pagina/trecho/imagem,
+  idioma declarado, referencia bibliografica, nivel de confianca, revisao
+  profissional e so entao aprovacao local explicita.

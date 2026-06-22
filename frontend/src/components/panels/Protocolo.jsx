@@ -6,9 +6,15 @@ import {
   mergeKnowledgeReviews,
 } from '../../services/knowledgeAdminService';
 import { getMapAsset, getLocationsForPoint } from '../../knowledge/mapLocations';
+import { commonlyUsedMapFilterCodes } from '../../knowledge/commonlyUsedPoints';
+import { normalizePointCode } from '../../knowledge/aliases';
 import { buildPointDetail } from '../../knowledge/pointDetails';
 import { buildSessionSuggestion } from '../../knowledge/pointRecommendationEngine';
-import { suggestVentosa } from '../../knowledge/protocolEngine';
+import {
+  buildLaserTechniquePlan,
+  buildMoxaTechniquePlan,
+  suggestVentosa,
+} from '../../knowledge/protocolEngine';
 import {
   findAtlasEdneaSourceReference,
   loadAtlasEdneaSourceIndex,
@@ -19,13 +25,14 @@ function pointKey(point) {
   return point?.code || point?.displayCode || point?.label || point;
 }
 
-function MapOverlay({ points, mapId, onPointClick }) {
+function MapOverlay({ points, mapId, onPointClick, commonOnly }) {
   const asset = getMapAsset(mapId);
   if (!asset) return null;
 
   const locations = points
     .flatMap(point => getLocationsForPoint(pointKey(point))
       .filter(location => location.mapId === mapId)
+      .filter(location => !commonOnly || commonlyUsedMapFilterCodes.has(normalizePointCode(location.code)))
       .map((location, index) => ({
         ...location,
         markerKey: `${mapId}-${location.code}-${location.xPct}-${location.yPct}-${index}`,
@@ -119,19 +126,86 @@ function SuggestionRow({ item, origem, checked, onToggleSelect, onDetail }) {
   );
 }
 
+function selectedClinicalText(selectedMap) {
+  return Object.entries(selectedMap || {})
+    .filter(([, selected]) => selected)
+    .map(([key]) => key.split(':').slice(1).join(':'))
+    .filter(Boolean)
+    .join(' ');
+}
+
+function TechniqueStatus({ status, label }) {
+  return <span className={`tech-status ${status}`}>{label}</span>;
+}
+
+function TechniqueParameterGrid({ items }) {
+  return (
+    <div className="dose-grid tech-params">
+      {items.map(item => (
+        <div key={item.label} className="dose-box">
+          <b>{item.label}</b><br />{item.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TechniqueChecklist({ title, items }) {
+  return (
+    <div className="tech-section">
+      <h5>{title}</h5>
+      <ul className="tech-list">
+        {items.map(item => <li key={item}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function TechniquePlanCard({ plan }) {
+  return (
+    <div className="tech-card technique-plan-card">
+      <div className="tech-card-head">
+        <h4>{plan.title}</h4>
+        <TechniqueStatus status={plan.status} label={plan.statusLabel} />
+      </div>
+      <p className="small">{plan.summary}</p>
+      <div className="tech-section">
+        <h5>Pontos e alvo</h5>
+        <p>{chips(plan.points)}</p>
+        <p className="small"><b>Modo:</b> {plan.mode}</p>
+      </div>
+      <TechniqueParameterGrid items={plan.parameters} />
+      <TechniqueChecklist title="Antes de aplicar" items={plan.checklist} />
+      <div className="warning-soft">
+        {plan.cautions.map(item => <p key={item}>{item}</p>)}
+      </div>
+      <p className="tech-source-note">{plan.sourceNote}</p>
+    </div>
+  );
+}
+
 const SYSTEMIC_PROTOCOL_MAP_ID = 'body_full';
 
 export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
   const { protocol, main, safetyAlerts = [] } = analysis;
   const bodyPoints = protocol.bodyPoints || [];
   const earPoints = protocol.earPoints || [];
-  const laser = protocol.laser || [];
-  const moxa = protocol.moxa || [];
   const eletro = protocol.eletro || [];
   const stiper = protocol.stiper || bodyPoints.slice(0, 4).map(p => `${p.displayCode} — considerar Stiper conforme tolerância e objetivo`);
   const ventosa = suggestVentosa(main);
+  const clinicalTechniqueText = [
+    state?.queixa,
+    state?.historia,
+    state?.medicamentos,
+    state?.observacoes,
+    selectedClinicalText(selectedMap),
+    safetyAlerts.map(alert => alert.message).join(' '),
+  ].filter(Boolean).join(' ');
+  const laserPlan = buildLaserTechniquePlan({ protocol, patternName: main, clinicalText: clinicalTechniqueText });
+  const moxaPlan = buildMoxaTechniquePlan({ protocol, patternName: main, clinicalText: clinicalTechniqueText });
 
   const [filtros, setFiltros] = useState([]);
+  const [commonOnly, setCommonOnly] = useState(true);
   const [pointInfoBox, setPointInfoBox] = useState(null);
   const [atlasSourceIndex, setAtlasSourceIndex] = useState(null);
   const [atlasLoadState, setAtlasLoadState] = useState('loading');
@@ -233,6 +307,23 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
           ))}
         </div>
         <p className="small">Se nenhum filtro estiver marcado, o sistema mostra todas as técnicas disponíveis.</p>
+        <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <b>Pontos no mapa:</b>
+          <button
+            className={`tag${commonOnly ? ' active' : ''}`}
+            onClick={() => setCommonOnly(true)}
+            aria-pressed={commonOnly}
+          >
+            {commonOnly ? '✓ ' : ''}Mais usados
+          </button>
+          <button
+            className={`tag${!commonOnly ? ' active' : ''}`}
+            onClick={() => setCommonOnly(false)}
+            aria-pressed={!commonOnly}
+          >
+            {!commonOnly ? '✓ ' : ''}Todos
+          </button>
+        </div>
       </div>
 
       {safetyAlerts.length > 0 && (
@@ -247,7 +338,7 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
             <div className="map-card">
               <h3>Mapa corporal</h3>
               <div className="map-stage">
-                <MapOverlay points={bodyPoints} mapId={SYSTEMIC_PROTOCOL_MAP_ID} onPointClick={handleClick} />
+                <MapOverlay points={bodyPoints} mapId={SYSTEMIC_PROTOCOL_MAP_ID} onPointClick={handleClick} commonOnly={commonOnly} />
               </div>
               <div className="legend">
                 <span><i className="dot" style={{ background: 'var(--gold)' }}></i>Pontos selecionados</span>
@@ -258,7 +349,7 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
             <div className="map-card">
               <h3>Mapa auricular</h3>
               <div className="map-stage">
-                <MapOverlay points={earPoints} mapId="ear_lateral" onPointClick={handleClick} />
+                <MapOverlay points={earPoints} mapId="ear_lateral" onPointClick={handleClick} commonOnly={commonOnly} />
               </div>
               <div className="legend">
                 <span><i className="dot" style={{ background: 'var(--gold)' }}></i>Pontos auriculares</span>
@@ -339,24 +430,11 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
           </div>
 
           {enabled('Laser') && (
-            <div className="tech-card">
-              <h4>Laser / Fotobiomodulação</h4>
-              <p>{chips(laser)}</p>
-              <div className="dose-grid">
-                <div className="dose-box"><b>Modo</b><br />Pontual ou varredura</div>
-                <div className="dose-box"><b>Dose</b><br />Definir por objetivo, área e equipamento</div>
-                <div className="dose-box"><b>Alerta</b><br />Respeitar janela terapêutica</div>
-              </div>
-              <div className="warning-soft">A dose deve ser conferida conforme potência do aparelho, comprimento de onda, área irradiada e resposta do paciente.</div>
-            </div>
+            <TechniquePlanCard plan={laserPlan} />
           )}
 
           {enabled('Moxa') && (
-            <div className="tech-card">
-              <h4>Moxaterapia</h4>
-              <p>{chips(moxa)}</p>
-              <div className="warning-soft">Priorizar em frio, deficiência e estagnação por frio. Evitar em calor exuberante, febre, inflamação aguda ou pele sem integridade.</div>
-            </div>
+            <TechniquePlanCard plan={moxaPlan} />
           )}
 
           {enabled('Ventosa') && (

@@ -23,6 +23,7 @@ import {
   jsonResponse,
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { withCorrectionLessons } from '../_shared/corrections.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 
@@ -84,6 +85,8 @@ const CATALOG: Record<string, string[]> = {
     'Gestação', 'Anticoagulante', 'Marcapasso', 'Epilepsia',
     'Febre/infecção', 'Pressão descompensada', 'Diabetes descompensada',
     'Síncope com agulha', 'Feridas locais', 'Dor torácica sem avaliação',
+    'Perda de peso não intencional', 'Desmaio recente', 'Queda recente', 'Trauma recente',
+    'Distúrbio de coagulação', 'Histórico de câncer', 'Cirurgia recente',
   ],
 };
 
@@ -135,7 +138,7 @@ Regras:
 - Sugira APENAS o que o texto sustenta diretamente. Não infira diagnóstico nem padrão energético — isso é outra etapa.
 - Cada sugestão precisa de uma justificativa curta citando o sinal do texto (campo "rationale").
 - Confiança conservadora: 0.8+ só quando o texto afirma o item claramente; 0.4–0.7 quando é provável mas indireto; não sugira abaixo de 0.35.
-- Atenção especial a sinais de SEGURANÇA (grupo "seguranca"): gestação, anticoagulante, marcapasso, epilepsia, febre, pressão/diabetes descompensada, dor torácica — se o texto indicar, sugira com prioridade.
+- Atenção especial a sinais de SEGURANÇA (grupo "seguranca"): gestação, anticoagulante, coagulopatia, marcapasso, epilepsia, febre, pressão/diabetes descompensada, dor torácica, perda de peso não intencional, desmaio, queda, trauma, câncer e cirurgia recente — se o texto indicar, sugira com prioridade.
 - Não repita a mesma chave. Máximo de 12 sugestões, das mais às menos relevantes.
 - O texto pode vir com identificadores mascarados ([NOME], [DATA], [CPF] etc.) — ignore-os, são esperados.
 - Se o texto estiver vazio ou sem conteúdo clínico aproveitável, retorne suggestions vazio e explique em warning (pt-BR).`;
@@ -176,8 +179,14 @@ Deno.serve(async (req) => {
     // Teto defensivo: anamnese não deveria passar de alguns milhares de chars.
     const clippedText = text.slice(0, 8000);
 
+    const systemText = await withCorrectionLessons(supabaseAdmin, SYSTEM_PROMPT, {
+      surface: 'anamnese_marks',
+      callerId: caller.user.id,
+      relevanceQuery: clippedText,
+    });
+
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
         role: 'user',
         parts: [{ text: `Texto da anamnese:\n"""\n${clippedText}\n"""\n\nSugira as marcações do checklist sustentadas por este texto.` }],

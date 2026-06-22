@@ -613,8 +613,13 @@ export function upsertStoredMapLocation(location, options = {}) {
   const now = new Date().toISOString();
   const actorRole = options.actorRole || 'therapist';
   const actorLabel = options.actorLabel || 'acupunturista';
+  const replacementMeta = options.replaceLocationIdentity ? {
+    replacesLocationIdentity: options.replaceLocationIdentity,
+    replacedFromMapId: options.replacedFromMapId || null,
+  } : {};
   const nextLocation = {
     ...location,
+    ...replacementMeta,
     ...buildLocalMapApproval(actorRole, actorLabel),
     approvedByRole: actorRole,
     approvedByLabel: actorLabel,
@@ -629,6 +634,9 @@ export function upsertStoredMapLocation(location, options = {}) {
   const next = [
     nextLocation,
     ...stored.filter(item => {
+      if (options.replaceLocationIdentity && locationIdentity(item) === options.replaceLocationIdentity) {
+        return false;
+      }
       if (shouldReplaceByCode) {
         if (locationPointCode(item) !== pointCode) return true;
         const itemCommonBucket = item.mapId === 'body_full' ? 'body_full' : 'segmented';
@@ -660,6 +668,11 @@ export function getAllMapLocations() {
 
   const stored = dedupeStoredCommonMapLocations(readStoredMapLocations());
   const storedIds = new Set(stored.map(locationIdentity));
+  const storedReplacedLocationIds = new Set(
+    stored
+      .map(location => location.replacesLocationIdentity)
+      .filter(Boolean),
+  );
   const storedCommonPointCodes = new Set(
     stored
       .filter(location => location.mapId !== 'body_full')
@@ -712,6 +725,7 @@ export function getAllMapLocations() {
     ...commonlyUsedBodyFull,
     ...pointLocations.filter(location => {
       return !storedIds.has(locationIdentity(location))
+        && !storedReplacedLocationIds.has(locationIdentity(location))
         && !commonlyUsedMapLocationCodes.has(locationPointCode(location));
     }),
     ...highConfidenceDrafts,

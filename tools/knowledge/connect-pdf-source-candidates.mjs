@@ -65,6 +65,20 @@ const GENERIC_NAME_TERMS = new Set([
 
 const AURICULAR_SOURCE_PATTERN = /auricul/i;
 const ARTICLE_SOURCE_PATTERN = /artigo|coorte|metodologic|trial|bias/i;
+const POINT_CANDIDATE_SKIP_POLICIES = new Set([
+  'none',
+  'skipacupointcandidates',
+  'sourceonly',
+  'sourceonlynopointcandidatescan',
+]);
+const MIN_CANDIDATE_TEXT_CHARACTERS = 160;
+const MIN_CANDIDATE_WORDS = 18;
+const MIN_CANDIDATE_LETTERS = 70;
+const CONTENTS_HEADING_PATTERN = /\b(?:sumario|conteudo|indice|table of contents|contents|sommaire)\b/u;
+const FORMAL_FRONT_MATTER_PATTERN = /\b(?:isbn|copyright|catalogacao na fonte|ficha catalografica|todos os direitos reservados|direitos reservados)\b/u;
+const FRONT_MATTER_HEADING_PATTERN = /\b(?:dedicatoria|agradecimentos|prefacio|apresentacao|creditos editoriais|nota importante)\b/u;
+const CLINICAL_CONTENT_PATTERN = /\b(?:localizacao|indicacoes|metodo|funcoes?|tecnica|anatomia|canal de energia|meridiano do)\b/u;
+const CONTENTS_LISTING_PATTERN = /\b(?:parte|capitulo|pontos?|meridiano|canal|anatomia|protocolos?)\b/u;
 
 const AURICULAR_PROTOCOL_CONCEPTS = [
   { target: 'AA1', label: 'Anatomia Auricular', aliases: ['anatomia auricular', 'helix', 'helice', 'anti-helice', 'antihelice', 'trago', 'antitrago', 'concha', 'lobulo', 'fossa triangular', 'fossa escafoide', 'raiz da helice'] },
@@ -114,6 +128,16 @@ export function normalizeSearchText(text) {
 
 function normalizeCompact(text) {
   return normalizeSearchText(text).replace(/[\s-]+/g, '');
+}
+
+export function sourceSkipsPointCandidateExtraction(source) {
+  const policy = normalizeCompact(
+    source.candidateExtractionPolicy
+      || source.pointCandidateExtraction
+      || source.pointCandidatePolicy
+      || '',
+  );
+  return POINT_CANDIDATE_SKIP_POLICIES.has(policy);
 }
 
 function normalizeSpaces(text) {
@@ -350,8 +374,67 @@ async function loadPageText(sourceRoot, page) {
   return {
     pdfText,
     ocrText,
+    rawText: `${pdfText}\n${ocrText}`,
     combinedText: normalizeSpaces(`${pdfText}\n${ocrText}`),
   };
+}
+
+function countMatches(text, pattern) {
+  return [...String(text || '').matchAll(pattern)].length;
+}
+
+function isLowQualityCandidateText(rawText, normalizedText) {
+  const letters = countMatches(rawText, /\p{L}/gu);
+  const words = countMatches(normalizedText, /\p{L}{2,}/gu);
+  return rawText.length < MIN_CANDIDATE_TEXT_CHARACTERS
+    || letters < MIN_CANDIDATE_LETTERS
+    || words < MIN_CANDIDATE_WORDS;
+}
+
+function sourceIdentityTerms(source) {
+  const titleTerms = normalizeSearchText(source.title)
+    .split(' ')
+    .filter(term => term.length >= 4);
+  const authorTerms = (source.authors || [])
+    .flatMap(author => normalizeSearchText(author).split(' '))
+    .filter(term => term.length >= 4);
+  return [...new Set([...titleTerms, ...authorTerms])];
+}
+
+function isLikelyCoverPage(source, page, normalizedText) {
+  if (page.pageNumber > 2 || CLINICAL_CONTENT_PATTERN.test(normalizedText)) return false;
+  const identityTerms = sourceIdentityTerms(source);
+  return identityTerms.length >= 2 && identityTerms.every(term => normalizedText.includes(term));
+}
+
+function isLikelyContentsContinuation(rawText, normalizedText) {
+  const pageReferences = countMatches(rawText, /(?<!\p{L})\d{1,4}(?!\p{L})/gu);
+  const sentenceEnds = countMatches(rawText, /[.!?](?=\s|$)/gu);
+  return pageReferences >= 7
+    && sentenceEnds <= 2
+    && CONTENTS_LISTING_PATTERN.test(normalizedText);
+}
+
+function pageHeadingText(normalizedText) {
+  return normalizedText.split(' ').slice(0, 16).join(' ');
+}
+
+export function getCandidatePageSkipReason({
+  source,
+  page,
+  pageText,
+  insideContents = false,
+}) {
+  const rawText = pageText.rawText || pageText.combinedText || '';
+  const normalizedText = normalizeSearchText(rawText);
+  const headingText = pageHeadingText(normalizedText);
+
+  if (!normalizedText || isLowQualityCandidateText(rawText, normalizedText)) return 'texto_ilegivel_ou_insuficiente';
+  if (CONTENTS_HEADING_PATTERN.test(headingText)) return 'sumario';
+  if (insideContents && isLikelyContentsContinuation(rawText, normalizedText)) return 'sumario_continuacao';
+  if (FORMAL_FRONT_MATTER_PATTERN.test(normalizedText) || FRONT_MATTER_HEADING_PATTERN.test(headingText)) return 'front_matter';
+  if (isLikelyCoverPage(source, page, normalizedText)) return 'capa';
+  return '';
 }
 
 function mergeEvidence(existing, next) {
@@ -426,6 +509,8 @@ export async function buildCandidateLinksForPages({
   const auricularLinksByKey = new Map();
   let pagesScanned = 0;
   let pagesWithText = 0;
+  let pagesSkippedAsNonContent = 0;
+  let insideContents = false;
 
   const sourceTerms = filterTermsForSource(compiledTerms, manifest.source);
   const useAuricularTerms = sourceIsAuricular(manifest.source);
@@ -435,6 +520,18 @@ export async function buildCandidateLinksForPages({
     pagesScanned += 1;
     const pageText = await loadPageText(sourceRoot, page);
     if (pageText.combinedText) pagesWithText += 1;
+
+    const skipReason = getCandidatePageSkipReason({
+      source: manifest.source || source,
+      page,
+      pageText,
+      insideContents,
+    });
+    insideContents = skipReason === 'sumario' || skipReason === 'sumario_continuacao';
+    if (skipReason) {
+      pagesSkippedAsNonContent += 1;
+      continue;
+    }
 
     const pageTerms = findTermMatches(pageText.combinedText, sourceTerms);
     for (const match of pageTerms) {
@@ -460,6 +557,7 @@ export async function buildCandidateLinksForPages({
       sourceKey: source.key,
       pagesScanned,
       pagesWithText,
+      pagesSkippedAsNonContent,
     },
   };
 }
@@ -558,8 +656,37 @@ function buildReviewDrafts(links) {
   }).sort((left, right) => left.code.localeCompare(right.code));
 }
 
-function summaryMarkdown({ generatedAt, index, sourceSummary, auricularSummary, pageStats, links, auricularLinks }) {
-  const pageRows = pageStats.map(item => `| ${item.sourceKey} | ${item.pagesScanned} | ${item.pagesWithText} |`).join('\n');
+function skippedSourcesMarkdown(skippedSources) {
+  if (!skippedSources.length) return '';
+  const rows = skippedSources
+    .map(source => `| ${source.key} | ${source.pageCount || 0} | ${source.reason} |`)
+    .join('\n');
+
+  return `
+## Fontes fora do scanner de pontos
+
+Estas fontes foram ingeridas como biblioteca/rastreamento, mas nao foram varridas
+pelo conector de pontos para evitar candidatos falsos em dominios especificos.
+
+| Fonte | Paginas | Motivo |
+| --- | ---: | --- |
+${rows}
+`;
+}
+
+function summaryMarkdown({
+  generatedAt,
+  index,
+  sourceSummary,
+  auricularSummary,
+  pageStats,
+  links,
+  auricularLinks,
+  skippedSources = [],
+}) {
+  const scannedPages = pageStats.reduce((sum, item) => sum + item.pagesScanned, 0);
+  const skippedNonContentPages = pageStats.reduce((sum, item) => sum + item.pagesSkippedAsNonContent, 0);
+  const pageRows = pageStats.map(item => `| ${item.sourceKey} | ${item.pagesScanned} | ${item.pagesWithText} | ${item.pagesSkippedAsNonContent} |`).join('\n');
   const sourceRows = Object.entries(sourceSummary.bySource)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([sourceKey, count]) => `| ${sourceKey} | ${count} |`)
@@ -575,15 +702,17 @@ Gerado em: ${generatedAt}
 
 ## Regra clinica
 
-- Todas as ${index.counts.pages} paginas dos ${index.counts.sources} PDFs foram varridas como fonte local.
+- ${scannedPages} paginas foram varridas pelo conector de pontos, dentro de ${index.counts.pages} paginas ingeridas de ${index.counts.sources} PDFs.
+- ${skippedNonContentPages} paginas de capa, sumario, front matter ou texto insuficiente foram ignoradas antes de gerar candidatos.
 - O resultado e evidencia candidata para curadoria, nao aprovacao clinica.
 - Fichas de ponto permanecem em pt-BR; fonte nao-pt-BR exige sintese pt-BR revisada.
 - Paginas/imagens continuam em \`frontend/.local-source-assets\`, fora do bundle principal.
+${skippedSourcesMarkdown(skippedSources)}
 
 ## Cobertura de varredura
 
-| Fonte | Paginas varridas | Paginas com texto/OCR |
-| --- | ---: | ---: |
+| Fonte | Paginas varridas | Paginas com texto/OCR | Paginas ignoradas |
+| --- | ---: | ---: | ---: |
 ${pageRows}
 
 ## Pontos sistemicos/KM-Agent
@@ -647,8 +776,19 @@ export async function run(options = {}) {
   const allLinks = [];
   const allAuricularLinks = [];
   const pageStats = [];
+  const skippedSources = [];
 
   for (const source of index.sources || []) {
+    if (sourceSkipsPointCandidateExtraction(source)) {
+      skippedSources.push({
+        key: source.key,
+        title: source.title,
+        pageCount: source.pageCount,
+        reason: 'candidateExtractionPolicy sem varredura de pontos',
+      });
+      continue;
+    }
+
     const manifest = await readJson(sourceManifestPath(pdfRoot, source));
     const result = await buildCandidateLinksForPages({
       source,
@@ -683,6 +823,7 @@ export async function run(options = {}) {
       ...sourceSummary,
       pagesScanned: pageStats.reduce((sum, item) => sum + item.pagesScanned, 0),
       pagesWithTextOrOcr: pageStats.reduce((sum, item) => sum + item.pagesWithText, 0),
+      pagesSkippedAsNonContent: pageStats.reduce((sum, item) => sum + item.pagesSkippedAsNonContent, 0),
       automaticClinicalApprovals: 0,
     },
     links: sortedLinks,
@@ -700,6 +841,7 @@ export async function run(options = {}) {
           return source && sourceIsAuricular(source);
         })
         .reduce((sum, item) => sum + item.pagesScanned, 0),
+      pagesSkippedAsNonContent: pageStats.reduce((sum, item) => sum + item.pagesSkippedAsNonContent, 0),
       automaticClinicalApprovals: 0,
     },
     links: sortedAuricularLinks,
@@ -727,6 +869,7 @@ export async function run(options = {}) {
     pageStats,
     links: sortedLinks,
     auricularLinks: sortedAuricularLinks,
+    skippedSources,
   }), 'utf8');
 
   return {
@@ -736,11 +879,13 @@ export async function run(options = {}) {
     summary: summaryPath,
     counts: {
       pagesScanned: sourceOutput.counts.pagesScanned,
+      pagesSkippedAsNonContent: sourceOutput.counts.pagesSkippedAsNonContent,
       sourceLinks: sourceSummary.links,
       sourceTargets: sourceSummary.connectedTargets,
       auricularLinks: auricularSummary.links,
       auricularTargets: auricularSummary.connectedTargets,
       drafts: drafts.length,
+      skippedSources: skippedSources.length,
       automaticClinicalApprovals: 0,
     },
   };

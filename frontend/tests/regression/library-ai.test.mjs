@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
@@ -8,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 let server;
 let lib;
+let docCorpus;
 
 before(async () => {
   server = await createServer({
@@ -17,6 +19,7 @@ before(async () => {
     appType: 'custom',
   });
   lib = await server.ssrLoadModule('/src/services/libraryAiService.js');
+  docCorpus = await server.ssrLoadModule('/src/knowledge/generated/doc-corpus.js');
 });
 
 after(async () => {
@@ -54,6 +57,26 @@ test('rankLibraryCards respeita o limite', () => {
     title: `Ponto dor ${i}`, cat: 'Ponto', confidence: 'high', source: 'Base', txt: 'trata dor', tags: 'dor',
   }));
   assert.equal(rankLibraryCards('dor', many, 5).length, 5);
+});
+
+test('rankLibraryCards recupera a nota TEAC com referencia rastreavel', () => {
+  const { rankLibraryCards } = lib;
+  const top = rankLibraryCards('VB20 esternocleidomastoideo trapezio', docCorpus.docCorpusCards);
+  const teacCard = top.find(card => card.source.includes('Acupuntura Médica em Questões'));
+
+  assert.ok(teacCard, 'a busca deve recuperar o corpus TEAC');
+  assert.equal(teacCard.confidence, 'medium');
+  assert.match(teacCard.txt, /TEAC 2013, questao 01/i);
+  assert.match(teacCard.txt, /alternativa D/i);
+});
+
+test('library-qa exige atribuicao rastreavel para respostas TEAC', async () => {
+  const promptPath = path.resolve(root, '../supabase/functions/library-qa/index.ts');
+  const source = await readFile(promptPath, 'utf8');
+
+  assert.match(source, /De acordo com Cruz, Höhl e Ungarelli/i);
+  assert.match(source, /TEAC \[ano\], questão \[número\]/i);
+  assert.match(source, /Nunca apresente a resposta de prova como verdade clínica universal/i);
 });
 
 test('askLibrary sem matches faz curto-circuito sem chamar IA', async () => {

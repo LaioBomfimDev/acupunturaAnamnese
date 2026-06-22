@@ -2,6 +2,7 @@ import { getAllClinicalText, getSelectedItems } from '../utils/analyzer';
 import { displayPointCode, normalizePointCode } from './aliases';
 import { acupoints, auricularPoints, getKnowledgeSourceLabels } from './knowledgeBase';
 import { isCommonlyUsedEntity, isCommonlyUsedPointKey } from './commonlyUsedPoints';
+import { isClinicallyActiveKnowledgeReview } from './reviewSourcePolicy';
 
 const EVIDENCE_RULES = [
   {
@@ -139,7 +140,7 @@ function reviewCode(review) {
 }
 
 function isApprovedPointReview(review) {
-  return review?.status === 'approved_local' && reviewCode(review);
+  return isClinicallyActiveKnowledgeReview(review) && reviewCode(review);
 }
 
 function getReviewLabel(review, displayCode) {

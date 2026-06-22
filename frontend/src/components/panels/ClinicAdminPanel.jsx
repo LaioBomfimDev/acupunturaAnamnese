@@ -8,6 +8,7 @@ import {
   saveClinic,
   setProfileClinic,
 } from '../../services/clinicService';
+import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 
 const EMPTY_CLINIC = {
   id: null,
@@ -101,6 +102,9 @@ export function ClinicAdminPanel() {
   const [logoLoading, setLogoLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // null = diálogo de novo profissional fechado; '' ou id = aberto
+  // (com a clínica pré-selecionada quando vier de uma linha da lista).
+  const [createForClinic, setCreateForClinic] = useState(null);
   const logoInputRef = useRef(null);
 
   async function load() {
@@ -220,6 +224,12 @@ export function ClinicAdminPanel() {
     }
   }
 
+  // Recarrega a lista (profissionais ↔ clínica) após criar; o diálogo
+  // fica aberto com o aviso de sucesso para permitir vários cadastros.
+  async function handleProfessionalCreated() {
+    await load();
+  }
+
   const brandColor = normalizeHexColor(form.brand_color) || DEFAULT_BRAND_COLOR;
 
   return (
@@ -227,6 +237,22 @@ export function ClinicAdminPanel() {
       {(error || success) && (
         <div className={error ? 'inline-error' : 'inline-success'}>
           {error || success}
+        </div>
+      )}
+
+      {createForClinic !== null && (
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="clinic-professional-modal">
+            <ProfessionalCreateForm
+              key={createForClinic || 'sem-clinica'}
+              clinics={clinics}
+              defaultClinicId={createForClinic || ''}
+              onCreated={handleProfessionalCreated}
+              onCancel={() => setCreateForClinic(null)}
+              kicker="Novo profissional da clínica"
+              heading="Adicionar profissional"
+            />
+          </div>
         </div>
       )}
 
@@ -431,6 +457,9 @@ export function ClinicAdminPanel() {
                     </span>
                   </div>
                   <div className="clinic-row-actions">
+                    <button className="tag active" type="button" onClick={() => setCreateForClinic(clinic.id)}>
+                      + Profissional
+                    </button>
                     <button className="tag" type="button" onClick={() => startEdit(clinic)}>
                       Editar
                     </button>
@@ -451,6 +480,9 @@ export function ClinicAdminPanel() {
             <p className="small">Vínculos</p>
             <h2>Profissional ↔ Clínica</h2>
           </div>
+          <button className="tag active" type="button" onClick={() => setCreateForClinic('')}>
+            Adicionar profissional
+          </button>
         </div>
 
         {loading ? (

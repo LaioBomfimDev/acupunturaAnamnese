@@ -1,5 +1,9 @@
 import { normalizePointCode } from '../knowledge/aliases';
 import { enrichReviewsWithSymptoms } from '../knowledge/relatedSymptomsEnricher';
+import {
+  isClinicallyActiveKnowledgeReview,
+  normalizeKnowledgeReviewForClinicalUse,
+} from '../knowledge/reviewSourcePolicy';
 import { fetchKnowledgeSourceJsonAsset } from './knowledgeSourceAssetService';
 
 const LOCAL_KNOWLEDGE_REVIEWS_KEY = 'acup_living_library_reviews_v1';
@@ -47,7 +51,25 @@ export function mergeClinicalKnowledgeReviews({
   highConfidenceReviews = [],
   localReviews = getLocalKnowledgeReviews(),
 } = {}) {
-  return mergeKnowledgeReviews(deepCuratedReviews, highConfidenceReviews, localReviews);
+  const merged = new Map();
+
+  [deepCuratedReviews, highConfidenceReviews, localReviews]
+    .flat()
+    .filter(Boolean)
+    .forEach(rawReview => {
+      const review = normalizeKnowledgeReviewForClinicalUse(rawReview);
+      const key = reviewKey(review);
+      if (!key) return;
+
+      const current = merged.get(key);
+      if (current && isClinicallyActiveKnowledgeReview(current) && review.clinicalActivationBlocked) {
+        return;
+      }
+
+      merged.set(key, review);
+    });
+
+  return [...merged.values()];
 }
 
 export async function getClinicalKnowledgeReviews() {
@@ -88,7 +110,7 @@ export function getLocalKnowledgeReviews() {
   if (typeof localStorage === 'undefined') return [];
   try {
     const data = JSON.parse(localStorage.getItem(LOCAL_KNOWLEDGE_REVIEWS_KEY) || '[]');
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data.map(normalizeKnowledgeReviewForClinicalUse) : [];
   } catch {
     return [];
   }

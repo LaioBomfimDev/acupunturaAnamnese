@@ -49,6 +49,10 @@ export const checklists = {
     "Dor fixa", "Irradiação", "Formigamento", "Dormência", "Melhora com calor",
     "Melhora com frio", "Piora à pressão", "Piora ao movimento"
   ],
+  dorRegioes: [
+    "Pescoço", "Ombros", "Parte superior das costas", "Cotovelos", "Punhos/mãos",
+    "Parte inferior das costas", "Quadril/coxas", "Joelhos", "Tornozelos/pés"
+  ],
   lingua: [
     "Pálida", "Vermelha", "Vermelho intenso", "Arroxeada", "Inchada", "Fina",
     "Marcas de dentes", "Rachaduras", "Petéquias", "Pontos vermelhos",
@@ -82,6 +86,8 @@ export const checklists = {
   seguranca: [
     "Gestação", "Anticoagulante", "Marcapasso", "Epilepsia",
     "Febre/infecção", "Pressão descompensada", "Diabetes descompensada",
-    "Síncope com agulha", "Feridas locais", "Dor torácica sem avaliação"
+    "Síncope com agulha", "Feridas locais", "Dor torácica sem avaliação",
+    "Perda de peso não intencional", "Desmaio recente", "Queda recente", "Trauma recente",
+    "Distúrbio de coagulação", "Histórico de câncer", "Cirurgia recente"
   ]
 };

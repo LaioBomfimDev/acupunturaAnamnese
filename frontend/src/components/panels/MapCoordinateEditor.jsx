@@ -11,6 +11,7 @@ import {
   writeStoredMapLocations,
 } from '../../knowledge/mapLocations';
 import { displayPointCode, normalizePointCode } from '../../knowledge/aliases';
+import { commonlyUsedMapFilterCodes } from '../../knowledge/commonlyUsedPoints';
 import { buildPointDetail } from '../../knowledge/pointDetails';
 import {
   getDeepCuratedKnowledgeReviews,
@@ -110,6 +111,10 @@ const STATUS_FILTERS = [
   { id: 'review', label: 'Revisar mapa' },
 ];
 
+function mapLabel(mapId) {
+  return getMapAsset(mapId)?.label || mapId;
+}
+
 export function MapCoordinateEditor({
   approvalActorRole = 'therapist',
   approvalActorLabel = 'acupunturista',
@@ -117,12 +122,15 @@ export function MapCoordinateEditor({
   const [activeMapId, setActiveMapId] = useState('feet_dorsal');
   const [selectedPoint, setSelectedPoint] = useState('LR3');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [commonOnly, setCommonOnly] = useState(true);
   const [allLocations, setAllLocations] = useState(() => getAllMapLocations());
   const [knowledgeReviews, setKnowledgeReviews] = useState(() => getLocalKnowledgeReviews());
   const [atlasSourceIndex, setAtlasSourceIndex] = useState(null);
   const [atlasLoadState, setAtlasLoadState] = useState('loading');
   const [dialogEntry, setDialogEntry] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [activeMarkerAction, setActiveMarkerAction] = useState(null);
+  const [mapChangeDraft, setMapChangeDraft] = useState(null);
   const [dragPosition, setDragPosition] = useState(null);
   const [pendingMove, setPendingMove] = useState(null);
   const [saveMessage, setSaveMessage] = useState('');
@@ -146,9 +154,15 @@ export function MapCoordinateEditor({
   }, [locations]);
 
   const visibleLocations = useMemo(() => {
-    if (statusFilter === 'all') return locations;
-    return locations.filter(location => locationFilterBucket(location) === statusFilter);
-  }, [locations, statusFilter]);
+    let filtered = locations;
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(location => locationFilterBucket(location) === statusFilter);
+    }
+    if (commonOnly) {
+      filtered = filtered.filter(location => commonlyUsedMapFilterCodes.has(normalizePointCode(location.code)));
+    }
+    return filtered;
+  }, [locations, statusFilter, commonOnly]);
 
   const pointEntries = useMemo(() => {
     if (!asset) return [];
@@ -243,6 +257,7 @@ export function MapCoordinateEditor({
   function openLocation(location) {
     if (!asset) return;
     setSelectedPoint(location.label || location.code);
+    setActiveMarkerAction(null);
     setDialogEntry(buildEntryForLocation(location));
   }
 
@@ -284,6 +299,10 @@ export function MapCoordinateEditor({
         undoLastMove();
       } else if (event.key === 'Escape' && pendingMove) {
         setPendingMove(null);
+      } else if (event.key === 'Escape' && mapChangeDraft) {
+        setMapChangeDraft(null);
+      } else if (event.key === 'Escape' && activeMarkerAction) {
+        setActiveMarkerAction(null);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -295,6 +314,8 @@ export function MapCoordinateEditor({
     event.preventDefault();
     event.stopPropagation();
     detachDragListeners();
+    setActiveMarkerAction(null);
+    setMapChangeDraft(null);
     dragRef.current = {
       location,
       startClientX: event.clientX,
@@ -328,13 +349,21 @@ export function MapCoordinateEditor({
       if (!drag) return;
 
       setSelectedPoint(drag.location.label || drag.location.code);
-      if (!drag.moved) return;
+      if (!drag.moved) {
+        setActiveMarkerAction(drag.location);
+        return;
+      }
 
       setPendingMove({
         origin: drag.location,
         code: drag.location.code,
         label: drag.location.label,
         displayLabel: markerLabel(drag.location),
+        sourceMapId: drag.location.mapId,
+        sourceMapLabel: mapLabel(drag.location.mapId),
+        targetMapId: activeMapId,
+        targetMapLabel: mapLabel(activeMapId),
+        replaceLocationIdentity: getLocationIdentity(drag.location),
         fromXPct: drag.location.xPct,
         fromYPct: drag.location.yPct,
         xPct: drag.xPct,
@@ -353,16 +382,26 @@ export function MapCoordinateEditor({
     if (!asset || !editMode || pendingMove) return;
     const point = pctFromClient(event.clientX, event.clientY);
     if (!point) return;
+    const origin = mapChangeDraft?.origin || selectedLocation;
+    const code = mapChangeDraft?.code || asLocationCode(selectedPoint);
+    const label = mapChangeDraft?.label || (auricularLabelToCode[selectedPoint] ? selectedPoint : undefined);
+    const displayLabel = mapChangeDraft?.displayLabel || (origin ? markerLabel(origin) : selectedPoint);
+    setActiveMarkerAction(null);
     setPendingMove({
-      origin: selectedLocation,
-      code: asLocationCode(selectedPoint),
-      label: auricularLabelToCode[selectedPoint] ? selectedPoint : undefined,
-      displayLabel: selectedLocation ? markerLabel(selectedLocation) : selectedPoint,
-      fromXPct: selectedLocation?.xPct ?? null,
-      fromYPct: selectedLocation?.yPct ?? null,
+      origin,
+      code,
+      label,
+      displayLabel,
+      sourceMapId: origin?.mapId || null,
+      sourceMapLabel: origin ? mapLabel(origin.mapId) : null,
+      targetMapId: activeMapId,
+      targetMapLabel: mapLabel(activeMapId),
+      replaceLocationIdentity: origin ? getLocationIdentity(origin) : null,
+      fromXPct: origin?.xPct ?? null,
+      fromYPct: origin?.yPct ?? null,
       xPct: point.xPct,
       yPct: point.yPct,
-      isNew: !selectedLocation,
+      isNew: !origin,
     });
   }
 
@@ -372,18 +411,23 @@ export function MapCoordinateEditor({
 
   function confirmPendingMove() {
     if (!pendingMove || !asset) return;
+    const targetMapId = pendingMove.targetMapId || activeMapId;
+    const targetAsset = getMapAsset(targetMapId);
+    if (!targetAsset) return;
     // Snapshot do estado local antes da gravação para suportar "Desfazer".
     const snapshot = readStoredMapLocations();
     const stored = upsertStoredMapLocation({
       code: pendingMove.code,
       label: pendingMove.label,
-      mapId: activeMapId,
-      view: asset.view || asset.type,
+      mapId: targetMapId,
+      view: targetAsset.view || targetAsset.type,
       xPct: pendingMove.xPct,
       yPct: pendingMove.yPct,
     }, {
       actorRole: approvalActorRole,
       actorLabel: approvalActorLabel,
+      replaceLocationIdentity: pendingMove.replaceLocationIdentity,
+      replacedFromMapId: pendingMove.sourceMapId,
     });
 
     // Se o arrasto cruzou a linha média, a identidade (lado) muda e o registro
@@ -398,17 +442,20 @@ export function MapCoordinateEditor({
     }
 
     setAllLocations(getAllMapLocations());
+    if (targetMapId !== activeMapId) setActiveMapId(targetMapId);
     setSelectedPoint(stored.label || stored.code);
     setPendingMove(null);
+    setMapChangeDraft(null);
+    setActiveMarkerAction(null);
     setUndoStack(stack => [
       ...stack.slice(-19),
       {
         snapshot,
-        mapId: activeMapId,
-        description: `${pendingMove.displayLabel} em x ${pendingMove.xPct}% · y ${pendingMove.yPct}%`,
+        mapId: targetMapId,
+        description: `${pendingMove.displayLabel} em ${mapLabel(targetMapId)} x ${pendingMove.xPct}% · y ${pendingMove.yPct}%`,
       },
     ]);
-    setSaveMessage(`${pendingMove.displayLabel} salvo em x ${pendingMove.xPct}% · y ${pendingMove.yPct}%.`);
+    setSaveMessage(`${pendingMove.displayLabel} salvo em ${mapLabel(targetMapId)} x ${pendingMove.xPct}% · y ${pendingMove.yPct}%.`);
   }
 
   function undoLastMove() {
@@ -418,6 +465,8 @@ export function MapCoordinateEditor({
     setUndoStack(undoStack.slice(0, -1));
     setAllLocations(getAllMapLocations());
     setPendingMove(null);
+    setMapChangeDraft(null);
+    setActiveMarkerAction(null);
     setDragPosition(null);
     if (last.mapId !== activeMapId) setActiveMapId(last.mapId);
     setSaveMessage(`Desfeito: ${last.description}.`);
@@ -426,11 +475,29 @@ export function MapCoordinateEditor({
   function toggleEditMode() {
     setEditMode(current => !current);
     setPendingMove(null);
+    setMapChangeDraft(null);
+    setActiveMarkerAction(null);
     setDragPosition(null);
   }
 
   function changeActiveMap(mapId) {
     setActiveMapId(mapId);
+    setPendingMove(null);
+    setActiveMarkerAction(null);
+    setDragPosition(null);
+  }
+
+  function startMapChange(location) {
+    setSelectedPoint(location.label || location.code);
+    setMapChangeDraft({
+      origin: location,
+      code: location.code,
+      label: location.label,
+      displayLabel: markerLabel(location),
+      sourceMapId: location.mapId,
+      sourceMapLabel: mapLabel(location.mapId),
+    });
+    setActiveMarkerAction(null);
     setPendingMove(null);
     setDragPosition(null);
   }
@@ -442,8 +509,8 @@ export function MapCoordinateEditor({
           <h3 style={{ margin: '0 0 6px', color: 'var(--navy)' }}>Mapas da Biblioteca</h3>
           <p className="small" style={{ margin: 0 }}>
             {editMode
-              ? 'Modo de edição ativo: arraste um ponto até o local desejado e confirme em "OK, salvar". Clicar em área vazia posiciona o ponto selecionado na lista.'
-              : 'Clique em "Editar mapa" para mover pontos. Fora da edição, clique em um ponto para abrir os detalhes.'}
+              ? 'Modo de calibração ativo: arraste um ponto, clique nele para alterar o mapa, ou clique em área vazia para posicionar o ponto selecionado.'
+              : 'Clique em "Calibrar mapa" para mover pontos. Fora da calibração, clique em um ponto para abrir os detalhes.'}
           </p>
         </div>
         <div className="map-calibration-toolbar">
@@ -452,7 +519,7 @@ export function MapCoordinateEditor({
             className={`map-edit-toggle${editMode ? ' active' : ''}`}
             onClick={toggleEditMode}
           >
-            {editMode ? '✓ Concluir edição' : '✎ Editar mapa'}
+            {editMode ? 'Concluir calibração' : 'Calibrar mapa'}
           </button>
           <button
             type="button"
@@ -468,7 +535,11 @@ export function MapCoordinateEditor({
           <span className="admin-status active">aprovação automática local</span>
           <select
             value={selectedPoint}
-            onChange={event => setSelectedPoint(event.target.value)}
+            onChange={event => {
+              setSelectedPoint(event.target.value);
+              setMapChangeDraft(null);
+              setActiveMarkerAction(null);
+            }}
             className="map-point-select"
           >
             {calibrationPointOptions.map(point => (
@@ -496,29 +567,56 @@ export function MapCoordinateEditor({
             {filter.label} ({filterCounts[filter.id]})
           </button>
         ))}
+        <span style={{ borderLeft: '1px solid var(--line)', margin: '0 4px', height: 20 }} />
+        <button
+          type="button"
+          className={`tag${commonOnly ? ' active' : ''}`}
+          onClick={() => setCommonOnly(true)}
+          aria-pressed={commonOnly}
+        >
+          {commonOnly ? '✓ ' : ''}Mais usados
+        </button>
+        <button
+          type="button"
+          className={`tag${!commonOnly ? ' active' : ''}`}
+          onClick={() => setCommonOnly(false)}
+          aria-pressed={!commonOnly}
+        >
+          {!commonOnly ? '✓ ' : ''}Todos
+        </button>
       </div>
 
-      <div className="map-tab-strip" aria-label="Mapas disponíveis">
-        {mapGroups.map(group => (
-          <div className="map-tab-group" key={group.id}>
-            <span>{group.label}</span>
-            <div>
-              {group.maps.map(mapId => {
-                const map = getMapAsset(mapId);
-                return (
-                  <button
-                    key={mapId}
-                    type="button"
-                    className={`tag${activeMapId === mapId ? ' active' : ''}`}
-                    onClick={() => changeActiveMap(mapId)}
-                  >
-                    {map?.label || mapId}
-                  </button>
-                );
-              })}
-            </div>
+      <div className="map-picker-row">
+        <label className="map-picker-field">
+          <span>Mapa</span>
+          <select
+            value={activeMapId}
+            onChange={event => changeActiveMap(event.target.value)}
+            className="map-map-select"
+            aria-label="Mapa de calibração"
+          >
+            {mapGroups.map(group => (
+              <optgroup key={group.id} label={group.label}>
+                {group.maps.map(mapId => (
+                  <option key={mapId} value={mapId}>
+                    {mapLabel(mapId)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        {mapChangeDraft && (
+          <div className="map-change-hint">
+            <b>Alterar mapa de {mapChangeDraft.displayLabel}</b>
+            <span>
+              Origem: {mapChangeDraft.sourceMapLabel}. Escolha o mapa de destino e clique na nova posição.
+            </span>
+            <button type="button" className="quiet-button" onClick={() => setMapChangeDraft(null)}>
+              Cancelar troca
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
       <div className="map-editor-grid">
@@ -558,6 +656,29 @@ export function MapCoordinateEditor({
                   </button>
                 );
               })}
+              {activeMarkerAction && visibleLocations.includes(activeMarkerAction) && !pendingMove && !mapChangeDraft && (
+                <div
+                  className={`map-point-actions${activeMarkerAction.yPct < 24 ? ' below' : ''}`}
+                  style={{
+                    left: `${Math.min(82, Math.max(18, activeMarkerAction.xPct))}%`,
+                    top: `${activeMarkerAction.yPct}%`,
+                  }}
+                  onClick={event => event.stopPropagation()}
+                  role="dialog"
+                  aria-label={`Ações de calibração para ${markerLabel(activeMarkerAction)}`}
+                >
+                  <b>{markerLabel(activeMarkerAction)}</b>
+                  <button type="button" className="primary-button" onClick={() => startMapChange(activeMarkerAction)}>
+                    Alterar mapa
+                  </button>
+                  <button type="button" className="quiet-button" onClick={() => openLocation(activeMarkerAction)}>
+                    Ver detalhes
+                  </button>
+                  <button type="button" className="quiet-button" onClick={() => setActiveMarkerAction(null)}>
+                    Fechar
+                  </button>
+                </div>
+              )}
               {pendingMove && (pendingMove.isNew || !visibleLocations.includes(pendingMove.origin)) && (
                 <span
                   className="map-marker pending ghost"
@@ -577,10 +698,18 @@ export function MapCoordinateEditor({
                   role="alertdialog"
                   aria-label={`Confirmar posição de ${pendingMove.displayLabel}`}
                 >
-                  <b>{pendingMove.isNew ? 'Adicionar' : 'Mover'} {pendingMove.displayLabel}?</b>
+                  <b>
+                    {pendingMove.isNew
+                      ? `Adicionar ${pendingMove.displayLabel}?`
+                      : pendingMove.sourceMapId && pendingMove.sourceMapId !== pendingMove.targetMapId
+                        ? `Mover ${pendingMove.displayLabel} para ${pendingMove.targetMapLabel}?`
+                        : `Mover ${pendingMove.displayLabel}?`}
+                  </b>
                   <span>
-                    {pendingMove.fromXPct != null && `de x ${pendingMove.fromXPct}% · y ${pendingMove.fromYPct}% `}
-                    para x {pendingMove.xPct}% · y {pendingMove.yPct}%
+                    {pendingMove.fromXPct != null && (
+                      `de ${pendingMove.sourceMapLabel || 'mapa atual'} x ${pendingMove.fromXPct}% · y ${pendingMove.fromYPct}% `
+                    )}
+                    para {pendingMove.targetMapLabel || mapLabel(activeMapId)} x {pendingMove.xPct}% · y {pendingMove.yPct}%
                   </span>
                   <div className="map-move-confirm-actions">
                     <button type="button" className="primary-button" onClick={confirmPendingMove}>
@@ -612,7 +741,7 @@ export function MapCoordinateEditor({
             <p><b>Ponto selecionado:</b> {selectedPoint}</p>
             <p><b>Coordenada:</b> {selectedLocation
               ? `x ${selectedLocation.xPct}% / y ${selectedLocation.yPct}%`
-              : editMode ? 'clique no mapa para posicionar' : 'ative "Editar mapa" para posicionar'}</p>
+              : editMode ? 'clique no mapa para posicionar' : 'ative "Calibrar mapa" para posicionar'}</p>
             <p><b>Status:</b> {locationStatus(selectedLocation)}</p>
           </div>
 

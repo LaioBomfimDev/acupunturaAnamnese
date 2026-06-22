@@ -16,6 +16,16 @@
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { anonymizeClinicalText } from '../utils/anonymize';
 import { getSelectedItems, getPulseQualityItems } from '../utils/analyzer';
+import { rankLibraryCards } from './libraryAiService';
+import { knowledgeCards } from '../knowledge/searchIndex';
+import { docCorpusCards } from '../knowledge/generated/doc-corpus';
+
+// Corpus curado para aterrar o raciocínio: padrões/pontos da base + chunks do
+// repertório e das regras de língua. A IA passa a raciocinar A PARTIR daqui,
+// não do conhecimento genérico do modelo.
+const REASONING_KNOWLEDGE_CORPUS = [...docCorpusCards, ...knowledgeCards];
+const REASONING_KNOWLEDGE_LIMIT = 6;
+const REASONING_KNOWLEDGE_TEXT_CAP = 600;
 
 export const REASONING_MOCK_VERSION = 'mock-0.1';
 
@@ -48,8 +58,46 @@ function collectSignals(selectedMap) {
 }
 
 /**
+ * Constrói a query de recuperação do caso: hipótese + diferencial + padrões do
+ * motor + termos que os sustentam + rótulos de sinais. É o que liga o caso ao
+ * conhecimento curado.
+ */
+export function buildReasoningKnowledgeQuery(clinicalCase) {
+  const parts = [];
+  if (clinicalCase?.hypothesis?.primary) parts.push(clinicalCase.hypothesis.primary);
+  if (clinicalCase?.hypothesis?.differential?.name) parts.push(clinicalCase.hypothesis.differential.name);
+  for (const pattern of clinicalCase?.topPatterns || []) {
+    if (pattern.name) parts.push(pattern.name);
+    for (const term of pattern.terms || []) parts.push(term);
+  }
+  for (const labels of Object.values(clinicalCase?.signals || {})) {
+    for (const label of labels || []) parts.push(label);
+  }
+  return parts.join(' ');
+}
+
+/**
+ * Recupera os trechos curados mais relevantes para o caso (repertório/regras +
+ * padrões da base) — reduzidos ao essencial para enviar à IA como âncora.
+ */
+export function retrieveCaseKnowledge(
+  clinicalCase,
+  { corpus = REASONING_KNOWLEDGE_CORPUS, limit = REASONING_KNOWLEDGE_LIMIT } = {},
+) {
+  const query = buildReasoningKnowledgeQuery(clinicalCase);
+  if (!query.trim()) return [];
+  return rankLibraryCards(query, corpus, limit).map(card => ({
+    title: card.title,
+    cat: card.cat,
+    confidence: card.confidence || 'high',
+    source: card.source,
+    text: String(card.txt || '').slice(0, REASONING_KNOWLEDGE_TEXT_CAP),
+  }));
+}
+
+/**
  * Monta o caso clínico enviado à IA: hipótese do motor + sinais (rótulos) +
- * texto livre ANONIMIZADO. Não inclui nenhum identificador direto.
+ * texto livre ANONIMIZADO + conhecimento curado recuperado. Sem identificador direto.
  */
 export function buildClinicalCase(state, selectedMap, synthesis, { patientName } = {}) {
   const rawText = [
@@ -63,7 +111,7 @@ export function buildClinicalCase(state, selectedMap, synthesis, { patientName }
 
   const signals = collectSignals(selectedMap);
 
-  return {
+  const clinicalCase = {
     hypothesis: {
       primary: synthesis?.primaryName || null,
       primaryPercent: synthesis?.primaryPercent ?? 0,
@@ -83,6 +131,12 @@ export function buildClinicalCase(state, selectedMap, synthesis, { patientName }
     signals,
     anamneseText: anonymizeClinicalText(rawText, { patientName }),
   };
+
+  // Âncora curada: trechos do repertório/regras e padrões da base relevantes
+  // ao caso, para a IA raciocinar a partir do material do sistema.
+  clinicalCase.knowledgeContext = retrieveCaseKnowledge(clinicalCase);
+
+  return clinicalCase;
 }
 
 // Quão "preenchido" está o caso — usado pela UI para habilitar o botão.

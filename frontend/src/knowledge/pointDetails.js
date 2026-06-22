@@ -9,6 +9,7 @@ import {
   getPointPageLanguageNotice,
   isPointPageContentAllowed,
 } from './sourceLanguagePolicy';
+import { isClinicallyActiveKnowledgeReview } from './reviewSourcePolicy';
 
 function asList(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -34,7 +35,7 @@ function reviewMatchesPoint(review, pointKey) {
 
 function findApprovedReview(pointKey, reviews = []) {
   return (reviews || []).find(review => {
-    return review?.status === 'approved_local' && reviewMatchesPoint(review, pointKey);
+    return isClinicallyActiveKnowledgeReview(review) && reviewMatchesPoint(review, pointKey);
   }) || null;
 }
 

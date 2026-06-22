@@ -43,6 +43,7 @@ const pdfJsWorkerPath = path.join(runtimeNodeModules, 'pdfjs-dist', 'legacy', 'b
 const pdfJsStandardFontsUrl = pathToFileURL(path.join(runtimeNodeModules, 'pdfjs-dist', 'standard_fonts')).href;
 const defaultOutputRoot = path.join(projectRoot, 'frontend', '.local-source-assets', 'pdf-sources');
 const defaultSummaryPath = path.join(projectRoot, 'docs', 'pdf-source-ingestion-2026-06-05.md');
+const defaultCatalogPath = path.join(defaultOutputRoot, 'source-catalog.local.json');
 const defaultLocalOcrNodeModules = path.join(projectRoot, 'frontend', '.local-source-assets', 'pdf-ocr-node', 'node_modules');
 const defaultOcrNodeModules = path.join(os.tmpdir(), 'sistema-acup-ocr', 'node_modules');
 const REQUIRED_OCR_PACKAGES = [
@@ -50,6 +51,12 @@ const REQUIRED_OCR_PACKAGES = [
   'tesseract.js-core',
   'regenerator-runtime',
 ];
+const SOURCE_ONLY_CANDIDATE_POLICIES = new Set([
+  'none',
+  'skipacupointcandidates',
+  'sourceonly',
+  'sourceonlynopointcandidatescan',
+]);
 
 const SOURCE_DEFINITIONS = [
   {
@@ -108,6 +115,102 @@ const SOURCE_DEFINITIONS = [
   },
 ];
 
+const OPTIONAL_SOURCE_FIELDS = [
+  'reference',
+  'referenceCitation',
+  'publicReferenceUrl',
+  'licenseNote',
+  'trustTier',
+  'curationBatch',
+  'knowledgeDomain',
+  'curationTarget',
+  'candidateExtractionPolicy',
+  'intendedUse',
+  'clinicalActivationPolicy',
+  'notes',
+];
+
+function optionalSourceFields(source) {
+  const fields = {};
+  for (const field of OPTIONAL_SOURCE_FIELDS) {
+    const value = source[field];
+    if (value !== undefined && value !== null && value !== '') {
+      fields[field] = value;
+    }
+  }
+  return fields;
+}
+
+function normalizeAuthors(value) {
+  if (Array.isArray(value)) {
+    return value.map(author => String(author || '').trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split(';').map(author => author.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function normalizeSourceDefinition(source, { catalogDir = projectRoot, origin = 'inline', index = 0 } = {}) {
+  const key = String(source.key || '').trim();
+  const title = String(source.title || '').trim();
+  const sourcePath = String(source.path || source.localPath || '').trim();
+
+  if (!key) throw new Error(`Fonte sem key em ${origin}#${index + 1}.`);
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(key)) {
+    throw new Error(`Key invalida em ${origin}#${index + 1}: ${key}. Use slug em minusculas com hifens.`);
+  }
+  if (!title) throw new Error(`Fonte ${key} sem title em ${origin}.`);
+  if (!sourcePath) throw new Error(`Fonte ${key} sem path em ${origin}.`);
+
+  return {
+    key,
+    title,
+    authors: normalizeAuthors(source.authors),
+    originalLanguage: String(source.originalLanguage || 'unknown').trim() || 'unknown',
+    sourceType: String(source.sourceType || 'fonte clinica').trim() || 'fonte clinica',
+    path: path.isAbsolute(sourcePath) ? sourcePath : path.resolve(catalogDir, sourcePath),
+    use: String(source.use || source.intendedUse || 'Fonte bruta para curadoria; exige revisao profissional antes de uso clinico.').trim(),
+    ...optionalSourceFields(source),
+  };
+}
+
+async function loadSourceCatalog(catalogPath) {
+  const resolvedPath = path.resolve(String(catalogPath || defaultCatalogPath));
+  const parsed = JSON.parse(await fs.readFile(resolvedPath, 'utf8'));
+  const sources = Array.isArray(parsed) ? parsed : parsed.sources;
+  if (!Array.isArray(sources)) {
+    throw new Error(`Catalogo sem array sources: ${resolvedPath}`);
+  }
+
+  return sources.map((source, index) => normalizeSourceDefinition(source, {
+    catalogDir: path.dirname(resolvedPath),
+    origin: resolvedPath,
+    index,
+  }));
+}
+
+async function loadSourceDefinitions(args) {
+  if (!args.catalog) {
+    return SOURCE_DEFINITIONS.map((source, index) => normalizeSourceDefinition(source, {
+      origin: 'SOURCE_DEFINITIONS',
+      index,
+    }));
+  }
+
+  const catalogPath = args.catalog === true ? defaultCatalogPath : args.catalog;
+  const catalogSources = await loadSourceCatalog(catalogPath);
+  if (!args.includeDefaultSources) return catalogSources;
+
+  return [
+    ...SOURCE_DEFINITIONS.map((source, index) => normalizeSourceDefinition(source, {
+      origin: 'SOURCE_DEFINITIONS',
+      index,
+    })),
+    ...catalogSources,
+  ];
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -152,6 +255,15 @@ function languageKey(value) {
     .replace(/[^a-z]/g, '');
 }
 
+function sourceSkipsPointCandidateExtraction(source) {
+  return SOURCE_ONLY_CANDIDATE_POLICIES.has(languageKey(
+    source.candidateExtractionPolicy
+      || source.pointCandidateExtraction
+      || source.pointCandidatePolicy
+      || '',
+  ));
+}
+
 function isPtBrLanguage(value) {
   const key = languageKey(value);
   return key === 'ptbr' || key === 'pt' || key === 'por' || key === 'portugues';
@@ -165,11 +277,11 @@ function pageFileName(page, extension) {
   return `page-${String(page).padStart(3, '0')}.${extension}`;
 }
 
-function selectSources(args) {
+function selectSources(args, sourceDefinitions = SOURCE_DEFINITIONS) {
   const wanted = splitArg(args.sources || args.source || 'all');
-  if (!wanted.length || wanted.includes('all')) return SOURCE_DEFINITIONS;
+  if (!wanted.length || wanted.includes('all')) return sourceDefinitions;
   const wantedKeys = new Set(wanted.map(item => item.toLowerCase()));
-  return SOURCE_DEFINITIONS.filter(source => wantedKeys.has(source.key.toLowerCase()));
+  return sourceDefinitions.filter(source => wantedKeys.has(source.key.toLowerCase()));
 }
 
 function selectedPages(args, pageCount) {
@@ -210,6 +322,8 @@ function detectLanguageHint(text, fallback) {
   const value = String(text || '');
   const ptHits = (value.match(/\b(de|da|do|das|dos|para|com|em|ponto|auricular|acupuntura|tratamento|dor|localizacao|localização)\b/gi) || []).length;
   const enHits = (value.match(/\b(the|and|of|in|with|treatment|point|acupuncture|pain|ear|method|trial)\b/gi) || []).length;
+  const esHits = (value.match(/\b(el|la|las|los|del|con|sin|tratamiento|puntos|dolor|láser|laser|rayo|piel|paciente|terapia|aguja|agujas)\b/gi) || []).length;
+  if (esHits > Math.max(ptHits, enHits) * 1.2 && esHits > 4) return 'es';
   if (ptHits >= enHits * 1.5 && ptHits > 4) return 'pt-BR';
   if (enHits > ptHits * 1.5 && enHits > 4) return 'en';
   return fallback || 'unknown';
@@ -217,6 +331,20 @@ function detectLanguageHint(text, fallback) {
 
 function pointPagePolicyForSource(source) {
   const sourceIsPtBr = isPtBrLanguage(source.originalLanguage);
+  if (sourceSkipsPointCandidateExtraction(source)) {
+    return {
+      pointPageLanguage: 'pt-BR',
+      originalLanguage: source.originalLanguage,
+      allowRawOriginalInPointPages: false,
+      ptBrReviewed: false,
+      pointPageEligibleAfterReview: false,
+      sourceOnly: true,
+      requiresPtBrSynthesis: !sourceIsPtBr,
+      requiresProfessionalAudit: true,
+      rule: 'Fonte de dominio especifico preservada para curadoria/rastreamento; nao gera rascunho de ponto nem entra no scanner de pontos.',
+    };
+  }
+
   return {
     pointPageLanguage: 'pt-BR',
     originalLanguage: source.originalLanguage,
@@ -734,6 +862,7 @@ function buildSourceManifest({ source, extracted, pageIndexes, generatedAt }) {
       fileName: path.basename(source.path),
       localPath: source.path,
       use: source.use,
+      ...optionalSourceFields(source),
     },
     pageCount: extracted.pageCount,
     counts: {
@@ -840,6 +969,7 @@ function aggregateIndex(results, outputRoot, generatedAt) {
       pageCount: manifest.pageCount,
       counts: manifest.counts,
       policy: manifest.policy,
+      ...optionalSourceFields(manifest.source),
     };
   });
 
@@ -868,7 +998,9 @@ function aggregateIndex(results, outputRoot, generatedAt) {
 
 function summaryMarkdown(index) {
   const rows = index.sources.map(source => {
-    const gate = source.policy.requiresPtBrSynthesis
+    const gate = source.policy.sourceOnly
+      ? 'fonte de dominio especifico; fora do scanner de pontos'
+      : source.policy.requiresPtBrSynthesis
       ? 'bloqueado para ficha ate sintese pt-BR'
       : 'elegivel como rascunho pt-BR apos revisao';
     return `| ${source.title} | ${source.originalLanguage} | ${source.pageCount} | ${source.counts.pagesRendered} | ${source.counts.pagesOcrDone} | ${gate} |`;
@@ -878,16 +1010,17 @@ function summaryMarkdown(index) {
 
 Gerado em: ${index.generatedAt}
 
-## Regra de idioma
+## Regra de idioma e dominio
 
-- Paginas de ponto no app devem permanecer em pt-BR.
+- Conteudo clinico normalizado no app deve permanecer em pt-BR.
 - Texto original em ingles/outro idioma fica apenas como fonte bruta local.
 - Fonte nao-pt-BR so pode alimentar ficha de ponto depois de sintese pt-BR revisada, com trecho e pagina rastreaveis.
+- Fonte marcada como dominio especifico/source-only fica fora do scanner de pontos.
 - Todo item importado destes PDFs permanece em rascunho/revisao e exige auditoria profissional.
 
 ## Resultado
 
-| Fonte | Idioma original | Paginas | Telas renderizadas | OCR concluido | Gate para ficha |
+| Fonte | Idioma original | Paginas | Telas renderizadas | OCR concluido | Gate para uso |
 | --- | --- | ---: | ---: | ---: | --- |
 ${rows}
 
@@ -908,7 +1041,8 @@ async function main() {
   const outputRoot = path.resolve(args.outputRoot || defaultOutputRoot);
   const summaryPath = path.resolve(args.summary || defaultSummaryPath);
   const generatedAt = new Date().toISOString();
-  const sources = selectSources(args);
+  const sourceDefinitions = await loadSourceDefinitions(args);
+  const sources = selectSources(args, sourceDefinitions);
 
   if (!sources.length) {
     throw new Error('Nenhuma fonte selecionada. Use --sources all ou uma lista de keys.');
@@ -935,9 +1069,14 @@ async function main() {
 
 export {
   findOcrNodeModules,
+  detectLanguageHint,
   importPdfJsForTextExtraction,
+  loadSourceCatalog,
+  loadSourceDefinitions,
   missingOcrPackages,
+  normalizeSourceDefinition,
   selectOcrNodeModules,
+  selectSources,
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

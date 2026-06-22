@@ -26,6 +26,8 @@ import {
   jsonResponse,
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { withCorrectionLessons } from '../_shared/corrections.ts';
+import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 const BUCKET = 'clinical-tongue-photos';
@@ -189,8 +191,20 @@ Deno.serve(async (req) => {
         : 'Analise a foto e gere os achados estruturados para conferência profissional. NÃO sugira tags sublinguais (não há foto sublingual).',
     });
 
+    // Empilha diretrizes do SuperAdm e depois as lições de correção
+    // (aprovadas + as da própria autora), sem relaxar o prompt fixo.
+    const extraInstructions = await getActiveInstructions(supabaseAdmin, [
+      'clinical-global',
+      'tongue-analysis',
+    ]);
+    const instructedPrompt = layerSystemPrompt(SYSTEM_PROMPT, extraInstructions);
+    const systemText = await withCorrectionLessons(supabaseAdmin, instructedPrompt, {
+      surface: 'tongue',
+      callerId: caller.user.id,
+    });
+
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemText }] },
       contents: [{ role: 'user', parts }],
       generationConfig: {
         temperature: 0.4,

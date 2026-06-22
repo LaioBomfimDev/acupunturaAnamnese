@@ -1,56 +1,80 @@
 # Aprendizado local de PDFs por pagina
 
-Gerado em: 2026-06-08T02:30:24.109Z
+Gerado em: 2026-06-19T18:48:41.789Z
 
 ## Regra clinica
 
-- Todas as 1359 paginas dos 6 PDFs foram varridas como fonte local.
+- 2477 paginas foram varridas pelo conector de pontos, dentro de 5194 paginas ingeridas de 19 PDFs.
+- 562 paginas de capa, sumario, front matter ou texto insuficiente foram ignoradas antes de gerar candidatos.
 - O resultado e evidencia candidata para curadoria, nao aprovacao clinica.
 - Fichas de ponto permanecem em pt-BR; fonte nao-pt-BR exige sintese pt-BR revisada.
 - Paginas/imagens continuam em `frontend/.local-source-assets`, fora do bundle principal.
 
+## Fontes fora do scanner de pontos
+
+Estas fontes foram ingeridas como biblioteca/rastreamento, mas nao foram varridas
+pelo conector de pontos para evitar candidatos falsos em dominios especificos.
+
+| Fonte | Paginas | Motivo |
+| --- | ---: | --- |
+| acupuntura-chinesa-moxibustao | 373 | candidateExtractionPolicy sem varredura de pontos |
+| classico-81-dificuldades-ebramec | 64 | candidateExtractionPolicy sem varredura de pontos |
+| combinacoes-pontos-acupuntura-jeremy-ross | 511 | candidateExtractionPolicy sem varredura de pontos |
+| diagnostico-medicina-chinesa-auteroche | 422 | candidateExtractionPolicy sem varredura de pontos |
+| dietoterapia-chinesa-corpo-mente-espirito | 197 | candidateExtractionPolicy sem varredura de pontos |
+| ebook-ervas-medicinais | 440 | candidateExtractionPolicy sem varredura de pontos |
+| manual-acupuntura-laser-sanagua | 81 | candidateExtractionPolicy sem varredura de pontos |
+| microssistema-lingua | 103 | candidateExtractionPolicy sem varredura de pontos |
+| semiologia-da-lingua-completo | 295 | candidateExtractionPolicy sem varredura de pontos |
+| sistema-chines-curas-alimentares | 231 | candidateExtractionPolicy sem varredura de pontos |
+
+
 ## Cobertura de varredura
 
-| Fonte | Paginas varridas | Paginas com texto/OCR |
-| --- | ---: | ---: |
-| sumiko-ear-acupuncture-clinical-treatment | 480 | 472 |
-| scavone-manual-auriculoterapia | 372 | 349 |
-| long-acupuncture-trials-risk-of-bias | 12 | 12 |
-| huang-acupuncture-fibromyalgia-stroke-cohort | 15 | 15 |
-| ednea-garcia-guia-ilustrado-referencia | 372 | 369 |
-| livro-acupuntura-auricular | 108 | 108 |
+| Fonte | Paginas varridas | Paginas com texto/OCR | Paginas ignoradas |
+| --- | ---: | ---: | ---: |
+| huang-acupuncture-fibromyalgia-stroke-cohort | 15 | 15 | 1 |
+| atlas-colorido-acupuntura-hecker | 147 | 147 | 9 |
+| atlas-acupuntura-chinesa-meridianos-colaterais-auteroche | 269 | 241 | 81 |
+| atlas-guia-pratico-acupuntura-folcks | 702 | 702 | 27 |
+| long-acupuncture-trials-risk-of-bias | 12 | 12 | 1 |
+| sumiko-ear-acupuncture-clinical-treatment | 480 | 472 | 273 |
+| livro-acupuntura-auricular | 108 | 108 | 27 |
+| scavone-manual-auriculoterapia | 372 | 349 | 94 |
+| ednea-garcia-guia-ilustrado-referencia | 372 | 369 | 49 |
 
 ## Pontos sistemicos/KM-Agent
 
-- Links candidatos: 4937
-- Pontos/registros conectados: 362
-- Registros com fonte pt-BR elegivel para rascunho apos revisao: 362
-- Registros com alguma fonte nao-pt-BR bloqueada para ficha: 9
-- Registros com ao menos um link de alta confianca: 355
+- Links candidatos: 8718
+- Pontos/registros conectados: 408
+- Registros com fonte pt-BR elegivel para rascunho apos revisao: 408
+- Registros com alguma fonte nao-pt-BR bloqueada para ficha: 3
+- Registros com ao menos um link de alta confianca: 407
 - Validacoes/aprovacoes clinicas automaticas: 0
 
 | Fonte | Links candidatos |
 | --- | ---: |
-| ednea-garcia-guia-ilustrado-referencia | 4886 |
+| atlas-acupuntura-chinesa-meridianos-colaterais-auteroche | 707 |
+| atlas-colorido-acupuntura-hecker | 631 |
+| atlas-guia-pratico-acupuntura-folcks | 2504 |
+| ednea-garcia-guia-ilustrado-referencia | 4840 |
 | huang-acupuncture-fibromyalgia-stroke-cohort | 3 |
-| livro-acupuntura-auricular | 23 |
-| long-acupuncture-trials-risk-of-bias | 1 |
-| scavone-manual-auriculoterapia | 18 |
-| sumiko-ear-acupuncture-clinical-treatment | 6 |
+| livro-acupuntura-auricular | 21 |
+| scavone-manual-auriculoterapia | 12 |
 
 ## Auriculoterapia
 
-- Links candidatos auriculares: 2065
+- Links candidatos auriculares: 1713
 - Alvos auriculares/protocolos conectados: 86
 - Alvos com fonte pt-BR elegivel para rascunho apos revisao: 86
-- Alvos com alguma fonte nao-pt-BR bloqueada para ficha: 61
+- Alvos com alguma fonte nao-pt-BR bloqueada para ficha: 60
 - Validacoes/aprovacoes clinicas automaticas: 0
 
 | Fonte auricular | Links candidatos |
 | --- | ---: |
-| livro-acupuntura-auricular | 267 |
-| scavone-manual-auriculoterapia | 792 |
-| sumiko-ear-acupuncture-clinical-treatment | 1006 |
+| livro-acupuntura-auricular | 266 |
+| scavone-manual-auriculoterapia | 712 |
+| sumiko-ear-acupuncture-clinical-treatment | 735 |
 
 ## Arquivos locais
 

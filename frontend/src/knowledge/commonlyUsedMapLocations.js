@@ -154,44 +154,44 @@ const COMMON_BODY_COORDS = [
   ['BL62', 'legs_back', 49, 89],
 
   // ── hands_palmar (antebraço+palma; polegar/radial=ESQUERDA, ulnar=direita) ─
-  ['PC6', 'hands_palmar', 49, 58],
-  ['PC7', 'hands_palmar', 49, 68],
-  ['PC8', 'hands_palmar', 51, 80],
-  ['PC9', 'hands_palmar', 54, 95],
-  ['HT5', 'hands_palmar', 57, 63],
-  ['HT6', 'hands_palmar', 58, 65],
-  ['HT7', 'hands_palmar', 58, 68],
-  ['HT8', 'hands_palmar', 60, 80],
-  ['LU7', 'hands_palmar', 44, 58],
-  ['LU9', 'hands_palmar', 42, 68],
-  ['LU10', 'hands_palmar', 36, 68],
-  ['LU11', 'hands_palmar', 29, 61],
+  ['PC6', 'hands_palmar', 49, 56],
+  ['PC7', 'hands_palmar', 49, 66],
+  ['PC8', 'hands_palmar', 50, 78],
+  ['PC9', 'hands_palmar', 52, 93],
+  ['HT5', 'hands_palmar', 57, 60],
+  ['HT6', 'hands_palmar', 58, 62],
+  ['HT7', 'hands_palmar', 58, 66],
+  ['HT8', 'hands_palmar', 58, 78],
+  ['LU7', 'hands_palmar', 43, 56],
+  ['LU9', 'hands_palmar', 41, 66],
+  ['LU10', 'hands_palmar', 34, 74],
+  ['LU11', 'hands_palmar', 28, 72],
 
   // ── hands_dorsal (antebraço+mão dorso; polegar=direita) ───────────────────
-  ['LI4', 'hands_dorsal', 60, 80],
-  ['LI5', 'hands_dorsal', 62, 70],
-  ['LI10', 'hands_dorsal', 57, 14],
-  ['TE3', 'hands_dorsal', 42, 80],
-  ['TE5', 'hands_dorsal', 50, 58],
-  ['SI3', 'hands_dorsal', 38, 74],
+  ['LI4', 'hands_dorsal', 58, 78],
+  ['LI5', 'hands_dorsal', 60, 68],
+  ['LI10', 'hands_dorsal', 55, 16],
+  ['TE3', 'hands_dorsal', 44, 82],
+  ['TE5', 'hands_dorsal', 50, 56],
+  ['SI3', 'hands_dorsal', 36, 76],
 
-  // ── feet_dorsal (pé dorso; hálux topo-direita, tornozelo embaixo) ─────────
-  ['LR3', 'feet_dorsal', 57, 42],
-  ['LR2', 'feet_dorsal', 60, 22],
-  ['ST44', 'feet_dorsal', 53, 26],
-  ['ST45', 'feet_dorsal', 55, 14],
-  ['ST41', 'feet_dorsal', 50, 64],
-  ['GB40', 'feet_dorsal', 36, 62],
-  ['GB41', 'feet_dorsal', 40, 40],
-  ['KI3', 'feet_dorsal', 64, 70],
-  ['KI6', 'feet_dorsal', 66, 76],
-  ['BL67', 'feet_dorsal', 38, 20],
+  // ── feet_dorsal (pé dorso; hálux/medial=DIREITA, lateral=ESQUERDA, tornozelo embaixo) ─
+  ['LR3', 'feet_dorsal', 58, 40],
+  ['LR2', 'feet_dorsal', 62, 20],
+  ['ST44', 'feet_dorsal', 54, 22],
+  ['ST45', 'feet_dorsal', 52, 12],
+  ['ST41', 'feet_dorsal', 50, 62],
+  ['GB40', 'feet_dorsal', 34, 64],
+  ['GB41', 'feet_dorsal', 38, 38],
+  ['KI3', 'feet_dorsal', 66, 72],
+  ['KI6', 'feet_dorsal', 68, 78],
+  ['BL67', 'feet_dorsal', 36, 16],
 
-  // ── feet_plantar (planta; hálux/medial à direita, calcanhar embaixo) ──────
-  ['KI1', 'feet_plantar', 52, 33],
-  ['KI2', 'feet_plantar', 64, 52],
-  ['SP1', 'feet_plantar', 64, 12],
-  ['SP4', 'feet_plantar', 66, 42],
+  // ── feet_plantar (planta; hálux/medial à ESQUERDA, calcanhar embaixo) ─────
+  ['KI1', 'feet_plantar', 48, 33],
+  ['KI2', 'feet_plantar', 36, 52],
+  ['SP1', 'feet_plantar', 38, 10],
+  ['SP4', 'feet_plantar', 34, 40],
 ];
 
 function clampPct(value) {
@@ -205,40 +205,60 @@ function scalePct(value, fromMin, fromMax, toMin, toMax) {
   return clampPct(toMin + (ratio * (toMax - toMin)));
 }
 
+// Projeções calibradas para body-full.webp (corpo inteiro bilateral, vista anterior).
+// Referências visuais: topo cabeça ~3%Y, queixo ~13%Y, ombros ~17%Y,
+// mamilos ~25%Y, umbigo ~38%Y, virilha ~48%Y, joelhos ~68%Y,
+// tornozelos ~90%Y, pés ~95%Y. Linha média X=50%, ombro ~30%/70%, mãos ~18%/82%.
+
 function projectTorsoX(xPct) {
-  return clampPct(50 + ((Number(xPct) - 60) * 0.55));
+  // body_front/back: linha média ~x60 → body_full média x50; escala lateral ampla
+  return clampPct(50 + ((Number(xPct) - 60) * 0.65));
 }
 
 function projectBodyFrontY(yPct) {
-  return clampPct((Number(yPct) * 0.55) + 1);
+  // body_front: 0=topo cabeça→3%Y, 100=baixo abdome→48%Y
+  return scalePct(yPct, 0, 100, 3, 48);
 }
 
 function projectBodyBackY(yPct) {
-  return clampPct(Number(yPct) * 0.68);
+  // body_back: 0=topo cabeça→3%Y, 100=sacro/glúteo→50%Y
+  return scalePct(yPct, 0, 100, 3, 50);
 }
 
 function projectLegX(xPct) {
-  return clampPct(55 + ((Number(xPct) - 50) * 0.45));
+  // legs: medial ~x43→50 body_full, lateral ~x58→42 (perna direita, espelhada)
+  return clampPct(50 + ((Number(xPct) - 50) * 0.35));
 }
 
 function projectLegY(yPct) {
-  return scalePct(yPct, 30, 90, 55, 92);
+  // legs: topo coxa ~30→50%Y, tornozelo ~90→90%Y
+  return scalePct(yPct, 25, 92, 50, 92);
 }
 
 function projectHandX(xPct) {
-  return clampPct(29 + ((Number(xPct) - 50) * 0.25));
+  // hands: projetar na mão direita ~x18-28
+  return clampPct(22 + ((Number(xPct) - 50) * 0.2));
 }
 
 function projectHandY(yPct) {
-  return scalePct(yPct, 14, 95, 39, 59);
+  // hands: pulso ~14→42%Y, ponta dedos ~95→55%Y
+  return scalePct(yPct, 10, 95, 40, 56);
 }
 
-function projectFootX(xPct) {
-  return clampPct(55 + ((Number(xPct) - 50) * 0.18));
+function projectFootDorsalX(xPct) {
+  // feet_dorsal: medial(RIGHT/high-x)→center(~48), lateral(LEFT/low-x)→outer(~40)
+  return clampPct(44 + ((Number(xPct) - 50) * 0.14));
+}
+
+function projectFootPlantarX(xPct) {
+  // feet_plantar: medial(LEFT/low-x)→center(~48), lateral(RIGHT/high-x)→outer(~40)
+  // Espelhar: x baixo no plantar = medial = x alto no body_full (centro)
+  return clampPct(44 + ((50 - Number(xPct)) * 0.14));
 }
 
 function projectFootY(yPct) {
-  return scalePct(yPct, 12, 76, 96, 88);
+  // feet: dedos ~10→96%Y, tornozelo ~80→90%Y no body_full
+  return scalePct(yPct, 10, 80, 96, 90);
 }
 
 function projectToBodyFull([code, mapId, xPct, yPct]) {
@@ -258,8 +278,12 @@ function projectToBodyFull([code, mapId, xPct, yPct]) {
     return [code, projectHandX(xPct), projectHandY(yPct), mapId];
   }
 
-  if (mapId === 'feet_dorsal' || mapId === 'feet_plantar') {
-    return [code, projectFootX(xPct), projectFootY(yPct), mapId];
+  if (mapId === 'feet_dorsal') {
+    return [code, projectFootDorsalX(xPct), projectFootY(yPct), mapId];
+  }
+
+  if (mapId === 'feet_plantar') {
+    return [code, projectFootPlantarX(xPct), projectFootY(yPct), mapId];
   }
 
   return [code, xPct, yPct, mapId];

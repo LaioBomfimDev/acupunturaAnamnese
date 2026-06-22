@@ -1,17 +1,22 @@
 const NAV_GROUPS = [
   { title: null, tabs: ['Tela inicial', 'Painel'] },
-  { title: 'Avaliação', tabs: ['Anamnese', 'Língua', 'Pulso'] },
+  { title: 'Avaliação', tabs: ['Anamnese', 'Língua', 'Pulso', 'Reabilitação'] },
   { title: 'Diagnóstico', tabs: ['Raciocínio Clínico', 'Diagnóstico'] },
   { title: 'Tratamento', tabs: ['Protocolo', 'Evolução'] },
   { title: 'Apoio', tabs: ['Biblioteca', 'Relatório'] },
 ];
 
 const SUPER_ADMIN_SECTIONS = [
-  { id: 'create', label: 'Criar acupunturista', description: 'Cadastro e senha' },
-  { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
   { id: 'clinics', label: 'Clínicas', description: 'Cadastro e identidade visual' },
+  { id: 'create', label: 'Criar profissional', description: 'Cadastro e senha' },
+  { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
+  { id: 'deploy-health', label: 'Saúde do deploy', description: 'Supabase e migrations' },
   { id: 'knowledge', label: 'Alimentação', description: 'Biblioteca Viva' },
   { id: 'pdf-sources', label: 'Fontes PDF', description: 'Pontos não respondidos' },
+  { id: 'herbal-curation', label: 'Curadoria de ervas', description: 'Fonte e segurança' },
+  { id: 'anamnese-knowledge', label: 'Conhecimento da Anamnese', description: 'Achados e padrões' },
+  { id: 'ai-instructions', label: 'Instruções da IA', description: 'Diretrizes que a IA segue' },
+  { id: 'ai-corrections', label: 'Correções da IA', description: 'Ensino e aprovação' },
   { id: 'maps', label: 'Calibração de Mapa', description: 'Coordenadas e solicitações' },
   { id: 'logs', label: 'Logs', description: 'Auditoria' },
 ];
@@ -46,6 +51,13 @@ const NAV_ICONS = {
     </>
   ),
   'Pulso': <path d="M22 12h-4l-3 8L9 4l-3 8H2" />,
+  'Reabilitação': (
+    <>
+      <path d="M5 4h14v16H5z" />
+      <path d="M8 9h8M8 13h5M8 17h8" />
+      <path d="m15 13 1.5 1.5L20 11" />
+    </>
+  ),
   'Raciocínio Clínico': (
     <>
       <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z" />
@@ -109,6 +121,12 @@ const NAV_ICONS = {
       <path d="M8 7h2M12 7h2M8 11h2M12 11h2M8 15h2M12 15h2" />
     </>
   ),
+  'deploy-health': (
+    <>
+      <path d="M22 12h-4l-3 7-6-14-3 7H2" />
+      <path d="M16 5h4v4" />
+    </>
+  ),
   'knowledge': (
     <>
       <path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z" />
@@ -120,6 +138,31 @@ const NAV_ICONS = {
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
       <path d="M14 3v5h5" />
       <path d="M9 13h6M9 17h6" />
+    </>
+  ),
+  'herbal-curation': (
+    <>
+      <path d="M20 4C12 4 5 8 5 16c0 2.2 1.8 4 4 4 6.5 0 10-7.2 11-16Z" />
+      <path d="M4 21c3-5 7-8 12-11" />
+    </>
+  ),
+  'anamnese-knowledge': (
+    <>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 8h6M9 12h6M9 16h3" />
+      <path d="m15 16 1.5 1.5L20 14" />
+    </>
+  ),
+  'ai-instructions': (
+    <>
+      <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z" />
+      <path d="M9 20h6M10 22h4" />
+    </>
+  ),
+  'ai-corrections': (
+    <>
+      <path d="M21 11.5a8 8 0 0 1-11.5 7.2L3 21l1.8-6.5A8 8 0 1 1 21 11.5Z" />
+      <path d="m8.5 12 2.2 2.2L15 10" />
     </>
   ),
   'maps': (

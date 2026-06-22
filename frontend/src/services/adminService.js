@@ -72,6 +72,7 @@ export async function updateProfessionalProfile(profileId, payload) {
     p_document: payload.document,
     p_professional_registration: payload.professionalRegistration,
     p_specialty: payload.specialty,
+    p_profession: payload.profession,
     p_clinic_name: payload.clinicName,
     p_notes: payload.notes,
   });

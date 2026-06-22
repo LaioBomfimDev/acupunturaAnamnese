@@ -18,6 +18,8 @@ import {
   jsonResponse,
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
+import { withCorrectionLessons } from '../_shared/corrections.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 
@@ -48,6 +50,8 @@ Responda à pergunta da profissional usando EXCLUSIVAMENTE o CONTEXTO fornecido 
 Regras:
 - NÃO use conhecimento externo nem invente pontos, funções, localizações ou indicações que não estejam no contexto. Esta base é curada justamente para evitar informação não verificada.
 - Cite no campo citations os títulos dos itens do contexto que sustentam a resposta.
+- Quando usar uma fonte "Acupuntura Médica em Questões (TEAC)", atribua a conclusão no próprio texto: "De acordo com Cruz, Höhl e Ungarelli, Acupuntura Médica em Questões (TEAC [ano], questão [número]), ...". Copie ano e número da linha "Fonte" do contexto; se o trecho não tiver questão numerada, cite o capítulo. Nunca apresente a resposta de prova como verdade clínica universal, diagnóstico final ou conduta.
+- Para fonte TEAC, cada item em citations deve conter também a referência rastreável no formato "TEAC [ano], questão [número] — [título]" ou "TEAC, capítulo [nome] — [título]". Não invente ano, número ou capítulo.
 - Se o contexto NÃO contém o suficiente para responder, diga isso claramente no answer e marque insufficient=true. Não preencha lacunas com suposições.
 - Atenção ao nível de confiança de cada item (high/medium/low): se a resposta depender de itens de baixa confiança ("rascunho bruto" ou "em revisão"), avise que precisam de revisão profissional antes do uso clínico.
 - Português brasileiro, objetivo e clínico. A resposta é apoio ao estudo/consulta, não conduta automática.`;
@@ -92,8 +96,18 @@ Deno.serve(async (req) => {
       .join('\n\n')
       .slice(0, 14000);
 
+    // Diretrizes adicionais curadas (aditivas; a segurança do prompt fixo é piso).
+    const extraInstructions = await getActiveInstructions(supabaseAdmin, ['clinical-global', 'library-qa']);
+    const systemPromptText = layerSystemPrompt(SYSTEM_PROMPT, extraInstructions);
+    // Lições de correção (aprovadas + as da própria autora) sobre as diretrizes.
+    const systemText = await withCorrectionLessons(supabaseAdmin, systemPromptText, {
+      surface: 'library_qa',
+      callerId: caller.user.id,
+      relevanceQuery: question,
+    });
+
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
         role: 'user',
         parts: [{ text: `CONTEXTO:\n${contextText}\n\nPERGUNTA: ${question.slice(0, 1000)}` }],

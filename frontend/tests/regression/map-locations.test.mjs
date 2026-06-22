@@ -173,6 +173,54 @@ test('coordenadas locais antigas de pontos comuns não duplicam o marcador recal
   }
 });
 
+test('alterar mapa de BP3 substitui a posição antiga sem duplicar SP3', () => {
+  const hadLocalStorage = Object.prototype.hasOwnProperty.call(globalThis, 'localStorage');
+  const originalLocalStorage = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: key => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => {
+      store.set(key, String(value));
+    },
+  };
+
+  try {
+    mapLocations.writeStoredMapLocations([]);
+    const original = segmentedLocations(mapLocations.getLocationsForPoint('BP3'))
+      .find(location => location.mapId === 'feet_dorsal');
+    assert.ok(original, 'BP3/SP3 deveria ter posição inicial no dorso do pé');
+
+    const originalIdentity = mapLocations.getLocationIdentity(original);
+    const saved = mapLocations.upsertStoredMapLocation({
+      code: 'SP3',
+      mapId: 'feet_plantar',
+      view: 'plantar',
+      xPct: 66,
+      yPct: 42,
+    }, {
+      replaceLocationIdentity: originalIdentity,
+      replacedFromMapId: original.mapId,
+    });
+
+    const locations = segmentedLocations(mapLocations.getLocationsForPoint('BP3'));
+    assert.equal(saved.replacesLocationIdentity, originalIdentity);
+    assert.equal(saved.replacedFromMapId, 'feet_dorsal');
+    assert.equal(locations.length, 1, 'BP3/SP3 deve ficar com marcador único após alterar mapa');
+    assert.equal(locations[0].code, 'SP3');
+    assert.equal(locations[0].mapId, 'feet_plantar');
+    assert.equal(locations[0].xPct, 66);
+    assert.equal(locations[0].yPct, 42);
+    assert.deepEqual(mapLocations.validateMapLocations().errors, []);
+  } finally {
+    mapLocations.writeStoredMapLocations([]);
+    if (hadLocalStorage) {
+      globalThis.localStorage = originalLocalStorage;
+    } else {
+      delete globalThis.localStorage;
+    }
+  }
+});
+
 test('mecanismo de identidade por lado preserva os dois lados ao calibrar', () => {
   // O mecanismo bilateral (usado pela biblioteca completa do SuperAdm) continua
   // distinguindo lados por identidade; calibrar um lado não apaga o outro.

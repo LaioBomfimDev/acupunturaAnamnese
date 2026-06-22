@@ -19,6 +19,7 @@ const PainelInicial = lazyPanel(() => import('./components/panels/PainelInicial'
 const Anamnese = lazyPanel(() => import('./components/panels/Anamnese'), 'Anamnese');
 const Lingua = lazyPanel(() => import('./components/panels/Lingua'), 'Lingua');
 const Pulso = lazyPanel(() => import('./components/panels/Pulso'), 'Pulso');
+const Reabilitacao = lazyPanel(() => import('./components/panels/Reabilitacao'), 'Reabilitacao');
 const RaciocinioClinical = lazyPanel(() => import('./components/panels/RaciocinioClinical'), 'RaciocinioClinical');
 const Diagnostico = lazyPanel(() => import('./components/panels/Diagnostico'), 'Diagnostico');
 const Protocolo = lazyPanel(() => import('./components/panels/Protocolo'), 'Protocolo');
@@ -248,6 +249,7 @@ export default function App() {
       case 'Anamnese':          return <Anamnese {...commonProps} onSetSelection={setSelection} onFillTestAnswers={fillTestAnswers} />;
       case 'Língua':            return <Lingua {...commonProps} onSetSelection={setSelection} tongueAi={tongueAi} onTongueAiChange={setTongueAi} />;
       case 'Pulso':             return <Pulso {...commonProps} />;
+      case 'Reabilitação':      return <Reabilitacao key={selectedPatient?.id || 'sem-paciente'} {...commonProps} />;
       case 'Raciocínio Clínico':return <RaciocinioClinical {...commonProps} />;
       case 'Diagnóstico':       return <Diagnostico {...commonProps} />;
       case 'Protocolo':         return <Protocolo {...commonProps} />;

@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { draftReport, REPORT_AI_DISCLAIMER } from '../../services/reportAiService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { buildPointEvidence, buildProtocolSummary, buildReferenceList } from '../../knowledge/reportFragments';
+import { summarizeRehabilitation, formatOptionalMetric } from '../../services/rehabilitationService';
 import {
   buildReportAccentPalette,
   buildReportContactItems,
@@ -49,6 +52,15 @@ function InlineRow({ label, value, fallback = 'Aguardando dados.' }) {
       <b>{label}:</b> {value || fallback}
     </p>
   );
+}
+
+// Texto factual de uma medida funcional: valor atual (1 avaliação) ou
+// primeira → última com a variação bruta. Sem rótulo de melhora/piora.
+function rehabMetricText(metric, single) {
+  if (single) return `${metric.label}: ${formatOptionalMetric(metric.ultimo, metric.suffix)}`;
+  const range = `${formatOptionalMetric(metric.primeiro, metric.suffix)} → ${formatOptionalMetric(metric.ultimo, metric.suffix)}`;
+  const delta = metric.delta !== null ? ` (Δ ${metric.delta > 0 ? '+' : ''}${metric.delta}${metric.suffix})` : '';
+  return `${range ? `${metric.label}: ${range}` : ''}${delta}`;
 }
 
 function ReportContactIcon({ type }) {
@@ -129,6 +141,8 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   const therapistEmail = therapistProfile?.email || '';
   const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
   const ultimaEvolucao = evolucoes[evolucoes.length - 1];
+  const rehab = summarizeRehabilitation(state.reabilitacao);
+  const rehabSingle = rehab?.total === 1;
 
   // Dados institucionais: clínica cadastrada > campo livre do perfil > padrão
   const clinic = therapistProfile?.clinic || null;
@@ -220,6 +234,14 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
             : null,
         },
         seguranca: safetyMessages,
+        reabilitacao: rehab
+          ? {
+              total: rehab.total,
+              periodo: { de: rehab.primeira.data, ate: rehab.ultima.data },
+              objetivoFuncional: rehab.objetivoFuncional,
+              medidas: rehab.metricas.map(m => ({ medida: m.label, primeiro: m.primeiro, ultimo: m.ultimo })),
+            }
+          : null,
       };
       const res = await draftReport(modo, reportData, { patientName: nome });
       const html = res.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('');
@@ -269,6 +291,12 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           <InlineRow label="Hipótese atual" value={main ? `${main}.` : ''} />
           <InlineRow label="Princípio terapêutico" value={protocol?.goal} fallback="Preencha os dados para gerar raciocínio terapêutico." />
           <InlineRow label="Conduta" value="manter acompanhamento e ajustar protocolo conforme resposta clínica." />
+          {rehab && (
+            <InlineRow
+              label="Reabilitação funcional"
+              value={`${rehab.total} avaliação(ões) registrada(s); última em ${rehab.ultima.data}.`}
+            />
+          )}
         </>
       )}
 
@@ -310,6 +338,14 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
               ? ` Última sessão em ${ultimaEvolucao.data}: dor ${ultimaEvolucao.dor || 'não informada'}, sono ${ultimaEvolucao.sono || 'não informado'}, ansiedade ${ultimaEvolucao.ansiedade || 'não informada'}.`
               : ' Sem registros evolutivos.'}
           </p>
+          {rehab && (
+            <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
+              <b>10.1. Reabilitação funcional:</b> {rehab.total} avaliação(ões) {rehabSingle ? 'registrada' : `entre ${rehab.primeira.data} e ${rehab.ultima.data}`}.
+              {rehab.metricas.length > 0 && ` ${rehab.metricas.map(m => rehabMetricText(m, rehabSingle)).join('; ')}.`}
+              {rehab.objetivoFuncional && ` Objetivo funcional: ${rehab.objetivoFuncional}.`}
+              {' '}Medidas registradas para acompanhamento; a leitura clínica cabe ao profissional.
+            </p>
+          )}
           <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
             <b>11. Observação técnica:</b> as hipóteses constituem apoio ao raciocínio clínico e devem ser validadas pelo profissional responsável.
           </p>
@@ -394,6 +430,17 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           <button className="tag" type="button" onClick={restoreGenerated}>
             Restaurar texto automático
           </button>
+          {editedEntry.aiDraft && (
+            <AiCorrectionButton
+              surface={AI_SURFACES.NARRATIVE}
+              aiOutput={{ mode: modo, html: editedEntry.html }}
+              contextSnapshot={{ reportMode: modo }}
+              modelVersion={editedEntry.modelVersion}
+              patientName={nome}
+              summary={String(editedEntry.html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}
+              label="✎ Corrigir o texto"
+            />
+          )}
         </div>
       )}
 

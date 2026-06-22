@@ -23,6 +23,8 @@ import {
   jsonResponse,
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
+import { withCorrectionLessons } from '../_shared/corrections.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 
@@ -78,6 +80,7 @@ Produza:
 Regras:
 - Tudo em português brasileiro, linguagem clínica objetiva e concisa.
 - Conservador: se a evidência é fraca, diga que é fraca. Não force um padrão.
+- Quando vier CONHECIMENTO CURADO (trechos da base do próprio sistema), fundamente a leitura dos padrões NELE — é a referência do sistema e tem prioridade sobre o conhecimento geral de MTC. Ainda assim, não afirme nada que os sinais do caso não sustentem.
 - O texto da anamnese pode conter marcadores de anonimização ([NOME], [DATA], etc.) — ignore-os.
 - Você é assistivo. A decisão final é sempre da profissional.`;
 
@@ -108,14 +111,45 @@ Deno.serve(async (req) => {
     if (!clinicalCase || typeof clinicalCase !== 'object') {
       return jsonResponse({ error: 'Caso clínico ausente.' }, 400);
     }
+    // Conhecimento curado recuperado no cliente (âncora). Sai do JSON do caso
+    // para não competir pelo teto e ser apresentado como bloco próprio.
+    const knowledgeContext = Array.isArray(clinicalCase.knowledgeContext) ? clinicalCase.knowledgeContext : [];
+    const caseForModel: Record<string, unknown> = { ...clinicalCase };
+    delete caseForModel.knowledgeContext;
     // Teto defensivo no tamanho do caso serializado.
-    const caseText = JSON.stringify(clinicalCase).slice(0, 12000);
+    const caseText = JSON.stringify(caseForModel).slice(0, 12000);
+    const knowledgeText = knowledgeContext.length
+      ? knowledgeContext
+          .slice(0, 8)
+          .map((k: Record<string, unknown>, i: number) =>
+            `[${i + 1}] (${k.cat || '?'} · confiança ${k.confidence || '?'} · fonte ${k.source || '?'})\n${k.title || ''}: ${String(k.text || '').slice(0, 700)}`)
+          .join('\n\n')
+          .slice(0, 4500)
+      : '';
+
+    // Diretrizes adicionais curadas (aditivas; a segurança do prompt fixo é piso).
+    const extraInstructions = await getActiveInstructions(supabaseAdmin, ['clinical-global', 'clinical-reasoning']);
+    const systemPromptText = layerSystemPrompt(SYSTEM_PROMPT, extraInstructions);
+    // Lições de correção (aprovadas + as da própria autora) sobre as diretrizes.
+    // Query de relevância p/ as correções: hipótese + padrões + sinais do caso.
+    const reasoningQuery = [
+      clinicalCase.hypothesis?.primary,
+      ...(Array.isArray(clinicalCase.topPatterns)
+        ? clinicalCase.topPatterns.map((p: { name?: string }) => p?.name)
+        : []),
+      ...Object.values(clinicalCase.signals || {}).flat(),
+    ].filter(Boolean).join(' ');
+    const systemText = await withCorrectionLessons(supabaseAdmin, systemPromptText, {
+      surface: 'clinical_reasoning',
+      callerId: caller.user.id,
+      relevanceQuery: reasoningQuery,
+    });
 
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
         role: 'user',
-        parts: [{ text: `Caso clínico (JSON):\n${caseText}\n\nProduza o raciocínio estruturado para conferência profissional.` }],
+        parts: [{ text: `Caso clínico (JSON):\n${caseText}${knowledgeText ? `\n\nCONHECIMENTO CURADO RELEVANTE (base do próprio sistema — fundamente a leitura dos padrões nisto, priorizando sobre conhecimento geral; não invente além dos sinais do caso):\n${knowledgeText}` : ''}\n\nProduza o raciocínio estruturado para conferência profissional.` }],
       }],
       generationConfig: {
         temperature: 0.3,

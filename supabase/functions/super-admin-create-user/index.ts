@@ -10,6 +10,26 @@ import {
   writeAuditLog,
 } from '../_shared/security.ts';
 
+const ALLOWED_PROFESSIONS = new Set([
+  'acupunturista',
+  'fisioterapeuta',
+  'terapeuta_ocupacional',
+  'psicologo',
+  'psiquiatra',
+  'medico',
+  'nutricionista',
+  'enfermeiro',
+  'fonoaudiologo',
+  'dentista',
+  'outro',
+]);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function cleanText(value: unknown) {
+  return String(value || '').trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -34,7 +54,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const email = normalizeEmail(body.email);
     const username = normalizeUsername(body.username, email);
-    const fullName = String(body.fullName || '').trim();
+    const fullName = cleanText(body.fullName);
+    const profession = cleanText(body.profession);
+    const clinicId = cleanText(body.clinicId);
     const temporaryPassword = String(body.temporaryPassword || '');
     const confirmTemporaryPassword = String(body.confirmTemporaryPassword || '');
 
@@ -56,6 +78,32 @@ Deno.serve(async (req) => {
 
     if (temporaryPassword.length < 6) {
       return jsonResponse({ error: 'A senha temporária precisa ter pelo menos 6 caracteres.' }, 400);
+    }
+
+    if (!ALLOWED_PROFESSIONS.has(profession)) {
+      return jsonResponse({ error: 'Selecione uma profissão válida.' }, 400);
+    }
+
+    if (clinicId && !UUID_RE.test(clinicId)) {
+      return jsonResponse({ error: 'Clínica inválida.' }, 400);
+    }
+
+    let clinic: { id: string; name: string } | null = null;
+    if (clinicId) {
+      const { data: clinicData, error: clinicError } = await supabaseAdmin
+        .from('clinics')
+        .select('id,name')
+        .eq('id', clinicId)
+        .maybeSingle();
+
+      if (clinicError) throw clinicError;
+      if (!clinicData) {
+        return jsonResponse({ error: 'Clínica não encontrada.' }, 400);
+      }
+      clinic = {
+        id: String(clinicData.id),
+        name: String(clinicData.name || ''),
+      };
     }
 
     const duplicateEmail = await supabaseAdmin
@@ -104,12 +152,14 @@ Deno.serve(async (req) => {
       username,
       full_name: fullName,
       role: 'therapist',
-      phone: String(body.phone || '').trim() || null,
-      document: String(body.document || '').trim() || null,
-      professional_registration: String(body.professionalRegistration || '').trim() || null,
-      specialty: String(body.specialty || '').trim() || null,
-      clinic_name: String(body.clinicName || '').trim() || null,
-      notes: String(body.notes || '').trim() || null,
+      phone: cleanText(body.phone) || null,
+      document: cleanText(body.document) || null,
+      professional_registration: cleanText(body.professionalRegistration) || null,
+      specialty: cleanText(body.specialty) || null,
+      profession,
+      clinic_name: clinic?.name || cleanText(body.clinicName) || null,
+      clinic_id: clinic?.id || null,
+      notes: cleanText(body.notes) || null,
       is_active: true,
       must_change_password: true,
       password_changed_at: null,
@@ -119,7 +169,7 @@ Deno.serve(async (req) => {
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert(profilePayload, { onConflict: 'id' })
-      .select('id,email,username,full_name,role,is_active,must_change_password,created_at')
+      .select('id,email,username,full_name,role,profession,professional_registration,specialty,clinic_name,clinic_id,is_active,must_change_password,created_at')
       .single();
 
     if (profileError) {
@@ -134,9 +184,11 @@ Deno.serve(async (req) => {
       details: {
         username,
         email,
+        profession: profilePayload.profession,
         professional_registration: profilePayload.professional_registration,
         specialty: profilePayload.specialty,
         clinic_name: profilePayload.clinic_name,
+        clinic_id: profilePayload.clinic_id,
       },
     });
 

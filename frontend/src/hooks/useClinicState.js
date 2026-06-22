@@ -42,13 +42,21 @@ export function createInitialState(patient = null) {
     queixa: '',
     historia: '',
     medicacoes: '',
+    atividadeFisica: '',
     agua: '',
     dorLocal: '',
     escalaDor: '',
+    dorPeriodoReferencia: '',
+    dorRepouso: '',
+    dorMovimento: '',
     obsSonoEmocoes: '',
     obsDigestao: '',
     obsDor: '',
     evolucoes: [],
+    reabilitacao: {
+      ativa: false,
+      avaliacoes: [],
+    },
     relatorioEdits: {},
   };
 }

@@ -1,68 +1,73 @@
 # Manual de Comportamento da IA
 
-Este arquivo é dinâmico e deve ser consultado antes de qualquer alteração no projeto. Ele define como a IA deve pensar, decidir, implementar, testar e atualizar a própria memória do projeto.
+Arquivo dinâmico. Consulte antes de qualquer alteração no projeto. Define como a IA pensa, decide, implementa, testa e mantém a própria memória.
 
-## 1. Papel Obrigatório
+Regras de módulo ficam em `docs/` e só precisam ser lidas ao tocar o módulo:
 
-A IA deve atuar como uma pessoa programadora sênior.
+- Mapas, Atlas, KM-Agent, fontes visuais, catalogação de PDFs por domínio, dietoterapia/ervas → `docs/agents-mapas.md`
+- Módulo Língua e IA assistiva (pulso/face futuras) → `docs/agents-lingua.md`
+- Histórico completo de incidentes de regressão → `docs/regressao-log.md`
 
-Isso significa:
+## 0. Invariantes (não violar)
 
-- analisar arquitetura, dependências, segurança, testes e efeitos colaterais antes de escrever código;
-- questionar requisitos ambíguos, incompletos ou arriscados;
-- preferir soluções simples, locais e coerentes com os padrões existentes;
-- evitar atalhos que resolvem o sintoma mas aumentam dívida técnica;
-- explicar decisões técnicas com objetividade quando elas afetarem manutenção, segurança ou experiência do usuário.
+- **Gate humano é inegociável.** A IA é colaboradora rápida, não autoridade clínica. Nada de conduta/diagnóstico final automático; conhecimento curado fica em `draft`/`review` até aprovação profissional.
+- **Dados clínicos e privacidade.** Fotos de pacientes nunca viram base64 em registros nem entram no bundle. Sem secrets/service role/tokens no frontend, logs, commits ou docs. RLS e limites de permissão sempre verificados.
+- **Dietoterapia/ervas = só educação revisada** por profissional habilitado; nunca prescrição, dose, preparo ou cardápio. Erva exige toxicologia/interações/cautelas antes de qualquer liberação (ver `docs/agents-mapas.md`).
+- **pt-BR em todo texto visível**, com pluralização ("item/itens", nunca "items") e terminologia clínica consistente.
+- **Todo bug → teste de regressão + regra destilada** (§4).
+- **Quality gate antes de commit/push** (§5).
+- **Incerteza em área sensível → pare e proponha** (§3).
+- **Mudança pequena, ligada ao pedido; preserve o que não é seu** (§7).
+- **Atlas público ≠ fontes protegidas.** Só `atlas-ednea/` é público; `pdf-sources/*` segue protegido (ver `docs/agents-mapas.md`).
 
-## 2. Fluxo Antes de Qualquer Alteração
+## 1. Papel
 
-Antes de editar código, configuração, banco, migrations, estilos ou scripts:
+A IA atua como pessoa programadora sênior:
 
-1. Leia este arquivo.
-2. Leia o contexto relevante do projeto, incluindo `README.md`, arquivos próximos ao ponto de alteração e scripts disponíveis.
-3. Identifique o comportamento atual, o comportamento desejado e o menor conjunto seguro de arquivos a alterar.
-4. Avalie efeitos colaterais em arquitetura, estado, banco de dados, autenticação, autorização, segurança, performance, UX e deploy.
-5. Só então implemente a mudança.
+- analisa arquitetura, dependências, segurança, testes e efeitos colaterais antes de escrever;
+- questiona requisitos ambíguos, incompletos ou arriscados;
+- prefere soluções simples, locais e coerentes com os padrões existentes;
+- evita atalhos que mascaram o sintoma e aumentam dívida técnica;
+- explica decisões que afetem manutenção, segurança ou UX.
 
-Em sistemas legados ou áreas sensíveis, faça uma análise passo a passo em formato objetivo antes de alterar: causa provável, pontos afetados, riscos e estratégia de validação.
+## 2. Fluxo antes de alterar
 
-## 3. Protocolo de Incerteza
+Antes de editar código, config, banco, migrations, estilos ou scripts:
 
-Se não houver segurança suficiente sobre como abordar o problema, não improvise.
+1. Leia este arquivo (e o doc de módulo, se aplicável).
+2. Leia o contexto relevante: `README.md`, arquivos próximos ao ponto de alteração, scripts disponíveis.
+3. Identifique comportamento atual, comportamento desejado e o menor conjunto seguro de arquivos a alterar.
+4. Avalie efeitos em arquitetura, estado, banco, autenticação, autorização, segurança, performance, UX e deploy.
+5. Só então implemente.
 
-Quando a incerteza for relevante:
+Em área legada/sensível, faça antes uma análise objetiva: causa provável, pontos afetados, riscos e estratégia de validação.
 
-1. Liste três alternativas de solução.
-2. Explique rapidamente vantagens, riscos e impacto de cada uma.
-3. Recomende uma opção.
-4. Aguarde feedback humano antes de prosseguir.
+## 3. Protocolo de incerteza
 
-Use esse protocolo especialmente quando a mudança afetar schema de banco, regras de acesso, dados clínicos, autenticação, arquitetura compartilhada, deploy ou comportamento difícil de reverter.
+Sem segurança suficiente, não improvise:
 
-## 4. Regra de Teste de Regressão
+1. Liste três alternativas.
+2. Diga vantagens, riscos e impacto de cada uma.
+3. Recomende uma.
+4. Aguarde feedback humano.
 
-Toda correção de bug deve vir acompanhada de um teste de regressão.
+Use sempre que a mudança afetar schema de banco, regras de acesso, dados clínicos, autenticação, arquitetura compartilhada, deploy ou comportamento difícil de reverter.
 
-Regras:
+## 4. Teste de regressão
 
-- o teste deve reproduzir o problema corrigido sempre que for tecnicamente viável;
-- quando possível, o teste deve falhar antes da correção e passar depois;
-- se não for viável automatizar o teste, registre o motivo e descreva a validação manual feita;
-- não remova ou enfraqueça testes existentes para fazer a suíte passar;
-- bugs recorrentes devem virar regra neste arquivo, além da correção no código.
+Toda correção de bug vem com teste de regressão:
 
-Comandos atuais do frontend:
+- reproduz o problema quando viável; idealmente falha antes da correção e passa depois;
+- se não der para automatizar, registre o motivo e a validação manual feita;
+- não remova nem enfraqueça testes existentes para a suíte passar;
+- **bug recorrente vira regra** — destile a regra na seção/doc certo e registre o incidente completo em `docs/regressao-log.md` (não acumule relatos longos aqui: append constante quebra o cache e infla toda leitura).
 
 ```bash
 cd frontend
 npm run test
 ```
 
-## 5. Qualidade Antes de Commit ou Push
-
-Antes de qualquer `git commit` ou `git push`, rode as verificações de qualidade aplicáveis ao projeto.
-
-Para o frontend atual:
+## 5. Quality gate antes de commit/push
 
 ```bash
 cd frontend
@@ -71,152 +76,51 @@ npm run test
 npm run build
 ```
 
-Se houver código Ruby/Rails ou se essas ferramentas estiverem configuradas no projeto, também rode:
+Se houver Ruby/Rails configurado, rode também `bundle exec rubocop` (estilo), `bundle exec brakeman` (segurança Rails) e `bundle exec rspec` (testes; SimpleCov roda junto quando configurado).
 
-```bash
-bundle exec rubocop
-bundle exec brakeman
-bundle exec rspec
-```
+Ferramenta obrigatória ausente: não ignore em silêncio. Informe o impedimento, registre a verificação como não aplicável/bloqueada e proponha a configuração.
 
-Regras específicas dessas ferramentas:
+## 6. Memória do projeto (dois sistemas, um dono por fato)
 
-- RuboCop: estilo e consistência de código Ruby.
-- Brakeman: análise estática de segurança em Rails.
-- SimpleCov: cobertura de testes; deve ser executado junto da suíte Ruby quando configurado, normalmente via `bundle exec rspec`.
+- **`AGENTS.md` + `docs/agents-*.md`** = verdade compartilhada do repo: regras e invariantes duráveis, versionadas no git, seguidas por **qualquer** agente (Claude, Codex). Regra durável mora aqui.
+- **Auto-memória pessoal do Claude** (`.claude/.../memory/`) = estado entre sessões: status do trabalho, pendências, preferências e o "porquê" de decisões. Não versionada; não é fonte de regra compartilhada.
+- **Não duplicar.** Regra que qualquer agente deve seguir → aqui. Status/pendência/preferência → auto-memória, com ponteiro para a seção/doc relevante quando referenciar uma regra.
 
-Se uma ferramenta obrigatória não estiver instalada ou configurada, não ignore silenciosamente. Informe o impedimento, registre a verificação como não aplicável ou bloqueada e proponha a configuração necessária.
+## 7. Boas práticas de implementação
 
-## 6. Memória de Erros Recorrentes
-
-Sempre que a IA cometer um erro recorrente, não corrija apenas o código. Atualize este arquivo com uma nova regra.
-
-Considere "erro recorrente" quando:
-
-- o mesmo tipo de erro aparecer mais de uma vez;
-- o usuário apontar que o problema já aconteceu antes;
-- uma correção revelar uma falha de processo que pode se repetir.
-
-Modelo para novas entradas:
-
-```markdown
-### AAAA-MM-DD - Nome curto do erro
-
-- Sintoma:
-- Causa:
-- Regra nova:
-- Teste ou verificação obrigatória:
-```
-
-### Entradas Registradas
-
-### 2026-06-15 - Fontes PDF locais sem rota protegida em produção
-
-- Sintoma: a área SuperAdm > Fontes PDF exibiu `HTTP 404` e as páginas/imagens renderizadas dos PDFs não apareciam após deploy, porque os arquivos estavam em `frontend/.local-source-assets` e não eram publicados.
-- Causa: a UI referenciava URLs públicas (`/knowledge/source-assets/...`) para assets bibliográficos que foram corretamente mantidos fora do bundle, mas ainda não havia camada protegida de Storage privado + URL assinada para produção.
-- Regra nova: fontes visuais bibliográficas (PDFs renderizados, páginas webp, OCR/texto e manifestos `.local.json`) nunca devem depender de rota pública em produção. Use bucket privado `knowledge-source-assets`, manifesto `knowledge_source_assets` e Edge Function `knowledge-source-asset-url`; o frontend só pode enviar `assetKey`, nunca `bucket`/`object_path`, e deve ter fallback local apenas em desenvolvimento.
-- Teste ou verificação obrigatória: teste de regressão deve validar sanitização de `assetKey`, bucket privado/RLS do manifesto e que a Edge Function exige `assertSuperAdmin` antes de gerar `createSignedUrl`.
-
-### 2026-06-15 - Atlas é público: bucket público, sem URL assinada
-
-- Sintoma/decisão: o Atlas da Ednéa é material público e precisa guiar o profissional comum ao clicar no ponto; a camada protegida (Edge Function + URL assinada de 5 min) era complexidade desnecessária e impedia o usuário comum de ver a imagem.
-- Regra nova: fontes do prefixo `atlas-ednea/` (páginas webp + índice) ficam em bucket **público** dedicado `knowledge-atlas-public`, servidas por URL pública fixa (`publicAtlasAssetUrl`), sem Edge Function e sem expiração. Bucket público é só-leitura: sem policy de escrita em `storage.objects`, então não há endpoint dinâmico nem caminho de escrita explorável. As demais fontes (`pdf-sources/*`) permanecem no fluxo protegido (bucket privado + Edge Function + SuperAdm).
-- Atenção: não confundir os dois mundos. Só `atlas-ednea/` é público; o resto continua restrito. A separação é por bucket e por prefixo (`isPublicAtlasAssetKey`).
-- Teste ou verificação obrigatória: teste de regressão deve garantir que `atlas-ednea/*` resolve para a URL pública do bucket (sem `token=`/expiração) e que a migration cria o bucket público sem policy de escrita customizada.
-
-### 2026-06-12 - Grupo novo de checklist sem peso de evidência no analyzer
-
-- Sintoma: itens do checklist `linguaOrgao:*` (painel Língua) entravam no texto clínico (`getAllClinicalText`), mas não contavam no peso de evidência de língua em `diagnosticProfile` (que somava apenas os grupos legados `lingua` e `regioesLingua`), nem nos contadores do `PainelInicial` e dos "Achados rápidos" do `App.jsx`.
-- Causa: ao criar um novo prefixo de grupo no `selectedMap`, ele foi ligado em um ponto do analyzer e esquecido nos demais. O filtro por `startsWith(grupo + ':')` não falha nem avisa — apenas ignora silenciosamente.
-- Regra nova: todo novo prefixo de grupo de checklist deve ser ligado em TODOS os consumidores do `selectedMap`: (1) `getAllClinicalText`, (2) pesos de `diagnosticProfile` (`parts`), (3) contadores de UI (`PainelInicial.jsx`, "Achados rápidos" em `App.jsx`). Procurar por `getSelectedItems`/`getSelectedCount`/`getSelected` antes de concluir.
-- Teste ou verificação obrigatória: teste de regressão garantindo que marcar um item do novo grupo altera `parts` e `confidence` do `diagnosticProfile` (ver `tests/regression/tongue-ai.test.mjs`, teste "achado aceito pesa como evidência de língua").
-
-## 7. Boas Práticas de Implementação
-
-- Preserve mudanças existentes que não foram feitas por você.
-- Não faça refatorações amplas sem necessidade clara.
+- Preserve mudanças que não foram suas; sem refatoração ampla sem necessidade clara.
 - Prefira APIs, helpers e padrões já usados no projeto.
 - Mantenha a mudança pequena, revisável e ligada ao pedido.
-- Use nomes claros para funções, variáveis, componentes e testes.
-- Evite duplicação apenas quando a abstração melhorar a leitura ou reduzir risco real.
-- Use parsers, validadores e APIs estruturadas quando disponíveis; evite manipulação frágil de strings.
-- Não coloque secrets, service role keys, tokens ou dados sensíveis no frontend, logs, commits ou documentação pública.
-- Todo texto visível ao usuário é em pt-BR. Atenção especial a pluralizações geradas por código (ex.: "item/itens", nunca "items") e a terminologia clínica consistente com o restante da interface.
+- Use nomes claros; evite duplicação só quando a abstração melhora a leitura ou reduz risco real.
+- Use parsers, validadores e APIs estruturadas; evite manipulação frágil de strings.
+- Sem secrets, service role keys, tokens ou dados sensíveis no frontend, logs, commits ou docs públicos.
 
-## 8. Cuidados Com Supabase e Dados Clínicos
+## 8. Curadoria de conhecimento (política compartilhada)
 
-Ao alterar Supabase, migrations, Edge Functions, autenticação ou dados clínicos:
+Vale para anamnese, língua, pulso, pontos e RAG da Biblioteca. Detalhe de catalogação por domínio e fontes visuais em `docs/agents-mapas.md`.
 
-- verifique políticas de RLS e limites de permissão;
-- diferencie chave anônima de service role;
-- preserve privacidade e integridade dos dados dos pacientes;
-- valide entradas antes de gravar dados;
-- considere migrações reversíveis ou bem documentadas;
+- **Fonte da verdade = o livro/PDFs + MTC genérica (estilo chinês).** Onde o livro fala, segue o livro; onde cala, completa com MTC genérica. Em cada revisão, leia o texto real extraído da fonte.
+- **Alimentar amplo, rotear por domínio.** O default é INCLUIR fonte nova no subsistema certo, não excluir. Material de paradigma diferente/conflitante ganha lane própria rotulada — nunca é descartado nem blendado na diferenciação MTC.
+- **Conflito entre fontes → `review`/esperar**, não forçar decisão. Segurança vem de roteamento + confiança/proveniência + gate humano, não de exclusão.
+- A IA pode propor padrões canônicos novos legítimos (além dos existentes), sempre em `review` até o gate humano.
+- **Meta: fazer funcionar, tudo ligado, ~80% de certeza**, estruturado para crítica humana e refino por equipe técnica de acupuntura nas fases finais.
+- Detalhe clínico: `docs/repertorio-padroes-mtc.md`, `docs/regras-clinicas-lingua-padrao.md`.
+
+## 9. Supabase e dados clínicos
+
+- verifique políticas de RLS e limites de permissão; diferencie chave anônima de service role;
+- preserve privacidade e integridade dos dados de pacientes; valide entradas antes de gravar;
+- prefira migrações reversíveis ou bem documentadas;
 - teste leitura, escrita, atualização e exclusão quando a mudança afetar persistência.
 
-## 9. Manutenção Contínua
+## 10. Manutenção contínua
 
-Este manual deve evoluir com o projeto.
+Atualize o manual quando: surgir um erro recorrente; entrar uma nova ferramenta de qualidade; for adotado um novo padrão arquitetural; uma decisão técnica importante precisar ser lembrada; uma regra estiver causando ambiguidade ou atrito.
 
-Atualize este arquivo quando:
+Não remova regras sem motivo claro. Quando uma regra ficar obsoleta, substitua por versão atualizada e registre a razão de forma breve. Regras de fonte/curadoria/módulo vão no doc de módulo correspondente, não aqui.
 
-- surgir um erro recorrente;
-- uma nova ferramenta de qualidade entrar no fluxo;
-- um novo padrão arquitetural for adotado;
-- uma decisão técnica importante precisar ser lembrada;
-- uma regra atual estiver causando ambiguidade ou atrito.
+## 11. Comunicação
 
-Não remova regras sem motivo claro. Quando uma regra ficar obsoleta, substitua por uma versão atualizada e registre a razão de forma breve.
-
-## 10. Biblioteca Viva, Fontes Visuais e Mapas
-
-Ao trabalhar com pontos de acupuntura, mapas, KM-Agent, Atlas da Ednéa Martins ou fontes visuais:
-
-- Use `tools/codex-skills/sistema-acup-map` como guia local quando a tarefa envolver coordenadas, mapas corporais, pontos auriculares, inferência de localização ou calibração visual.
-- A fonte clínica primária deve ser preservada com rastreabilidade: título, página impressa, página do PDF, trecho extraído e status de revisão.
-- Imagens ou páginas renderizadas de PDFs clínicos não devem entrar no bundle principal do frontend nem ser carregadas de forma ansiosa. Devem ser tratadas como fonte visual sob demanda, preferencialmente protegida e acessível primeiro em fluxos de Biblioteca Viva/SuperAdm/curadoria.
-- A interface clínica deve mostrar dados curados e objetivos; a imagem da fonte deve aparecer em aba ou painel de "Fonte" para conferência, não como substituta do conteúdo normalizado.
-- Não publique páginas inteiras de material bibliográfico em área pública sem avaliar licença, privacidade, tamanho de deploy e controle de acesso.
-- Ao gerar imagens de páginas do Atlas, use formato otimizado (`webp` quando possível), índice `ponto -> páginas/imagens`, carregamento lazy e metadados de origem.
-- Pontos, relações, cautelas, indicações, imagens de fonte e coordenadas inferidas permanecem em `draft` ou `review` até aprovação profissional explícita.
-- Aprovação em lote por critério de confiança do KM-Agent/Atlas deve ser registrada como `approved_local`, `approvalMode: local_only` e `requiresProfessionalAudit: true`; não migre para Supabase/produção sem etapa separada de auditoria e rastreabilidade.
-
-## 11. Módulo Língua e IA Assistiva
-
-Regras invariantes do módulo de inspeção da língua (`Lingua.jsx`, `tongueData.js`, `tongueAiService.js`) e de qualquer futura análise assistiva por IA (pulso, face etc.):
-
-### Contrato de tags estáveis
-
-- A IA (mock ou serviço real) NUNCA referencia o texto literal dos rótulos do checklist. Ela retorna tags estáveis (ex.: `swollen_center`), resolvidas por `tongueAiTagMap`/`resolveTongueAiTag` em `frontend/src/data/tongueData.js`.
-- Não renomear rótulos em `tongueOrganAlterations` sem atualizar a entrada correspondente no `tongueAiTagMap`. O teste `tests/regression/tongue-ai.test.mjs` quebra se uma tag apontar para item inexistente — isso é proposital; corrija o mapa, não o teste.
-- Tag sem entrada no mapa não marca nada e aparece como "não mapeada" na UI. Nunca fazer fallback por similaridade de texto.
-
-### IA é assistiva, nunca conduta final
-
-- Achados da IA NÃO entram no diagnóstico automaticamente. O analyzer lê somente o `selectedMap` (achados confirmados pela profissional). Esse desacoplamento é arquitetural e não deve ser quebrado.
-- "Aceitar" um achado usa `setSelection(group, item, true)` do `useClinicState` (marca, nunca desmarca). Não usar `toggle` para aceite — aceitar um item já marcado manualmente não pode desmarcá-lo.
-- "Desfazer" um aceite volta o card a pendente, mas NÃO desmarca itens do checklist — desmarcar é decisão explícita da profissional no checklist.
-- Confiança é exibida em faixas (alta/média/baixa) + inteiro arredondado. Nunca decimais — precisão decimal transmite falsa certeza clínica.
-- Linguagem da UI: "Sugestões da IA para conferência", "achados confirmados pela profissional". Proibido: "diagnóstico definitivo", "tratamento obrigatório", prescrição direta ou qualquer formulação que sugira que a IA "fechou diagnóstico".
-
-### Fotos e dados sensíveis
-
-- Fotos de pacientes (língua ou qualquer imagem clínica) NUNCA viram base64 dentro de `clinical_records` nem entram no bundle do frontend.
-- O estado `tongueAi` (fotos + análise) vive fora de `state`/`selectedMap` no `useClinicState` exatamente para não ser arrastado pelo `useSessionPersistence`. Não mover para dentro de `state`.
-- Object URLs de fotos devem ser revogados (`URL.revokeObjectURL`) ao substituir/remover foto e no reset da sessão.
-- Persistência futura (fase 4): bucket privado `clinical-tongue-photos` no Supabase Storage, caminho `therapist_id/patient_id/data/arquivo.webp`, políticas RLS por terapeuta, remoção de EXIF/GPS antes do upload e compressão para webp no cliente. No registro clínico, apenas metadados (caminho, tipo, data, achados, aceitos/ignorados, versão do modelo).
-- Inferência real (fase 5) roda em microserviço Python separado, atrás do contrato `analyzeTongueImages(photos)` em `frontend/src/services/tongueAiService.js`. O frontend não roda modelos; Edge Function não faz inferência pesada. Trocar mock por real = trocar o corpo dessa função, sem mexer na UI.
-
-### Troca/remoção de foto
-
-- Trocar ou remover qualquer foto invalida a análise vigente (`analysis: null`) — um resultado de IA nunca pode ficar órfão da imagem que o gerou. Os achados já aceitos no checklist permanecem.
-
-## 12. Padrão de Comunicação
-
-Ao trabalhar no projeto, a IA deve:
-
-- declarar suposições relevantes;
-- apontar riscos antes de mudanças sensíveis;
-- informar comandos de validação executados;
-- avisar quando algo não foi testado;
-- preferir respostas objetivas, técnicas e acionáveis.
+- Declare suposições; aponte riscos antes de mudanças sensíveis; informe os comandos de validação executados; avise quando algo não foi testado; prefira respostas objetivas, técnicas e acionáveis.
+- **Calibre a confiança.** Rotule "sólido/verificado" vs "melhor palpite, revisar". Sem absolutos ("canônico", "100% certo", "nada inventado") sem prova. Separe o opinativo do firme. Incentive o cruzamento (outra IA, equipe de acupuntura) — é o sistema funcionando, não desconfiança.
+- Confiança exibida ao usuário em faixas (alta/média/baixa) + inteiro arredondado; nunca decimais (falsa certeza). Detalhe no módulo Língua: `docs/agents-lingua.md`.

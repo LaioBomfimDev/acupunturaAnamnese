@@ -13,6 +13,8 @@ import {
   getTonguePhotoUrl,
   deleteTonguePhoto,
 } from '../../services/tongueMediaService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
 
 // Imagem extraída do HTML original e salva em public/
 const TONGUE_MAP_SRC = '/tongue-map.jpg';
@@ -39,6 +41,16 @@ function formatSize(bytes) {
   if (bytes == null) return '';
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatCount(count, singular, plural) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function countSelectedByPrefix(selectedMap, prefix) {
+  return Object.entries(selectedMap || {})
+    .filter(([key, value]) => Boolean(value) && key.startsWith(prefix))
+    .length;
 }
 
 // Slot de upload de foto: clique para escolher, preview, substituir/remover.
@@ -101,7 +113,7 @@ function PhotoUpload({ label, hint, photo, onSelect, onRemove, onError }) {
       ) : (
         <button type="button" className="upload tongue-upload-btn" onClick={() => inputRef.current?.click()}>
           <b>{label}</b>
-          <span className="small" style={{ display: 'block', marginTop: 4 }}>{hint}</span>
+          <span className="small tongue-upload-hint">{hint}</span>
         </button>
       )}
     </div>
@@ -109,7 +121,7 @@ function PhotoUpload({ label, hint, photo, onSelect, onRemove, onError }) {
 }
 
 // Card de um achado sugerido pela IA, com aceite parcial por item.
-function FindingCard({ finding, onAccept, onIgnore, onUndo, onToggleTag }) {
+function FindingCard({ finding, onAccept, onIgnore, onUndo, onToggleTag, modelVersion, patientName }) {
   const band = confidenceBand(finding.confidence);
   const pct = Math.round(finding.confidence * 100);
   const isPending = finding.status === 'pending';
@@ -131,7 +143,7 @@ function FindingCard({ finding, onAccept, onIgnore, onUndo, onToggleTag }) {
         </div>
       </div>
 
-      <p className="small" style={{ margin: '8px 0' }}>{finding.explanation}</p>
+      <p className="small ai-finding-explanation">{finding.explanation}</p>
 
       <div className="ai-finding-checklist">
         <span className="small"><b>Itens de checklist sugeridos:</b></span>
@@ -186,6 +198,20 @@ function FindingCard({ finding, onAccept, onIgnore, onUndo, onToggleTag }) {
             </button>
           </>
         )}
+        <AiCorrectionButton
+          surface={AI_SURFACES.TONGUE}
+          aiOutput={{
+            title: finding.title,
+            pattern: finding.pattern,
+            type: finding.type,
+            suggestedTags: finding.suggestedTags,
+            confidence: finding.confidence,
+            explanation: finding.explanation,
+          }}
+          contextSnapshot={{ findingType: finding.type, suggestedTags: finding.suggestedTags }}
+          modelVersion={modelVersion}
+          patientName={patientName}
+        />
       </div>
     </div>
   );
@@ -368,25 +394,68 @@ export function Lingua({ selectedMap, onToggle, onSetSelection, tongueAi, onTong
   }
 
   const pendingCount = analysis?.findings.filter(f => f.status === 'pending').length ?? 0;
+  const acceptedCount = analysis?.findings.filter(f => f.status === 'accepted').length ?? 0;
+  const ignoredCount = analysis?.findings.filter(f => f.status === 'ignored').length ?? 0;
+  const photoCount = Number(Boolean(photos.top)) + Number(Boolean(photos.sublingual));
+  const confirmedTongueCount = Object.keys(tongueOrganAlterations)
+    .reduce((total, organ) => total + countSelectedByPrefix(selectedMap, `linguaOrgao:${organ}:`), 0);
+  const analysisSummary = analysis
+    ? formatCount(analysis.findings.length, 'sugestão', 'sugestões')
+    : analyzing
+      ? 'analisando imagens'
+      : 'aguardando análise';
 
   return (
     <Panel title="Inspeção da língua">
-      <div className="box">
-        <b>Como funciona:</b> envie a foto da língua (e a sublingual, se houver), peça a análise e
-        revise as sugestões da IA. Nada entra no raciocínio clínico automaticamente — apenas os
-        achados que você aceitar marcam o checklist abaixo. As fotos são comprimidas, têm os
-        metadados removidos e ficam em armazenamento privado, vinculadas ao seu acesso.
-      </div>
+      <section className="tongue-workflow-panel">
+        <div className="tongue-workflow-copy">
+          <p className="small">Fluxo seguro</p>
+          <h3>Fotos, IA assistiva e checklist confirmado</h3>
+          <span>
+            As fotos são tratadas em armazenamento privado. A IA sugere achados para conferência;
+            somente o checklist marcado pela profissional entra no raciocínio clínico.
+          </span>
+        </div>
+        <div className="tongue-workflow-steps" aria-label="Resumo da inspeção da língua">
+          <div className={`tongue-step-card ${photoCount > 0 ? 'ready' : ''}`}>
+            <span>1</span>
+            <b>Fotos</b>
+            <small>{photoCount}/2 anexada{photoCount === 1 ? '' : 's'}</small>
+          </div>
+          <div className={`tongue-step-card ${analysis ? 'ready' : ''}`}>
+            <span>2</span>
+            <b>IA assistiva</b>
+            <small>{analysisSummary}</small>
+          </div>
+          <div className={`tongue-step-card ${confirmedTongueCount > 0 ? 'ready' : ''}`}>
+            <span>3</span>
+            <b>Checklist</b>
+            <small>{formatCount(confirmedTongueCount, 'confirmado', 'confirmados')}</small>
+          </div>
+        </div>
+      </section>
 
       <div className="tongue-duo">
         <div className="tongue-card">
-          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Mapa fixo da língua</h3>
+          <div className="tongue-card-head">
+            <div>
+              <span className="small">Referência visual</span>
+              <h3>Mapa fixo da língua</h3>
+            </div>
+            <span className="tongue-card-badge">MTC</span>
+          </div>
           <img className="tongue-map-fixed" src={TONGUE_MAP_SRC} alt="Mapa da língua por órgãos na MTC" />
           <p className="small">Referência visual para comparar com a foto clínica.</p>
         </div>
 
         <div className="tongue-card">
-          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Fotos do paciente</h3>
+          <div className="tongue-card-head">
+            <div>
+              <span className="small">Paciente</span>
+              <h3>Fotos do paciente</h3>
+            </div>
+            <span className="tongue-card-badge">{photoCount}/2 fotos</span>
+          </div>
 
           <PhotoUpload
             label="Adicionar foto superior da língua"
@@ -406,7 +475,7 @@ export function Lingua({ selectedMap, onToggle, onSetSelection, tongueAi, onTong
             onError={setError}
           />
 
-          {error && <div className="alert" style={{ marginTop: 10 }}>{error}</div>}
+          {error && <div className="alert tongue-inline-alert">{error}</div>}
 
           <button
             type="button"
@@ -417,12 +486,12 @@ export function Lingua({ selectedMap, onToggle, onSetSelection, tongueAi, onTong
             {analyzing ? 'Analisando imagens…' : analysis ? 'Analisar novamente' : 'Analisar com IA'}
           </button>
           {!photos.top && (
-            <p className="small" style={{ marginTop: 6 }}>
+            <p className="small tongue-card-note">
               Envie ao menos a foto superior para habilitar a análise.
             </p>
           )}
           {(photos.top?.uploadStatus === 'uploading' || photos.sublingual?.uploadStatus === 'uploading') && (
-            <p className="small" style={{ marginTop: 6 }}>
+            <p className="small tongue-card-note">
               Aguardando o envio ao armazenamento seguro…
             </p>
           )}
@@ -431,21 +500,30 @@ export function Lingua({ selectedMap, onToggle, onSetSelection, tongueAi, onTong
 
       {analysis && (
         <div className="ai-findings-section">
-          <h3>
-            Sugestões da IA para conferência
-            {pendingCount > 0 && <span className="ai-pending-pill">{pendingCount} pendente{pendingCount === 1 ? '' : 's'}</span>}
-          </h3>
-          <p className="small">
-            {TONGUE_AI_DISCLAIMER} Modelo: {analysis.modelVersion}
-            {analysis.modelVersion?.startsWith('mock') ? ' (simulado)' : ''}.
-          </p>
+          <div className="ai-findings-headline">
+            <div>
+              <h3>
+                Sugestões da IA para conferência
+                {pendingCount > 0 && <span className="ai-pending-pill">{pendingCount} pendente{pendingCount === 1 ? '' : 's'}</span>}
+              </h3>
+              <p className="small">
+                {TONGUE_AI_DISCLAIMER} Modelo: {analysis.modelVersion}
+                {analysis.modelVersion?.startsWith('mock') ? ' (simulado)' : ''}.
+              </p>
+            </div>
+            <div className="ai-findings-stats" aria-label="Status dos achados sugeridos">
+              <span><b>{pendingCount}</b> pendente{pendingCount === 1 ? '' : 's'}</span>
+              <span><b>{acceptedCount}</b> aceito{acceptedCount === 1 ? '' : 's'}</span>
+              <span><b>{ignoredCount}</b> ignorado{ignoredCount === 1 ? '' : 's'}</span>
+            </div>
+          </div>
           {analysis.warning && (
-            <div className="alert" style={{ marginTop: 8 }}>
+            <div className="alert tongue-inline-alert">
               <b>Aviso da análise:</b> {analysis.warning}
             </div>
           )}
           {analysis.findings.length === 0 && (
-            <p className="small" style={{ marginTop: 8 }}>
+            <p className="small tongue-card-note">
               Nenhum achado relatado pela IA para estas fotos.
             </p>
           )}
@@ -459,30 +537,49 @@ export function Lingua({ selectedMap, onToggle, onSetSelection, tongueAi, onTong
                 onIgnore={handleIgnore}
                 onUndo={handleUndo}
                 onToggleTag={handleToggleTag}
+                modelVersion={analysis.modelVersion}
+                patientName={selectedPatient?.name}
               />
             ))}
           </div>
         </div>
       )}
 
-      <h3 style={{ marginTop: 24 }}>Checklist único por órgão / região do mapa</h3>
-      <p className="small" style={{ marginTop: -6 }}>
-        Achados confirmados pela profissional. Somente o que está marcado aqui entra no diagnóstico.
-      </p>
+      <div className="tongue-checklist-head">
+        <div>
+          <h3>Checklist único por órgão / região do mapa</h3>
+          <p className="small">
+            Achados confirmados pela profissional. Somente o que está marcado aqui entra no diagnóstico.
+          </p>
+        </div>
+        <span className="tongue-summary-pill">
+          {formatCount(confirmedTongueCount, 'achado confirmado', 'achados confirmados')}
+        </span>
+      </div>
       <div className="organ-grid">
-        {Object.entries(tongueOrganAlterations).map(([organ, data]) => (
-          <div key={organ} className="organ-box">
-            <h4>{organ}</h4>
-            <p className="organ-note">{data.subtitle}</p>
-            <CheckGrid
-              group={`linguaOrgao:${organ}`}
-              items={data.items}
-              cols={2}
-              selectedMap={selectedMap}
-              onToggle={onToggle}
-            />
-          </div>
-        ))}
+        {Object.entries(tongueOrganAlterations).map(([organ, data]) => {
+          const selectedCount = countSelectedByPrefix(selectedMap, `linguaOrgao:${organ}:`);
+          return (
+            <div key={organ} className={`organ-box ${selectedCount > 0 ? 'has-selection' : ''}`}>
+              <div className="organ-box-head">
+                <div>
+                  <h4>{organ}</h4>
+                  <p className="organ-note">{data.subtitle}</p>
+                </div>
+                {selectedCount > 0 && (
+                  <span className="organ-count">{formatCount(selectedCount, 'marcado', 'marcados')}</span>
+                )}
+              </div>
+              <CheckGrid
+                group={`linguaOrgao:${organ}`}
+                items={data.items}
+                cols={2}
+                selectedMap={selectedMap}
+                onToggle={onToggle}
+              />
+            </div>
+          );
+        })}
       </div>
     </Panel>
   );

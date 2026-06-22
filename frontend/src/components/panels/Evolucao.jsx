@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { summarizeEvolution, REPORT_AI_DISCLAIMER } from '../../services/reportAiService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
+import { summarizeRehabilitation, formatOptionalMetric } from '../../services/rehabilitationService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toNum(v) {
@@ -87,6 +90,8 @@ function TrendCard({ label, arr, inverse = false }) {
 export function Evolucao({ state, onUpdate, analysis }) {
   const hoje = new Date().toLocaleDateString('pt-BR');
   const sessions = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+  const rehab = summarizeRehabilitation(state.reabilitacao);
+  const rehabSingle = rehab?.total === 1;
 
   const [form, setForm] = useState(() => createEmptyForm());
   const [aiLoading, setAiLoading] = useState(false);
@@ -316,6 +321,35 @@ export function Evolucao({ state, onUpdate, analysis }) {
         ))}
       </div>
 
+      {/* ── Reavaliação funcional (somente leitura; edita-se no painel Reabilitação) ── */}
+      {rehab && (
+        <div className="box" style={{ borderColor: 'var(--gold)' }}>
+          <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif', marginTop: 0 }}>Reabilitação funcional (reavaliação)</h3>
+          <p className="small">
+            {rehab.total} avaliação(ões) {rehabSingle ? 'registrada' : `entre ${rehab.primeira.data} e ${rehab.ultima.data}`}.{' '}
+            Registre ou edite no painel <b>Reabilitação</b>. O sistema apenas exibe as medidas — sem interpretação.
+          </p>
+          {rehab.metricas.length > 0 && (
+            <div className="metric-grid">
+              {rehab.metricas.map(m => (
+                <div className="metric-card" key={m.field}>
+                  <h4>{m.label}</h4>
+                  {rehabSingle ? (
+                    <p><b>{formatOptionalMetric(m.ultimo, m.suffix)}</b></p>
+                  ) : (
+                    <>
+                      <p><b>{formatOptionalMetric(m.primeiro, m.suffix)}</b> → <b>{formatOptionalMetric(m.ultimo, m.suffix)}</b></p>
+                      {m.delta !== null && <p className="small">Δ {m.delta > 0 ? '+' : ''}{m.delta}{m.suffix}</p>}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {rehab.objetivoFuncional && <p className="small">Objetivo funcional: {rehab.objetivoFuncional}</p>}
+        </div>
+      )}
+
       {/* ── Resumo da evolução por IA ── */}
       <div className="box" style={{ borderColor: 'var(--gold)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -350,6 +384,14 @@ export function Evolucao({ state, onUpdate, analysis }) {
                 Copiar resumo
               </button>
               <span className="small">Modelo: {aiSummary.modelVersion}{aiSummary.modelVersion?.startsWith('mock') ? ' (simulado)' : ''}.</span>
+              <AiCorrectionButton
+                surface={AI_SURFACES.NARRATIVE}
+                aiOutput={{ paragraphs: aiSummary.paragraphs }}
+                contextSnapshot={{ kind: 'evolution', sessions: sessions.length }}
+                modelVersion={aiSummary.modelVersion}
+                patientName={state.nome}
+                label="✎ Corrigir o resumo"
+              />
             </div>
           </div>
         )}

@@ -10,6 +10,8 @@ import {
   confidenceBand,
   ANAMNESE_AI_DISCLAIMER,
 } from '../../services/anamneseAiService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
 
 // Rótulos amigáveis dos grupos do checklist para exibir nas sugestões.
 const GROUP_LABELS = {
@@ -131,6 +133,13 @@ function AnamneseAiAssistant({ state, selectedMap, onSetSelection, patientName }
                         )}
                       </>
                     )}
+                    <AiCorrectionButton
+                      surface={AI_SURFACES.ANAMNESE_MARKS}
+                      aiOutput={{ group: s.group, item: s.item, rationale: s.rationale, confidence: s.confidence }}
+                      contextSnapshot={{ group: s.group }}
+                      modelVersion={result.modelVersion}
+                      patientName={patientName}
+                    />
                   </div>
                 </div>
               );
@@ -293,10 +302,15 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelectio
       <CheckGrid group="fezes" items={checklists.fezes} selectedMap={selectedMap} onToggle={onToggle} />
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>5. Dor e sinais físicos</h3>
-      <div className="form-grid two">
+      <div className="form-grid">
         <FieldInput label="Localização principal da dor" field="dorLocal" value={state.dorLocal} onChange={onUpdate} />
-        <FieldInput label="Escala de dor 0–10" field="escalaDor" value={state.escalaDor} onChange={onUpdate} />
+        <FieldInput label="Período de referência da dor" field="dorPeriodoReferencia" value={state.dorPeriodoReferencia} onChange={onUpdate} />
+        <FieldInput label="Escala de dor geral 0–10" field="escalaDor" value={state.escalaDor} onChange={onUpdate} />
+        <FieldInput label="Dor em repouso 0–10" field="dorRepouso" value={state.dorRepouso} onChange={onUpdate} />
+        <FieldInput label="Dor em movimento 0–10" field="dorMovimento" value={state.dorMovimento} onChange={onUpdate} />
       </div>
+      <h4>Regiões corporais com dor ou desconforto</h4>
+      <CheckGrid group="dor" items={checklists.dorRegioes} selectedMap={selectedMap} onToggle={onToggle} />
       <h4>Características da dor</h4>
       <CheckGrid group="dor" items={checklists.dor} selectedMap={selectedMap} onToggle={onToggle} />
       <h4>Relação climática</h4>
@@ -306,6 +320,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelectio
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>6. Histórico clínico integrado</h3>
       <CheckGrid group="historico" items={checklists.historico} selectedMap={selectedMap} onToggle={onToggle} />
       <FieldInput label="Medicamentos, exames, diagnósticos prévios e observações médicas" field="medicacoes" value={state.medicacoes} onChange={onUpdate} textarea />
+      <FieldInput label="Atividade física (tipo, frequência e duração)" field="atividadeFisica" value={state.atividadeFisica} onChange={onUpdate} textarea />
       <h4>Medicamentos, substâncias e estimulantes</h4>
       <CheckGrid group="substanciasUso" items={checklists.substanciasUso} selectedMap={selectedMap} onToggle={onToggle} />
 

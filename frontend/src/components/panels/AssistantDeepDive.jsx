@@ -10,6 +10,8 @@ import {
   caseHasEvidence,
   REASONING_DISCLAIMER,
 } from '../../services/clinicalReasoningService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
 
 export function AssistantDeepDive({ state, selectedMap, synthesis, patientName }) {
   const [loading, setLoading] = useState(false);
@@ -100,6 +102,19 @@ export function AssistantDeepDive({ state, selectedMap, synthesis, patientName }
           <p className="small deepdive-disclaimer" style={{ marginTop: 8 }}>
             {REASONING_DISCLAIMER} Modelo: {result.modelVersion}{isMock ? ' (simulado)' : ''}.
           </p>
+          <div className="deepdive-correct-row">
+            <AiCorrectionButton
+              surface={AI_SURFACES.CLINICAL_REASONING}
+              aiOutput={{
+                interpretation: result.interpretation,
+                differentialReasoning: result.differentialReasoning,
+              }}
+              contextSnapshot={{ primary: synthesis?.primaryName || null }}
+              modelVersion={result.modelVersion}
+              patientName={patientName}
+              label="✎ Corrigir o raciocínio"
+            />
+          </div>
         </div>
       )}
     </div>

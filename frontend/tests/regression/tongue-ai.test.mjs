@@ -168,6 +168,19 @@ test('tags permitidas da Edge Function analyze-tongue espelham o tongueAiTagMap'
   );
 });
 
+test('Edge Function analyze-tongue empilha instruções SuperAdm antes das correções', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(
+    path.resolve(root, '../supabase/functions/analyze-tongue/index.ts'),
+    'utf8'
+  );
+
+  assert.match(source, /from '..\/_shared\/instructions\.ts'/);
+  assert.match(source, /getActiveInstructions\(supabaseAdmin,\s*\[\s*'clinical-global',\s*'tongue-analysis',?\s*\]\s*\)/);
+  assert.match(source, /layerSystemPrompt\(SYSTEM_PROMPT,\s*extraInstructions\)/);
+  assert.match(source, /withCorrectionLessons\(supabaseAdmin,\s*instructedPrompt/);
+});
+
 // ===== Fase 4: persistência (Storage + metadados na sessão) =====
 
 test('caminho no Storage começa pelo therapist_id (exigência do RLS) e termina em .webp', () => {

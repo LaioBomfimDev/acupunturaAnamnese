@@ -71,6 +71,22 @@ test('todo ponto auricular comumente usado existe na base e está marcado', () =
   assert.equal(uniqueFlagged.size, 24);
 });
 
+test('filtro de mapa preserva pontos auriculares comumente usados', () => {
+  const { commonlyUsedMapFilterCodes, commonlyUsedBodyPoints, commonlyUsedAuricularPoints } = commonlyUsed;
+
+  for (const entry of commonlyUsedBodyPoints) {
+    assert.ok(commonlyUsedMapFilterCodes.has(entry.code), `${entry.code} ausente do filtro do mapa`);
+  }
+
+  for (const entry of commonlyUsedAuricularPoints) {
+    const code = `auricular:${entry.auricularSlug}`;
+    assert.ok(commonlyUsedMapFilterCodes.has(code), `${code} ausente do filtro do mapa`);
+  }
+
+  assert.ok(!commonlyUsedMapFilterCodes.has('auricular:sono'));
+  assert.ok(!commonlyUsedMapFilterCodes.has('SP3'));
+});
+
 test('helpers aceitam aliases brasileiros, nomes auriculares e prefixo auricular:', () => {
   assert.ok(commonlyUsed.isCommonlyUsedPointKey('VG20'));
   assert.ok(commonlyUsed.isCommonlyUsedPointKey('GV20'));
@@ -109,6 +125,7 @@ test('revisão aprovada fora da categoria não entra na visão filtrada do usuá
     status: 'approved_local',
     title: 'Extra Teste - aprovado',
     indications: ['teste'],
+    source: 'Atlas dos Pontos de Acupuntura: Guia de Localizacao',
   }];
 
   const filtered = pointRecommendations.buildRecommendationCandidates(reviews, { commonlyUsedOnly: true });

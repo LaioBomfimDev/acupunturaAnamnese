@@ -1,90 +1,48 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  createTherapist,
   listAuditLogs,
   listProfessionals,
   resetTemporaryPassword,
   setProfessionalActive,
   updateProfessionalProfile,
 } from '../../services/adminService';
+import { listClinics, setProfileClinic } from '../../services/clinicService';
+import { getProfession } from '../../data/professionalCouncils';
+import {
+  ClinicSelect,
+  PasswordField,
+  ProfessionRegistration,
+  SpecialtyTags,
+} from './professionalFormParts';
+import {
+  generatePassword,
+  getFullName,
+  maskCpfCnpj,
+  splitFullName,
+} from './professionalFormHelpers';
+import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { ClinicAdminPanel } from './ClinicAdminPanel';
+import { DeployHealthPanel } from './DeployHealthPanel';
 import { KnowledgeAdminPanel } from './KnowledgeAdminPanel';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
 import { PdfSourceLearningPanel } from './PdfSourceLearningPanel';
-
-const EMPTY_FORM = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  username: '',
-  phone: '',
-  document: '',
-  professionalRegistration: '',
-  specialty: '',
-  clinicName: '',
-  notes: '',
-  temporaryPassword: '',
-  confirmTemporaryPassword: '',
-};
+import { AnamneseKnowledgePanel } from './AnamneseKnowledgePanel';
+import { AiInstructionsPanel } from './AiInstructionsPanel';
+import { AICorrectionsPanel } from './AICorrectionsPanel';
+import { HerbalPlantCurationPanel } from './HerbalPlantCurationPanel';
 
 const EMPTY_EDIT_FORM = {
   firstName: '',
   lastName: '',
   phone: '',
   document: '',
+  profession: '',
   professionalRegistration: '',
   specialty: '',
-  clinicName: '',
+  clinicId: '',
   notes: '',
 };
-
-function normalizeUsername(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, '');
-}
-
-function getEmailLogin(email) {
-  return normalizeUsername(String(email || '').split('@')[0]);
-}
-
-function getFullName(firstName, lastName) {
-  return [firstName, lastName].map(part => String(part || '').trim()).filter(Boolean).join(' ');
-}
-
-function splitFullName(fullName) {
-  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
-  return {
-    firstName: parts.shift() || '',
-    lastName: parts.join(' '),
-  };
-}
-
-function maskCpfCnpj(value) {
-  const digits = String(value || '').replace(/\D/g, '').slice(0, 14);
-
-  if (digits.length <= 11) {
-    return digits
-      .replace(/^(\d{3})(\d)/, '$1.$2')
-      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
-  }
-
-  return digits
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4')
-    .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, '$1.$2.$3/$4-$5');
-}
-
-function generatePassword() {
-  const bytes = new Uint32Array(4);
-  crypto.getRandomValues(bytes);
-  const digits = Array.from(bytes, byte => String(byte % 10)).join('');
-  return `Acup${digits}`;
-}
 
 function toCount(value) {
   return Number(value || 0);
@@ -120,43 +78,12 @@ function profileToEditForm(profile) {
     lastName: name.lastName,
     phone: profile?.phone || '',
     document: maskCpfCnpj(profile?.document || ''),
+    profession: profile?.profession || '',
     professionalRegistration: profile?.professional_registration || '',
     specialty: profile?.specialty || '',
-    clinicName: profile?.clinic_name || '',
+    clinicId: profile?.clinic_id || '',
     notes: profile?.notes || '',
   };
-}
-
-function PasswordField({ label, value, onChange, visible, onToggle, required = false }) {
-  const title = visible ? 'Ocultar senha' : 'Mostrar senha';
-
-  return (
-    <label className="password-label">
-      {label}
-      <span className="password-field">
-        <input
-          type={visible ? 'text' : 'password'}
-          value={value}
-          onChange={onChange}
-          autoComplete="new-password"
-          required={required}
-        />
-        <button
-          className="password-eye-button"
-          type="button"
-          onClick={onToggle}
-          aria-label={title}
-          title={title}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M2.2 12s3.4-6 9.8-6 9.8 6 9.8 6-3.4 6-9.8 6-9.8-6-9.8-6Z" />
-            <circle cx="12" cy="12" r="3" />
-            {visible && <path className="password-eye-slash" d="M4 20 20 4" />}
-          </svg>
-        </button>
-      </span>
-    </label>
-  );
 }
 
 function getStatus(profile) {
@@ -186,20 +113,17 @@ function getActionLabel(action) {
 
 export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
   const [professionals, setProfessionals] = useState([]);
+  const [clinics, setClinics] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [auditLoading, setAuditLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [statusChangingId, setStatusChangingId] = useState('');
   const [resettingId, setResettingId] = useState('');
   const [resetTarget, setResetTarget] = useState(null);
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
   const [passwordVisibility, setPasswordVisibility] = useState({
-    temporary: false,
-    temporaryConfirm: false,
     reset: false,
     resetConfirm: false,
   });
@@ -269,6 +193,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
         profile.full_name,
         profile.username,
         profile.email,
+        getProfession(profile.profession).label,
         profile.specialty,
         profile.professional_registration,
         profile.clinic_name,
@@ -305,14 +230,19 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
     }
   }
 
+  async function loadClinics() {
+    try {
+      setClinics(await listClinics());
+    } catch (err) {
+      console.warn('Falha ao carregar clínicas para o select:', err?.message);
+    }
+  }
+
   useEffect(() => {
     load();
     loadAudit();
+    loadClinics();
   }, []);
-
-  function setField(field, value) {
-    setForm(prev => ({ ...prev, [field]: value }));
-  }
 
   function togglePasswordVisibility(field) {
     setPasswordVisibility(prev => ({ ...prev, [field]: !prev[field] }));
@@ -334,49 +264,9 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
     setEditForm(prev => ({ ...prev, [field]: value }));
   }
 
-  function fillGeneratedPassword() {
-    const password = generatePassword();
-    setForm(prev => ({
-      ...prev,
-      temporaryPassword: password,
-      confirmTemporaryPassword: password,
-    }));
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-
-    const payload = {
-      ...form,
-      email: form.email.trim().toLowerCase(),
-      username: normalizeUsername(form.username || getEmailLogin(form.email)),
-      fullName: getFullName(form.firstName, form.lastName),
-    };
-
-    if (!payload.firstName.trim() || !payload.email || !payload.username) {
-      setError('Preencha nome, e-mail e login.');
-      return;
-    }
-
-    if (payload.temporaryPassword !== payload.confirmTemporaryPassword) {
-      setError('A confirmação da senha temporária não confere.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const created = await createTherapist(payload);
-      setSuccess(`Usuário ${created?.username || payload.username} criado com troca de senha obrigatória.`);
-      setForm(EMPTY_FORM);
-      await load();
-      await loadAudit();
-    } catch (err) {
-      setError(err.message || 'Não foi possível criar o usuário.');
-    } finally {
-      setSaving(false);
-    }
+  async function handleProfessionalCreated() {
+    await load();
+    await loadAudit();
   }
 
   async function handleStatus(profile) {
@@ -405,9 +295,11 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
 
     if (!selectedLiveProfile) return;
 
+    const selectedClinic = clinics.find(clinic => clinic.id === editForm.clinicId) || null;
     const payload = {
       ...editForm,
       fullName: getFullName(editForm.firstName, editForm.lastName),
+      clinicName: selectedClinic?.name || '',
     };
 
     if (!payload.firstName.trim()) {
@@ -421,6 +313,10 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
 
     try {
       await updateProfessionalProfile(selectedLiveProfile.id, payload);
+      // Mantém clinic_id em sincronia com a clínica escolhida no select.
+      if ((editForm.clinicId || '') !== (selectedLiveProfile.clinic_id || '')) {
+        await setProfileClinic(selectedLiveProfile.id, editForm.clinicId || null);
+      }
       setSuccess('Cadastro profissional atualizado.');
       const nextProfiles = await load();
       const updatedProfile = nextProfiles.find(item => item.id === selectedLiveProfile.id);
@@ -476,7 +372,12 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
           <span>Acessos, profissionais, Biblioteca Viva e auditoria em áreas separadas.</span>
         </div>
         <div className="super-admin-actions">
-          <button className="quiet-button" type="button" onClick={load} disabled={loading}>
+          <button
+            className="quiet-button"
+            type="button"
+            onClick={() => { load(); loadClinics(); }}
+            disabled={loading}
+          >
             Atualizar
           </button>
         </div>
@@ -485,10 +386,20 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       <div className="super-admin-content">
       {activeSection === 'clinics' ? (
         <ClinicAdminPanel />
+      ) : activeSection === 'deploy-health' ? (
+        <DeployHealthPanel />
       ) : activeSection === 'knowledge' ? (
         <KnowledgeAdminPanel />
       ) : activeSection === 'pdf-sources' ? (
         <PdfSourceLearningPanel />
+      ) : activeSection === 'anamnese-knowledge' ? (
+        <AnamneseKnowledgePanel />
+      ) : activeSection === 'ai-instructions' ? (
+        <AiInstructionsPanel />
+      ) : activeSection === 'ai-corrections' ? (
+        <AICorrectionsPanel />
+      ) : activeSection === 'herbal-curation' ? (
+        <HerbalPlantCurationPanel />
       ) : activeSection === 'maps' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <section className="box" style={{ background: '#f8fafc', border: '1px solid var(--line)', borderRadius: 18, padding: 20 }}>
@@ -559,7 +470,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       </div>
       )}
 
-      {(activeSection === 'create' || activeSection === 'manage') && (error || success) && (
+      {activeSection === 'manage' && (error || success) && (
         <div className={error ? 'inline-error' : 'inline-success'}>
           {error || success}
         </div>
@@ -568,134 +479,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       {(activeSection === 'create' || activeSection === 'manage') && (
       <section className="admin-layout admin-layout-single">
         {activeSection === 'create' && (
-        <form className="admin-create-form" onSubmit={handleSubmit}>
-          <div className="start-panel-head">
-            <div>
-              <p className="small">Novo profissional</p>
-              <h2>Novo acupunturista</h2>
-            </div>
-            <button className="tag" type="button" onClick={fillGeneratedPassword}>
-              Gerar senha
-            </button>
-          </div>
-
-          <div className="admin-form-grid">
-            <label>
-              Nome *
-              <input
-                value={form.firstName}
-                onChange={event => setField('firstName', event.target.value)}
-                placeholder="Primeiro nome"
-                required
-              />
-            </label>
-            <label>
-              Sobrenome
-              <input
-                value={form.lastName}
-                onChange={event => setField('lastName', event.target.value)}
-                placeholder="Sobrenome"
-              />
-            </label>
-            <label>
-              E-mail *
-              <input
-                type="email"
-                value={form.email}
-                onChange={event => {
-                  const email = event.target.value;
-                  setForm(prev => ({
-                    ...prev,
-                    email,
-                    username: getEmailLogin(email),
-                  }));
-                }}
-                placeholder="nome@sistema.com"
-                required
-              />
-            </label>
-            <label>
-              Login *
-              <input
-                value={form.username}
-                onChange={event => setField('username', normalizeUsername(event.target.value))}
-                placeholder="login"
-                required
-              />
-            </label>
-            <label>
-              Telefone
-              <input
-                value={form.phone}
-                onChange={event => setField('phone', event.target.value)}
-                placeholder="(00) 00000-0000"
-              />
-            </label>
-            <label>
-              Documento
-              <input
-                value={form.document}
-                onChange={event => setField('document', maskCpfCnpj(event.target.value))}
-                placeholder="CPF/CNPJ"
-                inputMode="numeric"
-              />
-            </label>
-            <label>
-              Registro profissional
-              <input
-                value={form.professionalRegistration}
-                onChange={event => setField('professionalRegistration', event.target.value)}
-                placeholder="Registro ou conselho"
-              />
-            </label>
-            <label>
-              Especialidade
-              <input
-                value={form.specialty}
-                onChange={event => setField('specialty', event.target.value)}
-                placeholder="Acupuntura, MTC..."
-              />
-            </label>
-            <label>
-              Clínica
-              <input
-                value={form.clinicName}
-                onChange={event => setField('clinicName', event.target.value)}
-                placeholder="Unidade ou clínica"
-              />
-            </label>
-            <PasswordField
-              label="Senha temporária *"
-              value={form.temporaryPassword}
-              onChange={event => setField('temporaryPassword', event.target.value)}
-              visible={passwordVisibility.temporary}
-              onToggle={() => togglePasswordVisibility('temporary')}
-              required
-            />
-            <PasswordField
-              label="Confirmar senha *"
-              value={form.confirmTemporaryPassword}
-              onChange={event => setField('confirmTemporaryPassword', event.target.value)}
-              visible={passwordVisibility.temporaryConfirm}
-              onToggle={() => togglePasswordVisibility('temporaryConfirm')}
-              required
-            />
-            <label className="admin-notes">
-              Observações profissionais
-              <textarea
-                value={form.notes}
-                onChange={event => setField('notes', event.target.value)}
-                placeholder="Dados internos de credenciamento"
-              />
-            </label>
-          </div>
-
-          <div className="form-actions">
-            <button className="primary-button" type="submit" disabled={saving}>
-              {saving ? 'Criando...' : 'Criar profissional'}
-            </button>
-          </div>
-        </form>
+        <ProfessionalCreateForm clinics={clinics} onCreated={handleProfessionalCreated} />
         )}
 
         {activeSection === 'manage' && (
@@ -753,7 +537,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                     <small>
                       {profile.username || 'sem login'} • {profile.email}
                     </small>
-                    <em>{profile.specialty || profile.professional_registration || 'Dados profissionais pendentes'}</em>
+                    <em>{[getProfession(profile.profession).label, profile.specialty].filter(Boolean).join(' · ') || profile.professional_registration || 'Dados profissionais pendentes'}</em>
                   </div>
 
                   <div className="admin-user-insights" aria-label="Métricas administrativas">
@@ -825,7 +609,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                 <p className="small">Painel do profissional</p>
                 <h2>{selectedLiveProfile.full_name || selectedLiveProfile.email}</h2>
                 <span>
-                  {selectedLiveProfile.specialty || 'Especialidade pendente'} • {getStatus(selectedLiveProfile)}
+                  {[getProfession(selectedLiveProfile.profession).label, selectedLiveProfile.specialty].filter(Boolean).join(' · ') || 'Cadastro profissional pendente'} • {getStatus(selectedLiveProfile)}
                 </span>
               </div>
               <button className="quiet-button" type="button" onClick={closeProfilePanel}>
@@ -912,28 +696,22 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                   inputMode="numeric"
                 />
               </label>
-              <label>
-                Registro profissional
-                <input
-                  value={editForm.professionalRegistration}
-                  onChange={event => setEditField('professionalRegistration', event.target.value)}
-                  placeholder="Registro ou conselho"
-                />
-              </label>
-              <label>
-                Especialidade
-                <input
+              <ProfessionRegistration
+                profession={editForm.profession}
+                onProfession={value => setEditField('profession', value)}
+                registration={editForm.professionalRegistration}
+                onRegistration={value => setEditField('professionalRegistration', value)}
+              />
+              <ClinicSelect
+                value={editForm.clinicId}
+                onChange={value => setEditField('clinicId', value)}
+                clinics={clinics}
+              />
+              <label className="admin-notes">
+                Especialidades
+                <SpecialtyTags
                   value={editForm.specialty}
-                  onChange={event => setEditField('specialty', event.target.value)}
-                  placeholder="Acupuntura, MTC..."
-                />
-              </label>
-              <label>
-                Clínica
-                <input
-                  value={editForm.clinicName}
-                  onChange={event => setEditField('clinicName', event.target.value)}
-                  placeholder="Unidade ou clínica"
+                  onChange={value => setEditField('specialty', value)}
                 />
               </label>
               <label className="admin-notes">

@@ -22,6 +22,7 @@ import {
   jsonResponse,
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { withCorrectionLessons } from '../_shared/corrections.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 
@@ -99,10 +100,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Dados ausentes.' }, 400);
     }
 
-    const systemPrompt = kind === 'report'
+    const baseSystemPrompt = kind === 'report'
       ? buildReportPrompt(String(body.mode || 'Resumo clínico'))
       : EVOLUTION_PROMPT;
     const payloadText = JSON.stringify(payload).slice(0, 14000);
+    const systemPrompt = await withCorrectionLessons(supabaseAdmin, baseSystemPrompt, {
+      surface: 'narrative',
+      callerId: caller.user.id,
+      relevanceQuery: payloadText,
+    });
     const userText = kind === 'report'
       ? `Dados do relatório (JSON):\n${payloadText}\n\nRedija o rascunho.`
       : `Sessões do paciente (JSON):\n${payloadText}\n\nRedija o resumo da evolução.`;

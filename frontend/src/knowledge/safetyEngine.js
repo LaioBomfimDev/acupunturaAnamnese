@@ -49,6 +49,60 @@ export function evaluateSafety({ safetyFlags = [], clinicalText = '', protocol =
     ));
   }
 
+  if (hasAny(values, ['dist[úu]rbio de coagula[cç][ãa]o', 'coagulopatia', 'sangramento f[áa]cil'])) {
+    alerts.push(makeAlert(
+      'high',
+      'Risco de sangramento',
+      'Revisar o risco de sangramento e a indicação de técnicas invasivas antes de prosseguir; registrar a decisão clínica da profissional.',
+      'coagulation-risk',
+    ));
+  }
+
+  if (hasAny(values, ['perda de peso n[ãa]o intencional', 'emagrecimento sem querer'])) {
+    alerts.push(makeAlert(
+      'high',
+      'Perda de peso não intencional',
+      'Investigar o contexto clínico e considerar avaliação médica antes de definir ou manter a conduta terapêutica.',
+      'unintended-weight-loss',
+    ));
+  }
+
+  if (hasAny(values, ['desmaio recente', 'sincope recente'])) {
+    alerts.push(makeAlert(
+      'high',
+      'Desmaio recente',
+      'Revisar a causa do episódio, a segurança da posição durante o atendimento e a necessidade de avaliação médica antes de prosseguir.',
+      'recent-fainting',
+    ));
+  }
+
+  if (hasAny(values, ['queda recente', 'trauma recente'])) {
+    alerts.push(makeAlert(
+      'high',
+      'Queda ou trauma recente',
+      'Verificar lesão aguda, sinais neurológicos e necessidade de avaliação apropriada antes de aplicar técnicas locais.',
+      'recent-trauma',
+    ));
+  }
+
+  if (hasAny(values, ['cirurgia recente'])) {
+    alerts.push(makeAlert(
+      'high',
+      'Cirurgia recente',
+      'Confirmar fase de recuperação, integridade tecidual e orientações da equipe responsável antes de qualquer intervenção.',
+      'recent-surgery',
+    ));
+  }
+
+  if (hasAny(values, ['hist[óo]rico de c[âa]ncer', 'neoplasia'])) {
+    alerts.push(makeAlert(
+      'medium',
+      'Histórico de câncer',
+      'Registrar o contexto oncológico e alinhar a conduta ao acompanhamento em saúde existente; este sinal não define diagnóstico nem contraindicação isoladamente.',
+      'cancer-history',
+    ));
+  }
+
   if (hasAny(values, ['marcapasso']) && (protocol?.eletro || []).length) {
     alerts.push(makeAlert(
       'high',

@@ -99,13 +99,28 @@ export function stripPdfBanners(value) {
   return out;
 }
 
-// Heuristica de corrupcao de OCR: glifos raros, caixa misturada no meio da palavra,
-// digito no meio da palavra. Quanto maior o score, mais quebrado o texto.
+// Heuristica de corrupcao de OCR. Soma tres sinais independentes:
+//  1) glifos raros / caixa misturada no meio da palavra / digito no meio da palavra;
+//  2) runs improbaveis de consoantes (>=5) tipicos de OCR quebrado (ex.: "dcsmll");
+//  3) tokens alfabeticos sem nenhuma vogal (ex.: "hislcn", "ctn").
+// Quanto maior o score, mais quebrado o texto.
 const OCR_GLYPH = /[!~|º¡]|\\|[a-zà-ú][A-ZÀ-Ú][a-zà-ú]|\d[a-zà-ú]{2}|[a-zà-ú]{2}\d/g;
+const OCR_CONSONANT_RUN = /[bcdfghjklmnpqrstvwxz]{5,}/gi;
+
+function vowellessTokenCount(text) {
+  let count = 0;
+  for (const token of text.split(/\s+/)) {
+    const letters = token.replace(/[^a-zà-úA-ZÀ-Ú]/g, '');
+    if (letters.length >= 3 && !/[aeiouyàáâãéêíóôõúü]/i.test(letters)) count += 1;
+  }
+  return count;
+}
 
 export function ocrCorruptionScore(value) {
-  const matches = asText(value).match(OCR_GLYPH);
-  return matches ? matches.length : 0;
+  const text = asText(value);
+  const glyphs = (text.match(OCR_GLYPH) || []).length;
+  const clusters = (text.match(OCR_CONSONANT_RUN) || []).length;
+  return glyphs + clusters + vowellessTokenCount(text);
 }
 
 // Rotulos de secao que NAO deveriam aparecer dentro de outro campo.
@@ -313,11 +328,26 @@ function buildReport(assessed, stats) {
       reasons: a.assessment.issues.map(i => `${i.type}: ${i.detail}`),
     }));
 
-  return { byStatus, byIssue, quarantine, stats };
+  // Metricas de ESTADO (descrevem o pacote como esta' agora, independem de quando
+  // a correcao rodou — diferente dos deltas "nesta execucao" em `stats`).
+  const total = assessed.length;
+  const techniquesClean = assessed.filter(a => {
+    const t = a.review.techniques;
+    return Array.isArray(t) && t.length > 0 && t.every(x => !/,/.test(String(x)));
+  }).length;
+  const titlesGeneric = assessed.filter(a => /Ponto do meridiano/i.test(a.review.title || '')).length;
+  const state = {
+    total,
+    techniquesClean,
+    titlesNonGeneric: total - titlesGeneric,
+    titlesGeneric,
+  };
+
+  return { byStatus, byIssue, quarantine, stats, state };
 }
 
 function renderMarkdown(report, total) {
-  const { byStatus, byIssue, quarantine, stats } = report;
+  const { byStatus, byIssue, quarantine, stats, state } = report;
   const lines = [];
   lines.push('# Auditoria de qualidade — high-confidence-reviews.json');
   lines.push('');
@@ -331,10 +361,13 @@ function renderMarkdown(report, total) {
   lines.push(`- ⚠️ Precisam limpeza (ainda utilizaveis): **${byStatus.needs_cleanup.length}**`);
   lines.push(`- ⛔ Em quarentena (bloqueados do raciocinio clinico): **${byStatus.quarantine.length}**`);
   lines.push('');
-  lines.push('### Correcoes mecanicas aplicadas');
-  lines.push(`- \`techniques\` normalizado para lista limpa: **${stats.techniquesNormalized}** registros`);
-  lines.push(`- Banners de PDF removidos de campos clinicos: **${stats.bannersStripped}** registros`);
-  lines.push(`- Titulos reconstruidos a partir de nomes canonicos (km-agent): **${stats.titleFixes.length}** registros`);
+  lines.push('### Estado atual do pacote (apos correcoes ja aplicadas)');
+  lines.push(`- \`techniques\` em lista limpa: **${state.techniquesClean}/${state.total}**`);
+  lines.push(`- Titulos sem padrao generico "Ponto do meridiano": **${state.titlesNonGeneric}/${state.total}**`);
+  lines.push('');
+  lines.push('### Correcoes mecanicas nesta execucao (delta)');
+  lines.push(`- \`techniques\` normalizado: **${stats.techniquesNormalized}** | banners removidos: **${stats.bannersStripped}** | titulos reconstruidos: **${stats.titleFixes.length}**`);
+  lines.push('> Zero no delta significa que o pacote ja foi auditado; rode com dados recem-gerados para ver os numeros completos.');
   lines.push('');
   lines.push('## ⛔ Quarentena (revisar antes de qualquer uso clinico)');
   lines.push('');
@@ -377,7 +410,8 @@ export function run({ apply = false } = {}) {
   fs.writeFileSync(AUDIT_MD_PATH, renderMarkdown(report, assessed.length), 'utf8');
 
   if (apply) {
-    const backup = REVIEWS_PATH.replace(/\.json$/, `.backup-${Date.now()}.json`);
+    // Backup unico de rollback (o arquivo e' gitignored; git nao guarda historico).
+    const backup = REVIEWS_PATH.replace(/\.json$/, '.prev.json');
     fs.copyFileSync(REVIEWS_PATH, backup);
     const next = {
       ...pkg,

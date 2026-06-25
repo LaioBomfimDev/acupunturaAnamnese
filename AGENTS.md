@@ -104,6 +104,7 @@ Vale para anamnese, língua, pulso, pontos e RAG da Biblioteca. Detalhe de catal
 - **Conflito entre fontes → `review`/esperar**, não forçar decisão. Segurança vem de roteamento + confiança/proveniência + gate humano, não de exclusão.
 - A IA pode propor padrões canônicos novos legítimos (além dos existentes), sempre em `review` até o gate humano.
 - **Meta: fazer funcionar, tudo ligado, ~80% de certeza**, estruturado para crítica humana e refino por equipe técnica de acupuntura nas fases finais.
+- **Sexo clínico e contexto reprodutivo orientam perguntas, não diagnóstico.** Só personalize a investigação quando o dado estiver informado; não presuma anatomia, ciclo menstrual, contexto hormonal ou queixa urogenital a partir de gênero/sexo, nem use esse dado isoladamente como peso de padrão.
 - Detalhe clínico: `docs/repertorio-padroes-mtc.md`, `docs/regras-clinicas-lingua-padrao.md`.
 
 ## 9. Supabase e dados clínicos

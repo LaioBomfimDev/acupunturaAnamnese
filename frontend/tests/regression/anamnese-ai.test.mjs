@@ -11,7 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 // (lingua/pulso/oito/substancias/objetivos/sintomas ficam de fora de propósito.)
 const SCOPE_GROUPS = [
   'queixaEstruturada', 'historico', 'substanciasUso', 'sono', 'digestao',
-  'gineco', 'dor', 'clima', 'emocoes', 'fezes', 'seguranca',
+  'gineco', 'urogenital', 'dor', 'clima', 'emocoes', 'fezes', 'seguranca',
 ];
 
 let server;

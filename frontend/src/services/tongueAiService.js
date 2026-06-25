@@ -28,6 +28,7 @@
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 
 export const TONGUE_AI_MOCK_VERSION = 'mock-0.1';
 
@@ -116,34 +117,28 @@ export function mockAnalyzeTongueImages(photos) {
 }
 
 
-// Extrai a mensagem de erro do corpo da resposta da Edge Function
-async function functionErrorMessage(error, fallback) {
-  if (typeof error?.context?.json === 'function') {
-    try {
-      const body = await error.context.json();
-      if (body?.error) return body.error;
-    } catch { /* corpo não-JSON — usa fallback */ }
-  }
-  return error?.message || fallback;
-}
-
 /**
  * Analisa as fotos da língua e retorna achados estruturados para revisão.
  *
  * Usuário local (login fallback) → análise simulada (mock).
  * Usuário real → Edge Function `analyze-tongue` (Gemini Vision).
- * Se a função estiver indisponível ou sem chave, cai no mock com aviso.
+ * Indisponibilidade da função é exibida como erro, sem substituir por achados.
  *
  * @param {{ top: object, sublingual?: object|null }} photos - fotos do estado tongueAi
  * @param {{ patientId?: string }} [context]
+ * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  * @returns {Promise<{ modelVersion, analyzedAt, warning, findings }>}
  */
-export async function analyzeTongueImages(photos, context = {}) {
+export async function analyzeTongueImages(photos, context = {}, runtime) {
   if (!photos?.top) {
     throw new Error('É necessária a foto superior da língua para analisar.');
   }
 
-  const user = await getAuthenticatedUser();
+  const client = resolveAiRuntime(runtime, {
+    getAuthenticatedUser,
+    invoke: (...args) => supabase.functions.invoke(...args),
+  });
+  const user = await client.getAuthenticatedUser();
 
   // Login local: sem Storage nem Edge Function — análise simulada
   if (user?._isLocal) {
@@ -157,7 +152,7 @@ export async function analyzeTongueImages(photos, context = {}) {
     throw new Error('Paciente não identificado para a análise.');
   }
 
-  const { data, error } = await supabase.functions.invoke('analyze-tongue', {
+  const { data, error } = await client.invoke('analyze-tongue', {
     body: {
       patientId: context.patientId,
       photos: {
@@ -168,23 +163,7 @@ export async function analyzeTongueImages(photos, context = {}) {
   });
 
   if (error) {
-    const msg = await functionErrorMessage(error, '');
-    // Cai no mock quando a IA não está configurada ou a função está indisponível
-    const isMockable =
-      !msg ||
-      msg.includes('Failed to send') ||
-      msg.includes('fetch') ||
-      msg.includes('not found') ||
-      msg.includes('GEMINI_API_KEY') ||
-      msg.includes('não configurada');
-    if (isMockable) {
-      const result = await mockAnalyzeTongueImages(photos);
-      return {
-        ...result,
-        warning: 'Análise simulada — a IA por imagem ainda não está ativa neste servidor. Os achados abaixo são exemplos fixos para demonstração.',
-      };
-    }
-    throw new Error(msg || 'Falha ao analisar as imagens.');
+    throw new Error(await getAiFunctionErrorMessage(error, 'Falha ao analisar as imagens.'));
   }
   if (!data || !Array.isArray(data.findings)) {
     throw new Error('A análise retornou um formato inesperado.');

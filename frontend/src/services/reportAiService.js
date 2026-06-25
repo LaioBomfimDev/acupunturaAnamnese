@@ -6,14 +6,15 @@
 // `summarizeEvolution` — resumo da trajetória entre sessões.
 //
 // Ambos ANONIMIZAM o texto livre e NÃO enviam o nome do paciente
-// (a IA fala "o paciente"). Usuário local → mock; real → Edge Function
-// `draft-narrative`; indisponível → mock com aviso.
+// (a IA fala "o paciente"). Usuário local → mock; sessão real → Edge
+// Function `draft-narrative`; indisponibilidade é exibida como erro.
 //
 // Saída: rascunho para REVISÃO da profissional, nunca conduta final.
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { anonymizeClinicalText } from '../utils/anonymize';
+import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 
 export const REPORT_AI_MOCK_VERSION = 'mock-0.1';
 
@@ -68,42 +69,20 @@ export function mockSummarizeEvolution(sessions) {
   ]);
 }
 
-async function functionErrorMessage(error, fallback) {
-  if (typeof error?.context?.json === 'function') {
-    try {
-      const body = await error.context.json();
-      if (body?.error) return body.error;
-    } catch { /* corpo não-JSON */ }
-  }
-  return error?.message || fallback;
-}
-
-function isMockableError(msg) {
-  return (
-    !msg ||
-    msg.includes('Failed to send') ||
-    msg.includes('fetch') ||
-    msg.includes('not found') ||
-    msg.includes('GEMINI_API_KEY') ||
-    msg.includes('não configurada')
-  );
-}
-
-async function callDraftNarrative({ kind, mode, payload }, mockFn) {
-  const user = await getAuthenticatedUser();
+async function callDraftNarrative({ kind, mode, payload }, mockFn, runtime) {
+  const client = resolveAiRuntime(runtime, {
+    getAuthenticatedUser,
+    invoke: (...args) => supabase.functions.invoke(...args),
+  });
+  const user = await client.getAuthenticatedUser();
   if (user?._isLocal) return mockFn();
 
-  const { data, error } = await supabase.functions.invoke('draft-narrative', {
+  const { data, error } = await client.invoke('draft-narrative', {
     body: { kind, mode, payload },
   });
 
   if (error) {
-    const msg = await functionErrorMessage(error, '');
-    if (isMockableError(msg)) {
-      const result = await mockFn();
-      return { ...result, warning: 'Rascunho simulado — a IA de texto ainda não está ativa neste servidor.' };
-    }
-    throw new Error(msg || 'Falha ao gerar o rascunho.');
+    throw new Error(await getAiFunctionErrorMessage(error, 'Falha ao gerar o rascunho.'));
   }
   if (!data || !Array.isArray(data.paragraphs)) {
     throw new Error('A geração retornou um formato inesperado.');
@@ -116,13 +95,15 @@ async function callDraftNarrative({ kind, mode, payload }, mockFn) {
  * @param {string} mode - 'Resumo clínico' | 'Relatório profissional' | 'Orientação ao paciente'
  * @param {object} reportData - campos estruturados do relatório
  * @param {{ patientName?: string }} [context]
+ * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  */
-export async function draftReport(mode, reportData, context = {}) {
+export async function draftReport(mode, reportData, context = {}, runtime) {
   const payload = anonymizeFields(reportData, ['queixa', 'historia'], context.patientName);
 
   return callDraftNarrative(
     { kind: 'report', mode, payload },
     () => mockDraftReport(mode, reportData),
+    runtime,
   );
 }
 
@@ -130,8 +111,9 @@ export async function draftReport(mode, reportData, context = {}) {
  * Resume a trajetória do paciente entre sessões.
  * @param {Array} sessions - state.evolucoes
  * @param {{ patientName?: string }} [context]
+ * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  */
-export async function summarizeEvolution(sessions, context = {}) {
+export async function summarizeEvolution(sessions, context = {}, runtime) {
   const list = Array.isArray(sessions) ? sessions : [];
   if (list.length < 1) {
     throw new Error('Registre ao menos uma sessão para resumir a evolução.');
@@ -158,5 +140,6 @@ export async function summarizeEvolution(sessions, context = {}) {
   return callDraftNarrative(
     { kind: 'evolution', payload },
     () => mockSummarizeEvolution(list),
+    runtime,
   );
 }

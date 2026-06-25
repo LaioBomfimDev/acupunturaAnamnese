@@ -6,7 +6,7 @@
 // `suggestAnamneseMarks` decide a implementação:
 //  * usuário local (login fallback) → MOCK;
 //  * usuário real → Edge Function `suggest-marks` (Gemini flash-lite).
-//  * se a função estiver indisponível/sem chave → mock com aviso.
+//  * falha da função → erro explícito para a profissional.
 //
 // PRIVACIDADE: o texto é ANONIMIZADO aqui, no cliente, ANTES de sair —
 // nome/CPF/telefone/datas viram marcadores. Ver utils/anonymize.js.
@@ -16,6 +16,7 @@
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { anonymizeClinicalText } from '../utils/anonymize';
+import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 
 export const ANAMNESE_AI_MOCK_VERSION = 'mock-0.1';
 
@@ -60,7 +61,7 @@ export function buildAnamneseText(state) {
     .join('\n');
 }
 
-// ----- MOCK (login local e testes) -----
+// ----- MOCK (somente login local e testes) -----
 // Casa palavras-chave simples contra o catálogo para uma demonstração útil
 // mesmo offline. Não é o motor real — é determinístico e propositalmente raso.
 const MOCK_KEYWORDS = [
@@ -74,6 +75,10 @@ const MOCK_KEYWORDS = [
   { re: /crônic|cronic|anos|há muito/i, group: 'queixaEstruturada', item: 'Quadro crônico', confidence: 0.55 },
   { re: /frio|gela/i, group: 'clima', item: 'Piora com frio', confidence: 0.5 },
   { re: /grávid|gravid|gestante|gestação/i, group: 'seguranca', item: 'Gestação', confidence: 0.9 },
+  { re: /jato.*fraco|dificuldade.*urinar/i, group: 'urogenital', item: 'Jato urinário fraco', confidence: 0.78 },
+  { re: /urin[ao].*noite|noctúria|nocturia/i, group: 'urogenital', item: 'Urinar à noite', confidence: 0.78 },
+  { re: /disfunção erétil|disfuncao eretil|ereção|erecao|impotência|impotencia/i, group: 'urogenital', item: 'Alteração erétil', confidence: 0.82 },
+  { re: /ejaculação|ejaculacao/i, group: 'urogenital', item: 'Alteração ejaculatória', confidence: 0.76 },
   { re: /varfarina|anticoagul|marevan|xarelto/i, group: 'seguranca', item: 'Anticoagulante', confidence: 0.88 },
   { re: /perda.*peso|emagrec.*sem.*querer/i, group: 'seguranca', item: 'Perda de peso não intencional', confidence: 0.82 },
   { re: /desmai|síncope|sincope/i, group: 'seguranca', item: 'Desmaio recente', confidence: 0.82 },
@@ -108,25 +113,15 @@ export function mockSuggestAnamneseMarks(text) {
   });
 }
 
-// Extrai a mensagem de erro do corpo da resposta da Edge Function
-async function functionErrorMessage(error, fallback) {
-  if (typeof error?.context?.json === 'function') {
-    try {
-      const body = await error.context.json();
-      if (body?.error) return body.error;
-    } catch { /* corpo não-JSON — usa fallback */ }
-  }
-  return error?.message || fallback;
-}
-
 /**
  * Lê o texto livre da anamnese e sugere marcações do checklist para revisão.
  *
  * @param {object} state - estado clínico da sessão (campos de texto livre)
  * @param {{ patientName?: string }} [context]
+ * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  * @returns {Promise<{ modelVersion, analyzedAt, warning, suggestions }>}
  */
-export async function suggestAnamneseMarks(state, context = {}) {
+export async function suggestAnamneseMarks(state, context = {}, runtime) {
   const rawText = buildAnamneseText(state);
   if (!rawText.trim()) {
     throw new Error('Preencha a queixa ou observações antes de pedir sugestões.');
@@ -135,32 +130,21 @@ export async function suggestAnamneseMarks(state, context = {}) {
   // Anonimização no cliente — o dado bruto nunca sai do browser.
   const text = anonymizeClinicalText(rawText, { patientName: context.patientName });
 
-  const user = await getAuthenticatedUser();
+  const client = resolveAiRuntime(runtime, {
+    getAuthenticatedUser,
+    invoke: (...args) => supabase.functions.invoke(...args),
+  });
+  const user = await client.getAuthenticatedUser();
   if (user?._isLocal) {
     return mockSuggestAnamneseMarks(text);
   }
 
-  const { data, error } = await supabase.functions.invoke('suggest-marks', {
+  const { data, error } = await client.invoke('suggest-marks', {
     body: { text },
   });
 
   if (error) {
-    const msg = await functionErrorMessage(error, '');
-    const isMockable =
-      !msg ||
-      msg.includes('Failed to send') ||
-      msg.includes('fetch') ||
-      msg.includes('not found') ||
-      msg.includes('GEMINI_API_KEY') ||
-      msg.includes('não configurada');
-    if (isMockable) {
-      const result = await mockSuggestAnamneseMarks(text);
-      return {
-        ...result,
-        warning: 'Sugestões simuladas — a IA de anamnese ainda não está ativa neste servidor.',
-      };
-    }
-    throw new Error(msg || 'Falha ao gerar sugestões.');
+    throw new Error(await getAiFunctionErrorMessage(error, 'Falha ao gerar sugestões.'));
   }
   if (!data || !Array.isArray(data.suggestions)) {
     throw new Error('A sugestão retornou um formato inesperado.');

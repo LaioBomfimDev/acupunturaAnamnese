@@ -10,6 +10,8 @@ let server;
 let commonlyUsed;
 let knowledgeBase;
 let pointRecommendations;
+let auricularCuration;
+let mapLocations;
 
 before(async () => {
   server = await createServer({
@@ -21,6 +23,8 @@ before(async () => {
   commonlyUsed = await server.ssrLoadModule('/src/knowledge/commonlyUsedPoints.js');
   knowledgeBase = await server.ssrLoadModule('/src/knowledge/knowledgeBase.js');
   pointRecommendations = await server.ssrLoadModule('/src/knowledge/pointRecommendationEngine.js');
+  auricularCuration = await server.ssrLoadModule('/src/knowledge/auricularCuration.js');
+  mapLocations = await server.ssrLoadModule('/src/knowledge/mapLocations.js');
 });
 
 after(async () => {
@@ -71,7 +75,7 @@ test('todo ponto auricular comumente usado existe na base e está marcado', () =
   assert.equal(uniqueFlagged.size, 24);
 });
 
-test('filtro de mapa preserva pontos auriculares comumente usados', () => {
+test('filtro de mapa preserva pontos corporais e prioriza auriculares localizáveis', () => {
   const { commonlyUsedMapFilterCodes, commonlyUsedBodyPoints, commonlyUsedAuricularPoints } = commonlyUsed;
 
   for (const entry of commonlyUsedBodyPoints) {
@@ -85,6 +89,28 @@ test('filtro de mapa preserva pontos auriculares comumente usados', () => {
 
   assert.ok(!commonlyUsedMapFilterCodes.has('auricular:sono'));
   assert.ok(!commonlyUsedMapFilterCodes.has('SP3'));
+
+  const expectedPending = [
+    'utero', 'ovario', 'depressao', 'insonia', 'occipital', 'fronte', 'talamo',
+  ];
+  const summary = auricularCuration.auricularCurationSummary;
+  assert.equal(summary.sourceRecords, 83);
+  assert.equal(summary.commonPriority, 24);
+  assert.equal(summary.commonMapReady, 17);
+  assert.equal(summary.commonAwaitingCoordinates, 7);
+  assert.equal(auricularCuration.auricularCurationRecords.length, 90);
+  assert.ok(auricularCuration.auricularCurationRecords.every(record => record.approvalStatus === 'review'));
+
+  for (const slug of expectedPending) {
+    const record = auricularCuration.getAuricularCuration(slug);
+    assert.equal(record?.mapVisibility, 'hidden_until_coordinate_review');
+    assert.equal(auricularCuration.isDefaultCommonMapLocationCode(`auricular:${slug}`), false);
+  }
+
+  const defaultEarLocations = mapLocations.getAllMapLocations()
+    .filter(location => location.mapId === 'ear_lateral')
+    .filter(location => auricularCuration.isDefaultCommonMapLocationCode(location.code));
+  assert.equal(defaultEarLocations.length, 17);
 });
 
 test('helpers aceitam aliases brasileiros, nomes auriculares e prefixo auricular:', () => {

@@ -40,6 +40,21 @@ export function getSelectedItems(selectedMap, group) {
     .map(k => k.split(':').slice(1).join(':'));
 }
 
+// O sexo clínico só direciona perguntas de anamnese; nunca é evidência de
+// padrão e nunca recebe peso diagnóstico. Aceita os valores atuais e legados
+// do campo livre para não invalidar atendimentos já salvos.
+export function getClinicalSexContext(sexo) {
+  const value = String(sexo || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  if (['f', 'feminino', 'female', 'mulher'].includes(value)) return 'feminino';
+  if (['m', 'masculino', 'male', 'homem'].includes(value)) return 'masculino';
+  return 'nao_informado';
+}
+
 // Retorna os achados de pulso formatados para análise (qualidades + sinais)
 export function getPulseSelectedItems(selectedMap) {
   return Object.keys(selectedMap)
@@ -79,7 +94,7 @@ export function getAllClinicalText(state, selectedMap) {
   const groups = [
     'sintomas', 'queixaEstruturada', 'historico', 'substanciasUso',
     'sono', 'digestao', 'gineco', 'dor', 'lingua', 'regioesLingua',
-    'clima', 'emocoes', 'fezes', 'oito', 'substancias'
+    'urogenital', 'clima', 'emocoes', 'fezes', 'oito', 'substancias'
   ];
 
   const fromGroups = groups.flatMap(g => getSelectedItems(selectedMap, g));
@@ -206,7 +221,7 @@ export function diagnosticProfile(state, selectedMap) {
   // sinais associados pesam como sintoma (peso 4) e não contam em dobro
   // quando o mesmo achado já foi marcado na anamnese.
   const pulse = getPulseQualityItems(selectedMap).length;
-  const symptomItems = ['sintomas', 'digestao', 'sono', 'dor', 'gineco'].flatMap(
+  const symptomItems = ['sintomas', 'digestao', 'sono', 'dor', 'gineco', 'urogenital'].flatMap(
     g => getSelectedItems(selectedMap, g)
   );
   const normalizeFinding = (item) => String(item)
@@ -258,7 +273,13 @@ export function diagnosticProfile(state, selectedMap) {
   if (getSelectedItems(selectedMap, 'fezes').length === 0) missing.push("hábitos intestinais/fezes");
   if (!/sede|água|boca seca/i.test(text) && !state.agua) missing.push("sede e ingestão hídrica");
   if (getSelectedItems(selectedMap, 'sono').length === 0) missing.push("sono e horário dos despertares");
-  if (getSelectedItems(selectedMap, 'gineco').length === 0) missing.push("ciclo menstrual/hormonal, quando aplicável");
+  const sexContext = getClinicalSexContext(state?.sexo);
+  if (sexContext === 'feminino' && getSelectedItems(selectedMap, 'gineco').length === 0) {
+    missing.push("ciclo menstrual, saúde ginecológica e contexto hormonal, se pertinente ao caso");
+  }
+  if (sexContext === 'masculino' && getSelectedItems(selectedMap, 'urogenital').length === 0) {
+    missing.push("saúde urogenital, sexual e hormonal, se pertinente ao caso");
+  }
   if (getSelectedItems(selectedMap, 'clima').length === 0) missing.push("relação com frio, calor, umidade, vento ou secura");
 
   return {
@@ -291,7 +312,7 @@ function buildWeightedEvidence(state, selectedMap) {
     ...Object.keys(tongueOrganAlterations).flatMap(org => getSelectedItems(selectedMap, `linguaOrgao:${org}`)),
   ];
   const symptomItems = [
-    ...['sintomas', 'digestao', 'sono', 'dor', 'gineco', 'fezes'].flatMap(g => getSelectedItems(selectedMap, g)),
+    ...['sintomas', 'digestao', 'sono', 'dor', 'gineco', 'urogenital', 'fezes'].flatMap(g => getSelectedItems(selectedMap, g)),
     ...getPulseAssociatedSignItems(selectedMap),
   ];
   const anamneseItems = [

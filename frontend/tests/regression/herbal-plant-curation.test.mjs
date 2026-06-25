@@ -7,6 +7,7 @@ import {
   filterHerbalCurationRows,
   getLocalHerbalCurationDecisions,
   materializeHerbalCurationRows,
+  mergeHerbalCurationDecisions,
   saveLocalHerbalCurationDecision,
   summarizeHerbalCurationRows,
   validateHerbalCurationDecision,
@@ -97,8 +98,32 @@ test('busca encontra indicação da fonte sem inferir associação MTC', () => {
   assert.equal(summary.approved, 0);
 });
 
+test('decisão local substitui a triagem técnica e a triagem nunca libera paciente', () => {
+  const seed = {
+    id: `seed:${plant.id}`,
+    plantId: plant.id,
+    status: 'restrito_profissional',
+    decisionOrigin: 'technical_triage_from_source',
+    approvalMode: 'local_only',
+    requiresProfessionalAudit: true,
+    reviewNote: 'Triagem conservadora baseada na presença de toxicologia na fonte.',
+  };
+  const local = {
+    plantId: plant.id,
+    status: 'curadoria_tecnica',
+    reviewNote: 'Revisão local ainda pendente de auditoria profissional.',
+  };
+  const [row] = materializeHerbalCurationRows([plant], mergeHerbalCurationDecisions([seed], [local]));
+
+  assert.equal(row.contentReleaseStatus, 'curadoria_tecnica');
+  assert.equal(row.seedDecision, false);
+  assert.equal(row.localDecision, true);
+  assert.equal(row.patientEligible, false);
+});
+
 test('catálogo de ervas usa chave interna de fonte protegida', () => {
   const service = readFileSync(new URL('../../src/services/herbalPlantCurationService.js', import.meta.url), 'utf8');
   assert.match(service, /HERBAL_PLANT_CATALOG_ASSET_KEY = 'pdf-sources\/ebook-ervas-medicinais\/plant-catalog\.local\.json'/);
+  assert.match(service, /HERBAL_CURATION_SEED_ASSET_KEY = 'pdf-sources\/ebook-ervas-medicinais\/herbal-curation-seed-decisions\.local\.json'/);
   assert.match(service, /fetchKnowledgeSourceJsonAsset\(/);
 });

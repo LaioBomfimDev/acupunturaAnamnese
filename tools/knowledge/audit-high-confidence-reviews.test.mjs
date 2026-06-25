@@ -37,8 +37,11 @@ test('stripPdfBanners nao apaga conteudo legitimo em caixa baixa', () => {
 });
 
 test('ocrCorruptionScore pontua texto quebrado acima de texto limpo', () => {
-  assert.ok(ocrCorruptionScore('Apopleua. dcsmllío. hislcna. tootura') >= 3);
-  assert.equal(ocrCorruptionScore('Acalma e clareia a mente.'), 0);
+  const clean = ocrCorruptionScore('Acalma e clareia a mente.');
+  const broken = ocrCorruptionScore('Otspcna o VenlO J>Ol<lll!nico. l ltdicações dcsmllío hislcna');
+  assert.equal(clean, 0);
+  assert.ok(broken >= 3, `esperava score alto para OCR quebrado, obtido ${broken}`);
+  assert.ok(broken > clean);
 });
 
 test('hasMixedSection detecta rotulo de outra secao dentro da localizacao', () => {

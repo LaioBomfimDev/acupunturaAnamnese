@@ -11,6 +11,7 @@ import {
   formatRegisteredSessionCount,
   getReportSessionInfo,
 } from '../../utils/reportUtils';
+import { isAiDraftPendingReview } from '../../utils/reportAiReview';
 
 /* ── helpers ─────────────────────────────────────────────── */
 function today() {
@@ -178,6 +179,7 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   const edits = state.relatorioEdits || {};
   const editedEntry = edits[modo];
   const sanitizedEditedHtml = editedEntry ? sanitizeHtml(editedEntry.html) : '';
+  const aiDraftPendingReview = isAiDraftPendingReview(editedEntry);
 
   function startEditing() {
     // Parte do texto editado salvo ou do HTML gerado renderizado no momento
@@ -187,9 +189,17 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
 
   function saveEditing() {
     const html = sanitizeHtml(editableRef.current?.innerHTML || '');
+    const editedAt = new Date().toISOString();
     onUpdate?.('relatorioEdits', {
       ...edits,
-      [modo]: { html, editedAt: new Date().toISOString() },
+      [modo]: {
+        html,
+        editedAt,
+        aiDraft: Boolean(editedEntry?.aiDraft),
+        modelVersion: editedEntry?.modelVersion,
+        // Salvar uma edição é uma ação explícita de revisão profissional.
+        aiReviewedAt: editedEntry?.aiDraft ? editedAt : editedEntry?.aiReviewedAt,
+      },
     });
     setEditing(false);
   }
@@ -208,6 +218,22 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   function changeModo(m) {
     if (editing) return;
     setModo(m);
+  }
+
+  function confirmAiDraftReview() {
+    if (!editedEntry?.aiDraft) return;
+    onUpdate?.('relatorioEdits', {
+      ...edits,
+      [modo]: { ...editedEntry, aiReviewedAt: new Date().toISOString() },
+    });
+  }
+
+  function handlePrint() {
+    if (aiDraftPendingReview) {
+      setAiError('Confirme a revisão profissional do rascunho de IA antes de imprimir ou gerar o PDF.');
+      return;
+    }
+    window.print();
   }
 
   // Monta os dados estruturados (sem nome do paciente) e pede o rascunho à IA.
@@ -247,7 +273,13 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
       const html = res.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('');
       onUpdate?.('relatorioEdits', {
         ...edits,
-        [modo]: { html, editedAt: new Date().toISOString(), aiDraft: true, modelVersion: res.modelVersion },
+        [modo]: {
+          html,
+          editedAt: new Date().toISOString(),
+          aiDraft: true,
+          aiReviewedAt: null,
+          modelVersion: res.modelVersion,
+        },
       });
     } catch (err) {
       setAiError(err.message || 'Falha ao gerar o rascunho.');
@@ -425,11 +457,20 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           <span>
             {editedEntry.aiDraft ? '✦ ' : '✏️ '}
             {editedEntry.aiDraft ? 'Rascunho gerado por IA' : 'Texto editado manualmente'} em {new Date(editedEntry.editedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.
-            {editedEntry.aiDraft ? ' Revise antes de usar — a impressão usa este texto.' : ' A impressão usa o texto editado.'}
+            {editedEntry.aiDraft
+              ? aiDraftPendingReview
+                ? ' Confirme a revisão profissional antes de imprimir.'
+                : ' Revisão profissional confirmada.'
+              : ' A impressão usa o texto editado.'}
           </span>
           <button className="tag" type="button" onClick={restoreGenerated}>
             Restaurar texto automático
           </button>
+          {aiDraftPendingReview && (
+            <button className="tag" type="button" onClick={confirmAiDraftReview}>
+              Confirmar revisão profissional
+            </button>
+          )}
           {editedEntry.aiDraft && (
             <AiCorrectionButton
               surface={AI_SURFACES.NARRATIVE}
@@ -517,7 +558,14 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           </>
         ) : (
           <>
-            <button className="primary-button" onClick={() => window.print()}>Imprimir / PDF</button>
+            <button
+              className="primary-button"
+              onClick={handlePrint}
+              disabled={aiDraftPendingReview}
+              title={aiDraftPendingReview ? 'Confirme a revisão profissional do rascunho de IA antes de imprimir.' : undefined}
+            >
+              Imprimir / PDF
+            </button>
             <button className="tag" onClick={handleAiDraft} disabled={aiLoading} title={REPORT_AI_DISCLAIMER}>
               {aiLoading ? 'Gerando rascunho…' : '✦ Gerar rascunho com IA'}
             </button>

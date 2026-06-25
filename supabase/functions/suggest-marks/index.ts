@@ -61,7 +61,13 @@ const CATALOG: Record<string, string[]> = {
   gineco: [
     'TPM', 'Cólicas', 'Ciclo irregular', 'Fluxo intenso', 'Fluxo escasso',
     'Coágulos', 'Endometriose', 'SOP', 'Menopausa', 'Ondas de calor',
-    'Baixa libido', 'Uso hormonal',
+    'Baixa libido', 'Uso hormonal', 'Sem queixas ginecológicas/menstruais',
+  ],
+  urogenital: [
+    'Sintomas urinários', 'Jato urinário fraco', 'Aumento da frequência urinária',
+    'Urinar à noite', 'Dor pélvica/perineal', 'Alteração erétil',
+    'Alteração ejaculatória', 'Baixa libido', 'Fertilidade/planejamento reprodutivo',
+    'Uso hormonal', 'Sem queixas urogenitais/sexuais',
   ],
   dor: [
     'Pontada', 'Queimação', 'Peso', 'Pressão', 'Rigidez', 'Dor migratória',
@@ -139,6 +145,7 @@ Regras:
 - Cada sugestão precisa de uma justificativa curta citando o sinal do texto (campo "rationale").
 - Confiança conservadora: 0.8+ só quando o texto afirma o item claramente; 0.4–0.7 quando é provável mas indireto; não sugira abaixo de 0.35.
 - Atenção especial a sinais de SEGURANÇA (grupo "seguranca"): gestação, anticoagulante, coagulopatia, marcapasso, epilepsia, febre, pressão/diabetes descompensada, dor torácica, perda de peso não intencional, desmaio, queda, trauma, câncer e cirurgia recente — se o texto indicar, sugira com prioridade.
+- Em saúde reprodutiva, menstrual, sexual ou urogenital, sugira somente o que o texto afirmar. Nunca presuma anatomia, ciclo menstrual, identidade ou queixa a partir de sexo/gênero.
 - Não repita a mesma chave. Máximo de 12 sugestões, das mais às menos relevantes.
 - O texto pode vir com identificadores mascarados ([NOME], [DATA], [CPF] etc.) — ignore-os, são esperados.
 - Se o texto estiver vazio ou sem conteúdo clínico aproveitável, retorne suggestions vazio e explique em warning (pt-BR).`;

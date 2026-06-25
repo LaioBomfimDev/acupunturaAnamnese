@@ -51,6 +51,9 @@ export function normalizeHerbalCurationDecision(value = {}) {
     plantId,
     status: normalizeStatus(value.status || value.contentReleaseStatus),
     contentType: value.contentType === 'alimento' ? 'alimento' : 'planta_medicinal',
+    decisionOrigin: normalizeText(value.decisionOrigin) || 'local_curator',
+    approvalMode: normalizeText(value.approvalMode) || 'local_only',
+    requiresProfessionalAudit: value.requiresProfessionalAudit !== false,
     educationalSummary: normalizeText(value.educationalSummary),
     cautionSummary: normalizeText(value.cautionSummary),
     reviewNote: normalizeText(value.reviewNote),
@@ -68,7 +71,8 @@ export function normalizeHerbalCurationDecision(value = {}) {
 
 export function isHerbalPatientEligible(decision = {}) {
   const normalized = normalizeHerbalCurationDecision(decision);
-  return normalized.status === 'educativo_aprovado'
+  return !normalized.requiresProfessionalAudit
+    && normalized.status === 'educativo_aprovado'
     && Object.values(normalized.safetyReview).every(Boolean)
     && normalized.educationalSummary.length >= 20
     && normalized.cautionSummary.length >= 20;
@@ -143,6 +147,24 @@ export function removeLocalHerbalCurationDecision(plantId) {
   localStorage.setItem(HERBAL_CURATION_DECISIONS_KEY, JSON.stringify(next));
 }
 
+export function isHerbalTechnicalTriageDecision(decision = {}) {
+  const normalized = normalizeHerbalCurationDecision(decision);
+  return normalized.decisionOrigin === 'technical_triage_from_source';
+}
+
+export function mergeHerbalCurationDecisions(seedDecisions = [], localDecisions = []) {
+  const byPlantId = new Map();
+  for (const decision of seedDecisions) {
+    const normalized = normalizeHerbalCurationDecision(decision);
+    if (normalized.plantId) byPlantId.set(normalized.plantId, normalized);
+  }
+  for (const decision of localDecisions) {
+    const normalized = normalizeHerbalCurationDecision(decision);
+    if (normalized.plantId) byPlantId.set(normalized.plantId, normalized);
+  }
+  return [...byPlantId.values()];
+}
+
 export function materializeHerbalCurationRows(items = [], decisions = []) {
   const byPlantId = new Map(decisions.map(item => [item.plantId, normalizeHerbalCurationDecision(item)]));
   return items.map(plant => {
@@ -152,6 +174,8 @@ export function materializeHerbalCurationRows(items = [], decisions = []) {
       ...plant,
       contentReleaseStatus: status,
       curationDecision: decision,
+      seedDecision: decision ? isHerbalTechnicalTriageDecision(decision) : false,
+      localDecision: decision ? !isHerbalTechnicalTriageDecision(decision) : false,
       patientEligible: decision ? isHerbalPatientEligible(decision) : false,
     };
   });
@@ -194,6 +218,8 @@ export function summarizeHerbalCurationRows(rows = []) {
   return {
     total: rows.length,
     pending: rows.filter(row => !row.curationDecision).length,
+    seeded: rows.filter(row => row.seedDecision).length,
+    localReviewed: rows.filter(row => row.localDecision).length,
     sourceOnly: count('source_only'),
     technical: count('curadoria_tecnica'),
     approved: count('educativo_aprovado'),
@@ -204,8 +230,12 @@ export function summarizeHerbalCurationRows(rows = []) {
   };
 }
 
-export function downloadHerbalCurationDecisions(filename = 'curadoria-interna-ervas.json') {
-  const decisions = getLocalHerbalCurationDecisions();
+export function downloadHerbalCurationDecisions({
+  seedDecisions = [],
+  filename = 'curadoria-interna-ervas.json',
+} = {}) {
+  const localDecisions = getLocalHerbalCurationDecisions();
+  const decisions = mergeHerbalCurationDecisions(seedDecisions, localDecisions);
   const envelope = {
     schemaVersion: 'sistema-acup-herbal-curation-decisions.v1',
     generatedAt: nowIso(),
@@ -214,6 +244,8 @@ export function downloadHerbalCurationDecisions(filename = 'curadoria-interna-er
       patientData: 'never',
       requiresProfessionalAudit: true,
     },
+    seedDecisionCount: seedDecisions.length,
+    localDecisionCount: localDecisions.length,
     decisions,
   };
   const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });

@@ -11,7 +11,10 @@ import {
   writeStoredMapLocations,
 } from '../../knowledge/mapLocations';
 import { displayPointCode, normalizePointCode } from '../../knowledge/aliases';
-import { commonlyUsedMapFilterCodes } from '../../knowledge/commonlyUsedPoints';
+import {
+  auricularCurationSummary,
+  isDefaultCommonMapLocationCode,
+} from '../../knowledge/auricularCuration';
 import { buildPointDetail } from '../../knowledge/pointDetails';
 import {
   getDeepCuratedKnowledgeReviews,
@@ -159,7 +162,7 @@ export function MapCoordinateEditor({
       filtered = filtered.filter(location => locationFilterBucket(location) === statusFilter);
     }
     if (commonOnly) {
-      filtered = filtered.filter(location => commonlyUsedMapFilterCodes.has(normalizePointCode(location.code)));
+      filtered = filtered.filter(location => isDefaultCommonMapLocationCode(location.code));
     }
     return filtered;
   }, [locations, statusFilter, commonOnly]);
@@ -555,6 +558,12 @@ export function MapCoordinateEditor({
       </div>
 
       {saveMessage && <div className="inline-success">{saveMessage}</div>}
+
+      {activeMapId === 'ear_lateral' && commonOnly && (
+        <p className="small">
+          Curadoria interna: {auricularCurationSummary.commonMapReady} de {auricularCurationSummary.commonPriority} pontos auriculares prioritários têm localização rastreável; {auricularCurationSummary.commonAwaitingCoordinates} aguardam revisão de coordenada.
+        </p>
+      )}
 
       <div className="map-status-filter" aria-label="Filtro de status de calibração">
         {STATUS_FILTERS.map(filter => (

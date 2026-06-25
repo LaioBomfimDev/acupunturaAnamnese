@@ -42,7 +42,13 @@ export const checklists = {
   gineco: [
     "TPM", "Cólicas", "Ciclo irregular", "Fluxo intenso", "Fluxo escasso",
     "Coágulos", "Endometriose", "SOP", "Menopausa", "Ondas de calor",
-    "Baixa libido", "Uso hormonal"
+    "Baixa libido", "Uso hormonal", "Sem queixas ginecológicas/menstruais"
+  ],
+  urogenital: [
+    "Sintomas urinários", "Jato urinário fraco", "Aumento da frequência urinária",
+    "Urinar à noite", "Dor pélvica/perineal", "Alteração erétil",
+    "Alteração ejaculatória", "Baixa libido", "Fertilidade/planejamento reprodutivo",
+    "Uso hormonal", "Sem queixas urogenitais/sexuais"
   ],
   dor: [
     "Pontada", "Queimação", "Peso", "Pressão", "Rigidez", "Dor migratória",

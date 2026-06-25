@@ -5,10 +5,12 @@
 // `rankLibraryCards` recupera localmente (sobreposição de termos) os
 // cards mais relevantes — barato, sem vetores. `askLibrary` monta o
 // contexto e chama a Edge Function `library-qa` para a resposta
-// ancorada. Sem dado de paciente (é base de conhecimento).
+// ancorada. Sem dado de paciente (é base de conhecimento). O mock só
+// existe para o login local de demonstração e para os testes.
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 
 export const LIBRARY_AI_MOCK_VERSION = 'mock-0.1';
 
@@ -99,23 +101,14 @@ export function mockAskLibrary(question, topCards) {
   });
 }
 
-async function functionErrorMessage(error, fallback) {
-  if (typeof error?.context?.json === 'function') {
-    try {
-      const body = await error.context.json();
-      if (body?.error) return body.error;
-    } catch { /* corpo não-JSON */ }
-  }
-  return error?.message || fallback;
-}
-
 /**
  * Pergunta à Biblioteca: recupera localmente + responde com IA.
  * @param {string} question
  * @param {Array} cards - allCards da Biblioteca
+ * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  * @returns {Promise<{ modelVersion, answer, citations, insufficient, usedCount }>}
  */
-export async function askLibrary(question, cards) {
+export async function askLibrary(question, cards, runtime) {
   const q = String(question || '').trim();
   if (!q) {
     throw new Error('Digite uma pergunta para consultar a Biblioteca.');
@@ -135,29 +128,21 @@ export async function askLibrary(question, cards) {
     };
   }
 
-  const user = await getAuthenticatedUser();
+  const client = resolveAiRuntime(runtime, {
+    getAuthenticatedUser,
+    invoke: (...args) => supabase.functions.invoke(...args),
+  });
+  const user = await client.getAuthenticatedUser();
   if (user?._isLocal) {
     return { ...(await mockAskLibrary(q, topCards)), usedCount: topCards.length };
   }
 
-  const { data, error } = await supabase.functions.invoke('library-qa', {
+  const { data, error } = await client.invoke('library-qa', {
     body: { question: q, context: topCards.map(toContext) },
   });
 
   if (error) {
-    const msg = await functionErrorMessage(error, '');
-    const isMockable =
-      !msg ||
-      msg.includes('Failed to send') ||
-      msg.includes('fetch') ||
-      msg.includes('not found') ||
-      msg.includes('GEMINI_API_KEY') ||
-      msg.includes('não configurada');
-    if (isMockable) {
-      const result = await mockAskLibrary(q, topCards);
-      return { ...result, usedCount: topCards.length, warning: 'Resposta simulada — a IA da Biblioteca ainda não está ativa neste servidor.' };
-    }
-    throw new Error(msg || 'Falha ao consultar a Biblioteca.');
+    throw new Error(await getAiFunctionErrorMessage(error, 'Falha ao consultar a Biblioteca.'));
   }
   if (!data || typeof data.answer !== 'string') {
     throw new Error('A consulta retornou um formato inesperado.');

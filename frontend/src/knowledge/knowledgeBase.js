@@ -1,5 +1,6 @@
 import { APPROVAL_STATUS, KNOWLEDGE_TYPES, TECHNIQUES, createApproval, createSource } from './schema';
 import { displayPointCode, normalizePointCode } from './aliases';
+import { getAuricularCuration } from './auricularCuration';
 import { getLocationsForPoint } from './mapLocations';
 import { officialAuricularPdfPoints, auricularPdfSource } from './generated/auricular-pdf-points';
 import { curatedAcupoints } from './generated/curated-body-points';
@@ -48,6 +49,7 @@ function auricularPoint(data) {
     sources: data.sources || [baseSource],
     locations: getLocationsForPoint(data.name),
     ...data,
+    curation: getAuricularCuration(data.slug),
   };
 }
 

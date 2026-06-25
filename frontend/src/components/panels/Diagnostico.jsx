@@ -88,7 +88,6 @@ export function Diagnostico({ state, selectedMap, analysis }) {
                   <div className="missing" style={{ margin: 0 }}>□ Investigar hábitos intestinais/fezes</div>
                   <div className="missing" style={{ margin: 0 }}>□ Investigar sede e ingestão hídrica</div>
                   <div className="missing" style={{ margin: 0 }}>□ Investigar sono e horário dos despertares</div>
-                  <div className="missing" style={{ margin: 0 }}>□ Investigar ciclo menstrual/hormonal, quando aplicável</div>
                   <div className="missing" style={{ margin: 0 }}>□ Investigar relação com frio, calor, umidade, vento ou secura</div>
                 </div>
               )

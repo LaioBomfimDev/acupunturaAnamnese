@@ -7,7 +7,7 @@
 // determinística, ANONIMIZA o texto livre e decide a implementação:
 //  * usuário local → MOCK;
 //  * usuário real → Edge Function `clinical-reasoning` (Gemini flash);
-//  * função indisponível/sem chave → mock com aviso.
+//  * falha da função → erro explícito para a profissional.
 //
 // SOB DEMANDA (botão), nunca ao vivo. A IA explica/enriquece o motor
 // determinístico; nunca diagnóstico/conduta final.
@@ -17,6 +17,7 @@ import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { anonymizeClinicalText } from '../utils/anonymize';
 import { getSelectedItems, getPulseQualityItems } from '../utils/analyzer';
 import { rankLibraryCards } from './libraryAiService';
+import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 import { knowledgeCards } from '../knowledge/searchIndex';
 import { docCorpusCards } from '../knowledge/generated/doc-corpus';
 
@@ -42,7 +43,7 @@ function collectSignals(selectedMap) {
       .filter(k => k.startsWith('linguaOrgao:') && selectedMap[k])
       .map(k => k.split(':').slice(1).join(' ')),
   ];
-  const symptoms = ['sintomas', 'digestao', 'sono', 'dor', 'gineco', 'fezes']
+  const symptoms = ['sintomas', 'digestao', 'sono', 'dor', 'gineco', 'urogenital', 'fezes']
     .flatMap(g => getSelectedItems(selectedMap, g));
   const anamnese = ['queixaEstruturada', 'historico', 'substanciasUso', 'clima', 'oito', 'substancias']
     .flatMap(g => getSelectedItems(selectedMap, g));
@@ -147,7 +148,7 @@ export function caseHasEvidence(state, selectedMap, synthesis) {
   return Object.values(c.signals).some(arr => arr.length > 0);
 }
 
-// ----- MOCK (login local e testes) -----
+// ----- MOCK (somente login local e testes) -----
 export function mockDeepenClinicalReasoning(clinicalCase) {
   const primary = clinicalCase?.hypothesis?.primary;
   const diff = clinicalCase?.hypothesis?.differential;
@@ -173,16 +174,6 @@ export function mockDeepenClinicalReasoning(clinicalCase) {
   });
 }
 
-async function functionErrorMessage(error, fallback) {
-  if (typeof error?.context?.json === 'function') {
-    try {
-      const body = await error.context.json();
-      if (body?.error) return body.error;
-    } catch { /* corpo não-JSON */ }
-  }
-  return error?.message || fallback;
-}
-
 /**
  * Aprofunda o raciocínio sobre o caso atual com IA (sob demanda).
  *
@@ -190,9 +181,10 @@ async function functionErrorMessage(error, fallback) {
  * @param {object} selectedMap
  * @param {object} synthesis - saída de assistantSynthesis
  * @param {{ patientName?: string }} [context]
+ * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  * @returns {Promise<{ modelVersion, analyzedAt, interpretation, differentialReasoning, redFlags, contradictions, questions }>}
  */
-export async function deepenClinicalReasoning(state, selectedMap, synthesis, context = {}) {
+export async function deepenClinicalReasoning(state, selectedMap, synthesis, context = {}, runtime) {
   const clinicalCase = buildClinicalCase(state, selectedMap, synthesis, context);
 
   const hasContent = clinicalCase.anamneseText.trim()
@@ -201,32 +193,21 @@ export async function deepenClinicalReasoning(state, selectedMap, synthesis, con
     throw new Error('Preencha sinais ou texto da anamnese antes de aprofundar.');
   }
 
-  const user = await getAuthenticatedUser();
+  const client = resolveAiRuntime(runtime, {
+    getAuthenticatedUser,
+    invoke: (...args) => supabase.functions.invoke(...args),
+  });
+  const user = await client.getAuthenticatedUser();
   if (user?._isLocal) {
     return mockDeepenClinicalReasoning(clinicalCase);
   }
 
-  const { data, error } = await supabase.functions.invoke('clinical-reasoning', {
+  const { data, error } = await client.invoke('clinical-reasoning', {
     body: { case: clinicalCase },
   });
 
   if (error) {
-    const msg = await functionErrorMessage(error, '');
-    const isMockable =
-      !msg ||
-      msg.includes('Failed to send') ||
-      msg.includes('fetch') ||
-      msg.includes('not found') ||
-      msg.includes('GEMINI_API_KEY') ||
-      msg.includes('não configurada');
-    if (isMockable) {
-      const result = await mockDeepenClinicalReasoning(clinicalCase);
-      return {
-        ...result,
-        warning: 'Raciocínio simulado — a IA de raciocínio ainda não está ativa neste servidor.',
-      };
-    }
-    throw new Error(msg || 'Falha ao aprofundar o raciocínio.');
+    throw new Error(await getAiFunctionErrorMessage(error, 'Falha ao aprofundar o raciocínio.'));
   }
   if (!data || typeof data.interpretation !== 'string') {
     throw new Error('O raciocínio retornou um formato inesperado.');

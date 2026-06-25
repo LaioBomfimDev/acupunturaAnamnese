@@ -73,6 +73,8 @@ export function PainelInicial({
     getSelectedCount(selectedMap, 'queixaEstruturada') +
     getSelectedCount(selectedMap, 'sono') +
     getSelectedCount(selectedMap, 'digestao') +
+    getSelectedCount(selectedMap, 'gineco') +
+    getSelectedCount(selectedMap, 'urogenital') +
     getSelectedCount(selectedMap, 'dor') +
     getSelectedCount(selectedMap, 'lingua') +
     getSelectedCount(selectedMap, 'linguaOrgao') +

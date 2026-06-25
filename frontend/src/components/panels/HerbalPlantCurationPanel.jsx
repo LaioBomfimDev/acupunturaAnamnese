@@ -4,14 +4,13 @@ import {
   HERBAL_RELEASE_STATUS,
   downloadHerbalCurationDecisions,
   filterHerbalCurationRows,
-  getLocalHerbalCurationDecisions,
-  materializeHerbalCurationRows,
   removeLocalHerbalCurationDecision,
   summarizeHerbalCurationRows,
   validateHerbalCurationDecision,
 } from '../../knowledge/herbalPlantCuration';
 import {
   loadHerbalPlantCurationPayload,
+  refreshHerbalPlantCurationRows,
   saveHerbalPlantCurationDecision,
 } from '../../services/herbalPlantCurationService';
 import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
@@ -212,12 +211,12 @@ export function HerbalPlantCurationPanel() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState('all');
   const [safetyFilter, setSafetyFilter] = useState('all');
   const [selectedId, setSelectedId] = useState('');
   const [activePage, setActivePage] = useState(0);
   const [form, setForm] = useState(() => reviewFormFromRow(null));
-  const [payload, setPayload] = useState({ catalog: null, decisions: [], rows: [] });
+  const [payload, setPayload] = useState({ catalog: null, seedDecisions: [], decisions: [], rows: [] });
 
   useEffect(() => {
     let cancelled = false;
@@ -259,10 +258,9 @@ export function HerbalPlantCurationPanel() {
   }
 
   function updateRows() {
-    const decisions = getLocalHerbalCurationDecisions();
-    const rows = materializeHerbalCurationRows(payload.catalog?.items || [], decisions);
-    setPayload(prev => ({ ...prev, decisions, rows }));
-    return rows;
+    const next = refreshHerbalPlantCurationRows(payload.catalog, payload.seedDecisions);
+    setPayload(prev => ({ ...prev, ...next }));
+    return next.rows;
   }
 
   function saveDecision(event) {
@@ -293,16 +291,16 @@ export function HerbalPlantCurationPanel() {
   }
 
   function resetDecision() {
-    if (!selectedRow?.curationDecision) return;
+    if (!selectedRow?.localDecision) return;
     removeLocalHerbalCurationDecision(selectedRow.id);
     const rows = updateRows();
     const fresh = rows.find(row => row.id === selectedRow.id) || selectedRow;
     setForm(reviewFormFromRow(fresh));
-    setMessage('Decisão local removida; a planta voltou para somente fonte.');
+    setMessage('Decisão local removida; a triagem técnica da fonte foi restaurada.');
   }
 
   function exportDecisions() {
-    const envelope = downloadHerbalCurationDecisions();
+    const envelope = downloadHerbalCurationDecisions({ seedDecisions: payload.seedDecisions });
     setMessage(`${envelope.decisions.length} decisão(ões) exportada(s).`);
   }
 
@@ -325,12 +323,12 @@ export function HerbalPlantCurationPanel() {
         <button className="quiet-button" type="button" onClick={exportDecisions}>Exportar decisões</button>
       </div>
 
-      <div className="admin-stat-grid">
+        <div className="admin-stat-grid">
         <div className="security-card admin-stat-card total"><span>Plantas</span><b>{summary.total}</b><p>fichas da fonte</p></div>
-        <div className="security-card admin-stat-card pending"><span>Sem decisão</span><b>{summary.pending}</b><p>na fila inicial</p></div>
-        <div className="security-card admin-stat-card active"><span>Aprovadas</span><b>{summary.approved}</b><p>{summary.patientEligible} apta(s) para educação</p></div>
-        <div className="security-card admin-stat-card suspended"><span>Bloqueadas</span><b>{summary.blocked}</b><p>por risco</p></div>
-        <div className="security-card admin-stat-card patients"><span>Toxicologia</span><b>{summary.withToxicology}</b><p>fichas com trecho</p></div>
+        <div className="security-card admin-stat-card pending"><span>Triagem técnica</span><b>{summary.seeded}</b><p>regras conservadoras da fonte</p></div>
+        <div className="security-card admin-stat-card suspended"><span>Restritas</span><b>{summary.restricted}</b><p>com toxicologia registrada</p></div>
+        <div className="security-card admin-stat-card patients"><span>Revisões locais</span><b>{summary.localReviewed}</b><p>substituem a triagem</p></div>
+        <div className="security-card admin-stat-card active"><span>Aprovadas</span><b>{summary.approved}</b><p>{summary.patientEligible} publicada(s) ao paciente</p></div>
       </div>
 
       {message && <div className={/obrigat|bloquead|confirme|inclua|informe/i.test(message) ? 'inline-error' : 'inline-success'}>{message}</div>}
@@ -389,7 +387,8 @@ export function HerbalPlantCurationPanel() {
                 </div>
                 <div className="admin-user-meta">
                   <span className={`admin-status ${statusTone(row.contentReleaseStatus)}`}>{statusLabel(row.contentReleaseStatus)}</span>
-                  {row.curationDecision && <small>revisão local</small>}
+                  {row.seedDecision && <small>triagem técnica</small>}
+                  {row.localDecision && <small>revisão local</small>}
                 </div>
               </button>
             ))}
@@ -472,7 +471,7 @@ export function HerbalPlantCurationPanel() {
 
                   <div className="herbal-curation-actions">
                     <button className="primary-button" type="submit">Salvar decisão</button>
-                    {selectedRow.curationDecision && <button className="quiet-button" type="button" onClick={resetDecision}>Remover decisão</button>}
+                    {selectedRow.localDecision && <button className="quiet-button" type="button" onClick={resetDecision}>Remover decisão</button>}
                   </div>
                 </form>
               </div>

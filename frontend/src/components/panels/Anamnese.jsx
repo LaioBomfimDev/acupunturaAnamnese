@@ -5,6 +5,7 @@ import { FieldInput } from '../ui/FieldInput';
 import { checklists } from '../../data/checklists';
 import { usePatient } from '../../hooks/PatientContext';
 import { getPatientAge } from '../../hooks/useClinicState';
+import { getClinicalSexContext } from '../../utils/analyzer';
 import {
   suggestAnamneseMarks,
   confidenceBand,
@@ -21,12 +22,36 @@ const GROUP_LABELS = {
   sono: 'Sono',
   digestao: 'Digestão',
   gineco: 'Ginecológico',
+  urogenital: 'Urogenital',
   dor: 'Dor',
   clima: 'Clima',
   emocoes: 'Emoções',
   fezes: 'Fezes / eliminação',
   seguranca: '⚠ Segurança',
 };
+
+const SEXO_CLINICO_OPTIONS = [
+  { value: '', label: 'Não informado' },
+  { value: 'Feminino', label: 'Feminino' },
+  { value: 'Masculino', label: 'Masculino' },
+  { value: 'Outro / não especificado', label: 'Outro / não especificado' },
+];
+
+function SexoClinicoField({ value, onChange }) {
+  const hasLegacyValue = value && !SEXO_CLINICO_OPTIONS.some(option => option.value === value);
+
+  return (
+    <label>
+      Sexo clínico (opcional)
+      <select value={value || ''} onChange={event => onChange('sexo', event.target.value)}>
+        {hasLegacyValue && <option value={value}>{value}</option>}
+        {SEXO_CLINICO_OPTIONS.map(option => (
+          <option key={option.value || 'nao-informado'} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 // Assistente de IA: lê o texto livre da anamnese e sugere marcações de
 // checklist para a profissional aceitar. Sob demanda (botão), nunca ao vivo.
@@ -153,7 +178,7 @@ function AnamneseAiAssistant({ state, selectedMap, onSetSelection, patientName }
 
 export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelection, onFillTestAnswers }) {
   const { selectedPatient, updatePatient } = usePatient();
-  const [showGineco, setShowGineco] = useState(false);
+  const [showReproductiveHealth, setShowReproductiveHealth] = useState(false);
   const [editingPatient, setEditingPatient] = useState(false);
   const [savingPatient, setSavingPatient] = useState(false);
   const [patientForm, setPatientForm] = useState({
@@ -161,6 +186,26 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelectio
     phone: selectedPatient?.phone || '',
     age: getPatientAge(selectedPatient),
   });
+  const sexContext = getClinicalSexContext(state.sexo);
+  const reproductiveModule = sexContext === 'feminino'
+    ? {
+        title: '7. Saúde menstrual, ginecológica e hormonal',
+        showLabel: 'Exibir módulo ginecológico',
+        hideLabel: 'Ocultar módulo',
+        helper: 'Registre ciclo, sintomas ginecológicos ou contexto hormonal apenas quando pertinentes ao atendimento.',
+        group: 'gineco',
+        items: checklists.gineco,
+      }
+    : sexContext === 'masculino'
+      ? {
+          title: '7. Saúde urogenital, sexual e hormonal',
+          showLabel: 'Exibir módulo urogenital',
+          hideLabel: 'Ocultar módulo',
+          helper: 'Registre sintomas urinários, sexuais ou contexto hormonal apenas quando pertinentes ao atendimento.',
+          group: 'urogenital',
+          items: checklists.urogenital,
+        }
+      : null;
 
   function openPatientEdit() {
     setPatientForm({
@@ -261,7 +306,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelectio
       )}
 
       <div className="form-grid">
-        <FieldInput label="Sexo" field="sexo" value={state.sexo} onChange={onUpdate} />
+        <SexoClinicoField value={state.sexo} onChange={onUpdate} />
         <FieldInput label="Profissão" field="profissao" value={state.profissao} onChange={onUpdate} />
         <FieldInput label="Data do atendimento" field="data" value={state.data} onChange={onUpdate} />
       </div>
@@ -325,16 +370,21 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onSetSelectio
       <CheckGrid group="substanciasUso" items={checklists.substanciasUso} selectedMap={selectedMap} onToggle={onToggle} />
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        7. Ginecológico / hormonal
-        <button className="tag" onClick={() => setShowGineco(!showGineco)} style={{ fontSize: 13, margin: 0 }}>
-          {showGineco ? 'Ocultar módulo' : 'Exibir módulo ginecológico'}
-        </button>
+        {reproductiveModule?.title || '7. Saúde reprodutiva e hormonal'}
+        {reproductiveModule && (
+          <button type="button" className="tag" onClick={() => setShowReproductiveHealth(!showReproductiveHealth)} style={{ fontSize: 13, margin: 0 }}>
+            {showReproductiveHealth ? reproductiveModule.hideLabel : reproductiveModule.showLabel}
+          </button>
+        )}
       </h3>
-      {!showGineco && (
-        <p className="small">Módulo condicional: marque abaixo apenas quando for clinicamente necessário. Módulo ginecológico oculto para reduzir tempo de preenchimento.</p>
+      {!reproductiveModule && (
+        <p className="small">Informe o sexo clínico apenas se isso for pertinente ao caso. Sem essa informação, o sistema não presume ciclo menstrual, anatomia ou queixas urogenitais.</p>
       )}
-      {showGineco && (
-        <CheckGrid group="gineco" items={checklists.gineco} selectedMap={selectedMap} onToggle={onToggle} />
+      {reproductiveModule && !showReproductiveHealth && (
+        <p className="small">Módulo condicional: {reproductiveModule.helper}</p>
+      )}
+      {reproductiveModule && showReproductiveHealth && (
+        <CheckGrid group={reproductiveModule.group} items={reproductiveModule.items} selectedMap={selectedMap} onToggle={onToggle} />
       )}
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>8. Segurança clínica</h3>

@@ -10,6 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 let server;
 let reportUtils;
+let reportAiReview;
 let clinicService;
 let reportPanel;
 
@@ -21,6 +22,7 @@ before(async () => {
     appType: 'custom',
   });
   reportUtils = await server.ssrLoadModule('/src/utils/reportUtils.js');
+  reportAiReview = await server.ssrLoadModule('/src/utils/reportAiReview.js');
   clinicService = await server.ssrLoadModule('/src/services/clinicService.js');
   reportPanel = await server.ssrLoadModule('/src/components/panels/Relatorio.jsx');
 });
@@ -136,4 +138,12 @@ test('relatório avisa quando RLS impede carregar dados institucionais da clíni
 
   assert.match(html, /dados institucionais da clínica não puderam ser carregados/i);
   assert.doesNotMatch(html, /permission denied/i);
+});
+
+test('rascunho de IA exige confirmação de revisão antes de imprimir', () => {
+  const { isAiDraftPendingReview } = reportAiReview;
+
+  assert.equal(isAiDraftPendingReview({ aiDraft: true }), true);
+  assert.equal(isAiDraftPendingReview({ aiDraft: true, aiReviewedAt: '2026-06-23T10:00:00.000Z' }), false);
+  assert.equal(isAiDraftPendingReview({ aiDraft: false }), false);
 });

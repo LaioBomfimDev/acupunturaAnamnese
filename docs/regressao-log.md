@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-06-23 - Lacuna menstrual exibida para todos os sexos
+
+- Sintoma: o diagnóstico listava “ciclo menstrual/hormonal” como lacuna sempre que o checklist ginecológico estivesse vazio, inclusive em atendimentos masculinos e sem sexo clínico informado.
+- Causa: a regra de lacunas consultava apenas o grupo `gineco`; ignorava o campo `state.sexo` e não existia checklist urogenital equivalente.
+- Regra nova: sexo clínico informado só direciona investigação complementar — nunca entra como evidência ou peso de padrão. Contexto feminino sem achados ginecológicos pede investigação menstrual/ginecológica; contexto masculino sem achados urogenitais pede investigação urogenital/sexual; sem contexto informado, não presumir nenhum dos dois.
+- Teste ou verificação obrigatória: teste de regressão deve assegurar que as lacunas são específicas ao contexto informado, que “sem queixas” encerra a lacuna correspondente e que o novo grupo `urogenital` entra no texto, no peso diagnóstico e no caso enviado à IA.
+- Regra destilada em: `AGENTS.md` §8.
+
 ### 2026-06-15 - Fontes PDF locais sem rota protegida em produção
 
 - Sintoma: a área SuperAdm > Fontes PDF exibiu `HTTP 404` e as páginas/imagens renderizadas dos PDFs não apareciam após deploy, porque os arquivos estavam em `frontend/.local-source-assets` e não eram publicados.

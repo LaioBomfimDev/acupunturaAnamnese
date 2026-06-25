@@ -6,8 +6,7 @@ import {
   mergeKnowledgeReviews,
 } from '../../services/knowledgeAdminService';
 import { getMapAsset, getLocationsForPoint } from '../../knowledge/mapLocations';
-import { commonlyUsedMapFilterCodes } from '../../knowledge/commonlyUsedPoints';
-import { normalizePointCode } from '../../knowledge/aliases';
+import { isDefaultCommonMapLocationCode } from '../../knowledge/auricularCuration';
 import { buildPointDetail } from '../../knowledge/pointDetails';
 import { buildSessionSuggestion } from '../../knowledge/pointRecommendationEngine';
 import {
@@ -32,7 +31,7 @@ function MapOverlay({ points, mapId, onPointClick, commonOnly }) {
   const locations = points
     .flatMap(point => getLocationsForPoint(pointKey(point))
       .filter(location => location.mapId === mapId)
-      .filter(location => !commonOnly || commonlyUsedMapFilterCodes.has(normalizePointCode(location.code)))
+      .filter(location => !commonOnly || isDefaultCommonMapLocationCode(location.code))
       .map((location, index) => ({
         ...location,
         markerKey: `${mapId}-${location.code}-${location.xPct}-${location.yPct}-${index}`,

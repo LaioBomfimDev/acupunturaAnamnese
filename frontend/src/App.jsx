@@ -452,7 +452,7 @@ export default function App() {
                   <span>Sintomas</span>
                 </div>
                 <div className="quick-chip">
-                  <b>{getSelected('queixaEstruturada').length + getSelected('sono').length + getSelected('digestao').length}</b>
+                  <b>{getSelected('queixaEstruturada').length + getSelected('sono').length + getSelected('digestao').length + getSelected('gineco').length + getSelected('urogenital').length}</b>
                   <span>Anamnese</span>
                 </div>
                 <div className="quick-chip">

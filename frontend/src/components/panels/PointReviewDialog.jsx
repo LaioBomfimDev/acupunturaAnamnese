@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
+import { clinicalSources, clinicalWhy, sanitizeClinicalNote } from '../../knowledge/pointDisplaySanitize';
 
 function formatPageList(pages = []) {
   return pages.length ? pages.join(', ') : 'sem página';
@@ -211,7 +212,12 @@ export function PointReviewDialog({
   const sourceImagesBlocked = hasAtlasImages
     && sourceImageLoad.key === sourceImageKey
     && sourceImageLoad.status === 'error';
-  const hasClinicalNote = Boolean(resolvedDetail.clinicalNote?.trim());
+  // Exibicao limpa: remove mensagens de sistema/curadoria/admin (proveniencia,
+  // aprovacao local, avisos de auditoria, status, "Biblioteca Viva"). Essas
+  // informacoes sao do administrador, nao do acupunturista que abre a ficha.
+  const cleanNote = sanitizeClinicalNote(resolvedDetail.clinicalNote);
+  const cleanWhy = clinicalWhy(resolvedDetail.why);
+  const cleanSourceList = clinicalSources(resolvedDetail.sources);
   const hasMapPreview = Boolean(asset?.src && location);
 
   return (
@@ -394,18 +400,18 @@ export function PointReviewDialog({
                 <b>Rascunho do ponto</b>
                 <span>{resolvedDetail.displayCode}</span>
               </div>
-              <p>{resolvedDetail.why || 'Registro disponível para conferência no contexto selecionado.'}</p>
-              <p>{resolvedDetail.locationText || 'Localização aguardando revisão na Biblioteca Viva.'}</p>
+              {cleanWhy && <p>{cleanWhy}</p>}
+              <p>{resolvedDetail.locationText || 'Localização aguardando revisão.'}</p>
             </section>
 
-            <section className="point-review-section">
-              <div className="point-review-section-title">
-                <b>Revisão profissional</b>
-                <span>{resolvedDetail.reviewStatus || 'review'}</span>
-              </div>
-              <p>{hasClinicalNote ? resolvedDetail.clinicalNote : 'Sem nota profissional registrada para este ponto.'}</p>
-              {resolvedDetail.updatedAt && <small>Atualizado em {resolvedDetail.updatedAt}</small>}
-            </section>
+            {cleanNote && (
+              <section className="point-review-section">
+                <div className="point-review-section-title">
+                  <b>Revisão profissional</b>
+                </div>
+                <p>{cleanNote}</p>
+              </section>
+            )}
 
             <section className="point-review-section">
               <div className="point-review-grid">
@@ -444,7 +450,7 @@ export function PointReviewDialog({
 
             <section className="point-review-section point-review-footnote">
               <b>Fontes</b>
-              <p>{resolvedDetail.sources?.length ? resolvedDetail.sources.join(' + ') : 'Fonte aguardando curadoria.'}</p>
+              <p>{cleanSourceList.length ? cleanSourceList.join(' + ') : 'Fonte aguardando curadoria.'}</p>
               {atlasLoadState === 'loading' && <small>Carregando índice do Atlas...</small>}
               {atlasLoadState === 'error' && <small>Índice visual do Atlas indisponível no momento.</small>}
             </section>

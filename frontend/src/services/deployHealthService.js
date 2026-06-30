@@ -11,6 +11,30 @@ export const PUBLIC_ATLAS_BUCKET = 'knowledge-atlas-public';
 export const PUBLIC_ATLAS_PROBE_ASSET_KEY = 'atlas-ednea/source-index.json';
 export const KNOWLEDGE_SOURCE_ASSET_FUNCTION = 'knowledge-source-asset-url';
 export const EDGE_FUNCTION_PROBE_ASSET_KEY = 'deploy-health/probe-missing.json';
+export const AI_SMOKE_PURPOSE = 'deploy-health';
+
+export const AI_SMOKE_FUNCTIONS = [
+  {
+    id: 'aiSmokeSuggestMarks',
+    functionName: 'suggest-marks',
+    title: 'IA de anamnese: suggest-marks',
+  },
+  {
+    id: 'aiSmokeClinicalReasoning',
+    functionName: 'clinical-reasoning',
+    title: 'IA de raciocínio: clinical-reasoning',
+  },
+  {
+    id: 'aiSmokeDraftNarrative',
+    functionName: 'draft-narrative',
+    title: 'IA de narrativas: draft-narrative',
+  },
+  {
+    id: 'aiSmokeLibraryQa',
+    functionName: 'library-qa',
+    title: 'IA da Biblioteca: library-qa',
+  },
+];
 
 const SUPABASE_URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim();
 
@@ -251,6 +275,111 @@ function isExpectedProbeMiss(message) {
   return /Fonte visual não encontrada|fonte visual nao encontrada/i.test(String(message || ''));
 }
 
+function isMockModelVersion(value) {
+  return /^mock\b/i.test(String(value || '').trim());
+}
+
+function aiSmokeCorrection(message, functionName) {
+  const text = String(message || '');
+  if (/Sessão|Acesso restrito|SuperAdm|suspenso/i.test(text)) {
+    return 'Entre com uma sessão real de SuperAdm ativo; login local ou perfil comum não executa smoke de IA.';
+  }
+  if (/Vertex|conta de serviço|IA não configurada|autenticar/i.test(text)) {
+    return 'Configure os secrets GCP_SERVICE_ACCOUNT_JSON e GCP_LOCATION nas Edge Functions e confirme permissões do modelo na Vertex AI.';
+  }
+  if (/Function not found|não encontrada|not found/i.test(text)) {
+    return `Faça deploy da Edge Function ${functionName}.`;
+  }
+  return `Verifique o deploy da Edge Function ${functionName} e os secrets Supabase/Vertex no projeto.`;
+}
+
+function sanitizeAiSmokeTechnical(data, functionName) {
+  return {
+    functionName,
+    purpose: data?.purpose || null,
+    modelVersion: data?.modelVersion || null,
+    vertexLocation: data?.vertex?.location || null,
+    realVertexCall: data?.smoke?.realVertexCall === true,
+    checkedAt: data?.checkedAt || null,
+  };
+}
+
+export async function probeAiEdgeFunction(
+  definition,
+  {
+    invoke = (...args) => supabase.functions.invoke(...args),
+  } = {},
+) {
+  const base = {
+    id: definition.id,
+    title: definition.title,
+    group: 'IA real e Vertex',
+  };
+
+  try {
+    const { data, error } = await invoke(definition.functionName, {
+      body: {
+        purpose: AI_SMOKE_PURPOSE,
+        smoke: true,
+      },
+    });
+
+    if (error) {
+      const message = await functionErrorMessage(error, 'Smoke real da IA indisponível.');
+      return {
+        ...base,
+        status: HEALTH_STATUS.BLOCKED,
+        detail: message,
+        correction: aiSmokeCorrection(message, definition.functionName),
+      };
+    }
+
+    const technical = sanitizeAiSmokeTechnical(data, definition.functionName);
+    const validRealSmoke = data?.ok === true
+      && data?.purpose === AI_SMOKE_PURPOSE
+      && data?.functionName === definition.functionName
+      && data?.vertex?.configured === true
+      && data?.smoke?.realVertexCall === true
+      && typeof data?.modelVersion === 'string'
+      && !isMockModelVersion(data.modelVersion);
+
+    if (!validRealSmoke) {
+      const detail = isMockModelVersion(data?.modelVersion)
+        ? 'A função retornou modelVersion mock; conteúdo simulado é bloqueado em sessão real.'
+        : 'A função respondeu sem comprovar smoke real na Vertex AI.';
+      return {
+        ...base,
+        status: HEALTH_STATUS.BLOCKED,
+        detail,
+        correction: `Revise o deploy da Edge Function ${definition.functionName}; o healthcheck só aceita purpose deploy-health com chamada real à Vertex.`,
+        technical,
+      };
+    }
+
+    return {
+      ...base,
+      status: HEALTH_STATUS.OK,
+      detail: 'Edge Function respondeu ao smoke real e validou chamada à Vertex AI sem expor segredo.',
+      correction: '',
+      technical,
+    };
+  } catch (error) {
+    const message = error.message || 'Não foi possível executar o smoke real da IA.';
+    return {
+      ...base,
+      status: HEALTH_STATUS.BLOCKED,
+      detail: message,
+      correction: aiSmokeCorrection(message, definition.functionName),
+    };
+  }
+}
+
+export async function probeAiEdgeFunctions({
+  invoke = (...args) => supabase.functions.invoke(...args),
+} = {}) {
+  return Promise.all(AI_SMOKE_FUNCTIONS.map(definition => probeAiEdgeFunction(definition, { invoke })));
+}
+
 export async function probeKnowledgeSourceAssetFunction({
   invoke = (...args) => supabase.functions.invoke(...args),
 } = {}) {
@@ -411,10 +540,13 @@ export async function runDeployHealthCheck({
     return buildHealthResult([configCheck]);
   }
 
-  const [rpcResult, atlasProbe, functionProbe] = await Promise.all([
+  const [rpcResult, atlasProbe, functionProbe, aiSmokeProbes] = await Promise.all([
     runDeployHealthRpc(supabaseClient),
     probePublicAtlasIndex({ fetchImpl }),
     probeKnowledgeSourceAssetFunction({
+      invoke: (...args) => supabaseClient.functions.invoke(...args),
+    }),
+    probeAiEdgeFunctions({
       invoke: (...args) => supabaseClient.functions.invoke(...args),
     }),
   ]);
@@ -433,6 +565,7 @@ export async function runDeployHealthCheck({
     ...dbHealth.items,
     atlasProbe,
     functionProbe,
+    ...aiSmokeProbes,
   ];
 
   return {

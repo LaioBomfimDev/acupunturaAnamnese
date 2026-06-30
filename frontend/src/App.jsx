@@ -401,6 +401,9 @@ export default function App() {
                       <span className="synth-meter-val">{synthesis.primaryPercent}%</span>
                     </div>
                   )}
+                  <p className="synth-percent-note">
+                    Essa porcentagem indica a confiança do sistema nos dados preenchidos até aqui; use como apoio para conferência profissional.
+                  </p>
                   {synthesis.differential && (
                     <div className="synth-diff">
                       <span className="synth-diff-name">2º · {synthesis.differential.name}</span>

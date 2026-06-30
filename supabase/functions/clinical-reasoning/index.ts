@@ -17,6 +17,7 @@
 // ============================================================
 
 import {
+  assertSuperAdmin,
   corsHeaders,
   createServiceClient,
   getCallerProfile,
@@ -25,6 +26,7 @@ import {
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
+import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 
@@ -93,10 +95,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!isVertexConfigured()) {
-      return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
-    }
-
     const supabaseAdmin = createServiceClient();
     const caller = await getCallerProfile(req, supabaseAdmin);
     if ('error' in caller) {
@@ -107,6 +105,17 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    if (isDeployHealthSmoke(body)) {
+      if (!assertSuperAdmin(caller.profile)) {
+        return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
+      }
+      return await runAiSmokeCheck({ functionName: 'clinical-reasoning', modelId: MODEL_ID });
+    }
+
+    if (!isVertexConfigured()) {
+      return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
+    }
+
     const clinicalCase = body.case;
     if (!clinicalCase || typeof clinicalCase !== 'object') {
       return jsonResponse({ error: 'Caso clínico ausente.' }, 400);

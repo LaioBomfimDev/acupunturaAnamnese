@@ -10,61 +10,97 @@ const TERMS_SECTIONS = [
     ],
   },
   {
-    title: '2. Dados tratados na plataforma',
+    title: '2. Controlador dos dados e Encarregado (DPO)',
+    items: [
+      'O controlador dos dados tratados nesta plataforma é a clínica/profissional responsável pelo atendimento: [preencher: razão social/nome, CNPJ ou registro profissional, endereço]. O Sistema Acup é ferramenta de apoio ao tratamento conduzido por esse controlador.',
+      'Encarregado pelo Tratamento de Dados (DPO), responsável por receber solicitações de titulares e comunicação da ANPD: [preencher: nome do encarregado] — contato: [preencher: e-mail/telefone do encarregado].',
+      'Dúvidas, solicitações de titulares e comunicações sobre proteção de dados devem ser dirigidas ao Encarregado, pelos contatos acima.',
+    ],
+  },
+  {
+    title: '3. Dados tratados na plataforma',
     items: [
       'Dados do profissional: nome, e-mail, login, telefone, documento, registro profissional, especialidade, clínica, perfil de acesso, status do usuário, troca de senha temporária e registros administrativos de auditoria quando houver ação do SuperAdm.',
-      'Dados do paciente: nome, telefone, idade ou data de nascimento, sexo, profissão, data do atendimento, queixa principal, história clínica, sono, emoções, digestão, eliminações, hidratação, dor, escala de dor, histórico, medicamentos, exames, observações, sinais de segurança, achados de língua, achados de pulso, evolução, protocolo e relatório clínico.',
-      'Essas informações podem incluir dados pessoais sensíveis, especialmente dados referentes à saúde. Por isso devem ser coletadas apenas quando forem necessárias ao atendimento, em linguagem respeitosa, objetiva e pertinente à finalidade clínica.',
+      'Dados do paciente: nome, telefone, idade ou data de nascimento, sexo, profissão, data do atendimento, queixa principal, história clínica, sono, emoções, digestão, eliminações, hidratação, dor, escala de dor, histórico, medicamentos, exames, observações, sinais de segurança, achados de língua (incluindo fotografias), achados de pulso, evolução, protocolo e relatório clínico.',
     ],
   },
   {
-    title: '3. Base de uso e responsabilidades pela LGPD',
+    title: '4. Dados pessoais sensíveis e base legal',
     items: [
-      'Ao usar o sistema, o profissional declara que possui autorização, hipótese legal ou justificativa profissional adequada para registrar dados do paciente no contexto do atendimento, incluindo dados sensíveis de saúde quando necessários.',
-      'O tratamento deve observar os princípios da LGPD, como finalidade, adequação, necessidade, livre acesso, qualidade dos dados, transparência, segurança, prevenção, não discriminação e responsabilização.',
-      'O consentimento dado nesta tela é a ciência do usuário profissional sobre as regras de uso da plataforma. Ele não substitui o consentimento, contrato terapêutico, aviso de privacidade ou outro documento que a clínica/profissional deva apresentar ao paciente.',
+      'A plataforma trata dados pessoais sensíveis, especialmente dados referentes à saúde (art. 5º, II, da LGPD). Esses dados só devem ser coletados quando necessários ao atendimento, em linguagem respeitosa, objetiva e pertinente à finalidade clínica.',
+      'O tratamento de dados de saúde apoia-se, conforme o caso, na tutela da saúde por profissional/serviço de saúde (art. 11, II, "f", da LGPD) e/ou no consentimento específico e destacado do titular (art. 11, I), além das obrigações legais e regulatórias do exercício profissional.',
+      'O profissional declara possuir base legal adequada para registrar dados do paciente, observando os princípios da LGPD: finalidade, adequação, necessidade, livre acesso, qualidade dos dados, transparência, segurança, prevenção, não discriminação e responsabilização.',
+      'O consentimento desta tela é a ciência do PROFISSIONAL sobre as regras de uso. Ele NÃO substitui o consentimento, contrato terapêutico ou aviso de privacidade que a clínica/profissional deve apresentar e colher do PACIENTE.',
     ],
   },
   {
-    title: '4. Segurança, acesso e armazenamento',
+    title: '5. Segurança, acesso e armazenamento',
     items: [
       'O acesso é pessoal, identificado e reservado a usuários autorizados. Credenciais não devem ser compartilhadas, anotadas em local inseguro ou usadas por terceiros.',
-      'No ambiente Supabase, os pacientes ficam vinculados ao profissional responsável por regras de segurança em nível de linha (RLS), e as fichas clínicas são salvas por RPC com dados sensíveis criptografados no banco. A chave administrativa e a chave de criptografia não ficam no frontend.',
+      'No ambiente Supabase, os pacientes ficam vinculados ao profissional responsável por regras de segurança em nível de linha (RLS), e as fichas clínicas são salvas por RPC com dados sensíveis criptografados no banco. A chave administrativa e a chave de criptografia não ficam no frontend. Ações administrativas relevantes ficam registradas em logs de auditoria.',
       'Quando o fallback local estiver habilitado para desenvolvimento ou contingência, pacientes e fichas podem ficar no localStorage do navegador. Nesse caso, o usuário deve proteger o dispositivo, evitar computadores compartilhados e sair da sessão ao terminar.',
-      'O SuperAdm gerencia acessos, perfis profissionais, status de usuários, senhas temporárias, Biblioteca Viva, mapas e auditoria administrativa. Métricas administrativas podem mostrar quantidades de pacientes e registros, sem transformar a área administrativa em acesso livre ao conteúdo clínico do paciente.',
     ],
   },
   {
-    title: '5. IA assistiva (Google Gemini), língua e Biblioteca Viva',
+    title: '6. Inteligência Artificial assistiva (Google Vertex AI)',
     items: [
-      'A IA Assistente, o módulo de língua e o assistente de marcações da anamnese produzem sugestões para conferência. Nada deve ser tratado como diagnóstico definitivo, prescrição obrigatória ou decisão automática.',
-      'Para gerar essas sugestões, o sistema envia a um provedor de IA externo (Google Gemini), por meio de servidor seguro, as fotos da língua e/ou trechos do texto clínico da anamnese. As fotos ficam em armazenamento privado vinculado ao profissional; o texto enviado passa por anonimização automática, com mascaramento de nome, CPF, telefone, e-mail, datas e CEP antes de sair do dispositivo.',
-      'O processamento ocorre em plano pago do provedor, em que os dados enviados não são utilizados para treinar modelos nem passam por revisão humana do provedor. Ainda assim, recomenda-se não digitar identificadores diretos do paciente nos campos de texto livre.',
-      'Somente achados aceitos pela profissional entram no checklist e no raciocínio clínico. A decisão final sobre avaliação, protocolo, técnica, intensidade, contraindicações e encaminhamento continua sendo da profissional responsável.',
+      'A IA Assistente, o módulo de língua, o assistente de marcações da anamnese, os rascunhos de relatório/evolução e a consulta à Biblioteca produzem SUGESTÕES para conferência. Nada é diagnóstico definitivo, prescrição obrigatória ou decisão automática — a revisão humana profissional é obrigatória.',
+      'O processamento de IA é feito pelo Google Cloud Vertex AI (modelo Gemini), acionado por servidor seguro, com os dados processados na região do Brasil (São Paulo).',
+      'No Vertex AI, sob o Adendo de Tratamento de Dados do Google (CDPA, que abrange a LGPD), os dados enviados NÃO são utilizados para treinar modelos do provedor nem passam por revisão humana do provedor.',
+      'Antes de sair do dispositivo, o texto clínico enviado à IA passa por anonimização automática (mascaramento de nome, CPF, telefone, e-mail, datas e CEP) e o nome do paciente não é enviado. As fotos da língua ficam em armazenamento privado vinculado ao profissional. Ainda assim, recomenda-se não digitar identificadores diretos nos campos de texto livre.',
+      'Somente achados aceitos pela profissional entram no checklist e no raciocínio clínico. A decisão final sobre avaliação, protocolo, técnica, intensidade, contraindicações e encaminhamento é sempre da profissional responsável.',
+    ],
+  },
+  {
+    title: '7. Provedores, nuvem e subprocessadores',
+    items: [
+      'Para operar, a plataforma utiliza provedores que tratam dados como operadores/subprocessadores: (a) Supabase — banco de dados, autenticação e armazenamento das fichas e imagens; (b) Google Cloud Vertex AI — processamento de IA (Gemini), na região do Brasil.',
+      'Esses provedores tratam os dados conforme instruções do controlador e seus próprios termos de proteção de dados. O compartilhamento limita-se ao necessário para a finalidade clínica e técnica da plataforma.',
       'A Biblioteca Viva separa conhecimento clínico e fontes bibliográficas dos dados pessoais de pacientes. Conteúdos importados, mapas, coordenadas e fontes externas passam por revisão profissional antes de uso clínico aprovado.',
     ],
   },
   {
-    title: '6. Compartilhamento, relatórios e dever de sigilo',
+    title: '8. Compartilhamento, relatórios e dever de sigilo',
     items: [
-      'Relatórios, protocolos e evoluções gerados no sistema devem ser usados apenas para a finalidade clínica adequada. O compartilhamento com paciente, outros profissionais ou serviços externos é responsabilidade do usuário e deve respeitar sigilo profissional e LGPD.',
-      'Não é permitido copiar dados clínicos para ferramentas externas, mensagens, planilhas ou sistemas de IA sem base legal, necessidade real, proteção adequada e ciência do paciente quando aplicável.',
+      'Relatórios, protocolos e evoluções devem ser usados apenas para a finalidade clínica adequada. O compartilhamento com paciente, outros profissionais ou serviços externos é responsabilidade do usuário e deve respeitar sigilo profissional e LGPD.',
+      'Não é permitido copiar dados clínicos para ferramentas externas, mensagens, planilhas ou sistemas de IA não previstos neste termo, sem base legal, necessidade real, proteção adequada e ciência do paciente quando aplicável.',
       'Dados não devem ser usados para discriminação, exposição, marketing indevido, treinamento externo de modelos, publicação de casos ou qualquer finalidade incompatível com o atendimento.',
     ],
   },
   {
-    title: '7. Direitos dos titulares e correções',
+    title: '9. Retenção e eliminação dos dados',
     items: [
-      'Pacientes e profissionais podem solicitar, conforme a LGPD, confirmação de tratamento, acesso, correção, atualização, informação sobre compartilhamento, eliminação quando cabível, revogação de consentimento quando essa for a base usada e outras providências previstas em lei.',
-      'Solicitações de titulares devem ser avaliadas pela clínica ou profissional responsável, considerando obrigações legais, deveres éticos, segurança clínica, prazos de guarda e limites técnicos do sistema.',
-      'O usuário deve manter dados corretos e atualizados, corrigir registros inexatos quando identificar erro e evitar registrar informação excessiva ou sem relação com o atendimento.',
+      'Os dados clínicos são mantidos pelo prazo necessário ao atendimento e pelo prazo legal de guarda de prontuário aplicável à categoria profissional (em regra, no mínimo 20 anos a contar do último registro; [confirmar com o conselho profissional aplicável]).',
+      'Encerrada a finalidade e esgotados os prazos legais, os dados devem ser eliminados ou anonimizados. O titular pode solicitar eliminação quando cabível, ressalvadas as hipóteses de guarda obrigatória.',
+      'O usuário deve evitar registrar informação excessiva ou sem relação com o atendimento e manter os dados corretos e atualizados.',
     ],
   },
   {
-    title: '8. Incidentes e uso responsável',
+    title: '10. Direitos dos titulares',
     items: [
-      'Suspeitas de acesso indevido, perda de dispositivo, exposição de senha, erro de paciente, vazamento, alteração indevida ou qualquer incidente com dados pessoais devem ser comunicados imediatamente ao responsável pela plataforma ou pela clínica.',
-      'Ao clicar em "Li e aceito", o usuário confirma que compreendeu as finalidades do Sistema Acup, o caráter sensível dos dados tratados, os limites da IA assistiva e seu dever de sigilo, segurança, necessidade e responsabilidade profissional.',
+      'Pacientes e profissionais podem solicitar, conforme a LGPD, confirmação de tratamento, acesso, correção, atualização, portabilidade quando aplicável, informação sobre compartilhamento, eliminação quando cabível e revogação de consentimento quando essa for a base utilizada.',
+      'As solicitações devem ser dirigidas ao Encarregado (Seção 2) e avaliadas pela clínica/profissional responsável, considerando obrigações legais, deveres éticos, segurança clínica, prazos de guarda e limites técnicos do sistema.',
+    ],
+  },
+  {
+    title: '11. Crianças e adolescentes',
+    items: [
+      'Quando o paciente for criança ou adolescente, o tratamento de dados observará o seu melhor interesse, com consentimento específico e em destaque de pelo menos um dos pais ou do responsável legal, salvo nas hipóteses legais que dispensem o consentimento (por exemplo, tutela da saúde).',
+      'A coleta deve ser a mínima necessária, e o responsável legal deve ser informado, em linguagem clara, sobre a finalidade do tratamento e sobre o uso assistivo de IA descrito na Seção 6.',
+    ],
+  },
+  {
+    title: '12. Incidentes de segurança',
+    items: [
+      'Suspeitas de acesso indevido, perda de dispositivo, exposição de senha, vazamento, alteração indevida ou qualquer incidente com dados pessoais devem ser comunicadas imediatamente ao Encarregado/responsável pela clínica.',
+      'Incidentes que possam acarretar risco ou dano relevante aos titulares devem ser avaliados para comunicação à ANPD e aos titulares afetados, nos prazos e condições da LGPD.',
+    ],
+  },
+  {
+    title: '13. Aceite',
+    items: [
+      'Ao clicar em "Li e aceito", o profissional confirma que compreendeu as finalidades do Sistema Acup, o caráter SENSÍVEL dos dados de saúde tratados, o processamento por IA (Google Vertex AI) descrito na Seção 6, os limites da IA assistiva e a obrigatoriedade de revisão humana, bem como o seu dever de sigilo, segurança, necessidade e responsabilidade profissional.',
+      'Este aceite é do PROFISSIONAL usuário e não substitui o consentimento próprio que o PACIENTE (ou seu responsável legal) deve fornecer à clínica.',
     ],
   },
 ];
@@ -248,7 +284,7 @@ export function Login() {
               }}
             />
             <span>
-              Li e aceito o termo de consentimento, uso profissional e responsabilidade sobre dados clínicos.{' '}
+              Li e aceito o termo de uso profissional, o tratamento de dados sensíveis de saúde e o uso assistido por IA (Google Vertex AI), com revisão humana obrigatória.{' '}
               <button
                 type="button"
                 onClick={() => setShowTerms(true)}
@@ -372,7 +408,7 @@ export function Login() {
                 fontSize: '24px',
                 lineHeight: 1.15
               }}>
-                Privacidade, LGPD e responsabilidade profissional
+                Privacidade, LGPD, dados sensíveis e uso de IA
               </h2>
             </div>
 

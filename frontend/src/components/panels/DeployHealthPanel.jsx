@@ -106,9 +106,9 @@ export function DeployHealthPanel() {
     <section className="deploy-health-panel">
       <div className="start-panel-head">
         <div>
-          <p className="small">Deploy e Supabase</p>
-          <h2>Saúde do ambiente</h2>
-          <span>Verificação objetiva de schema, Storage, Edge Function e migrations críticas.</span>
+          <p className="small">Deploy, Supabase e IA</p>
+          <h2>Saúde do deploy</h2>
+          <span>Verificação objetiva de schema, Storage, Edge Functions, Vertex e migrations críticas.</span>
         </div>
         <button className="quiet-button" type="button" onClick={load} disabled={loading}>
           {loading ? 'Verificando...' : 'Verificar agora'}
@@ -134,10 +134,17 @@ export function DeployHealthPanel() {
             <small>{loading ? 'Executando checks...' : formatCheckedAt(health?.checkedAt || new Date().toISOString())}</small>
           </div>
         </div>
+        <div className="deploy-health-overview-row">
+          <span className="admin-status pending">IA real</span>
+          <div>
+            <b>Smoke técnico sem mock</b>
+            <small>Chama as Edge Functions com payload de saúde, sem dados de paciente e sem expor secrets.</small>
+          </div>
+        </div>
       </section>
 
       {loading && !health ? (
-        <div className="empty-state">Verificando Supabase, Storage e funções...</div>
+        <div className="empty-state">Verificando Supabase, Storage, Edge Functions e Vertex...</div>
       ) : groups.map(([group, items]) => (
         <section className="admin-users deploy-health-section" key={group}>
           <div className="start-panel-head">

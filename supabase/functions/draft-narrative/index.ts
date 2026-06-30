@@ -16,6 +16,7 @@
 // ============================================================
 
 import {
+  assertSuperAdmin,
   corsHeaders,
   createServiceClient,
   getCallerProfile,
@@ -23,6 +24,7 @@ import {
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
+import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 
@@ -77,10 +79,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!isVertexConfigured()) {
-      return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
-    }
-
     const supabaseAdmin = createServiceClient();
     const caller = await getCallerProfile(req, supabaseAdmin);
     if ('error' in caller) {
@@ -91,6 +89,17 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    if (isDeployHealthSmoke(body)) {
+      if (!assertSuperAdmin(caller.profile)) {
+        return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
+      }
+      return await runAiSmokeCheck({ functionName: 'draft-narrative', modelId: MODEL_ID });
+    }
+
+    if (!isVertexConfigured()) {
+      return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
+    }
+
     const kind = body.kind;
     const payload = body.payload;
     if (kind !== 'report' && kind !== 'evolution') {

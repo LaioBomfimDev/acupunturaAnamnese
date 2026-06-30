@@ -44,7 +44,7 @@ export function isTrustedAtlasKnowledgeReview(review = {}) {
 
 function isBlankClinicalField(value) {
   const text = Array.isArray(value) ? value.filter(Boolean).join(' ') : (value == null ? '' : String(value));
-  return text.replace(/[\s.,;:''"`~!|()\-]/g, '').trim().length === 0;
+  return text.replace(/[\s.,;:''"`~!|()-]/g, '').trim().length === 0;
 }
 
 /**

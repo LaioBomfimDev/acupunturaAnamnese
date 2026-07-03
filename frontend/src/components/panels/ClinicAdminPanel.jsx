@@ -20,6 +20,7 @@ const EMPTY_CLINIC = {
   email: '',
   brand_color: DEFAULT_BRAND_COLOR,
   logo_url: '',
+  logo_watermark: true,
   notes: '',
 };
 
@@ -370,6 +371,15 @@ export function ClinicAdminPanel() {
                     )}
                   </div>
                   <small>PNG, JPG, WEBP ou SVG. Sai no topo de todos os relatórios. Fundo transparente recomendado.</small>
+                  <label className={`clinic-watermark-toggle${form.logo_url ? '' : ' disabled'}`}>
+                    <input
+                      type="checkbox"
+                      checked={form.logo_url ? form.logo_watermark !== false : false}
+                      disabled={!form.logo_url}
+                      onChange={event => setField('logo_watermark', event.target.checked)}
+                    />
+                    <span>Usar a logo como marca d'água (grande e transparente) no fundo dos relatórios</span>
+                  </label>
                 </div>
               </div>
             </div>

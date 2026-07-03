@@ -109,6 +109,7 @@ export async function saveClinic(clinic) {
     email: clinic.email || null,
     brand_color: clinic.brand_color || DEFAULT_BRAND_COLOR,
     logo_url: clinic.logo_url || null,
+    logo_watermark: clinic.logo_watermark !== false,
     notes: clinic.notes || null,
   };
 
@@ -116,11 +117,23 @@ export async function saveClinic(clinic) {
     throw new Error('Informe o nome da clínica.');
   }
 
+  const isUpdate = Boolean(clinic.id) && !String(clinic.id).startsWith('local-');
+
+  function runSave(data) {
+    return isUpdate
+      ? supabase.from('clinics').update(data).eq('id', clinic.id).select().single()
+      : supabase.from('clinics').insert(data).select().single();
+  }
+
   try {
-    const query = clinic.id && !String(clinic.id).startsWith('local-')
-      ? supabase.from('clinics').update(payload).eq('id', clinic.id).select().single()
-      : supabase.from('clinics').insert(payload).select().single();
-    const { data, error } = await query;
+    let { data, error } = await runSave(payload);
+    // Banco ainda sem a migração da marca d'água (coluna nova): tenta de novo
+    // sem esse campo, pra não perder o resto (logo, cor, contato) por causa dele.
+    if (error && /logo_watermark/i.test(error.message || '')) {
+      const payloadWithoutWatermark = { ...payload };
+      delete payloadWithoutWatermark.logo_watermark;
+      ({ data, error } = await runSave(payloadWithoutWatermark));
+    }
     if (error) throw error;
     return data;
   } catch (err) {
@@ -210,16 +223,26 @@ export async function getClinicForProfile(profile) {
 
   if (profile.clinic_id && !isLocalId(profile.id)) {
     try {
+      const BASE_COLUMNS = 'id,name,legal_name,cnpj,address,phone,email,brand_color,created_at,updated_at';
       let { data, error } = await supabase
         .from('clinics')
-        .select('id,name,legal_name,cnpj,address,phone,email,brand_color,logo_url,created_at,updated_at')
+        .select(`${BASE_COLUMNS},logo_url,logo_watermark`)
         .eq('id', profile.clinic_id)
         .maybeSingle();
-      // Banco ainda sem a migração do logo: refaz a busca sem a coluna logo_url
+      // Banco ainda sem a migração da marca d'água (coluna nova): refaz só sem ela,
+      // mantendo logo_url (migração mais antiga, já deve existir).
+      if (error && /logo_watermark/i.test(error.message || '')) {
+        ({ data, error } = await supabase
+          .from('clinics')
+          .select(`${BASE_COLUMNS},logo_url`)
+          .eq('id', profile.clinic_id)
+          .maybeSingle());
+      }
+      // Banco ainda sem a migração do logo: refaz sem nenhuma das duas colunas.
       if (error && /logo_url/i.test(error.message || '')) {
         ({ data, error } = await supabase
           .from('clinics')
-          .select('id,name,legal_name,cnpj,address,phone,email,brand_color,created_at,updated_at')
+          .select(BASE_COLUMNS)
           .eq('id', profile.clinic_id)
           .maybeSingle());
       }

@@ -2965,93 +2965,12 @@ textarea { min-height: 95px; resize: vertical; }
   line-height: 1.6;
 }
 
+/* Rodapé institucional do tfoot: só existe para a impressão em tela
+   cheia antiga; hoje quem imprime é .report-print-pages, então fica
+   escondido SEMPRE — sem esta regra os SVGs dos contatos aparecem
+   gigantes no fim do relatório em tela. */
 .report-print-footer {
   display: none;
-  margin-top: 34px;
-  overflow: hidden;
-  border: 1px solid rgba(14, 42, 74, .1);
-  border-radius: 14px 14px 0 0;
-  background: #fff;
-}
-
-.report-contact-list {
-  display: grid;
-  grid-template-columns: minmax(180px, .85fr) minmax(240px, 1.15fr);
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 15px 18px 13px;
-}
-
-.report-contact-item {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 11px;
-  min-width: 0;
-  text-align: right;
-}
-
-.report-contact-text {
-  min-width: 0;
-}
-
-.report-contact-text span {
-  display: block;
-  margin-bottom: 2px;
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
-  line-height: 1.1;
-  text-transform: uppercase;
-}
-
-.report-contact-text b {
-  display: block;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-.report-contact-icon {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  color: white;
-}
-
-.report-contact-icon svg {
-  width: 25px;
-  height: 25px;
-  fill: currentColor;
-}
-
-.report-contact-icon.phone {
-  border-radius: 50%;
-  background: #25d366;
-  box-shadow: 0 3px 8px rgba(15, 23, 42, .16);
-}
-
-.report-contact-icon.address {
-  border-radius: 8px;
-  background: var(--clinic-accent, var(--navy));
-}
-
-.report-contact-icon.address circle {
-  fill: #fff;
-}
-
-.report-contact-bar {
-  display: block;
-  width: 100%;
-  height: 11px;
-  background: var(--clinic-accent, var(--navy));
 }
 
 /* Edição manual do relatório */
@@ -3161,6 +3080,31 @@ textarea { min-height: 95px; resize: vertical; }
   color: #64748b;
   font-size: 12px;
   line-height: 1.45;
+}
+
+.clinic-watermark-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.clinic-watermark-toggle input {
+  margin-top: 2px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.clinic-watermark-toggle.disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.clinic-watermark-toggle.disabled input {
+  cursor: not-allowed;
 }
 
 .clinic-color-field input[type='color'] {
@@ -7073,6 +7017,352 @@ textarea { min-height: 95px; resize: vertical; }
   white-space: pre-wrap;
 }
 
+/* ======= RELATÓRIO: PAGINAÇÃO DE IMPRESSÃO ======= */
+/* .report-print-pages monta as folhas (.rpage) que efetivamente saem no
+   PDF/impressão, com o rodapé institucional sempre absoluto no fundo de
+   CADA folha — corrige o rodapé "flutuando" acima do esperado em folhas
+   que não enchem a página inteira, limitação da técnica anterior de
+   thead/tfoot repetido em tabela (o navegador só estica a última linha
+   até o fim da página quando o conteúdo enche a folha).
+   As regras abaixo ficam FORA de @media print de propósito: o JS mede
+   a altura de cabeçalho/rodapé/parágrafos para decidir onde cortar as
+   folhas, e essa medição roda com a página ainda em tela — então a
+   métrica (fontes, mm) precisa ser a mesma dentro e fora da impressão.
+   Fora da impressão o bloco fica fora da tela (position: fixed); só
+   dentro de @media print ele volta ao fluxo normal e vira visível. */
+.report-print-pages {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 210mm; /* folha A4 INTEIRA: as margens vivem dentro de cada .rpage */
+}
+
+.rpage {
+  /* Folha do tamanho do papel com margem embutida no padding e
+     @page margin 0 (página nomeada "report", no @media print): assim o
+     resultado não depende do ajuste de margens/papel do diálogo de
+     impressão — margem diferente de 12mm era o que fatiava a folha no
+     lugar errado e deixava o texto invadir o rodapé. Altura 296.5mm
+     (0.5mm de folga) evita página em branco por arredondamento de mm. */
+  position: relative;
+  width: 210mm;
+  height: 296.5mm;
+  box-sizing: border-box;
+  padding: 16mm 21mm 24mm; /* topo menor (sem a barra) p/ o conteúdo subir; base 24mm p/ o rodapé */
+  background: white;
+  overflow: hidden;
+  break-after: page;
+  page-break-after: always;
+}
+
+.rpage:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.rpage-measure-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 168mm; /* mesma largura útil de .rpage-body/.rpage-header (210mm - 2×21mm) */
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.rpage-watermark {
+  /* Largura travada nas mesmas margens do texto (21mm, igual o padding
+     lateral da folha); folga vertical generosa faz o object-fit contain
+     escalar quase toda logo pela LARGURA — bem grande, sem passar das
+     margens. */
+  position: absolute;
+  top: 16mm;
+  bottom: 24mm;
+  left: 21mm;
+  right: 21mm;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.rpage-watermark img {
+  /* width/height 100% (não max-*): obriga a AMPLIAR logos pequenas até
+     encher o quadro — max-width só encolhe, nunca estica, e deixava a
+     marca d'água minúscula quando o upload era baixa resolução. */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: .09;
+  filter: grayscale(1);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.rpage-header,
+.rpage-body,
+.rpage-footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Trava dura: a altura exata vem por style inline (calculada na paginação);
+   mesmo que a medição erre, o excesso é CORTADO aqui e nunca invade o
+   rodapé. O corte em si acontece 4% antes do limite (SLICE_SAFETY no JS),
+   então em uso normal nada chega perto de ser clipado. */
+.rpage-body {
+  overflow: hidden;
+}
+
+.rpage-header {
+  margin: 0 0 9mm;
+}
+
+.rpage-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8mm;
+}
+
+.rpage-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  min-width: 0;
+}
+
+.rpage-logo {
+  height: 18mm;
+  max-width: 60mm;
+  width: auto;
+  object-fit: contain;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.rpage-logo-monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16mm;
+  height: 16mm;
+  border-radius: 3.5mm;
+  background: var(--clinic-accent, #0E2A4A);
+  color: #fff;
+  font-family: Georgia, serif;
+  font-size: 18pt;
+  font-weight: 700;
+  line-height: 1;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.rpage-header-main h1 {
+  font-family: Georgia, serif;
+  font-size: 18pt;
+  margin: 0 0 3pt;
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.rpage-header-main small {
+  display: block;
+  font-size: 8.5pt;
+  color: #53657a;
+}
+
+.rpage-header-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.rpage-header-meta b {
+  display: block;
+  font-size: 10pt;
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.rpage-header-meta span {
+  display: block;
+  font-size: 8.5pt;
+  color: #53657a;
+}
+
+.rpage-rule {
+  display: block;
+  height: 3mm;
+  margin-top: 5mm;
+  border-radius: 1.5mm;
+  background: linear-gradient(
+    90deg,
+    var(--clinic-accent-shade, #061a31) 0%,
+    var(--clinic-accent-shade, #061a31) 16%,
+    var(--clinic-accent, #0E2A4A) 16%,
+    var(--clinic-accent, #0E2A4A) 58%,
+    var(--clinic-accent-soft, #9DB8D0) 58%,
+    var(--clinic-accent-soft, #9DB8D0) 100%
+  );
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.rpage-body h2 {
+  font-size: 15pt;
+  margin: 0 0 10px;
+  text-align: left;
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.rpage-body b {
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.rpage-body p {
+  margin: 8px 0;
+  font-size: 10.5pt;
+  line-height: 1.5;
+}
+
+.rpage-body > *:first-child { margin-top: 0; }
+.rpage-body > *:last-child { margin-bottom: 0; }
+
+.rpage-footer {
+  position: absolute;
+  left: 21mm;
+  right: 21mm;
+  bottom: 24mm;
+}
+
+.rpage-footer-inner {
+  display: block;
+}
+
+/* Faixa segmentada acima dos contatos */
+.rpage-contact-segments {
+  display: block;
+  height: 2.6mm;
+  margin-bottom: 3mm;
+  border-radius: 1.5mm;
+  background: linear-gradient(
+    90deg,
+    var(--clinic-accent-soft, #9DB8D0) 0%,
+    var(--clinic-accent-soft, #9DB8D0) 34%,
+    var(--clinic-accent, #0E2A4A) 34%,
+    var(--clinic-accent, #0E2A4A) 80%,
+    var(--clinic-accent-shade, #061a31) 80%,
+    var(--clinic-accent-shade, #061a31) 100%
+  );
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.rpage-contact-list {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6mm;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.rpage-contact-item {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2.6mm;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.rpage-contact-text span {
+  display: block;
+  font-size: 6.5pt;
+  letter-spacing: .08em;
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.rpage-contact-text b {
+  display: block;
+  font-size: 8.5pt;
+  line-height: 1.25;
+  color: #1f2937;
+}
+
+.rpage-contact-icon {
+  width: 8mm;
+  height: 8mm;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: var(--clinic-accent, #0E2A4A);
+  color: #fff;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.rpage-contact-icon svg {
+  width: 4.6mm;
+  height: 4.6mm;
+}
+
+.rpage-contact-icon.address circle {
+  fill: #fff;
+}
+
+/* Linha final: nome da clínica + barra de assinatura colorida */
+.rpage-contact-baseline {
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+  margin-top: 3mm;
+}
+
+.rpage-contact-baseline-name {
+  flex: 0 0 auto;
+  font-family: Georgia, serif;
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--clinic-accent, #0E2A4A);
+  letter-spacing: .02em;
+}
+
+.rpage-contact-bar {
+  display: block;
+  flex: 1 1 auto;
+  height: 2.6mm;
+  border-radius: 1.5mm;
+  background: linear-gradient(
+    90deg,
+    var(--clinic-accent, #0E2A4A) 0%,
+    var(--clinic-accent, #0E2A4A) 70%,
+    var(--clinic-accent-soft, #9DB8D0) 70%,
+    var(--clinic-accent-soft, #9DB8D0) 100%
+  );
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+@media print {
+  .report-print-pages {
+    position: static;
+    left: auto;
+    top: auto;
+    width: auto;
+    /* Página nomeada: só o relatório imprime com margem 0 (a folha .rpage
+       já embute as margens no padding). As outras abas continuam usando o
+       @page global de 12mm. */
+    page: report;
+  }
+
+  @page report {
+    size: A4;
+    margin: 0;
+  }
+}
+
 /* ======= IMPRESSÃO ======= */
 @media print {
   /* Margem uniforme da folha. O cabeçalho/rodapé NÃO dependem dela: o
@@ -7080,6 +7370,7 @@ textarea { min-height: 95px; resize: vertical; }
      para o pé da página via flexbox — funciona em qualquer ajuste de
      margem da caixa de impressão. */
   @page {
+    size: A4;
     margin: 12mm;
   }
 
@@ -7176,67 +7467,15 @@ textarea { min-height: 95px; resize: vertical; }
     border-radius: 0 !important;
   }
 
-  /* Cadeia de altura 100% p/ a tabela ocupar a página inteira: assim o
-     tfoot (rodapé) gruda no pé mesmo em relatório curto, e o thead
-     (cabeçalho) no topo. Conteúdo longo pagina normalmente entre eles. */
-  html, body { height: 100% !important; }
-  .app { height: 100% !important; display: block !important; }
-  .main { height: 100% !important; }
-  .panel:has(.report),
-  .panel:has(.report) .panel-body { height: 100% !important; }
-
-  .report {
-    height: 100% !important;
-    position: static;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: white !important;
-    padding: 0 !important;
-    line-height: 1.5 !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+  /* O relatório vira documento timbrado: sem moldura nem título do painel.
+     A paginação (cabeçalho/rodapé repetidos, rodapé sempre no fundo da
+     folha) é feita por .report-print-pages — ver bloco dedicado abaixo,
+     fora deste @media, porque a medição via JS precisa das mesmas
+     métricas estando ou não em impressão. */
+  .report-screen-only {
+    display: none !important;
   }
 
-  /* A tabela é o documento: cabeçalho/rodapé repetem por página */
-  .report-sheet {
-    width: 100%;
-    height: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
-
-  /* thead/tfoot repetidos em TODAS as páginas; tbody pagina no meio */
-  .report-sheet-head { display: table-header-group; }
-  .report-sheet-foot { display: table-footer-group; }
-  .report-sheet-head, .report-sheet-foot { break-inside: avoid; }
-
-  /* Margens laterais embutidas (não dependem da caixa de impressão).
-     thead/tfoot acrescentam as margens superior/inferior por página. */
-  .report-sheet-cell { padding: 0 14mm !important; }
-  .report-sheet-cell-head { padding-top: 12mm !important; }
-  .report-sheet-cell-foot { padding-bottom: 12mm !important; vertical-align: bottom; }
-  .report-sheet-cell-body { height: 100%; }
-
-  /* Faixa colorida no topo do cabeçalho */
-  .report-topband {
-    display: block;
-    height: 6mm;
-    margin: 0 0 7mm;
-    border-radius: 2mm;
-    background: linear-gradient(
-      90deg,
-      var(--clinic-accent-shade, #061a31) 0%,
-      var(--clinic-accent-shade, #061a31) 16%,
-      var(--clinic-accent, #0E2A4A) 16%,
-      var(--clinic-accent, #0E2A4A) 64%,
-      var(--clinic-accent-soft, #9DB8D0) 64%,
-      var(--clinic-accent-soft, #9DB8D0) 100%
-    );
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  /* O relatório vira documento timbrado: sem moldura nem título do painel */
   .panel:has(.report) {
     border: 0 !important;
   }
@@ -7247,244 +7486,6 @@ textarea { min-height: 95px; resize: vertical; }
 
   .panel:has(.report) .panel-body {
     padding: 0 !important;
-  }
-
-  /* Cabeçalho contido dentro da margem segura — sem sangramento */
-  .report-letterhead {
-    position: static;
-    overflow: visible;
-    min-height: 0;
-    margin: 0 0 9mm !important;
-    padding: 0;
-  }
-
-  .report-letterhead-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8mm;
-    border-bottom: 0;
-    padding-bottom: 5mm;
-  }
-
-  .report-letterhead-brand {
-    display: flex;
-    align-items: center;
-    gap: 5mm;
-    min-width: 0;
-  }
-
-  .report-logo {
-    height: 18mm;
-    max-width: 60mm;
-    width: auto;
-    object-fit: contain;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .report-logo-monogram {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16mm;
-    height: 16mm;
-    border-radius: 3.5mm;
-    background: var(--clinic-accent, #0E2A4A);
-    color: #fff;
-    font-family: Georgia, serif;
-    font-size: 18pt;
-    font-weight: 700;
-    line-height: 1;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  /* Régua segmentada em vários tons da cor da clínica (estilo timbrado) */
-  .report-letterhead-rule {
-    display: block;
-    height: 3mm;
-    border-radius: 1.5mm;
-    background: linear-gradient(
-      90deg,
-      var(--clinic-accent-shade, #061a31) 0%,
-      var(--clinic-accent-shade, #061a31) 16%,
-      var(--clinic-accent, #0E2A4A) 16%,
-      var(--clinic-accent, #0E2A4A) 58%,
-      var(--clinic-accent-soft, #9DB8D0) 58%,
-      var(--clinic-accent-soft, #9DB8D0) 100%
-    );
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .report-letterhead-main h1 {
-    font-size: 18pt;
-    margin: 0 0 3pt;
-    color: var(--clinic-accent, #0E2A4A);
-  }
-
-  .report-letterhead-main small,
-  .report-letterhead-meta span {
-    font-size: 8.5pt;
-  }
-
-  .report-letterhead-meta b {
-    font-size: 10pt;
-    color: var(--clinic-accent, #0E2A4A);
-  }
-
-  /* Rodapé institucional: vive no tfoot, repetido no pé de TODAS as páginas
-     pelo navegador, com espaço reservado. Nunca cobre o conteúdo nem vira
-     "cabeçalho" da página seguinte. Igual nos 3 modos de relatório. */
-  .report-print-footer {
-    display: block;
-    margin: 0 !important;
-    padding: 6mm 0 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: white;
-    break-inside: avoid;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  /* Faixa segmentada acima dos contatos */
-  .report-contact-segments {
-    display: block;
-    height: 2.6mm;
-    margin-bottom: 3mm;
-    border-radius: 1.5mm;
-    background: linear-gradient(
-      90deg,
-      var(--clinic-accent-soft, #9DB8D0) 0%,
-      var(--clinic-accent-soft, #9DB8D0) 34%,
-      var(--clinic-accent, #0E2A4A) 34%,
-      var(--clinic-accent, #0E2A4A) 80%,
-      var(--clinic-accent-shade, #061a31) 80%,
-      var(--clinic-accent-shade, #061a31) 100%
-    );
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .report-contact-list {
-    display: flex;
-    position: relative;
-    z-index: 3;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6mm;
-    width: auto;
-    margin: 0;
-    padding: 0 !important;
-    background: transparent;
-  }
-
-  .report-contact-item {
-    display: flex;
-    flex: 1 1 0;
-    min-width: 0;
-    gap: 2.6mm;
-    align-items: center;
-    justify-content: flex-start;
-    flex-direction: row;
-    text-align: left;
-  }
-
-  .report-contact-text span {
-    font-size: 6.5pt !important;
-    letter-spacing: .08em;
-    color: var(--clinic-accent, #0E2A4A) !important;
-  }
-
-  .report-contact-text b {
-    font-size: 8.5pt !important;
-    line-height: 1.25 !important;
-    color: #1f2937 !important;
-  }
-
-  .report-contact-icon {
-    width: 8mm;
-    height: 8mm;
-    border-radius: 50%;
-    background: var(--clinic-accent, #0E2A4A);
-    color: #fff;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .report-contact-icon svg {
-    width: 4.6mm;
-    height: 4.6mm;
-  }
-
-  .report-contact-icon.address,
-  .report-contact-icon.phone,
-  .report-contact-icon.email {
-    background: var(--clinic-accent, #0E2A4A);
-  }
-
-  .report-contact-icon.address circle {
-    fill: #fff;
-  }
-
-  /* Linha final: nome da clínica + barra de assinatura colorida */
-  .report-contact-baseline {
-    display: flex;
-    align-items: center;
-    gap: 4mm;
-    margin-top: 3mm;
-  }
-
-  .report-contact-baseline-name {
-    flex: 0 0 auto;
-    font-family: Georgia, serif;
-    font-size: 8pt;
-    font-weight: 700;
-    color: var(--clinic-accent, #0E2A4A);
-    letter-spacing: .02em;
-  }
-
-  .report-contact-bar {
-    position: static;
-    display: block;
-    flex: 1 1 auto;
-    height: 2.6mm;
-    border-radius: 1.5mm;
-    background: linear-gradient(
-      90deg,
-      var(--clinic-accent, #0E2A4A) 0%,
-      var(--clinic-accent, #0E2A4A) 70%,
-      var(--clinic-accent-soft, #9DB8D0) 70%,
-      var(--clinic-accent-soft, #9DB8D0) 100%
-    );
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .report h2 {
-    font-size: 15pt !important;
-    margin: 0 0 10px !important;
-    text-align: left !important;
-    color: var(--clinic-accent, #0E2A4A) !important;
-  }
-
-  /* Rótulos dos campos na cor da clínica (Paciente:, Sessão:, ...) */
-  .report-body b {
-    color: var(--clinic-accent, #0E2A4A);
-  }
-
-  .report p {
-    margin: 8px 0 !important;
-    font-size: 10.5pt !important;
-    line-height: 1.5 !important;
-    break-inside: auto;
-  }
-
-  .report p:last-child {
-    margin-bottom: 0 !important;
   }
 
   .report-edited-banner {

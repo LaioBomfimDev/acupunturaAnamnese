@@ -74,6 +74,12 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Título da aba segue a clínica logada (ou o nome genérico antes do login).
+  useEffect(() => {
+    const clinicName = profile?.clinic?.name || profile?.clinic_name;
+    document.title = clinicName ? `Sistema ${clinicName}` : 'Sistema Acup';
+  }, [profile?.clinic?.name, profile?.clinic_name]);
+
   // Metadados persistíveis da análise de língua (sem imagens/object URLs)
   const tongueAiMeta = useMemo(() => serializeTongueAi(tongueAi), [tongueAi]);
 

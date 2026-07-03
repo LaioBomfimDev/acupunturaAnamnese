@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Panel } from '../ui/Panel';
 import { draftReport, REPORT_AI_DISCLAIMER } from '../../services/reportAiService';
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
@@ -119,6 +120,142 @@ function ReportContactFooter({ items, clinicName }) {
   );
 }
 
+function PrintLetterhead({ clinicLogo, clinicMonogram, clinicName, clinicDetails, dateLabel, sessaoLabel, terapeuta }) {
+  return (
+    <header className="rpage-header">
+      <div className="rpage-header-top">
+        <div className="rpage-header-brand">
+          {clinicLogo
+            ? <img className="rpage-logo" src={clinicLogo} alt={`Logo ${clinicName}`} />
+            : <span className="rpage-logo rpage-logo-monogram" aria-hidden="true">{clinicMonogram}</span>}
+          <div className="rpage-header-main">
+            <h1>{clinicName}</h1>
+            {clinicDetails && <small>{clinicDetails}</small>}
+          </div>
+        </div>
+        <div className="rpage-header-meta">
+          <b>{dateLabel}</b>
+          <span>{sessaoLabel}</span>
+          <span>{terapeuta}</span>
+        </div>
+      </div>
+      <span className="rpage-rule" aria-hidden="true" />
+    </header>
+  );
+}
+
+function PrintContactIcon({ type }) {
+  if (type === 'address') {
+    return (
+      <span className="rpage-contact-icon address" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 21s7-6.1 7-12A7 7 0 1 0 5 9c0 5.9 7 12 7 12Z" />
+          <circle cx="12" cy="9" r="2.4" />
+        </svg>
+      </span>
+    );
+  }
+
+  if (type === 'email') {
+    return (
+      <span className="rpage-contact-icon email" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M3.5 6.2h17a.8.8 0 0 1 .8.8v10a.8.8 0 0 1-.8.8h-17a.8.8 0 0 1-.8-.8V7a.8.8 0 0 1 .8-.8Z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M3.4 7 12 13l8.6-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    );
+  }
+
+  return (
+    <span className="rpage-contact-icon phone" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M8.8 7.2c-.2 0-.5.1-.7.4-.3.4-.7.9-.7 1.8 0 1 .7 2.1 1 2.5.2.3 1.8 2.9 4.5 4 2.2.8 2.7.7 3.2.6.5-.1 1.4-.6 1.6-1.2.2-.6.2-1.1.1-1.2-.1-.2-.3-.2-.6-.4l-1.6-.8c-.3-.1-.5-.1-.7.2l-.7.9c-.1.2-.3.2-.6.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.5-1.8-.1-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.7-1.6c-.2-.4-.4-.4-.7-.4h-.6Z" />
+      </svg>
+    </span>
+  );
+}
+
+function PrintFooter({ items, clinicName }) {
+  return (
+    <footer className="rpage-footer-inner" aria-label="Contato da clínica">
+      <span className="rpage-contact-segments" aria-hidden="true" />
+      <div className="rpage-contact-list">
+        {items.map(item => (
+          <div className="rpage-contact-item" key={item.id}>
+            <PrintContactIcon type={item.id} />
+            <div className="rpage-contact-text">
+              <span>{item.label}</span>
+              <b>{item.value}</b>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rpage-contact-baseline" aria-hidden="true">
+        <span className="rpage-contact-baseline-name">{clinicName}</span>
+        <span className="rpage-contact-bar" />
+      </div>
+    </footer>
+  );
+}
+
+// ── paginação manual para impressão ────────────────────────
+// O navegador não estica de forma confiável a última folha de uma
+// tabela paginada até o fim físico da página (por isso o rodapé antigo
+// "flutuava" acima do esperado). Aqui cada folha (.rpage) é do tamanho
+// do PAPEL (margens embutidas no padding + @page report margin 0), o
+// rodapé fica position:absolute no fundo dela e o corpo recebe altura
+// fixa — o texto nunca invade o rodapé, mesmo se o diálogo de impressão
+// usar margens/papel diferentes do previsto.
+const MM_TO_PX = 96 / 25.4;
+const PAGE_H_MM = 296.5; // folha A4 inteira (0.5mm de folga p/ arredondamento)
+const PAGE_PAD_TOP_MM = 16; // margem superior embutida (menor: sem a barra do topo)
+const PAGE_PAD_BOTTOM_MM = 24; // margem inferior embutida (reserva do rodapé)
+const HEADER_GAP_MM = 9;
+const FOOTER_GAP_MM = 6;
+const MIN_BODY_BUDGET_MM = 60;
+// Corta a folha 4% antes do limite real: absorve pequenas variações de
+// medição (fontes/arredondamento) antes que o clip do .rpage-body atue.
+const SLICE_SAFETY = 0.96;
+
+// Mede cabeçalho/rodapé/parágrafos num "palco" escondido e corta o
+// conteúdo em folhas que cabem no espaço disponível de cada página.
+// Retorna também a altura exata da área de texto, aplicada como height
+// fixo do .rpage-body (overflow hidden) — a garantia final de que nada
+// passa por cima do rodapé.
+function paginateReportBody(html, { stage, header, footer }) {
+  if (!stage || !header || !footer) return { pages: [html], bodyHeightPx: null };
+  stage.innerHTML = html;
+
+  const headerH = header.getBoundingClientRect().height;
+  const footerH = footer.getBoundingClientRect().height;
+  const usableH = (PAGE_H_MM - PAGE_PAD_TOP_MM - PAGE_PAD_BOTTOM_MM) * MM_TO_PX;
+  const budget = Math.max(
+    usableH - headerH - (HEADER_GAP_MM * MM_TO_PX) - footerH - (FOOTER_GAP_MM * MM_TO_PX),
+    MIN_BODY_BUDGET_MM * MM_TO_PX,
+  );
+  const sliceBudget = budget * SLICE_SAFETY;
+
+  const nodes = Array.from(stage.children);
+  const pages = [];
+  let current = [];
+  let currentH = 0;
+  nodes.forEach(node => {
+    const h = node.getBoundingClientRect().height;
+    if (current.length && currentH + h > sliceBudget) {
+      pages.push(current.map(n => n.outerHTML).join(''));
+      current = [];
+      currentH = 0;
+    }
+    current.push(node);
+    currentH += h;
+  });
+  if (current.length) pages.push(current.map(n => n.outerHTML).join(''));
+
+  stage.innerHTML = '';
+  return { pages: pages.length ? pages : [''], bodyHeightPx: budget };
+}
+
 const MODOS = ['Resumo clínico', 'Relatório profissional', 'Orientação ao paciente'];
 const DEFAULT_ACCENT = '#0E2A4A';
 
@@ -130,6 +267,10 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   const [aiError, setAiError] = useState(null);
   const reportBodyRef = useRef(null);
   const editableRef = useRef(null);
+  const printMeasureRef = useRef(null);
+  const printHeaderMeasureRef = useRef(null);
+  const printFooterMeasureRef = useRef(null);
+  const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
   const { main, detail, protocol, safety, safetyAlerts = [] } = analysis;
 
   const nome    = selectedPatient?.name || state.nome || 'Paciente não informado';
@@ -158,6 +299,12 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   ].filter(Boolean).join(' • ');
   const contactItems = buildReportContactItems({ clinic, therapistProfile });
   const clinicLoadError = therapistProfile?.clinicLoadError;
+  const watermarkEnabled = Boolean(clinicLogo) && clinic?.logo_watermark !== false;
+  const accentStyle = {
+    '--clinic-accent': accentPalette.accent,
+    '--clinic-accent-shade': accentPalette.shade,
+    '--clinic-accent-soft': accentPalette.soft,
+  };
 
   // A avaliação inicial conta como 1º encontro; o primeiro registro de evolução
   // corresponde ao relatório da 2ª sessão.
@@ -233,6 +380,16 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
       setAiError('Confirme a revisão profissional do rascunho de IA antes de imprimir ou gerar o PDF.');
       return;
     }
+    // Recorta o corpo do relatório em folhas de altura fixa antes de
+    // imprimir, para o rodapé ficar sempre grudado no fundo de cada
+    // página (ver comentário em paginateReportBody).
+    const html = reportBodyRef.current?.innerHTML || '';
+    const doc = paginateReportBody(html, {
+      stage: printMeasureRef.current,
+      header: printHeaderMeasureRef.current,
+      footer: printFooterMeasureRef.current,
+    });
+    flushSync(() => setPrintDoc(doc));
     window.print();
   }
 
@@ -491,18 +648,13 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
       {/* ║               CORPO DO RELATÓRIO                 ║ */}
       {/* ╚═══════════════════════════════════════════════════╝ */}
       <div
-        className={`report${editing ? ' report-editing' : ''}`}
-        style={{
-          '--clinic-accent': accentPalette.accent,
-          '--clinic-accent-shade': accentPalette.shade,
-          '--clinic-accent-soft': accentPalette.soft,
-        }}
+        className={`report report-screen-only${editing ? ' report-editing' : ''}`}
+        style={accentStyle}
       >
-        {/* Estrutura em tabela: thead (cabeçalho) e tfoot (rodapé) são
-            repetidos pelo navegador no topo/pé de TODAS as páginas e têm o
-            espaço reservado, então o texto flui para a próxima página entre
-            eles, sem cobrir a assinatura nem virar "cabeçalho" da página de
-            baixo. Cabeçalho e rodapé fixos por página. */}
+        {/* Estrutura em tabela: thead (cabeçalho) e tfoot (rodapé) repetem
+            no topo/pé em TELA (visualização/edição contínua). Escondida
+            na impressão — quem imprime é .report-print-pages, logo
+            abaixo, que pagina de verdade em folhas de altura fixa. */}
         <table className="report-sheet">
           <thead className="report-sheet-head">
             <tr>
@@ -547,6 +699,59 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* Documento que efetivamente sai na impressão/PDF: folhas de altura
+          fixa (.rpage), cabeçalho e marca d'água repetidos, rodapé sempre
+          grudado no fundo de cada folha. Fica fora da tela até imprimir
+          (ver .report-print-pages no CSS). */}
+      <div className="report-print-pages" style={accentStyle} aria-hidden="true">
+        <div className="rpage-measure-stage">
+          <div ref={printHeaderMeasureRef}>
+            <PrintLetterhead
+              clinicLogo={clinicLogo}
+              clinicMonogram={clinicMonogram}
+              clinicName={clinicName}
+              clinicDetails={clinicDetails}
+              dateLabel={shortDate()}
+              sessaoLabel={sessaoLabel}
+              terapeuta={terapeuta}
+            />
+          </div>
+          <div ref={printFooterMeasureRef}>
+            <PrintFooter items={contactItems} clinicName={clinicName} />
+          </div>
+          {/* Mesma classe do corpo real: a medição usa exatamente a
+              tipografia que a folha vai renderizar */}
+          <div ref={printMeasureRef} className="rpage-body" />
+        </div>
+
+        {printDoc.pages.map((html, index) => (
+          <section className="rpage" key={index}>
+            {watermarkEnabled && (
+              <div className="rpage-watermark" aria-hidden="true">
+                <img src={clinicLogo} alt="" />
+              </div>
+            )}
+            <PrintLetterhead
+              clinicLogo={clinicLogo}
+              clinicMonogram={clinicMonogram}
+              clinicName={clinicName}
+              clinicDetails={clinicDetails}
+              dateLabel={shortDate()}
+              sessaoLabel={sessaoLabel}
+              terapeuta={terapeuta}
+            />
+            <div
+              className="rpage-body"
+              style={printDoc.bodyHeightPx ? { height: printDoc.bodyHeightPx } : undefined}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+            <div className="rpage-footer">
+              <PrintFooter items={contactItems} clinicName={clinicName} />
+            </div>
+          </section>
+        ))}
       </div>
 
       {/* ── botões finais (não imprime) ────────────────────── */}

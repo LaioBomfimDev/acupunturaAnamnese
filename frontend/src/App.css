@@ -7108,7 +7108,7 @@ textarea { min-height: 95px; resize: vertical; }
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: .09;
+  opacity: .20;
   filter: grayscale(1);
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;

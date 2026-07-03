@@ -12,9 +12,9 @@ const TERMS_SECTIONS = [
   {
     title: '2. Controlador dos dados e Encarregado (DPO)',
     items: [
-      'O controlador dos dados tratados nesta plataforma é a clínica/profissional responsável pelo atendimento: [preencher: razão social/nome, CNPJ ou registro profissional, endereço]. O Sistema Acup é ferramenta de apoio ao tratamento conduzido por esse controlador.',
-      'Encarregado pelo Tratamento de Dados (DPO), responsável por receber solicitações de titulares e comunicação da ANPD: [preencher: nome do encarregado] — contato: [preencher: e-mail/telefone do encarregado].',
-      'Dúvidas, solicitações de titulares e comunicações sobre proteção de dados devem ser dirigidas ao Encarregado, pelos contatos acima.',
+      'O controlador dos dados tratados nesta plataforma é a Reability – Núcleo de Desenvolvimento Neurológico LTDA, CNPJ 53.351.769/0001-10, com sede na Rua Simões Filho, 350, Boa Vista, Catu – BA, CEP 48110-000. Responsável técnica: Denise Neves (CRP 03/10696). O Sistema Acup é ferramenta de apoio ao tratamento clínico conduzido pelo controlador.',
+      'Encarregado pelo Tratamento de Dados (DPO): ainda não formalmente nomeado. Até a nomeação, solicitações de titulares e comunicações sobre proteção de dados devem ser dirigidas ao contato institucional da clínica — telefone/WhatsApp (71) 99970-3912 (Instagram @reability.neuro). [preencher: nome e e-mail do Encarregado quando nomeado.]',
+      'Dúvidas, solicitações de titulares e comunicações sobre proteção de dados devem ser dirigidas ao Encarregado ou, até a sua nomeação, ao contato institucional indicado acima.',
     ],
   },
   {
@@ -104,6 +104,9 @@ const TERMS_SECTIONS = [
     ],
   },
 ];
+
+const WHATSAPP_HELP_TEXT = 'Oi, estou precisando de ajuda no Sistema Acup.';
+const WHATSAPP_HELP_URL = `https://wa.me/5571999703912?text=${encodeURIComponent(WHATSAPP_HELP_TEXT)}`;
 
 export function Login() {
   const { signInWithPassword } = useAuth();
@@ -357,6 +360,56 @@ export function Login() {
           </p>
         </button>
       </div>
+
+      <a
+        href={WHATSAPP_HELP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Abrir conversa de ajuda no WhatsApp"
+        style={{
+          position: 'fixed',
+          right: '18px',
+          bottom: '18px',
+          zIndex: 900,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          maxWidth: 'calc(100vw - 36px)',
+          padding: '10px 12px',
+          borderRadius: '999px',
+          background: 'white',
+          color: '#123524',
+          textDecoration: 'none',
+          border: '1px solid rgba(22, 163, 74, 0.28)',
+          boxShadow: '0 14px 34px rgba(15, 23, 42, 0.16)',
+          fontSize: '13px',
+          fontWeight: 700
+        }}
+      >
+        <span style={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          Oi, está precisando de ajuda?
+        </span>
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: '0 0 auto',
+          minHeight: '34px',
+          padding: '0 13px',
+          borderRadius: '999px',
+          background: '#16a34a',
+          color: 'white',
+          fontSize: '12px',
+          letterSpacing: '0.2px'
+        }}>
+          WhatsApp
+        </span>
+      </a>
 
       {showTerms && (
         <div

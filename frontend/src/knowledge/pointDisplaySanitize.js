@@ -63,3 +63,37 @@ export function clinicalSources(sources = []) {
     .filter(Boolean)
     .filter(src => !/^biblioteca\s+viva/i.test(String(src).trim()));
 }
+
+const ATLAS_BOOK_LABEL = 'Atlas dos Pontos de Acupuntura: Guia de Localização (Ednea Martins)';
+
+function pageRangeLabel(pages) {
+  if (!Array.isArray(pages) || !pages.length) return '';
+  const unique = [...new Set(pages.filter(page => Number.isFinite(page)))];
+  if (!unique.length) return '';
+  return unique.length > 1
+    ? `p. ${unique[0]}–${unique[unique.length - 1]}`
+    : `p. ${unique[0]}`;
+}
+
+// Citacao bibliografica limpa para o acupunturista conferir/pesquisar na fonte:
+// "Livro (autor), p. X". A pagina impressa (printedPages) e' a util para achar
+// no livro/PDF; cai para pdfPages so' se nao houver a impressa. Nunca inclui
+// rotulos de sistema (Biblioteca Viva) nem avisos de curadoria.
+export function clinicalCitation(detail = {}) {
+  const ref = detail.atlasReference || {};
+  const sources = detail.sources || [];
+  const isAtlas = Boolean(ref.referenceLabel) || sources.some(src => /atlas/i.test(String(src)));
+
+  if (isAtlas) {
+    const pages = pageRangeLabel(ref.printedPages) || pageRangeLabel(ref.pdfPages);
+    return pages ? `${ATLAS_BOOK_LABEL}, ${pages}` : ATLAS_BOOK_LABEL;
+  }
+
+  const others = clinicalSources(sources);
+  return others.length ? others.join(' + ') : '';
+}
+
+// Referencia da pagina do PDF (para quem navega o PDF do Atlas), quando existir.
+export function pdfPageLabel(detail = {}) {
+  return pageRangeLabel(detail.atlasReference?.pdfPages);
+}

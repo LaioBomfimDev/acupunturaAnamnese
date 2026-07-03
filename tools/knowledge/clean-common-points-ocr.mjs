@@ -30,6 +30,11 @@ const WORKSHEET = path.join(ROOT, 'docs/common-points-ocr-doubts.md');
 const DRY = process.argv.includes('--dry');
 
 const TEXT_FIELDS = ['locationText', 'actions', 'indications', 'cautions', 'relatedPatterns', 'needling', 'clinicalNote'];
+const CLEAN_CLINICAL_SOURCES = new Set(['reocr_atlas', 'deep_curated_clean']);
+const CLEAN_SOURCE_LABELS = {
+  reocr_atlas: 'reocr_atlas — leitura direta/re-OCR manual do Atlas',
+  deep_curated_clean: 'deep_curated_clean — curadoria profunda limpa equivalente',
+};
 
 function normCode(c) {
   return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -280,6 +285,7 @@ function processFile(file, commonCodes, label, deepCleanMap = null) {
   const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
   const arr = Array.isArray(raw) ? raw : raw.reviews;
   const allDoubts = [];
+  const cleanSourceResolutions = [];
   let touched = 0;
   for (const review of arr) {
     const code = normCode(review.code);
@@ -294,14 +300,71 @@ function processFile(file, commonCodes, label, deepCleanMap = null) {
     }
     const { changed, doubts } = cleanReview(review);
     if (changed) touched++;
-    if (doubts.length) allDoubts.push({ code: review.code, displayCode: review.displayCode, title: review.title, doubts });
+    // Pontos ja resolvidos por fonte limpa (re-OCR do Atlas ou curadoria deep limpa)
+    // nao entram no worksheet de duvidas — o texto deles e' confiavel.
+    const fromCleanSource = CLEAN_CLINICAL_SOURCES.has(review.clinicalSource);
+    if (fromCleanSource) {
+      cleanSourceResolutions.push({
+        code: review.code,
+        displayCode: review.displayCode,
+        title: review.title,
+        clinicalSource: review.clinicalSource,
+        residualDoubtCount: doubts.length,
+      });
+    }
+    if (doubts.length && !fromCleanSource) {
+      allDoubts.push({ code: review.code, displayCode: review.displayCode, title: review.title, doubts });
+    }
   }
   if (!DRY) fs.writeFileSync(file, JSON.stringify(raw, null, 2) + '\n');
   console.log(`${label}: ${touched} pontos limpos, ${allDoubts.length} com duvidas${DRY ? ' (dry-run)' : ''}`);
-  return allDoubts;
+  return { doubts: allDoubts, cleanSourceResolutions };
 }
 
-function writeWorksheet(highDoubts) {
+function renderCleanSourceSection(cleanSourceResolutions) {
+  const lines = [];
+  lines.push('## Pontos retirados da planilha de dúvidas por fonte limpa');
+  lines.push('');
+  lines.push('Os pontos abaixo não aparecem na lista de dúvidas porque seus campos clínicos');
+  lines.push('foram substituídos por uma fonte limpa rastreável. Isto não libera uso clínico');
+  lines.push('automático: todos continuam exigindo auditoria profissional final.');
+  lines.push('');
+
+  if (!cleanSourceResolutions.length) {
+    lines.push('- Nenhum ponto comum foi retirado por fonte limpa nesta geração.');
+    lines.push('');
+    return lines;
+  }
+
+  const sorted = [...cleanSourceResolutions].sort((a, b) => {
+    const sourceOrder = String(a.clinicalSource).localeCompare(String(b.clinicalSource));
+    if (sourceOrder !== 0) return sourceOrder;
+    return normCode(a.code).localeCompare(normCode(b.code), 'pt-BR', { numeric: true });
+  });
+  const bySource = new Map();
+  for (const entry of sorted) {
+    const bucket = bySource.get(entry.clinicalSource) || [];
+    bucket.push(entry);
+    bySource.set(entry.clinicalSource, bucket);
+  }
+
+  for (const [source, entries] of bySource) {
+    lines.push(`### ${CLEAN_SOURCE_LABELS[source] || source}`);
+    lines.push('');
+    for (const entry of entries) {
+      const label = entry.displayCode || entry.code;
+      const title = entry.title ? ` — ${entry.title}` : '';
+      const residual = entry.residualDoubtCount
+        ? ` (${entry.residualDoubtCount} ${entry.residualDoubtCount === 1 ? 'sinal residual ignorado' : 'sinais residuais ignorados'} por fonte limpa)`
+        : '';
+      lines.push(`- \`${label}\`${title}${residual}`);
+    }
+    lines.push('');
+  }
+  return lines;
+}
+
+function writeWorksheet(highDoubts, cleanSourceResolutions = []) {
   const lines = [];
   lines.push('# Pontos comuns — dúvidas de OCR para revisão profissional');
   lines.push('');
@@ -309,6 +372,7 @@ function writeWorksheet(highDoubts) {
   lines.push('corrigiu ruído inequívoco; os trechos abaixo permaneceram suspeitos e **não foram');
   lines.push('alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventado).');
   lines.push('');
+  lines.push(...renderCleanSourceSection(cleanSourceResolutions));
   for (const entry of highDoubts) {
     lines.push(`## ${entry.displayCode || entry.code} — ${entry.title || ''}`);
     for (const d of entry.doubts) {
@@ -320,14 +384,14 @@ function writeWorksheet(highDoubts) {
   console.log(`worksheet: ${highDoubts.length} pontos com dúvidas -> docs/common-points-ocr-doubts.md`);
 }
 
-export { cleanField, stripRunningHeads, applyWordFixes, collectDoubts };
+export { cleanField, stripRunningHeads, applyWordFixes, collectDoubts, renderCleanSourceSection };
 
 function main() {
   const commonCodes = loadCommonCodes();
   const deepCleanMap = buildDeepCleanMap();
-  const highDoubts = processFile(HIGH, commonCodes, 'high-confidence', deepCleanMap);
+  const highResult = processFile(HIGH, commonCodes, 'high-confidence', deepCleanMap);
   processFile(DEEP, commonCodes, 'deep-curated');
-  writeWorksheet(highDoubts);
+  writeWorksheet(highResult.doubts, highResult.cleanSourceResolutions);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

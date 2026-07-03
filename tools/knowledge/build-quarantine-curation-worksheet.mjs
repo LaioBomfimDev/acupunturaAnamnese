@@ -2,12 +2,12 @@
 /**
  * build-quarantine-curation-worksheet.mjs
  *
- * Gera uma PLANILHA DE SUGESTOES para os pontos em quarentena no
+ * Gera uma PLANILHA DE CURADORIA para os pontos em quarentena no
  * `high-confidence-reviews.json` (marcados por audit-high-confidence-reviews.mjs).
  *
  * NAO altera nenhum dado clinico. E' um artefato de CURADORIA: mostra, lado a lado,
- *   - o valor atual (quebrado) de cada campo, e
- *   - uma sugestao com FONTE e CONFIANCA explicitas,
+ *   - no JSON: o valor atual (quebrado) de cada campo, para auditoria;
+ *   - no Markdown: apenas valor revisado com FONTE e CONFIANCA explicitas,
  * para um acupunturista aprovar/editar (gate humano inegociavel).
  *
  * Fontes de sugestao (rotuladas em cada campo):
@@ -16,6 +16,8 @@
  *   - km-agent-traduzido: traducao do original zh/ko do km-agent (revisar)
  *   - leitura-ocr       : leitura do OCR quebrado do Atlas (revisar)
  *   - mtc-generica      : conhecimento MTC padrao (conferir contra o livro)
+ *
+ * Regra conservadora: campos sem fonte clara ficam vazios na sugestao principal.
  *
  * Uso: node tools/knowledge/build-quarantine-curation-worksheet.mjs
  * Saida: docs/quarantine-curation-worksheet.md  +  .json
@@ -37,87 +39,110 @@ const asText = v => (Array.isArray(v) ? v.filter(Boolean).join(' | ') : (v == nu
 
 /**
  * Overlay curado por campo. Cada sugestao: { value, source, confidence }.
- * needling dos EX-* e' puxado do km-agent em runtime (verbatim) e nao fica aqui.
  * As localizacoes dos EX-* sao traducoes do original zh/ko do km-agent.
  * As leituras de OCR sao decifracoes do texto quebrado do proprio Atlas.
  */
 const CURATED = {
   // ---- Tier A: EX-* com correspondencia no km-agent --------------------------
   'EX-HN4': {
-    tier: 'A', identity: 'Yuyao (魚腰) — "cintura do peixe", ponto ocular',
-    location: { value: 'Na regiao frontal, no centro da sobrancelha, diretamente acima da pupila (olhar para frente).', source: 'km-agent-traduzido', confidence: 'alta' },
-    actions: { value: 'Remove obstrucoes, alivia espasmos e interrompe a dor; elimina Calor no Figado; clareia e ilumina os olhos.', source: 'leitura-ocr', confidence: 'media' },
-    indications: { value: 'Dor supraorbital, hiperemia da conjuntiva, oftalmoplegia, neuralgia supraorbital, espasmo/contracao das palpebras, paralisia facial.', source: 'leitura-ocr', confidence: 'media' },
+    tier: 'A', identity: 'Yuyao 魚腰 — ponto ocular',
+    sourceTranslation: 'Na região frontal, no centro da sobrancelha, diretamente acima da pupila.',
+    location: { value: 'Na região frontal, no centro da sobrancelha, diretamente acima da pupila, com o paciente olhando para frente.', source: 'km-agent-traduzido', confidence: 'alta' },
+    actions: { value: 'Remove obstruções, alivia espasmos e interrompe a dor; elimina Calor no Fígado; clareia os olhos.', source: 'leitura-ocr', confidence: 'media' },
+    indications: { value: 'Dor supraorbital, hiperemia conjuntival, oftalmoplegia, neuralgia supraorbital, espasmos ou contrações palpebrais.', source: 'leitura-ocr', confidence: 'media' },
+    needling: { value: 'Inserção horizontal: 0,3 a 0,5 cun.', source: 'km-agent', confidence: 'alta' },
+    reviewNote: '“Paralisia facial” não aparece claramente no fragmento OCR apresentado. Só deve ser incluída se for confirmada no Atlas ou em outra fonte do projeto.',
   },
   'EX-HN6': {
-    tier: 'A', identity: 'Erjian (耳尖) — "apice da orelha"',
-    location: { value: 'No apice (ponto mais alto) da orelha, dobrando o pavilhao auricular para a frente.', source: 'km-agent-traduzido', confidence: 'alta' },
-    actions: { value: 'Clareia Calor, reduz edema e inflamacao, beneficia olhos e garganta. (ATENCAO: o conteudo atual pertence a um ponto nasal — descartar.)', source: 'mtc-generica', confidence: 'media' },
-    crossNote: 'O bloco de actions atual coincide com o de EX-HN8 (ponto nasal): foi mal-atribuido. Descartar e usar conteudo de Erjian.',
+    tier: 'A', identity: 'Erjian 耳尖 — ápice da orelha',
+    sourceTranslation: 'No ponto mais alto da orelha.',
+    location: { value: 'No ápice da orelha, no ponto mais alto do pavilhão auricular, localizado ao dobrar a orelha para frente.', source: 'km-agent-traduzido', confidence: 'alta' },
+    actions: { value: 'Clareia Calor, reduz edema e inflamação, beneficia os olhos e a garganta.', source: 'mtc-generica', confidence: 'media' },
+    needling: { value: 'Inserção perpendicular: 0,1 a 0,2 cun. Pode-se usar agulha triangular para sangria.', source: 'km-agent', confidence: 'alta' },
+    crossNote: 'O bloco de ações atual coincide com o de EX-HN8 (ponto nasal): foi mal-atribuído. Descartar e usar conteúdo de Erjian.',
   },
   'EX-HN8': {
-    tier: 'A', identity: 'Shangyingxiang (上迎香) — "acima do Yingxiang", ponto nasal (Bitong)',
-    location: { value: 'Na extremidade superior do sulco nasolabial, onde a cartilagem alar encontra a borda da concha nasal.', source: 'km-agent-traduzido', confidence: 'alta' },
+    tier: 'A', identity: 'Shangyingxiang 上迎香 — ponto nasal / Bitong',
+    sourceTranslation: 'No ponto onde a cartilagem nasal encontra a região da concha nasal, na extremidade superior do sulco nasolabial.',
+    location: { value: 'Na extremidade superior do sulco nasolabial, onde a cartilagem alar encontra a região da concha nasal.', source: 'km-agent-traduzido', confidence: 'alta' },
     actions: { value: 'Beneficia o nariz e desobstrui as narinas.', source: 'leitura-ocr', confidence: 'media' },
-    indications: { value: 'Rinite alergica, rinite atrofica, rinite hipertrofica, sinusite, polipos nasais, furunculos na regiao do nariz, obstrucao nasal.', source: 'leitura-ocr', confidence: 'media' },
+    indications: { value: 'Rinite alérgica, rinite atrófica, rinite hipertrófica, sinusite, pólipos nasais, furúnculos na região do nariz e obstrução nasal.', source: 'leitura-ocr', confidence: 'media' },
+    needling: { value: 'Inserção oblíqua: 0,3 a 0,5 cun, em direção para dentro e para cima.', source: 'km-agent', confidence: 'alta' },
   },
   'EX-HN12': {
-    tier: 'A', identity: 'Jinjin (金津) — veia sublingual esquerda (par de Yuye EX-HN13)',
-    location: { value: 'Na face inferior da lingua, sobre a veia do lado ESQUERDO do frenulo lingual (o lado direito corresponde a Yuye).', source: 'km-agent-traduzido', confidence: 'alta' },
+    tier: 'A', identity: 'Jinjin 金津 — veia sublingual esquerda',
+    sourceTranslation: 'Sob a língua, nas veias dos dois lados do frênulo lingual; o lado esquerdo é Jinjin e o lado direito é Yuye.',
+    location: { value: 'Na face inferior da língua, sobre a veia do lado esquerdo do frênulo lingual. A veia do lado direito corresponde a Yuye EX-HN13.', source: 'km-agent-traduzido', confidence: 'alta' },
+    needling: { value: 'Puntura para sangria.', source: 'km-agent', confidence: 'alta' },
+    reviewNote: 'Par de Yuye EX-HN13.',
   },
   'EX-LE2': {
-    tier: 'A', identity: 'Heding (鶴頂) — "topo da garca"',
-    location: { value: 'Acima do joelho, na depressao sobre o ponto medio da borda superior da patela.', source: 'km-agent-traduzido', confidence: 'alta' },
+    tier: 'A', identity: 'Heding 鶴頂 — topo da garça',
+    sourceTranslation: 'Acima do joelho, na depressão situada sobre o ponto médio da base da patela.',
+    location: { value: 'Acima do joelho, na depressão sobre o ponto médio da borda superior da patela.', source: 'km-agent-traduzido', confidence: 'alta' },
+    needling: { value: 'Inserção perpendicular: 0,5 a 0,8 cun.', source: 'km-agent', confidence: 'alta' },
   },
   'EX-UE1': {
-    tier: 'A', identity: 'Zhoujian (肘尖) — "ponta do cotovelo"',
-    location: { value: 'Na face posterior do braco, no apice do olecrano (ponta do cotovelo), com o cotovelo flexionado.', source: 'km-agent-traduzido', confidence: 'alta' },
-    needlingNote: 'km-agent registra apenas moxa (3 a 7 cones); agulhamento direto nao consta.',
+    tier: 'A', identity: 'Zhoujian 肘尖 — ponta do cotovelo',
+    sourceTranslation: 'Na parte posterior do braço, no ponto saliente do olécrano da ulna.',
+    location: { value: 'Na face posterior do cotovelo, no ápice do olécrano, com o cotovelo flexionado.', source: 'km-agent-traduzido', confidence: 'alta' },
+    needling: { value: 'Moxabustão com 3 a 7 cones.', source: 'km-agent', confidence: 'alta' },
+    needlingNote: 'km-agent registra apenas moxa (3 a 7 cones); agulhamento direto não consta.',
   },
 
   // ---- Tier B: ATLAS-EXTRA com OCR parcialmente legivel -----------------------
   'ATLAS-EXTRA-GENPING': {
-    tier: 'B', identity: 'Genping — regiao do tornozelo/calcaneo',
-    location: { value: 'Regiao posterior do tornozelo, ~2 cun acima do osso calcaneo, no meio do tendao do calcaneo (Aquiles).', source: 'leitura-ocr', confidence: 'media' },
+    tier: 'B', identity: 'Genping — região do tornozelo/calcâneo',
+    location: { value: 'Região posterior do tornozelo, aproximadamente 2 cun acima do osso calcâneo, no meio do tendão do calcâneo, isto é, tendão de Aquiles.', source: 'leitura-ocr', confidence: 'media' },
   },
   'ATLAS-EXTRA-JIANMING': {
-    tier: 'B', identity: 'Jianming ("fortalece o brilho") — ponto ocular',
-    location: { value: 'Na margem inferior da cavidade orbital, ~0,2 cun da borda (ponto periocular). OCR muito fragmentado — confirmar no livro.', source: 'leitura-ocr', confidence: 'baixa' },
+    tier: 'B', identity: 'Jianming — ponto ocular',
+    location: { value: 'Possivelmente na margem inferior da cavidade orbital, cerca de 0,2 cun da borda orbital. OCR muito fragmentado; confirmar no livro antes de aplicar.', source: 'leitura-ocr', confidence: 'baixa' },
+    reviewNote: 'Não aplicar automaticamente. A localização está incompleta e depende de confirmação no Atlas.',
   },
   'ATLAS-EXTRA-SHANGJINGMING': {
-    tier: 'B', identity: 'Shangjingming (上睛明) — "acima do Jingming (B-1)"',
-    location: { value: 'Logo acima de B-1 (Jingming): com os olhos fechados, deslizar o dedo pela margem anterior da orbita ate a depressao acima do canto interno do olho.', source: 'leitura-ocr', confidence: 'media' },
-    crossNote: 'O bloco de localizacao de ATLAS-EXTRA-JIANMING-N-1 coincide com este: aquele registro foi mal-atribuido (o conteudo pertence a este Shangjingming).',
+    tier: 'B', identity: 'Shangjingming 上睛明 — acima de Jingming B-1',
+    location: { value: 'Logo acima de B-1 Jingming. Para localizar, pedir ao paciente que feche os olhos e deslizar o dedo pela margem anterior da órbita até a depressão acima do canto interno do olho.', source: 'leitura-ocr', confidence: 'media' },
+    crossNote: 'O bloco de localização de ATLAS-EXTRA-JIANMING-N-1 coincide com este: aquele registro foi mal-atribuído (o conteúdo pertence a este Shangjingming).',
   },
   'ATLAS-EXTRA-SHANGLIANQUAN': {
-    tier: 'B', identity: 'Shanglianquan — ponto da garganta (acima de CV-23 Lianquan)',
-    location: { value: '~1 cun acima da proeminencia da cartilagem tireoidea, na depressao muscular entre a borda inferior da mandibula e o osso hioide.', source: 'leitura-ocr', confidence: 'media' },
+    tier: 'B', identity: 'Shanglianquan — acima de CV-23 Lianquan',
+    location: { value: 'Aproximadamente 1 cun acima da proeminência da cartilagem tireóidea, na depressão muscular entre a borda inferior da mandíbula e o osso hioide.', source: 'leitura-ocr', confidence: 'media' },
   },
 
   // ---- Tier C: sem fonte utilizavel (re-OCR ou curadoria manual) --------------
   'ATLAS-EXTRA-BICHONG': {
-    tier: 'C', identity: 'Bichong (臂中) — "meio do antebraco"',
-    location: { value: 'Ponto medio do antebraco (face anterior), entre PC-3 (Quze) e PC-7 (Daling), entre os ossos. CONFERIR contra o livro.', source: 'mtc-generica', confidence: 'baixa' },
-    crossNote: 'O conteudo atual (loc/actions/needling) pertence a Shixuan (10 pontos das pontas dos dedos): mal-atribuido. Descartar tudo.',
+    tier: 'C', identity: 'Bichong 臂中',
+    crossNote: 'O conteúdo atual (loc/actions/needling) pertence a Shixuan (10 pontos das pontas dos dedos): mal-atribuído. Descartar tudo.',
+    reviewNote: 'A sugestão "ponto médio do antebraço, face anterior, entre PC-3 e PC-7" pode ser usada apenas como hipótese de pesquisa, não como dado curado.',
   },
   'ATLAS-EXTRA-JIANMING-N-1': {
     tier: 'C', identity: 'Jianming n. 1 — ponto ocular',
-    crossNote: 'O conteudo atual pertence a Shangjingming (mal-atribuido). Sem dado proprio: precisa re-OCR da pagina do Atlas ou curadoria manual.',
+    crossNote: 'O conteúdo atual pertence a Shangjingming e deve ser removido deste registro.',
   },
   'ATLAS-EXTRA-JIANMING-N-3': {
     tier: 'C', identity: 'Jianming n. 3 — ponto ocular',
-    crossNote: 'Registro completamente vazio. Precisa re-OCR da pagina do Atlas ou curadoria manual.',
+    reviewNote: 'Registro vazio. Requer re-OCR da página do Atlas ou curadoria manual.',
   },
   'ATLAS-EXTRA-JIANXI': {
     tier: 'C', identity: 'Jianxi ("abaixo do joelho")',
-    crossNote: 'Registro completamente vazio. Precisa re-OCR da pagina do Atlas ou curadoria manual.',
+    reviewNote: 'Registro vazio. Requer re-OCR da página do Atlas ou curadoria manual.',
   },
 };
 
-const TIER_LABEL = {
-  A: 'A — km-agent (alta): localizacao traduzida do zh/ko + agulhamento pt-BR do projeto',
-  B: 'B — leitura do OCR (media): texto do Atlas decifrado, revisar',
-  C: 'C — sem fonte utilizavel: re-OCR da pagina ou curadoria manual',
+const TIER_SECTIONS = {
+  A: {
+    title: 'Tier A — km-agent alta confiança',
+    subtitle: 'Localização traduzida do zh/ko + agulhamento do projeto',
+  },
+  B: {
+    title: 'Tier B — OCR do Atlas',
+    subtitle: 'Usar com revisão manual',
+  },
+  C: {
+    title: 'Tier C — sem fonte utilizável',
+    subtitle: 'Não aplicar automaticamente',
+  },
 };
 
 function loadEnriched() {
@@ -140,12 +165,12 @@ export function buildWorksheet({ pkg, enriched } = {}) {
     const km = enriched.get(review.code);
 
     const suggestions = {};
-    for (const field of ['location', 'actions', 'indications']) {
+    for (const field of ['location', 'actions', 'indications', 'needling']) {
       if (curated[field]) suggestions[field] = curated[field];
     }
-    // needling: verbatim do km-agent quando existir (fonte de maior confianca)
+    // Fallback: needling do km-agent quando existir e nao houver revisao curada.
     const kmNeedling = km?.needling?.ptBr && String(km.needling.ptBr).trim();
-    if (kmNeedling) {
+    if (!suggestions.needling && kmNeedling) {
       suggestions.needling = { value: kmNeedling, source: 'km-agent', confidence: 'alta' };
     }
 
@@ -154,8 +179,10 @@ export function buildWorksheet({ pkg, enriched } = {}) {
       title: review.title,
       tier: curated.tier,
       identity: curated.identity,
+      sourceTranslation: curated.sourceTranslation || null,
       crossNote: curated.crossNote || null,
       needlingNote: curated.needlingNote || null,
+      reviewNote: curated.reviewNote || null,
       current: {
         location: asText(review.locationText),
         actions: asText(review.actions),
@@ -173,33 +200,51 @@ export function buildWorksheet({ pkg, enriched } = {}) {
 
 function renderMd(ws) {
   const L = [];
+  const confidenceLabel = confidence => ({ media: 'média', alta: 'alta', baixa: 'baixa' }[confidence] || confidence);
   L.push('# Planilha de curadoria — pontos em quarentena');
   L.push('');
-  L.push(`> Gerada por \`tools/knowledge/build-quarantine-curation-worksheet.mjs\` em ${ws.generatedAt.slice(0, 10)}.`);
-  L.push('> **Nada aqui foi aplicado aos dados.** Sao SUGESTOES para o acupunturista aprovar/editar.');
-  L.push('> Fontes: `km-agent` (pt-BR do projeto) · `km-agent-traduzido` (do zh/ko, revisar) · `leitura-ocr` (Atlas decifrado, revisar) · `mtc-generica` (padrao, conferir no livro).');
+  L.push('## Versão revisada — sem preenchimento inventado');
+  L.push('');
+  L.push('> Critério usado: manter apenas o que está sustentado pela fonte indicada.');
+  L.push('> Campos sem fonte clara permanecem como `—`.');
+  L.push('> Pontos com OCR baixo, conteúdo mal-atribuído ou fonte genérica devem ser revisados no livro antes de aplicação.');
+  L.push('> Nada aqui foi aplicado aos dados clínicos; é material de revisão.');
   L.push('');
   const byTier = { A: [], B: [], C: [] };
   for (const e of ws.entries) byTier[e.tier].push(e);
   for (const tier of ['A', 'B', 'C']) {
-    L.push(`## Tier ${TIER_LABEL[tier]}`);
+    const section = TIER_SECTIONS[tier];
+    L.push(`## ${section.title}`);
+    L.push('');
+    L.push(`### ${section.subtitle}`);
     L.push('');
     for (const e of byTier[tier]) {
       L.push(`### ${e.code} — ${e.identity || e.title}`);
-      if (e.crossNote) L.push(`> ⚠️ ${e.crossNote}`);
-      if (e.kmAgent && e.kmAgent.locationOriginal) L.push(`> km-agent original (${e.kmAgent.zh} / ${e.kmAgent.ko}): \`${e.kmAgent.locationOriginal}\``);
+      if (e.sourceTranslation) {
+        L.push('');
+        L.push('**Tradução do original:**');
+        L.push(e.sourceTranslation);
+      }
       L.push('');
-      const cell = v => String(v || '').replace(/\s*\n+\s*/g, ' / ').replace(/\|/g, '/').trim();
-      L.push('| campo | valor atual (quebrado) | sugestao | fonte · confianca |');
-      L.push('|---|---|---|---|');
+      const cell = v => String(v || '').replace(/\s*\n+\s*/g, ' ').replace(/\|/g, '/').trim();
+      L.push('| campo | valor revisado | fonte · confiança |');
+      L.push('| --- | --- | --- |');
       for (const field of ['location', 'actions', 'indications', 'needling']) {
-        const cur = cell(e.current[field]).slice(0, 90) || '—';
         const s = e.suggestions[field];
         const sug = s ? cell(s.value) : '—';
-        const meta = s ? `${s.source} · ${s.confidence}` : '—';
-        L.push(`| ${field} | ${cur} | ${sug} | ${meta} |`);
+        const meta = s ? `${s.source} · ${confidenceLabel(s.confidence)}` : '—';
+        L.push(`| ${field} | ${sug} | ${meta} |`);
       }
-      if (e.needlingNote) L.push(`\n_needling: ${e.needlingNote}_`);
+      if (e.crossNote) {
+        L.push('');
+        L.push('**Correção importante:**');
+        L.push(e.crossNote);
+      }
+      if (e.needlingNote || e.reviewNote) {
+        L.push('');
+        L.push('**Nota:**');
+        L.push([e.needlingNote, e.reviewNote].filter(Boolean).join(' '));
+      }
       L.push('');
     }
   }

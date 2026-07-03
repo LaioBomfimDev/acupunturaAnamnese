@@ -2382,6 +2382,16 @@ textarea { min-height: 95px; resize: vertical; }
 .ai-status-badge.ignored { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
 
 /* ======= PULSO ======= */
+.pulse-position-guide {
+  display: block;
+  width: min(780px, 100%);
+  max-height: 320px;
+  object-fit: contain;
+  margin: 0 auto 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
 .pulse-organ-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
 .pulse-organ-box { border: 1px solid var(--line); background: #fff; border-radius: 18px; padding: 14px; }
 .pulse-organ-box h4 { margin: 0 0 8px; color: var(--gold); font-family: Georgia, serif; }
@@ -2429,6 +2439,14 @@ textarea { min-height: 95px; resize: vertical; }
 .protocol-hero p { margin: 5px 0; line-height: 1.55; }
 
 .protocol-layout { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; }
+.protocol-layout-single { grid-template-columns: minmax(0, 1fr); }
+.protocol-map-filter {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
 /* Mapa corporal e auricular */
 .map-card { border: 1px solid var(--line); background: var(--soft); border-radius: 22px; padding: 16px; overflow: hidden; margin-bottom: 16px; }

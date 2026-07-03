@@ -9,12 +9,12 @@
 
 | Campo | Valor |
 |---|---|
-| Versão | 1.0 (rascunho) |
-| Data | 2026-06-14 |
-| Responsável pela elaboração | [preencher] |
-| Encarregado (DPO) | [preencher: nome, e-mail/telefone] |
-| Controlador | [preencher: razão social/nome, CNPJ ou registro, endereço] |
-| Status | Rascunho — pendente de revisão jurídica/DPO |
+| Versão | 1.0 |
+| Data | 2026-06-30 |
+| Responsável pela elaboração | Equipe Reability — [definir responsável técnico] |
+| Encarregado (DPO) | Ainda não formalmente nomeado — contato institucional interino: (71) 99970-3912 |
+| Controlador | Reability – Núcleo de Desenvolvimento Neurológico LTDA — CNPJ 53.351.769/0001-10 — Rua Simões Filho, 350, Boa Vista, Catu – BA, CEP 48110-000. Responsável técnica: Denise Neves (CRP 03/10696) |
+| Status | Revisado — pendente de validação jurídica/DPO |
 
 ---
 
@@ -28,9 +28,11 @@ evolução e relatórios; oferece módulos de **IA assistiva** (sugestões revis
 consulta a base de conhecimento. A IA **não** toma decisão automatizada com efeito jurídico/relevante —
 toda saída exige **revisão humana**.
 
-**Titulares:** pacientes (incl. **possivelmente crianças/adolescentes** — ver §9) e profissionais usuários.
+**Titulares:** pacientes (**inclui crianças/adolescentes** — confirmado: a Reability atende público infantojuvenil, ex.: avaliação nutricional infantojuvenil/seletividade alimentar — ver §9) e profissionais usuários.
 
-**Abrangência:** [preencher: nº aproximado de profissionais/pacientes, abrangência geográfica].
+**Contexto institucional:** a Reability é clínica multiprofissional de reabilitação neurológica em Catu-BA. Serviços da clínica: neuropsicologia, psicoterapia, psiquiatria, fisioterapia neurofuncional, terapia ocupacional, nutrição, acupuntura, reabilitação cognitiva, laserterapia/fotobiomodulação e neuromodulação (conselhos aplicáveis conforme a profissão: CRP, CRM, CREFITO, CRN etc.). **Este RIPD cobre especificamente o módulo Sistema Acup (acupuntura/MTC).**
+
+**Abrangência:** sede em Catu-BA. [preencher: nº aproximado de profissionais/pacientes; se o uso será em uma só unidade, várias unidades ou por profissionais independentes.]
 
 ---
 
@@ -64,8 +66,8 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 5. **Eliminação/anonimização:** ao fim da finalidade e dos prazos legais.
 
 **Agentes de tratamento:**
-- **Controlador:** clínica/profissional [preencher].
-- **Operadores/subprocessadores:** **Supabase** (banco, auth, storage) e **Google Cloud Vertex AI** (IA).
+- **Controlador:** Reability – Núcleo de Desenvolvimento Neurológico LTDA (CNPJ 53.351.769/0001-10), Catu-BA. Responsável técnica: Denise Neves (CRP 03/10696). [preencher: confirmar responsável legal da PJ no contrato social.]
+- **Operadores/subprocessadores:** **Supabase** (banco, auth, storage) e **Google Cloud Vertex AI** (IA). [preencher: arquivar DPA do Supabase e o CDPA do Google; região dos backups.]
 
 ---
 
@@ -98,7 +100,7 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 | 2 | Vazamento via IA (texto sensível) | Baixa | Alto | Anonimização na origem, nome não enviado, Vertex no Brasil, CDPA não-treino | Baixo |
 | 3 | Foto de língua exposta | Baixa | Médio | Bucket privado + RLS, URL assinada sob demanda, EXIF removido | Baixo |
 | 4 | Sugestão de IA tratada como diagnóstico | Média | Alto | Revisão humana obrigatória, avisos na UI e no termo, sem decisão automatizada | Baixo/Médio |
-| 5 | Dados de menores sem consentimento adequado | [preencher] | Alto | §9; consentimento do responsável; minimização | [preencher] |
+| 5 | Dados de menores sem consentimento adequado | Média | Alto | §9; consentimento do responsável; minimização | Médio (reduzir com fluxo formal de consentimento) |
 | 6 | Credencial de serviço (GCP) exposta | Baixa | Alto | Secret no Supabase (servidor), nunca no frontend; rotação em incidente | Baixo |
 | 7 | Uso do fallback local em dispositivo compartilhado | Baixa | Médio | Aviso no termo; orientar não usar em produção/dispositivo público | Baixo |
 
@@ -130,8 +132,11 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 - Caso haja pacientes menores de 18: prevalência do **melhor interesse**; consentimento específico e em
   destaque do **responsável legal**, salvo hipóteses legais que o dispensem (ex.: tutela da saúde).
 - Coleta mínima; informar o responsável, em linguagem clara, sobre finalidade e uso de IA (§4).
-- **Decisão da clínica:** o sistema atende menores? [preencher: sim/não]. Se sim, anexar fluxo de
-  consentimento do responsável.
+- **Decisão da clínica:** o sistema atende menores? **SIM (confirmado)** — a Reability atende público
+  infantojuvenil. [preencher: idade mínima; como/onde será colhido e guardado o consentimento do
+  responsável legal; quais dados do responsável serão registrados.]
+- Enquanto não houver fluxo formal e documentado de consentimento do responsável, o risco "dados de
+  menores sem consentimento adequado" NÃO deve ser classificado como baixo (ver §6, item 5).
 
 ---
 
@@ -142,12 +147,14 @@ não-treino, revisão humana, RLS/criptografia), o risco residual tende a **baix
 pendências abaixo.
 
 **Plano de ação / pendências:**
-- [ ] Preencher identificação do controlador e do Encarregado (DPO).
-- [ ] Definir e registrar prazo de retenção/eliminação.
-- [ ] Decidir e documentar o tratamento de menores (e fluxo de consentimento do responsável).
-- [ ] Elaborar/colher o **consentimento do PACIENTE** (documento separado deste RIPD e do termo do profissional).
-- [ ] Arquivar o CDPA (PDF pt-BR) e validar base legal de saúde com jurídico.
-- [ ] Revisão jurídica/DPO deste RIPD e do termo do profissional.
+- [x] Identificação do controlador (Reability LTDA, CNPJ, endereço, responsável técnica).
+- [ ] **Nomear formalmente o Encarregado (DPO)** e definir um canal LGPD dedicado (e-mail próprio) — hoje só há contato institucional interino.
+- [ ] Definir e registrar o **prazo de guarda/eliminação** (varia por conselho — ex.: CRP ~5 anos, CRM 20 anos; confirmar com jurídico) e o destino dos dados quando um profissional deixar a clínica.
+- [ ] **Formalizar o fluxo de consentimento do responsável** para menores (idade mínima, meio de coleta, guarda da prova, dados do responsável).
+- [ ] Consentimento/aviso de privacidade do **PACIENTE** ao nível da clínica (papel/PDF, fora do sistema — o termo do app é só do profissional).
+- [ ] Arquivar o **CDPA do Google** (PDF pt-BR) e o **DPA do Supabase**; registrar a região dos backups.
+- [ ] Definir política de segurança operacional: **MFA**, backup (frequência/retenção/responsável), revisão e desligamento de acessos, treinamento LGPD da equipe.
+- [ ] **Revisão jurídica/DPO final** deste RIPD e do termo do profissional.
 
 **Aprovações:**
 - Encarregado (DPO): __________________ — data: ____/____/____

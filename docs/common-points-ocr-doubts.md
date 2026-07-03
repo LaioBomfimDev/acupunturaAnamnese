@@ -4,42 +4,51 @@ Gerado por `tools/knowledge/clean-common-points-ocr.mjs`. A limpeza automática
 corrigiu ruído inequívoco; os trechos abaixo permaneceram suspeitos e **não foram
 alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventado).
 
+## Pontos retirados da planilha de dúvidas por fonte limpa
+
+Os pontos abaixo não aparecem na lista de dúvidas porque seus campos clínicos
+foram substituídos por uma fonte limpa rastreável. Isto não libera uso clínico
+automático: todos continuam exigindo auditoria profissional final.
+
+### deep_curated_clean — curadoria profunda limpa equivalente
+
+- `EX-HN3` — EX-HN3 - Yintang (Palacio da Fronte)
+- `EX-HN5` — EX-HN5 - Taiyang (Grande Yang)
+
+### reocr_atlas — leitura direta/re-OCR manual do Atlas
+
+- `BL12` — B-12 (Fengmen) - Porta do Vento (2 sinais residuais ignorados por fonte limpa)
+- `BL15` — B-15 (Xinshu) - Ponto do Coração (1 sinal residual ignorado por fonte limpa)
+- `BL18` — B-18 (Ganshu) - Ponto do Fígado (1 sinal residual ignorado por fonte limpa)
+- `BL22` — B-22 (Sanjiaoshu) - Ponto do San Jiao (1 sinal residual ignorado por fonte limpa)
+- `BL23` — B-23 (Shenshu) - Ponto do Rim (1 sinal residual ignorado por fonte limpa)
+- `BL28` — B-28 (Pangguangshu) - Ponto da Bexiga
+- `BL54` — B-54 (Zhibian) - Ordenar a Ponta
+- `BL56` — B-56 (Chengjin) - Tendão do Suporte
+- `BL67` — B-67 (Zhiyin) - Onde Começa o Yin (1 sinal residual ignorado por fonte limpa)
+- `CV23` — CV23 (Lianquan) - Corner (Ridge) Spring
+- `GV14` — Du-14 (Dazhui) - Grande Vértebra (1 sinal residual ignorado por fonte limpa)
+- `KI7` — R-7 (Fuliu) - Corrente que Retorna
+- `IG4` — IG-4 (Hegu) - Vale Circundado (1 sinal residual ignorado por fonte limpa)
+- `LI5` — IG-5 (Yangxi) - Riacho do Yang (1 sinal residual ignorado por fonte limpa)
+- `LI10` — LI10 (Shousanli) - Três Distâncias do Braço
+- `IG11` — IG-11 (Quchi) - Lagoa Tortuosa (2 sinais residuais ignorados por fonte limpa)
+- `SI3` — SI3 (Houxi) - Back Stream (Ravine) (2 sinais residuais ignorados por fonte limpa)
+- `SI10` — ID-10 (Naoshu) - Ponto do Umero (1 sinal residual ignorado por fonte limpa)
+- `SI11` — SI11 (Tianzong) - Convergência Celestial (2 sinais residuais ignorados por fonte limpa)
+- `SP4` — SP4 (Gongsun) - Yellow Emperor (2 sinais residuais ignorados por fonte limpa)
+- `SP10` — Ba-10 (Xuehai) - Mar do Sangue (1 sinal residual ignorado por fonte limpa)
+- `ST25` — ST25 (Tianshu) - Pi vô Celeste (1 sinal residual ignorado por fonte limpa)
+- `ST28` — ST28 (Shuidao) - Passagem da Água
+- `TE3` — SJ-3 (Zhongzhu) - Ilha do Meio (2 sinais residuais ignorados por fonte limpa)
+
 ## BL11 — B-11 (Dazhu) - Grande Lançadeira
 - **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…de En ergia…`
 - **needling** (possivel palavra quebrada por espaco): `…em d ireção…`
 
-## BL12 — B-12 (Fengmen) - Porta do Vento
-- **locationText** (possivel palavra quebrada por espaco): `…margem in ferior…`, `…da T II…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…Ajus ta os…`, `…os ní veis…`, `…veis nu tritivos…`, `…Yin g Qi…`, `…defensivos W ei…`, `…W ei Qi…`, `…Qi Be neficia…`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Mai t J…`, `…t J…`
-
-## BL15 — B-15 (Xinshu) - Ponto do Coração
-- **locationText** (possivel palavra quebrada por espaco): `…de lo ca/…`, `…ca/ ir ação…`, `…de T 1…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…QidoCoraçã oe libera…`, `…Harmoni za Qi…`
-- **actions[0]** (maiuscula no meio da palavra (OCR)): `oCo`
-- **indications[0]** (possivel palavra quebrada por espaco): `…costas s udorese…`, `…ansiedade hi steria…`, `…insô ni a…`
-
-## BL18 — B-18 (Ganshu) - Ponto do Fígado
-- **locationText** (possivel palavra quebrada por espaco): `…toráci ca TX…`, `…ca TX 1…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…R egu…`, `…egu la o…`, `…Fígado c lareia…`, `…tendões P acifica…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…hepáti ca hemoptise…`, `…da co njuntiva…`, `…menstruação im gular…`
-- **needling** (token com digito no meio de palavra): `c1`
-
 ## BL20 — B-20 (Pishu) - Ponto do Baço
 - **locationText** (possivel palavra quebrada por espaco): `…torácica Xl…`
 - **indications[0]** (possivel palavra quebrada por espaco): `…abdominai s distensão…`
-
-## BL22 — B-22 (Sanjiaoshu) - Ponto do San Jiao
-- **locationText** (possivel palavra quebrada por espaco): `…as co stas…`, `…lombar l Nota…`, `…de lo calização…`, `…Vértebr is A…`, `…da L IV…`, `…a L 1…`
-- **locationText** (maiuscula no meio da palavra (OCR)): `lJa`, `sHz`
-- **actions[0]** (possivel palavra quebrada por espaco): `…Huidos oo Jiao…`
-
-## BL23 — B-23 (Shenshu) - Ponto do Rim
-- **locationText** (possivel palavra quebrada por espaco): `…de lo calização…`, `…da L fV…`, `…L fV deslize…`, `…par- i encontrar…`, `…vértebra l ombar…`
-- **locationText** (maiuscula no meio da palavra (OCR)): `lJa`
-- **actions[0]** (simbolo/ruido residual): `$`
-- **actions[0]** (maiuscula no meio da palavra (OCR)): `aEn`, `oRi`
-- **indications[0]** (token com digito no meio de palavra): `disn1rbios`
 
 ## BL24 — B-24 (Qihaishu) - Ponto do Mar do Qi
 - **locationText** (possivel palavra quebrada por espaco): `…lombar W…`
@@ -61,11 +70,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **indications[0]** (token com digito no meio de palavra): `dis6ria`, `tun1a`
 - **needling** (possivel palavra quebrada por espaco): `…cun l…`
 
-## BL28 — B-28 (Pangguangshu) - Ponto da Bexiga
-- **locationText** (possivel palavra quebrada por espaco): `…horizontal tr içada…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…Jiao In ferior…`, `…lim in a…`, `…Bexiga F on…`, `…F on alece…`, `…coluna lo mb…`, `…lo mb ar…`, `…mb ar e…`, `…dorso El imina…`
-- **indications[0]** (token com digito no meio de palavra): `diabe1es`
-
 ## BL31 — B-31 (Shangliao) - Orifício Superior
 - **locationText** (possivel palavra quebrada por espaco): `…1 c 1JT…`, `…sacral l e…`
 - **locationText** (token com digito no meio de palavra): `1JT`
@@ -84,17 +88,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **actions[0]** (maiuscula no meio da palavra (OCR)): `sLr`, `aLo`
 - **indications[0]** (possivel palavra quebrada por espaco): `…convulsõe s febre…`
 - **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Mar H e…`, `…de Ma Dan…`
-
-## BL54 — B-54 (Zhibian) - Ordenar a Ponta
-- **locationText** (possivel palavra quebrada por espaco): `…cun la terais…`, `…processo es pi…`, `…es pi nhoso…`, `…cun l at…`, `…l at erais…`, `…sac ra l…`, `…ra l Nota…`, `…de lo cali'lll…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…ndõe s…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…membros i nf…`, `…i nf eriores…`, `…pação p ro…`, `…p ro lapso…`, `…e pe rn…`, `…pe rn as…`, `…exte rn os…`, `…edema es -…`
-
-## BL56 — B-56 (Chengjin) - Tendão do Suporte
-- **locationText** (possivel palavra quebrada por espaco): `…5 c 1111…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…i1U1fÕ es 8-32…`, `…8 VB -25…`, `…ao lo ngo…`, `…4 c 1111…`, `…B-40 c --------…`, `…B-55 i 1…`, `…cun J 2…`
-- **indications[0]** (token com digito no meio de palavra): `1p`
-- **needling** (sequencia consonantal improvavel): `Cllll`
 
 ## BL58 — B-58 (Feiyang) - Voar em Ascendência
 - **locationText** (possivel palavra quebrada por espaco): `…vertic al que…`, `…B-57 C hei1gshan…`
@@ -117,15 +110,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 ## BL62 — B-62 (Shenmai) - Canal Estendido
 - **locationText** (possivel palavra quebrada por espaco): `…Fa ce…`, `…Fa ce lateral…`, `…dcsliz ar o…`
 - **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Sun Si Miao…`
-
-## BL67 — B-67 (Zhiyin) - Onde Começa o Yin
-- **locationText** (possivel palavra quebrada por espaco): `…laLera l e…`, `…de lo cali1…`, `…na ba se…`
-- **locationText** (token com digito no meio de palavra): `cali1`
-- **locationText** (maiuscula no meio da palavra (OCR)): `aLe`
-- **actions[0]** (possivel palavra quebrada por espaco): `…do Ji ao…`, `…Infe ri o…`, `…o r Elimina…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…má po sição…`, `…feto re tenção…`
-- **indications[0]** (token com digito no meio de palavra): `obsll1lção`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…/ ob…`
 
 ## CV3 — CV3 (Zhongji) - Middle Extremity (Central Pole)
 - **actions[0]** (possivel palavra quebrada por espaco): `…ifi ca e…`, `…oJíao In fe…`, `…In fe rior…`, `…o Qí do…`
@@ -162,11 +146,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **actions[0]** (possivel palavra quebrada por espaco): `…difund ee regula…`
 - **indications[0]** (possivel palavra quebrada por espaco): `…da s cordas…`, `…vocai s afonia…`
 - **needling** (token com digito no meio de palavra): `penetrar0`
-
-## CV23 — CV23 (Lianquan) - Corner (Ridge) Spring
-- **actions[0]** (possivel palavra quebrada por espaco): `…erior R egu…`, `…egu la o…`, `…o fl uxo…`, `…do Q i…`, `…Q i redi…`, `…lnve rt ido…`, `…as fu nções…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…vocai s sensação…`, `…brônqui ca surdez…`
-- **needling** (possivel palavra quebrada por espaco): `…recomendam nã o…`
 
 ## GB8 — VB-8 (Shuaigu) - Segu.indo o Vale
 - **indications[0]** (possivel palavra quebrada por espaco): `…infant il agudo…`
@@ -209,12 +188,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **indications[0]** (possivel palavra quebrada por espaco): `…dor/contratur i de…`, `…generalizada ri nites…`, `…toráci- ca sensação…`
 - **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Influência Hu i…`, `…Hu i do…`
 
-## GV14 — Du-14 (Dazhui) - Grande Vértebra
-- **locationText** (possivel palavra quebrada por espaco): `…cervical vn…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…do co rpo…`, `…pato gê ni…`, `…gê ni co…`, `…ni co de…`, `…de t odos…`, `…Yang R eduz…`, `…Qi D efe…`, `…cla r eia…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…co ntralllra…`, `…Calor ma lária…`
-- **needling** (token com digito no meio de palavra): `c1`
-
 ## GV16 — Du-16 (Fengfu) - Palácio dos Ventos
 - **locationText** (possivel palavra quebrada por espaco): `…1 c 1111…`, `…aci ma da…`
 - **indications[0]** (possivel palavra quebrada por espaco): `…súbita ob S…`, `…ob S surdez…`, `…neurol óg ica…`
@@ -251,40 +224,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **actions[0]** (possivel palavra quebrada por espaco): `…Umidade s Elimina…`
 - **actions[0]** (maiuscula no meio da palavra (OCR)): `oJi`
 - **indications[0]** (possivel palavra quebrada por espaco): `…ro menstruação…`
-
-## KI7 — R-7 (Fuliu) - Corrente que Retorna
-- **locationText** (possivel palavra quebrada por espaco): `…do ca lcânco…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…do R im…`, `…R im e…`, `…inferiores R eg…`, `…R eg ula…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…dos lí -…`, `…inferiore s poliomielite…`
-- **indications[0]** (maiuscula no meio da palavra (OCR)): `eSt`
-
-## IG4 — IG-4 (Hegu) - Vale Circundado
-- **locationText** (possivel palavra quebrada por espaco): `…rnetacarpal ll na…`, `…adut or do…`, `…palma co loque…`, `…metacarpais T e…`, `…e U e…`, `…de Ma Dan…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…regu la a…`
-- **indications[0]** (maiuscula no meio da palavra (OCR)): `bUç`
-- **needling** (possivel palavra quebrada por espaco): `…inserção pc rpcndicular…`, `…obliqua la 1…`
-
-## LI5 — IG-5 (Yangxi) - Riacho do Yang
-- **locationText** (possivel palavra quebrada por espaco): `…e cu rto…`
-- **locationText** (token com digito no meio de palavra): `anatô1`
-- **actions[0]** (possivel palavra quebrada por espaco): `…do pu oho…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…patologia s ocu…`, `…lares to nsiJite…`, `…odontalgia ur ti…`, `…distdrb io digestivo…`, `…mem br os…`, `…os s uperiores…`, `…depress ão e…`, `…maníaco-depressiva d oe…`
-- **indications[0]** (maiuscula no meio da palavra (OCR)): `iJi`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…punho IG /…`
-- **needling** (possivel palavra quebrada por espaco): `…aO S cun…`, `…cun i…`
-
-## LI10 — LI10 (Shousanli) - Três Distâncias do Braço
-- **locationText** (possivel palavra quebrada por espaco): `…e n tre…`, `…e lG Q11…`, `…Q11 c hl…`, `…c hl 2…`, `…a IG…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…e In testinos…`, `…Jiao M édio…`, `…e ai ivia…`, `…patogênico Re f…`, `…Re f orça…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…e co tovelo…`, `…hipertensão sí ndrome…`, `…seque la de…`
-
-## IG11 — IG-11 (Quchi) - Lagoa Tortuosa
-- **actions[0]** (maiuscula no meio da palavra (OCR)): `sCn`
-- **indications[0]** (possivel palavra quebrada por espaco): `…rinom ia olhos…`, `…diarreia di -…`, `…de co 1nbinaç…`, `…na pe le…`, `…pe le Du-14…`, `…depressão J cun…`, `…rancei ha e…`, `…carpo IG…`
-- **indications[0]** (token com digito no meio de palavra): `1nbina`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Ponto M ar…`, `…M ar He…`, `…Sun Si Miao…`
-- **relatedPatterns[0]** (maiuscula no meio da palavra (OCR)): `aSm`
-- **needling** (token com digito no meio de palavra): `Shaoha1`
 
 ## LI14 — IG-14 (Binao) - Proeminência Muscular do Braço
 - **indications[0]** (possivel palavra quebrada por espaco): `…ExempÚ s de…`, `…tuberculose IG…`
@@ -343,33 +282,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **indications[0]** (possivel palavra quebrada por espaco): `…infanti s pranto…`, `…da s mãos…`
 - **needling** (possivel palavra quebrada por espaco): `…fazer sa ngria…`, `…agul ha Lriangu…`
 
-## SI3 — SI3 (Houxi) - Back Stream (Ravine)
-- **locationText** (possivel palavra quebrada por espaco): `…metacarpal V Nota…`, `…de lo caliulção…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…os Ca nais…`, `…Ven to Exterior…`, `…Umidade Af a…`, `…a ta o…`, `…Inte rn o…`, `…icte rí cia…`, `…cia tr ata…`, `…leps ia Dispersa…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…al dor…`, `…locamen to lombar…`, `…agudo ce rvicalgia…`, `…ntais co nvulsão…`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…1 ID…`
-- **needling** (possivel palavra quebrada por espaco): `…c1 m em…`
-- **needling** (token com digito no meio de palavra): `c1`
-
-## SI10 — ID-10 (Naoshu) - Ponto do Umero
-- **locationText** (possivel palavra quebrada por espaco): `…Jianl Mn e…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…15 SJ ID-9…`, `…TG-1 I SJ-5…`, `…5 S J-…`, `…4 f D-14…`, `…bro CA "…`, `…" ID…`
-- **indications[0]** (token com digito no meio de palavra): `1n`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Qiao l 1…`
-
-## SI11 — SI11 (Tianzong) - Convergência Celestial
-- **actions[0]** (token com digito no meio de palavra): `pa1ogênioo`, `pleni1ude`
-- **indications[0]** (possivel palavra quebrada por espaco): `…de co "1…`, `…SJ-14 lG 10…`, `…4 ID -…`, `…2 S J-6…`, `…J-6 ID -3…`, `…mamária I D-11…`, `…D-9 ID…`
-- **indications[0]** (token com digito no meio de palavra): `co1ovelo`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…ter ço da…`
-- **relatedPatterns[0]** (token com digito no meio de palavra): `dis1ãncia`
-
-## SP4 — SP4 (Gongsun) - Yellow Emperor
-- **locationText** (possivel palavra quebrada por espaco): `…metatarsal I entre…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…H armoniza…`, `…e r emove…`, `…Harmoni za o…`, `…Chong M ai…`, `…M ai regula…`, `…menstruação Pr otege…`, `…e c lareia…`, `…de B aço…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…nas f ezes…`, `…epigástri ca bort…`, `…e nd omet…`, `…edema fa cial…`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…diarreia Ba…`
-
 ## BP6 — BP6 (Sanyinjiao) - Three Yin Meeting
 - **indications[0]** (possivel palavra quebrada por espaco): `…mol es com…`, `…o co prurido…`
 - **indications[0]** (token com digito no meio de palavra): `abdo1ne`
@@ -386,12 +298,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 - **actions[0]** (possivel palavra quebrada por espaco): `…Intestino s Beneficia…`
 - **indications[0]** (possivel palavra quebrada por espaco): `…com pu s…`, `…pu s muco…`
 - **indications[0]** (token com digito no meio de palavra): `co1n`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…/ Ba…`
-
-## SP10 — Ba-10 (Xuehai) - Mar do Sangue
-- **locationText** (possivel palavra quebrada por espaco): `…No ta de…`, `…de l oc…`, `…l oc al…`, `…oc al ização…`
-- **actions[0]** (possivel palavra quebrada por espaco): `…regu la a…`, `…circu la ção…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…E u mp/…`, `…com bi naç…`, `…urticária IG 1…`, `…SJ-5 VB F…`, `…VB F -2…`, `…····· Ba…`
 - **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…/ Ba…`
 
 ## ST2 — E-2 (Sibai) - Tudo Brilhando
@@ -418,17 +324,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 ## ST21 — ST21 (Liangmen) - Porta do Alimento
 - **actions[0]** (possivel palavra quebrada por espaco): `…dor i Eleva…`, `…a i estagnação…`
 - **indications[0]** (possivel palavra quebrada por espaco): `…ca dilatação…`
-
-## ST25 — ST25 (Tianshu) - Pi vô Celeste
-- **actions[0]** (possivel palavra quebrada por espaco): `…Nutritivo fo rtalece…`, `…tôma go remove…`
-- **indications[0]** (possivel palavra quebrada por espaco): `…rre ia paralisia…`, `…umbilica l dores…`, `…co1 n fezes…`, `…fezes mu co…`, `…mu co colite…`
-- **indications[0]** (token com digito no meio de palavra): `co1`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…Alanne Mu do…`
-
-## ST28 — ST28 (Shuidao) - Passagem da Água
-- **actions[0]** (possivel palavra quebrada por espaco): `…da Be xi…`, `…xi ga beneficia…`, `…do Sa t1…`, `…regulari za a…`
-- **actions[0]** (token com digito no meio de palavra): `t1`
-- **indications[0]** (possivel palavra quebrada por espaco): `…infertilidade re -…`, `…a fe cções…`, `…nefrite c istit…`
 
 ## ST29 — ST29 (Guilai) - Retorno
 - **actions[0]** (possivel palavra quebrada por espaco): `…Inferio r s…`, `…r s '…`
@@ -475,14 +370,6 @@ alterados** — exigem leitura do acupunturista contra o Atlas (nada foi inventa
 ## ST45 — E-45 (Lidui) - Porta Fundamental
 - **actions[0]** (possivel palavra quebrada por espaco): `…Calo r e…`
 - **indications[0]** (possivel palavra quebrada por espaco): `…epistax c paralisia…`, `…afta s perda…`
-
-## TE3 — SJ-3 (Zhongzhu) - Ilha do Meio
-- **locationText** (possivel palavra quebrada por espaco): `…metacarpais rv e…`, `…e V ou…`, `…de SJ -2…`, `…-2 Y en1en…`
-- **locationText** (token com digito no meio de palavra): `en1en`
-- **indications[0]** (possivel palavra quebrada por espaco): `…da co njuntiva…`, `…mudez su rdi…`, `…nido d or…`, `…d or de…`, `…tal lo mb…`, `…lo mb algia…`, `…das m ãos…`, `…mot or dos…`
-- **indications[0]** (token com digito no meio de palavra): `e1`
-- **relatedPatterns[0]** (possivel palavra quebrada por espaco): `…do Ca nal…`
-- **needling** (possivel palavra quebrada por espaco): `…5 cu n…`, `…cu n…`
 
 ## TA5 — SJ-5 (Waiguan) - Fechadura Exterior
 - **locationText** (possivel palavra quebrada por espaco): `…Fa ce…`, `…Fa ce dorsal…`

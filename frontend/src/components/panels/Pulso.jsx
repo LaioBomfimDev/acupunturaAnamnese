@@ -2,6 +2,8 @@ import { Panel } from '../ui/Panel';
 import { CheckGrid } from '../ui/CheckGrid';
 import { pulsePositions } from '../../data/pulseData';
 
+const PULSE_POSITION_GUIDE_SRC = '/maps/pulse-position-guide.webp';
+
 // Qualidades palpadas ficam no grupo "pulso:" (evidência de palpação);
 // sinais associados vão para "pulsoSinal:" e pesam como sintoma na análise.
 function PulsePositionBox({ side, pos, selectedMap, onToggle }) {
@@ -23,6 +25,13 @@ export function Pulso({ selectedMap, onToggle }) {
         <b>Proposta do módulo:</b> o checklist organiza achados por posição e órgão,
         incluindo qualidade do pulso e sinais associados para cruzar com língua e anamnese.
       </div>
+
+      <img
+        className="pulse-position-guide"
+        src={PULSE_POSITION_GUIDE_SRC}
+        alt="Mapa prático das posições do pulso nos punhos esquerdo e direito"
+        loading="lazy"
+      />
 
       <h3 style={{ marginTop: 24 }}>Lado Direito</h3>
       <div className="pulse-organ-grid">

@@ -39,7 +39,24 @@ function findApprovedReview(pointKey, reviews = []) {
   }) || null;
 }
 
-function buildFromReview(review, patternName, atlasReference) {
+// Completa a referencia do Atlas (indice visual) com a pagina do proprio review
+// quando o indice nao tiver (ex.: pontos extra como Yintang/Taiyang), para que a
+// citacao "livro + pagina" apareca sempre que a pagina existir.
+function mergeAtlasReference(atlasReference, review) {
+  const reviewAtlas = Array.isArray(review?.enrichment?.atlasReference)
+    ? review.enrichment.atlasReference[0]
+    : null;
+  if (!atlasReference && !reviewAtlas) return atlasReference || null;
+
+  const merged = atlasReference ? { ...atlasReference } : {};
+  if (!merged.printedPages?.length && reviewAtlas?.page?.length) merged.printedPages = reviewAtlas.page;
+  if (!merged.pdfPages?.length && reviewAtlas?.pdfPage?.length) merged.pdfPages = reviewAtlas.pdfPage;
+  if (!merged.referenceLabel) merged.referenceLabel = reviewAtlas?.source || 'Atlas Ednea Martins';
+  return merged;
+}
+
+function buildFromReview(review, patternName, atlasReferenceParam) {
+  const atlasReference = mergeAtlasReference(atlasReferenceParam, review);
   const normalized = normalizePointCode(review.code || review.displayCode);
   const displayCode = review.displayCode || displayPointCode(normalized);
   const canShowClinicalContent = isPointPageContentAllowed(review);

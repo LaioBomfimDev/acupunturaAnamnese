@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
-import { clinicalSources, clinicalWhy, sanitizeClinicalNote } from '../../knowledge/pointDisplaySanitize';
+import { clinicalCitation, clinicalWhy, pdfPageLabel, sanitizeClinicalNote } from '../../knowledge/pointDisplaySanitize';
 
 function formatPageList(pages = []) {
   return pages.length ? pages.join(', ') : 'sem página';
@@ -217,7 +217,8 @@ export function PointReviewDialog({
   // informacoes sao do administrador, nao do acupunturista que abre a ficha.
   const cleanNote = sanitizeClinicalNote(resolvedDetail.clinicalNote);
   const cleanWhy = clinicalWhy(resolvedDetail.why);
-  const cleanSourceList = clinicalSources(resolvedDetail.sources);
+  const citation = clinicalCitation(resolvedDetail);
+  const pdfPages = pdfPageLabel(resolvedDetail);
   const hasMapPreview = Boolean(asset?.src && location);
 
   return (
@@ -449,8 +450,9 @@ export function PointReviewDialog({
             )}
 
             <section className="point-review-section point-review-footnote">
-              <b>Fontes</b>
-              <p>{cleanSourceList.length ? cleanSourceList.join(' + ') : 'Fonte aguardando curadoria.'}</p>
+              <b>Fonte / referência</b>
+              <p>{citation || 'Fonte aguardando curadoria.'}</p>
+              {pdfPages && <small>Atlas em PDF: {pdfPages}</small>}
               {atlasLoadState === 'loading' && <small>Carregando índice do Atlas...</small>}
               {atlasLoadState === 'error' && <small>Índice visual do Atlas indisponível no momento.</small>}
             </section>

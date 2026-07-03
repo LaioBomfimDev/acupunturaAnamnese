@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  clinicalCitation,
   clinicalSources,
   clinicalWhy,
+  pdfPageLabel,
   sanitizeClinicalNote,
 } from '../../src/knowledge/pointDisplaySanitize.js';
 
@@ -36,4 +38,29 @@ test('why de sistema ("Biblioteca Viva") vira vazio; rationale clinico permanece
 test('fontes removem rotulo de sistema "Biblioteca Viva", mantendo a referencia bibliografica', () => {
   const out = clinicalSources(['Biblioteca Viva', 'Atlas dos Pontos de Acupuntura: Guia de Localizacao', 'Atlas Ednea Martins, p. 284-285']);
   assert.deepEqual(out, ['Atlas dos Pontos de Acupuntura: Guia de Localizacao', 'Atlas Ednea Martins, p. 284-285']);
+});
+
+test('citacao cita livro + pagina impressa do Atlas para o acupunturista conferir', () => {
+  const detail = {
+    sources: ['Biblioteca Viva', 'Atlas dos Pontos de Acupuntura: Guia de Localizacao'],
+    atlasReference: { referenceLabel: 'Atlas Ednea Martins, p. 284-285', printedPages: [284, 285], pdfPages: [301, 302] },
+  };
+  assert.equal(clinicalCitation(detail), 'Atlas dos Pontos de Acupuntura: Guia de Localização (Ednea Martins), p. 284–285');
+  assert.equal(pdfPageLabel(detail), 'p. 301–302');
+});
+
+test('citacao com pagina unica e sem pagina', () => {
+  assert.equal(
+    clinicalCitation({ atlasReference: { referenceLabel: 'Atlas Ednea Martins', printedPages: [854] } }),
+    'Atlas dos Pontos de Acupuntura: Guia de Localização (Ednea Martins), p. 854',
+  );
+  assert.equal(
+    clinicalCitation({ atlasReference: { referenceLabel: 'Atlas Ednea Martins', printedPages: [] } }),
+    'Atlas dos Pontos de Acupuntura: Guia de Localização (Ednea Martins)',
+  );
+});
+
+test('citacao nao-atlas cai para fontes bibliograficas limpas', () => {
+  assert.equal(clinicalCitation({ sources: ['Biblioteca Viva', 'WHO Standard'] }), 'WHO Standard');
+  assert.equal(clinicalCitation({ sources: ['Biblioteca Viva'] }), '');
 });

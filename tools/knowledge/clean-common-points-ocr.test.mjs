@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { cleanField, stripRunningHeads, collectDoubts } from './clean-common-points-ocr.mjs';
+import { cleanField, stripRunningHeads, collectDoubts, renderCleanSourceSection } from './clean-common-points-ocr.mjs';
 
 test('remove cabecalho/rodape de pagina injetado', () => {
   assert.equal(stripRunningHeads('Beneficia o nariz. ( TA/YANG DO PÉ ) - 363').trim(), 'Beneficia o nariz.');
@@ -44,4 +44,18 @@ test('nao inventa: trechos ambiguos permanecem e viram duvida', () => {
 test('idempotente: limpar texto ja limpo nao muda', () => {
   const once = cleanField('Faz a li1npcza do Ca l or do Coração');
   assert.equal(cleanField(once), once);
+});
+
+test('documenta pontos retirados da planilha por fonte limpa', () => {
+  const section = renderCleanSourceSection([
+    { code: 'LI4', displayCode: 'IG-4', title: 'Hegu', clinicalSource: 'reocr_atlas', residualDoubtCount: 3 },
+    { code: 'EXHN3', displayCode: 'EX-HN3', title: 'Yintang', clinicalSource: 'deep_curated_clean', residualDoubtCount: 0 },
+  ]).join('\n');
+
+  assert.match(section, /Pontos retirados da planilha de dúvidas por fonte limpa/);
+  assert.match(section, /reocr_atlas/);
+  assert.match(section, /deep_curated_clean/);
+  assert.match(section, /`IG-4`/);
+  assert.match(section, /`EX-HN3`/);
+  assert.match(section, /3 sinais residuais/);
 });

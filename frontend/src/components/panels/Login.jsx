@@ -104,10 +104,6 @@ const TERMS_SECTIONS = [
     ],
   },
 ];
-
-const WHATSAPP_HELP_TEXT = 'Oi, estou precisando de ajuda no Sistema Acup.';
-const WHATSAPP_HELP_URL = `https://wa.me/5571999703912?text=${encodeURIComponent(WHATSAPP_HELP_TEXT)}`;
-
 export function Login() {
   const { signInWithPassword } = useAuth();
   const [username, setUsername] = useState('');
@@ -360,56 +356,6 @@ export function Login() {
           </p>
         </button>
       </div>
-
-      <a
-        href={WHATSAPP_HELP_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Abrir conversa de ajuda no WhatsApp"
-        style={{
-          position: 'fixed',
-          right: '18px',
-          bottom: '18px',
-          zIndex: 900,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          maxWidth: 'calc(100vw - 36px)',
-          padding: '10px 12px',
-          borderRadius: '999px',
-          background: 'white',
-          color: '#123524',
-          textDecoration: 'none',
-          border: '1px solid rgba(22, 163, 74, 0.28)',
-          boxShadow: '0 14px 34px rgba(15, 23, 42, 0.16)',
-          fontSize: '13px',
-          fontWeight: 700
-        }}
-      >
-        <span style={{
-          minWidth: 0,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
-          Oi, está precisando de ajuda?
-        </span>
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: '0 0 auto',
-          minHeight: '34px',
-          padding: '0 13px',
-          borderRadius: '999px',
-          background: '#16a34a',
-          color: 'white',
-          fontSize: '12px',
-          letterSpacing: '0.2px'
-        }}>
-          WhatsApp
-        </span>
-      </a>
 
       {showTerms && (
         <div

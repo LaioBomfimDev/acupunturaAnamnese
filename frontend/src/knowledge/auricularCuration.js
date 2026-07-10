@@ -23,51 +23,10 @@ const localVisualAnchorSlugs = new Set([
   'estomago',
   'rim',
   'endocrino',
-  'ansiedade',
   'coracao',
-  'sono',
-  'fome',
 ]);
 
-// Pontos prioritários presentes na base clínica, mas sem coordenada que possa
-// ser vinculada com segurança à fonte auricular atual.
-const unlocatedCommonPoints = [
-  {
-    slug: 'utero',
-    name: 'Útero',
-    note: 'A fonte registra "Genitais internos / Útero"; a equivalência com o slug clínico Útero ainda precisa de revisão profissional.',
-  },
-  {
-    slug: 'ovario',
-    name: 'Ovário',
-    note: 'A fonte atual não fornece equivalência unívoca para o slug clínico Ovário.',
-  },
-  {
-    slug: 'depressao',
-    name: 'Depressão',
-    note: 'Ponto funcional de escola; sem coordenada vinculada de forma rastreável na fonte atual.',
-  },
-  {
-    slug: 'insonia',
-    name: 'Insônia',
-    note: 'Não deve ser confundido com o ponto local Sono sem revisão profissional da equivalência.',
-  },
-  {
-    slug: 'occipital',
-    name: 'Occipital',
-    note: 'A fonte cita Occipital menor, que não é equivalente automaticamente ao slug clínico Occipital.',
-  },
-  {
-    slug: 'fronte',
-    name: 'Fronte',
-    note: 'A prancha contém regiões anatômicas frontais, sem equivalência pontual confirmada para este slug.',
-  },
-  {
-    slug: 'talamo',
-    name: 'Tálamo',
-    note: 'Sem ponto correspondente confirmado na fonte auricular atual.',
-  },
-];
+const unlocatedCommonPoints = [];
 
 function buildPdfCuration(point) {
   const common = commonBySlug.get(point.slug);

@@ -29,6 +29,20 @@ test('registro Atlas saudavel continua clinicamente ativo', () => {
   assert.equal(normalizeKnowledgeReviewForClinicalUse(healthyAtlasReview), healthyAtlasReview);
 });
 
+test('aprovacao local por fidelidade OCR do Atlas entra como fonte confiavel', () => {
+  const ocrFaithful = {
+    code: 'CV12',
+    status: 'approved_local',
+    approvalMethod: 'atlas_ocr_faithful_operator_request',
+    locationText: 'No abdome, 4 cun acima da cicatriz umbilical.',
+    actions: ['Harmoniza o Estomago.'],
+    indications: ['gastralgia'],
+    needling: '1 a 1,5 cun perpendicular.',
+  };
+
+  assert.equal(isClinicallyActiveKnowledgeReview(ocrFaithful), true);
+});
+
 test('registro anotado como blockedFromClinical sai do uso clinico', () => {
   const quarantined = {
     ...healthyAtlasReview,

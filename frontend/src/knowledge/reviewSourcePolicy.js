@@ -1,5 +1,6 @@
 const TRUSTED_ATLAS_APPROVAL_METHODS = new Set([
   'atlas_extra_operator_request',
+  'atlas_ocr_faithful_operator_request',
   'bulk_high_confidence_operator_request',
   'auto_high_confidence_atlas',
 ]);

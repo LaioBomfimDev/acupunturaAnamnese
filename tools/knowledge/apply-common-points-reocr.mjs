@@ -25,6 +25,51 @@ function normCode(c) {
   return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+function asArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (!value) return [];
+  return [String(value)].filter(Boolean);
+}
+
+function isAtlasCharacteristic(value) {
+  const text = String(value || '').trim();
+  return /^(?:Ponto|Movimento)\b/i.test(text)
+    || /\b(?:Localização|Nota de localização|Método|Funções energéticas|Indicações)\b/i.test(text)
+    || /\b(?:dis1ãncia|pon10|ter ço)\b/i.test(text);
+}
+
+function mergeRelatedPatterns(existing, sourcePatterns) {
+  const preserved = asArray(existing).filter(item => !isAtlasCharacteristic(item));
+  const merged = [...asArray(sourcePatterns), ...preserved];
+  return [...new Set(merged)];
+}
+
+function mergeCautions(existing, sourceCautions) {
+  return [...new Set([...asArray(sourceCautions), ...asArray(existing)])];
+}
+
+function applyReocrEntry(review, entry) {
+  for (const f of FIELDS) {
+    if (entry[f] != null) review[f] = JSON.parse(JSON.stringify(entry[f]));
+  }
+  if (entry.title) review.title = entry.title;
+  if (entry.relatedPatterns) {
+    review.relatedPatterns = mergeRelatedPatterns(review.relatedPatterns, entry.relatedPatterns);
+  }
+  if (entry.cautions) {
+    review.cautions = entry.cautionsMode === 'replace'
+      ? asArray(entry.cautions)
+      : mergeCautions(review.cautions, entry.cautions);
+  }
+  review.status = 'approved_local';
+  review.approvalMode = 'local_only';
+  review.clinicalSource = 'reocr_atlas';
+  review.requiresProfessionalAudit = true;
+  // re-OCR limpo: zera o rastro de duvidas do OCR automatico para estes campos
+  if (review.ocrCleanup) review.ocrCleanup = { tool: 'apply-common-points-reocr.mjs', at: new Date().toISOString().slice(0, 10), reocr: true };
+  return review;
+}
+
 function applyTo(file, reocrByCode, label) {
   const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
   const arr = Array.isArray(raw) ? raw : raw.reviews;
@@ -32,13 +77,7 @@ function applyTo(file, reocrByCode, label) {
   for (const review of arr) {
     const entry = reocrByCode.get(normCode(review.code));
     if (!entry) continue;
-    for (const f of FIELDS) {
-      if (entry[f] != null) review[f] = JSON.parse(JSON.stringify(entry[f]));
-    }
-    review.clinicalSource = 'reocr_atlas';
-    review.requiresProfessionalAudit = true;
-    // re-OCR limpo: zera o rastro de duvidas do OCR automatico para estes campos
-    if (review.ocrCleanup) review.ocrCleanup = { tool: 'apply-common-points-reocr.mjs', at: new Date().toISOString().slice(0, 10), reocr: true };
+    applyReocrEntry(review, entry);
     applied += 1;
   }
   if (!DRY) fs.writeFileSync(file, JSON.stringify(raw, null, 2) + '\n');
@@ -46,8 +85,16 @@ function applyTo(file, reocrByCode, label) {
   return applied;
 }
 
-const reocr = JSON.parse(fs.readFileSync(REOCR, 'utf8'));
-const byCode = new Map(Object.entries(reocr.points).map(([code, data]) => [normCode(code), data]));
-console.log(`re-OCR fonte: ${byCode.size} pontos (${reocr._meta?.source || ''})`);
-applyTo(HIGH, byCode, 'high-confidence');
-applyTo(DEEP, byCode, 'deep-curated');
+function main() {
+  const reocr = JSON.parse(fs.readFileSync(REOCR, 'utf8'));
+  const byCode = new Map(Object.entries(reocr.points).map(([code, data]) => [normCode(code), data]));
+  console.log(`re-OCR fonte: ${byCode.size} pontos (${reocr._meta?.source || ''})`);
+  applyTo(HIGH, byCode, 'high-confidence');
+  applyTo(DEEP, byCode, 'deep-curated');
+}
+
+export { applyReocrEntry, mergeRelatedPatterns, normCode };
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

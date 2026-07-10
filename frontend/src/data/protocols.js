@@ -5,7 +5,7 @@
 export const protocols = {
   "Ascensão do Yang do Fígado": {
     body: ["F3", "VB20", "VB34", "TA5", "IG4", "R3"],
-    ear: ["Shen Men", "Fígado", "Subcórtex", "Ansiedade", "Rim"],
+    ear: ["Shen Men", "Fígado", "Subcórtex", "Rim"],
     moxa: ["Evitar se houver calor exuberante", "Considerar apenas em deficiência associada"],
     laser: ["F3", "VB20", "R3"],
     eletro: ["VB20 + F3 em baixa intensidade, conforme tolerância"],
@@ -21,7 +21,7 @@ export const protocols = {
   },
   "Umidade-Calor": {
     body: ["BP9", "E40", "IG11", "BP6", "VC12"],
-    ear: ["Baço", "Estômago", "Endócrino", "Shen Men", "Fome"],
+    ear: ["Baço", "Estômago", "Endócrino", "Intestino Grosso", "Shen Men"],
     moxa: ["Contraindicada enquanto houver calor/umidade-calor evidente"],
     laser: ["BP9", "E40", "IG11"],
     eletro: ["E40 + BP9 em baixa/moderada intensidade quando houver retenção importante"],
@@ -37,7 +37,7 @@ export const protocols = {
   },
   "Agitação do Shen por Calor": {
     body: ["C7", "PC6", "Yintang", "VG20", "BP6"],
-    ear: ["Shen Men", "Coração", "Subcórtex", "Sono", "Ansiedade"],
+    ear: ["Shen Men", "Coração", "Subcórtex", "Rim"],
     moxa: ["Evitar se houver calor, agitação intensa ou insônia por calor"],
     laser: ["C7", "PC6", "Yintang"],
     eletro: ["Evitar estímulo excessivo; priorizar baixa intensidade e sedação suave"],

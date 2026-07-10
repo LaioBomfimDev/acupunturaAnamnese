@@ -1,4 +1,6 @@
 export const HERBAL_CURATION_DECISIONS_KEY = 'acup_herbal_plant_curation_decisions_v1';
+export const HERBAL_TECHNICAL_TRIAGE_ORIGIN = 'technical_triage_from_source';
+export const HERBAL_WORKSHEET_PRELOAD_ORIGIN = 'worksheet_preload_for_professional_review';
 
 export const HERBAL_RELEASE_STATUS = [
   { value: 'source_only', label: 'Somente fonte' },
@@ -39,6 +41,10 @@ function normalizeStatus(value) {
   return HERBAL_RELEASE_STATUS.some(item => item.value === value) ? value : 'source_only';
 }
 
+function normalizeOptionalStatus(value) {
+  return HERBAL_RELEASE_STATUS.some(item => item.value === value) ? value : '';
+}
+
 export function normalizeHerbalCurationDecision(value = {}) {
   const plantId = normalizeText(value.plantId || value.itemId || value.id);
   const safetyReview = {
@@ -50,10 +56,13 @@ export function normalizeHerbalCurationDecision(value = {}) {
     id: normalizeText(value.id) || `herbal:${plantId}`,
     plantId,
     status: normalizeStatus(value.status || value.contentReleaseStatus),
+    proposedStatus: normalizeOptionalStatus(value.proposedStatus || value.worksheetSuggestedStatus),
     contentType: value.contentType === 'alimento' ? 'alimento' : 'planta_medicinal',
     decisionOrigin: normalizeText(value.decisionOrigin) || 'local_curator',
     approvalMode: normalizeText(value.approvalMode) || 'local_only',
     requiresProfessionalAudit: value.requiresProfessionalAudit !== false,
+    preloadSource: normalizeText(value.preloadSource || value.sourceWorksheet),
+    worksheetTier: normalizeText(value.worksheetTier),
     educationalSummary: normalizeText(value.educationalSummary),
     cautionSummary: normalizeText(value.cautionSummary),
     reviewNote: normalizeText(value.reviewNote),
@@ -149,7 +158,16 @@ export function removeLocalHerbalCurationDecision(plantId) {
 
 export function isHerbalTechnicalTriageDecision(decision = {}) {
   const normalized = normalizeHerbalCurationDecision(decision);
-  return normalized.decisionOrigin === 'technical_triage_from_source';
+  return normalized.decisionOrigin === HERBAL_TECHNICAL_TRIAGE_ORIGIN;
+}
+
+export function isHerbalWorksheetPreloadDecision(decision = {}) {
+  const normalized = normalizeHerbalCurationDecision(decision);
+  return normalized.decisionOrigin === HERBAL_WORKSHEET_PRELOAD_ORIGIN;
+}
+
+export function isHerbalSeedCurationDecision(decision = {}) {
+  return isHerbalTechnicalTriageDecision(decision) || isHerbalWorksheetPreloadDecision(decision);
 }
 
 export function mergeHerbalCurationDecisions(seedDecisions = [], localDecisions = []) {
@@ -174,8 +192,10 @@ export function materializeHerbalCurationRows(items = [], decisions = []) {
       ...plant,
       contentReleaseStatus: status,
       curationDecision: decision,
-      seedDecision: decision ? isHerbalTechnicalTriageDecision(decision) : false,
-      localDecision: decision ? !isHerbalTechnicalTriageDecision(decision) : false,
+      seedDecision: decision ? isHerbalSeedCurationDecision(decision) : false,
+      technicalTriageDecision: decision ? isHerbalTechnicalTriageDecision(decision) : false,
+      worksheetPreloadDecision: decision ? isHerbalWorksheetPreloadDecision(decision) : false,
+      localDecision: decision ? !isHerbalSeedCurationDecision(decision) : false,
       patientEligible: decision ? isHerbalPatientEligible(decision) : false,
     };
   });
@@ -219,6 +239,7 @@ export function summarizeHerbalCurationRows(rows = []) {
     total: rows.length,
     pending: rows.filter(row => !row.curationDecision).length,
     seeded: rows.filter(row => row.seedDecision).length,
+    worksheetPreloaded: rows.filter(row => row.worksheetPreloadDecision).length,
     localReviewed: rows.filter(row => row.localDecision).length,
     sourceOnly: count('source_only'),
     technical: count('curadoria_tecnica'),
@@ -243,6 +264,7 @@ export function downloadHerbalCurationDecisions({
       sourceOnlyByDefault: true,
       patientData: 'never',
       requiresProfessionalAudit: true,
+      localPreloadOnly: true,
     },
     seedDecisionCount: seedDecisions.length,
     localDecisionCount: localDecisions.length,

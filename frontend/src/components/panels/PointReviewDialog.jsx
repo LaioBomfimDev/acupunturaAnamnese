@@ -31,7 +31,7 @@ function DetailList({ items, empty = 'Não informado' }) {
   if (!items?.length) return <p className="small">{empty}</p>;
   return (
     <div className="point-detail-chip-row">
-      {items.map(item => <span key={item}>{item}</span>)}
+      {items.map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}
     </div>
   );
 }

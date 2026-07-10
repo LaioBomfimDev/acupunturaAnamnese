@@ -31,15 +31,15 @@ after(async () => {
   await server?.close();
 });
 
-test('categoria "Pontos comumente usados" tem exatamente 150 pontos com ids únicos', () => {
+test('categoria "Pontos comumente usados" tem apenas pontos corporais e auriculares chineses rastreados', () => {
   const { commonlyUsedPoints, commonlyUsedBodyPoints, commonlyUsedAuricularPoints } = commonlyUsed;
 
-  assert.equal(commonlyUsedPoints.length, 150);
+  assert.equal(commonlyUsedPoints.length, 142);
   assert.equal(commonlyUsedBodyPoints.length, 126);
-  assert.equal(commonlyUsedAuricularPoints.length, 24);
+  assert.equal(commonlyUsedAuricularPoints.length, 16);
 
   const ids = new Set(commonlyUsedPoints.map(entry => entry.id));
-  assert.equal(ids.size, 150);
+  assert.equal(ids.size, commonlyUsedPoints.length);
 
   for (const entry of commonlyUsedPoints) {
     assert.ok(entry.map, `entrada ${entry.id} sem mapa definido`);
@@ -68,11 +68,14 @@ test('todo ponto auricular comumente usado existe na base e está marcado', () =
     const point = knowledgeBase.auricularPoints.find(item => item.slug === entry.auricularSlug);
     assert.ok(point, `aurículo ${entry.auricularSlug} (${entry.name}) não encontrado na base`);
     assert.equal(point.commonlyUsed, true, `aurículo ${entry.auricularSlug} sem marcação commonlyUsed`);
+    assert.equal(point.curation?.officialChinese, true, `aurículo ${entry.auricularSlug} não está no trilho chinês/oficial`);
+    assert.equal(point.curation?.source?.id, 'pdf-auricular-local-sources');
+    assert.ok(point.curation?.sourcePage?.pdfPage, `aurículo ${entry.auricularSlug} sem página de fonte`);
   }
 
   const flagged = knowledgeBase.auricularPoints.filter(point => point.commonlyUsed);
   const uniqueFlagged = new Set(flagged.map(point => point.slug));
-  assert.equal(uniqueFlagged.size, 24);
+  assert.equal(uniqueFlagged.size, 16);
 });
 
 test('filtro de mapa preserva pontos corporais e prioriza auriculares localizáveis', () => {
@@ -90,27 +93,25 @@ test('filtro de mapa preserva pontos corporais e prioriza auriculares localizáv
   assert.ok(!commonlyUsedMapFilterCodes.has('auricular:sono'));
   assert.ok(!commonlyUsedMapFilterCodes.has('SP3'));
 
-  const expectedPending = [
-    'utero', 'ovario', 'depressao', 'insonia', 'occipital', 'fronte', 'talamo',
-  ];
   const summary = auricularCuration.auricularCurationSummary;
   assert.equal(summary.sourceRecords, 83);
-  assert.equal(summary.commonPriority, 24);
-  assert.equal(summary.commonMapReady, 17);
-  assert.equal(summary.commonAwaitingCoordinates, 7);
-  assert.equal(auricularCuration.auricularCurationRecords.length, 90);
+  assert.equal(summary.commonPriority, 16);
+  assert.equal(summary.commonMapReady, 16);
+  assert.equal(summary.commonAwaitingCoordinates, 0);
+  assert.equal(auricularCuration.auricularCurationRecords.length, 83);
   assert.ok(auricularCuration.auricularCurationRecords.every(record => record.approvalStatus === 'review'));
 
-  for (const slug of expectedPending) {
-    const record = auricularCuration.getAuricularCuration(slug);
-    assert.equal(record?.mapVisibility, 'hidden_until_coordinate_review');
+  for (const slug of [
+    'ansiedade', 'sono', 'fome', 'utero', 'ovario', 'depressao', 'insonia', 'occipital', 'fronte', 'talamo',
+  ]) {
     assert.equal(auricularCuration.isDefaultCommonMapLocationCode(`auricular:${slug}`), false);
+    assert.equal(commonlyUsed.isCommonlyUsedPointKey(`auricular:${slug}`), false);
   }
 
   const defaultEarLocations = mapLocations.getAllMapLocations()
     .filter(location => location.mapId === 'ear_lateral')
     .filter(location => auricularCuration.isDefaultCommonMapLocationCode(location.code));
-  assert.equal(defaultEarLocations.length, 17);
+  assert.equal(defaultEarLocations.length, 16);
 });
 
 test('helpers aceitam aliases brasileiros, nomes auriculares e prefixo auricular:', () => {
@@ -123,10 +124,42 @@ test('helpers aceitam aliases brasileiros, nomes auriculares e prefixo auricular
   assert.ok(commonlyUsed.isCommonlyUsedPointKey('auricular:supra-renal'));
   assert.ok(commonlyUsed.isCommonlyUsedPointKey('Adrenal'));
   assert.ok(commonlyUsed.isCommonlyUsedPointKey('Coluna Lombar'));
+  assert.ok(commonlyUsed.isCommonlyUsedPointKey('Simpático'));
 
   assert.ok(!commonlyUsed.isCommonlyUsedPointKey('SP3'));
   assert.ok(!commonlyUsed.isCommonlyUsedPointKey('Sono'));
+  assert.ok(!commonlyUsed.isCommonlyUsedPointKey('Ansiedade'));
+  assert.ok(!commonlyUsed.isCommonlyUsedPointKey('Útero'));
   assert.ok(!commonlyUsed.isCommonlyUsedPointKey(''));
+});
+
+test('auriculares comuns mantidos têm texto pt-BR limpo nos campos visíveis', () => {
+  const visibleText = knowledgeBase.auricularPoints
+    .filter(point => point.commonlyUsed)
+    .map(point => JSON.stringify({
+      name: point.name,
+      locationText: point.locationText,
+      actions: point.actions,
+      indications: point.indications,
+    }))
+    .join('\n');
+
+  for (const typo of [
+    'regulacao',
+    'vasodilatacao',
+    'constipacao',
+    'distensao',
+    'hipertensao',
+    'ulcera',
+    'proximo',
+    'anti-helice',
+    'helix',
+    'ossea',
+    'respiracao',
+    'depressao',
+  ]) {
+    assert.ok(!visibleText.includes(typo), `texto auricular comum ainda contém grafia sem pt-BR: ${typo}`);
+  }
 });
 
 test('filtro commonlyUsedOnly restringe candidatos do ranking aos pontos comumente usados', () => {

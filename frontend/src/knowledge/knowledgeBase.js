@@ -18,10 +18,7 @@ const baseAuricularSlugs = new Set([
   'estomago',
   'rim',
   'endocrino',
-  'ansiedade',
   'coracao',
-  'sono',
-  'fome',
 ]);
 
 function acupoint(data) {
@@ -555,82 +552,11 @@ export const auricularPoints = [
     relatedPatterns: ['Umidade-Calor', 'Deficiência de Qi do Baço'],
   }),
   auricularPoint({
-    slug: 'ansiedade',
-    name: 'Ansiedade',
-    actions: ['apoio sintomático para ansiedade e agitação'],
-    indications: ['ansiedade', 'agitação'],
-    relatedPatterns: ['Agitação do Shen por Calor'],
-  }),
-  auricularPoint({
     slug: 'coracao',
     name: 'Coração',
     actions: ['regular Shen', 'ansiedade, palpitação e sono'],
     indications: ['palpitação', 'insônia', 'ansiedade'],
     relatedPatterns: ['Agitação do Shen por Calor'],
-  }),
-  auricularPoint({
-    slug: 'sono',
-    name: 'Sono',
-    actions: ['regular sono e relaxamento'],
-    indications: ['insônia', 'sono leve'],
-    relatedPatterns: ['Agitação do Shen por Calor'],
-  }),
-  auricularPoint({
-    slug: 'fome',
-    name: 'Fome',
-    actions: ['regular apetite e compulsão'],
-    indications: ['compulsão alimentar', 'fome aumentada', 'desejo por doce'],
-    relatedPatterns: ['Umidade-Calor', 'Deficiência de Qi do Baço'],
-  }),
-  // --- Pontos auriculares da categoria "Pontos comumente usados" sem equivalente no PDF oficial ---
-  auricularPoint({
-    slug: 'utero',
-    name: 'Útero',
-    actions: ['regular ciclo menstrual', 'apoiar região pélvica'],
-    indications: ['cólica menstrual', 'irregularidade do ciclo', 'dor pélvica'],
-    relatedPatterns: ['Estagnação de Xue', 'Deficiência de Xue do Fígado'],
-  }),
-  auricularPoint({
-    slug: 'ovario',
-    name: 'Ovário',
-    actions: ['apoiar eixo hormonal e fertilidade'],
-    indications: ['irregularidade do ciclo', 'fertilidade', 'climatério'],
-    relatedPatterns: ['Deficiência de Yin do Rim'],
-  }),
-  auricularPoint({
-    slug: 'depressao',
-    name: 'Depressão',
-    actions: ['apoio sintomático para humor deprimido e apatia'],
-    indications: ['humor deprimido', 'apatia', 'tristeza'],
-    relatedPatterns: ['Deficiência de Qi do Pulmão', 'Deficiência de Qi do Baço'],
-  }),
-  auricularPoint({
-    slug: 'insonia',
-    name: 'Insônia',
-    actions: ['apoiar início e manutenção do sono'],
-    indications: ['dificuldade de iniciar o sono', 'despertares noturnos'],
-    relatedPatterns: ['Agitação do Shen por Calor', 'Deficiência de Yin do Rim'],
-  }),
-  auricularPoint({
-    slug: 'occipital',
-    name: 'Occipital',
-    actions: ['modular cefaleia e tensão cervical', 'apoiar sono'],
-    indications: ['cefaleia', 'cervicalgia', 'insônia'],
-    relatedPatterns: ['Ascensão do Yang do Fígado'],
-  }),
-  auricularPoint({
-    slug: 'fronte',
-    name: 'Fronte',
-    actions: ['modular cefaleia frontal e ansiedade'],
-    indications: ['cefaleia frontal', 'ansiedade', 'sinusite'],
-    relatedPatterns: ['Agitação do Shen por Calor'],
-  }),
-  auricularPoint({
-    slug: 'talamo',
-    name: 'Tálamo',
-    actions: ['modulação central da dor e sensorial'],
-    indications: ['dor crônica', 'hipersensibilidade', 'queixas neurológicas'],
-    relatedPatterns: ['Estagnação de Xue'],
   }),
   // Apenas pontos do padrão chinês oficial (ISO 17316 / WHATC) são expostos nos protocolos e
   // seleções clínicas padrão. Os pontos complementares ficam preservados em
@@ -651,7 +577,7 @@ export const patternDefinitions = {
     tags: ['fígado', 'yang', 'cefaleia', 'tontura', 'irritabilidade'],
     protocol: {
       body: ['LR3', 'GB20', 'GB34', 'TE5', 'LI4', 'KI3'],
-      ear: ['Shen Men', 'Fígado', 'Subcórtex', 'Ansiedade', 'Rim'],
+      ear: ['Shen Men', 'Fígado', 'Subcórtex', 'Rim'],
       moxa: ['Evitar se houver calor exuberante', 'Considerar apenas em deficiência associada'],
       laser: ['LR3', 'GB20', 'KI3'],
       eletro: ['GB20 + LR3 em baixa intensidade, conforme tolerância'],
@@ -691,7 +617,7 @@ export const patternDefinitions = {
     tags: ['umidade', 'calor', 'saburra amarela', 'edema', 'secreção'],
     protocol: {
       body: ['SP9', 'ST40', 'LI11', 'SP6', 'CV12'],
-      ear: ['Baço', 'Estômago', 'Endócrino', 'Shen Men', 'Fome'],
+      ear: ['Baço', 'Estômago', 'Endócrino', 'Intestino Grosso', 'Shen Men'],
       moxa: ['Contraindicada enquanto houver calor/umidade-calor evidente'],
       laser: ['SP9', 'ST40', 'LI11'],
       eletro: ['ST40 + SP9 em baixa/moderada intensidade quando houver retenção importante'],
@@ -731,7 +657,7 @@ export const patternDefinitions = {
     tags: ['shen', 'coração', 'ansiedade', 'insônia', 'palpitação'],
     protocol: {
       body: ['HT7', 'PC6', 'EX-HN3', 'GV20', 'SP6'],
-      ear: ['Shen Men', 'Coração', 'Subcórtex', 'Sono', 'Ansiedade'],
+      ear: ['Shen Men', 'Coração', 'Subcórtex', 'Rim'],
       moxa: ['Evitar se houver calor, agitação intensa ou insônia por calor'],
       laser: ['HT7', 'PC6', 'EX-HN3'],
       eletro: ['Evitar estímulo excessivo; priorizar baixa intensidade e sedação suave'],
@@ -754,7 +680,7 @@ export const patternDefinitions = {
     tags: ['rim', 'yin', 'calor vazio', 'suores noturnos', 'menopausa', 'insônia', 'zumbido'],
     protocol: {
       body: ['KI3', 'KI6', 'SP6', 'CV4', 'BL23'],
-      ear: ['Rim', 'Shen Men', 'Endócrino', 'Ansiedade', 'Sono'],
+      ear: ['Rim', 'Shen Men', 'Endócrino', 'Coração'],
       moxa: ['Contraindicada em calor vazio ativo'],
       laser: ['KI3', 'KI6', 'SP6'],
       eletro: ['KI3', 'SP6'],

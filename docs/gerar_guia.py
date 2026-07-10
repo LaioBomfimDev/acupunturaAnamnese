@@ -487,7 +487,7 @@ def build_story():
         ("Salvo automático",  "O sistema salva a cada interação — não há botão de salvar obrigatório. O indicador no topo mostra o status."),
         ("Múltiplas sessões", "Cada vez que você abre um paciente já existente, uma nova sessão é iniciada automaticamente."),
         ("Atalho diagnóstico","Se quiser pular direto para o Protocolo, o sistema ainda funcionará — apenas a IA terá menos dados para sugerir."),
-        ("Perfil clínico",    "Usuários 'Acupunturista' veem os 150 pontos mais comuns. Super Admin tem visão irrestrita de todos os pontos."),
+        ("Perfil clínico",    "Usuários 'Acupunturista' veem os pontos comuns curados. Super Admin tem visão irrestrita de todos os pontos."),
         ("Dark mode",         "O sistema suporta tema escuro — alternável nas configurações de perfil."),
     ]
     for titulo, texto in dicas:

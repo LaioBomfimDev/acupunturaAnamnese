@@ -206,6 +206,28 @@ function SafetyChecklist({ form, setForm }) {
   );
 }
 
+function WorksheetPreloadNotice({ row, onApply }) {
+  const decision = row?.curationDecision;
+  if (!row?.worksheetPreloadDecision || !decision?.proposedStatus) return null;
+
+  return (
+    <div className="herbal-preload-notice">
+      <div>
+        <span>Pré-carga local do worksheet</span>
+        <b>Proposta: {statusLabel(decision.proposedStatus)}</b>
+        <p>
+          Síntese e cautelas foram preenchidas para revisão no SuperAdm. Nada foi publicado ao paciente;
+          aprovação permanece local e exige auditoria profissional.
+        </p>
+        <small>
+          approvalMode: {decision.approvalMode} · requiresProfessionalAudit: {String(decision.requiresProfessionalAudit)}
+        </small>
+      </div>
+      <button type="button" className="quiet-button" onClick={onApply}>Usar proposta</button>
+    </div>
+  );
+}
+
 export function HerbalPlantCurationPanel() {
   const [loadState, setLoadState] = useState('loading');
   const [error, setError] = useState('');
@@ -224,7 +246,10 @@ export function HerbalPlantCurationPanel() {
       .then(data => {
         if (cancelled) return;
         setPayload(data);
-        const first = data.rows.find(row => !row.curationDecision) || data.rows[0] || null;
+        const first = data.rows.find(row => row.worksheetPreloadDecision)
+          || data.rows.find(row => !row.curationDecision)
+          || data.rows[0]
+          || null;
         setSelectedId(first?.id || '');
         setActivePage(first?.sourcePdfPages?.[0] || 0);
         setForm(reviewFormFromRow(first));
@@ -326,6 +351,7 @@ export function HerbalPlantCurationPanel() {
         <div className="admin-stat-grid">
         <div className="security-card admin-stat-card total"><span>Plantas</span><b>{summary.total}</b><p>fichas da fonte</p></div>
         <div className="security-card admin-stat-card pending"><span>Triagem técnica</span><b>{summary.seeded}</b><p>regras conservadoras da fonte</p></div>
+        <div className="security-card admin-stat-card pending"><span>Pré-cargas</span><b>{summary.worksheetPreloaded}</b><p>worksheet local em revisão</p></div>
         <div className="security-card admin-stat-card suspended"><span>Restritas</span><b>{summary.restricted}</b><p>com toxicologia registrada</p></div>
         <div className="security-card admin-stat-card patients"><span>Revisões locais</span><b>{summary.localReviewed}</b><p>substituem a triagem</p></div>
         <div className="security-card admin-stat-card active"><span>Aprovadas</span><b>{summary.approved}</b><p>{summary.patientEligible} publicada(s) ao paciente</p></div>
@@ -387,7 +413,9 @@ export function HerbalPlantCurationPanel() {
                 </div>
                 <div className="admin-user-meta">
                   <span className={`admin-status ${statusTone(row.contentReleaseStatus)}`}>{statusLabel(row.contentReleaseStatus)}</span>
-                  {row.seedDecision && <small>triagem técnica</small>}
+                  {row.technicalTriageDecision && <small>triagem técnica</small>}
+                  {row.worksheetPreloadDecision && <small>pré-carga local</small>}
+                  {row.curationDecision?.proposedStatus && <small>proposta: {statusLabel(row.curationDecision.proposedStatus)}</small>}
                   {row.localDecision && <small>revisão local</small>}
                 </div>
               </button>
@@ -430,6 +458,14 @@ export function HerbalPlantCurationPanel() {
                       <h3>Revisão da ficha</h3>
                     </div>
                   </div>
+
+                  <WorksheetPreloadNotice
+                    row={selectedRow}
+                    onApply={() => setForm(prev => ({
+                      ...prev,
+                      status: selectedRow.curationDecision.proposedStatus,
+                    }))}
+                  />
 
                   <div className="herbal-form-grid">
                     <label>

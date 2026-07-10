@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-04T02:41:37.184Z",
+  "approvalMode": "local_only",
+  "approvalMethod": "operator_approved_quarantine_worksheet",
+  "sourceWorksheet": "docs/quarantine-curation-worksheet.json",
+  "approved": [
+    {
+      "code": "ATLAS-EXTRA-GENPING",
+      "tier": "B",
+      "fields": {
+        "location": true,
+        "actions": false,
+        "indications": false,
+        "needling": false
+      }
+    },
+    {
+      "code": "ATLAS-EXTRA-SHANGJINGMING",
+      "tier": "B",
+      "fields": {
+        "location": true,
+        "actions": false,
+        "indications": false,
+        "needling": false
+      }
+    },
+    {
+      "code": "ATLAS-EXTRA-SHANGLIANQUAN",
+      "tier": "B",
+      "fields": {
+        "location": true,
+        "actions": false,
+        "indications": false,
+        "needling": false
+      }
+    },
+    {
+      "code": "EX-HN4",
+      "tier": "A",
+      "fields": {
+        "location": true,
+        "actions": true,
+        "indications": true,
+        "needling": true
+      }
+    },
+    {
+      "code": "EX-HN6",
+      "tier": "A",
+      "fields": {
+        "location": true,
+        "actions": true,
+        "indications": false,
+        "needling": true
+      }
+    },
+    {
+      "code": "EX-HN8",
+      "tier": "A",
+      "fields": {
+        "location": true,
+        "actions": true,
+        "indications": true,
+        "needling": true
+      }
+    },
+    {
+      "code": "EX-HN12",
+      "tier": "A",
+      "fields": {
+        "location": true,
+        "actions": false,
+        "indications": false,
+        "needling": true
+      }
+    },
+    {
+      "code": "EX-LE2",
+      "tier": "A",
+      "fields": {
+        "location": true,
+        "actions": false,
+        "indications": false,
+        "needling": true
+      }
+    },
+    {
+      "code": "EX-UE1",
+      "tier": "A",
+      "fields": {
+        "location": true,
+        "actions": false,
+        "indications": false,
+        "needling": true
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "code": "ATLAS-EXTRA-BICHONG",
+      "tier": "C",
+      "reason": "sem fonte utilizavel"
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING",
+      "tier": "B",
+      "reason": "baixa confianca"
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING-N-1",
+      "tier": "C",
+      "reason": "sem fonte utilizavel"
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANMING-N-3",
+      "tier": "C",
+      "reason": "sem fonte utilizavel"
+    },
+    {
+      "code": "ATLAS-EXTRA-JIANXI",
+      "tier": "C",
+      "reason": "sem fonte utilizavel"
+    }
+  ],
+  "counts": {
+    "approved": 9,
+    "skipped": 5
+  }
+}

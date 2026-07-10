@@ -6,6 +6,7 @@ import {
   HERBAL_CURATION_DECISIONS_KEY,
   filterHerbalCurationRows,
   getLocalHerbalCurationDecisions,
+  isHerbalPatientEligible,
   materializeHerbalCurationRows,
   mergeHerbalCurationDecisions,
   saveLocalHerbalCurationDecision,
@@ -121,9 +122,52 @@ test('decisão local substitui a triagem técnica e a triagem nunca libera pacie
   assert.equal(row.patientEligible, false);
 });
 
+test('pré-carga do worksheet não conta como revisão local nem publica paciente', () => {
+  const preload = {
+    id: `seed:worksheet:${plant.id}`,
+    plantId: plant.id,
+    status: 'curadoria_tecnica',
+    proposedStatus: 'educativo_aprovado',
+    decisionOrigin: 'worksheet_preload_for_professional_review',
+    approvalMode: 'local_only',
+    requiresProfessionalAudit: true,
+    educationalSummary: 'Resumo educativo seguro já preparado para revisão.',
+    cautionSummary: 'Cautelas revisadas sem orientação de dose, preparo ou combinação.',
+    reviewNote: 'Pré-carga local do worksheet para revisão profissional.',
+    safetyReview: {
+      botanicalIdentityConfirmed: false,
+      partUsedConfirmed: true,
+      toxicologyReviewed: true,
+      interactionsReviewed: false,
+      vulnerableGroupsReviewed: false,
+      sourceScopeConfirmed: false,
+    },
+  };
+  const [row] = materializeHerbalCurationRows([plant], [preload]);
+  const summary = summarizeHerbalCurationRows([row]);
+
+  assert.equal(row.contentReleaseStatus, 'curadoria_tecnica');
+  assert.equal(row.seedDecision, true);
+  assert.equal(row.worksheetPreloadDecision, true);
+  assert.equal(row.localDecision, false);
+  assert.equal(row.patientEligible, false);
+  assert.equal(row.curationDecision.proposedStatus, 'educativo_aprovado');
+  assert.equal(summary.worksheetPreloaded, 1);
+  assert.equal(summary.approved, 0);
+  assert.equal(isHerbalPatientEligible(preload), false);
+});
+
 test('catálogo de ervas usa chave interna de fonte protegida', () => {
   const service = readFileSync(new URL('../../src/services/herbalPlantCurationService.js', import.meta.url), 'utf8');
   assert.match(service, /HERBAL_PLANT_CATALOG_ASSET_KEY = 'pdf-sources\/ebook-ervas-medicinais\/plant-catalog\.local\.json'/);
   assert.match(service, /HERBAL_CURATION_SEED_ASSET_KEY = 'pdf-sources\/ebook-ervas-medicinais\/herbal-curation-seed-decisions\.local\.json'/);
   assert.match(service, /fetchKnowledgeSourceJsonAsset\(/);
+});
+
+test('relatório não oferece propostas do worksheet como ervas liberadas', () => {
+  const report = readFileSync(new URL('../../src/components/panels/Relatorio.jsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(report, /HERBAL_CATALOG/);
+  assert.doesNotMatch(report, /worksheetSuggestedStatus/);
+  assert.doesNotMatch(report, /suggestedStatus/);
+  assert.match(report, /Ervas só entram após publicação explícita/);
 });

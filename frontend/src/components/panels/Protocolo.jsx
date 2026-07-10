@@ -28,6 +28,7 @@ import {
   loadAtlasEdneaSourceIndex,
 } from '../../knowledge/sourceReferences';
 import { PointReviewDialog } from './PointReviewDialog';
+import { DietoterapiaEducativa } from './DietoterapiaEducativa';
 
 function pointKey(point) {
   return point?.code || point?.displayCode || point?.label || point;
@@ -111,7 +112,16 @@ function snapshotSuggestion(suggestion) {
   };
 }
 
+// Rótulos administrativos/genéricos que não interessam ao profissional na tela
+// (proveniência da curadoria). Ficam de fora da exibição, mas seguem no score.
+const GENERIC_REASONS = new Set(['aprovado Biblioteca Viva', 'protocolo base']);
+
+function clinicalReasons(reasons) {
+  return (reasons || []).filter(reason => !GENERIC_REASONS.has(reason));
+}
+
 function SuggestionRow({ item, origem, checked, onToggleSelect, onDetail }) {
+  const reasons = clinicalReasons(item.reasons).slice(0, 2);
   return (
     <div className="suggestion-row">
       <label className="suggestion-check">
@@ -124,7 +134,7 @@ function SuggestionRow({ item, origem, checked, onToggleSelect, onDetail }) {
       </label>
       <button type="button" className="suggestion-info" onClick={() => onDetail(item.point)}>
         <b>{item.point.label}</b>
-        <small>{item.reasons.slice(0, 3).join(' • ')}</small>
+        {reasons.length > 0 && <small>{reasons.join(' • ')}</small>}
         {item.cautions.length > 0 && <em>{item.cautions.join(' • ')}</em>}
       </button>
       <strong className="suggestion-score" title="Pontuação clínica">{item.score}</strong>
@@ -211,6 +221,9 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
   const moxaPlan = buildMoxaTechniquePlan({ protocol, patternName: main, clinicalText: clinicalTechniqueText });
 
   const [filtros, setFiltros] = useState([DEFAULT_PROTOCOL_TECHNIQUE]);
+  // Dietoterapia não é técnica de ponto: abre uma seção educativa própria,
+  // fora de PROTOCOL_TECHNIQUES, que esconde mapas/sugestões (ver docs/plano-dietoterapia.md).
+  const [showDietoterapia, setShowDietoterapia] = useState(false);
   const [commonOnly, setCommonOnly] = useState(true);
   const [pointInfoBox, setPointInfoBox] = useState(null);
   const [atlasSourceIndex, setAtlasSourceIndex] = useState(null);
@@ -281,6 +294,7 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
   }, []);
 
   function toggleFiltro(t) {
+    setShowDietoterapia(false);
     setFiltros(prev => selectProtocolTechniqueFilter(prev, t));
   }
 
@@ -322,18 +336,27 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
             <button
               key={t}
               type="button"
-              className={`tag${activeTechniqueFilter === t ? ' active' : ''}`}
+              className={`tag${!showDietoterapia && activeTechniqueFilter === t ? ' active' : ''}`}
               onClick={() => toggleFiltro(t)}
-              aria-pressed={activeTechniqueFilter === t}
+              aria-pressed={!showDietoterapia && activeTechniqueFilter === t}
             >
-              {activeTechniqueFilter === t ? '✓ ' : ''}{t}
+              {!showDietoterapia && activeTechniqueFilter === t ? '✓ ' : ''}{t}
             </button>
           ))}
+          <button
+            type="button"
+            className={`tag${showDietoterapia ? ' active' : ''}`}
+            onClick={() => setShowDietoterapia(true)}
+            aria-pressed={showDietoterapia}
+            title="Material educativo de dietoterapia chinesa — não é técnica de ponto"
+          >
+            {showDietoterapia ? '✓ ' : ''}Dietoterapia
+          </button>
         </div>
         <p className="small">
-          Seção ativa: {activeTechniqueFilter}.
+          Seção ativa: {showDietoterapia ? 'Dietoterapia (educativo)' : activeTechniqueFilter}.
         </p>
-        {showPointOverview && (
+        {showPointOverview && !showDietoterapia && (
           <div className="protocol-map-filter">
             <b>Pontos no mapa:</b>
             <button
@@ -362,7 +385,13 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
         </div>
       )}
 
-      <div className={protocolLayoutClass}>
+      {showDietoterapia && (
+        <DietoterapiaEducativa
+          anamneseText={[state?.queixa, state?.historia, state?.observacoes, selectedClinicalText(selectedMap)].filter(Boolean).join(' ')}
+        />
+      )}
+
+      <div className={protocolLayoutClass} style={showDietoterapia ? { display: 'none' } : undefined}>
         {showPointOverview && (
           <div>
             {enabled('Sistêmicos') && fullBodyAsset && (
@@ -390,10 +419,9 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
           </div>
         )}
 
-        <div>
-          {showPointOverview && (
-            <div className="tech-card">
-              <h4>Resumo dos pontos</h4>
+        {showPointOverview && (
+          <div className="tech-card">
+            <h4>Resumo dos pontos</h4>
               <table className="protocol-table">
                 <tbody>
                   {enabled('Sistêmicos') && <tr><td>Corpo</td><td>{chips(bodyPoints)}</td></tr>}
@@ -404,7 +432,7 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
           )}
 
           {showPointOverview && (
-            <div className="tech-card">
+            <div className="tech-card protocol-suggestion-full">
               <h4>Sugestão da sessão</h4>
               {hasSuggestionItems ? (
                 <>
@@ -418,7 +446,7 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
                     sessionSuggestion.groups[group.id].length > 0 && (
                       <div key={group.id} className="suggestion-group">
                         <h5>{group.label} <span>{group.hint}</span></h5>
-                        <div className="point-recommendation-list">
+                        <div className={`point-recommendation-list${group.id === 'essential' ? '' : ' point-recommendation-list--dense'}`}>
                           {sessionSuggestion.groups[group.id].map(item => (
                             <SuggestionRow
                               key={item.point.code}
@@ -493,12 +521,13 @@ export function Protocolo({ state, selectedMap, analysis, onUpdate }) {
               <div className="warning-soft">Evitar estímulo excessivo em pacientes muito ansiosos, debilitados, gestantes ou com contraindicações específicas.</div>
             </div>
           )}
-        </div>
       </div>
 
-      <div className="box" style={{ marginTop: 16 }}>
-        <b>Leitura clínica:</b> o protocolo não deve ser aplicado como receita fixa. A seleção final depende de idade, queixa, pulso, língua, tolerância, medicamentos, sinais de alerta e objetivo da sessão.
-      </div>
+      {!showDietoterapia && (
+        <div className="box" style={{ marginTop: 16 }}>
+          <b>Leitura clínica:</b> o protocolo não deve ser aplicado como receita fixa. A seleção final depende de idade, queixa, pulso, língua, tolerância, medicamentos, sinais de alerta e objetivo da sessão.
+        </div>
+      )}
 
       <PointReviewDialog
         entry={pointInfoBox}

@@ -32,7 +32,10 @@ export type CorrectionSurface =
   | 'anamnese_marks'
   | 'clinical_reasoning'
   | 'narrative'
-  | 'library_qa';
+  | 'library_qa'
+  | 'food_research'
+  | 'psych_marks'
+  | 'psych_reading';
 
 export interface CorrectionLesson {
   correction_text: string;

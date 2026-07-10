@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const fnDir = path.resolve(root, '../supabase/functions');
 
-// As 5 superfícies de IA e o arquivo da Edge Function de cada uma,
+// As superfícies de IA e o arquivo da Edge Function de cada uma,
 // com o literal de superfície esperado na injeção de correções.
 const SURFACES = [
   { id: 'tongue', file: 'analyze-tongue/index.ts' },
@@ -16,6 +16,16 @@ const SURFACES = [
   { id: 'clinical_reasoning', file: 'clinical-reasoning/index.ts' },
   { id: 'narrative', file: 'draft-narrative/index.ts' },
   { id: 'library_qa', file: 'library-qa/index.ts' },
+  { id: 'food_research', file: 'food-research/index.ts' },
+  { id: 'psych_marks', file: 'psych-suggest-marks/index.ts' },
+  { id: 'psych_reading', file: 'psych-reading/index.ts' },
+];
+
+// A CHECK de surface começou no 20260619 e foi ampliada em migrações seguintes.
+const SURFACE_MIGRATIONS = [
+  '../supabase/migrations/20260619_ai_corrections.sql',
+  '../supabase/migrations/20260705_ai_corrections_food_research.sql',
+  '../supabase/migrations/20260711_ai_corrections_psychology.sql',
 ];
 
 let server;
@@ -37,7 +47,7 @@ after(async () => {
 
 // ===== Serviço do frontend =====
 
-test('AI_SURFACES cobre exatamente as 5 superfícies de IA', () => {
+test('AI_SURFACES cobre exatamente as superfícies de IA', () => {
   const { AI_SURFACES } = aiCorrectionService;
   assert.deepEqual(
     Object.values(AI_SURFACES).sort(),
@@ -71,7 +81,7 @@ test('submitAiCorrection exige a versão correta (texto não vazio)', async () =
 
 // ===== Edge Functions: injeção das lições de correção =====
 
-test('as 5 Edge Functions importam e aplicam as lições de correção', async () => {
+test('as Edge Functions importam e aplicam as lições de correção', async () => {
   for (const { id, file } of SURFACES) {
     const source = await readFile(path.resolve(fnDir, file), 'utf8');
     assert.match(
@@ -106,13 +116,17 @@ test('_shared/corrections.ts expõe o contrato do loop de ensino', async () => {
 
 // ===== Migração: tabela e CHECK de superfícies =====
 
-test('a migração ai_corrections cobre as 5 superfícies e o gate de aprovação', async () => {
+test('a migração ai_corrections cobre as superfícies e o gate de aprovação', async () => {
   const source = await readFile(
     path.resolve(root, '../supabase/migrations/20260619_ai_corrections.sql'),
     'utf8',
   );
+  // A CHECK de surface é ampliada por migrações seguintes — junta todas.
+  const surfaceSql = (
+    await Promise.all(SURFACE_MIGRATIONS.map(f => readFile(path.resolve(root, f), 'utf8')))
+  ).join('\n');
   for (const { id } of SURFACES) {
-    assert.ok(source.includes(`'${id}'`), `CHECK de surface deve incluir '${id}'`);
+    assert.ok(surfaceSql.includes(`'${id}'`), `CHECK de surface deve incluir '${id}'`);
   }
   for (const status of ['pending', 'approved', 'rejected']) {
     assert.ok(source.includes(`'${status}'`), `CHECK de status deve incluir '${status}'`);

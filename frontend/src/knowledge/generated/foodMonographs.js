@@ -1,0 +1,4677 @@
+// ============================================================
+// foodMonographs — AUTO-GERADO. NÃO editar à mão.
+//
+// Fonte única: "Sistema Chinês de Curas Alimentares" (Henry C. Lu, ed. Roca).
+// Extraído da camada de texto/OCR do PDF (231 págs.) e limpo por script.
+// pageOffset = 15  →  página impressa = página do PDF − 15.
+//
+// Cada entrada é o conteúdo TRADICIONAL do livro (indicações, descrição
+// energia/sabor/órgãos, aplicações com quantidades, relatórios clínicos e
+// comentários). É REFERÊNCIA DE CONHECIMENTO DO PROFISSIONAL — não é
+// prescrição, plano alimentar nem indicação automática ao paciente. As
+// aplicações citam quantidades e preparos exatamente como o livro descreve;
+// use com o julgamento clínico e o gate de curadoria (foodDietoterapiaCuration).
+//
+// Regenerar: python tools/knowledge/extract-food-monographs.py "<PDF>"
+// ============================================================
+
+export const FOOD_MONOGRAPHS_SOURCE = {
+  key: 'sistema-chines-curas-alimentares',
+  title: 'Sistema Chinês de Curas Alimentares',
+  author: 'Henry C. Lu',
+  pageOffset: 15,
+};
+
+export const FOOD_MONOGRAPHS = [
+  {
+    "id": "item",
+    "name": "(Erva-doce Estrelar)",
+    "page": 41,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Hérnia, dor abdominal, lumbago, beribéri, vômito",
+    "descricao": "Morna; pungente e doce; aquece a energia Yang (energia que percorre na pele e nos músculos como oposto da energia Yil1 que percorre através dos órgãos internos) e promove a circulação energética; afeta baço, rins e fígado.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Esmague 7 \"star anises\" e 7 cabeças brancas de cebolas frescas, e ferva-as em 3 xícaras de água sobre fogo baixo até que o liquido seja reduzido a 1 xícara. Beba isto como chá, duas vezes ao dia, para curar constipação , dificuldade de urinação e inchação abdominal.",
+      "Asse 40g de \"star anise\" e moa até tornar-se pó; beba 5g de cada vez do pó dissol vido em vinho de arroz morno, duas vezes ao dia, para aliviar hérnia do intestino delgado .",
+      "Frite \"star anise\" e moa até tornar-se pó; dissolva 7g do pó com um pouco de sal em água morna antes das refeições, duas vezes ao dia, para curar ltunbago."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "De acordo com a Teoria Tradicional Chinesa, o \"star anise \" cura todos os tipos de sintomas de frio, tanto como hérnia , escroto inflamado, lumbago e beribéri. É sensato tomar \"star anise\" com um pouco de sal , vinho de arroz e canela para melhores resultados. Se você tem doença ocular ou doença de pele, você deve evitar o \"star . \" amse ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-erva-doce",
+    "name": "Semente de Erva-doce",
+    "page": 42,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Hérnia, dor fria no abdômen inferior, lumbago, dor de estômago, vômito, beribéri seca e úmida",
+    "descricao": "Morna; pungente; aquece as regiões internas e promove a circulação energética; afeta os rins, bexiga e estômago.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "estomago",
+      "rins",
+      "bexiga"
+    ],
+    "aplicacoes": [
+      "Prepare 40g de sementes de damasco; esmague 20g de cabeças brancas de cebolas frescas com raízes e asse até secar; prepare 40g de semente de erva-doce; moa todos os ingredientes até tornarem-se pó. Beba 10g de cada vez do pó dissolvido em vinho de arroz, duas vezes ao dia, para aliviar a dor na hérnia do intestino delgado.",
+      "Frite quantidades iguais de sementes de erva-doce e de lechia e moa até tornarem-se pó; dissolva lOg do pó em vinho de arroz e beba de cada vez, duas vezes ao dia, para aliviar a dor na hérnia do intestino delgado.",
+      "Meça quantidades iguais de erva-doce e de pimenta-da-reino e moaos até tornarem-se pó; dissolva 10g de cada vez do pó em vinho de arroz, duas vezes ao dia, para aliviar a dor no intestino delgado.",
+      "Para lumbago, quando estiver incapaz de virar-se para os lados e fadiga extrema, cozinhe fatias de rins de porco com erva-doce frita e coma nas refeições.",
+      "Para curar dor de estômago fria e dor abdominal, use erva-doce e gengibre como temperos quando preparar as refeições ."
+    ],
+    "relatoriosClinicos": [
+      "Para o tratamento de hérnia encarcerada do intestino delgado, use 10 a 20g de erva-doce (menos para as crianças) para fazer chá; beba quente; se nenhum efeito for mostrado dentro de 15 a 30min, repita mais uma vez . Ou, use água quente para fazer caldo de erva -doc e (4 a 8g de semente de erva-doce para adultos e 2g para crianças), e beba-o; 10min depois, repita e beba mais uma vez, então deite-se de costas com suas pernas juntas e os joelhos meio curvados por 40min. Em geral, a hérnia encarcerada deve restaurar-se dentro de meia hora, e a dor deve desaparecer ou melhorar, de outro modo , a cirurgia é indicada, de acordo com o seu relatório clinico. Entre os 26 casos tratados de 2h a 3 dias, 22 casos se recuperaram e 4 casos mostraram nenhum efeito (3 casos de omento maior encarcerado e 1 caso de necrose parietal). O relatório também indica que os resultados do tratamento são melhores nos casos com uma história mais curta da doença; se os sintomas possuem uma longa história, necrose e perfurações já podem ter ocorrido e não devem ser tratados por este método. Em caso de omento maior encarcerado, a cir urgia deve ser considerada, de acordo com este relatório .",
+      "Para o tratamento de hidrocele de túnica vaginal e elefantíase escrotal: frite 16g de erva-doce e 5g de sal até enegrecerem; moa-os até tornarem-se pó para fazer bolos com 2 ovos de pata crus; coma os bolos enquanto bebe vinho de arroz na hora de dormir. Cada programa de tratamento continua por 4 dias ; o segundo programa de tratamento começa 2 a 5 dias depois de completar o primeiro . O tratamento pode con tinuar, se nec essá rio. Entre os 64 casos de hidrocele de túnica vaginal tratados por 1 a 6 programas, 59 casos recuperaram-se, 1 caso mostrou progresso, 4 não mostraram resultados . A maioria dos pacientes que sofre de elefantíase escrotal mostrou resultados apenas depo is de 4 programas de tratamento; os resultados são preferivelmente satisfatórios com nenhum efeito colate ra l (exceto os casos nos quais o escroto era tão duro quanto uma pedra) ."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Os herbalistas Chineses acreditam que a erva-doce percorre muito rápido no organismo e pode rapidamente aquecer a região interna . Por isso, a erva-doce pode tratar dor fria no organismo; mas já que ela é morna por natureza, não deve ser usada para tratar nenhuma doença quente, tais como diarréia arden te ou dor que ocorre à exposição a ambientes quentes (queimadura de sol, queimadura ou temperaturas mornas) . A erva- doce não é recomendada para homens com ereção excessivamente forte e ejaculação precoce. A erva-doce deve ser a de melhor qualidade, fresca e aromática; é considerada um digestivo aromático e carminativo, boa para regu lação dos intestinos, expulsão de gás intestinal, aquecimento da região interna e excitação do sistema nervoso . A raiz da erva-doce é morna, e tem sabor pungente e doce, pode aquecer os rins e promover a circu lação energética para aliviar a dor; é boa para dor fria na hérnia, vômito frio, dor abdominal e artrite."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "manjericao-doce",
+    "name": "Manjericão Doce",
+    "page": 44,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor de cabeça em resfriado comum, diarréia, indigestão, dor de estômago, menstruação irregular",
+    "descricao": "Momo; pungente; promove energia, circulação sangüínea e digestão; afeta os pulmões, baço, estõmago e intestino grosso.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Use folhas de manjericão doce como um tempero para substituir por salsa ou cebola verde para alívio de dor de cabeça em resfriado COmum .",
+      "Existem dois modos que o manjericão doce pode ser usado para aliviar a dor menstrual: cozinhe poucas folhas com ovo de galinha e consuma corno um caldo com um pouco de vinho de arroz (é bom para mulheres com dor pré-menstrual); um outro modo é cozinhar algumas folhas de manjericão doce com gengibre, cebola verde e algumas carnes ou peixe (é bom para dor menstrual devido ao frio) .",
+      "O manjericão doce, gengibre fresco e alcaçuz podem ser fervidos em água; beba como chá para curar gastroenterite aguda, inchação abdominal e dor."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-endro",
+    "name": "Semente de Endro",
+    "page": 44,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor abdominal, apetite pobre, deficiência de secreção de leite após o parto",
+    "descricao": "Morna; pungente; aquece o organismo, promove a circulação energé tica e age contra intoxicação por peixe e carne; afeta o baço e os rins.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Frite sementes de endro até ficarem cheirosas e moa até tomarem-se pó; dissolva 5g do pó em vinho de arroz momo e beba de cada vez para curar lumbago devido a músculos contorcidos ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A folha de endro é morna, pungente e opressiva . De acordo com uma experiência, a folha de endro é descoberta por ter o efeito de abaixar a pressão sangiiinea e expandir os vasos sangüineos em animais."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "casca-de-canela",
+    "name": "Casca de Canela",
+    "page": 44,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Membros frios, dor abdominal, diarréia, sensações quentes na região superior com sensações frias na região inferior",
+    "descricao": "Quen te; pungente e doce; afeta os rins, baço e bexiga.",
+    "energy": "quente",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "rins",
+      "bexiga"
+    ],
+    "aplicacoes": [
+      "Moa a casca de cane la seca até tornar-se pó; dissolva 5g do pó em água morna, e beba de cada vez, três vezes ao dia, para curar vários tipos de sintomas frios (incluindo dor abdominal fria, inchação abdominal fria e dor de estômago fria) .",
+      "Dissolva 5g do pó em vinho de arroz, e beba de cada vez, três vezes ao dia, para aliviar dor abdominal nas mulheres após o parto.",
+      "Dissolva 3g de pó de casca de canela em água morna para corrigir ácido gástrico em excesso e vômito de ácido.",
+      "Use casca de canela como um tempero na culinária para aquecer o orgamsmo."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Os efeitos da casca de canela em animais indicam que ela acalma o sistema nervoso central em ratos e também reduz as suas pressôes sangüíneas."
+    ],
+    "comentarios": [
+      "Como a canela possui urna energ ia quente, ela pode tratar quase qualquer tipo de sintomas de resfriado e tornar a região inferior aquecida (o que é bom para membros frios). Algumas pessoas gostam de bebidas frias e saladas frias. Ao passar do tempo, elas podem sofrer de distúrbios digestivos devido a energias frias em excesso no organismo, que podem ser tratadas pela casca de canela.",
+      "Se urna mulher sofre de períodos irregulares com dor periódica posterior e corrimento vaginal esbranquiçado, estes são sintomas frios muito prováveis e podem ser tratados pela casca de canela.",
+      "Pessoas em idade avançada (65 a 90 anos) são usua lmente fracas em energia e sangue. Possuem uma tendência a desenvolver entorpecimento na pele e artrite fria, o que significa que a dor piora no tempo frio . Se isto acontecer, a casca de canela pode ser usada para corrigir as condições.",
+      "A casca de canela é uma erva tão poderosa, que os herbalistas Chineses têm listado mais de 30 condições como contra-indicações da casca de canela. Pessoas com qualquer uma dessas condições devem evitar esta erva . As condições listadas como contra -indicações da casca de canela incluem : condições quentes (incluindo fluxo menstrual excessivo), eliminação de urina contendo sangue, hemorragia nasal, dificuldade de urinação, eliminação de fezes secas, tosse devido a pulmões quentes, febre, perda de voz, hemorróidas e outras enfermidades. E qualquer um que sofra de resfriado comum deve evitar a casca de canela. Esta especiaria também deve ser evitada por mulheres grávidas.",
+      "\"Cinnamon Forests\", uma cidade na China conhec ida por suas árvores de canela ubíquas, também possui a mais bonita vista paisagística do país. Quando recentemente visitei \"CiImamon Forests\" pude sentir",
+      "aroma das caneleiras por todos os lugares, incluindo a área do centro comercial, e fiquei tão satisfeito pela abundância de árvores de canela na cidade quanto pela sua bela paisagem. 46 S istema Chinês de Cllras Alimentares"
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "galhinho-de-canela",
+    "name": "Galhinho de Canela (Pau)",
+    "page": 46,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor nas cosias e no ombro, dor no peito, menopausa",
+    "descricao": "Morno; pungente e doce; induz a transpiração, aquece as regiões superiores do organismo; afeta a bexiga, coração e pulmões.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "bexiga",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva 20g de galhinhos de canela com 30g de gengibre fresco em água suficiente para cobrir as especiarias; ferva até que a água seja reduzida à metade. Beba uma xícara cheia por vez, três vezes ao dia, para curar artrite.",
+      "Cozinhe 10g de galhinho de canela com 100g de carne de porco magra em água como um caldo; beba para aliviar a menopausa e gás intestinal em excesso. (Beba o caldo tão lentamente como se estivesse ingerindo uma bebida alcoólica.) Não há necessidade de induzir a transpiração porque o galhinho de canela é capaz de induzi-la .",
+      "Ferva 3g de galhinhos de canela em água sobre fogo baixo. Beba como chá apenas na hora de dormir para curar entorpecimento da pele, dedos e músculos. Comelltários - Os galhinhos de canela são ramagens da árvore de canela. Por esta razão, os galhinhos são mais efetivos para artrites envolvendo as juntas dos 4 membros, porque as ramagens das árvores são comparáveis aos 4 membros de uma pessoa. Muitos herbalistas Chineses descrevem as funções dos galhinhos de canela como ruas de uma cidade em ampliação, com os efeitos alcançando todas as partes do organismo. Os galhinhos de canela são particularmente efetivos para os sintomas dos membros e dedos, porque as pontas dos dedos são consideradas as áreas mais remotas no organismo humano, além do alcance de muitas outras ervas.",
+      "O galhinho de canela é basicamente uma erva morna. Pode reduzir a transpiração, eliminar o frio, promover a circulação sangüinea, facilitar o fluxo menstrual e promover a urinação. Obviamente, esta erva é boa para dor reumática que piora à exposição ao frio e para dor abdominal fria. Mas por outro lado, esta erva é ruim para sintomas e enfermidades quentes , incluindo lábios secos, sede, garganta irritada, vômito de sangue, febre, úlceras e alcoolismo."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "alho",
+    "name": "Alho",
+    "page": 46,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor abdominal fria, edema, diarréia, disenteria, coqueluche",
+    "descricao": "Morno; pungente; promove a circulação energética, aquece o estômago e o baço, destrói verminose; afeta o baço, estômago e pulmões.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva 3 dentes de alho em água e coma com mollio de soja nas refeições para aliviar a tosse e a dor abdominal e também para promover circulação sangüínea e urinação.",
+      "Para aliviar coceira na região genital nas mulheres, ferva alguns dentes de allio e use o líquido para lavar a região genital.",
+      "Esmague alguns dentes de allio para misturar com mostarda (pó ou pas ta) e coma com vinho de arroz. Ou, ferva alguns dentes de alho em água e beba como um chá para corrigir sensações frias crônicas, particularmente nas mullieres. Se o vinho é desejado, faça vinho de allio: simplesmente pique um dente de alho em pedaços grandes, deixe cair numa pequena garrafa de vinho; guarde por 1 mês e está pronto para beber como um tônico de vinho.",
+      "Coma 1 a 3 dentes de allio frescos diariamente dividindo-os em 3 dosagens; continue o tratamento por 5 a 10 dias consecutivos para curar disenteria amebiana.",
+      "Tome 2 colheradas da solução de 10 a 20% de alho a cada 2h (misturada com xarope ou tintura de laranja para tomá-lo mais apetitoso) para aliviar a coqueluche nas crianças.",
+      "Coma dentes de allio regularmente para prevenir disenteria bacilar quando estiver muito difundida.",
+      "Pique um dente de alho e use as fatias suculentas para friccionar na pele para aliviar a dor causada por mordida de inseto (tal como ferroada de abellia) como uma medida de emergência.",
+      "O alho pode ser cozido com feijões-de-soja: embeba os feijões-de-soja por toda a noite; cozinhe os feijões-de-soja com 5 a 10 dentes de allio. Coma como um tônico e também é útil para promover urinação, aliviar edema e nefrite crônica.",
+      "Um outro modo de usar o alho: frite dentes de alho em óleo vegetal com pimenta-do-reino, gengibre fresco fatiado e sal; aclicione camarões secos, então polvillie com açúcar, vinagre e cebola verde. Adicione um pouco de mollio de tomate e farinha para engrossar, se desejar. Esta receita contém quase todos os sabores necessários - doce, azedo, pungente e salgado."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de pneumonia lobar: 1 collier de sopa de xarope de allio a cada 4h (em geral 10%, mas às vezes 100%). Entre as 9 pessoas tratadas, 6 casos mostraram recuperação completa, 3 não mostraram resultado satisfatório."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Tem existido menos casos de tuberculose pulmonar em Sandong, uma província da China aonde a população consome mais alho que em qualquer outra província. Como um resultado desses achados, o allio tem sido preparado em tabletes e usado com bons resultados. Nas províncias do norte da China, a população Chinesa carrega com eles um pouco de allio durante uma longa jornada, apenas no caso em que eles tenham que beber água de montanhas ou rios. Para prevenir efeitos 48 Sistema Chinês de Cllras Alimelltares ruins, eles mastigam um dente de alho como se estivessem mascando uma goma e cospem antes de beber água.",
+      "Muitas pessoas não querem comer alho por medo de adquirir mal hálito. De acordo com algumas pessoas, o bafo de \"alho\" pode ser eliminado comendo algumas tâmaras vermelhas ou caqui. Quando dentes de alho são vapori zados (sobre água fervendo), o cheiro forte desaparecerá antes de comer o alho.",
+      "Na culinária diária, algumas fatias de alho podem ser adicionadas para eliminar o cheiro forte de carnes ou peixe. Acredita-se que uma pequena quantidade de alho pode agir contra o câncer, mas uma quantidade excessiva de aUlo pode causar câncer (baseado na teoria Chinesa de que o alho em excesso é ruim para O estômago e fígado).",
+      "A população Chinesa come grandes quantidades de alho apenas sob circunstãncias especiais, tais como desnutrição severa ou edema .",
+      "Nos últimos anos, O alho tem emergido como um importante ingrediente na Medicina Chinesa, principalmente devido aos seus poderosos efeitos no tratamento de disenteria e destruição de germes. De fato, muitos medicamentos modernos contêm alho como um importante ingrediente. Para disenteria no seu estágio inicial, mastigue um dente de alho cinco ou seis vezes ao dia a cada 4h.",
+      "As contra-indicações do alho incluem doenças oculares e garganta irritada."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cravo-da-india",
+    "name": "Cravo-da-índia",
+    "page": 48,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Vômito, soluço, estômago desarranjado, diarréia, dor abdominal, hérnia",
+    "descricao": "Morno; pungente; empurra para baixo, aquece a região interna em geral e rins em particular; afeta o estômago, baço e rins.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Mastigue 1 ou 2 cravos-da-india para livrar-se do mal hálito.",
+      "Aplique cravos-da-índia moídos nos mamilos para curar mamilos rachados.",
+      "Moa cravos-da-india e cálice de caqui até tornarem-se pó; tome 2g de cada vez em água, duas vezes ao dia, para aliviar O soluço.",
+      "Ferva 4g de cravo com 6g de cálice de caqui, e 4g de gengibre fresco em 2 xícaras de água sobre fogo baixo até que esta seja reduzida a 1 xícara; beba meia xícara de cada vez, duas vezes ao dia, para interromper o vômito.",
+      "Uma fórmula tradicional Chinesa para aliviar soluço: combine 2g de cravos, 3g de cálice de caqui (disponível na maioria das lojas de ervas Chinesas), 3g de ginsém e 2g de gengibre fresco e ferva; divida em 2 dosagens e beba em 1 dia. Na minha experiência, isto nunca desapontou para produzir resultados urgentes.",
+      "Ferva 20 cravos com folhas de chá vermelhas e água o suficiente para cobri-los; beba como chá para corrigir apetite pobre e d esconforto no estômago por indigestão e também para corrigir ácido gástric o em excesso."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O cravo é uma especiaria muito morna, e como tal pode aquecer o estômago e aliviar o vômito, soluço e dor de hérnia . Mas algumas vezes o vômito e o soluço são devido à energia quente e o cravo não deve ser usado. Se você desenvolve soluço e toma cravo para alívio, normalmente terá efeito em poucos minutos, ou no máximo, em poucas horas. Mas se o cravo não aliviar os sintomas, então muito provavelmente são sintomas quentes. Muitos sintomas de vômito e soluço são sintomas frios, entretanto, o cravo pode ser usado para alívio."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "gengibre-fresco",
+    "name": "Gengibre Fresco",
+    "page": 49,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Resfriado comum, vômito, tosse, asma, diarréia",
+    "descricao": "Morno; pungente; induz a transpiração, dispersa o frio e alivia o vômito; afeta os pulmôes, estômago e baço.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Rale gengibre envelhecido fresco (ver Comentários adiante) e ferva em água por lOmin; beba como chá para curar edema, vômito ou tosse e também para aquecer o organismo.",
+      "Esmague 100g de gengibre envelhecido fresco e ferva; use o líquido quente para lavar o corpo e estimular a pele a induzir a transpiração para alívio de febre em resfriado comum.",
+      "Rale gengibre envelhecido fresco e extraia o suco; misture o suco com açúcar ou mel em 1 a 2 xícaras de água fervendo; beba uma xícara de cada vez, três vezes ao dia, para aliviar a tosse.",
+      "Coma alguns pedaços macios de gengibre fresco para aliviar a indigestão.",
+      "Extraia suco de gengibre fresco e beba como suco de laranja para curar \"doença em movimento\", soluço ou vômito; também é efetivo contra intoxicação por alimentos.",
+      "Ferva 2g de gengibre seco ou 7g de gengibre fresco com um pouco de açúcar mascavo; beba quente para aliviar desconforto de frio e febre com dor abdominal fria devido a resfriado comum.",
+      "Ferva 4g de gengibre fresco com 8g de casca de laranja seca e beba como chá para curar vômito e tosse dev ido a resfriado comum.",
+      "Os médicos Ocidentais normalmente usam gengibre como um digestivo e carminativo."
+    ],
+    "relatoriosClinicos": [
+      "Injeção de suco de gengibre fresco de 5 a 10% nas áreas afetadas é efetivo para aliviar a dor reumática. 50 Sistema Cllinês de Curas Alim enta res",
+      "Misture 50g de gengibre fresco com 30g de açúcar mascavo; para tratar disenteria bacilar aguda, coma três vezes ao dia, por 7 dias como um programa de tratamento. Entre os 50 casos tratados, 70% recuperaram-se da doença e 30% mostraram melhoras. Depois de comer a mistura de gengibre, a dor abdominal e o tenesmo desaparecem dentro de uma média de 1 a 5 dias, respectivamente. As fezes e os movimentos intestinais retornam ao normal dentro de uma média de 4 a 5 dias, respectivamente. Comeutários - Na culinária diária, o gengibre tenro fresco é usado; mas quando usado para propósitos terapêuticos, o gengibre envelhecido fresco fornece melhores efeitos. (O gengibre fresco, também chamado de gengibre \"bebê\", está disponível nas lojas Chinesas sazonalmente, em geral em junho e julho , podendo ser usado para fazer picles de gengibre; o gengibre envelhecido, conhecido como gengibre \"mãe\", é difícil de ser mastigado e usualmente está disponível em mercados Chineses.)",
+      "Como o alho , o gengibre é amplamente usado na culinária; algumas fatias adicionadas ao cozinhar irão agir contra o cheiro forte das carnes, peixe ou marisco, e pode também agir contra os efeitos tóxicos."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "gengibre-seco",
+    "name": "Gengibre Seco",
+    "page": 50,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor abdominal fria, vômito e diarréia, membros frios, reumatismo",
+    "descricao": "Quente; pungente; aquece a região interna; afeta o baço, estômago e pulmões.",
+    "energy": "quente",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Dissolva 7g de gengibre moído em água morna e beba de cada vez, uma vez ao dia, para aliviar a diarréia com eliminação de fezes muito aguadas ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O gengibre seco, disponível em lojas de ervas, é normalmente usado como erva; quando o gengibre envelhecido fresco é descascado e colocado sob o sol para secar, torna-se gengibre seco com uma energia quente no lugar de uma energia morna."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "noz-moscada",
+    "name": "Noz-moscada",
+    "page": 50,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor e inchação abdominal, diarréia, vômito, indigestão",
+    "descricao": "Morna; pungente; empurra para baixo; aquece a região interna; promove a digestão; afeta o baço e o intestino grosso.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A noz-moscada é ruim para hemorróidas, diarréia quente, e dor de dente. O macis, uma especiaria moída da camada entre a casca da noz-mascada e as suas cascas secas, é usado como um carminativo, tônico estomaca l e estimulante."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "manjerona",
+    "name": "Manjerona",
+    "page": 51,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Resfriados comuns, febre, vômito, diarréia, icterícia, desnutrição nas crianças, erupção cutânea",
+    "descricao": "Fresca; plmgente; induz a transpiração; promove a circulação energética; alivia a retenção de água.",
+    "energy": "fresca",
+    "flavors": [],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva a manjerona em água e beba como chá para induzir a transpiração.",
+      "Ferva a manjerona em água e use o líquido para lavar a boca para agir contra o mal hálit o.",
+      "Para aliviar a coceira, ferva 150g de manjerona fresca e use o líquido para lavar as regiões afetadas."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "As experiências mostram que a manjerona promove a urinação, induz a transpiração, aumenta o apetite e também alivia a eliminação de muco."
+    ],
+    "comentarios": [
+      "Na medicina popular Chinesa, acredita-se que a manjerona regula a temperatura corpórea e previne as doenças quentes; é amplamente usada no verão como substituta do chá."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "salsa-chinesa",
+    "name": "Salsa Chinesa (Coentro)",
+    "page": 51,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Indigestão, sarampo previamente à erupção",
+    "descricao": "Morna; pungente; induz a transpiração, promove a digestão, acelera a erupção do exantema do sarampo; afeta os pulmões e baço.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva a salsa Chinesa com castanha d'água e cenoura para fazer sopa para facilitar as erupções do sarampo; ou, pique um pouco de uma salsa inteira (incluindo folhas e raízes) e cozinhe em água; lave o paciente com sarampo enquanto o líquido está momo para facilitar as erupções do sarampo.",
+      "O consumo regular de salsa Chinesa reduzirá o mal cheiro da urina devido ao calor interno.",
+      "Cozinhe a salsa Chinesa inteira (incluindo folhas e raízes) com peixe, carne de porco ou carne de boi para remover cheiros ofensivos (incluindo odores vaginais e mal hálito). 52 Sistema ClJinês de Curas Alimelltares",
+      "Use a salsa Chinesa como um tempero na culinária para aliviar o ácido gástrico em excesso e a dor de estômago fria ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A população Chinesa usa a salsa Chinesa como um tempero quando cozinham camarões, caranguejos, ostras, várias espécies de moluscos bivalves e outros peixes por três propósitos: para fazer com que o alimento pareça melhor, para aumentar a fragrância aromática e para aumentar a energia morna.",
+      "Quando a salsa Chinesa é usada para facilitar as erupções no sarampo, um número de coisas deve ser mantido em mente: a salsa Chinesa não é projetada para consumo prolongado; quando existem sinais de erupçôes no segundo ou terceiro dia de febre no sarampo, é a melhor hora para administrar a salsa Chinesa. Mas se as erupções já ocorreram, a salsa Chinesa não deve ser usada, porque pode aumentar o calor interno.",
+      "Pessoas com. sede constante, lábios rachados ou constipação não devem comer salsa Chinesa."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "pimenta-da-reino-e-pimenta-branca",
+    "name": "Pimenta-da-reino e Pimenta Branca",
+    "page": 52,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor abdominal fria, estômago desarranjado, vômito de água clara, diarréia, intoxicação alimentar",
+    "descricao": "Quentes; pungentes; empurram para baixo; aquecem as regiões internas; afetam o estômago e o intestino grosso.",
+    "energy": "quente",
+    "flavors": [],
+    "organs": [
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Ferva 30g de gengibre fresco fatiado com 19 de pimentado-reino moída em 3 xícaras de água até que esta seja reduzida a 1 xícara. Beba esta quantidade três vezes ao dia por 1 dia para interromper o vômito devido ao estômago desarranjado. Moa 10 grãos de pimenta-da-reino até tornarem-se pó e aqueça até a ebulição em 8 % de xícaras de água; use o líquido para lavar a região afetada duas vezes ao dia para curar eczema do escroto ."
+    ],
+    "relatoriosClinicos": [
+      "Um relatório sobre diarréia indigestiva simples: moa 19 de pimenta branca até tornar-se pó e misture com 9g de pó de glicose em água; crianças menores de 1 ano devem tomar 0,3 a 0,5g de cada vez; crianças menores de 3 anos de idade devem tomar 0,5 a 1,5g, normalmente não excedendo 2g, três vezes ao dia, por 1 a 3 dias como um programa de tratamento; em caso de desidratação, a terapia de retenção de líquido deve ser aplicada. Entre os 20 casos de diarréia indigestiva simples tratada, 18 casos recuperaram-se e 2 casos mostraram melhoras.",
+      "Um relatório sobre nefrite: faça um buraco no ovo de galinha e esprema 7 grãos de pimenta branca nele; sele o buraco com farinha. Embrulhe o ovo com uma folha úmida de papel; vaporize o ovo até cozinhar. Descasque o ovo e coma-o com os grãos de pimenta. Como um programa de tratamento, os adultos comem 2 ovos ao dia e as crianças comem 1 ovo ao dia por 10 dias. O segundo programa começa 3 dias depois de completar o primeiro. Geralmente, três programas de tratamento são administrados. Entre os 6 casos de nefrite tratados, todos se recuperaram exceto um caso de nefrite crônica com uma história de 10 anos."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Para 24 adultos normais foi dado 19 de pimenta-doreino para colocá-la na boca sem engoli-la para determinar os efeitos da pimenta-do-reino na pressão sangüúlea e velocidade de pulsação. Foi descoberto que a pimenta-da-reino pode elevar a pressão sangüínea: na média, a pressão sistólica aumenta 13,lmmHg; e a pressão diastólica aumenta 18,lmmHg; ambas as pressões retornam ao normal em 10 a lSmin; nenhum efeito foi descoberto na velocidade de pulsa ção. Durante a experiência, a maioria dos pacientes sentiu sensações de calor no corpo inteiro ou nas suas cabeças, além das sensações quentes e pungentes na ponta de suas línguas. Os efeitos da pimenta-do-reino foram descobertos serem similares àqueles da pimenta-malagueta, apenas em grau menor.",
+      "Tradicionalmente, as pimentas-do-reino e a branca são consideradas úteis no aquecimento do organismo e na eliminação de cheiros fortes de carnes e peixe . Mas um consumo excessivo dessas especiarias é considerado nocivo e não recomendado para pessoas com doenças oculares e garganta irritada."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "pimenta-malagueta-ou-pimenta-verde",
+    "name": "Pimenta-malagueta ou Pimenta Verde",
+    "page": 53,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor abdominal, vômito, diarréia",
+    "descricao": "Quente; pungente; aquece a região interna, aumenta o apetite, promove a digestão; afeta o coração e o baço.",
+    "energy": "quente",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "baco",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "A pimenta-malagueta pode ser usada na culinária para excitar o estado de espírito, induzir a transpiração, promover a urinação, aumentar o apetite e amolecer os vasos sangüíneos. Algmnas pessoas acreditam que a pimenta-malagueta pode prevenir a doença cardíaca.",
+      "Cozinhe folhas de pimenta-malagueta com ovo de galinha e gengibre fresco como um caldo para aquecer o estômago.",
+      "Use pimenta-malagueta como um tempero na culinária para promover a circulação sangüinea e também amolecer os vasos sangüíneos (é boa para auxílio da arteriosclerose e para prevenção de hipertensão)."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O consumo de pimenta-malagueta em quantidades excessivas causará dor abdominal e constipação : a pimenta-malagueta não é recomendada para pessoas com doenças oculares, tosse, gastrite ou nefrite. 54 Sistema Cllinês de Curas Alimentares",
+      "Além da cor das pimentas (que pode ser vermelha ou verde), existem também graus diferentes de intensidade: as pimentas com um formato redondo não são tão quentes quanto as pimentas que são longas e pontudas.",
+      "Diz-se que existem quatro estágios na psicologia de comer pimentamalagueta ou verde: no começo, antes de começar a comê-la, fica-se com medo da sua natureza quente; gradualmente, pode -se tolerar a sua natureza quente ; e então, é usada para isso e não mais com medo dela; e finalmente , começa a lamentar-se de que não é todavia quente",
+      "suficiente ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-alcaravia",
+    "name": "Semente de Alcaravia",
+    "page": 54,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor de estômago, dor abdominal, hérnia, lumbago",
+    "descricao": "Morna; levemente pungen te; promove a circulação energética; é boa para o estômago; afeta os rins e o estômago.",
+    "energy": "morna",
+    "flavors": [],
+    "organs": [
+      "estomago",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Ferva lOg de semente de alcaravia com 5g de canela e 5g de gengibre seco; beba corno um caldo para tratar vômito e soluço.",
+      "Ferva lOg de semente de erva-doce em 3 xícaras de água sobre fogo baixo até que esta seja reduzida a 1 xícara. Beba urna xícara cheia de cada vez, duas vezes ao dia, para aliviar a tosse."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "A alcaravia tem sido descoberta por aliviar a asma em ratos."
+    ],
+    "comentarios": [
+      "Basicamente, as ações da alcaravia são similares às da erva-doce."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "hortela-pimenta",
+    "name": "Hortelã-pimenta",
+    "page": 54,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Resfriado comum, dor de cabeça, garganta irritada, indigestão, câncer, dor de dente, erupções cutâneas",
+    "descricao": "Fria; pungente; afeta os pulmões e o fígado.",
+    "energy": "fria",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Ferva 5g de hortelã-pimenta em 1 xícara de água por um curto tempo. Beba como um chá para tratar eliminação de fezes contendo sangue (como na disenteria) .",
+      "Extraia O suco de hortelã-pimenta fresca para pingar nos ouvidos a fim de aliviar dor de ouvido. (Para extrair o suco, use um pilão para triturar levemente a hortelã-pimenta, então embrulhe em um pano limpo e extraia o suco; ou embrulhe a hortelã-pimenta, triture e esmague.)",
+      "Ferva 5g de hortelã-pimenta fresca em 1 xícara de água e adicione um pouco de sal. Beba como chá para aliviar todos os tipos de dores envolvendo a cabeça e o pescoço, tais como dor de cabeça, garganta irritada, dor na boca, dor na língua, dor de dente, e também hemorragia nasal, preferivelmente no estágio ínicial.",
+      "Cozinhe 70g de hortelã-pimenta fresco com 150g de fígado de porco; coma nas refeições para aliviar dor nos olhos, visão embaçada e irrigação nos olhos.",
+      "Ferva hortelã-pimenta fresca com coalhada de feijão e gengibre fresco em água. Beba o caldo e coma a coalhada de feijão para curar congestão e corrimento nasais, espirro freqüente e resfriado comum."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Aplicações locais de mental (um tipo de óleo de hortelãpimenta) são efetivas para dor de cabeça, nevralgia e prurido. Quando o mental é usado, a pele sente sensações frescas seguidas por sensações leves de queimação. As sensações frescas induzidas pelo mental não são causadas por uma baixa de temperatura de pele, mas preferivelmente por um receptor frio das terminações nervosas."
+    ],
+    "comentarios": [
+      "Se o prurido de pele é devido à pele fria, o mental piorará isso; normalmente, quando o prurido de pele ocorre no inverno ou à exposição ao tempo frio, significa que a pessoa possui uma pele fria.",
+      "A hortelã-pimenta pode curar nevralgia trigêmea e possuo uma experiência pessoal a este respeito. Aproximadamente 10 anos atrás, desenvolvi nevralgia trigêmea, que foi muito dolorosa, e usei a hortelã-pimenta, por exemplo, para alivio da dor. Foi mais efetivo do que qualquer remédio para dor. Mas o tratamento de nevralgia trigêmea deve ser baseado em cada constituição física pessoal."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "hortela",
+    "name": "Hortelã",
+    "page": 55,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Resfriado comum, tosse, dor de cabeça, dor abdominal, dor menstrual",
+    "descricao": "Morna; pungente e doce; promove a circulação energética, alivia a dor.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Cozinhe folhas de hortelã-pimenta fresca e macia em água com ovo de galinha e tome como sopa para tratar dor de cabeça .",
+      "A hortelã acalma o estado de espírito e alivia o resfriado comum ao mesmo tempo. Tem sido usada na medicina popular Chinesa para tratar dor de cabeça e tontura. É relatado que uma mulher esteve sofrendo de dor de cabeça crôruca por uma década, particularmente quando estava sob tensão, com ataques de dor de cabeça, até muitas vezes ao dia. Sua doença foi diagnosticada pelos médicos Ocidentais como um caso de anerrria cerebral e pelos médicos tradicionais Chineses como algo mais, mas nenhum alívio foi oferecido. Ela eventualmente curouse bebendo caldo de hort elã por menos de 1 mês. 56 Sistema Chinês de Cltr/ls Alimelltares",
+      "Acredita-se que as mulheres Vietnamitas consideram a hortelã como uma erva importante para alívio da dor de cabeça; elas apenas bebem como chá. Comeutários - A hortelã pode ser efetiva para alívio da dor de cabeça porque pode agir sobre o fígado, e na Medicina Chinesa o fígado é responsável pela dor de cabeça devido à tensão."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "ginsem",
+    "name": "Ginsém",
+    "page": 56,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Apetite pobre, fadiga, estômago desarranjado, diarréia, tosse, transpiração excessiva, esquecimento, impotência, urinação freqüente, diabetes, corrimento vaginal",
+    "descricao": "Morno; doce; e levemente amargo; tonifica a energia; produz líquidos; acalma O estado de espírito; afeta o baço e os pulmões .",
+    "energy": "morna",
+    "flavors": [
+      "doce",
+      "amargo"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "O ginsém é uma das poucas ervas Chinesas que é freqüentemente aplicado sozinho. Uma fórmula herbal tradicional Chinesacaldo de ginsém solitário - é feita pela vaporização ou pela ebulição do ginsém para consumo: ferva 5g de ginsém em 1 1;2 xícaras de água sobre fogo baixo até que esta seja reduzida à metade. Beba tudo dentro de 1 dia para curar prolapso e insuficiência cardíaca.",
+      "O gins ém Fode ser usado com gengibre seco para tratar náusea matinal e dor abdomin al."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O ginsém é considerado como um importante ingrediente para representar os seguintes grupos de funções:",
+      "Para excitar O sistema ner voso, melhorar a eficiência de trabalho e reduzir a fadiga.",
+      "Para estimular órgãos formadores de sangu e e auxiliar a produção de sangue.",
+      "Para aumentar a capacidade de contração cardíaca e tonificar o coração (útil no tratamento de insuficiência card íaca e choque).",
+      "Para melhorar as funções das glândulas sexuais nos homens e mulheres no tratamento de hipogonadismo.",
+      "Para melhorar as funções da digestão, absorção e metabolismo .",
+      "Para agir como um antidiurético .",
+      "Para abaixar o açúcar no sangue; esta função é atribuída à presença de ginsenina no ginsém. Enquanto o ginsém possui suas importantes funções, também existem circunstâncias sob as quais o ginsém não deve ser usado. Tais circunstâncias podem incluir o seguinte:",
+      "Tosse e tossir expelindo sangue. Vômito de sangue devido à tolerância excessiva na relação sexual.",
+      "O ginsém poderia causar encefalemia ou acidentes cerebrovasculares em pessoas que sofrem de hipertensão .",
+      "Edema e funções incompletas dos rins com urinação diminuída, porque o ginsém é um antidiurético que pode causar edema para deteriorar.",
+      "Tipo excessivo de insônia, porque o ginsém pode produzir uma condição excess iva até mais excessiva.",
+      "Resfriado comum com febre, porque o ginsém pode aumentar a produção de calor extremo no organ ismo, que pode intensificar a febre. Existem três tipos básicos de ginsém com funções diferentes: ginsém Chinês; ginsém Coreano ou vermelho e ginsém Americano. O ginsém Chinês, mais benéfico para os pulmões e sistema digestivo, é mais freqüentemente usado para beneficiar os pulmões, produzir liquidos e curar outros sintomas críticos . O ginsém Coreano ou vermelho é mais morno; é mais freqüentemente usado para tonificar a energia e o sangue para melhorar as funções das glândulas sexuais e é menos efetivo para outros sintomas. O ginsém Americano possui uma energia fresca. Tem sabor doce e levemente amargo, agindo no coração, pulmões e rins, e é mais usado para tosse, sede e alcoolismo."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "alecrim",
+    "name": "Alecrim",
+    "page": 57,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor de cabeça",
+    "descricao": "Morno; pungente; induz a transpiração; é usado como um medicamento estomacal.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Uma fonte indica que a preparação do alecrim pode ser usada como um emenagogo para acelerar o fluxo menstrual na síndrome da menopausa. Uma outra fonte indica que o óleo de alecrim e raiz de malva-rosa misturados podem promover crescimento de cabelo na cabeça. Uma outra fonte ainda indica que infusões de alecrim e bórax podem prevenir a calvície."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "acafrao",
+    "name": "Açafrão",
+    "page": 57,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Peito congestionado, vômito de sangue, supressão da menstruação, dor abdominal após o parto devido a coagulações sangüíneas, lesões decorrentes de quedas",
+    "descricao": "Neutro; doce; promove energia e circulação sangüinea, elimina coagu lações sangüineas; afe ta o coração e o figado.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "figado",
+      "coracao"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Nos animais, uma experiência mostra que o açafrão pode induzir tensões e contrações do útero com sinais de excitação . Uma outra experiência em gatos mostra o efeito do açafrão na diminuição da pressão sangüínea. Uma terceira experiência em ratos mostra o efeito do açafrão em prolongar O ciclo de estro de 1 ou 2 para 3 ou 4 dias."
+    ],
+    "comentarios": [
+      "Os estiletes, estigmas e flores do açafrão são usados pela população Chinesa para terapias."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "timo",
+    "name": "Timo",
+    "page": 58,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Coqueluche, bronquite aguda, laringite",
+    "descricao": "Suprime a tosse; também é usado como um calmante aromático.",
+    "energy": null,
+    "flavors": [],
+    "organs": [
+      "rins"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "O timo pode ser usado como um agente antibacteriano e como um anti-helmíntico. A folha do timo pode ser usada corno um expectorante, de acordo com as experiências."
+    ],
+    "comentarios": [],
+    "needsReview": true
+  },
+  {
+    "id": "alcacuz",
+    "name": "Alcaçuz",
+    "page": 58,
+    "chapter": "Especiarias e Ervas",
+    "indications": "Dor abdominal, apetite pobre, fadiga, febre, tosse, palpitações, convulsões, garganta irritada, úlceras digestivas, intoxicação por droga, intoxicação alimentar",
+    "descricao": "Neutro; doce; retarda as doenças agudas, lubrifica os pulmões, age contra os efeitos tóxicos, coordena os efeitos de outras ervas; afeta o baço, estômago e pulmões.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Prepare 150g de alcaçuz processado e 80g de gengibre seco; ferva em água suficiente apenas para cobrir os dois ingredientes; ferva até que a água seja reduzida à metade; coe e beba 1 xícara de cada vez do caldo morno, duas vezes ao dia, para curar pulmôes com abscessos, pneumonia supurativa e bronquite sem tosse .",
+      "Ferva 10g de alcaçuz com 20g de grãos de trigo inteiros e 5 tàmaras vermelhas Chinesas. Beba como caldo para tratar histeria nas mulheres, ansiedade e tensão. Esta é urna fórmula herbal tradicional na Medicina Chinesa."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O alcaçuz é uma erva muito importante na Medicina Chinesa . Existem dois tipos: alcaçuz cru e alcaçuz processado com mel. O alcaçuz cru é levemente fresco e tem sabor doce, que pode aliviar os sintomas quentes e agir contra os efeitos tóxicos. O alcaçuz processado é levemente morno e tem sabor doce, que pode tonificar O baço e aumentar a energia."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "frutas-e-nozes",
+    "name": "Frutas e Nozes",
+    "page": 59,
+    "chapter": "Frutas e Nozes",
+    "indications": "Maçã Indigestão, açúcar baixo no sangue, náusea matinal, enterite crônica",
+    "descricao": "Fresca; doce e azeda; produz líquidos; lubrifica os pulmões; promove a digestão; alivia a intoxicação.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes"
+    ],
+    "aplicacoes": [
+      "Descasque e tire a parte central de algumas maçãs meio maduras e pressione-as ou esmague-as para extrair o suco. Beba meia xícara de suco de cada vez, três vezes ao dia por 3 dias consecutivos, para curar indigestão.",
+      "Coma duas maçãs descascadas de cada vez, duas vezes ao dia, por 3 dias consecutivos como um programa de tratamento para tratar açúcar baixo no sangue.",
+      "Prepare 6 maçãs frescas: descasque, retire a parte central e remova as sementes; esmague as maçãs e vaporize-as com 500g de mel até que fiquem tão macias quanto uma geléia . Tome duas colheradas de cada vez, três vezes ao dia, para tratar tosse devido a pulmões quentes e sensações secas na boca e na língua. Este remédio também é bom para neutralizar os efeitos do fumo.",
+      "Prepare 30 a 60g de casca de maçã fresca. Frite 30g de arroz até ficar amarelado; misture o arroz com a casca de maçã para fazer chá para aliviar náusea matinal.",
+      "Corte algumas maçãs verdes em quatro fatias; seque-as ao sol; moa até tornarem-se pó. Tome 15g de pó de maçã com 1 xícara de água morna, duas vezes ao dia, para curar enterite crônica, dor abdominal e diarréia. 60 Sistema Chinês de Curas Alime/Itares"
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "banana",
+    "name": "Banana",
+    "page": 60,
+    "chapter": "Frutas e Nozes",
+    "indications": "Constipação, hemorróidas, hipertensão, alcoolismo",
+    "descricao": "Fria; doce; lubrifica os intestinos; desintoxica.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Coma uma a duas bananas bem macias, duas vezes ao dia, antes de dormir e logo pela manhã de estômago vazio para aliviar a constipaç ão.",
+      "Coma uma a duas bananas frescas, três vezes ao dia, para aliviar a sede na doença quente.",
+      "Vaporize duas bananas meio maduras com as suas cascas até ficarem bem macias. Coma duas vezes ao dia, logo pela manhã de estômago vazio e antes de dormir, para curar hemorróidas e eliminação de sangue pelo ânus depois dos movimentos intestinais.",
+      "Ferva uma casca de banana ou vaporize em água , e beba como chá, uma xícara cheia por vez, três vezes ao dia, para tratar e prevenir a hipertensão.",
+      "Coloque SOOg de banana e 15g de gergelim preto num liquidificador e misture-os. Coma em um dia para tratar hipertensão com constipação.",
+      "Vaporize duas bananas bem macias com suas cascas. Coma a banana e a casca, duas vezes ao dia, logo pela manhã de estômago vazio e antes de dormir , para curar asma e tosse devido a pulmões quentes.",
+      "Ferva 60g de casca de banana em água e beba o líquido para auxílio do alcoolismo e ressaca."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência em animais mostra que a banana verde é efetiva no tratamento e prevenção de úlceras gástricas."
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "cereja",
+    "name": "Cereja",
+    "page": 60,
+    "chapter": "Frutas e Nozes",
+    "indications": "Paralisia, entorpecimento dos braços e pernas, reumatismo, lumbago, ulceração produzida pelo frio",
+    "descricao": "Morna; doce.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Mastigue 8 a 12 cerejas frescas lentamente como se estivesse mascando um chiclete, duas vezes ao dia, para aliviar faringolaringite no seu estágio inicial.",
+      "Ferva lkg de cerejas frescas até ficarem bem macias; remova e descarte as sementes. Adicione SOOg de açúcar e ferva para fazer geléia. Tome uma colherada de geléia de cereja por vez, duas vezes ao dia, para aliviar fadiga e melhorar sua aparência.",
+      "Num jarro grande, combine 500g de cerejas frescas e 4 V2 xícaras de vinho de arroz; cubra e conserve por 10 dias. Beba 30 a 60g por vez de vinho de cereja, duas vezes ao dia, para aliviar entorpecimento das juntas e paralisia decorrente de reumatismo."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "As cerejas não são recomendadas para pessoas com calor interno porque geram calor no organismo. Portanto, as cerejas são recomendadas para O tipo frio de artrite e reumatismo ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-cereja",
+    "name": "Semente de Cereja",
+    "page": 61,
+    "chapter": "Frutas e Nozes",
+    "indications": "Sarampo, terçol na pálpebra, cicatriz",
+    "descricao": "Neutra; amarga e pungente; ajuda a promover o estouro da erupção no sarampo; age contra os efeitos tóxicos.",
+    "energy": "neutra",
+    "flavors": [
+      "pungente",
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Moa sementes de cereja a té tornarem-se pó e misture com água para aplicação externa na região afetada para curar terço!.",
+      "Ferva sementes de cereja em água; use o líquido para lavar a pele afetada para eliminar cicatriz .",
+      "Ferva 9g de sementes de cereja em 1 xícara de água e beba o líquido para promover estouro da erupção no sarampo. Além disso, ferva 150g de sementes de cereja em 4 xícaras de água; lave o corpo com",
+      "líquido.",
+      "Esmague 90 a 150g de sementes de cereja com um pilão ou martelo e ferva em água. Lave a pele afetada com o líquido para curar carbúnculo."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "coco",
+    "name": "Coco",
+    "page": 61,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tênia e fasciolopsíase, edema, vômito, constipação, envelhecimento prematuro",
+    "descricao": "Morno (casca e líquido dentro do coco); neutro e obstrutivo (casca); levemente doce e aromático (líquido); doce (parte comestível do coco); o líquido e a parte comestível do coco produzem líquidos, promovem urinação e destroem vermes intestinais; a casca constringe e destrói vermes intestinais e alivia o prurido.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Beba o líquido do coco para aliviar a sede, insolação, febre, diabetes e edema.",
+      "Beba um copo de líquido de coco com 30g de açúcar e um pouco de sal, três vezes ao dia, por 3 dias consecu tivos, e então uma vez ao dia posteriormente, paTa aliviar vômito e fraqueza após sangramento severo e desidratação depois de diarréia severa.",
+      "Consuma a parte comestível do coco e o líquido do coco, uma vez ao dia, logo pela manhã de estômago vazio por 3 dias consecu tivos, para aliviar tênias e fasciolopsíase. 62 Sistema Chinês de Curas Afimelltares",
+      "Coma a parte comestível de um coco por vez, pela manhã e ao anoitecer, para corrigir constipação.",
+      "Corte a parte comestível de um coco em cubos pequenos e misture com açúcar. Coloque os cubos de coco num jarro; cubra com açúcar e conser ve por 2 semanas. Coma 2 a 3 cubos açucarados de coco por vez, duas vezes ao dia, para tonificar fraqueza nos idosos e prevenir envelhecimento prematuro."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "figo",
+    "name": "Figo",
+    "page": 62,
+    "chapter": "Frutas e Nozes",
+    "indications": "Enterite, disenteria, constipação, hemorróidas, garganta irritada, diarréia",
+    "descricao": "Neutro; doce; desintoxica; é usado como um tônico estomacal; afeta O baço e o intestino grosso.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Coma um a dois figos frescos por vez, pela manhã e ao entardecer, para melhorar o apetite e corrigir a indigestão.",
+      "Coma 1 a 2 figos frescos na hora de dormir para aliviar constipação, particularmente nos idosos.",
+      "Vaporize 1 a 2 figos frescos e 2 tâmaras de mel (processadas em mel) até ficarem bem macios. Coma 1 a 2 figos por dia para aliviar tosse seca e garganta irritada.",
+      "Ferva lkg de figos secos em água sobre fogo baixo até que fiquem macios como geléia. Adicione 750g de açúcar e aqueça até dissolvê-lo. Então misture todos os ingredientes; tome 1 colherada de geléia de figo por vez, pela manhã e ao entardecer, para corrigir fraqueza após doença. A geléia de figo tamb ém é usada como terapia adjuvante para tuberculose pulmonar e hepatite.",
+      "Ferva 1 a 3 figos frescos até ficarem bem macios ou 30g de figos secos com 60g de carne de porco magra e 2 tâmaras vermelhas; coma uma vez ao dia para aumentar a secreção de leite em mulheres após o parto.",
+      "Ferva 60g de figos frescos com 60g de carne de porco ou com lavo de galinha e 15g de vinho de arroz. Coma uma vez ao dia para aliviar dor nos músculos e ossos e entorpecimento devido ao reumatismo.",
+      "Frite 30g de figos secos até ficarem aromáticos; separadamente, frite 9g de gengibre seco até parecer com carvão. Ferva junto os figos e o gengibre. Coma três vezes ao dia para curar diarréia crônica.",
+      "Coma 2 figos frescos não maduros pela manhã e ao anoitecer para aliviar dor e sangramento nas hemorróidas.",
+      "Ferva figo fresco ou seco ou raízes de figu eira em água com carne de porco ou ovos para dor nos músculos e ossos.",
+      "Esmague raízes de figueira (com as superfícies ásperas removidas); ferva em água para fazer chá para curar prurido na garganta.",
+      "Ferva 30g de figos e raízes de figueiras para aliviar tuberculose de nódulos linfáticos ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A folha da figueira é neutra em energia e tem sabor doce e levemente pungente; pode curar hemorróidas e dor e inchação cardíacas. Raiz de Figueira Dor nos músculos e ossos, hemorróidas, tuberculose de nódulos linfáticos"
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "uva",
+    "name": "Uva",
+    "page": 63,
+    "chapter": "Frutas e Nozes",
+    "indications": "Deficiência sangüínea e energética, tosse, palpitações, suor noturno, reumatismo, dificuldade ao urinar, edema",
+    "descricao": "Neutra; doce e azeda; fortalece os tendões e os ossos; promove a urinação; também é usada como tônico sangüíneo e energético; afeta os pulmões, baço e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Esmague 500g de uvas frescas; adicione 500g de vinho de arroz e misture cuidadosamente. Coe para fazer vinho de uva. Coma 30g de passas encharcadas ou beba 30g de vinho de uva pela manhã e ao anoitecer, para tonificar energia depois da doença.",
+      "Coma um cacho grande de uvas frescas pela manhã e ao anoitecer, para aliviar a garganta seca e a sede.",
+      "Ferva 30g de passas com 15g de casca de gengibre fresco. Beba duas vezes ao dia para curar edema nutricional.",
+      "Extraia suco de 250g de uvas frescas e misture com uma quantidade igual de água morna. Beba tudo de lUna vez, uma vez ao dia, para aliviar dor e dificuldade na urinação, e eliminação de fluxo avermelliado e curto de urina.",
+      "Esmague 120g de uvas frescas e 250g de raízes de lótus frescas. Extraia",
+      "suco, beba tudo de uma vez, três vezes ao dia, para curar ou prevenir eliminação de urina contendo sangue.",
+      "Ferva 30g de passas em água e beba como caldo. Além disso, ferva folhas de videira e salsa e use o líquido para lavar o corpo para promover estouro da erupção no sarampo.",
+      "Ferva 30g de passas com 15g de tâmaras vermelhas em água; beba como caldo para aliviar ansiedade durante agitação."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Comer quantidades excessivas de uvas pode diminuir",
+      "apetite."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "folha-de-goiabeira",
+    "name": "Folha de Goiabeira",
+    "page": 64,
+    "chapter": "Frutas e Nozes",
+    "indications": "Diarréia, disenteria crônica, eczema, inchação devido a lesões",
+    "descricao": "Neu tra; doce; obstrutiva.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva aproximadamente 50g de folhas de goiaba fresca em água; beba o suco para curar ou prevenir enterite, disenteria e diarréia.",
+      "Ap lique o suco de folha de goiaba fresca em lesões para interromper o sang ramento."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "toranja",
+    "name": "Toranja",
+    "page": 64,
+    "chapter": "Frutas e Nozes",
+    "indications": "Indigestão, mal hálito devido à intoxicação, apetite pobre em mulheres grávidas",
+    "descricao": "Fria; doce e azeda.",
+    "energy": "fria",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Vaporize 90g de toranja descascada com meia xícara de vinho de arroz e 1 xícara de mel. Beba tudo em 1 dia para aliviar tosse com elimina ção mucosa.",
+      "Coma 1 toranja média por vez, três vezes ao dia, para aliviar indigestão, arroto e boca cheia d'água em mulheres grávidas.",
+      "Lentamente coma 1 toranja pequena para aliviar intoxicação."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "casca-de-toranja",
+    "name": "Casca de Toranja",
+    "page": 64,
+    "chapter": "Frutas e Nozes",
+    "indications": "Congestão 110 peito, eliminação mucosa, tosse, intoxicação",
+    "descricao": "Morna; pungente, doce e ama rga; empurra para baixo; afeta o baço, rins e bexiga.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "rins",
+      "bexiga"
+    ],
+    "aplicacoes": [
+      "Junt e as cascas de toranja; cor te fora apenas a casca externa. Coloque as cascas ao sol para secar e fazer cascas de toranja secas. Ou, no lugar de secar as cascas ao sol, ferva-as em água por algum tempo. Drene e coloque as cascas ao sol para secá-la mais ou menos; então adicione açúcar para fazer cascas de toranja cristalizadas.",
+      "Mastigue lentamente 30 a 60g de cascas de toranja cristalizadas, como se mascasse chiclete, para aliviar doença de movimento e vômito.",
+      "Ferva 15g de cascas de toranja cristalizadas ou 3g de cascas de toranjas secas em água e beba como caldo, três vezes ao dia, para aliviar inchação e dor abdominai s e diarr éia causadas por indigestão nas crianças."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "goiaba",
+    "name": "Goiaba",
+    "page": 65,
+    "chapter": "Frutas e Nozes",
+    "indications": "Diarréia, diabetes, hemorróidas",
+    "descricao": "Morna; doce; obstrutiva e construtiva; lnterrompe diarréia e sangramento.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Esmague 2S0g de goiabas frescas e aqueça até a ebulição. Beba tudo de uma vez, três vezes ao dia, para aliviar diarréia em gastroenterite aguda e disenteria.",
+      "Frite 30g de goiabas frescas; ferva-as em água e divida em 3 dosagens para beber em 1 dia para aliviar a diarréia nas crianças.",
+      "Esmague 90g de goiabas frescas; extraia o suco para beber antes das refeições, três vezes ao dia, para aliviar os sintomas associados com diabetes .",
+      "Ferva 90g de goiabas frescas e beba como chá, para aliviar farlngolaringite aguda e crônica e rouquidão.",
+      "Ferva SOOg de goiabas frescas ou 2S0g de goiabas secas até que o líquido se torne bem concentrado; use o Líquido da goiaba para lavar a região afetada, duas a três vezes ao dia, para curar hemorróidas, sangramento, eczema, prurido e exantema quente."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "fruta-do-espinheiro",
+    "name": "(Fruta do Espinheiro",
+    "page": 65,
+    "chapter": "Frutas e Nozes",
+    "indications": "Branco) Indigestão por carne, inchação abdominal, eliminação mucosa, eliminação de sangue pelo ânus, lumbago, hérnia, dor no pescoço após o parto",
+    "descricao": "Levemente morna; doce e azeda; promove a digestão; corrige coagulações sangúineas; expulsa tênias; afeta o baço, estômago e fígado.",
+    "energy": "morna",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Embeba a \"hawth orn frui!\" em água fervendo por menos de lmin; fatie as frutas e coloque-as ao sol para secar. (As fatias de \"hawthorn fruit\" estão disponiveis na maioria das lojas de ervas Chinesas.)",
+      "Frite as fatias de \"hawthorn\" até que elas pareçam carvão vegetal a fim de fazer carvão de \"hawthorn fruit\" .",
+      "Misture os seguintes ingredientes e ponha em escabeche por 10 dias para preparar vinho de \"hawthorn fruit\": 2S0g de fatias de \"hawthorn fruit\", 2S0g de \"longans\" frescos, 30g de tâmaras vermelhas, 30g de açúcar mascavo e 4 Ih xícaras de vinho de arroz.",
+      "Beba 30 a 60g de vinho de \"hawthorn fruit\" toda vez antes de dormir para aliviar dor causada por fadiga excessiva, dor muscular e dor de 66 Sistema Chhlês de Curas Alimentares artrite, manchas móveis na frente dos olhos, lumbago e dor na coxa dos idosos.",
+      "Ferva 60g de fatias de \"hawthorn fruit\" em água com uma quantidade igual de castanhas frescas ou secas até ficarem bem macias; adicione 30g de açúcar e mexa cuidadosamente. Beba o suco uma vez por dia, logo pela manhã de estômago vazio, para curar escorbuto.",
+      "Ferva 31g de fatias de \"hawthorn fruits\" com água; misture em 1,5g de pó de erva-doce. Beba o suco pela manhã e ao anoitecer para aliviar hérnia do intestino delgado.",
+      "Ferva 15g de fatias de \"hawthorn fruit\" em água e beba como chá a longo prazo, para aliviar hipertensão, alto nível de gordura no sangue e coronariopatia.",
+      "Moa 6 a 9g de carvão de \"hawthorn frui!\" até tornar-se pó. Tome o pó com água morna, uma vez ao dia, para aliviar dor abdominal causada por gastrite aguda e crônica, enterite e disenteria.",
+      "Ferva 3g de carvão de \"hawthorn fruit\" com 6g de fatias de \"hawthorn fruit\" ; beba o suco para aliviar a diarréia nas crianças; ou esmague 5 \"hawthorn fruits\" e extraia o suco para misturar com uma pitada de carvão de \"hawthorn fruit\" e administrar oralmente para interromper a diarréia nas crianças.",
+      "Esmague 2 a 3 \"hawthorn fruits\" frescas e extraia o suco para beber; ou ferva 2 a 3 \"hawthorn fruits\" com 6g de cascas de laranja secas; beba o suco para corrigir indigestão, inchação e dor abdominais."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência em coelhos mostra os efeitos da \"hawthom fruit\" na diminuição da pressão sangüinea.",
+      "Uma experiência em sapos mostra os efeitos da \"hawthorn fruit\" na expansão dos vasos sangüíneos.",
+      "As \"hawthorn fruits\" são relatadas por ter os efeitos de contração do útero e redução de antibiose. Comelltários - As \"hawthorn fruits\" não são recomendadas para pessoas que estão sofrendo de constipação devido ao calor interno ou àque las que possuem ácido gástrico em excesso.",
+      "As \"hawthorn fruits\" podem efetivamente digerir gorduras e preveni- las de en trar nos vasos sangüíneos removendo-as através de movimentos intestinais. Realmente, as frutas são tão efetivas no amolecimento da substâncias duras, que a população Chinesa as usa para cozinhar galinhas velhas duras e persistentes! Quando as \"hawthorn fruits\" são usadas na água de cozinhar, as galinhas duras tornam-se macias e tenras - uma indicação do poder de amaciamento desta fruta. Um outro exemplo, quando as \"hawthorn fruits\" são usadas para cozinhar peixe, até a cartilagem do peixe tornar-se-á tenra."
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "limao",
+    "name": "Limão",
+    "page": 67,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse com eliminação mucosa, indigestão, diabetes, faringolaringite",
+    "descricao": "Extremamente azedo; produz líquidos; protege o feto na agitação, é considerado bom para mulheres grávidas.",
+    "energy": null,
+    "flavors": [
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Para fazer limões em conserva, coloque 500g de limões frescos num recipiente de cerâmica grande; adicione 250g de sal e deixe o recipiente ao sol para secar até que as cascas se tornem enrugadas e macias com os sucos brotando . Os limões mais velhos em conserva são os melhores . Coma limões em conserva nas refeições para aliviar a indigestão.",
+      "Descasque um limão e esprema-o para fazer limonada para alívio do calor de verão, diabetes e faringolaringite.",
+      "Vaporize um limão fresco com uma quantidade adequada de açúcar em pedra. Coma pela manhã e ao anoitecer para aliviar a tosse com eliminação mucosa abundante e coqueluche nas crianças."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O limão não é recomendado para pessoas com úlceras gástricas ou duodenais e ácido gástrico em excesso .",
+      "A semente do limão é neutra e amarga e boa para usar na estimulação de energia e alívio da dor.",
+      "Esmague 15g de sementes de limão e moa até tornarem-se pó. Dissolva 3g de pó de semente de limão em água, uma vez ao dia, por 5 dias consecutivos, para aliviar visão embaçada.",
+      "Moa sementes de limão até tornarem-se pó. Dissolva 3g do pó de semente de limão em um pouco de vinho de arroz. Beba na hora de dormir para aliviar dor no corpo devido à fadiga excessiva."
+    ],
+    "needsReview": true
+  },
+  {
+    "id": "manga",
+    "name": "Manga",
+    "page": 67,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse, indigestão, sangramento da gengiva",
+    "descricao": "Fresca; doce e azeda; sacia a sede; fortalece o estômago; alivia o vômito; promove a urinação.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Coma uma manga fresca com casca por vez, três vezes ao dia, para aliviar tosse com eliminação mucosa e asma.",
+      "Coma uma manga fresca com casca pela manhã e ao anoitecer para aliviar indigestão , peito congestionado e inchação abdominal.",
+      "Coma 2 mangas todos os dias para aliviar sangramento da gengiva."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Um consumo excessivo de manga é relatado por ter causado nefrite.",
+      "Comer manga após uma refeição completa causará inchação do estômago.",
+      "A manga não deve ser comida com alimentos que possuem um sabor pungente, tais como alho ou cebola verde, pois causarão prurido de pele e icterícia . Um dia intencionalmente comi 5 mangas grandes com uma pequena quantidade de cebola verde, em parte para determinar a validade desta crença de centenas de anos e em parte para desfrutar do gosto da manga. Desenvolvi prurido de pele severo dentro de Sh, mas nenhum sinal de icterícia, porque leva muito tempo para uma pessoa desenvolver tal doença.",
+      "O caroço da manga é neutro, tem sabor doce e amargo e estimula energia e alivia a dor. Para usar o caroço da manga, seque -o completamente, alise primeiro a semente e quebre-a.",
+      "Esmague lSg de caroços de manga e lSg de sementes de \"longan\"; adicione 5 tâmaras vermelhas e ferva junto em 3 xícaras de água até que esta seja reduzida a 1 xícara. Beba 1 xícara de suco por vez, pela manhã e ao anoitecer, para aliviar dor de hérnia e orquite.",
+      "Ferva lSg de casca de manga com 30g de caroço de manga em quantidade suficiente de água para cobrir os dois ingredientes; beba duas xícaras de suco por vez , uma vez ao dia, para aliviar edema de pele ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "azeitona",
+    "name": "Azeitona",
+    "page": 68,
+    "chapter": "Frutas e Nozes",
+    "indications": "Garganta irritada, tosse com expulsão de sangue, alcoolismo, diarréia",
+    "descricao": "Neutra ; doce e azeda; obstrutiva; afeta os pulmõe s e o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Seque azeitonas frescas à sombra por 1 a 2 dias. Coloque as azeitonas em um recipiente de cerântica grande, adicione sal e armazene por 2 semanas para fazer azeitona s em conserva.",
+      "Remova a semente da azeitona fresca ou em conserva e mantenha a azeitona em sua boca para aliviar a garganta irritada. Repita com 1 azeitona por vez, poucas vezes ao dia .",
+      "Ferva 5 azeitonas frescas sem caroço e um pedaço de gengibre cristalizado em água . Beba o suco três vezes ao dia para curar disenteria e enterite.",
+      "Ferva 5 azeitonas frescas sem caroço em água; adicione 100g de raiz de lótus fresca e carne de porco magra e um pouco de sal. Beba apenas o suco, uma vez ao dia, para interromper sangramento das hemorróidas e sangramento do estômago.",
+      "Misture 5 azeitonas frescas sem caroço e um pouco de açúcar em pedra; vaporize-as por meia hora. Coma as azeitonas para aliviar tosse crônica.",
+      "Esmague 5 a 10 azeitonas frescas sem caroço; adicione 35g de açúcar e 4 xícaras de água; ferva por 10min. Beba o suco, uma vez ao dia, para aliviar o alcoolismo."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de disenteria bacilar aguda: use 100g de azeitonas frescas com sementes e ferva em uma xícara de água sobre fogo bem baixo por 2 a 3h até ser reduzida a meia xícara; coe. Adultos bebem de V2 a 1 colherada de cada vez. Repita 3 a 4 vezes até que os movimentos intestinais voltem ao normal. O tratamento é interrompido assim que o paciente tenha um a dois movimentos intestinais diariamente. Em geral, cada programa de tratamento leva 5 dias."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "tangerina",
+    "name": "Tangerina",
+    "page": 69,
+    "chapter": "Frutas e Nozes",
+    "indications": "Congestão no peito, vômito, soluço",
+    "descricao": "Fresca; doce e azeda; promove a circulação de energia; fortalece o baço; alivia a tosse; afeta os pulmões, estômago e rins.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Coma uma tangerina meio madura para aliviar indigestão e manter sua digestão.",
+      "Beba suco de tangerina fresca para aliviar a sede 'de febre e garganta seca, e para aliviar uma ressaca .",
+      "Vaporize 2 tangerinas com casca com 30g de açúcar em pedra; coma as tangerinas na hora de dormir para aliviar a tosse com eliminação mucosa amarelada."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "As cascas de tangerina secas podem ser preparadas colocando-as ao sol para secar. As cascas de tangerina secas possuem uma energ ia morna e um sabor pungente-amargo.",
+      "Ferva 6g de cascas de tangerina secas com 3g de gengibre fresco em água; beba uma xícara de suco por vez, duas vezes ao dia, para aliviar o vômito.",
+      "Espalhe as tangerinas frescas ao sol até ficarem meio secas. Pressione para achatá-las; embeba as tangerinas achatadas em xarope para fazer bolos de tangerina,",
+      "Mastigue lentamente 1 bolo de tangerina pequeno, como se mastigasse um chiclete, para aliviar vômito e diarréia; repita 4h mais tarde,",
+      "As sementes da tangerina possuem uma energia neutra e um sabor amargo.",
+      "Para aliviar dor e inchação em mastite, ferva 15g de sementes de tangerina numa mistura de metade água e metade vinho, Beba uma xícara do suco por vez, três vezes ao dia.",
+      "Frite 30g de sementes de tangerina até ficarem amareladas e moa-as; misture o pó com um quarto de xícara de vinho de arroz. Beba o suco duas vezes ao dia para aliviar dor de hérnia, inchação e dor nos testículos e lumbago . 70 Sistema Chinês de Curas Alimelltares",
+      "Tangerinas frescas não são recomendadas para pessoas com uma tosse de resfriado comum e edema . A casca da tangerina não é recomendada para ninguém com uma tosse seca ou alguém vomitando sangue."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "tangerina-2",
+    "name": "Tangerina ()",
+    "page": 70,
+    "chapter": "Frutas e Nozes",
+    "indications": "Sede, intoxicação, dificuldade de urinação, enfisema",
+    "descricao": "Fresca; doce e azeda; promove a urinação; lubrifica os pulmões; alivia a tosse; elimina o muco.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes"
+    ],
+    "aplicacoes": [
+      "Coma algumas tangerinas frescas para aliviar a sede devido a febre ou urinação dolorosa. Repita 4h mais tarde.",
+      "Vaporize uma tangerina fresca com casca com 15g de açúcar em pedra e 2 fatias de gengibre fresco por Ih. Coma a tangerina com casca para tratar tosse senil e crônica.",
+      "Beba suco de tangerina para aliviar uma ressaca.",
+      "Vaporize uma tangerina fresca com casca com 5 tâmaras vermelhas por meia hora. Coma as tangerinas e as tâmaras para aliviar sintomas de enfisema.",
+      "Lentamente mastigue a casca de uma tangerina fresca para aliviar congestão no peito e inchação abdominal devido à indigestão.",
+      "As sementes de tangerina podem ser deixadas ao sol para secar e serem usadas em remédios.",
+      "Frite 30g de sementes de tangerina; ferva as sementes em 3 xícaras de água com 9g de sementes de alcaravia até que a água seja reduzida a 2 xícaras. Beba 1 xícara do suco por vez, pela manhã e ao anoitecer, para curar hérnia e inch ação dolorosa nos testículos .",
+      "Esmague 15g de seme ntes de tangerina e ferva-as em 30g de vinho de arroz . Beba o suco duas vezes ao dia para promover secreção de leite e suavizar inchaço no seio.",
+      "Junte cascas de tangerina e seque-as ao sol para fazer cascas de tangerina secas."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "casca-de-tangerina-seca",
+    "name": "Casca de Tangerina () Seca",
+    "page": 70,
+    "chapter": "Frutas e Nozes",
+    "indications": "Congestão no peito, inchação abdominal,falta de apetite, vômito, soluço, tosse com eliminação mucosa, intoxicação por peixe e caranguejo",
+    "descricao": "Morna; pungente e amarga; empurra para baixo; estimula a energia; alivia a retenção de água; elimina muco; afeta o baço e os pulmões.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "amargo"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "A casca de tangerina seca é uma importante erva Chinesa. É amplamente usada nos remédios.",
+      "Dissolva 1,5g de pó de casca de tangerina seca em água morna. Beba de cada vez, três vezes ao dia, para aliviar congestão no peito, inchação abdominal e dor devido à indigestão.",
+      "Misture 40g de pó de casca de tangerina seca com 100g de pó de osso de siba. Tome 3g por vez dissolvidas em água morna, três vezes ao dia, para tratar dor e inchação de estómago, arroto e ácido gástrico em excesso."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de mastite aguda: misture 40g de cascas de tangerina secas e 7g de alcaçuz em água. Aqueça até a ebulição e então ferva novamente por um segundo de tempo. Divida em 2 dosagens para tomar em um dia. Dobre a dosagem em casos severos. Observações clínicas mostram que o tratamento inicial (dentro de 1 a 2 dias do início) produz bons resultados com uma taxa de sucesso de 70% em 2 a 3 dias. Este tratamento é menos efetivo quando a mastite aguda possui uma duração mais longa. Nenhum resultado foi obtido depois da supuração ter ocorrido."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "item-2",
+    "name": "\"Kumquat\"",
+    "page": 71,
+    "chapter": "Frutas e Nozes",
+    "indications": "Congestão no peito, sede, indigestão, tosse, coqueluche, dor de estômago, dor de hérnia, apetite pobre",
+    "descricao": "Morno; pungente, doce e azedo; alivia a tosse; elimina o muco; promove a circulação energética .",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce",
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Vaporize 5 a 10 \"kumquats\" frescos com 30g de açúcar em pedra por meia hora e coma um pouco de cada vez, duas vezes ao dia, para interromper tosse senil e asma.",
+      "Coma alguns \"kumquats\" frescos para aliviar a indigestão.",
+      "Para preparar \"kumquats\" secos, coloque os \"kumquats\" frescos ao sol para secar.",
+      "Ferva 10 \"kumquats\" secos em 6 xícaras de água até que esta seja reduzida a 3 xícaras; beba 1 xícara do suco por vez, três vezes ao dia, para tratar dor de estômago.",
+      "Esmague 10 \"kumquats\" secos e ferva numa mistura de metade água e metade vinho de arroz. Beba uma xícara do suco por vez, duas vezes ao dia, para aliviar dor de hérnia.",
+      "Para fazer \"kumquats\" açucarados, coloque os \"kumquats\" frescos ao sol até ficarem meio secos. Embeba-os em xarope.",
+      "Mastigue lentamente 30g de \"kumquats\" açucarados, como se mascasse um chiclete, para estimular apetite pobre devido a resfriado comum ou doença de movimento."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "mamao",
+    "name": "Mamão",
+    "page": 72,
+    "chapter": "Frutas e Nozes",
+    "indications": "Dor de estômago, disenteria, dificuldade nos movimentos intestinais, reumatismo",
+    "descricao": "Neutro; doce; promove a digestão; destrói vermes intestina is.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva 500g de mamões parcialmente maduros com 2 pernas de porco até ficarem bem macios. Coma mamões e came de porco uma vez por dia por 3 dias consecutivos para estimular a lactação após o pacto.",
+      "Vaporize 250 a 500g de mamões frescos. Coma mamões uma vez ao dia para aliviar a sede devido à febre e tosse crônica.",
+      "Prepare alguns mamões verdes: descasque e remova as sementes; embeba os mamões em vinagre para fazer mamão azedos (proteja o vinagre embebido).",
+      "Coma 30g de mamão azedo ou 60g de mamão fresco duas vezes ao dia para aliviar indigestão e dor e inchação abdominais.",
+      "Na hora de dormir , coma 250g de mamões azedos e beba 60g do vinagre no qual os mamões estavam embebidos, por 3 dias consecutivos , para destruir tênias , nematódeo, nematódeos afasmídicos e outros vermes do trato intestinal."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O mamão é relatado ser antitumorigênico porque contém carpaína.",
+      "É relatado que o mamão possui um efeito paralítico no sistema nervoso central, o que pode explicar por que o mamão pode aliviar a dor reumática."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "pessego",
+    "name": "Pêssego",
+    "page": 72,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse, dor de hérnia, transpiração excessiva",
+    "descricao": "Morno; doce e azedo; obstrutivo; promove a circulação sangüínea; lubrifica os intestinos; produz líquidos; controla a transpiração.",
+    "energy": "morna",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Descasque 3 pêssegos frescos e vaporize-os com 30g de açúcar em pedra. Coma uma vez ao dia para tratar asma e tosse .",
+      "Pêssegos verdes frescos podem ser deixados ao sol para secar e preparar pêssegos secos.",
+      "Ferva 30g de pêssegos secos e uma mang a em água. Coma duas vezes ao dia para aliviar dor de hérnia.",
+      "Frite 30g de pêssegos secos até que a superfície esteja marrom ou amarelada. Adicione água imediatamente e então adicione 30g de tãmaras vermelhas; ferva por poucos mínutos . Coma na hora de dormir para aliviar emissão seminal, transpiração excessiva e suor noturno.",
+      "Coma 1 a 2 pêssegos por vez, duas vezes ao dia, ou ferva 30g de pêssegos secos em água e beba como chá para tratar hipertensão.",
+      "Quebre as sementes de pêssego para obter os miolos; deixe-os ao sol para secar. Os miolos das sementes do pêssego são importantes e amplamente usados nos remédios herbais Chineses. Possuem uma energia neutra e um sabor amargo-doce. São considerados levemente tóxicos e capazes de promover a circulação sangüinea e lubrificar os intestinos.",
+      "Esmague 15g de miolos de sementes de pêssego e ferva com 30g de mel. Beba para curar constipação.",
+      "Ferva 15g de cada, miolos de semente de pêssego, gengibre fresco e tâmaras vermelhas com 30g de vinho de arroz e uma quantidade adequada de água. Beba como chá pela manhã e ao anoitecer para aliviar dor abdominal após o parto e supressão da menstruação."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "pera",
+    "name": "Pêra",
+    "page": 73,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse com muco, constipação, dificuldade de deglutição, alcoolismo, dificuldade de urinação, indigestão",
+    "descricao": "Fresca; doce e levemente azeda; produz líquidos; lubrifica a secura; elimina o muco; afeta os pulmões e o estômago.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Beba um copo de suco de pêra fresca pela manhã e ao anoitecer para aliviar a tosse e a sede devido à febre.",
+      "Embeba peras frescas sem casca em vinagre para preparar peras ao vrnagre.",
+      "Descasque 2 peras ao vinagre e coma-as para aliviar indigestão e alcoolismo.",
+      "Esmague 2 peras ao vinagre para extrair o suco. Beba o suco lentamente pela manhã e ao anoitecer para curar garganta irritada e dificuldade de deglutição.",
+      "Ferva 60g de cascas de pêra secas em água. Beba o suco para aliviar dificuldade de urinação e dor ao urinar."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "caqui",
+    "name": "Caqui",
+    "page": 73,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse, vômito de sangue, cancro de boca, dor de estômago, diarréia, hemorróidas, hipertensão, Mcio endêmico, eliminação de urina contendo sangue, soluço",
+    "descricao": "Frio; doce; obstrutivo; sacia a sede; lubrifica os pulmões; fortalece o baço; afeta o coração, pulmões e intestino grosso.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco",
+      "intestino_grosso",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Coma um caqui fresco e descascado, por vez, duas vezes ao dia, para aliviar dor de estômago que piora à exposição ao calor. 74 Sistema Cltinês de Cllras AlimeHtares",
+      "Esmague um caqui parcialmente maduro e extraia o suco. Beba o suco com água morna uma vez ao dia para tratar hipertensão e bócio endêmico.",
+      "Pique os caquis quando as camadas externas apenas começarem a se tornar amarelas; descasque os caquis e deixe-os ao sol em dias quentes e freqüentemente pressione para achatá-los até que a superfície esteja coberta com pó branco. Na língua Chinesa, o pó é chamado de geada branca do caqui. Os caquis secos desta maneira são chamados de bolos de caqui.",
+      "Vaporize 2 bolos de caqui com 30g de mel. Coma pela manhã e ao anoitecer para tratar asma senil e tosse com muco.",
+      "Cozinhe 2 bolos de caqui em água com 60g de arroz glutinoso (doce) e 2 fatias de casca de laranja seca. Coma nas refeições, uma vez ao dia, por 3 dias consecutivos, para curar enterite crônica e diarréia.",
+      "Misture um bolo de caqui com um pouco de arroz de grão longo e água, e esmague-o para fazer uma pasta. Use para alimentar crianças três vezes ao dia por 2 a 3 dias consecutivos para aliviar a diarréia.",
+      "Ferva 2 bolos de caqui até ficarem bem macios. Coma 2 bolos de caqui por vez, duas vezes ao dia, para curar hemorróidas.",
+      "Cozinhe caldo de arroz e adicione 2 bolos de caqui ao caldo. Coma uma vez ao dia por 5 dias consecutivos para aliviar a elimi nação de urina contendo sangue com nenhuma dor na urinação.",
+      "Esmague 3 a 9g de geada branca de caqui; ferva em água e beba lentamente, algumas vezes ao dia, para curar cancro de boca, garganta irritada e tosse seca.",
+      "Apanhe o cálice e o receptáculo de um caqui e deixe-os ao sol para secar . O cálice e o receptáculo secos, importantes nos remédios herbais Chineses, possuem uma energia neutra, poder obstrutivo e efeito de empurrar para baixo.",
+      "Ferva 3 bolos de caqui em água com os cálices e receptáculos até ficarem macios. Beba o suco pela manhã e ao anoitecer para tratar tosse e dor no peito em doença pulmonar.",
+      "Ferva 9g de cálices e receptáculos em água com 3g de gengibre fresco . Beba como chá para aliviar o soluço; ou frite 3g de cálices e receptáculos de caqui até ficarem aromáticos e moa até tornarem- se pó. Dissolva em vinho de arroz e beba uma vez ao dia para aliviar soluço."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "abacaxi",
+    "name": "Abacaxi",
+    "page": 74,
+    "chapter": "Frutas e Nozes",
+    "indications": "Edema, indigestão, diarréia, vômito, inchação abdominal",
+    "descricao": "Neutro; doce e azedo; promove urinação e digestão; sacia a sede; cura inchação .",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Frite 250g de abacaxi fresco, fatiado, com 60g de galinha em óleo, temperada com pimenta e sal. Coma todo dia, ou em dias alternados, para aliviar tontura devido à pressão sangüínea baixa.",
+      "Coma 4 fatias de abacaxi fresco ou beba um copo de suco de abacaxi fresco por vez, duas vezes ao dia, para aliviar indigestão, inchação abdominal, vômito ou diarréia.",
+      "Beba um copo de suco de abacaxi fresco temperado com um pouco de sal por vez, duas vezes ao dia, para aliviar a sede devido à febre."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "É aconselhável comer abacaxi com um pouco de sal para eliminar prurido leve na ponta da lingua.",
+      "A bromelina no abacaxi tem sido usada para curar vários tipos de inflamações, edemas e tromba.",
+      "O abacaxi não é recomendado para pessoas com eczema ou carbúnculo ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "ameixa",
+    "name": "Ameixa",
+    "page": 75,
+    "chapter": "Frutas e Nozes",
+    "indications": "Doença hepática, diabetes, ascite",
+    "descricao": "Neutra; doce e azeda; produz líquidos; promove urinação e digestão; afeta o fígado e os rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Coma 2 ameixas frescas todo dia pela manhã e ao anoitecer para promover digestão e interromper o sangramento da gengiva.",
+      "Para curar cirrose e urinação diminlÚda, esmague 2 ameixas doces com sementes e misture com água quente. Beba como chá, 1 xícara por vez, duas vezes ao dia.",
+      "Embeba ameixas frescas em vinagre para preparar ameixas ao vinagre .",
+      "Esmague 2 ameixas ao vinagre com suas sementes, misture com água fervendo e um pouco de sal; deixe esfriar. Lave sua boca e garganta com o suco algumas vezes ao dia para curar faringolaringite crônica, tonsilite, periodontite, cancro de boca e úlcera de língua .",
+      "Esmague 30g de sementes de ameixa e ferva com água. Beba uma xícara cheia por vez, duas vezes ao dia, para aliviar constipação."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A ameixa não é recomendada para pessoas com estômago fraco, úlceras e gastroenterite aguda ou crônica ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "ameixa-azeda",
+    "name": "Ameixa Azeda",
+    "page": 75,
+    "chapter": "Frutas e Nozes",
+    "indications": "Diarréia, tosse seca, sede",
+    "descricao": "Neutra; extremamente azeda; construtiva e obstrutiva; produz líquidos e destrói vermes; afeta o fígado.",
+    "energy": "neutra",
+    "flavors": [
+      "azedo"
+    ],
+    "organs": [
+      "figado"
+    ],
+    "aplicacoes": [
+      "Coma 2 ameixas azedas frescas, ou esmague uma ameixa azeda fresca e misture com açúcar e um pouco de sal para fazer chá . Beba",
+      "chá para aliviar a sede devido à febre e deficiência de ácido gástrico e apetite pobre.",
+      "Para fazer ameixas azedas em conserva (boas para interromper diarréia), coloque ameixas azedas frescas maduras em um recipiente de cerárnica grande; adicione sal e prepare em escabeche até que as ameixas se tornem tão macias que o suco começa a manar."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Um amigo que está hoje praticando acupuntura em Montreal me contou que uma vez se associou a um grupo de pessoas numa dieta extrema e foi dito para comer todo dia uma grande quantidade de ameixas em conserva. Depois de alguns dias de consumo de ameixas, ele tornou -se tão nervoso que enquanto estava trabalhando em uma loja, sentiu um forte ímpeto de correr atrás dos clientes e dizer-lhes para irem ao inferno . As ameixas podem agir sobre o fígado e assim, comer muitas delas pode transtornar O fígado e causar uma explosão emocional."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "damasco-e-semente-de-damasco",
+    "name": "Damasco e Semente de Damasco",
+    "page": 76,
+    "chapter": "Frutas e Nozes",
+    "indications": "Damasco para sede e asma; semente de damasco amargo para tosse, garganta irritada, constipação, asma; semente de damasco doce para tosse, constipação e garganta irritada",
+    "descricao": "O damasco é neutro, doce e azedo. Lubrifica os pulmões e produz líguidos. A semente de damasco amargo é morna, pungente, amarga e tóxica. E usada para suprimir a tosse, aliviar a asma e lubrificar os intestinos. A semente de damasco doce é morna, pungente e doce. É usada para lubrificar os intestinos e suprimir tosse, e também como um tônico energético.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce",
+      "azedo",
+      "amargo"
+    ],
+    "organs": [
+      "pulmoes",
+      "intestino_grosso",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Coma 2 a 3 damascos secos ou frescos pela manhã e ao anoitecer para aliviar garganta seca e saciar a sede.",
+      "Mastigue 5 a 10 sementes de damasco doce uma vez ao dia para curar tosse crôn ica e tremor devido ao frio.",
+      "Combine 15g de sementes de damasco doce, 30g de cada, de arroz e açúcar; adicione água e esmague-as para fazer um creme. Coma pela manhã e ao anoitecer para corrigir constipação nos idosos e nas mulheres grávidas.",
+      "Prepare 2 peras e remova as sementes. Esmague 6g de sementes de damasco amargo e moa até tornarem-se pó; encha as peras com o pó e vaporize por meia hora. Coma uma vez ao dia para curar tosse seca.",
+      "Ferva 9g de sementes de damasco amargo em água com 6g de gengibre fresco e 2 tárnaras vermelhas. Beba como chá duas vezes ao dia para curar tosse com muco aquoso."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Os damascos frescos não são recomendados para consumo freqüente ou excessivo ou para pessoas com diarréia. As sementes de damasco amargo são tóxicas e não devem ser consumidas nas formas fresca ou crua ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "morango",
+    "name": "Morango",
+    "page": 77,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse seca, sede, garganta irritada, rouquidão, indigestão, dificuldade na urinação, ressaca",
+    "descricao": "Fresco; doce e azedo; lubrifica os pulmões; produz líquidos; fortalece o baço; alivia a intoxicação.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Vaporize 60g de morangos frescos com 30g de açúcar em pedra . Coma três vezes ao dia para tratar tosse seca que prolonga-se cansativamente.",
+      "Beba um copo de suco de morangos frescos pela manhã e ao anoitecer, para aliviar a sede na febre, garganta irritada e rouquidão.",
+      "Coma 60g de morangos frescos antes das refeições, três vezes ao dia, para aliviar indigestão e dor e inchação abdominais, e para melhorar o apetite.",
+      "Esmague 60g de morangos frescos e misture com água fria. Beba um copo do suco por vez, três vezes ao dia, para aliviar a urinação com dificuldade e dor e eliminação de urina vermelha.",
+      "Coma 8 a 10 morangos frescos de uma vez para aliviar ressaca.",
+      "Misture suco de morango fresco com uma quantidade igual de vinho de arroz. Beba para corrigir desnutrição e fraqueza depois de uma doença."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "framboesa",
+    "name": "Framboesa",
+    "page": 77,
+    "chapter": "Frutas e Nozes",
+    "indications": "Urinação freqüente, tontura",
+    "descricao": "Morna; doce e azeda; usada como um tônico hepático e renal para controlar a urinação.",
+    "energy": "morna",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Beba suco de framboesa fresca para interromper urinação freqüente e tontura devido à doença de movimento .",
+      "Misture suco de framboesa fresca com mel como um remédio para curar tosse seca devido ao frio."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A framboesa verde seca (imatura) é uma importante erva Chinesa com uma energia neutra e um sabor doce-azedo. Age no fígado e rins, é usada para corrigir impotência, emissão seminal, urinação freqüente, visão embaçada, e é relatada por produzir efeitos similares aos efeitos como aqueles do hormônio sexual feminino."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "tamara",
+    "name": "Tâmara",
+    "page": 78,
+    "chapter": "Frutas e Nozes",
+    "indications": "Estômago fraco, palpitações, nervosidade, histeria nas mulheres, púrpura alérgica",
+    "descricao": "Morna; doce; usada como um tônico esplênico, tônico energético e tônico sangüíneo; produz líquidos; desintoxica; afeta o baço e o estômago.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva 30g de tâmaras vermelhas com um ovo de galinha ínteiro, 4 fatias de gengibre fresco e 30g de açúcar mascavo em água. Coma nas refeições para aliviar fraqueza após o parto.",
+      "O consumo prolongado de 30g de tâmaras vermelhas todos os dias ao anoitecer melhora as condições físicas, tais como magreza e fraqueza.",
+      "Ferva 30g de tâmaras vermelhas com 5 cabeças brancas de cebolas verdes. Coma tudo na hora de dormir para aliviar insônia.",
+      "Coma 30 a 60g de tâmaras vermelhas por vez, três vezes ao dia, por 15 dias consecutivos, para curar púrpura alérgica.",
+      "Ferva 30g de tâmaras vermelhas e 30g de inhame com 2 fatias de gengibre fresco até ficarem macios. Coma uma vez ao dia por 10 dias consecutivos para tratar dor de estômago fria, dor abdominal e diarréia devido à fraqueza digestiva.",
+      "Ferva 30g de tâmaras vermelhas secas com 15g de inhame, 15g de trigo integral e 15g de alcaçuz processado. Beba o suco pela manhã e ao anoitecer para tratar histeria nas mulheres e nervosismo nas mulheres durante a menopausa.",
+      "Ferva 15g de tâmaras pretas com 9g de \"longans\" e 30g de açúcar mascavo, Coma as frutas cozidas nas refeições num período a longo prazo para tratar anemia.",
+      "Para preparar geléia de tâmara, ferva 1.500g de tâmaras frescas, descaroçadas, ou 500g de tâmaras vermelhas, descaroçadas, até que elas pareçam geléia; adicione 500g de açúcar e mexa até dissolver.",
+      "Tome uma colherada de geléia de tâmara com água morna num período a longo prazo para aliviar hepatite, tuberculose pulmonar e fraqueza após doença."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "As tâmaras frescas podem ser deixadas ao sol para secar até ficarem vermelhas para preparar tâmaras vermelhas secas .",
+      "As tâmaras vermelhas frescas podem ser fervidas e deixadas ao sol para secar, então vaporizadas e assadas poucas horas até que a superfície se torne quase preta; estas são chamadas de tâmaras pretas."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "melancia",
+    "name": "Melancia",
+    "page": 79,
+    "chapter": "Frutas e Nozes",
+    "indications": "Urinação diminuída, garganta irritada, cancro de boca",
+    "descricao": "Fria; doce; promove a urinação e lubrifica os intestinos; afeta o coração, estômago e bexiga.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso",
+      "bexiga",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Beba um copo de suco de melancia fresca para aliviar tontura em insolação e vômito.",
+      "Coma 500 a 1.000g de melancia fresca por vez, duas vezes ao dia, para aliviar a sede, gosto amargo na boca, mal hálito, eliminação de urina amarelada, dor na uretra e ressaca.",
+      "Corte fora as cascas de melancia aproximadamente O,Scm de grossura e coloque-as ao sol para secar, que tornam-se cascas de melancia secas amplamente usadas como ervas no herbalismo Chinês.",
+      "Ferva SOg de cascas de melancia secas em água e beba como chá para tratar hipertensão, diabetes, nefrite e ressaca."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "fruta-estrelar",
+    "name": "Fruta Estrelar (Carambola)",
+    "page": 79,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse e febre decorrentes de resfriado comum, dor de dente, cálculos renais e na bexiga, hemorróidas, cancro de boca, indigestão, ressaca",
+    "descricao": "Fria; doce e azeda; reduz a febre; produz líquidos; promove a urinação; desintoxica.",
+    "energy": "fria",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Coma uma fruta estrelar fresca por vez, duas vezes ao dia, para aliviar a febre e tosse em resfriado comum .",
+      "Ferva 3 frutas estrelares frescas com 2 colheradas de mel. Coma as frutas e beba o suco uma vez ao dia para aliviar cálculos renais e na bexiga e dificuldade de urinação.",
+      "Esmague 3 frutas estrelares frescas para fazer suco . Beba o suco duas vezes ao dia para aliviar faringolaringite, cancro de boca e dor de dente.",
+      "Esmague 3 frutas estrelares frescas e misture o suco com água fria. Beba o suco três vezes ao dia para aliviar urinação dolorosa e eliminação de urina vermelha.",
+      "Coma 2 frutas estrelares frescas por vez, duas vezes ao dia, logo pela manhã de estômago vazio e ao anoitecer, para aliviar hemorróidas."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "item-3",
+    "name": "\"Longan\"",
+    "page": 80,
+    "chapter": "Frutas e Nozes",
+    "indications": "Insônia, esquecimento, palpitações, nervosidade",
+    "descricao": "Momo; doce; usado como tônicosesplênico, cardíaco, sangüíneo e energético; afeta o coração e o baço.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Vaporize 15g de \"longans\" com 30g de carne de porco magra, 2 fatias de gengibre fresco e wna quantidade adequada de vinho de arroz. Coma uma vez ao dia para aliviar tontura e peso abaixo do normal.",
+      "Misture 500g de \"longans\" com 500g de açúcar; vaporize-os para fazer geléia de \"longan\".",
+      "Tome lllna colherada de geléia de \"longan\" com água morna para aliviar tontura e edema após o parto; ou ferva 15g de \"longans\" com 5 tâmaras vermelhas, 30g de açúcar mascavo e 6g de gengibre fresco."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "plumula-de-lotus",
+    "name": "Plúmula de Lótus",
+    "page": 81,
+    "chapter": "Frutas e Nozes",
+    "indications": "Emissão seminal, hipertensão, visão embaçada, inchação e dor nos olhos",
+    "descricao": "Fria; amarga; obstrutiva; suspende o sangramento; interrompe a emissão seminal; também é usada como um tônico cardíaco; afeta coração, pulmões e rins.",
+    "energy": "fria",
+    "flavors": [
+      "amargo"
+    ],
+    "organs": [
+      "pulmoes",
+      "rins",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva 3g de plúmula de lótus e beba tudo de uma vez para aliviar emissão seminal com ou sem sonhos.",
+      "Mastigue lentamente 1,5g de plúrnula de lótus e lave com água para aliviar a hipertensão.",
+      "Ferva 3g de plúmula de lótus e 3g de alcaçuz com água. Beba como chá, duas vezes ao dia, para aliviar ansiedade e cancro de boca."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência em animais mostra que a plúmula de lótus pode abaixar a pressão sangüinea."
+    ],
+    "comentarios": [
+      "A plúmula de lótus refere-se ao botão verde de uma semente de lótus seca madura. /"
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "maca-silvestre-acida",
+    "name": "Maçã Silvestre Acida",
+    "page": 81,
+    "chapter": "Frutas e Nozes",
+    "indications": "Diarréia , diabetes, emissão seminal",
+    "descricao": "Neutra; doce e azeda; sacia a sede; obstrutiva; afeta o coração, fígado e pulmões.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes",
+      "figado",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva 10 maçãs silvestres ácidas parcialmente maduras numa quantidade adequada de água até que esta seja reduzida à metade. Beba o caldo e coma as maçãs silvestres ácidas logo pela manhã para curar diarréia aquosa.",
+      "Esmague 60g de maçãs silvestres ácidas frescas parcialmente maduras; ferva as maçãs silvestres ácidas em água. Beba uma xícara do suco por vez, três vezes ao dia, para aliviar dor abdominal e diarréia na enterite e d isenteria .",
+      "Esmague 15 a 30g de maçãs silvestres ácidas frescas; extraia O suco. Beba três vezes ao dia para curar diarréia nas crianças.",
+      "Frite 30g de maçãs silvestres ácidas secas até ficarem amareladas; ferva as maçãs silvestres ácidas em água. Coma-as na hora de dormir para curar emissão seminal e ejaculação precoce."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Não é sensato consumir maçãs silvestres ácidas em grandes quantidades porque possuem uma natureza obstrutiva. As maçãs silvestres ácidas não são recomendadas para pessoas com constipação."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "lechia",
+    "name": "Lechia ()",
+    "page": 82,
+    "chapter": "Frutas e Nozes",
+    "indications": "Soluço, dor de estômago, diarréia, asma, dor de hérnia",
+    "descricao": "Morna; doce e azeda; produz líquidos; estimula energia; alivia a dor; afeta o baço e o fígado.",
+    "energy": "morna",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "baco",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Coma 60 a 150g de lechias frescas para melhorar as condições físicas depois de uma doença prolongada.",
+      "As lechias frescas podem ser deixadas ao sol para secar. As lechias secas são amplamente usadas na dieta Chinesa.",
+      "Ferva 30 a 60g de lechias secas e 5 tâmaras vermelhas secas com água adequada . Beba o caldo duas vezes ao dia para curar diarréia crõnica .",
+      "Vaporize 120g de lechias secas e coma uma vez ao dia para curar asma .",
+      "Reúna as sementes de lechia e deixe-as ao sol para secar e ser usadas em remédios.",
+      "Esmague 30g de sementes de lechia secas; ferva em água com 6g de gengibre fresco ou cascas de laranja secas. Beba uma vez ao dia para aliviar dor de estõmago e dor abdominal.",
+      "Esmague 60g de sementes de lechia secas e 15g de sementes de alcaravia; ferva-as em uma quantidade adequada de água. Beba o caldo uma vez ao dia para aliviar a dor de hérnia, elefantíase, hidrocele de túnica vaginal e inchação e dor nos testículos."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "noz",
+    "name": "Noz",
+    "page": 82,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse, lumbago, impotência, emissão seminal, urinação freqüente, cálculos renais e na bexiga, constipação",
+    "descricao": "Morna; doce; é usada como tônico renal e para lubrificar os intestinos e controlar a emissão seminal; afeta os rins e os pulmôes.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "intestino_grosso",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Vaporize 30g de nozes com 15g de açúcar em pedra e 6g de sementes de rabanete por meia hora. Coma a mistura duas vezes ao dia para curar asma crônica e tosse.",
+      "Mastígue lentamente 90g de nozes a cada dia para aliviar garganta irritada, rouquidão, constipação e úlceras gástricas e duodenais. Fntlas e Nozes 83",
+      "Ferva 15g de nozes com 15g de gengibre fresco esmagado. Beba duas vezes ao dia para aliviar dor de cabeça, febre e medo do frio devido ao resfriado comum, e também para induzir a transpiração no resfriado comum .",
+      "Vaporize 250g de nozes e bolos de caqlÚ por Ih. Divida em 3 porções e coma I porção de cada vez, três vezes ao dia por I mês, para aliviar a tosse e peso abaixo do normal devido à tuberculose pulmonar .",
+      "Prepare 30g de nozes, 2 rins de porco faliados e um pouco de toucinho; frite -os juntos. Coma-os quente todos os dias na hora de dormir por 3 dias para curar emissão seminal com urinação súbita.",
+      "Frite 120g de nozes em óleo vegetal até que estejam crocantes. Misture as nozes com um pouco de açúcar e água para fazer xarope. Coma dentro de 2 dias para aliviar cálculos no trato urinário."
+    ],
+    "relatoriosClinicos": [
+      "Para o tratamento de cálculos renais e na bexiga: frite 120g de nozes em óleo vegetal até ficarem crocantes. Adicione açúcar e moa até obter uma emulsão ou creme. Coma as nozes dentro de I a 2 dias. (Reduza a dosagem para crianças.) O tratamento continua até que os cálculos tenham sido expelidos ou os sintomas desaparecidos. Em geral, os cálculos são expelidos de uma vez ou várias vezes dentro de alguns dias. Também parecem menores e mais macios do que os anteriores ou são dissolvidos na urina para parecer um creme. Assim, a noz é considerada efetiva para dissolver os cálculos."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "loquat",
+    "name": "Loquat",
+    "page": 83,
+    "chapter": "Frutas e Nozes",
+    "indications": "Faringolaringite, tosse, sede, constipação",
+    "descricao": "Fresco; doce e azedo; lubrifica os pulmões; sacia a sede; empurra para baixo; afeta o baço, pulmões e fígado.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Vaporize 90g de loquats frescos descaroçados com 15g de açúcar em pedra por meia hora. Coma os loquats e beba o caldo para curar faringolaringite crõnica e aguda.",
+      "Coma 250g de loquats completamente maduros por vez, pela manhã e ao anoitecer, para aliviar garganta seca, sede e dificuldade de urinação.",
+      "Esmague 15g de sementes de loquat; ferva em água com 3 fatias de gengibre fresco. Beba I xícara do suco por vez, duas vezes ao dia, para aliviar a tosse. Esmague 9 a 15g de sementes de loquat; ferva-as em água; coe e adicione 30g de mel e misture cuidadosamente . Beba uma vez ao dia para curar constipação senil, tosse e asma ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O loquat não é recomendado para pessoas com digestões fracas . 84 Sistema Cllillês de Curas Alimentares",
+      "A folha do loquat seca é urna importante erva Chinesa com urna energia fresca e um sabor amargo. É usada para aliviar a tosse, hemorragia nasal e tosse expelindo sangue."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "melao-almiscarado",
+    "name": "Melão Almiscarado",
+    "page": 84,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse, dificuldade na urinação, constipação, doença hepática",
+    "descricao": "Frio; doce; reduz a febre; sacia a sede; promove a urinação; afeta o coração e o estômago.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Coma 250 a 500g de melão almiscarado por vez, duas vezes ao dia, para aliviar a sede na febre, dor na urinação e constipação.",
+      "Vaporize 250g de melão almiscarado fresco com urna quantidade adequada de açúcar em pedra. Coma duas vezes ao dia para aliviar a tosse na tuberculose pulmonar.",
+      "Para preparar cálice e receptáculo secos de melão almiscarado, retire o cáhce e o receptáculo de um melão almiscarado e deixe-os à sombra para secar. Esta é urna importante erva Chinesa , cujos extratos são relatados por terem sido feitos em tabletes para hepatite."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O melão almiscarado e as sementes não são recomendados para pessoas com diarréia e edema. O cálice e o receptáculo secos do melão almiscarado não são recomendados para pessoas com doença cardíaca ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "castanha",
+    "name": "Castanha",
+    "page": 84,
+    "chapter": "Frutas e Nozes",
+    "indications": "Estômago desarranjado, diarréia, pernas fracas, vômito de sangue, hemorragia nasal, eliminação de fezes contendo sangue",
+    "descricao": "Morna; doce; é usada corno tônicos estomacal, esplênico e renal; promove a circulação sangüínea e suspende o sangramento; afeta o baço, estômago e rins.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Mastigue lentamente 30 a 60g de castanhas cruas frescas (com as cascas removidas), corno se mascasse um chiclete, para curar faringolaringite crônica.",
+      "Ferva 30 a 60g de castanhas secas ou frescas em água com um pouco de açúcar mascavo. Coma castanhas na hora de dormir para aliviar fraqueza e entorpecimento dos membros.",
+      "Asse 30g de castanhas secas. Coma-as pela manhã e ao anoitecer para curar urinação freqüente e pernas fracas devido à fraqueza renal.",
+      "Ferva 60g de castanhas frescas com 4 tâmaras vermelhas e um pouco de carne de porco magra. Coma tudo de uma vez para curar asma e tosse.",
+      "Esmague 15g de castanhas e misture com um bolo de caqui para fazer geléia e então cozinhe . Coma para curar diarréia nas crianças.",
+      "As cascas das castanhas podem ser deixadas para secar ao sol e usá-las para remédios.",
+      "Asse as cascas de castanha secas até que pareçam carvão; moa-as até tornarem-se pó. Tome 6g do pó com 30g de mel para aliviar hemorróidas."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "amendoim",
+    "name": "Amendoim",
+    "page": 85,
+    "chapter": "Frutas e Nozes",
+    "indications": "Tosse seca, estômago desarranjado, beribéri, escassez de secreção de leite após o parto",
+    "descricao": "Neutro; doce; lubrifica os pulmões; é considerado bom para dor de estômago; afeta o baço e os pulmões.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Frite 3 xícaras de amendoins torrados até ficarem aromáticos; embeba 1 xícara de arroz (qualquer tipo exceto o doce [glutinoso]) em água por pelo menos 2h; escoe e adicione os amendoins e ferva junto em água até que se tornem macios para fazer caldo congelado de amendoim-arroz. Beba o caldo uma vez ao dia para aliviar beribéri e promover secreção de leite.",
+      "Torre os amendoins e coma-os para estimular o apetite, lubrificar os intestinos e aliviar garganta seca.",
+      "Consuma amendoins frescos para aliviar tosse com eliminação mucosa.",
+      "Ferva 100g de amendoins frescos com uma quantidade igual de feijões vermelhos pequenos e tâmaras vermelhas. Beba como sopa nas refeições para aliviar beribéri .",
+      "Ferva 100g de amendoins com luna perna de porco. Coma nas refeições para promover secreção de leite após O parto.",
+      "Ferva 1 copo de amendoins com 3 copos de água sobre fogo baixo por 3h; adicione um pouco de açúcar em pedra, e beba isto de estômago vazio para aliviar beribéri.",
+      "Consuma amendoins frescos mun período regular para aliviar a surdez."
+    ],
+    "relatoriosClinicos": [
+      "Para o tratamento de traqueíte crônica: ferva 70g das camadas externas dos amendoins em água por aproximada86 Sistema Chinês de Curas Alimelltares mente 10h. Coe isto para obter 100ml do líquido; adicione açúcar. Beba SOml por vez, duas vezes ao dia, por 10 dias como um programa de tratamento. Entre os 407 casos de traqueíte crônica tratados, 74 casos mostraram resultados significativos, 230 casos mostraram melhorias, 95 casos não mostraram efeito."
+    ],
+    "experiencias": [
+      "As experiências iniciais indicam que os amendoins suspendem o sangramento em pacientes hemofílicos. Experiências subseqüentes mostram que os amendoins podem suspender vários tipos de sangramento, exceto sangramento severo. É também descoberto que os amendoins fritos ou torrados são 20 vezes menos efetivos que os amendoins crus, e os efeitos das peles marrons externas do amendoim são 50 vezes mais fortes do que o próprio amendoim."
+    ],
+    "comentarios": [
+      "As camadas externas dos amendoins não devem ser removidas se possível quando os amendoins são usados num remédio Chinês, a menos que seja especificado de outra maneira .",
+      "Comer grandes quantidades de amendoins é considerado nocivo para as funções digestivas e para a pele .",
+      "O óleo de amendoim é neutro e doce, e é usado para lubrificar os intestinos. Use uma bola de algodão para aplicar óleo de amendoim na região do escroto para aliviar prurido e sensações úmidas, 5 ou 6 vezes ao dia, sem lavar com água quente ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cenoura",
+    "name": "Cenoura",
+    "page": 87,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Diarréia crônica, tosse, indigestão, dificuldade ao urinar",
+    "descricao": "Neutra; doce; empurra para baixo; é usada como um diurético e digestivo; afeta os pulmões e o baço.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Consumo regular de cenouras cozidas ou frescas previne cegueira noturna .",
+      "Ferva cenoura e tâmaras vermelhas em água para fazer sopa para tratar coqueluche nas crianças.",
+      "A cenoura pode ser cozida com salsa e castanha d'água para facilitar erupção no sarampo.",
+      "O suco de cenoura fresca pode ser usado para aplicação externa para sarar queimaduras.",
+      "Ferva 5g de sementes de cenoura em 2 copos de água sobre fogo baixo até que esta seja reduzida a 1 copo. Beba o caldo para promover a urinação no tratamento de edema.",
+      "Asse as cascas das cenouras até que pareçam queimadas. Coma as cascas enquanto estiverem quentes para aliviar urinação noturna freqüente. Di\\'ida 1 cenoura em 3 dosagens e coma-as três vezes ao clia.",
+      "Para usar a cenoura como um tônico sangüíneo, cozinhe-a com espinafre e raízes de lótus em sopa; ou, cozinhe com tomates, cebola e carne de boi; ou, cozinhe a cenoura com fígado de porco.",
+      "Para aguçar a visão, cozinhe a cenoura com fígado de galinha ou de pato."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Mostra o efeito da diminuição do açúcar no sangue em animais."
+    ],
+    "comentarios": [
+      "Lembro um dia que um amigo me disse que seu irmão de 3 anos tinha molhado a cama na noite anterior. Perguntei a ele casual mente se seu irmão havia comido alguma cenoura antes de ir para a cama. Muito inesperadamente, este amigo foi pego de surpresa. \"Como você sabia?\" Ele perguntou. Disse-lhe que a cenoura pode promover a urinação . De fato, a cenoura também é boa para promover a erupção no sarampo e para inflamação da bexiga e dos rins não apenas porque a cenoura é um diurético, mas também porque ela é um alimento efetivo para sarar inflamações ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "aipo",
+    "name": "Aipo",
+    "page": 88,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Hipertensão, tontura e dor de cabeça, eliminação de urina contendo sangue",
+    "descricao": "Neutro; doce e amargo; acetinado; afeta o estômago e o fígado.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "amargo"
+    ],
+    "organs": [
+      "estomago",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Algumas vezes um bebê pode sentir sensações quentes e ser incapaz de dormir e chorar dia e noite. Se existem sinais de sintomas quen tes (como cancro de boca ou vermelhidão na região que rodeia o ânus ou urinação freqüente com eliminação de urina escassa e arnarelo-aver melhada), então é útil cortar alguns pedaços de aipo, imergi-los em água fervendo por alguns segundos e extrair O suco. Este suco pode reduzir o calor na bexiga, um remédio útil para uretrite.",
+      "Existe uma receita Chinesa para melhorar as condições do fígado e dos rins: frite aipo e rins de porco. O aipo pode acalmar você e prevenir distúrbios hepáticos enquan to os rins do porco podem tonificar os nns.",
+      "O aipo é aromático, razão pela qual a população Chinesa chama-o de \"aipo aromático\". O aipo pode ser cozido com vinagre para diminuir a pressão sangüínea e aliviar a dor de cabeça devido à pressão sangüínea alta.",
+      "O suco de aipo fresco pode ser misturado com mel para aliviar tontura e dor de cabeça e dor nos ombros associada com hipertensão.",
+      "Em casos de hipertensão de gravidez e hipertensão climatérica, beba suco de aipo fresco todos os dias para aliviar os sintomas."
+    ],
+    "relatoriosClinicos": [
+      "Um relatório sobre o efeito da diminuição da pressão sangüínea e o nível de colesterol: lave o aipo fresco (com as raízes removidas) em água fria. Extraia o suco e misture-o com uma quantidade igual de melou xarope. Beba 40ml de suco morno por vez, três vezes ao dia. Entre os 16 casos tratados, 14 casos foram efetivos e 2 casos não tiveram efeitos. Os resultados índicaram efetividade para hipertensào primária, hipertensão na gravidez e hipertensão climatérica. Em geral, a pressão sangüínea começa a cair depois de 1 dia de tratamento com sensações subjetivas, melhora as condições de dormir e urinação aumentada.",
+      "Um relatório clínico sobre os efeitos das raizes de aipo: como um programa de tratamento , 10 raízes de aipo são lava das, esmagadas e fervidas em água com 10 tâmaras vermelhas para consumo oral duas vezes ao dia por 15 a 20 dias . Entre os 21 casos tratados para hipertensão e doença cardíaca de esclerose coronária com o nível de colesterol acima de 200mg%, foi descoberto que o nível de colestero l foi reduzido entre 8 e 75mg% em 14 casos. Foi observado tamb ém que as raízes frescas produzem melhores resultados do que as secas e que as dosagens são flexíveis."
+    ],
+    "experiencias": [
+      "O aipo diminui a pressão sangüínea nos ratos ."
+    ],
+    "comentarios": [
+      "De acordo com a teoria Chinesa, o aipo é efetivo para hipertensão porque age sobre o fígado; um tipo de hipertensão está associada com o fígado.",
+      "Um médico me escreveu sobre o fato de que o aipo contém sódio, que é considerado ruim para hipertensão. Contudo, pensaria que a quanti dade de sódio contida no aipo (25mg em 1 caule) é muito pequena para causar qualquer dano. 90 Sistema Chinês de Curas Alimwtares",
+      "Uma crença alimentar clássica Chinesa: o aipo pode reduzir O calor interno nas cri anças e também o calor interno em adultos devido à intoxicação."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "broto-de-bambu",
+    "name": "Broto de Bambu",
+    "page": 90,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Sarampo, eliminação de muco",
+    "descricao": "Frio; doce; acetinado. Comelltários - O broto de bambu é um ingrediente de valor ao cozinhar carnes porque possui uma energia fria. Quando é cozido com carne, o broto de bambu neutraliza os efeitos da energia morna ou quente na carne e, portanto, atinge um equilíbrio entre os dois ingredientes. Como o cogumelo, o broto de bambu é amplamente usado na arte culinária Chinesa de carne. ~ luitos séculos atrás, um célebre poeta Chinês era apreciador da combinação, ele escre\\'eu um poema enfatizando que as carnes e os brotos de bambu eram os dois ingredientes mais apreciados na sua mesa de jantar, Como a população Ocidental consome uma grande quantidade de carne todos os dias, é sensa to usar brotos de bambu ao cozinhar. Algumas pessoas sofrem de uma doença de pele que parece estar encober ta aba ixo da pele, no entanto, não irá embora nem irá erupcionar para a superfície, Quando isto acontece, o broto de bambu pode acelerar a erupção. Isto explica por que a raiz de bambu é boa para o sarampo antes da erupção cutânea. As folhas do bambu possuem uma energia fria e um sabor levemente doce. As folhas produzem líquidos, promovem a urinação, são boas para dificuldade de urinação com eliminação de fluxos curtos de urina vermelha.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "raiz-de-beterraba",
+    "name": "Raiz de Beterraba",
+    "page": 90,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Peito congestionado, circulação energética pobre",
+    "descricao": "Neutra; doce; promove a menstruação; promove movimentos inferiores.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "aspargo",
+    "name": "Aspargo",
+    "page": 90,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Tosse, eliminação de muco, inchação, vários tipos de erupções de pele, escassez de secreção de leite após o parto",
+    "descricao": "Levemente momo; amargo e levemente pungente; pro move a urinação .",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência anima l mostra os efeitos do aspargo na promoção de urinação, diminuição da pressão sangüínea, expansão dos vasos sangüíneos terminais e red ução da pulsação."
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "cebolinho",
+    "name": "Cebolinho",
+    "page": 91,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Dor no peito; dificuldade na deglutição; estômago desarranjado; vômito de sangue; hemorragia nasal; eliminação de urina contendo sangue; prolapso do ânus; lesões devido à queda, causando coagulações sangüíneas internas",
+    "descricao": "Morno; pungente; promove a circulação energética; age contra coagulações sangüíneas; afeta o fígado, estõmago e rins. Contra-indicações - Doenças oculares e erupções de pele.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "estomago",
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Extraia o suco de cebolinho fresco (folhas ou raizes). Beba 1 colherada do suco morno por vez com leite para tratar de dificuldade na deglutição. O mesmo suco, frio sem leite, é efetivo para tratar insolação e também para lavar erup ções de pele causadas pelo envenenamento por verruz.",
+      "Cozinhe cebolinho com fígado de porco ou de cordeiro para curar transpiração excessiva e estimular o apetite.",
+      "Esmague folhas de cebolinho ou raízes e aplique externamente o suco no ferimento para aliviar contusões, inchação e dor.",
+      "Cor te folhas e raízes de cebolinho em pequenos pedaços; ferva com vinho. Beba-o quente para aliviar lesões resultantes de torção da cintura.",
+      "Cozinhe cebolinho com ovo para aliviar diarréia, suor noturno e noctúria."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O cebolinho é um alimento importante para lesões externas porque pode agir contra coagulações sangüineas. Quando uma pessoa se machuca (como num acidente automobilistico) ele ou ela pode sentir dor prolongada após o acidente causada por coagulações sangüineas internas não diagnosticadas pelo exame de raio X. A coagulação sangüinea que está causando a dor pode ser tão leve que pode não ser vista no raio X. Um modo útil de determinar se a coagulação sangüinea ocorreu ou não, entre tanto, é determinar se a dor recorre na mesma região do corpo ou se muda ao redor; se o paciente sempre sente dor na mesma região, é muito provável que a coagulação sangüinea tenha ocorrido, o que pode ser aliviado comendo cebolinho . A população Chinesa acredita que a dor pode ser causada ou por coagulação sangüínea ou por congestão energética. (Quando o sangue cai para circular, ele coagula; quando a energia cai para circular, ela fica congestionada.) Quando a dor é causada por coagulações sangüineas, ela recorrerá na mesma região; quando causada por congestão energética, a dor mudará para o arredor. Aqui está um modo conveniente de usar cebolinha para aliviar a dor causada por coagulações sangüíneas : corte o cebolinha em pequenos pedaços; ferva em água com vinho e então beba tudo como sopa. Por exemplo, no passado , as autoridades Chinesas costumavam bater severamente nos prisioneiros para forçar uma confissão, mas a surra severa causava sangra menta interno e subseqüentemente, coagulações sangüineas internas. Para prevenir coagulações sangüíneas, tornou-se uma prática rotineira dar cebolinha nas refeições dos prisioneiros após a surra.",
+      "O cebolinha é morno em energia e age sobre o estômago. Portanto, o cebolinha é freqüentemente usado para aliviar dor de estômago de natureza fria. Corno um problema de fato, a população Chinesa sempre insiste em comer cebolinha regularmente, que também é efetivo para enterite, se eles apresentarem funções digestivas fracas. O suco de cebolinha fresco também pode ser bebido para aliviar hemorragia nasal (mas o seu sabor terrÍvel freqüentemente torna O suco difícil de ser administrado)."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-cebolinho",
+    "name": "Semente de Cebolinho",
+    "page": 92,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Impotência, emissão seminal com sonhos eróticos, urinação freqüente, urinação sem controle ou involuntária, diarréia, corrimen to vaginal",
+    "descricao": "Morna; pungente e salgada; afeta o fígado e os rins.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "salgado"
+    ],
+    "organs": [
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Para homens que possuem ereção forte com dor agulhante no pênis, tome 1 Og por vez de semente de cebolinha em pó com água morna, três vezes ao dia .",
+      "Para impotência e fraqueza sexual , ferva sobre fogo baixo 15g de sementes de cebolinha em 2 copos de água até que esta seja reduzida a 1 copo. Beba como sopa , três vezes ao dia; alternativamente, tome aproximadamente 20 sementes de cebolinha com água salgada logo pela manhã (que deve produzir os mesmos resultados)."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A semente de cebolinha é uma erva importante nos remédios herbais Chineses e é normalmente usada como um tônico Yang."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "raiz-de-cebolinho",
+    "name": "Raiz de Cebolinho",
+    "page": 92,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Dor no peito, vômito de sangue, corrimento vaginal, hemorragia nasal, coagulações sangüíneas internas causadas por lesões devido à queda",
+    "descricao": "Morna; pungente; aquece a região interna; promove a circulação energética; age contra coagulações sangüíneas.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "A raiz de cebolinho pode ser aplicada do mesm o modo que o talo do cebolinho, exceto a raiz não é normalmente usada na culinária."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "chicoria",
+    "name": "Chicória",
+    "page": 93,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Icteroepatite",
+    "descricao": "Afeta o fígado e a vesícula biliar.",
+    "energy": null,
+    "flavors": [],
+    "organs": [
+      "figado",
+      "vesicula"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "A planta inteira foi descoberta por excitar o sistema nervoso central e aumentar as ações cardíacas nos animais. As raízes foram descobertas por aumentar o apetite e melhorar as funções digestivas."
+    ],
+    "comentarios": [],
+    "needsReview": true
+  },
+  {
+    "id": "barbas-de-milho-estilete-e-estigma-de",
+    "name": "Barbas de Milho (Estilete e Estigma de",
+    "page": 93,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Milho) Edema na nefrite, beribéri, icteroepatite, hipertensão, cálculos biliares, diabetes, vômito de sangue, hemorragia nasal, colecistite, sinusite, mastite",
+    "descricao": "Neutra; doce; promove a urinação; afeta o fígado e a vesícula biliar.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "figado",
+      "vesicula"
+    ],
+    "aplicacoes": [
+      "Ferva 40g de barbas de milho e 40g de casca de banana em água. Beba o suco frio para aliviar hipertensão, hemorragia nasal e vômito de sangue .",
+      "Ferva barbas de milho com casca de melancia e feijões vermelhos pequenos em água. Beba como sopa para alívio de nefrite crônica com edema e ascite.",
+      "Ferva 40g de barbas de milho e 40g de casca de banana em água. Beba o suco frio para aliviar a hipertensão, hemorragia nasal e vômito de sangue.",
+      "Ferva barbas de milho com casca de melancia e feijões vermelhos pequenos em água. Beba como uma sopa para alivio de nefrite crônica com edema e ascite."
+    ],
+    "relatoriosClinicos": [
+      "Um relatório sobre o tratamento de nefrite crônica: coloque 50g de barbas de milho secas em 600ml de água morna; ferva sobre fogo baixo por aproximadamente 20 a 30min até que seja reduzida a aprOldmadamente 300 a 400ml de caldo; coe e beba-o uma vez ao dia; ou divida e beba algumas vezes ao dia. Este remédio foi usado para tratar 9 casos de nefrite glomerular crônica sob observação por 10 meses. Os resultados indicam que entre os 9 casos tratados, 3 casos mostraram completa recuperação, 2 melhorias e 4 resultados significativos. As barbas de milho promovem a urinação, melhoram as funções renais, saram ou reduzem edema e eliminam ou reduzem albumina urinári a, de acordo com o relatório."
+    ],
+    "experiencias": [
+      "As barbas de milho promovem a urinação, abaixam o açúcar no sangue, são benéficas para a vesícula biliar e interrompem o sangramen to, de acordo com as experiências nos animais. 94 Sistema Chillês de Curas Alime/ltare s"
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "milho",
+    "name": "Milho",
+    "page": 94,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Dificuldade de urinação, coração fraco",
+    "descricao": "1\\'eutro; doce; usado como um tônico estomacal; promove a urinação; afeta o estômago e o intestino grosso. Comeutários - Cma fonte indica que um consumo regular de milho torna o coração mais forte e aumenta a capacidade sexual, de acordo com uma experiência em andorinhas. Fen·a 15g de grãos de milho em 3 copos de água sobre fogo baixo até que esta seja reduzida a 1 copo ou até que se torne vermelho-amarronzada. Beba meio copo do caldo por vez, duas vezes ao dia, para aliviar doença renal. Fen'a 30g de folhas de milho fresco sobre fogo baixo por 20min. Beba caldo para ali\\\"iar dificuldade de urinação.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso",
+      "coracao"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "berinjela",
+    "name": "Berinjela",
+    "page": 94,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Eliminação de sangue pelo ânus, disenteria com eliminação de sangue, eliminação de urina contendo sangue",
+    "descricao": "Fresca; doce; afeta o baço, estômago e intestino grosso.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Ferva berinjelas brancas em água e beba o caldo com mel para aliviar a tosse.",
+      "Asse algumas cascas de berinjela fresca até que pareça preta como um carvão na parte externa mas por dentro intacta; misture com mel. Coloque na boca como se estivesse mascando uma goma para curar estomatite."
+    ],
+    "relatoriosClinicos": [
+      "Um relatório da China indica que a berinjela contém vitamina P, que pode prevenir endurecimento dos vasos sangüíneos e é útil no tratamento de arteriosclerose. De acordo com as estatísticas, os idosos Chineses são muito menos suscetíveis à apoplexia causada por acidente vascular cerebral do que seus correlativos Ocidentais, atribuí do aos hábitos Chineses de comer berinjela. O mesmo relatório salienta duas razões para os idosos Chineses consumirem mais berinjelas: as berinjelas são muito menos caras do que outros vegetais ou carnes e podem ser coziVerdllras, Raí::es e Caba ... .ib _5 das mais macias do que outros vegetais ou carnes, portanto mais fácil para os idosos Chineses comerem (como muitos deles perderam a maioria dos seus dentes). Além disso, a população Chinesa em geral gosta de berinjelas por causa do sabor."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "A berinjela é cons iderada obstrutiva para algum grau,",
+      "que explica o porquê dela poder curar vários tipos de sangramento. Ademais, ela possui uma energia fresca que interrompe o sangramento. A berinjela fresca também pode aliviar intoxicação por cogumelo."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "pepino",
+    "name": "Pepino",
+    "page": 95,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Garganta irritada, conjuntivite, inflamação, queimaduras",
+    "descricao": "Fresco; doce; desintoxica; promove a urinação e sacia a sede; afeta o baço, estômago e intestino grosso.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Extraia o suco do pepino ou da folha. Aplique externamente à região afetada para aliviar queimaduras.",
+      "Quando o pepino torna-se velho, parece amarelado. O pepino pode então ser fervido como sopa para aliviar tosse seca no outono (quando as pessoas estão mais prováveis de desenvolver tosse devido a clima seco). A população Chinesa acredita que os pulmões são mais suscetiveis à energia externa de secura no outono ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O pepino é efetivo para aliviar acne comum, porque esta ocorre devido ao calor excessivo nos pulmões e estômago. Já que o pepino possui uma energia fresca e age sobre o estômago, o pepino fresco pode ser comido para curar a acne.",
+      "A população Chinesa conserva o pepino e come como um vegetal para limpar o sangue, clarear o calor interno para curar diarréia quente ou condições quentes de pele. Corte wn pepino longitudinalmente, remova e descarte a porção da semente e coloque o pepino ao sol para secar."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cogumelo-preto",
+    "name": "Cogumelo Preto",
+    "page": 95,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Eliminação de sangue pelo ânus, disenteria com eliminação de sangue, sangramento vaginal, hemorróidas",
+    "descricao": "Neutro; doce; suspende o sangramento; refresca o sangue; afeta o estômago e o intestino grosso.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Beba cogume los pretos cozidos em vinho para aliviar ou prevenir coagulações sangüíneas após lesões externas ou após o parto.",
+      "Cozinhe cogumelos pretos como wna sopa para aliviar as hemorróidas.",
+      "Ferva cogwnelos pretos em água e adicione açúcar mascavo. Beba para aliviar sangramento vaginal. 96 Sistema Chúlês de Cllras Alimentares"
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "É relatado que o cogumelo preto tem sido usado como um anticoncepcional com resultados: ferva 450g de cogumelos pretos em água até que fiquem bem macios; misture-os com açúcar mascavo para fazer um xarope. Tome o xarope com vinho de arroz amarelo, duas vezes ao dia, por 3 a 7 dias após o parto."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cogumelo-branco",
+    "name": "Cogumelo Branco",
+    "page": 96,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Tosse, eliminação de muco com sangue, constipação crônica",
+    "descricao": "eutro; doce com um leve sabor; acetinado; produz líquidos e lubrifica os pulmões.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O cogumelo branco também é chamado de cogumelo da neve. É considerado um tônico Yil1 importante, bom para insônia, doença pulmonar, doença hepática e apetite pobre. Como ocogumeJo branco é acetinado, não é recomendado para aqueles que sofrem de diarréia ou em issão seminal .",
+      "É costumeiro cozinhar cogumelo branco com carne de porco magra sobre fogo baixo por 3h; ou ferva o cogumelo branco em água com açúcar em pedra. Algumas pessoas preferem ferver o cog umelo branco em caldo de galinha, que torna-o mais delicioso .",
+      "O cogumelo branco não deve ser usado para aliviar tosse devido a resfriado comum."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "alface",
+    "name": "Alface",
+    "page": 96,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Urinação diminuída, eliminação de urina com sangue, escassez de secreção de leite",
+    "descricao": "Fresca; amarga e doce; promove a urinaç ão e secreção de leite; afeta o estômago e o intestino grosso.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "amargo"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Acredita-se que o consumo excessivo de alface causará tontura e dor nos olhos."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-alface",
+    "name": "Semente de Alface",
+    "page": 96,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Escroto inchado, hemorróidas, escassez de secreção de leite após o parto",
+    "descricao": "Fria; amarga; promove secreção de leite e urinação .",
+    "energy": "fria",
+    "flavors": [
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Moa 30 sementes até tornarem-se pó e dissolva em vinho. Beba o caldo para escassez de secreção de leite após o parto; ou cozinhe quantidades iguais de sementes de alface e arroz doce e adicione um pouco de alcaçuz para comer nas refeições."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "cabeca-branca-de-cebola-verde",
+    "name": "Cabeça Branca de Cebola Verde",
+    "page": 97,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Dor de cabeça, dor abdominal, constipação, supressão da urinação, disenteria",
+    "descricao": "Morna; pungente; induz a transpira ção; afeta os p ulmões e o estômago.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Para alívio de congestão e corrimento nasais associa dos com resfriados comuns em bebês, vaporize uma cabeça branca de cebola verde e um cogumelo com 30 a SOml de leite materno. Aliment e os bebês com o caldo sem o cogumelo ou a cabeça branca .",
+      "Esmague 4 a 6 cabeças brancas; aqueça -as com vinho . Beba o caldo para curar resfriado comum."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A cabeça branca de cebola verde é uma erva imp ortante na Medicina Chinesa. Pode induzir a transpiração e aquecer o organísmo. É mais freqüentemente usada para aliviar o resfriado comum nos seus estágios iniciais ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "folha-de-cebola-verde",
+    "name": "Folha de Cebola Verde",
+    "page": 97,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Dor de cabeça e congestão nasal associados com resfriado comum",
+    "descricao": "Morna; pungente ; induz a transpiração. 98 Sistema Chillês de Curas Alimellfares",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "alho-porra",
+    "name": "Alho-porra",
+    "page": 98,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Diarréia em enterite de intestino grosso, sangramento, disfagia, estômago desarranjado",
+    "descricao": "Momo; plmgente; obstrutivo; afeta o fígado e os pulmões.",
+    "energy": "morna",
+    "flavors": [],
+    "organs": [
+      "pulmoes",
+      "figado"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "batata",
+    "name": "Batata",
+    "page": 98,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Falta de energia, caxumba, queimaduras",
+    "descricao": "Neutra; doce ; sara inflamações; é usada como um tônico energético e esplênico.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Esmague uma batata e extraia o suco; misture com vinagre. Aplique o suco na região afetada para aliviar a caxumba.",
+      "Aplique suco de batata externamente às queimaduras.",
+      "Prepare 5 batatas (do tamanho de ovos), 1 cebola e uma quantidade adequada de alho e cenouras. Lave e cuidadosamente limpe as batatas mas não descasque-as. Corte as batatas e a cebola; coloque todos os ingredientes em aproximadamente algumas xícaras de água; ferva em fogo baixo até que a água seja reduzida à metade e adicione um pouco de sal. Beba 2 xícaras do caldo em cada refeição; ou ajuste a quantidade e freqüência de acordo com as necessidades individuais. Este caldo é bom para hipertensão, desnutrição nos bebês, diarréia, asma brônquica, pele alérgica, doença renal e também para obesidade.",
+      "Para aliviar úlceras gástrica e duodenal, beba uma xícara cheia de líquido de batata cozida uma vez ao dia. Para preparar remédio de batata, lave 30 batatas frescas sem casca e raspe -as para extrair O suco. Ferva o suco em fogo baixo em um pote de cerânúca (não em um de metal) sem tampa até que a água evapore completamente para formar uma camada grossa no fundo do pote . Esta substância é chamada de grude de batata e é cheio de proteína. Tomando este líquido grosso você pode aliviar a dor e curar um estômago sensível. É relatado que as úlceras gástrica e duodenal podem se recuperar dentro de 20 a 30 dias tomando este grude."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "batata-doce",
+    "name": "Batata-doce",
+    "page": 98,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Fraqueza estomacal, fraqueza renal, ejaculação precoce",
+    "descricao": "Neutra; doce; é usada como um tônico esplênico e energé tico e como um tônico renal Y in.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Aplique o caldo de batata-doce na região afetada para curar ulceração produzida pelo frio; ou aplique o vapor da batata-doce à região ulcerada pelo frio, mantendo-a sobre o vapor.",
+      "Asse a ba tata -doce até que a superfície esteja tostada; moa até tornarse pó. Tome lOg do pó dissolvido em água morna para aliviar resfriado comum. A batata-doce tostada pode induzir a transpiração e reduzir a febre."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Quando uma criança acidentalmente engole uma moeda, alimente a criança com grandes quantidades de batatas -doces fervidas de uma vez; a moeda será revestida pelas batatas-doces para ser eliminada com as fezes."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "abobora-moranga",
+    "name": "Abóbora-moranga",
+    "page": 99,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Asma brônquica, tosse, edema",
+    "descricao": "Neutra; doce e levemente amarga.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [
+      "Para mais de 30 sofredores de asma brônquica foram dadas a cada dia aproximadamente 1 libra de abóbora-moranga vaporizada com mel e açúcar. A maioria dos pacientes foi capaz de controlar os sintomas ou com ausência de ataques de asma ou melhoras significativas. Alguns pacientes não tiveram ataques de recaída durante os períodos de observação, variando de 6 meses a 2 anos . Observações preliminares indicaram que os pacientes com asma brônqu ica simp les tiveram os melhores resultados e os pacientes com asma brônquica comp licada também mostraram algumas melhoras."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "rabanete",
+    "name": "Rabanete",
+    "page": 99,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Inchação abdominal devido à indigestão, laringite devido à tosse contínua com eliminação de muco, vômito de sangue, hemorragia nasal, disenteria , dor de cabeça",
+    "descricao": "Fresco; pungente e doce; afeta os pulmões e o estômago; desintoxica; proporciona movimentos para baixo; promove digestão e elimina corrimento mucos o quente.",
+    "energy": "fresca",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Beba suco de rabanete fresco misturado com suco de gengibre para curar laringite.",
+      "Beba suco de rabanete fresco para aliviar intoxicação .",
+      "O consumo regu lar de rabanetes frescos previne o resfriado comum, gripe e infecções respiratórias."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "folha-de-rabanete",
+    "name": "Folha de Rabanete",
+    "page": 100,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Congestão no peito, soluço, indigestão, diarréia, garganta irritada, inchação do seio nas mulheres, escassez de secreção de leite",
+    "descricao": "Neutra; pungente e amarga; promove digestão e circulação energética ; afe ta o baço e o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "pungente",
+      "amargo"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Corte folhas de rabanete secas, ferva-as em água e adicione um pouco de sal. Use o líquido morno para lavar as áreas genitais nas mulheres para aliviar o prurido , ou derrame o líquido na banheira e se lave para aliviar sensações frias na região genital."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "folha-de-taro",
+    "name": "Folha de Taro",
+    "page": 100,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Diarréia, transpiração excessiva, suor noturno",
+    "descricao": "Fresca; pungente; controla a transpiração e a diarréia; sara a inchação.",
+    "energy": "fresca",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "flor-de-taro",
+    "name": "Flor de Taro",
+    "page": 100,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Dor de estômago, vômito de sangue, pro lapso do útero, hemorróidas, prOlapso do ânus",
+    "descricao": "Neutra; sabor adormecedor.",
+    "energy": "neutra",
+    "flavors": [],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Ferva flor de taro fresca em pequenas quantidades."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "taro",
+    "name": "Taro",
+    "page": 100,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Tuberculose de nódulos linfáticos, escrófula, aplicação externa para aliviar inflamação, inchação e dor",
+    "descricao": "Neutro; doce e pungente; acetinado; afeta o estômago e o intestino grosso .",
+    "energy": "neutra",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Descasque aproximadamente 30 taros frescos (raízes); corte em pedaços e frite em óleo vegetal. Seque o taro ao sol; moa até tornar-se pó. Tome 15g por vez do pó dissolvido em água morna, duas vezes ao dia, para cura r escrófula."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "flor-de-lis",
+    "name": "Flor-de-lis",
+    "page": 101,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Insônia, tosse, nervosidade",
+    "descricao": "Fria; doce; lubrifica os pulmões; alivia a nervosidade; afeta os pulmões.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes"
+    ],
+    "aplicacoes": [
+      "Ferva 40g de flores-de-lis por meia hora e adoce com açúcar. Beba o suco na hora de dormir para curar insônja."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A flor-de-Iis é referida pela popula ção Chinesa como a \"flor do esquecimento da dor\" porque ela pode aliviar a nervosidade e deixar você esquecer a sua dor."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cabaca-amarga",
+    "name": "Cabaça Amarga (Pepino Silvestre)",
+    "page": 101,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Insolação, disenteria, conjllntivi te e dor nos olhos",
+    "descricao": "Fria; amarga; desínto x.ica; aguça a visão; afeta o coração, baço e estômago.",
+    "energy": "fria",
+    "flavors": [
+      "amargo"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Frite as sementes de cabaça amarga e moa até tornarem-se pó. Tome lOg por vez do pó dissolvido em vinho, duas vezes ao dia, para curar impotência.",
+      "O consumo regular de cabaça amarga melhora a visão."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A cabaça amarga é considerada como o rei dos alimentos amargos . É ruim para pessoas com um estômago fraco porque pode causar vômito. Mas é boa para aqueles com uma constituição física quente porque pode resfriar a região ínterna e aliviar constipação quente.",
+      "De acordo com a teoria médica Chinesa, os alimentos amargos podem melhorar as condições do fígado (esse é o porquê da cabaça amarga ser boa para doenças hepáticas)."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "espinafre",
+    "name": "Espinafre",
+    "page": 102,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Hemorragia nasal, eliminação de sangue pelo ânus, sede na diabetes, constipação, alcoolismo, escorbuto, hemorróidas",
+    "descricao": "Frio; doce; acetinado; lubrifica a secura; suspende o sangramento; é usado como um tônico sangüíneo; afeta os intestinos grosso e delgado.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Mergulhe o espinafre em água fervendo por 3min e coma-o com um pouco de óleo de gergelim para tratar hipertensão, constipação, dor de cabeça e tontura.",
+      "Ferva grandes quantidades de espinafre em fogo baixo, incluindo raízes e cabeças, por 2 ou 3h. Beba como um chá para aliviar ressaca e alcoolismo."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O espinafre não é recomendado para pessoas com ejaculação precoce e diarréia porque ele é acetinado (corrediço). Mas é bom para erupções de pele causadas por uma constituição física quente .",
+      "O espinafre pode limpar o sangue e é bom para muitas erupções de pele quentes e pele pruriente, que são causadas por sangue quente em muita s ocas iões. O espinafre também possui uma energia fresca. Para tratar doenças de pele quentes, o espinafre pode ser cozido com alga marinha ou \"kelp\", que também podem limpar o sangue.",
+      "No verão quando o tempo é realmente quente , se algumas pessoas desenvolverem garganta irritada ou congestão no peito após comerem alimentos fritos, é benéfico beber um pouco de caldo de espinafre ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cogumelo-shiitake",
+    "name": "Cogumelo Shiitake",
+    "page": 102,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Prevenção de raquitismo, anemia, sarampo",
+    "descricao": "Neutro; doce; afeta o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Ferva alguns cogumelos shÜlake em água até que o caldo torne-se amarelado. Beba apenas o líquido (sem comer os cogumelos) para aliviar o vômito causado pelo descuido na hora de comer; uma outra alternativa é colocar os cogumelos shiitake em água fervendo e pôr de molho até que o caldo torne-se amarelado. Beba como chá.",
+      "Dissolva um pouco de açúcar ou mel no caldo de cogumelo shiitake para tratar tosse.",
+      "Beba o caldo de cogumelo shiitake, ou dissolva o pó de cogum elo shiita.~ em água quente e beba como chá para aliviar intoxicação por peixe. Acredita-se que um consumo prolongado por este método pre vine arteriosclerose .",
+      "Em caso de urinação com dificuldade ou eliminação de urina contendo sangue, asse alguns cogumelos shiitake até que pareçam queimados na superfície. Coma 10g por vez, duas vezes ao dia, ou coma cogumelos shiitake frescos."
+    ],
+    "relatoriosClinicos": [
+      "Um relatório recente indica que o cogumelo shiitake age contra o colesterol."
+    ],
+    "experiencias": [
+      "Estudos com ratos mostram que o cogumelo shiitake abaixa os níveis de gordura no sangue."
+    ],
+    "comentarios": [
+      "Acredita-se que o cogumelo shiitake age contra o câncer de estômago e cervical. (Quando visitei o Japão em outubro de 1985, aprendi que um novo produto contendo o extrato do cogumelo shiitake foi aprovado pelo governo Japonês como um agente anticancerígeno.) A população Chinesa gosta muito de cogumelos, incluindo os cogumelos shiitake, que são produzidos primariamente no Japão. O cogumelo shiitake pode ser cozido por si próprio e também pode ser cozido com outros vegetais. Em qualquer caso, evite quantidades excessivas de molho de soja e sal porque são rapidamente absorvidos pelo cogumelo e estragam seu gosto bom."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "gomo-de-cogumelo",
+    "name": "Gomo de Cogumelo",
+    "page": 103,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Diarréia, eliminação de muco , vômito",
+    "descricao": "Fresco; doce; afeta o estômago, pulmões e intestinos.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Cozinhe gomo de cogumelo comum para aliviar leucocitopenia e hepatite contagiosa e para prevenir metástase após a operação de câncer."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "De acordo com uma experiência, o gomo de cogumelo comum possui os efeitos de antibiose e abaixa a gordura no sangue ."
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "cera-da-cabaca-cabaca-do-inverno-ou",
+    "name": "Cera da Cabaça (Cabaça do Inverno ou",
+    "page": 103,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Melão do Inverno) Edema, beribéri, insolação, hemorróidas, alcoolismo",
+    "descricao": "Fresca; doce e sabor suave; desintoxica; promove a urinação; elimina o muco; afeta os pulmões, bexiga e intestinos delgado e grosso.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "intestino_grosso",
+      "bexiga"
+    ],
+    "aplicacoes": [
+      "Beba suco de cera da cabaça fresca para aliviar insolação e sede.",
+      "Cozinhe 100g de casca de cera da cabaça seca até que torne-s e xarope. Beba em grandes quantidades a cada dia para aliviar todos os tipos de edema associado com urinação ctiminuída, incluindo doença renal, doença cardíaca, beribéri e ascite cirrótica.",
+      "Ferva 100g de cera da cabaça sobre fogo baixo. Beba como um caldo. Ou asse uma cera da cabaça até que sua pele pareça tostada. Tome 30g por vez, duas vezes ao clia. Ou coma cera da cabaça cozida num período regular para promover urinação e movimentos intestinais, curar edema, beribéri e hemorróidas."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A casca de cera da cabaça Chinesa é comumente usada na Medicina Chinesa. Pode ser usada como cera da cabaça mas com efeitos maiores."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "abobora",
+    "name": "Abóbora",
+    "page": 104,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Abscesso pulmonar, bronquiectasia, nematódeos, vício por ópio",
+    "descricao": "Morna; doce; sara inflamação; alivia a dor; afeta O baço e o estômago.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Beba freqüentemente suco de abóbora fresca para aliviar vício por ópio.",
+      "Cozinhe 400g de abóbora com 200g de carne de boi sem sal ou óleo. Coma para curar abscesso pulmonar e bronquiectasia.",
+      "Aplique suco de abóbora fresca às queimaduras."
+    ],
+    "relatoriosClinicos": [
+      "O consumo de 400g de abóbora fresca (reduzido pela metade nas crianças) seguido da ingestão de um purgativo 2h mais tarde , LUna vez ao dia por 2 dias consecutivos, foi descoberto por expelir nematódeos (de 2 a mais de 100) em 6 dos 10 casos.",
+      "As sementes de abóbora têm sido descobertas por expelir tênias, nematód eos e trematódeos sangüíneos.",
+      "Prepare 20g de sementes de abóbora e remova as cascas; embrulhe as sementes em um pano e esmague-as. Misture com água ou com um pouco de molho de soja ou açúcar. Beba pela manhã e ao anoitecer por 3 a 5 dias. Isto tem sido descoberto por promover secreção de leite após o parto; mas sementes totalmente cozidas não têm sido efetivas.",
+      "As folhas de abóbora são efetivas para disenteria. Ferva 10 folhas com um pouco de sal. Beba como chá duas vezes ao dia para aliviar a disenteria.",
+      "As flores de abóbora podem ser fervidas para beber como chá para curar icterícia e tosse ."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "A abóbora não é recomendada para pessoas que sofrem de congestão no peito ou retenção de água."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "couve-rabano",
+    "name": "Couve-rábano",
+    "page": 105,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Indigestão, icterícia, diabetes, alcoolismo, hemorragia nasal",
+    "descricao": "Neutra; amarga; doce e pungente; desintoxica.",
+    "energy": "neutra",
+    "flavors": [
+      "pungente",
+      "doce",
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Beba suco de couve-rábano fresca para interromper a hemorragia nasal.",
+      "Esmague sementes de couve-rábano fresca até tomarem -se pó. Torne lOg do pó por vez, duas vezes ao dia, para aliviar dificuldade de urinação após o parto e melhorar a visão.",
+      "Esmague lOg de sementes de couve-rábano até tornarem-se pó. Misture com um copo de água fervendo. Coe através de talagarça sobre urna tigela e extraia todo o líquido. Beba o líquido corno chá logo pela manhã para induzir movimentos intestinais e urinação."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "mostarda-folhosa",
+    "name": "Mostarda Folhosa",
+    "page": 105,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Eliminação de muco, tosse, congestão no peito",
+    "descricao": "Morna; pungente; afeta os pulmões.",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [
+      "pulmoes"
+    ],
+    "aplicacoes": [
+      "Cozinhe mostarda folhosa em conserva e coma 30g por dia para curar abscesso pulmonar e bronquiectasia e laringite. Ferva 5g de sementes de mostarda folhosa fritas com lOg de sementes de rabanete fritas, 5g de cascas de laranja secas e 5g de alcaçuz. Beba corno chá para curar bronquite crônica e tosse com eliminação de muco."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Um consumo prolongado de mostarda folhosa pode aquecer a região interna. Não é recomendado para pessoas que sofrem de doenças oculares, hemorróidas ou eliminação de fezes contendo sangue, que são normalmente consideradas como sintomas quente s.",
+      "A mostarda folhosa pode aliviar congestão porque possui urna energia morna e sabor pungente, que são os dois componentes importantes dos alimentos que são usados para promover a circulação energética e aliviar congestão de vários tipos."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "inhame",
+    "name": "Inhame",
+    "page": 105,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Diarréia crônica, tosse, diabetes, emissão seminal, corrimento vaginal, urinação freqüente",
+    "descricao": "Neutro; doce, tõnico esplênico, pulmonar e renal; afeta os pulmões, baço e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Prepare 80g de inharne cru e moa até tornar-se pó. Lave uma quantidade igual de arroz glutinoso (doce) e drene-o; coloque o arroz ao sol para secar. Toste o arroz numa panela, sacudindo ou mexendo, até ficar amarelado e moa até tomar-se pó. Misture o inhame e o arroz. Torne a cada manhã 4 colheradas do pó, um pouco de açúcar e pimenta-da-reino dissolvidos em água morna para tratar diarréia crônica e apetite pobre.",
+      "Ferva inhame com ginsém por 30min e beba como chá . Ou faça um caldo com inhame e carne de boi ou de porco."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "castanha-d-agua",
+    "name": "Castanha D' água",
+    "page": 106,
+    "chapter": "Verduras, Raízes e Cabaças",
+    "indications": "Diabetes, icterícia, resistência urinária, conjuntivite, garganta irritada, hipertensão",
+    "descricao": "Fria; doce; alivia febre e indigestão; promove a urinação; afeta os pulmões e o estômago.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Ferva 5 castanhas d'água em água com 1 casca de tangerina fresca. Beba como chá, três vezes ao dia, para aliviar hipertensão .",
+      "Descasque 100g de castanhas d'água e mastigue-as lentamente pela manhã e ao anoitecer; ou beba suco de castanha d'água para curar garganta irritada, hemorróidas e cancro de boca.",
+      "Prepare 500g de castanhas d'água; lave em água e seque cuidadosamente; coloque-as em meia garrafa de vinho de arroz; sele e guarde por alguns dias. Lentamente mastigue 2 castanhas d'água por vez e lave com vinho de arroz na garrafa, duas vezes ao dia, para curar diarréia com eliminacão de subs tâncias esbranquiçadas ou avermelhadas .",
+      "Aqueça um copo de suco de castanha d'água e misture com 2 colheradas de vinho de arroz. Beba para aliviar eliminação de sangue pelo ânus (corno nas hemorróidas)."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "legumes-graos-oleos",
+    "name": "Legumes, Grãos, Oleos",
+    "page": 107,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "e Sementes Cevada Indigestão, diarréia , dor na urinação , edema, queimaduras",
+    "descricao": "Fresca; doce e salgada; regula o estômago; expande os intestinos; promove a urinação; afeta o baço e o estôm ago.",
+    "energy": "fresca",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Frite a cevada até que fique aromática e leve mente marrom. Use isto para fazer chá para aliviar calor de verão , indigest ão, fadiga e transpiração excessiva no verão.",
+      "Frite 1 xícara de cevada até que ela fique aromática e levemente marrom para fazer chá com poucas fatias de gengibre fresco. Beba como um substituto para suco ou chá de consumo regular, é bom para pessoas que sentem sede em tempo quente, mas não podem beber chá ou suco por uma razão ou outra.",
+      "Ferva lOOg de cevada em água e misture com suco de gengibre fresco para beber antes das refeições para curar dificuldade e dor na urinação .",
+      "Frite a cevada até que esteja tostada; moa até tornar-se pó e misture em óleo vegetal para aplicação externa no alívio de queimaduras.",
+      "O consumo regular de cevada cura uremia e indigestão.",
+      "Ferva 5g de folhas e caules de cevada macia. Beba como chá para promover a urinação."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "malte",
+    "name": "Malte",
+    "page": 107,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Indigestão, inchação abdominal, apetite pobre, vômito, diarréia, inchação dos seios",
+    "descricao": "Levemente morno; doce; promove a digestão; empurra para baixo; afeta o baço e o estômago.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva SOg de malte em água e beba como caldo para curar indigestão, in chação abdom inal e inchação dos seios com dor.",
+      "Ferva 50g de malte com 10g de casca de laranja em água. Beba como chá para aliviar os efeitos secundários de hepatite crônica e aguda.",
+      "Frite o malte e moa até tornar-se pó. Tome 2 colheradas com vinho por vez, duas vezes ao dia, para curar inchação abdominal e tensão após o parto; tome 2 colheradas com água morna por vez, duas vezes ao dia, para aliviar a febre após o parto, escassez de secreção de leite após o parto, ou inchação dos seios após o parto.",
+      "Ferva 40g de malte fresco e de malte frito. Beba como sopa uma vez ao dia por 3 dias consecutivos para curar inchação dos seios no desaleitamenta; se a inchação, dureza e dor são observadas, dobre as quantidades de malte fresco e malte frito.",
+      "Ferva lOg de \"haw thorn fruits\" e 10g de malte frito (para ser reduzido no caso das crianças), e beba como chá três vezes ao dia para aliviar indigestão."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de hepatite aguda e crônica: prepare raízes tenras de brotos de malte. (Para fazer brotos de malte, lave a cevada, então mergulhe em água por 12h; drene, então embrulhe firmemente em um pano úmido e borrife água neles algumas vezes diariamente até que eles brotem; seque os brotos ao soL) Seque e moa até tornarem-se pó e misture com xarope para um remédio. Tome 10ml (contendo 15g de pó de malte) por vez, três vezes ao dia, após as refeições; além disso, uma quantidade adequada de levedura e tabletes de vitamina do complexo B devem ser administrados . Em geral, um programa de tratamento consiste de 30 dias, e um programa de tratamento adicional deve ser administrado após a recuperação. Entre os 161 casos tratados, 108 mostraram efeitos e 53 casos não mostraram efeitos, o que significa que a taxa efetiva é 67,1 %. Entre os indivíduos tratados, dos 56 casos de hepatite aguda, 48 casos mostraram efeitos do tratamento; dos 105 casos de hepatite crônica, 60 casos mostraram efeitos. Após os tratamentos, existem diminuições de vários graus nos sintomas, tais como dor no fígado, anorexia, fadiga e temperatura baixa, particu larm ente o sintoma de anorexia. Entre os casos que mostraram efeitos, existem vários graus de diminuição no tamanho de um fígado intumescido e na transaminase . Poucos pacientes mostraram alguns efeitos colaterais, incluindo sensações secas na boca, gosto amargo na boca, ansiedade e diarréia. Os efeitos a longo prazo deste tratamento devem ser determinados pelo exame mais detalhado."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "maltose",
+    "name": "Maltose",
+    "page": 109,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Fadiga, dor abdominal, tosse seca, sede, vômito de sangue, garganta irritada, constipação",
+    "descricao": "Morna; doce; retarda o ataque de sintomas agudos; produz líquidos; lubrifica a secura; também é usada como um tônico energético; afeta o baço, estômago e pulmôes.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Tome algumas colheradas de maltose com água morna várias vezes ao dia para neutralizar os efeitos de dose excessiva da droga e para aliviar dor de úlceras gástricas crônicas e duodenais e dor de estômago.",
+      "Forme uma bola de maltose tão grande quanto uma gema de ovo e engula para desalojar uma espinha de peixe fincada na garganta; algumas bolas podem ser necessárias e o tamanho da bola de maltose pode ser aumentada gradualmente.",
+      "Asse a maltose até que esteja parcialmente dourada . Tome 1 colherada dissolvida em água morna por vez, duas vezes ao dia, para aliviar uma garganta irritada; ou, misture maltose com cenoura esmagada; ponha em escabeche por toda a noite; no dia seguinte, misture com água e beba 1 copo de cada vez, três vezes ao dia."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "item-4",
+    "name": "(Feijão Jacinto)",
+    "page": 109,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Diarréia e vômito no verão, corrimento vaginal, desnutrição nas crzanças",
+    "descricao": "Neutro; doce; é usado como um tônico esplênico; reduz a retenção de água; afeta o baço e o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Moa os \"hyacinth beans\" até tornarem-se pó. Tome 15g do pó dissolvido em água morna de cada vez, três vezes ao dia, para curar gastroenterite aguda, vômito e diarréia; ou ferva 50g de \"hyacinth beans\" e beba como sopa, três vezes ao dia. O mesmo remédio também pode ser usado para curar dificuldade na urinação.",
+      "Moa os \"hyacinth beans\" até tomarem-se pó. Tome 15g do pó dissolvido em caldo de arroz por vez, três vezes ao dia, para aliviar agitação nas mulheres devido à ingestão de drogas; ou, beba suco concentrado de \"hyacinth bean\", duas vezes ao dia.",
+      "Cozinhe uma tigela de \"hyacinth beans\" com açúcar, e coma nas refeiçôes para curar diarréia crônica."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "fava",
+    "name": "Fava ()",
+    "page": 110,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Edema, tinea capitis",
+    "descricao": "Neutra; doce; é usada como tônico esp lênico; elimina retenção de água; afeta o baço e o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva 70g de favas e 70g de casca de cera da cabaça em água. Beba como chá para curar edema.",
+      "Esmague favas frescas até formar um creme. Aplique externamente à região afetada para aliviar tinea capitis; ou use favas secas, se necessário.",
+      "Seque as favas frescas ao sol para moer até tomarem-se pó. Tome 2 colheradas do pó dissolvido em água morna de cada vez, três vezes ao dia, para curar diarréia e eliminação de fezes contendo sangue.",
+      "Ferva o pó de favas com açúcar em água . Beba como chá para aliviar apetite pobre e diarréia nas crianças (o açúcar branco deve ser usado na ausência de eliminação de sangue, mas o açúcar mascavo deve ser usado na presença de sangue do ânus). Quanto mais velho é o pó, melhores serão os seus efeitos."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "mamona",
+    "name": "Mamona",
+    "page": 110,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Carbúncu!o, inchação, tuberculose de nódulos linfáticos, garganta irritada, edema, constipação",
+    "descricao": "Neutra; doce e pLmgente; cura inchação com os seus efeitos de desintoxicação; induz movimentos intestinais; afeta o intestino grosso e os pulmões.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Moa 20 mamona s sem cozinhar (com as cascas removidas) e adicione um pouco de sal para aplicar e curar inchação de um carbúnculo.",
+      "Frite mamonas em óleo vegetal até que fiquem totalmente cozidas; descasque as mamonas. Mastigue 3 mamonas na hora de dormir e gradualmente aumente para 10 ou mais mamonas de cada vez, para aliviar tuberculose de nódulos linfáticos."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de paralisia facial: moa mamonas (com as cascas removidas) para fazer um creme . Aplique externamente ao lado afetado da junta mandibular e ângulo da boca (a camada de creme deve ser de 3mm ou aproximadamente lJs de polegada de espessura) e cubra com uma bandagem; troque a bandagem uma vez ao dia. Entre os três casos tratados, todos recuperaram-se dentro de 3 dias.",
+      "Um relatório sobre o envenenamento por mamona e tratamento: as substâncias tóxicas na mamona são deslnúdas pelo calor. A maioria dos casos de envenenamento por mamona são devido ao consumo de mamonas frescas. Um relatório indica que três crianças que comeram 2 a 7 mamonas frescas vomitaram continuamente, com dor abdorrtinal; uma criança sofreu de consciência não clara com desidratação, membros frios, aumento das pupilas e reações pobres à luz. Todos os casos recuperaram-se após tratamento pelos procedimentos padrões de tratar envenenamento."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "O óleo de mamona (óleo de rícino) é bom para constipação, mas ruim para o estõmago . Por esta razão, mulheres grávidas devem evitar o óleo de rícino."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "feijao-vermelho-pequeno",
+    "name": "Feijão Vermelho Pequeno (Feijão Azuki)",
+    "page": 111,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Edema, beribéri, icterícia, diarréia, eliminação de sangue pelo ânus, inchação de carbúnculo, caxumba, as cite cirrótica",
+    "descricao": "Neutro; doce e azedo; facilita a urinação; cura a inchação; desintoxica; afeta o coração e o intestino delgado.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo"
+    ],
+    "organs": [
+      "intestino_delgado",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva lOOg de feijões verme lhos pequenos em água com 300g de cera da cabeça. Beba corno sopa nas refeições uma vez ao dia para aliviar nefrite, beribéri e trofedema.",
+      "Moa feijões vermelhos pequenos até tornarem-se pó e misture com mel. Aplique no carbúnculo para curar inchação.",
+      "Ferva 100g de feijões vermelhos pequenos em água. Coma nas refeições para promover secreção de leite após o parto .",
+      "Frite 300g de feijões vermelhos pequenos até ficarem tostados. Adicione 6 tigelas cheias de água e ferva até que esta seja reduzida a 3 tigelas. Adicione um pouco de açúcar mascavo como tempero. Beba 1 tigela de caldo por vez, três vezes ao dia, para aliviar dor abdominal devido a coagulações sangüíneas após o parto ."
+    ],
+    "relatoriosClinicos": [
+      "Para um tratamento de ascite cirrótica: ferva 1 libra de feijões vermelhos pequenos com uma carpa comum (mais que 1 libra) em 2 a 3L de água até que os feijões fragmentem-se. Coma os feijões e o peixe, e beba o caldo separadamente, diariamente ou em dias alternados até que se cure . Os resultados de 2 casos tratados mosh'aram urinação aumentada e tamanho abdominal reduzido, com bom estado de espírito e nenhum efeito colateral.",
+      "Um relatório sobre o tratamento de caxumba: moa 50 a 70 feijões vermelhos pequenos até tornarem-se pó; misture com água morna e clara de ovo ou mel para fazer um creme para aplicar na região afetada; cubra com uma bandagem. Em geral, a inchação desaparece com um tratamento; todos os 7 casos tratados mostraram bons resultados."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Existem muitos tipos de feijões vermelhos comuns que devem ser distinguidos dos feijões vermelhos pequenos sob discussão. Os feijões vermelhos comuns são redondos na forma, enquanto que os feijões vermelhos pequenos são longos. Os feijões vermelhos comuns possuem uma energia neutra, gosto amargo, são normalmente usados para promover a circulação energética e o fluxo menstrual, e são considerados bons para hérnia, dor abdominal e supressão da menstruação ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "feijao-comum",
+    "name": "Feijão Comum",
+    "page": 112,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Edema, beribéri",
+    "descricao": "Neutro; doce e gosto suave; promove a urinação; cura inchação.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva lS0g de feijões comuns com 15g de alho e 40g de açúcar em água. Beba como sopa nas refeições para aliviar edema."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "item-5",
+    "name": "(Feijão Espada)",
+    "page": 112,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Soluço, vômito, inchação abdominal, lumbago devido à deficiência renal, eliminação de muco",
+    "descricao": "Morno; doce; empurra para baixo; aquece a região interna; é usado como tônico renal; afeta o estômago e o intestino grosso.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Ferva 30g de \"sword beans\" secos envelhecidos com casca, junto com 3 fatias de gengibre fresco; coe para obter suco e adicione um pouco de açúcar mascavo. Beba 1 xícara de cada vez, três vezes ao dia, para aliviar soluço e tosse.",
+      "Cozinhe 50g de \"sword beans\" com um rim de porco . Coma-os nas refeições uma vez ao dia em dias alternados para aliviar o lumbago devido a rins fracos e durante a gravidez.",
+      "Frite \"sword beans\" até ficarem marrons; moa até tomarem-se pó. Tome 4g do pó por vez com vinho de arroz, três vezes ao dia, para curar dor de cabeça, nevralgia intercostal e dor causada por lesões.",
+      "Ferva 20g de \"sword beans\" em água; coe e adicione açúcar em pedra ou mel. Beba como chá uma vez ao dia para aliviar coqueluche nas crianças e asma e tosse nos idosos."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "vagem",
+    "name": "Vagem (Feijão Verde)",
+    "page": 112,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Diarréia, vômito, diabetes, emissão seminal, corrimento vaginal esbranquiçado, urinação freqüente",
+    "descricao": "Neutra; doce; é usada como tônicos renal e esplênico; afeta o baço e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Ferva 50g de vagens secas (com as cascas) em água. Beba como sopa uma vez ao dia para aliviar diabetes, sede e urinação freqüente."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "item-6",
+    "name": "(Munguba)",
+    "page": 113,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Edema, diarréia, envenenamento por droga, erisipela",
+    "descricao": "Fresco; doce; desintoxica; reduz sensações quentes do organismo; promove a urinação; afeta o coração e o estômago.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva 200g de \"mung beans\" em água; adicione um pouco de melou açúcar como um tempero. Beba como sopa nas refeições, uma vez ao dia, para curar erupções cutâneas verme lhas e dificuldade de urinação devido à febre; ou moa os \"mung beans\" até tornarem-se pó e tome 15g do pó dissolvido em água por vez, duas vezes ao dia ."
+    ],
+    "relatoriosClinicos": [
+      "Um tratamen to de envenenamento por pesticida: esmague 500g de \"mung beans \" e misture com 60g de sal em aproximadamente 2L de água fria por poucos minuto s; coe e beba tant o quanto possí vel, mas não mais que 3 a 5L por dia . Dos 15 casos tratado s todos recuperaram-se dentro de 24h. Nenhum efeito colateral foi observa do com exceção do vômito ocasional.",
+      "Um relatório sobre o tratamento de saturnismo : ferva 15g de \"mung beans\" com 16g de alcaçuz para comer duas vezes diariamente com 300mg de vitamina C adicionadas de cada vez . Cada programa de tratamento dura 10 a 15 dias. Um total de 9 casos de envenenamento leve e 28 casos de absorção de chumbo foram tratados e todos os casos mos traram recuperação fundamental."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Os brotos de \"mung beans\" possuem uma energia fria e gosto doce e são usados para agir contra o alcoolismo e calor no organismo .",
+      "O pó de \"mung bean\" pode ser usado para o mesmo propósito como o \"mung bean\". Seus usos particulares são para queimaduras, alcoolismo e intoxicação alimentar."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "farelo-de-arroz",
+    "name": "Farelo de Arroz",
+    "page": 113,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Dificuldade de deglutição, beribéri",
+    "descricao": "Neutro; doce e pungente; empurra para baixo; afeta o estômago e o intestino grosso.",
+    "energy": "neutra",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Misture farelo de arroz com mel e forme tabletes. Mantenha 1 table te por vez na boca apenas como uma pastilha para tosse . Este remédio alivia a dificuldade de deglutição.",
+      "Frite 2S0g de farelo de arroz até que fique amarelado, mas não queimado. Guarde num jarro para aplicação. Tome 10g do farelo de arroz amarelado com água de cada vez, duas vezes ao dia, para aliviar beribéri."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "arroz-polido",
+    "name": "Arroz Polido (Branco)",
+    "page": 114,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Diarréia, náusea matinal, dificuldade de urinação",
+    "descricao": "Neutro; doce; é usado como tônicos energético e esplênico; afeta o baço e o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Frite 1 tigela cheia de arroz polido com suco de gengibre fresco até que o arroz tome-se amarelado. Mastigue 20 a 30 grãos antes de levantar-se pela manhã para aliviar náusea matinal.",
+      "Ferva arroz em água como você faria normalmente, mas cozinhe um pouco mais que o normal para deixar uma crosta grossa de arroz tostado no fundo da panela; o arroz é neutro , amargo e doce.",
+      "Ferva lSOg de crosta tostada de arroz com uma quantidade igual de frutas de lótus e açúcar em uma quantidade adequada de água. Beba 2 colheradas de cada vez, três vezes ao dia, para curar diarréia, particularmente nas crianças."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "arroz-doce",
+    "name": "Arroz Doce (Glutinoso)",
+    "page": 114,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Urinação excessiva, transpiração excessiva, diarréia",
+    "descricao": "Momo; doce; é usado como um tônico energético; afeta o baço, estômago e pulmões.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Frite arroz doce com farelo de trigo e moa até tomar-s e pó. Tome lOg do pó em água morna de cada vez, três vezes ao dia, para interromper a transpiração excessiva .",
+      "Cozinhe SOg de arroz doce com 60g de lágrimas-de-jó e 8 tâmaras vermelhas. Coma nas refeições para aliviar tuberculose pulmonar, neurastenia, anemia e vários tipos de doenças crônicas.",
+      "Ferva brotos de arroz doce em água com malte. Beba o caldo para aliviar indigestão e promover o apetite."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "coalhada-de-feijao",
+    "name": "Coalhada de Feijão (Queijo Tipo Totu)",
+    "page": 114,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Conjuntivite, diabetes, diarréia periódica, envenenamento por enxofre",
+    "descricao": "Fresca; doce; é usada como um tônico energético; produz líquidos; lubrifica a secura; desintoxica; afeta o baço, estômago e intestino grosso.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Prepare 1 tigela de coalhada de feijão, 70g de maltos e e meia xícara de suco de rabanete fresco; combine os 3 ingredientes numa pane la, adicione meia xícara de água e aqueça uma vez até a ebulição. Divida o caldo em 2 dosagens e beba duas vezes ao dia para tratar asma com eliminação de muco, incluindo asma brônquica aguda .",
+      "Esmague um número de coalhadas de feijão e aplique a mistura nas pernas para curar erisipelas; troque o curativo assim que a mistura secar."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "feijao-de-soja-amarelo",
+    "name": "Feijão-de-soja Amarelo",
+    "page": 115,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Desnutrição nas crianças, diarréia, inchação abdominal, peso abaixo do normal, gestose",
+    "descricao": "Neutro; doce; é usado como um tônico esplênico; lubri fica a secura; elimina líquidos teciduais; afeta o baço e o intestino grosso.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Frite feijões-de-soja amarelos até que fiquem aromáticos para comer nas refeições para promover secreção de leite após o parto .",
+      "Frite os feijões-de-soja amarelos e então ferva-os em água para comer nas refeições para corrigir o peso abaixo do normal."
+    ],
+    "relatoriosClinicos": [
+      "Um tratamento de gestose aguda: 92 casos de eclâmpsia potencial e eclâmpsia foram tratados pelo suco de feijão-desoja (feijão-de-soja e água na proporção de 1 para 8) cozido com 120g de açúcar, dividido em 6 dosagens . Coma enquanto bebe água adicional. Em geral, o tratamento dura 2 a 4 dias, e então, mude para uma dieta sem sal. No segundo dia de tratamento, frutas ou pó de raiz de lótus podem ser administrados para aliviar a fome. No grupo de controle, em 41 casos foram dados apenas uma dieta sem sal com outros fatores idênticos em ambos os grupos, incluindo impedimento do som e estimulos leves, e administração de sedativos e drogas antiespasmódicas. Os resultados indicaram que um grupo exper imental mostrou um desaparecimento mais rápido do edema e normali zação mais rápida da pressão sangüínea que no grupo de controle; a taxa de morte no grupo experimental foi zero, enquanto que no grupo de controle foi maior que 2%. O resultado é atribuído ao fato de que o suco de feijão-de-soja amarelo é baixo em cálcio e sódio, mais alto em vitamina 81 e niacina com maior ingestão de água, que contribui para a diminuição da pressão sangüinea e urinação aumentada."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Os brotos de feijão-de-soja amare lo são frescos e doces. São usados para aliviar tosse com eliminação de muco amarelo e para promover a urin ação ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "feijao-de-soja-preto",
+    "name": "Feijão-de-soja Preto",
+    "page": 116,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Edema, beribéri, icterícia, reumatismo, cãibras musculares, trismo, envenenamento por droga",
+    "descricao": "Neutro; doce; promove a circulação sangüínea e a passagem de água; age contra reumatismo; desintoxica; afeta o baço e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Ferva Sg de feijões-de-soja pretos frescos em água como 1 dosagem, três vezes ao dia; ou ferva até ficarem macios, então adicione açúcar e sal como tempero. Coma nas refeições; ou frite e moa até tornarse pó. Tome 1 colher de chá cheia do pó de cada vez, dissolvido em água, duas vezes ao dia, para aliviar tosse, doença renal e peritonite_",
+      "O consumo regular de feijões-de-soja pretos nas refeições promove urinação, alivia cãibras musculares, reumatismo e dor nos joelhos."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência em ratos indica que os feijões-de-soja pretos produzem efeitos que assemelham-se aos hormônios do sexo feminino, e os efeitos de um antiespasmódico no intestino delgado igual a 37% daqueles produzidos pelo cloridrato de papaverina. ,"
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "oleo-de-feijao-de-soja",
+    "name": "Oleo de Feijão-de-soja",
+    "page": 116,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Úlcera gástrica, úlcera duodenal, obstrução intestinal",
+    "descricao": "Quente ; pungente e doce; lubrifica os intestinos.",
+    "energy": "quente",
+    "flavors": [
+      "pungente",
+      "doce"
+    ],
+    "organs": [
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Prepare 1 colher de chá cheia de óleo de feijão-de-soja e adicion e algumas gotas de suco de limão. Beba de estômago vazio log o pela manhã ; gradualmente aumente a dosagem para 5 ou 6 colheres de chá por vez para curar úlceras gástrica e duodenal, e obstrução intestinal."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O molho de soja (um produto de feijâes-de-soja) pode promover digestão e também ser usado como um remédio externo para curar queimaduras. Mas um consumo excessivo de molho de soja causará tosse e sede e também não é recomendado para pessoas com icterícia."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "farelo-de-trigo",
+    "name": "Farelo de Trigo",
+    "page": 116,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Estomatite, herpes oral, reumatismo, beribéri, eliminação de urina contendo sangue",
+    "descricao": "Fresco; doce; afeta o estômago.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [
+      "Um tratamento de diabetes: vaporize 60% de farelo de trigo e 40% de farinha para todos os propósitos; adicione uma quantidade adequada de óleo vegetal, ovos e vegetais. Coma nas refeições para aliviar o diabetes. A proporção de farelo de trigo diminui assim que as condições melhoram. Nenhum remédio ou suplemento nutricional são dados neste tratamento. Entre os 13 casos tratados de diabetes, o açúcar no sangue abaixo de 140mg% em 3 casos e para 180mg% em 7 casos; após o tratamento (que dura de 4 a 98 dias), o açúcar na urina mudou de + + + + ou + + + para negativo em 10 casos; mas em geral, o açúcar na urina mudou para negativo dentro de 1 mês com o desaparecimento de neurite associada com diabetes."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "trigo-integral",
+    "name": "Trigo Integral",
+    "page": 117,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Histeria nas mulheres, diarréia, queimaduras",
+    "descricao": "Fresco; doce; é usado como tônicos cardíaco e renal; afeta coração, baço e rins.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "rins",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva 30g de grãos de trigo integral com lOg de alcaçuz e 5 tâmaras vermelhas em água. Coma luna vez ao dia para curar histeria nas mulheres. Esta é uma receita tradicional freqüentemente usada na Medicina Chinesa para histeria nas mulheres .",
+      "Frite o trigo até que fique tostado, moa até tornar-se pó e misture com óleo para aplicações externas para aliviar queimaduras."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Os grãos que flutuam na água são usados como um importante remédio Chinês para os sintomas anteriores."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "lagrimas-de-jo",
+    "name": "Lágrimas-de-jó",
+    "page": 117,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Diarréia, reumatismo, torção muscular, dificuldade nos movimentos das juntas, edema, beribéri, doenças pulmonares, corrimento vaginal esbranquiçado",
+    "descricao": "Fresca; doce e sabor suave; desintoxica; é usada como tônicos esplênico e pulmonar; diurético; afeta o baço, pulmões e nns.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva uma quantidade igua l de lágrimas -de-jó, amendoins e açúcar mascavo. Beba como chá para aliviar edema, promover urinação e tonificar O estômago .",
+      "Ferva 40g de lágrimas-de-jó para serem divididas em 2 dosagens para consumir duas vezes ao dia, por 10 dias, como um programa de tratamento para aliviar verrugas plana e comum."
+    ],
+    "relatoriosClinicos": [
+      "Para o tratamento de uma verruga plana: cozinhe 60g de lágrimas-d e-jó frescas com arroz descascado em água . Coma uma vez ao dia até se recuperar. Entre os 23 casos tratados por 7 a 16 dias, 11 casos recuper aram-se completamente, 6 casos não mostraram resultados claros , e 6 casos não tiveram resultados; a maioria dos pacientes mostrou algumas rea ções durante os períodos entre o início do tratamento e o desaparecimento da erupção cutãne a, incluindo aumento do foco da verr uga, que tornou-se ve rmelho com a inflamação aumentada; ma s como o tratamento continuou por vários dias, o foco prejudicado tornou-se seco e descamativo até desa parecer completamente."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "As lágrima s-de-jó são relatadas por inibir o desenvolvimento e destruir as células cancerígenas. Por exemplo, de acordo com um relatório na primeira tiragem do JORNAL MÉDICO CHINÊs J1ANGSU (1962), um paciente que sofria de câncer de garganta foi tratado com lágrimas-de-jó no hospital, porque o câncer estava local izado na região profunda da garganta, que era mais precisamente difícil de ser tratada pela cirurgia. O paciente foi tratado com lágrimas-de-jó todos os dias, e",
+      "tratamento produziu efeitos significativos dentro de 2 meses; o paciente recuperou-se comp letament e dentro de 6 meses ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-girassol",
+    "name": "Semente de Girassol",
+    "page": 118,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Constipação, diarréia com eliminação de sangue",
+    "descricao": "Morna e neutra; doce e sabor suave; interrompe a diarréia; facilita o estouro da erupção no sarampo.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Esmague 30g de sementes de girassol (com as cascas removidas); adicione 1 xícara de água fervendo e uma quantidade adequada de mel e misture . Beba pela manhã e ao anoitecer para curar constipação.",
+      "Esmague 30g de semen tes de girassol ; adicione 30g de açúcar em pedra e um pouco de água; ferva sobre fogo baixo por Ih. Beba 1 xícara de cada vez, três vezes ao dia, para curar diarréia com eliminação de sangue .",
+      "Esmague 5g de sementes de girasso l e faça chá. Beba duas vezes ao dia para promover erupções no sarampo .",
+      "Esmague 30g de sementes de girasso l com cascas, adicione 30g de açúcar em pedra e ferva sobre fogo baixo por meia hora; beba duas vezes ao dia para curar barulho nos ouvidos."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma pessoa normal que consome óleo de girasso l não refinado de estõmago vazio amnentará temporariamente o nivel do seu colesterol; e mulheres jovens que usam óleo de girassol para cozinhar por 7 dias diminuirão levemente seus niveis de colesterol."
+    ],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "semente-de-gergelim-preta",
+    "name": "Semente de Gergelim Preta",
+    "page": 119,
+    "chapter": "Legumes, Grãos, Óleos e Sementes",
+    "indications": "Constipação, pele seca, cabelo grisalho, escassez de secreção de leite",
+    "descricao": "Neutra; doce; é usada como tônicos hepático e renal; afeta fígado e os rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Frite 15g de sementes de gergelim pretas; adicione um pouco de sal. Coma para aumentar a secreção de leite .",
+      "Embeba 1 xícara de arroz por poucas horas; drene e esmague o arroz; ferva com 1 xícara de sementes de gergelim pretas em água para fazer sopa. Beba o caldo nas refeições para corrigir constipação. , Oleo de Gergelim Constipação devido à secura, úlceras, pele rachada, escabiose e tinea DesC1'ição - Fresco; doce; desintoxica; lubrific a a secura; promove movimentos intestinais; produz músculos.",
+      "Adicione algumas gotas de óleo de gergelim na culinária para aliviar constipação. 120 Sistema Clti\"ês de C Ifras Alim elltar es",
+      "Aplique externamente o óleo de gergelim à região afetada e massageie repetidamente para aliviar dor reumática e fadiga ."
+    ],
+    "relatoriosClinicos": [
+      "Para o tratamento de rmite simples crônica: cozinhe óleo de gergelim sobre fogo baixo até ferver. Use como gotas no nariz; aplique 2 a 3 gotas em cada lado de cada vez, gradualmente aumentando para 5 a 6 gotas, três vezes ao dia. Entre os 63 casos tratados, 52 casos mostraram melhoras significativas, 3 casos mostraram progresso ou melhoras, 8 casos não mostraram efeito . A duração do tratamento varia de 10 dias a 3 meses . •"
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "carnes-leite-frutos",
+    "name": "Carnes, Leite, Frutos",
+    "page": 121,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "do Mar, Aves Domésticas e Ovos Carne de Boi Peso abaixo do normal, diabetes, edema",
+    "descricao": "Neutra; doce; é usada como tônicos esplênico, esto macal, energé tico e sangüíneo; afeta o baço e o estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Tome regularmente caldo de carne de boi concentrado para aliviar diarréia crônica e prolapso do ânus causado por diarréia crônica .",
+      "Misture junto lkg de carne de boi, lOg de pimenta-da-reino moída, 5g de pó de casca de laranja seca; adicione 1 xícara de suco de gengibre fresco e uma quantidade adequada de sal; ponha em escabeche por 2h; cozinhe a carne de boi. Coma nas refeições para melhorar as condições do estômago e estimular o apetite . Para fazer suco de gengibre, rale o gengibre fresco e ferva em água ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O rim de boi é usado como um tônico renal para melhorar a capacidade sexual e curar impotência temporária e permanente nos homens; corte um rim em pequenos pedaços para ferver com uma tigela de arroz, e quando o rim estiver cozido, adicione cinco cabeças brancas de cebola verde .",
+      "O fígado de boi é neu tro e doce, é usado como um tônico hepático e para aguçar a visão e aliviar glaucoma e cegueira noturna."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "carne-de-cordeiro-ou-de-carneiro",
+    "name": "Carne de Cordeiro ou de Carneiro",
+    "page": 121,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Fraqueza geral, peso abaixo do normal, dor abdominal, lumbago",
+    "descricao": "Morna; doce; é usada como um tõnico energético e para aquecer a região interna; afeta o baço e os rins.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Cozinhe a carne de cordeiro ou de carneiro com alho e coma nas refeições para fortalecer a ereção do pênis e também para aliviar estômago desarranjado nos homens e nas mulheres .",
+      "Ferva SOOg de carne de carneiro com 1 tigela de arroz e 1 copo de suco de mamão; tempere com açúcar e sal. Beba para curar lumbago e beribéri. COlllentários - A carne de carneiro pode aquecer a região interna, e por esta razão , não é recomendada para pessoas com uma constituição física quente; além do mais, a carne de carneiro é muito gordurosa, não é recomendada para pessoas com um alto nível de gordura no sangue.",
+      "A carne de carneiro é benéfica para pessoas fracas e abaixo do peso. Já que ela não pode ser facilmente digerida, a quantidade consumida de cada vez deve ser limitada.",
+      "O leite de ovelha é morno e doce, é usado para lubrificar a secura e aliviar a fadiga, peso abaixo do normal, diabetes e vômito de ácido .",
+      "O fígado de ovelha é fresco, doce e amargo, é usado como um tônico hepático e para aguçar a visão e aliviar glaucoma e cegueira noturna.",
+      "O rim de ovelha é morno e doce, é usado como um tônico renal e para fortalecer a capacidade sexual e a ereção do pênis ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "leite",
+    "name": "Leite",
+    "page": 122,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Leite de vaca para estômago desarranjado, dificuldade de deglutição, diabetes, constipação; leite humano para fadiga, magreza, diabetes, dificuldade de deglutição, fezes secas",
+    "descricao": "Leite de vaca é neutro; doce; empurra para baixo; é usado como tônicos pulmonar e estomacal; e é usado para produzir líquidos e lubr ificar os intestinos; afeta o coração, pulmões e estômago. Leite humano é neutro; doce e salgado; é usado como um tõnico sangüíneo e para lubrificar a secura; afeta o coração, pulmões e estômago.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "intestino_grosso",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Ferva 1 copo de leite de vaca em 4 copos de água sobre fogo baixo até esta seja reduzida a 1 xícara. Beba lentamente de estômago vazio para melhorar as condições físicas após uma enfermidade prolongada.",
+      "Misture 1 copo de leite de vaca com meio copo de suco de cebolinho fresco e 3 colheres de chá cheias de suco de gengibre fresco; esquente numa panela pequena. Beba para aliviar um estômago desarranjado. Cames, Leite, Frutos do Mar, Aves Domésticas e Ovos 123",
+      "Misture quantidades iguais de leite de vaca e de ovelha. Beba o leite como um substituto para o chá ou suco para melhorar a condição física de pacientes diabéticos e urinação freqüente."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de oftalmia elétrica por leite de vaca: extraia diretamente leite humano fresco numa garrafa esterilizada ou garrafa de líquido oftálmico estéril; aplique 2 a 3 gotas na conjuntiva bulbar do ângulo lateral de cada olho em intervalos de 5 a 15min; feche os olhos e descanse por um tempo. Em geral, o desconforto e a dor desaparecerão ou diminuirão dentro de 8 a 16h com nenhum efeito colateral ou desconforto."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "O leite de vaca não é recomendado para pessoas com diarréia ou eliminação mucosa."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "pato",
+    "name": "Pato",
+    "page": 123,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Sensações quentes, tosse, edema",
+    "descricao": "Neutro; doce e salgado; facilita a passagem de água e sara inchação; afeta os pulmões e os rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [
+      "pulmoes",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Cozinhe um pato com quantidades adequadas de presunto. Coma nas refeições para aliviar diarréia, particularmente diarréia crônica após o parto.",
+      "Coloque 4 a 5 dentes de alho dentro de um pato preparado; ferva o pato em água sobre fogo baixo até que fique bem macio. Coma o pato e o alho e beba o caldo sem sal para aliviar nefrite crônica e edema."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O pato é bom para sintomas quentes, tais como a presença de calor interno. Mas não pode ser facilmente digerido e é considerado ruim para hemorróidas.",
+      "O ovo de pata é fresco e doce, é usado para reduzir o calor nos pulmões e também para aliviar tosse, gargan ta irritada, dor de dente e diarréia .",
+      "O limão-doce, sal e outros ingredientes podem ser usados para conservar",
+      "ovo de pata para fazer ovo de pata em conserva, que possui uma energia fria e sabores pungente, doce e salgado; coma 2 a 3 ovos de pata em conserva todos os dias (com açúcar e vinagre, se desejar) para aliviar hipertensão; ou coma 2 ovos de pata em conserva para suspender a diarréia e aliviar uma ressaca. Os ovos de pata em conserva estão disponíveis na maior parte das lojas de alimentos Chineses. 124 Sistema Chinês de Curas Alimelltares"
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "galinha",
+    "name": "Galinha",
+    "page": 124,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Peso abaixo do normal, apetite pobre, diarréia, edema, urinação freqüente, sangramento e corrimento vaginal, escassez de secreção de leite após o parto, fraqueza após o parto",
+    "descricao": "Morna; doce; é usada como um tônico energético; aquece a região interna ; afeta o baço e o estômago.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Corte uma galinha e remova a pele; seque exatamente com uma toalha de papel; aqueça e lubrifique ligeiramente uma frigideira; derrame os cubos de galinha na frigideira, mexendo constantemente; aclicione um pouco de óleo vegeta I e 5 fatias de gengibre fresco e continue a mexer fritando por um tempo. Aclicione 1 xícara de água e 1 xícara de vinho de arroz; continue a cozinhar por aproxímadamente 20min; aclicione mais vinho de arroz, se desejar. Coma nas refeições para aliviar iacliga e aumentar a secreção de leite nas mães lactantes.",
+      "Corte uma galinha e remova a pele; lave os cubos de galinha com vinho de arroz e coloque-os numa frigideira; mexa fritando até ficarem secos. Vaporize os cubos de galinha com 20g de \"Iongans\" por 3h até que sejam reduzidos a meia xícara de caldo puro de galinha ede \"longan\". Beba o caldo coado (sem comer a galinha ou \"longans\") para aliviar neurastenia e esquecimento. Esta é uma receita cara; os \"longans\" secos estão dispOlúveis na maioria das lojas de alimentos Chineses."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O fígado de galinha é levemente morno e possui um sabor doce; age no fígado e nos rins, é usado como um tônico hepático e renal, e também para tais sintomas como visão embaçada, desnutrição nas crianças e aborto habitual."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "ovo-de-galinha",
+    "name": "Ovo de Galinha",
+    "page": 124,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Tosse seca, rouquidão, conjuntivite, garganta irritada, agitação, diarréia, queimaduras",
+    "descricao": "Neutro; doce; é usado como um tônico sangüíneo; lubrifi ca a secura .",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "O ovo pode ser comido fresco ou misturado com água quente; ou use uma mistura de clara e gema de ovo para aplicações externas.",
+      "Quebre um ovo numa xícara e misture com algumas colheres de chá cheias de vinho de arroz. Beba para aliviar dor cardíaca em mulheres grávidas.",
+      "Ferva 20 ovos de galinha com casca até estarem completamente cozidos . Esmague os ovos, incluindo as cascas; ferva-os em água com 500g de feijões-de-soja pretos por aproxímadamente 2 a 3h até que os ovos e os feijões estejam completamente misturados e tornem-se pretos; remova e descarte os feijões-de-soja pretos. Guarde os ovos num recipiente até que seja necessário. Descasque os ovos e coma 2 a 3 ovos mornos de cada vez, uma vez ao dia, enquanto for necessário, para aguçar a visão e corrigir visão embaçada ."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de neurodermatite e psoríase, esterilize 2 ovos de galinha com álcool e coloque-os num jarro ligeiramente maior do que os ovos; adicione vinagre para cobrir os ovos e sele; guarde por 7 dias. Quebre os ovos e despeje a clara e a gema num outro jarro esterilizado e seleo. Use uma bola de algodão para esfregar o ovo na região afetada por 1 a 2ntin de cada vez, várias vezes ao dia; o tratamento deve continuar sem interrupção. Em geral, as escamas começam a cair após vários tratamentos; prurido severo tanto melhora como pára completamente. Se o tratamento continuar, então o foco da enfermidade da pele irá gradualmente ser reduzido em tamanho; mas se o tratamento for interrompido neste ponto, os sintomas voltarão. Quanto mais tempo tiver a história dos sintomas, mais tempo será necessário para o tratamento. Entre os 12 casos de neurodermatite tratados, 9 casos recuperaram-se completamente e 3 casos melhoraram; entre os 5 casos de psoríase tratados, 2 casos recuperaram- se completamente e 3 casos melhoraram."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "clara-de-ovo-de-galinha",
+    "name": "Clara de Ovo de Galinha",
+    "page": 125,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Garganta irritada, conjuntivite, tosse, diarréia, queimaduras",
+    "descricao": "Fresca; doce; desintoxica; lubrifica os pulmões; refresca as sensações quentes; é considerada benéfica para a garganta.",
+    "energy": "fresca",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes"
+    ],
+    "aplicacoes": [
+      "Ferva um ovo de galinha e remova-o da água assim que começar a ferver; faça um buraco na casca e lentamente sugue a clara através da abertura para lubrificar a garganta, uma vez ao dia, por 3 ou 4 meses, para aliviar garganta irritada, rouquidão e perda de voz, e para proteger a garganta em cantores profissionais .",
+      "Misture a clara de ovo com vinho de arroz e use a mistura para lavar a região afetada para sarar queimaduras e úlceras de pele .",
+      "Misture a clara de ovo com 3 colheres de chá cheias de vinagre de arroz . Beba para retomar a menstruação após o parto."
+    ],
+    "relatoriosClinicos": [
+      "Para um tratamento de queimaduras: coloque um ovo de galinha em álcool a 75% e esterilize por 15min; abra dois buracos nas duas extremidades do ovo usando um instrumento estéril e deixe a clara do ovo fluir num recipiente esterilizado. Após o debridamento (corte fora as vesículas, se houver), use uma bola de algodão esterilizada para aplicar a clara de ovo nas áreas queimadas por 2 a 3 vezes no primeiro dia . Em geral, uma crosta amarelada formar-se-á na ferida dentro de 6 a 15h; neste tempo, a dor diminuirá e a secreção de líquidos ou cessará ou diminuirá . Se a crosta se formar incompletamente, com fendas, aplique a clara de ovo novamente até que se forme apropriada e completamente. Se, entretanto, ocorrer supuração sob a crosta (principalmente vista em queimaduras de terceiro grau), corte a crosta aberta e incise o pus cuidadosamente, e então aplique a clara de ovo novamente . Quando as queimaduras envolvem um área ampla, uma lâmpada pode ser usada para manter a temperatura desejada (25 e 31°C). Entre os 100 pacientes extras tratados , a maioria deles com queimaduras de primeiro e segundo graus (envolvendo áreas menores que 10%) recuperou-se dentro de 10 dias; os paciente s remanescentes recuperaram-se dentro de 12 a 31 dias . A maioria dos pacientes com queimaduras de primeiro e segundo graus (envolvendo áreas entre 10 e 20%) recuperou-se dentro de 7 a 20 dias enquanto que a minoria recuperou-se dentro de 37 a 60 dias. Leva mais tempo para pacientes recuperarem-se em casos de queimaduras de segundo e terceiro graus severos com áreas acima de 30% e complicações.",
+      "Um relatório sobre o tratamento de infecções na superfície corpórea mostra que a clara de ovo alivia a dor, sara inflamações e previne supuração por aplicações externas; e em caso de regiões supuradas , a clara de ovo é descoberta por controlar a inflamação e localizá-la. Entre os 36 casos tratados, os pacientes com áreas infectadas menos amplas recuperaram-se em uma simples aplicação; os pacientes com áreas mais amplas recuperaram-se dentro de 3 a 4 aplicações. O método de aplicação é similar ao usado nas queimaduras.",
+      "Um relatório clínico sobre o tratamento de erosão cervical indica que o método de aplicação é similar ao de queimaduras . Use uma bola de algodão para aplicar a clara de ovo nas áreas erosivas e então empurre a bola de algodão repleta de clara de ovo na cérvix para ser removido no dia seguinte. Cada programa de tratamento dura 3 a 5 dias; um programa secundário continua se nenhum resultado for obtido, e o tratamento cessa durante o período da menstruação. Entre os 32 casos tratados , 18 casos recuperaram-se e 7 casos melhoraram com 7 casos interrompidos . É indicado que aqueles comsangramento mostram melhores resultados; além disso, os 7 casos tratados por cervicite e vaginite (desenvolvidas após o parto) recuperaram-se completamente .",
+      "Um relatório clinico sobre o tratamento de otite média purulenta mostra que uma mistura de quantidades iguais de clara de ovo e óleo de gergelim produz resultados satisfatórios quando aplicada no ouvido."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "gema-de-ovo-de-galinha",
+    "name": "Gema de Ovo de Galinha",
+    "page": 126,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Insônia, torção muscular, vômito de sangue, soluço, diarréia, aborto, queimaduras, hepatite, desnutrição nas crianças, eczema",
+    "descricao": "Neutra; doce; é usada como um tônico sangüineo; lubrifica a secura; afeta o coração e os rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "rins",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Tome algumas gemas de ovo para aliviar vômito agudo.",
+      "Misture a gema de ovo fresca com leite e deixe as crianças beb erem para interromper convulsões."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de queimaduras: use óleo de gema de ovo após filtração e alta pressão de esterilização. Aplique o óleo nas áreas queimadas após debridamento; exposta é preferida. Em mais de 100 casos tratados para queimaduras de primeiro e segundo graus com áreas pequenas e médias , todos eles mostraram bons resultados e não ocorreram infecções secundárias. Após a aplicação de óleo de gema de ovo, os pacientes sentem frescor com dor dinúnuída, efusão de líquidos e encrostarnento mais rápido (que cai por si próprio) com nenhuma cicatriz ou apenas cicatrizes obscuras .",
+      "Para fazer óleo de gema de ovo, ferva aproximadamente 5 a 10 ovos até ficarem bem cozidos. Remova as gemas e misture-as cuídadosamente. Frite as gemas numa panela sobre fogo alto, mexendo constantemente, até que se tomem gradualmente bem escuras e quase pretas, como se o óleo estivesse para brotar; use um pano limpo para embrulhar as gemas e extraia o óleo. Aplique o óleo em queimaduras.",
+      "Um relatório sobre tratamento de úlcera varicosa (úlcera de estase): use o mesmo método como nas queimaduras para extrair o óleo de gema de ovo; limpe as áreas afetadas e então aplique uma bandagem plana de algodão embebida em óleo na região afetada; troque a bandagem em dias alternados ou a cada 3 dias até recuperar-se."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Uma fonte indica que a gema de ovo fervida pode ser usada para deixar de fumar."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "casca-de-ovo-de-galinha",
+    "name": "Casca de Ovo de Galinha",
+    "page": 127,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Dor de estômago, gastrite, raquitismo nas crianças, vários tipos de sangramento, ceruminose (formação excessiva de cera no ouvido)",
+    "descricao": "Restringe o ácido gástrico; interrompe o sangramento.",
+    "energy": null,
+    "flavors": [
+      "azedo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Esmague uma casca de ovo até tornar-se pó; dissolva 7g do pó em vinho de arroz. Beba esta quantidade de cada vez, duas vezes ao dia, para aliviar estômago desarranjado.",
+      "Asse a casca de ovo até ficar seca e esmague até tornar-se pó (quanto mais fino melhor). Tome 4g de cada vez com água morna antes das refeições, três vezes ao dia, para reduzir ácido gástrico em excesso e úlceras gástrica e duodenal.",
+      "Asse 12 ovos de galinha grandes e misture cuidadosamente; adicione 500g de açúcar em pedra e 500g de vinho de arroz; ferva até estarem tostados e amarelados. Tome uma colher grande de cada vez antes das refeições, três vezes ao dia, para aliviar espasmos gástricos."
+    ],
+    "relatoriosClinicos": [
+      "Um relatório clínico sobre o tratamento de desnutrição nas crianças (56 casos) e raquitismo (139 casos) e torção nas mãos e pés (10 casos) mostra que todos exceto 9 casos de indigestão crônica recuperaram-se completamente dentro de 20 dias a 3 meses. O tratamento: lave uma casca de ovo e seque cuidadosamente; moa-a até tomar-se pó e peneire (quanto mais fino melhor); administre 0,5g de cada vez para uma criança de 1 ano de idade, 19 para crianças acima de 2 anos de idade, duas vezes ao dia.",
+      "Um relatório clínico sobre o tratamento de vários tipos de sangramento : simplesm ente aplique o pó (como feito acima) nas áreas afetadas com precauções padrão de esterilização; os 600 casos de sangramento traumático tratados por este método não desenvolveram supuração. Para o tratamento de tosse com eliminação de sangue, vômito de sangue, hemorragia nasal e eliminação de sangue pelo ânus, aplique 6g do pó fino com um pouco de sal e vitamina C. Administre oralmente três vezes ao dia por 2 a 7 dias. É relatado também que tomando o pó dissolvido em água (2g de cada vez, três vezes ao dia) alivia erupção cutânea alérgica, urticária, asma brônquica, ácido estomacal excessivo e mal hálito."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": true
+  },
+  {
+    "id": "presunto-fresco",
+    "name": "Presunto Fresco",
+    "page": 128,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Diarréia, nervosidade, apetite pobre",
+    "descricao": "Morno; salgado; é usado como um tônico esplênico; estimula o apetite; produz líquidos; empurra para baixo.",
+    "energy": "morna",
+    "flavors": [
+      "salgado"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva o presunto em água com pimenta-malagueta para fazer caldo; desnate e descarte a gordura flutuante . Beba o caldo quente para aliviar O soluço e dor abdominal que tem durado por 3 a 4 dias.",
+      "Ferva 200g de presunto em água sobre fogo baixo por um dia inteiro até que fique extremamente tenro; descarte a gordura da superfície. Beba como sopa para aliviar diarréia crônica."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "carne-de-porco",
+    "name": "Carne de Porco",
+    "page": 128,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Diabetes, peso abaixo do normal, tosse seca, constipação",
+    "descricao": "Neutra; doce e salgada; é usada para lub rificar a secura; afeta o baço, estômago e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Ferva 500g a lkg de carne de porco; desnate e descarte a gordura flutuante. Beba o caldo para aliviar tosse seca e constipação.",
+      "Pique 100g de carne de porco magra (carnes vermelhas) para ferver em água com 100g de lágrimas-de -jó sobre fogo baixo por 2h. Coma nas refeições para umedecer a pele; isto é considerado um bom remédio para pele seca ."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O fígado de porco é morno, doce e amargo, age no fígado e é usado corno tônicos hepático e sangüíneo, aguça a visão e é considerado benéfico para cegueira noturna, conjuntivite, edema e beribéri .",
+      "O rim de porco é neutro e salgado; é usado para aliviar lumbago, edema, emissão seminal, suor noturno e ensurdecimento nos idosos .",
+      "O toucinho é fresco e doce; o toucinho desintoxica, é usado para lubrificar a secura e é considerado bom para movimentos intestinais difíceis, tosse seca e pele rachada."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "haliote",
+    "name": "Haliote",
+    "page": 129,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Sensações quentes, tosse, sangramento e corrimento vaginal, força urinária, glaucose, catarata",
+    "descricao": "Neutro; doce e salgado; desintoxica; aguça a visão.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O haliote é difícil de digerir."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "carpa",
+    "name": "Carpa",
+    "page": 129,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Carpa comum para edema, beribéri, icterícia, tosse e escassez de secreção de leite; \"grass carp\" para dor de cabeça e reumatismo; carpa dourada para estômago fraco, apetite pobre, disenteria, eliminação de sangue pelo ânus, edema, força urinária e úlceras",
+    "descricao": "A carpa comum é neutra, doce, empurra para baixo, facilita a passagem de água, promove a secreção de leite, cura inchação, age no baço e rins; a \"grass carp\" é morna e doce, age no baço e estômago; a carpa dourada é neutra e doce, é usada como um tônico esplênico, facilita a passagem de água, age no baço, estômago e intestino grosso.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "estomago",
+      "baco",
+      "intestino_grosso",
+      "rins"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "mexilhao",
+    "name": "Mexilhão",
+    "page": 129,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Suor noturno, lumbago, impotência, vômito de sangue, corrimento vaginal, bócio",
+    "descricao": "Morno; salgado; aumenta a energia dos rins e fígado; cura bócio simples; afeta o fígado e rins. 130 Sistema Chinês de Curas Alimmtares",
+    "energy": "morna",
+    "flavors": [
+      "salgado"
+    ],
+    "organs": [
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Asse lOOg de mexilhões e moa até tornarem-se pó. Moa lOg de casca de laranja seca até tornar- se pó. Misture os dois pós com mel. Dissolva 3 colheres de chá cheias em água de cada vez, três vezes diariamente, para curar insônia e tontur a.",
+      "Use vinho de arroz para lavar os mexilhões e cozinhe com cebolinho. Coma para curar lumb ago e agir contra sensações frias no baixo abdômen das mulhere s.",
+      "Ferva lOg de mexilhões com30g de aipo. Coma nas refeições para abaixar a pressão sangüínea. Molusco Bivalve Molusco bivalve de água salgada para edema, eliminação mucosa, bácio, corrimento vaginal, hemorróidas; molusco bivalve de água doce para sangramento e corrimento vaginal, conjuntivite, eczema e hemorróidas; pó de carapaça do molusco bivalve de água salgada para diabetes, edema, báeio e hemorróidas; saliva de molusco bivalve de água doce para diabetes, conjuntivite e queimaduras; pó de carapaça do molusco bivalve de água doce para tosse com eliminação mucosa, dor de estômago, soluço, vômito, corrimento vaginal"
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "esbranquicado-eczema-inchacao",
+    "name": "esbranquiçado, eczema, inchação",
+    "page": 130,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "",
+    "descricao": "Molusco do mar (de água salgada) é frio, salgado, age no estômago, promove a passagem de água, elimina muco e amolece a dureza; molusco bivalve de água doce é frio, doce e salgado, desintoxica, aguça a visão, age no fígado e rins. PÓ de carapaça de molusco bivalve do mar é frio, salgado, promove a passagem de água, amolece a dureza, elimina o muco, age nos pulmões e rins; saliva de molusco bivalve do rio aguça a visão; pó de carapaça do molusco bivalve de água doce é frio, salgado, elimina o muco e seca a umidade, age nos pulmões, fígado e estômago.",
+    "energy": "fria",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "A carapaça de molusco bivalve do mar pode ser assada e moída até tornar-se pó bem fino para fazer pó de carapaça de molusco bivalve do mar. A carapaça de molusco bivalve de água doce pode ser lavada (com a pele preta removida) e moída até tornar-se pó ou assada e moída até tornar-se pó para fazer pó de carapaça do molusco bivalve de água doce. Aplique a saliva de molusco bivalve de água salgada externarnente à região afetada para aliviar prurido, dor e inchação do orifício vaginal.",
+      "Esmague alguns alhos para misturar com pó de carapaça de molusco bivalve e faça tabletes de tamanho normal. Tome 10 tabletes com água morna de cada vez, uma vez ao dia, para aliviar edema em pessoas fracas. Canles, Leite, Frutos do Mar, Aves Domésticas e Ovos 131",
+      "Misture o pó de carapaça de molusco bivalve com toucinho para aplicação externa na região afetada para aliviar queimaduras.",
+      "Misture o pó de carapaça de molusco bivalve fino com uma quantidade igual de pó de alcaçuz cru, tome 7g de cada vez com água morna, duas vezes ao dia, para curar úlcera gástrica e ácido gástrico em excesso.",
+      "O consumo regular de carne de molusco bivalve nas refeições ali\" ia linfadenite, escrófula no pescoço e bócio .",
+      "Cozinhe molusco biva lve com cebolinho. Coma nas refeições para aliviar tuberculose pulmonar e suor noturno.",
+      "Ferva 30g de pó de carapaça de molusco bivalve fino com 4g de cama da externa de amendoins e 6 tâmaras vermelhas para fazer caldo concentrado. Beba o caldo uma vez ao dia para aliviar hemorragia nasal, sangramento da gengiva e púrpura hemorrágica.",
+      "Asse um molusco bivalve de água doce inteiro até que sua parte externa esteja tostada e a parte interna torne-se amarelo-amarronzada com sua forma original permanecendo intacta; moa até tornar-se um pó fino e misture com óleo de gergelim para aplicação externa para aliviar eczema nos bebês."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de úlceras gástrica e duodenal: frite o pó de carapaça do molusco bivalve de água doce numa frigideira de bronze (ou qualquer outra frigideira de cerâmica) até que se torne amareloamarronzado com o cheiro de peixe morto; coe antes de usar. Tome 1 a 2g de cada vez misturado com água morna, uma vez por hora durante o dia, 12 a 14 vezes ao dia, por 4 a 8 semanas . Entre os 41 casos tratados de 14 a 79 dias, 28 casos mostraram desaparecimen to de dor no abdômen superior e 7 casos uma diminuição; 23 casos mostraram desaparecimento de dor por pressão no abdômen super ior (dor que ocorre na pressão pela mão) e6 casos uma diminui ção; 21 casos tiveram um acompanhamento de exame de raio X, que indicou desaparecimento do nicho em 9 casos, desaparecimento de deformidade em 1 caso e uma redução no tamanho do nicho em 6 casos."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "ostra-e-concha",
+    "name": "Ostra e Concha",
+    "page": 131,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Ostra para insônia, tensão e nervosidade; concha de ostra para transpiração excessiva, suor noturno, ejaculação precoce, sangramento e corrimento vaginal, tuberculose de nódulos linfáticos, báeio",
+    "descricao": "A os tra é neutra, doce e salgada, é usada como um tônico sangüíneo; a concha de ostra é fresca, salgada, obstrut iva, impede a transp iração excessiva e a ejaculação precoce, amo lece a dureza, age no fígado e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "salgado"
+    ],
+    "organs": [
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Coma 15 a 25 ostras nas refeições para curar tuberculose de nódulos linfáticos e bócio; ou use molho de ostra como tempero se a ostra fresca não estiver prontamente disponível.",
+      "Esmague a concha de ostra até tomar-se pó e embrulhe lSg do pó em um pano. Ferva em 3 xícaras de água sobre fogo baixo até que esta seja reduzida a 1 xícara. Beba como chá antes de uma refeição, uma vez ao dia, para aliviar ácido gástrico excessivo; ou moa a concha até tomar -se um pó bem fino e tome 3g do pó cada vez com água morna, três vezes ao dia."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de suor noturno na tuberculose pulmonar: ferva 20g de concha de ostra em SOOml de água até que esta seja reduzida a 200m!. (Açúcar pode ser adicionado, se desejar.) Divida em 2 dosagens e beba pela manhã e ao anoitecer por alguns dias consecutivos. Após o suor noturno ter cessado, o tratamento continua por outros 2 a 3 dias para estabilizar os efeitos. A terapia herbal pode ser usada em combinação, se nenhum resultado satisfatório for obtido. Nos 10 casos tratados, após tomar 2 a 3 doses, o suor noturno desapareceu em 7 casos, 3 não mostraram resultados óbvios, mas 2 recuperaram-se após serem tratados em combinação com outras ervas. Nenhum efeito colateral foi observado."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "caranguejo",
+    "name": "Caranguejo",
+    "page": 132,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Fraturas e luxações, tine a, erupções cutâneas causadas por vernzz",
+    "descricao": "Frio; salgado; alivia coagulações sangüíneas; refresca sensações quen tes; facilita a recuperação de luxações; afeta o fígado e o estômago.",
+    "energy": "fria",
+    "flavors": [
+      "salgado"
+    ],
+    "organs": [
+      "estomago",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Esmague um carangue jo fresco para misturar com caldo quente. Beba freqüen temente e aplique o caranguejo remanescente na região afetada para restaurar luxações; ou misture cinza de caranguejo quei mado com bebida alcoólica para consumo oral para restaurar luxações e curar fraturas.",
+      "Esmague um carangue jo fresco e aplique-o na região afetada para aliviar erupções cutâneas induzidas por verniz e tinea.",
+      "Asse um caranguejo até estar tostado, moa até tomar-se pó e mis ture com vinho de arroz. Tome lOg do pó e vinho de cada vez, duas vezes ao dia, para aliviar icterícia.",
+      "Asse alguns caranguejos até estarem tostados e moa até tomarem -se pó. Tome lOg do pó com vinho de arroz de cada vez, duas vezes ao dia, para aliviar dor hipogástrica após O parto.",
+      "Asse um caranguejo macho e 1 caranguejo fêmea, então moa até tornarem-se pó; tome o pó com vinho de uma vez para facilitar a cura do câncer de mama. Cames, Leite, Frutos do Mar, Aves Doméstica~ (' ~ 133",
+      "Embrulhe um caranguejo fresco num pano limpo , esmagu e-o para extrair o suco; aplique o suco na região afetada para alívio de erupções cutãneas induzidas por verniz, ou beba o suco todo de uma vez para interromper ou suprimir a tosse."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "Um caranguejo macho possui um umbigo longo enquanto a fêmea possui um umbigo redondo.",
+      "Normalmente, os caranguejos de água doce são usados na dieta Chinesa.",
+      "A garra do caranguejo é completamente forte em dissolver coagulações sangüineas, e não é recomendada para mulheres grávidas (ela pode causar aborto).",
+      "O pó da carapaça do caranguejo também pode ser usado para uma variedade de propósitos terapêuticos . Para fazer o pó, asse a carapaça do carangue jo e moa até tornar-se pó. Tome lOg do pó com vinho de arroz de cada vez, duas vezes ao dia, para aliviar dor hipogástrica após",
+      "parto e mastite aguda."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "camarao",
+    "name": "Camarão",
+    "page": 133,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Camarão fresco para impotência e camarão seco para escassez de secreção de leite",
+    "descricao": "Morno; doce; é usado para aumentar a energia Yang.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Esmague SOOg de camarões e misture com vinho de arroz quente. Beba para aumentar a secreção de leite; ou beba com sopa feita de perna de porco para reforçar os efeitos."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O camarão é ruim para homens com emissão seminal ou ejaculação precoce."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "enguia",
+    "name": "Enguia",
+    "page": 133,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Fadiga, corrimento vaginal, eliminação de fezes contendo sangue e pus, hemorróidas",
+    "descricao": "Morna; doce; é usada como um tônico energético; age contra o reumatismo; fortalece os ossos; afeta o fígado, baço e rins.",
+    "energy": "morna",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "baco",
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Asse uma enguia depois de descartar os órgãos internos; frite lOg de açúcar mascavo e moa com a enguia para fazer um pó. Tome o pó com água morna para aliviar diarréia crônica com eliminação de fezes contendo sangue e pus.",
+      "Coma eng uia nas refeições para interromper o sangramen to de hemorróidas internas.",
+      "Ferva uma enguia numa quantidade adequada de vinho até que este se evapore; asse a enguia, incluindo a pele e os ossos, e moa até tornarem-se pó. Tome lOg de cada vez com uma xícara de vinho em casos severos , ou tome 7g em casos leves, para aliviar dificuldade de deglutição. Continue bebendo o caldo de arroz e evitando carne ou distúrbios emocionais e sexo excessivo. Siba Siba para anemia, sangramento e corrimento vaginal e supressão da menstruação; pó de osso de siba para dor de estômago, ácido gástrico excessivo, vômito de sangue, eliminação de sangue pelo ânus, sangramento e corrimento vaginal, dor abdominal, supressão do fluxo menstrual, diarréia,"
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "ulceras-e-pustulas",
+    "name": "úlceras e pústulas",
+    "page": 134,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "",
+    "descricao": "A siba é neutra, doce, salgada, é usada como um tônico sangüíneo, aguça a visão, age no fígado e rins; o pó de osso de siba é levemente momo, salgado, é usado para facilitar a passagem de água, restringe o ácido e as pústulas de pele, interrompe o sangramento, age no fígado e rins.",
+    "energy": "neutra",
+    "flavors": [
+      "doce",
+      "azedo",
+      "salgado"
+    ],
+    "organs": [
+      "figado",
+      "rins"
+    ],
+    "aplicacoes": [],
+    "relatoriosClinicos": [
+      "Para tratamento de úlceras gástrica e duodenal com pó de osso de siba, use pó de osso de siba como um ingrediente principal; o pó de osso de siba é efetivo para sangramento e perfuração devido a úlceras, restrição de ácido e interrupção de sangramento e diminuição da dor devido a úlceras .",
+      "Para tratamento de asma, misture 500g do pó de osso de siba e lkg de açúcar para administração oral. Tome 20g de cada vez para adultos ou uma quantidade reduzida para crianças, três vezes ao dia; em geral, o tratamento tem efeito em 2 semanas. Entre os 8 casos tratados com uma história de 3 a 27 anos (todos tratados muitas vezes pela Medicina Ocidental sem resultados), 7 casos foram controlados e os ataques de asma não têm recorrido a despeito de muitas mudanças no tempo e 1 caso mostrou melhoras."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "item-7",
+    "name": "(Grama Marinha)",
+    "page": 134,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Tuberculose de nódulos linfáticos, bácio, edema, beribéri, dor nos testículos",
+    "descricao": "Fria; amarga e salgada; amolece a dureza, elimina o muco; promove a passagem de água; reduz sensações quentes.",
+    "energy": "fria",
+    "flavors": [
+      "amargo",
+      "salgado"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva 20g de \"sea grass\" em fogo baixo em 4 xícaras de água até que esta seja reduzida a 2 xícaras. Beba 1 xícara de cada vez, duas vezes ao dia, para aliviar tuberculose de nódulo linfático e bócio, e para prevenir hipertensão e arteriosclerose.",
+      "Ferva 50g de \"sea grass\" com 20g de sementes de laranjas fritas e ISg de sementes de alcaravia fritas em água. Beba o caldo uma vez ao dia para aliviar testículos inchados."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência mostra que o extrato de \"sea grass\" pode ser usado como um anticoagulante; uma outra experiência em ratos indica que vários tipos de \"sea grass\" podem diminuir o colesterol no soro e nos órgãos internos; uma outra experiência em cachorros e ratos mostra que quando dosagens altas (O,75g/kg) são usadas, a \"sea grass\" pode abaixar a pressão sangüínea por um período prolongado de tempo; mas dosagens menores elevarão temporariamente a pressão sangüínea."
+    ],
+    "comentarios": [
+      "Uma fonte indica que a \"sea grass\" pode inibir o apetite e causar perda de peso. Veja \"kelp\" para efeitos na glândula tireóide."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "item-8",
+    "name": "(Tipo de Alga Marinha)",
+    "page": 135,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Tuberculose de nódulos linfáticos, bácio, soluço, dificuldade de deglutição, edema, inchação e dor nos testículos, corrimento vaginal",
+    "descricao": "Fria; salgada; amolece a dureza; facilita a passagem de água; afeta o estômago.",
+    "energy": "fria",
+    "flavors": [
+      "salgado"
+    ],
+    "organs": [
+      "estomago"
+    ],
+    "aplicacoes": [
+      "O consumo regular de \"kelp\" nas refeições alivia O bócio; ou coma pó de \"kelp\" com mel."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Uma experiência mostra que a \"kelp\" é efetiva para hipotireoidismo devido à deficiência de iodo; a \"kelp\" também inibe temporariamente a taxa do metabolismo basal no hipertireoidismo e melhora os sintomas para uma curta duração .",
+      "Uma outra experiência indica que a \"kelp\" reduz a pressão sangüínea, os ataques de asma e a tosse."
+    ],
+    "comentarios": [
+      "A \"kelp\" é fria e pode refrescar os sintomas quentes; e é salgada e pode amolecer a dureza.",
+      "O consumo prolongado de \"kelp\" causará perda de peso. A \"kelp\" não é recomendada para mulheres grávidas e pessoas com digestão fraca.",
+      "Para fazer pó de \"kelp\", toste-a; seque e moa até tornar-se pó."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "alga-marinha",
+    "name": "Alga Marinha",
+    "page": 136,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Bócio, edema, beribéri",
+    "descricao": "Fria; salgada; amo lece a dureza; elimina o muco; promove a passagem de água.",
+    "energy": "fria",
+    "flavors": [
+      "salgado"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Prepare 40g de alga marinha e lave tirando o sal; ferva-a em 2 ou 3 copos de água sobre fogo baixo até que esta seja reduzida à metade. Beba para curar bócio simples .",
+      "Ferva 20g de cada alga marinha e \"sea grass\" com 5g de sementes de alcaravia em uma quantidade adequada de água sobre fogo baixo até que esta seja red uzida à metad e. Beba para aliviar testículos inchados .",
+      "Lave a alga marinha e cor te aproximadamente 2,5cm de comprimento; embeba a alga marinha em água fervendo três vezes, aproximadamente 305 de cada vez; coe e coma a alga marinha com açúcar nas refeições por 1 mês para al iviar bronquite crônica senil."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "alimentos-variados",
+    "name": "Alimentos Variados",
+    "page": 137,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Sal Constipação, sangramento da gengiva, garganta irritada, dor de dente, carbúncu[o, catarata",
+    "descricao": "Frio; salgado; desintoxica; afeta o estômago, rins, intestinos delgado e grosso.",
+    "energy": "fria",
+    "flavors": [
+      "salgado"
+    ],
+    "organs": [
+      "estomago",
+      "intestino_grosso",
+      "rins"
+    ],
+    "aplicacoes": [
+      "Escove os seus dentes com uma fina superfície de sal pela manhã e ao anoitecer para interromper o sangramento da gengiva .",
+      "Misture sal com vinagre e beba para aliviar dor abdominal abaixo do umbigo.",
+      "Massageie as regiões circundantes do carbÚ11culo e erupções cutâneas com sal para aliviar prurido.",
+      "Beba uma xícara de água salgada logo pela manhã de estômago vazio para aliviar constipação.",
+      "Gargareje com água salgada para prevenir e aliviar garganta irritada.",
+      "Lamba wn pouco de sal com a ponta da língua antes de fumar para prevenir a formação do hábito ou para desistir de fumar dentro de 1 mês.",
+      "Frite o sal até ficar marrom; misture-o com água morna. Beba a água salgada para aliviar intoxicação por peixe e por carne e dor abdominal devido ao ato de comer alimentos errados.",
+      "Misture o sal com 2 copos de água e lave a região afetada para aliviar dermatite localizada, prurido, inchação de pele e veneno em contato com a pele.",
+      "Lamba um pouco de sal e deixe dissolver na boca e engula-o lentamente para aliviar o soluço devido à comida imprópria . 138 Sistema Cllillês de Cllras Alimentares"
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "De acordo com uma fonte, o sal pode agir contra os efeitos tóxicos do a1calóide vegetal (isto explica por que o sal pode ser usado para aliviar envenenamento por vegetais e ervas) .",
+      "De acordo com o YELLOW EMPEROR'S CLASS1C OF INTERNAL MEDlCINE:\"O sal caminha para o sangue, e uma pessoa que sofre de doença sangüínea deve evitar comer alimentos salgados em excesso; 05 rins gostam de alimentos salgados .\" Como o sabor salgado canUnha primeiro para 05 rins, ao tomar um tônico renal, é costumeiro adicionar um pouco de sal para reforçar os efeitos; mas o sal é ruim para edema associado com nefrite ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "geleia-real",
+    "name": "Geléia Real",
+    "page": 138,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Subdesenvolvimento, perda de peso, apetite pobre, hepatite, neurastenia, flebite nodular, desnutrição, artrite reumatóide, anemia, úlceras gástricas",
+    "descricao": "A geléia real, um produto moderno não registrado nos clássicos dietéticos tradicionais Chineses, é hoje amplamente usada para promover desenvolvimento, retardar o processo de envelhecimento e previnir perda de cabelo; é produzida de uma secreção das glândulas salivares de abelhas operárias e fermentada com pólen de mel e outros ingredientes e especialmente usada como alimento para as abelhas rainhas. Isto explica por que virtualmente todas as abelhas rainhas são capazes de viver mais 5 anos, enquanto as abelhas operárias podem viver apenas 2 a 4 meses. O melhor disso, no auge da estação corrente, uma abelha rainha sozinha pode colocar 2.500 a 3.000 óvulos que pesam mais que o próprio corpo da abelha rainha.",
+    "energy": null,
+    "flavors": [],
+    "organs": [],
+    "aplicacoes": [],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "A geléia real está disponível na forma de tablete ."
+    ],
+    "needsReview": true
+  },
+  {
+    "id": "mel",
+    "name": "Mel",
+    "page": 138,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Tosse seca, constipação, dor de estômago, sinusite, cancro de boca, queimaduras, neurastenia, hipertensão, tuberculose pulmonar, doença cardíaca e hepática",
+    "descricao": "Neutro; doce; desintoxica; lubrifica a secura; alivia a dor; afeta os pulmões, baço e intestino grosso.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco",
+      "intestino_grosso"
+    ],
+    "aplicacoes": [
+      "Vaporize aproximadamente meia xícara de mel. Coma tudo de uma vez de estômago vazio, três vezes ao dia, por 2 a 3 semanas no final, para aliviar úlceras gástrica e duodenal .",
+      "Misture meia xícara de mel com água morna e beba uma vez ao dia para tratar hipertensão, constipação, dor de estômago, neurastenia, doença cardíaca e esclerose coronária. Alimentos Variados 139",
+      "Beba uma xícara de água de mel na hora de dormir para curar insônia devido à neurastenia.",
+      "Externamente aplique mel na região afetada para aliviar queimaduras .",
+      "Misture 3 colheres grandes de mel em água fervendo. Beba pela manhã e ao anoitecer para aliviar insônia, dor de cabeça e anemia; ou coma mel nas refeições com ou tros alimentos.",
+      "Usando uma bola de algodão esterilizada, aplique mel externamente ao ãnus para curar pele rachada em hemorróidas; ou aplique externamente ao ouvido para aliviar inchação.",
+      "Misture 2 colheres de chá cheias de mel com água morna. Beba logo pela manhã de estômago vazio para aliviar constipação crônica.",
+      "Misture 1 colher de chá cheia de mel com água morna e beba 3h após as refeições, três vezes ao dia, por 5 dias consecutivos, para aliviar rouquidão causada por fadiga excessiva, mas não relacionada ao resfriado comum, com descanso suficiente para produzir melhores resultados."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de úlceras gástrica e duodenal: entre 20 casos tratados, o nicho desapareceu em 15 casos, mostrou progresso em 3 casos (32 dias em média), dor completamente desaparecida em 18 casos e dor diminuída em 2 casos; a dor foi embora rapidamente em 6 dias e dentro de 22 dias em média. O método de tratamento: cada dia, coma uma terceira xícara de mel fresco antes das refeições, três vezes ao dia; após o décimo dia, aumente a quantidade de mel para meia xícara a cada dia.",
+      "Relatórios clinicos sobre o tratamento de outras doenças mostraram bons resultados: para tratamento de disenteria bacilar aguda, tome 150g de mel a cada dia para adultos (divida em 4 doses para crianças); para tratamento de constipação temporária e! ou crônica nos idosos e em mulheres grávidas, tome mellogo pela manhã; para tratamento de anemia hipocrômica, tome 80 a 100g de mel a cada dia, dividas em 3 dosagens; os resultados mostram um aumento óbvio nas células sangüíneas e hemoglobina."
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "vinagre",
+    "name": "Vinagre",
+    "page": 139,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Icterícia, vômito de sangue, hemorragia nasal, eliminação de sangue pelo ânus, prurido na região genital, envenenamento por peixe, carne e vegetais",
+    "descricao": "Morno; azedo e amargo; dispersa coagulações; desintoxica; interrompe o sangramento; afeta o fígado e o estômago.",
+    "energy": "morna",
+    "flavors": [
+      "azedo",
+      "amargo"
+    ],
+    "organs": [
+      "estomago",
+      "figado"
+    ],
+    "aplicacoes": [
+      "Esmague um pedaço pequeno de gengibre fresco e misture-o com 1 ou 2 xícaras de vinagre de arroz; beba para corrigir indigestão causada por consumo excessivo de peixe, saladas e frutas.",
+      "Adicione um pouco de vinagre nas carnes quando estiver cozinhando para promover digestão e estimular o apetite.",
+      "Cozinhe aipo com vinagre como um tempero para tratar hipertensão com dor de cabeça.",
+      "a medicina popular Chinesa, quando uma criança sofre de convulsões e desmaios, com temperatura corpórea diminuindo rapidamente,",
+      "vinagre é fervido em fogo alto com as portas fechadas, assim o paciente inspirará o vapor do vinagre para recuperar a consciência. O mesmo método pode ser usado para despertar mulheres que desmaiam logo após o parto.",
+      "Beba uma xícara de vinagre quente para aliviar dor causada por ascaríase biliar e ascaríase intestinal.",
+      "Combine meia tigela de vinagre, 70g de açúcar mascavo e 35g de gengibre fresco fatiado; aqueça até a ebulição duas vezes, e coe. Beba 1 xícara pequena do líquido de cada vez com água morna, três vezes ao dia, para aliviar prurido e erupções cutâneas de reações alérgicas após comer peixe e caranguejo.",
+      "Embeba 10 amendoins em uma pequena xícara de vinagre por toda a noite. Beba o vinagre e coma os amendoins no clia seguinte para tratar hipertensão; repita por 10 a 15 clias como um programa de tratamento."
+    ],
+    "relatoriosClinicos": [
+      "Uma criança estava sofrendo de encefalite epidêmica e o médico Chinês disse ao pai do paciente que era necessário usar esterilização de ácido láctico; mas o ácido láctico não estava prontamente disponível. Assim o pai usou vinagre como um substituto e obteve bons resultados .",
+      "Uma vez uma fábrica alimentar Chinesa relatou uma epidemia de gripe. Todos os trabalhadores na fábrica foram acometidos, exceto os trabalhadores na divisão do vinagre; nenhum deles ficou doente.",
+      "De acordo com um relatório de uma fábrica de processamento alimentar Chinesa, uma média de 8% dos trabalhadores da fábrica estão doentes com infecções respiratórias; mas apenas 1% dos trabalhadores na divisão do vinagre tem sofrido de infecções respiratórias a cada ano . Além disso, quando os trabalhadores na divisão de vinagre sofrem de infecções respiratórias, o ataque é mais leve, também .",
+      "Ferva 500g de ossos de porco e 100g de açúcar branco em 4 xícaras de vinagre por 30min; coe. Os adultos tomam 30 a 40ml e as crianças tomam 10 a 15m! de cada vez após as refeições, três vezes ao dia por 1 mês como um programa de tratamento. Os pacientes crônicos suportam 2 a 3 programas de tratamento (exceto pacientes com febre alta que não devem ser tratados por este método l. Entre os 3 casos de hepatite contagiosa aguda e crõnica tratados, todos recuperaram-se dentro de 40 a 60 dias . Alimentos Variados 141",
+      "No Hu BEl YEECANG PEOPLE'S HOSPITAL na China, 51 casos de hepatite do tipo ictérica contagiosa aguda foram tratados com lOml de vinagre de arroz e 2 tabletes de vitamina BI' Todos os pacientes recuperaramse da enfermidade dentro de uma média de 4 dias e seus apetites pobres foram significantemente melhorados."
+    ],
+    "experiencias": [
+      "Numa experiência conduzida pelo Instituto de Pesquisa de Doenças Epidemiológicas na Academia Chinesa de Ciência Médica, 200 colônias de bactérias foram cultivadas, consistindo de 5 bactérias mais freqüentemente causando infecçôes respiratórias, tais como pneumonia, catarro e gripe. Foi descoberto que todas, exceto algumas colônias de bactérias isoladas, foram exterminadas dentro de 30min pelo vinagre vaporizado em 100°C; a mesma experiência também indicou que o vinagre não possui poder óbvio de exterminação de bactéria quando vaporizado abaixo de 100°C."
+    ],
+    "comentarios": [
+      "O vinagre é chamado de vinho amargo na linguagem Chinesa, e o vinagre e o vinho são considerados os dois amigos de ervas Chinesas . Por que? O vinagre e o vinho são muito freqüentemente usados para processar as ervas Chinesas, não apenas para inibir os efeitos colaterais delas , mas também para aumentar os seus efeitos.",
+      "Beba entre 30 e 50ml de vinagre ou mais, de acordo com sua idade, para aliviar a dor causada pela ascaríase biliar. Este tratamento pode ser repetido até que a dor tenha passado . Depois que a dor estiver significativamente reduzida, aplique anti-helmúltico como normalmente. Entre os 15 casos de ascaríase biliar observados, com um total de 300 a 500ml de vinagre administrado em cada caso, a dor parou completamente em 12 casos dentro de 2 dias e dentro de 3 a 4 cl.ias em 3 casos."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "vinho",
+    "name": "Vinho",
+    "page": 141,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Reumatismo, espasmos musculares, dor no peito, dor abdominal fria",
+    "descricao": "Morno; doce, amargo e pungente; promove a circulação sangüínea; expele energia fria; acelera os efeitos das ervas; afeta o coração, fígado, pulmões e estômago.",
+    "energy": "morna",
+    "flavors": [
+      "pungente",
+      "doce",
+      "amargo"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "figado",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Beba um copo de vinho para aliviar diarréia devido ao frio e com eliminação de corrente de urina clara e longa, que indica um sintoma frio.",
+      "Misture mel com vinho de arroz e beba para tratar prurido por todo O corpo nas mulheres.",
+      "Frite 500g de feijões-de-soja pretos até que eles pareçam superfritos e comecem a rachar. Coloque num pote de cerâmica e despeje 2 a 4 co142 Sistema Chinês de Curas Alimelltares pos de vinho de arroz no pote; deixe esfriar e coe. Beba uma xícara de cada vez, duas vezes ao dia, para curar entorpecimento e dor nas juntas, dor reumá tica, nevralgia e anemia.",
+      "Beba 1 copo de vinho de arroz quente ou vinho de uva para aliviar dor causada por lesões externa s."
+    ],
+    "relatoriosClinicos": [
+      "Para tratamento de diarréia simples após o parto: aqueça 3 copos de vinho de arroz até a ebulição; adicione 150g de açúcar mascavo e continue fervendo por 2 a 3min; deixe esfriar e beba tudo, ou divida em 2 partes para beber 3 a 4h à parte. Entre os 14 casos tratados, 10 casos recuperaram-se completamente. Um caso recuperou-se naturalmente após interromper o tratamento , 2 casos mostraram melhoras e 1 caso nenhum resultado significativo. Alguns casos recuperaram-se completamente dentro de 3 dias. Apenas 1 caso reclamou sobre dor de cabeça leve durante o tratamento. Nenhum efeito colateral foi mostrado em todos os outros casos."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Existem basicamente dois tipos de vinho usados na terap ia herbal Chinesa - vinho de arroz (também chamado de vinho amarelo) e vinho quente (também chamado de vinho branco ou vinho de fogo). O vinho amarelo contém apenas 10 a 20% de álcool; o vinho branco contém um IÚvel de álcool muito mais alto . O vinho branco é normalmente usado para manufaturar vinho herbal medicado. O vinho amarelo é adequado para beber com refeições Chinesas.",
+      "O vinho é algumas vezes considerado mais nocivo do que benéfico, porque muitas pessoas possuem uma tendência a intoxicarem-se quando",
+      "bebem ."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cafe",
+    "name": "Café",
+    "page": 142,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Bronquite, enfisema, cor pulmonale , intoxicação",
+    "descricao": "Momo; doce e amargo; é usado como um estimulante, tônico cardíaco e diurético.",
+    "energy": "morna",
+    "flavors": [
+      "doce",
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Beba café preto forte para aliviar intoxicação.",
+      "Ferva 10g de feijões de café torrados em água. Beba a cada dia para aliviar bronquit e crônica, enfisema e cor pu/mona/e."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "tabaco",
+    "name": "Tabaco",
+    "page": 142,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Indigestão, inchação abdominal, dor de cabeça, entorpecimento e dor na artrite",
+    "descricao": "Momo; pungente; tóxico; promov e a circulação energética; alivia a dor; age contra os sintomas frio e úmido. Alimel1tos Variados 143",
+    "energy": "morna",
+    "flavors": [
+      "pungente"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva ou extraia suco de tabaco ou fume cigarros para curar coagulações sangüíneas, dor reumática e para aquecer o corpo e o útero nas mulheres . (Usar cigarros como uma forma de terapia está long e do fumo habitual, que é uma forma de vício.)"
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [
+      "Os fumantes excessivos podem desenvolver faringite crõnica e outros sintomas respiratórios; os fumantes excessivos (acima de 20 cigarros por dia) estão 4 a 7 vezes mais suscetíveis ao ataque de bronquite do que os não fumantes .",
+      "O fumo também pode estar relacionado ao câncer de pulmão: entre os pacientes acima dos 45 anos de idade que sofrem de câncer de pulmão, existem aproximadamente 50 vezes mais gente fumando mais que 25 cigarros ao dia quanto não fumantes.",
+      "Os fumantes também estão mais suscetíveis aos distúrbios gastroentéricos (tais como indigestão, doenças estomacais nervosas, úlceras e constipação) .",
+      "Os fumantes excessivos podem desenvolver dor de cabeça e insõnia.",
+      "O ingrediente principal do tabaco é a nicotina, que é muito facilmente absorvida pelas membranas mucosas. Quando duas gotas são colocadas na superfície da lingua dos cachorros, eles morrem dentro de 1 a 2min . A nicotina também pode ser absorvida pela superfície da pele e causar a morte."
+    ],
+    "comentarios": [
+      "A população Chinesa acredita que o câncer de pulmão pode ser atribuído ao calor excessivo nos pulmões. Isto pode explicar porque fumar contribui para o câncer de pulmão , porque o tabaco é considerado capaz de gerar o calor que seca os pulmões. Conseqüentemente, os pulmões tornam-se alvos do câncer quando estão quentes e secos. Por esta razão, quando uma pessoa apresen ta os sintomas de tosse e võmito de sangue, fumar poderia ser fatal.",
+      "Muitas pessoas ganham peso depois que desistem de fumar, que pode ser devido a duas razões possíveis: primeira, muitos médicos atribuem isso ao ato de comer demais, porque quando uma pessoa desiste de fumar, necessita de algo mais para compensar o ato de fumar, e comer é o candidato mais fácil; segwlda, de acordo com a Medicina Chinesa, fumar pode fazer O corpo secar; muitas pessoas acima do peso possuem uma constituição física úmida, e o fumo pode ajudá-las a permanecerem esbeltas; quando elas desistem de fumar, seus corpos começam a reter água e ganhar peso.",
+      "Minha especulação pessoal é de que se uma pessoa possui uma constituição física úmida (que freqüentemente significa peso acima do normal), está menos provável de ser prejudicada pelo fumo; por outro lado, uma pessoa com uma constituição física quente ou seca está mais provável de ser prejudicada pelo fumo, e é sensato e urgente para tal pessoa desistir de fumar."
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cha",
+    "name": "Chá",
+    "page": 144,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Dor de cabeça, visão embaçada, sonolência, sede, indigestão, enterite, disenteria bacilar, edema na doença cardíaca, herpes zóster",
+    "descricao": "Amargo; doce; levemente frio; sacia a sede; eleva o estado de espírito; promove a digestão e a urinação ; afeta o coração, pulmões e estômago.",
+    "energy": "fria",
+    "flavors": [
+      "doce",
+      "amargo"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago",
+      "coracao"
+    ],
+    "aplicacoes": [
+      "Moa 10g de folhas de chá e 10g de gengibre seco até tornarem-se pó. Tome uma colher de sopa cheia do pó com água morna de cada vez, duas a três vezes diariamente, para curar gastroenterite aguda .",
+      "Moa as folhas de chá até tornarem-se pó; dissolva o pó em chá forte e aplique externamente à região afetada duas a três vezeS diariamente para curar herpes zóster."
+    ],
+    "relatoriosClinicos": [
+      "Relatórios clí1licos - É relatado que entre 168 casos de disenteria bacilar tratados tomando 2ml de chá forte três a quatro veZeS diariamente, 40,6% recuperaram-se dentro de poucos dias a poucas semanas .",
+      "O chá forte também foi usado para tratar 87 casos de enterite aguda e mais de 90% dos pacientes recuperaram-se dentro de 2 dias; o mesmo método foi usado para tratar 12 casos de enterite crônica. Dez casos completamente recuperados dentro de 4 a 21 dias com fezes retornando ao normal; 2 casos melhoraram para um grau bem significativo. O método de tratamento: beba 2 a 5ml de chá bem forte três a quatro vezes ao dia. (As folhas são fervidas sobre fogo baixo para fazer chá bem forte, que é diferente do modo normal de fazer chá, ou seja, derramar água quente sobre as folhas de chá.)"
+    ],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "acucar-branco",
+    "name": "Açúcar Branco",
+    "page": 144,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Tosse seca, sede, dor de estômago",
+    "descricao": "Neutro; doce; lubrifica os pulmôes ; produz líquidos; afeta baço.",
+    "energy": "neutra",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "baco"
+    ],
+    "aplicacoes": [
+      "Ferva 3 colheres de açúcar em 1 copo de vinho de arroz sobre fogo baixo. Beba para aliviar uma sensação de aperto no abdômen .",
+      "Misture o açúcar com tâmaras vermelhas e mastigue 2 tâmaras após as refeições como se mastigasse um chiclete para aliviar uma tosse seca.",
+      "Ferva o açúcar em água para fazer xaropes concentrados para tratar dor de estômago, desconforto abdominal causado pelo ato de comer peixe e caranguejos e mal hálito causado pelo ato de comer alho e cebola."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [
+      "O açúcar pode ser fervido e produzido em formato de pedra; isto é chamado de açúcar em pedra (doce em pedra) com uma ener-"
+    ],
+    "needsReview": false
+  },
+  {
+    "id": "cana-de-acucar",
+    "name": "Cana-de-açúcar",
+    "page": 145,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Vômito, tosse seca, constipação, alcoolismo",
+    "descricao": "Fria; doce; lubrifica a secura; promove a urinação; produz líquidos; empurra para baixo; afeta os pulmões e o estômago.",
+    "energy": "fria",
+    "flavors": [
+      "doce"
+    ],
+    "organs": [
+      "pulmoes",
+      "estomago"
+    ],
+    "aplicacoes": [
+      "Beba caldo de cana -de-açúcar para aliviar febre, dificuldade de urinação e sede .",
+      "Misture meio copo de caldo de cana-de-açúcar com 3 colheres de chá cheias de suco de gengibre fresco. Beba para aliviar o vômito.",
+      "Beba 1 copo de caldo de cana-de-açúcar fresco, três vezes ao dia, para curar edema leve durante a gravidez."
+    ],
+    "relatoriosClinicos": [],
+    "experiencias": [],
+    "comentarios": [],
+    "needsReview": false
+  },
+  {
+    "id": "fruto-do-lupulo",
+    "name": "Fruto do Lúpulo",
+    "page": 145,
+    "chapter": "Carnes, Leite, Frutos do Mar, Aves e Ovos",
+    "indications": "Indigestão, inchação abdominal, edema, cistite, tuberculose pulmonar, insônia",
+    "descricao": "Levemente fresco; amargo; é usado como um tôrúco estomacal, digestivo e diurético.",
+    "energy": "fresca",
+    "flavors": [
+      "amargo"
+    ],
+    "organs": [],
+    "aplicacoes": [
+      "Ferva 15g de fruto do lúpulo em 2 copos de água sobre fogo baixo até que esta seja reduzida à metade. Beba uma vez ao dia para aliviar o estágio irúcial de tuberculose pulmonar e febre baixa à tarde.",
+      "Use 4g de fruto do lúpulo para fazer chá todos os dias para aliviar neurastenia, insônia e apetite diminuido."
+    ],
+    "relatoriosClinicos": [
+      "No tratamento de lepra, tuberculose pulmonar, silicose, silicotuberculose, tuberculose de nódulos liIúáticos e disenteria bacilar aguda, todas indicaram resultados positivos."
+    ],
+    "experiencias": [],
+    "comentarios": [
+      "Um rela tório revela que as mulheres Chinesas ao apanharem fruto do lúpulo no campo normalmente começam a apresentar fluxo menstrual no segundo ou terceiro dia após começarem a colher o fruto , mas não apresentaram a dor menstrual. As ações do fruto do lúpulo e aque las de um hormônio sexual feminino são similares. Prevenindo e Curando Doenças CONDIÇÕES INTERNAS Hoje na China, as doenças são tratadas ou pela Medicina Ocidental ou pela Medicina Tradicional Chinesa ou ambas, dependendo da natureza das doenças e da escolha do paciente. Quando visitei a China em 1983, nosso motorista de ônibus me contou os seus planos de ver um médico no dia seguinte, e perguntei-lhe que médico ele gostaria de ver, um médico de Medicina Ocidental ou um médico de Medicina Chinesa. Ele tinha marcado urna consulta com o último, disse. Perguntei-lhe corno ele fez essa escolha. Normalmente, ele respondeu, um paciente Chinês confia na recomendação de um amigo ou conhecido, por causa disso, alguém que tinha sofrido de urna doença similar e se curou. Resfriado Comum",
+      "Cozinhe o macarrão de acordo com o gosto do paciente, e adicione 25g de cabeças brancas de cebolas frescas e 25g de gengibre fresco; misture cuidadosamente. O paciente pode começar a transpirar posteriormente e deve permanecer na cama após comer isso.",
+      "Descasque e esmague 15g de alho; adicione 15ml de vinagre de arroz. Use esta mistura da mesma forma corno a dos macarrões (acima).",
+      "Fatie 30g de gengibre fresco ou envelhecido e ferva em 300ml de água até que esta seja reduzida a 100ml; adicione um pouco de açúcar mascavo e ferva novamente até que o açúcar dissolva . Beba tudo e permaneça na cama para transpirar. 148 Sistema ClJinês de Curas Alimentare s",
+      "Ferva 30g de \"hyacinth beans\" em água até que eles se rompam; adicione 30g de açúcar e ferva novamente até que o açúcar dissolva. Depois de comer, permaneça na cama para transpirar.",
+      "Ferva lOg de hortelã-pimenta e 10g de cabeças brancas de cebolas verdes em água para fazer chá para aliviar dor de cabeça devido ao resfriado comum.",
+      "Outros alimentos considerados benéficos para o resfriado comum são a casca de laranja , hortelã-pimenta, bulbo de cebola verde e rabanete.",
+      "Esmague lOOg de gengibre fresco e extraia o suco; misture-o com vinho de arroz e aqueça numa panela pequena. Beba a bebida para induzir a transpiração.",
+      "Frite alguns dentes de alho e moa até tornarem-se pó; misture 2 colheres de chá cheias de pó de alho com um pouco de açúcar e coma para aliviar a tosse devido ao resfriado comum.",
+      "Quebre um ovo num copo de vinho de arroz e misture com uma colher; aqueça sobre fogo baixo até que o ovo esteja quase cozido; ac1icione um pouco de açúcar. Beba como uma sopa para aliviar a dor de cabeça e estremecimento devido ao resfriado comum .",
+      "Como qualquer outra doença, o tratamento do resfriado comum varia com sintomas diferentes. No estágio inicial, o paciente pode tremer com frio mas sem febre, que deve ser aliviada pelos alimentos com uma energia morna ou quente e sabor pungente (alimentos com uma energia morna ou quente aliviarão o estremecimento e alimentos com um sabor pungente induzirão a transpiração). Quando o paciente com um resfriado comum começa a desenvolver febre, os alimentos consumidos devem possuir uma energia fria ou fresca para reduzir a febre (a doença mudou de uma doença fria para uma quente); portanto, para reduzir a febre o paciente deve comer alimentos com uma energia fria ou fresca no lugar de alimentos com uma energia morna ou quente. Mas os alimentos com um sabor pungente devem ainda ser usados para induzir a transpiração. Por outro lado, o resfriado comum com garganta irritada ou qualquer outra inflamação deve ser tratado como um sintoma quente. Gripe",
+      "Ferva lOg de feijões-de-soja amarelos em água por 15min; ac1icione 30g de salsa e ferva novamente por 15min. Beba o caldo e permaneça na cama para transpirar.",
+      "Fatie 250g de rabanete fresco e embeba em uma quantidade adequada de vinagre por algumas horas. Coma como salada.",
+      "Coloque algumas cabeças brancas de cebolas verdes fatiadas ou alho numa máscara respiratória; inale para prevenção e recuperação de gripe. Prevenindo e Curando Doenças 149",
+      "Rale 150g de rabanete fresco e misture com mel num jarro. Sele o jarro por 1 semana. Coma wna xícara pequena de cada vez, três vezes ao dia. Diabetes",
+      "o açúcar na urina como um dos mais importantes sintomas do diabetes foi incluído no clássico médico Chinês, UMA COLEÇÃO DE DOEN ÇAS, por W ANG SHOU, publicado em 752. Pela primeira vez na história médica Chinesa, o diabetes foi listado entre as 1.100 doenças no livro. O autor recomendou pâncreas de porco como tratamento para esta doença, e também tinha usado wn método especial para testar o açúcar na urina: o paciente urinou completamente, achate o tijolo para ver se formigas reúnem-se para coletar o açúcar. Este método de testar a urina permaneceu por mais de dez séculos à frente de RrCHARD THOMAS WlLLIAMSON (1862-1937), que inventou um teste para o mesmo propósito . O tratamento do autor Chinês usando pâncreas de porco foi similar ao tratamento moderno pela insulina, wn hormônio secreta do pelas células ~ das ilhotas de Langerhans do pâncreas . Na Medicina Chinesa , entretanto , sede , perda de peso, fadiga e açúcar na urina são considerados os sintomas principais do diabetes. Quando um paciente se recupera de qualquer um desses sintomas, o tratamento de diabetes é considerado bem-sucedido.",
+      "Vinte e cinco pacientes diabéticos foram tratados no \"Canton College of Traditional Chinese Medicine\" por fatias de melão amargo seco, cada dosagem por dia consistia em 250g de fatias de melão amargo seco fervido em água. Os níveis do seu açúcar no sangue medidos 2,5h após as refeiçôes e do seu açúcar na urina medidos 24h após as refeições foram ambos estatisticamente muito significativos; o mesmo método tem sido subseqüentemente aplicado na dieta dos ratos, que também resultou nwna diminuição significativa no nível do açúcar no sangue;",
+      "mesmo relatório concluiu que os efeitos do melão amargo seco são comparáveis àqueles da insulina. É também sugerido que quando lOOg de moluscos bivalves frescos são fervidos em água com as fatias de melão amargo seco, os resultados devem ser melhores.",
+      "Uma clinica na Província de Jiangxi na China relatou o tratamento de wn paciente diabético com bons resultados, no qual o total de 100g de milho fresco são fervidos de cada vez como wna dosagem. O paciente sofria de diabetes há mais de 2 anos com açúcar na urina, inchaço no corpo, urinação freqüente e foi tratado pela Medicina Ocidental com nenhwn resultado. Sob o tratamento por mi1l10, o paciente tinha se recuperado após tomar apenas 4 dosagens. Subseqüentemente, um outro médico Chinês, ao ler este relatório de um jornal médico, usou o mes150 Sistema Cl!ines de Curas A limentares mo remédio para tratar um paciente diabético de 63 anos de idade e descobriu ser igualmente efetivo - o paciente mostrou uma diminuição mwto significativa no nível de açúcar no sangue após ser submetido a menos de 10 tratamentos. Uma outra clínica na mesma província desenvolveu uma cura alimentar para diabetes que consiste de 60% de farelo de trigo e 40% de pó de trigo, misturados com ovos de galinha para fazer um remédio de bolo (sem açúcar). No começo, os pacientes foram tratados com 500g deste remédio de bolo a cada dia, com a proporção de farelo de trigo gradualmente diminuída conforme os sintomas melhoravam . Entre os 15 casos tratados por este método, O nível de açúcar no sangue foi testado em 10 casos, entre eles, o açúcar no sangue reduziu para menos que 140mg/100ml de sangue em 3 casos e reduziu para menos que 180mg / 100ml de sangue em 7 casos. Todos os 13 casos mostraram uma melhora geral em todos os outros sintomas .",
+      "No Simpósio Internacional sobre os Efeitos do Ginsém presidido na União Soviética em 1954, um relatório indicou que o ginsém é capaz de abaixar os níveis de açúcar no sangue; e um médico Chinês também salientou que de acordo com suas experiências, o ginsém é capaz de reduzir os níveis de açúcar no sangue por até 40 a 50mg/lOOml de sangue; tais efeitos podem continuar por mais de 2 semanas depois do paciente parar de tomar ginsém. Além do mais, em alguns casos, o consumo de insulina pode ser reduzido enquanto o paciente está tomando ginsém.",
+      "Pique 50g de folhas de batatas frescas e 100g de cera da cabaça; vaporize-as sobre água como uma dosagem para consumo diário.",
+      "Embeba 100g de cebola fresca em água fervendo por 1min; tempere-a com um pouco de sal. Coma duas vezes ao dia.",
+      "Beba 1 xícara de leite de égua como uma dosagem diária. Beba o leite duas vezes ao dia. O leite de égua possw uma energia fresca e um sabor doce; pode lubrificar a secura, reduzir o calor e saciar a sede; é usado para fadiga e diabetes. Um clássico de dieta Chinesa diz:\"O leite de égua posswa mesma função que o leite de vaca, mas não é tão gorduroso; é efetivo para redução de calor na vesícula biliar e no estômago, considerado benéfico para garganta irritada, bom para a cabeça e os olhos e também é efetivo para o alivio do diabetes\".",
+      "De acordo com os remédios herbais Chineses, o pâncreas de porco possw uma energia neutra e um sabor doce; é usado para tratar traqueíte crônica, tosse, escassez de secreção de leite e enfisema. Ferva um pâncreas de porco, de boi ou de cordeiro em água com 200g de inhame; tempere com um pouco de sal. Divida em 4 partes. Coma cada parte uma vez ao dia por 4 dias. Ou corte um pâncreas de porco e asse até secar sobre fogo baixo; moa até tomar-se pó. Tome 3 a 5g em água moma de cada vez, três vezes ao dia . Ou lave o pâncreas de porco, remova e PrevenÍlldo e Curando Doenças 151 descarte toda a gordura branca, e corte em pedaços finos; ferva sobre fogo baixo em água com 20g de barbas de milho; tempere com um pouco de sal. Coma diariamente. O uso do pâncreas de porco como um ingrediente na fórmula dietética para tratar diabetes na China foi originalmente publicada em 1846 no clássico da dieta Chinesa, NOVA COLETÂNEA DE RECEITAS DIETÉTICAS APROVADAS.",
+      "Misture 50g de pó de inhame com 10g de pó de ginsém (prontamente disponível nas lojas). Tome três vezes ao dia, 15g de cada vez, dissolvido em água morna.",
+      "Ferva 30g de casca de melancia fresca em 2 copos de água. Beba 1 copo de cada vez, duas vezes ao dia.",
+      "Embeba 100g de \"mung beans\" a noite inteira; ferva em 3 copos de água sobre fogo baixo até que os feijões se rompam. Tome como sopa em um dia.",
+      "Ferva 250 a 300g de rabanete fresco em água com 20 a 25g de haliote. Tome como sopa em dias alternados. Repita 6 a 7 vezes como um programa de tratamento (esta é uma receita tradicional na medicina popular Chinesa para diabetes).",
+      "Ferva 150g de cebolinho (ou brotos de cebolinho) com 200g de moluscos bivalves e tempero adequado. Coma em um dia. Este remédio também é bom para transpiração excessiva e tuberculose pulmonar. Hipertensão",
+      "Na \"Ping-Yang Seaweed Culture Unit\" na Província de Zhejiang, China, 110 casos de hipertensão foram tratados pelo pó de raiz de alga marinha; em 19 casos (17,3%), a pressão sangüínea diastólica foi reduzida por mais de 20mmHg, e em 65 casos (59,1 %), a pressão sangüínea diastólica foi reduzida por 10 a 19mmHg ou para menos de 90mmHg, e a pressão sangüínea sistólica foi reduzida por mais de 20mmHg. O relatório concluiu que a taxa efetiva total de 76,4% foi alcançada e que as raízes de alga marinha são materiais excedentes, prontamente disponíveis sem nenhum efeito colateral, conseqüentemente tornando a terapia tanto efetiva como econõmica.",
+      "Num relatório clínico, 30 a 40g de plantas de amendoins secos foram fervidas para fazer chá como uma dosagem diária por 2 semanas; os pacientes foram instruídos a beber o chá de plantas de amendoins de forma regular após a pressão sangüínea ter retornado ao normal. Vinte casos de hipertensão foram tratados por este método; a maioria mostrou melhoras dentro de 3 dias com uma diminuição signíficativa na pressão sangüínea (o valor médio - a pressão sistólica foi reduzida para 29mmHg e a pressão diastólica para 30rnmHg) . 152 Sistema CTlillês de Cllras Alimentares",
+      "Um paciente hipertenso em Tianjin, China, escreveu para um editor para dizer que sofria de hipertensão com tontura e constipação há muitos anos, mas era incapaz de descobrir uma cura; subseqüentemente, começou a comer 5 bananas todos os dias, o que eventualmente curou sua doença.",
+      "Um médico Chinês relatou uma paciente de 49 anos de idade que sofria de hipertensão com constipação ocasional, dor de cabeça e tontura; ela tomou mel por 2 meses, que reduziu a sua pressão sangüinea ao normal e também curou sua constipação.",
+      "Existem basicamente três modos de enfrentar a hipertensão de acordo com o sistema dietético Chinês. Primeiro, coma mais alimentos que possam amolecer os vasos sangüíneos, tais como \"kelp\", \"sea grass\", brotos de \"mung bean\", frutas e outros, para prevenir arteriosclerose. Segundo, use óleos vegetais, tais como óleo de gergelim, de amendoim e de milho, no lugar de óleos e gorduras animais para reduzir o nível de colesterol; e evite alimentos com LUn nível de colesterol alto, tais como gema de ovo, fígado e rins. Terceiro, coma mais alimentos que possam reduzir a pressão sangüínea, tais como aipo, \"hawthom fruit\", banana e caqui.",
+      "Lave 500g de aipo fresco e extraia o suco; misture o suco com SOml de mel e aqueça-o numa pequena panela. Divida e beba duas vezes ao dia.",
+      "Embeba os \"mung beans\" em água durante toda a noite; no dia seguinte, ferva com uma quantidade igual de alga marinha e um pouco de arroz (para consumo a longo prazo).",
+      "Coma 1 a 2 tomates frescos de estômago vazio, logo pela manhã por 15 dias. Repita de vez em quando como um programa de tratamento. Isto também é bom para constipação.",
+      "Cozinhe tomates com aipo como sopa; tempere com um pouco de sal.",
+      "Pique 750g de castanhas d'água e 750g de rabanetes; extraia o suco; misture com algumas colheradas de mel. Beba o suco duas vezes ao dia, metade da porção de cada vez .",
+      "Frite 20g de \"kelp\" com 20g de feijões-de-soja pretos; ferva a \"kelp\" e os feijôes-de-soja em 3 xícaras de água até que esta seja reduzida à metade. Tome como sopa.",
+      "Coma regularmente alga marinha, \"mung beans\", \"hawthom fruit\", moluscos bivalves e brotos de \"mung beans\". Doença Renal",
+      "Lave e descasque 300g de gengibre velho; esmague-o para extrair o suco; embeba 50g de tâmaras vermelhas em água por meia hora até ficarem macias; esmague-as depois de descascá-las e remova as sementes. Combine o suco de gengibre e esmague as tâmaras num reciPrevenindo e C1mmdo Doenças 153 piente; adicione lOOg de açúcar mascavo e vaporize até que se tomem como um pudim. Coma três vezes ao dia por 5 dias.",
+      "Os Chineses em aldeias pequenas possuem o hábito de comer \"açúcar de melancia\" como um alimento para tratar doença renal. Fatie a m elancia (apenas a parte vermelha) em pedaços finos e cozinhe sobre fogo baixo; então adicione um pouco de açúcar e coe; depois de 4 ou 5 dias ,",
+      "suco engrossará como mel, que é chamado de açúcar de melancia. Tome 1 colherada de cada vez, duas vezes ao dia. Nefrite",
+      "Usando uma faca afiada, faça um buracotriangularnumamelancia de 1,5kg para remover um pouco de polpa; coloque 70g de dentes de alho descascados dentro da melancia; cubra o buraco com um pedaço cortado da casca; vaporize a melancia com o alho; e coma tudo enquanto estiver quente.",
+      "Ferva 30g de casca de melancia seca em água. Beba como chá. Ou ferva 2 espigas de milho em água e beba como chá.",
+      "Coma 1 ou 2 pepinos frescos; ou esmague os pepinos para extrair o suco . Beba como chá; ou ferva os pepinos secos em água como sopa.",
+      "Prepare uma carpa grande removendo os órgãos internos; não raspe as escamas; use um pano para secar O peixe. Ferva a carpa em água com 1 xícara de feijões vermelhos pequenos sem sal. Beba o caldo, que também é bom para edema devido à nefrite durante a gravidez nas mulheres.",
+      "Para dificuldade ao urinar, coma mais alimentos que possam promover a urinação, tais como raízes de berinjela, pepino, sementes e casca de melão ceroso, espiga de milho, casca de melancia, feijões vermelhos pequenos, \"sea grass\", flor-de-lis, rabanete, feijões-de-soja pretos.",
+      "Evite alho fresco , cebola verde, cebolinho, pimenta-malagueta, nicotina, álcool. Bronquite",
+      "Esmague 500g de rabanete sem casca ou pêra e embeba em 2 colheres de chá cheias de mel por algumas horas antes de comer.",
+      "Em caso de rouquidão devido à bronquite, ferva um pouco de alcaçuz em água sobre fogo baixo. Tome como sopa.",
+      "Limpe uma galinha e descasque uma toranja; recheie a toranja na cavidade da galinha, coloque numa panela e adicione um pouco de água; vaporize a galinha com a toranja dentro . Coma a galinha e beba o caldo. Repita este remédio três vezes, em semanas alternadas.",
+      "Os pacientes idosos que sofrem de bronquíte crônica devem ficar mais energéticos comendo peixe, frutos do mar e inhame. 154 Sistema Chinês de Curas Alim entares Asma Brônquica",
+      "Lave e ferva uma abóbora-moranga com 2 colheres de chá cheias de mel em água até que a abóbora-moranga torne-se extremamente macia; use um caldo condensado de abóbora-moranga para misturar com 10g de suco de gengibre fresco. Ferva a nova mistura por alguns minutos. Beba 1 xícara de cada vez com água morna , três vezes ao dia.",
+      "Ferva junto 200g de coalhada de feijão, 60g de maltose ou mel e 30g de raban ete fresco. Coma em 1 dia para aliviar os sintoma s.",
+      "Ferva 2g de semente de erva-doce ou semente de anis, 10g de semente de damasco, 5g de casca de laranja seca e 8g de alga marinha em 3 xícaras de água até que esta seja reduzida a 1 xícara. Beba 1 xícara como chá de cada vez, três vezes ao dia. Tuberculose de Nódulos Linfáticos",
+      "Ferva junto 50g de lechia seca, 15g de alga marinha , 15g de \"kelp \" e 1 colher de chá cheia de vinho em água. Coma a mistura em 1 dia.",
+      "Ferva um pouco de macarrão em água até que fique meio cozido; adicione 50g de carnes de ostras frescas e 15g de alho fresco, esmagado; ferva novamente por alguns minutos e tempere com um pouco de sal. Coma todo o cozido em 1 dia.",
+      "Descasque90g de dentes de alho; ferva-os em água com 2 ovos de pata sem casca; quando os ovos estiverem bem cozidos, descasque-os e cozinhe novamente por um tempo. Beba o caldo e coma os ovos e o alho. (Ovos de pata devem ser usados no lugar de ovos de galinha, porque pod em tonificar a energia Yin e refrescar os pulmões.)",
+      "Ferva 120g de \"kelp\" fresca ou 60g de \"kelp\" seca com uma quantidade adequada de vinagre de arroz. Tome como sopa. Isto não é recomendado para pessoas com úlceras gástrica e duodenal ou ácido estomacal excessivo. Caxumba",
+      "Ferva 50g de flor-de-lis fresca ou 20g de flor-de-lis seca; adicione um pouco de sal. Beba como um caldo.",
+      "Esmague lOg de dentes de alho descascados em 10ml de vinagre de arroz para aplicação externa na região afetada; ou embeba 50g de feijões vermelhos pequenos em água por 30min e esmague-os para aplicação externa na região afetada; ou embeba 50g de feijões vermelhos pequenos durante toda a noite; ferva até que fiquem tenros no dia seguinte . Tome como sopa em 1 dia. Prevenindo e CIf rando Doenças 155 Hepatite Contagiosa",
+      "Ferva junto 4 xícaras de vinagre de arroz, 500g de ponta de costela de porco, 125g de açúcar mascavo e 125g de açúcar branco por 30min ou menos sem adicionar água. Coe e beba de cada vez como segue: 10 a 15ml para crianças de 5 a 10 anos de idade; 20 a 30ml para 11 a 15 anos de idade; 30 a 40ml para adultos; três vezes ao dia após as refeições por 1 mês como um programa de tratamento; e 2 a 3 programas de tratamento para pacientes crônicos.",
+      "Lave 100 a 150g de aipo fresco e extraia o suco; vaporize o suco com mel. Coma quente uma vez ao dia. Gastroenterite",
+      "Asse 100g de folhas de chá e 50g de gengibre fresco; quando secar, moa até tornarem-se pó. Tome 3g do pó de cada vez, três vezes ao dia, com água morna. Este é um remédio bom para gastroenterite aguda.",
+      "Ferva 50g de \"hyacinth beans\" em água como uma dosagem diária; divida e coma duas vezes ao dia. Ou asse os \"hyacinth beans\" até secar e moa até tornarem-se pó. Tome 15g do pó em água morna de cada vez, duas vezes ao dia. Um outro remédio bom para gastroenterite aguda.",
+      "Vinho feito de uvas é considerado bom para gastroenterite crônica.",
+      "Misture grandes pitadas de noz-moscada moída, canela moída e uma pitada pequena de cravo-da-índia moído; divididos em três porções iguais. Tome 1 porção em água morna de cada vez, três vezes ao dia: bom para gastroenterite crônica e estômago frio. , Ulceras Gástrica e Duodenal",
+      "Um médico Japonês bem conhecido relatou que um professor alemão na Universidade de Berlim usava pó de alcaçuz para tratar pacientes com úlceras gástricas com resultados notáveis. De acordo com este relatório num jornal médico Alemão, 38 pacientes foram tratados com 20 a 25g de alcaçuz todos os dias por 6 semanas; as úlceras gástricas passaram completamente em 32 casos, verificadas pelo exame de raio X; sensações subjetivas de desconforto estomacal foram eliminadas em 3 casos. Os 3 casos restantes não mostraram efeitos, mas quando subseqüentemente tratados por cirurgia foi descoberto que possuiam cânceres de estômago.",
+      "Durante o tratamento, o consumo de sal deve ser controlado e os pacientes devem receber dietas altamente protéicas e vitamínicas. O professor destacou que se um paciente com úlcera gástrica não responder ao tratamento com pó de alcaçuz, a possibilidade do câncer de estômago pode ser indicada . Subseqüentemente, um professor e dois assistentes da Universidade de Kyushu no Japão também relataram seus tratamentos com pó de alcaçuz para 6 pacientes Japoneses com úlcera gástrica; os resultados indicaram que a dor abdominal e a azia acabaram completamente dentro de 1 semana, os sucos gástricos retomaram ao normal e as fezes estavam livres de sangue dentro de 2 semanas. Os exames de raio X depois de 1 mês verificaram que os pacientes estavam completamente curados. Esta cura drástica de úlceras gástricas, que eles salientaram, nunca tinha ocorrido no passado, exceto por cirurgia.",
+      "Embeba 50g de amendoins frescos em água por 30min, drene e esmague-os; aqueça 200ml de leite fresco até a ebulição e adicione os amendoins; aqueça novamente até a ebulição; remova do fogo para esfriar; adicione 30ml de mel. Coma uma vez ao dia, Ih antes de dormir.",
+      "Pique e esmague 50g de batatas frescas sem casca; extraia o suco e adicione uma quantidade adequada de mel ao suco. Beba o suco de estômago vazio logo pela manhã por 20 dias. O sabor azedo das batatas será neutralizado pelo mel.",
+      "Evite alimentos irritantes (bebida alcoólica, café, pimenta-malagueta e pimenta-do-reino, gengibre), alimentos com uma energia fria (caranguejo, molusco bivalve, alga marinha, \"mung beans\", cera da cabaça) e alimentos com um sabor azedo (vinagre, limão, ameixa, \"hawthorn fruits\" ).",
+      "Ferva 3 coalhadas de feijão com 60g de açúcar mascavo num copo de água por 10rnin. Beba como uma sopa. Este remédio é recomendado para sangramento, vômito de sangue ou eliminação de fezes pretas causadas por úlceras gástrica e duodenal.",
+      "Ferva 50g de lágrimas-de-jó e lOg de alcaçuz em 2 xícaras de água. Beba como sopa.",
+      "Ferva raízes de lótus frescas em água sobre fogo baixo para fazer um suco concentrado. Beba 1 xícara ao dia por 2 semanas como um programa de tratamento. Gastroxia (Hipercloridria)",
+      "Tome 5g de pó de osso de haliote com água morna de cada vez, meia hora antes das refeições, três vezes ao dia. Evite ficar muito faminto, muito cheio ou muito cansado. Para fazer pó de osso de haliote, lave os ossos e asse até secarem; raspe a camada mais externa e moe até tomar-se pó. Guarde o pó num jarro. Prevetl;\"do e Curando Doellças 157",
+      "Coma um pouco de gengibre fresco ou frutas doces ou chá forte ou algumas fatias de alho 2 ou 3h após as refeições para aliviar dor ou azia.",
+      "Toste conchas de ostras e moa-as até tornarem-se pó. Torne 2g do pó em água morna de cada vez, três vezes ao dia. Dor de Estômago",
+      "Um médico Chinês relatou que tratou 34 casos de doenças frias com resultados notáveis; estes incluem dor de estômago fria, vômito de ácido, inchação abdominal, ruído intestinal, diarréia, dor peitoral, tosse e dor abdominal durante a menstruação nas mulheres. As doenças anteriores são classificadas como doenças frias, porque todos os pacientes mostraram três sintomas frios básicos: aversão pelo frio por fazer os seus sintomas piorarem , ausência de febre e nenhuma sensação de sede . O remédio consiste de 10 a 15g de alcaçuz e gengibre seco misturados juntos corno urna dosagem para 1 dia.",
+      "Um médico Chinês relatou seu tratamento bem-sucedido de 20 casos de dores de estômago frias. Para fazer este remédio: combine 10 grãos de pimenta-do-r eino crus, 3 tãmaras vermelhas descaroçadas, 5 sementes de damasco (doce ou amargo) e mergulhe em água morna por 2 dias (troque a água 5 vezes durante esse período); drene e esmague os três ingredientes, misture-os com uma pequena quantidade de água morna para fazer um caldo grosso. Beba o caldo com água para uma dosagem (reduza para as crianças). Um paciente com 75 anos de idade tratado neste programa que tinha uma história de dor de estômago de 10 anos veio à clínica porque sua dor de estômago crônica foi provocada por uma refeição fria no anoitecer do dia anterior. Sua dor de estômago sumiu apenas 30min depois de beber o caldo. O médico Chinês visitou-o 1 mês depois e encontrou o paciente em bom estado de saúde.",
+      "Aqueça 3;' de xícara de leite fresco com 1 colher de chá cheia de suco de gengibre fresco e um pouco de açúcar; beba tudo. Isto também é bom para vômito, arroto e dificuldade de deglutição .",
+      "Dissolva 4g de canela moída em uma xícara de água morna; cubra-a por 15min. Beba como chá. Dor Abdominal",
+      "Ferva alguns dentes de alho em água com açúcar demerara sobre fogo baixo. Beba uma xícara de cada vez, três vezes ao dia, após as refeições. 158 Sistema Chinês de Curas Alime/1tares",
+      "Mastigue lentamente algumas ameixas azedas secas como se mastigasse um chiclete.",
+      "Consuma uma grande quantidade de cebolinhas cozidos. Disenferia Bacilar",
+      "Numa clínica Chinesa, 24 pacientes de disenteria bacilar foram curados por plantas de tomate. Para fazer o remédio: lave os caules do tomate, ramos e folhas de 2 a 3 plantas de tomate (aproximadamente 1kg); ferva-os em água por 3h e faça suco extraindo através de um pano limpo. Beba 1 a 2 xícaras de cada vez, 6 a 10 vezes ao dia.",
+      "Dois hospitais Chineses na Província de Sandong relataram que de 91 pacientes, 34 com disenteria bacilar e 57 com enterite, foram tratados por um simples remédio com resultados notáveis. O remédio: \"hawthom fruits\" tostadas e flores de \"hyacinth beans\"; os pacientes, divididos em três grupos, foram tratados separadamente por três remédios - \"hawthorn fruits\" tostadas, flores de \"hyacinth beans\" e uma combinação dos dois ingredientes; 24 casos de disenteria bacilar (83,33%) foram curados por apenas \"hawthorn fruits\" tostadas, 35 casos de enterite aguda (71,43%) por apenas flores de \"hyacinth bean\". Destaca-se também \"hawthom fruits\" cruas e tostadas que não possuem diferenças significativas nos resultados de tratamento, o que significa que um ou outro pode ser usado para o tratamento.",
+      "Corte rabanetes frescos descascados; adicione um pouco de vinagre de arroz e açúcar. Coma duas vezes ao dia.",
+      "Coma batatas vaporizadas com mel, três vezes ao dia.",
+      "Coloque 100g de foll1as de má verdes em 700ml de água; aqueça até a ebulição e cozinhe por 20min ou até que esteja reduzida a 75m! de água; remova do calor para esfriar; adicione 25m! de vinho branco. Beba 2m! de cada vez, três vezes ao dia. Disenferia Amebiana Crônica",
+      "Mastigue 1 dente de aTho de cada vez, três vezes ao dia por 7 dias, junto com outros alimentos.",
+      "Ferva 50g de casca de goiaba fresca em água como uma dosagem diária.",
+      "Os dois remédios anteriores não são adequados para disenteria amebiana aguda. Prevenindo e Ctlrando Doenças 159 Nematódeo no Trato Biliar",
+      "Uma paciente de 27 anos de idade com ascarÍase biliar foi curada por uma fórmula de três ingredientes: 15g de alcaçuz, 12g de mel e lOg de arroz moído não glutinoso. Para fazer o remédio, ferva o alcaçuz em água; então despeje o suco de alcaçuz quente na mistura de mel e pó de arroz . Beba quente. Quando a paciente com 10 nematódeos foi admitida à clínica, estava com dor severa no abdômen superior direito e vômito freqüente. Ela foi tratada por ambas Medicinas Chlnesa e Ocidental por 3 dias sem resultados, mas com dor severa (os médicos absteram-se de usar analgésicos fortes devido a sua gravidez). Ao tomar este reméclio, a dor da paciente desapareceu dentro de 1 dia e recuperou-se completamente dentro de 6 dias quando algumas ervas Chlnesas comparáveis à piperazina também foram administradas; ela deu à luz a um menino poucos meses depois .",
+      "Misture 40ml de vinagre de arroz com uma quantidade igual de água morna para 1 dosagem. Beba três vezes ao dia por 3 dias.",
+      "Beba lOmI de suco de gengibre fresco com água morna de cada vez, uma vez a cada hora por quatro vezes; repita três vezes ao dia por 2 dias.",
+      "Moa 10 grãos de pimenta-do-reino; adicione 100ml de água e ferva por 30min . Coe e beba todo o líquido de cada vez, duas vezes ao dia.",
+      "As três receitas anteriores podem ser usadas alternativamente; depois dos sintomas serem eliminados, a piperazina deve ser usada para prevenir urna recaída. Anemia por Deficiência de Ferro",
+      "Ferva 50g de \"mung beans\" e 50g de tâmaras vermelhas secas em água até que os feijões se rompam; adicione um pouco de açúcar mascavo. Beba uma vez ao dia por 15 dias como um programa de tratamento.",
+      "Coloque 100g de arroz doce ou arroz integral e 30g de feijões-de-soja pretos em água fervendo; ferva em fogo baixo a té que fiquem meio cozidos; aclicione 30g de tâmaras vermelhas e continue cozinhando até estarem bem cozidos; adicione açúcar mascavo como tempero. Coma uma vez ao dia. Anemia Macrocítica",
+      "Lave 150g de espinafre; corte 50g de fígado de porco. Aqueça a água até a ebulição; adicione o espinafre e o fígado de porco e ferva por mais alguns minutos; tempere com sal. Coma uma vez ao clia até recuperar -se.",
+      "Prepare um rim de porco corno você faria normalmente; embeba-o em água morna por 30min; corte-o em pedaços finos e ferva os pedaços em água. Adicione sal corno tempero. Coma uma vez ao dia ou todo dia até recuperar-se. (Rim de boi, de vitela ou de cordeiro podem ser usados como substitutos.) Anemia Aplásica",
+      "Embeba 30g de cogumelos pretos em água por 30min; drene. Ferva os cogumelos com 30 tâmaras vermelhas e um pouco de açúcar mascavo. Coma uma vez ao dia até recuperar-se. Granulopenia",
+      "Ferva 50g de cogumelos frescos; adicione sal corno temp ero. Coma diariamente até recuperar-se. Hemofilia",
+      "Coma 50g de amendoins frescos com casca, incluindo o amendoim e a pele, três vezes ao dia por 2 semanas corno um programa de tratamento. Púrpura Anafilactáide (Púrpura Alérgica)",
+      "Dois médicos Chineses relataram que curaram 6 casos de púrpura atrombopênica, incluindo púrpura simples e alérgica, usando tâmaras verme lhas . Para o remédio, lave tâmaras vermelhas frescas (ou secas). Coma 10 tâmaras de cada vez, três vezes diariamente, até que a púrpura tenha passado completamente. Nenhwn outro remédio é usado, exceto em um caso, que também é dado vitamina s C e K e \"benadryl\". A púrpura desapareceu dentro de 2 dias em 1 caso,3 dias em 3 casos, 7 dias em 2 casos, com uma média de 4 dias. Urna visita freqüente indicou nenhuma recaída em 5 casos e recaída em 1 caso, possivelmente causada por terminação prematura do tratamento. O médico indicou que o tratamento deveria continuar por alguns dias depois da púrpura ter desaparecido , para prevenir uma recaída.",
+      "Ferva 100g de cevada com l5g de tâmaras vermeUlas em 500ml de água até que esta seja reduzida a l50ml. Coma tudo como uma dosagem diária.",
+      "Coloque 250g de tâmaras vermelhas em 1.500ml de água e aqueça até a ebulição; esmague as tâmara s assim que elas incl1arem; continue ferPrevenindo e Curando Doenças 161 vendo por 40min, então drene sobre uma tigela e guarde o suco. Adicione 300m] de água nas tâmaras e ferva sobre fogo baixo por 20min; drene novamente e guarde o suco. Ferva o suco guardado até que seja reduzido a 750ml. Beba 1 xícara do suco de cada vez, três vezes ao dia.",
+      "Prepare 30g de cascas de amendoim e30g de tâmaras vermelhas. Ferva os 2 ingredientes; drene e guarde o caldo. Beba todo o caldo de uma vez como uma dosagem diária; repita por 5 dias como um programa de tratamento. Doença Cardíaca Arterosclerótica Coronária",
+      "Ferva 50g de feijões-de-soja amarelos em água; adicione sal como tempero. Coma em 1 dia; repita sempre que for necessário.",
+      "Ferva 30 \"hawthom fruits\" em água; tempere com açúcar e coma esta quantidade a cada dia do tratamento; repita sempre que for necessário. Bócio Simples",
+      "Asse 500g de alga marinha e 500g de \"sea grass\" até secar; moa até tomarem-se pó. Tome lOg do pó em água morna de cada vez, uma vez ao dia.",
+      "Ferva lOg de alga marinha e lOg de \"kelp\" em água. Beba o caldo como chá. Insolação",
+      "Ferva 50g de \"hyacinth beans\" em SOOml de água até que esta seja reduzida a 300m I; adicione sal como tempero. Beba metade do suco resfriado de cada vez, duas vezes ao dia, e coma os feijões.",
+      "Descasque uma cera da cabaça pesando SOOg; esmague-a para extrair",
+      "suco; tempere com sal. Beba lentamente.",
+      "Lave e descasque um rabanete; rasp e-o para extrair o suco . Beba-o com água fria.",
+      "Fatie um melão amargo em pedaços pequenos; cozinhe em água como sopa ou como um ingrediente numa receita. Alcoolismo",
+      "Despeje água fervendo num bule de chá contendo 15g de folhas de chá; aguarde por lOmin. Beba tudo de uma vez.",
+      "Ferva 60g de feijões-de-soja pretos em água. Beba como uma sopa.",
+      "Coloque lSg de açúcar em 30ml de vinagre de arroz; adicione um pouco de água quente para dissolver o açúcar. Beba tudo de uma vez.",
+      "Ferva 30g de \"hyacinth beans\" em água. Beba como um caldo.",
+      "Corte finamente 2g de casca de laranja seca; adicione 2 ameixas descaroçadas fatiadas; ferva a casca e as ameixas em 2 copos de água sobre fogo baixo por 30min; drene sobre urna tigela; adicione suco de gengibre fresco e chá forte ao líquido. Beba como chá.",
+      "Lave 20g de feijões-de-soja pretos; abra um coco (guardando o líquido) e coloque os feijões-de -soja pretos e feche-o novamente; vaporize",
+      "coco numa tigela por 4h; adicione sal ao líquido do coco.",
+      "Use o ginsém Americano ou o Ocidental (não o ginsém Coreano ou o Chinês, que possuem conjuntament e ações difer entes) ou em forma de caldo ou de pó, uma vez ao dia. Fumo",
+      "Rale um rabanete fresco e misture com 2 colheres de chá cheias de mel. Beba como suco.",
+      "Prepare lOOg de coalhada de feijão fresco e 50g de açúcar demerara; faça alguns buracos nas coalhadas de feijão e coloque açúcar demerara nos buracos; vaporize as coalhadas de feijão. Quando uma pessoa tem desejo de fumar, coma algumas colheradas de coalhada de feijão com açúcar demerara dentro para desistir de fumar. Isto fará o fumante habitual querer vomitar à exposição do cheiro de tabaco. DOENÇAS E CONDIÇÕES FEMININAS Distúrbios Menstruais",
+      "Prepare 120g de fígado de cordeiro, 90g de cebolinho, 1 colher de sopa de óleo de amendoim e um pouco de molho de soja leve. Corte os cebolinhos e o fígado como você faria na culinária normal. Aqueça uma\"wok\"ou frigideira sobre fogo alto e despeje o óleo na panela; aclicione os cebolinhos e frite mexendo por um tempo; despeje o fígado na \"wok\" e frite mexendo novamente por um tempo; tempere com molho de soja leve e cozinhe por alguns segundos a mais. Bom para menstruação irregular e sangramento vaginal; também é bom para corrimento vaginal.",
+      "Frite 30g de cogumelo preto sobre fogo baixo; adicione uma tigela de água e continue a cozinhar; adicione 15g de açúcar como tempero. É bom para fluxo menstrual excessivo que somente pertence a um sintoma quente. Este remédio não é recomendado para tratamento de fluxo menstrual excessivo devido à deficiência de sangue . Prevenindo e Curando Doenças 163",
+      "Raspe e fatie 120g de aipo fresco e 120g de raizes de lótus como você faria na culinária normal; coloque uma \"wok\" ou frigideira sobre fogo alto e despeje 1 colher de sopa de óleo de amendoim na panela; quando estiver quente, acticione o aipo e as raízes de lótus e frite mexendo por Smin antes de adicionar o sal como tempero. É bom para menstruação irregular e sangramento vaginal de nahrreza quente.",
+      "Ferva 30g de gengibre seco em água junto com 30g de açúcar mascavo e 30g de tâmaras vermelhas descaroçadas. É bom para dor menstrual de natureza fria.",
+      "Prepare 24g de gengibre fresco, 30g de tâmaras vermelhas e 9g de pimenta-malagueta. Corte o gengibre e a pimenta como você faria na culinária normal; ferva os três ingredientes em 3 copos de água até que esta seja reduzida à metade. Beba quente para aliviar dor menstrual fria.",
+      "Cozinhe 60g de feijões-de-soja pretos, 2 ovos com casca e 120g de vinho de arroz sobre fogo baixo; descasque os ovos depois de cozinhar e então cozinhe-os novamente; adicione vinho de arroz. Coma os ovos e beba o caldo quente para aliviar dor menstrual devido à deficiência energétka e sangüínea.",
+      "Ferva 5g de galhinhos de canela, 15g de \"hawthorn fruits\" e 30g de açúcar mascavo em 3 copos de água até que esta seja reduzida à metade; acticione açúcar mascavo e continue a ferver por alguns segundos. Beba quente para aliviar a dor menstrual devido a frieza e coagulações sangüíneas.",
+      "Ferva 50g de salsa fresca em 3 xícaras de água até que esta seja reduzida a 1 xícara; quebre 1 ovo na água fervendo (o ovo coagula para parecer flores); acticione algum tempero. Coma para aliviar dor menstrual. Esta receita também é boa para dor de estõmago e dor de cabeça nervosa.",
+      "Frite uma siba de 250g em óleo vegetal com 40g de gengibre fresco fatiado finamente; tempere com sal. Este é um remédio para aliviar a supressão da menstruação. Leucorréia",
+      "Ferva 15g de \"hyacinth beans\", 30g de inhame, 60g de arroz doce em SOOml de água sobre fogo baixo. Beba como sopa para aliviar corrimento vaginal esbranquiçado. Ou ferva 60g de \"hyacinth beans\" em água; adicione um pouco de açúcar como tempero. Beba como chá para aliviar corrimento vaginal esbranquiçado. Ou, frite urna quantidade igual de \"hyacinth beans\" e inhame e faça chá para interromper o corrimento vaginal esbranquiçado.",
+      "Ferva 30g de lágrimas-de-jó em 750mJ de água com 30g de tâmaras vermelhas descaroçadas e 60g de arroz doce sobre fogo baixo. Beba como sopa para aliviar corrimento vaginal esbranquiçado devido à fraqueza.",
+      "Ferva 2 sibas com 2S0g de carne de porco magra em água; tempere com sal. Coma uma vez ao dia por 5 dias como um programa de tratamento para aliviar corrimento vaginal esbranquiçado.",
+      "Ferva 10 folhas secas de rabanete em 3 copos de água; adicione um pouco de sal. Beba o caldo quente para induzir a transpiração, duas vezes ao dia, por 1 a 2 meses para aliviar corrimento vaginal esbranquiçado. Sintomas Associados com a Gravidez",
+      "Limpe uma carpa dourada de 2S0g como você faria na culinária normal; vaporize-a junto com 90g de feijões vermelhos pequenos até que estes estejam macios . Em geral, o edema durante a gravidez deve ser curado depois de comer a mistura 5 ou 7 vezes.",
+      "Ferva SOg de casca de cera da cabaça e SOg de feijões vermelhos pequenos em água sem adicionar sal. Beba como chá para aliviar edema durante a gravidez.",
+      "Prepare 12Sg de amendoins frescos, 10 tâmaras vermelhas, 30 dentes de alho fatiados finamente e lSg de óleo de amendoim . Aqueça uma \"wok\" ou frigideira sobre fogo alto; despeje o óleo de amendoim na \"wok\" e frite mexendo o alho; então adicione amendoins e tâmaras com 1.000ml de água; ferva até que os amendoins estejam bem macios. Este prato deve produzir efeitos para edema durante a gravidez depois de comer a mistura por 7 a 10 vezes.",
+      "Vaporize 9g de casca de toranja e 12g de azeitonas marrons salgadas Chinesas em 600 a 700ml de água até que estas estejam completamente cozidas . Em geral , este remédio deve aliviar náusea matinal depois de comer a mistura por 5 a 7 vezes .",
+      "Ferva 15 a 20g de casca de toranja em água. Beba como chá para aliviar náusea matinal.",
+      "Aqueça 1.000m l de água até a ebulição sobre fogo alto; adicione 100g de feijões-de-soja pretos, 30g de dentes de alho fatiados e 30g de açúcar mascavo; ferva sobre fogo baixo até que os feijõesde-soja estejam completamente cozidos. Em geral, o edema durante a gravidez deve ser curado depois de comer a mistura por 5 ou 7 vezes .",
+      "Frite 2S0g de arroz doce com 30ml de suco de gengibre fresco até que o arroz se rompa; moa até tornar-se pó. Tome 10 a 20g em água morna de cada vez, duas vezes ao dia, para curar náusea matinal.",
+      "Aqueça 60ml de vinagre de arroz até a ebulição; adicione 30g de açúcar e mexa até dissolver; quebre os ovos no vinagre fervendo. Quando",
+      "ovo estiver cozido, beba tudo para aliviar náusea matinal. Prevellilldo e Cllnmdo Doenças 165",
+      "Frite 1 xícara de farelo de arroz; então embrulhe numa sacola de pano ou em tala garça; adicione água e ferva sobre fogo baixo; adicione um pouco de açúcar, se desejar. Beba como chá para curar beribéri durante a gravidez.",
+      "Embeba 100g de feijões vermelhos pequenos por toda a noite; no dia seguinte, ferva em 3 copos de água até que os feijões comecem a romper. Beba como sopa para curar edema e retenção de água durante a gravidez. Sintomas Pós-parto",
+      "Ferva 150g de coalhada de feijão com 50g de açúcar mascavo em 3 xicaras de água; adicione 50ml de vinho de arroz quando o açúcar dissolver. Beba tudo de uma vez, uma vez ao dia por 5 dias, para aumentar o fornecimento de leite após o parto.",
+      "Esmague um caranguejo de rio; ferva-o com 60ml de vinho de arroz. Coma em 1 dia. Em geral, este prato deve produzir resultados no aumento do fornecimento de leite seguido do parto depois de comer a mistura por 3 a 5 vezes.",
+      "Prepare 30g de flor-de-lis e 60g de carne de porco magra como você faria na culinária normal; vaporize os dois ingredientes sobre fogo alto até que a carne de porco esteja bem cozida. Coma tudo para aumentar",
+      "fornecimento de leite após o parto e também para aliviar mastite.",
+      "Ferva 500g de mamão junto com 500ml de vinagre de arroz e 30g de gengibre fresco sobre fogo baixo por 40min. Beba como chá, duas vezes ao dia, 1 copo pequeno de cada vez, para aumentar o fornecimento de leite após o parto e também para aliviar loquio stase.",
+      "Frite 120g de malte sobre fogo baixo por alguns segundos; adicione 750rnl de água e aqueça até a ebulição e cozinhe até que o malte esteja completamente cozido; adicione 30g de açúcar mascavo. Beba como sopa uma vez ao dia por 5 a 7 dias para interromper a secreção de leite .",
+      "Ferva 30g de \"hawthorn fruits\" em água até estarem bem macios; adicione 30g de açúcar mascavo . Beba como chá para aliviar loquiostase e coagulações sangüíneas após o parto.",
+      "Frite 500g de feijões-de-soja pretos sobre fogo baixo até que se tornem meio queimados, adicione 350ml de vinho de arroz e ponha em escabeche por toda a noite. No dia seguinte , coe e beba meio copo de vinho de cada vez, três vezes ao dia, para aliviar dor reumática após o parto.",
+      "Coma trigo rachado e arroz integral de forma regular para promover a secreção de leite.",
+      "Ferva 10g de semente de anis em água para fazer sopa; adicione um pouco de vinho. Beba para promover a secreção de leite. Outras Doenças de Mulheres",
+      "Coloque lkg de lechias frescas com sementes (ou lechias secas na quantidade reduzida) em 1 L de vinho de arroz; sele o recipiente e guarde por 1 semana. Beba duas vezes ao dia, dependendo do seu apetite, para curar prolapso do útero.",
+      "Lave e vaporize alguns caranguejos; quando estiverem completamente cozidos, adicione 2 colheres de chá cheias de vinho de arroz e vaporize por mais lmin. Beba o caldo e coma o caranguejo com molho de soja para aliviar dor abdominal após o parto.",
+      "Coloque uma toranja ou sua casca na banheira enquanto toma banho; isto desprenderá um cheiro aromático, é considerado bom para aquecer sensações frias nas mulheres.",
+      "Vaporize feijões-de-soja pretos e seque-os ao sol; moa até tornarem-se pó; adicione uma quantidade igual de sementes de gergelim moído e um pouco de mel; beba os três ingredientes com água morna para curar frigidez nas mulheres . OUTROS PROBLEMAS DE SAÚDE A Pro lapso do Anus",
+      "Ferva 200g de salsa fresca em água. Lave o ânus com o líquido uma vez ao dia.",
+      "Ferva folhas de figueira em água. Use o líquido para lavar a região afetada ou quando estiver tomando banho. Hemorróidas",
+      "Frite 250g de moluscos bivalves em um pouco de óleo de amendoim; adicione lOg de gengibre fresco fatiado e um pouco de água e cozinhe até que os moluscos bivalves estejam bem macios; adicione um pouco de sal. Coma de estômago vazio, em dias alternados, 7 vezes como um programa de tratamento.",
+      "Coma 1 a 2 bananas com a casca, de estômago vazio, preferencialmente logo de manhã.",
+      "Coma 1 a 2 figos de estômago vazio logo pela manhã. Ou ferva folhas de figueira em água; use o líquido para lavar a região afetada ou quando estiver tomando banho. Prevenindo e Cural1do Doenças 167",
+      "Vaporize 60g de figos secos numa quantidade adequada de água com 100g de carne de porco magra; tempere a seu gosto. Coma por um mês como um programa de tratamento.",
+      "Um médico do exército Chinês escreveu um relatório sobre seu tratamento bem-sucedido de 27 casos de hemorróidas por um remédio simples de figos. Para usar o seu remédio, prepare 10 figos frescos ou secos e ferva sobre fogo baixo em 1 L de água por 30min depois que esta começar a ferver; a água deve ser reduzida a aproximadamente 0,7L. Coma S figos de cada vez, duas vezes ao dia; também, repetidamente lave a região afetada com a água quente dos figos por 20min. Durante o tratamento, o paciente deve abster-se de comer alimentos pungentes ou quentes . A história das hemorróidas entre os 27 casos curados é como segue: 3 casos mais de 10 anos; 7 casos entre 6 e 10 anos; 17 casos entre 1 e S anos; os pacientes recuperaram-se dentro de 12 tratamentos em 4 casos, dentro de S tratamentos em 9 casos e dentro de 6 a 11 tratamentos em 14 casos, com a média sendo de 7,6 tratamentos .",
+      "Ferva 30g de cogumelos pretos com 30 tãmaras vermelhas sobre fogo baixo. Coma urna vez ao dia por 10 dias como um programa de tratamento.",
+      "Ferva 60g de flor-de-lis em água com urna quantidade adequada de açúcar mascavo. Coma antes do café da manhã por 1 semana como urn programa de tratamento.",
+      "Descasque 2 bananas e vaporize-as com uma quantidade adequada de açúcar em pedra. Coma-as duas vezes ao dia por 1 semana. Mastite",
+      "Ver SINTOMAS PÓS-PARTO.",
+      "Ferva lS0g de cabeças brancas de cebolas verdes e 60g de malte em SOOml de água por 20min; embrulhe as cabeças de cebola e o malte num pano branco limpo. Use quente para esfregar ao longo do seio até",
+      "mamilo, particularmente na área dura, até que o seio torne-se vermelho e macio. Este tratamento é aplicável apenas nos estágios iniciais de mastite aguda previamente à supuração . Carbúnculo",
+      "Ver o remédio de feijão em ERlSIPELAS.",
+      "Asse alguns feijões vermelhos pequenos e moa-os até tornarem-se pó; misture com mel para fazer um ungüento . Aplique externamente na região afetada até curar; mude de curativo assim que secar. 168 Sistema CIJ illês de Cliras Alimentares Erisipelas",
+      "Embeba 1kg de trigo integral em 1.500m! de água por 3 dias; esmague",
+      "trigo para extrair o suco; armazene o suco num recipiente até que ele assente, descarte o líquido claro; seque o sedimento ao sol. Frite o sedimento seco sobre fogo baixo até ficar amarelado; moa até tomar-se pó. Misture o pó com vinagre de arroz. Aplique externamente na região afetada e nas suas áreas circundantes antes da erupção; após a erupção, aplique somente nas áreas circundantes deixando o meio aberto para drenagem de pus.",
+      "Moa 50g de feijões vermelhos pequenos até tornarem-se pó; adicione 3 claras de ovos para fazer um ungüento. Aplique externamente na região afetada, uma a duas vezes ao dia . Este tratamento também pode ser aplicado na inchação do carbúnculo e queimaduras. Queimadura",
+      "Um médico Chinês relatou: \"Nos últimos 20 anos, tenho aplicado suco de gengibre fresco para tratar 400 ou 500 casos de queimaduras por água quente ou fogo, e não tenho falhado um único caso.\" Para usar este método de tratamento, esmague gengibre fresco e extraia o suco . Aplique para queimaduras com uma bola de algodão, que deve interromper a dor instantaneamente; e também pode curar inflamação, reduzir inchação e eliminar pústulas depois das queimaduras terem pustulado.",
+      "Aplique suco de a/oe fresco na queimadura .",
+      "Esmague a polpa da abóbora-moranga fresca e aplique externamente na queimadura .",
+      "Esmague a polpa de cera da cabaça fresca e aplique externamente na queimadura. Ulceração Produzida pelo Frio",
+      "Pique e esmague 5 pimentas vermelhas, fervendo em 100m! de água. Lave a ulceração produzida pelo frio duas vezes ao dia .",
+      "Misture 70ml de mel com 30m! de toucinho para fazer um ungüento. Aplique externamente na ulceração produzida pelo frio.",
+      "Aqueça pimentas em óleo de gergelim. Aplique o óleo frio na ulceração causada pelo frio. Prevenindo e Curando Doenças 169",
+      "Embeba pimentas vermelhas em álcool. Use uma bola de algodão para aplicar na região afetada, três vezes ao dia, ambos para curar e prevenir ataques futuros. Vitiligo",
+      "Fatie um pedaço de gengibre fresco ou dente de alho. Esfregue a região afetada até que o suco acabe; repita o mesmo procedimento com uma fatia nova de gengibre ou alho até que as sensações quentes sejam geradas na pele, três a quatro vezes ao dia, até que a pele retorne ao normal. Este tratamento também pode ser aplicado para alopecia areada e alopecia prematura. Alopecia Areada e Alopecia Prematura",
+      "Cozinhe sementes de gergelim até que estejam meio queimadas; moa até tornarem-se pó e misture com toucinho frio para fazer um ungüento. Aplique externamente na região afetada, algumas vezes diariamente , até que o cabelo comece a crescer novamente.",
+      "Pique e esmague lOg de pimentas vermelhas; embeba em SOml de vinho branco (álcool a 60%) por 10 dias; coe e aplique o vinho na região afetada, algumas vezes diariamente .",
+      "Trate do mesmo modo como no vitiligo. Infecção por Cogumelo, Queimadura, Tinea Corporis e Psoríase",
+      "Pique e esmague 2S0g de gengibre fresco e embeba-o em SOOml de vinho branco por 2 dias. Use uma bola de algodão para aplicar externamente na região afetada, várias vezes ao dia.",
+      "Esmague dentes de alho descascados; misture com óleo de gergelim ou toucinho para fazer um ungüento. Corte o cabelo na área afetada antes da aplicação, uma vez ao dia, e aplique externamente na região afetada.",
+      "Misture 20g de cravos inteiros com álcool a 70% para fazer 100ml. Aplique externamente na região afetada.",
+      "Aplique vinagre na região afetada, três vezes ao dia. Ou encha um saco plástico com vinagre e amarre o saco envolta da mão por toda a noite para curar unhas acizentadas. 170 Sistema Cld1lês de Cums Alimel1tares",
+      "Ferva alguns ovos e remova a clara do ovo; frite as gemas até ficarem secas e queimadas; misture as gemas com água fervendo de modo que",
+      "óleo da gema flutue sobre a superfície. Esfrie e use para esfregar na região afetada. Insônia",
+      "Esmague uma cebola e coloque-a num jarro. Aspire o vapor através do nariz enquanto estiver na cama. Normalmente, você sentirá sono dentro de 15min .",
+      "Embrulhe 30g de farelo de trigo num pano limpo como um saco de chá; faça chá com o farelo. Beba tudo de uma vez na hora de dormir.",
+      "Prepare 50g de flor-de-lis fresca (reduzida à metade se a flor-de-lis seca for usada) e 15g de açúcar em pedra; ferva em água por 30min; remova as flores-de-lis; adicione 15g de açúcar em pedra ao liquido e ferva por 2rrUn. Beba Ih antes de dormir, uma vez ao dia, por 1 semana.",
+      "Coma gema de ovo cozida todos os dias por algumas semanas.",
+      "Frite 20g de trigo até ficar amarelado; adicione 5g de alcaçuz e 10 tâmaras vermelhas; ferva os três ingredientes em água sobre fogo baixo até que esta seja reduzida à metade. Beba como sopa. Neurastenia",
+      "Ver o último remédio em INSÓNlA.",
+      "Consumo regular de mel com leite no café da manhã é um bom remé dio.",
+      "Coma alho regularmente.",
+      "Coma nozes regularmente. Soluço",
+      "Um médico Chinês no Hospital Provincial Hebei na China relata que curou mais de 30 casos de soluço com fatias de gengibre fresco. Mas ele adverte que quando o paciente sob tratamento também está sofrendo de infecções bucais agudas ou laringite, este método deve ser aplicado com muito cuidado. O método é como se segue: selecione gengibre fresco suculento e corte-o em fatias; quando o soluço ocorrer, coloque 1 fatia de gengibre na boca e mastigue-a lentamente e engu la",
+      "suco; em geral, 1 a 3 fatias devem interromper o soluço. Prevenindo e Curando Doenças 171",
+      "Ferva 15g de \"sword beans\" em água. Beba como sopa.",
+      "Asse lechias frescas com cascas até que fiquem meio queimadas; moa até tomarem-se pó. Beba com água morna.",
+      "Prepare 30g de gengibre fresco e extraia o suco; misture com 30ml de mel. Beba tudo lentamente.",
+      "Misture 20rnl de vinagre de arroz com uma quantidade igual de água fria . Beba tudo lentamente. Constipação Crônica",
+      "Descasque e pique 500g de batatas-doces como você faria na culinária normal: ferva as batatas em água; adicione sal ou açúcar como tempero. Coma antes de dormir.",
+      "Pique 100g de rabanete branco e extraia o suco; misture com um pouco de mel. Coma todos os dias.",
+      "Misture 2 colheres de chá cheias de mel com um copo de água morna. Beba de estômago vazio logo pela manhã.",
+      "Pique e esmague batatas com casca frescas e extraia o suco. Beba 2 colheres de chá cheias de suco com mel de estômago vazio logo pela manhã por 2 a 3 semanas. Este remédio também aplica -se para úlceras gástrica e duodenal.",
+      "Esmague 7 \"star anise\", 20g de cânhamo e 7 cabeças brancas de cebolas verdes; ferva em água. Coma duas vezes ao dia. Isto também aplica-se para dificuldade de urinação.",
+      "Coma algumas bananas bem maduras ou figos secos de estômago vazio logo pela manhã (bananas duras podem produzir resultados negativos).",
+      "Beba leite regularmente logo pela manhã de estômago vazio .",
+      "Embeba 1 copo de arroz em água por toda a noite . No dia seguinte, ferva 10 nozes por 5min; moa-as num liquidificador; despeje o arroz e a água embebida no liquidificador e moa-os novamente; adicione mais água e um pouco de açúcar e continue fervendo as nozes e o arroz sobre fogo baixo até que tomem-se grudentos. Coma este prato regularmente .",
+      "Beba um copo de suco de toranja logo pela manhã de estômago vazio. Enurese e Urinação Freqüente",
+      "Mastigue algumas castanhas frescas (não cozidas) pela manhã e ao anoitecer para reduzir urinação freqüente, particularmente nas pessoas idosas.",
+      "Misture meia colher de galhinhos de canela moída com maltose e um pouco de pó de alcaçuz . Beba duas vezes ao dia para interromper a molhadeira de cama pelas crianças.",
+      "Embeba 30 cogumelos secos em água até que estejam bem macios; cozinhe com algumas cabeças brancas de cebolas verdes, adicione molho de soja como tempero para consumo normal nas refeições.",
+      "Vaporize 2 fígados de galinha com 3g de canela moída e um pouco de água. Coma os fígados para aliviar urinação freqü en te e enurese nas crianças. Isto não pode ser tornado por mulheres grávidas, pois a canela é muito pungente e quente, que poderia causar dano à energia do feto.",
+      "Ferva 150g de vagem em água; adicione um pouco de sal corno tempero quando os feijões estiverem bem macios. Beba corno sopa de estômago vazio para interromper urinação freqüente . Diarréia",
+      "Um hospital Chinês em Shanghai apresenta este remédio simples efetivo para tratamento de diarréia: descasque 2 dentes de alho (aproximadamente 15g) e esmague-os; adicione 2 colheres de chá cheias de açúcar mascavo e ferva os dois ingredientes em meio copo de água. Beba o caldo quente de cada vez, duas a três vezes diariamente .",
+      "Coma 1 maçã silvestre ácida logo pela manhã de estômago vazio; outra depois do almoço e outra depois do jantar.",
+      "Frite gengibre fresco sem óleo até que torne-se seco e queimado na parte externa; moa até tornar-s e pó. Tome 8g de gengibre moído de cada vez, três vezes ao dia, com água morna.",
+      "Esmague alguns rabanetes frescos para extrair o suco. Beba uma xícara do suco de cada vez, duas vezes ao dia .",
+      "Ferva 60g de \"hyacinth beans\" fritos com 60g de inhame e 50g de arro z branco de grão longo (não arroz integral) em água. Beba corno sopa.",
+      "Ferva um ovo de galinha até ficar bem cozido; descasque e guarde a clara de ovo em outro prato; coloque a gema numa frigideira para fritar sobre fogo bai xo para extrair o óleo. O óleo de lavo pode ser usado como urna dosagem diária para bebês abaixo de um ano de idade, dividido em 3 dosagens; crianças acima de um ano de idade podem tornar o óleo de 2 ovos em 1 dia; cada programa de tratamento dura 4 a 5 dias . Esta receita é designada particularmente para diarréia ou vômito em bebês devido à indigestão simples; não é boa para indigestão ou diarréia crônica. Em geral, Prevellilldo e Curnlldo Doellças 173 melhoras nas fezes devem aparecer em 2 a 3 dias; senão, interrompa O tratamento.",
+      "Frite 3 coalhadas de feijão em óleo de amendoim sobre fogo bai xo; adicione um pouco de sal e 60ml de vinagre de arroz e ferva por um tempo. Coma para alívio da diarréia .",
+      "Aqueça um copo de água até a ebulição; quebre um ovo de pata na água fervendo e mexa-o; adicione 1 colher de chá cheia de suco de gengibre fresco e um pouco de sal como tempero. Coma as coalhadas de feijão e beba o caldo. Rouquidão",
+      "Esmague algumas peras e extraia o suco . Beba lentamente.",
+      "Ferva 50 amendoins frescos em água. Coma todos os dias.",
+      "Misture uma colher de chá cheia de mel com um copo de água morna. Beba 3h após as refeições, três vezes ao dia por 1 semana. Isto é benéfico para perda repentina da voz ou rouquidão devido à fadiga excessiva, mas não é benéfico para perda de voz no resfriado CQnlum . Tosse",
+      "Fatie 2 peras em pedaços pequenos; adicione 3 tigelas de água e ferva até que esta seja reduzida a 2 tigelas; coe e descarte as peras; adicione 30g de arroz branco ao líquido e ferva novamente até cozinhar. Beba o caldo de arroz .",
+      "Descasque 200g de rabanetes frescos e corte em pequenos pedaços; prepare 1 ou 2 carpas douradas removendo os órgãos internos sem raspar as escasmas; ferva os rabanetes e as carpas em fogo baixo e adicione algum tempero . Beba o caldo .",
+      "Descasque 50g de gengibre fresco e corte em fatias pequenas; ferva as fatias de gengibre com 100g de maltose em 2 copos de água por 30min. Beba quente, duas vezes ao dia, em 1 dia.",
+      "Ferva 20 tâmaras vermelhas com 60g de maltose numa quantidade adequada de água. Coma uma vez ao dia.",
+      "Misture 150ml de suco de lótus fresco com 30g de mel. Beba como suco, uma vez ao dia, por alguns dias.",
+      "Faça um buraco no lado de uma pêra ou de uma maçã; derrame um pouco de mel no buraco; vaporize a pêra ou a maçã. Esmague e coma. 174 Sistema Chinês de Curas A/filieI/lares Edema",
+      "Use I5g das cascas de favas secas e 6g de folhas de chá vermelhas para fazer chá ou para ferver sobre fogo baixo. Beba o suco regularmente.",
+      "Remova e descarte os órgãos internos de uma galinha; comprima 60g de feijões vermelhos pequenos na cavidade da galinha; ferva em água sobre fogo baixo e tempere a galinha . Coma a galinha e os feijões e beba o caldo.",
+      "Ferva 60g de \"mung beans\" em água com 100g de fígado de porco e uma quantidade adequada de arroz branco. Tempere e coma a mistnra.",
+      "Ferva 60g de lágrimas-de-jó em água com uma quantidade adequada de arroz branco. Tempere o caldo antes de comê-lo. Vômito",
+      "Três médicos Chineses relatam que conjuntamente trataram 20 casos de vómito com resultados extraordinários. Para usar O remédio deles, primeiro, frite 20 a 30g de arroz de grão longo até ficarem amarelados; segundo, pique um pouco de gengibre fresco, adicione um pouco de sal, então embrulhe-os numa toalha de papel úmida e aqueça numa panela; terceiro, prepare 30g de mel; quarto, frite 1 a 2g de sal em fogo alto. Depois desses ingredientes estarem prontos, ferva o arroz amarelado em 1 xícara de água até que o arroz se rompa para parecer flores. Adicione gengibre, sal e mel. Primeiro, deixe o paciente tomar 3 a 5 colheres de chá cheias deste remédio, e então continue a tomar bem devagar, aproximadamente 10min mais tarde; em geral, o vômito deve parar em meia hora.",
+      "Vaporize 2 colheres de chá cheias de suco de cebolinho fresco com 1 colher de chá cheia de suco de gengibre fresco e 250m! de leite fresco. Beba morno antes das refeições.",
+      "Ver os remédios em SOLUÇO.",
+      "Mastigue lentamente algumas ameixas em conserva, como se mascasse um chiclete.",
+      "Rale 50g de gengibre fresco e faça chá com 100g de casca de laranja seca e água; beba lentamente. Isto é particularmente recomendado para pessoas que desenvolvem o impulso de vomitar à vista de alimentos.",
+      "Em caso de vômito seco, misture uma colher de chá cheia de mel com uma xícara pequena de suco de gengibre fresco. Beba lentamente .",
+      "Para vômito crônico com sensações frias, prepare 7 tâmaras pretas e alguns cravos inteiros; esmague os cravos e ferva com as tâmaras em água. Coma as tàmaras e beba o caldo de estômago vazio, uma vez ao dia por 1 semana, como um programa de tratamento. Prevenindo e Curando Doenças 175 Hemorragia Nasal",
+      "Um médico Chinês escreveu: \"Nos últimos anos, tenho tratado casos de hemorragia nasal persistente com um remédio simples e obtive resultados imediatos usualmente com um tratamento único. Prepare uma folha de cebola tenra fresca e abra-a, use uma bola de algodão para esfregar a superfície interna da folha da cebola até que a bola de algodão fique embebida com líquidos de cebola; esprema a bola de algodão no nariz sangrando, o qual deve interromper o sangramento. Este método é efetivo para hemorragia nasal de causas variadas. \"",
+      "Lave raízes de lótus frescas com água fria; descasque e esmague-as para extrair o suco. Beba 2 XÍcaras ao dia; esta receita também é um bom remédio para tosse com eliminação de sangue devido à tuberculose pulmonar.",
+      "Esmagu e alguns dentes de alho e faça um bolo. Coloque-o na sola do pé como um tratamento externo.",
+      "Extraia o suco de cebolinhos frescos. Beba uma xícara pequena do suco de cada vez, duas vezes ao dia. Dieta Chinesa Para Perda de Peso TEORIA CHINESA DO EXCESSO DE PESO Qualquer teoria útil ou científica deve ser baseada em fatos; de outro modo, a teoria é especulação pura. Mas quais são os fatos? É um fato que os emigrantes Chineses não apresentam excesso de peso tão facilmente quanto suas crianças nascidas no Ocidente. Este fenômeno é ôbvio no Hawai aonde existem tantos Orientais com excesso de peso quanto Caucasianos, que permite-nos raciocinar que a obesidade possui nenhuma discriminação racial. Em outras palavras, qualquer um - Oriental ou Caucas iano - nascido no Ocidente possui uma oportunidade igual de apresentar excesso de peso. Mas não tenho encontrado nenhum imigrante Oriental que ganhou mais que 10 libras depois que chegou ao Ocidente. Tenho visto muitos imigrantes ganhando 8 libras durante o primeiro ano depois de suas chegadas. Mas seus pesos normalmente declinaram novamente dentro de 1 ano para manter mais ou menos o mesmo dos seus pesos no Oriente. Uma dramática mudança nas suas dietas causou um ganho inicial de peso. É claro, um pequeno número de imigrantes Chineses permanecem com excesso de peso porque estavam acima do peso antes de emigrarem. Já uma pessoa nativa do pais não deve influenciar seu peso, acredita-se que o excesso de peso na vida mais avançada é prontamente determinado quando uma pessoa alcança os 10 anos de idade. Similar à teoria na psicologia que a personalidade é prontamente determinada antes dos 10 anos de idade (ou até mais cedo), acredita-se que este conceito é aplicável também para obesidade. Indubitavelmente, algumas pessoas possuem uma tendência maior a adquirirem excesso de peso devido a fatores hereditários; a hereditariedade desempenha um papel na psicologia e fisiologia. Os fatores cruciais, entretanto, não são os fatores hereditários (pré-determinados), mas os meios ambientes que podem ser alterados e influenciados. Isto não significa que depois dos 10 anos, uma pessoa permanecerá com excesso de peso ou abaixo do peso, nenhum problema com o que ela come ou faz; apenas significa que depois dos 10 anos, uma pessoa obesa estará na direção da obesidade e que uma pessoa não obesa estará se afastando dela, a menos que alguma coisa seja feita para mudar a direção. DIRIGINDO-SE PARA A OBESIDADE OU MAGREZA",
+      "que faz uma pessoa tomar rumo para a obesidade e outra para a magreza? O desenvolvimento do corpo humano pode ser comparado àquele de uma árvore. Quando os alicerces da árvore são construidos solidamente, a árvore será forte e mais difícil de destruir num estágio mais adiantado. De um modo similar, quando os órgãos internos de uma pessoa são formados solidamente numa idade precoce, a pessoa será forte e mais difícil de enfraquecê-la mais tarde. Em outras palavras, quando os órgãos internos são bem nutridos na infância, eles tendem a trabalhar duro posteriormen te e fazê-lo ganhar mais peso; este é o porquê os imigrantes Chineses no Ocidente não adquirem facilmente excesso de peso; seus órgãos internos não foram supernutridos quando eles eram jovens. Existem sempre dois fatores no trabalho quando a obesidade é consi derada: o que você é e o que você come. Algumas pessoas comem muito, mas permanecem magras; outras comem pouco, mas adquirem excesso de peso. Lembro-me de ter conversado com um cavalheiro excessivamen te acima do peso na minha clínica em Vancouver que me disse estar tomando vitaminas como suplementos alimentares todos os dias. Não vi nenhuma razão do porquê ser necessário para ele tomar vitaminas, particularmente quando estava tão pesado. Mas este cavalheiro enfaticamente respondeu: \"Eu não acredito que as vitaminas farão ganhar peso, você acredita?\" A questão é, as vitaminas contribuem para a obesidade? Se você pensa que apenas um fator (os alimentos que você come) contribui para a obesidade, é óbvio que as vitaminas não têm nada a fazer com a obesidade; o conhecimento moderno das vitaminas indica que elas não contr ibuirão para a obesidade. Mas se você dar-se conta que existem dois fatores contribuindo para a obesidade (o que você é e o que você come), então saberá que as vitaminas podem contribuir para a obesidade. Se as vitaminas valem qualquer coisa no todo, devem contribuir para o organismo de uma maneira positiva. Por exemplo, a vitamina B1 pode aumentar",
+      "apetite e a absorção e a vitamina D pode promover o crescimento normal de osso e dente. Isto significa que as vitaminas melhoram as condiDieta ClJinesa Para Perda de Peso 179 ções do organismo e indiretamente contribuem para a obesidade, porque quando as condições orgânicas são mais fortes, possuem uma capacidade maior de trabalhar durante o processo de digestão e de absorção. Mas não é minha intenção atacar as vitaminas como culpadas pela obesidade; meu propósito aqui apenas é de destacar os dois fatores que contribuem para o problema de obesidade e que ambos os fatores devem ser considerados. Quando uma pessoa é supernutrida na idade precoce, os órgãos internos em geral e o sistema digestivo em particular desenvolverão uma capacidade muito grande para digestão e absorção, que faz esta pessoa se direcionar para a obesidade mais tarde na vida. Uso deliberadamente a palavra supernutrido (como oposto de subnutrido) porque indica algo indesejável. Sob circunstâncias normais, naturalmente pensamos em termos de \"quanto mais, melhor. \" Por exemplo, acreditamos que quanto mais forte é o nosso corpo, melhor, que quanto mais dinheiro temos, melhor, e que yuanto mais vivemos, melhor. E assim, possuímos uma tendência natural para pensar que quanto mais nutrido é nosso corpo, melhor. Este é um erro crucial que fazemos na nutrição e na saúde humana . Não é semp re verdade que quanto mais nutrido é nosso corpo, melhor ; devemos adicionar outras condições para tornar essa afirmação verdadeira: quanto mais nutrido é o seu organismo, melhor, estabelecido que o organismo está bem balanceado. Um organismo desequilibrado, forte, é exatamente tão ruim quanto um organismo equilibrado, fraco. UM ORGANISMO BEM EQUILIBRADO Um organismo bem equilibrado significa que o organismo está igualmente em form a em todos os aspectos. Por exemp lo, uma pesso a com um estômago forte, mas com um coração fraco, ou um coração forte, mas um fígado fraco, ou alguém que é forte e energético, mas que de repente morre de ataque cardíaco não é bem equilibrado; uma pessoa em que os órgãos internos permanecem em boa forma, mas sofre de hepatite não é bem equilibrada. É interessan te ver que nosso s órgãos internos não são sempre cooperativos um com o outro; quando um dado órgão é excessivamente fort e, enfraquecerá um outro órgão ou até causará dano a um outro. Seria bom se todos os nossos órgãos internos pudessem ser igualmente nutridos ou até igualmente supernutridos, porque neste caso, seríamos muito fort es e viveríamos mais tempo uma vida feliz. Tnfeli7.mente, isto não aconteceu antes e não está acontecendo hoje, até na sociedade rica; ao contrário, muito mais casos de diab etes, hipertensão, cânceres e o que não tem se desenvolvido, tudo isso aponta para o fato de como isso é,nosso organismo é supemutrido, mas não é equilibrado. Isto significa que nossos órgãos internos não são 180 Sistema ClJillês de CUrtl S Alimentares supernutridos igualmente. Temos nosso sistema digestivo supernutrido à custa de outros órgãos internos, e este é o porquê de termos mais casos de doenças cardíacas, renais e hepáticas, que não estão diretamente relacionadas ao sistema digestivo. De acordo com a teoria Chinesa de órgãos internos, quando o estômago e",
+      "baço são supernutridos, enfraquecem os rins e a bexiga; quando os rins e a bexiga são supemutridos, enfraquecem os pulmôes e o intestino grosso; quando os pulmôes e o intestino grosso são supemutridos, enfraquecem o fígado e a vesícula biliar; quando o fígado e a vesícula biliar são supernutridos, enfraquecem o estômago e o baço. Sob circunstãncias normais, comemos o que mais gostamos, e a boca é o juiz final da nossas preferências, e assim, comemos de acordo com nosso paladar imposto pela língua ou pela boca. Mas a boca é apenas um representante do estômago; ela não representa outros órgãos, tais como o fígado, o coração ou os pulmões. Idealmente, todos os órgãos internos devem possuir representação igual na boca para garantir eqüidade na seleção dos alimentos, como num sistema político democrático, no qual as regiões da nação devem ter representação no governo central. Já que não existe representação igual dos órgãos internos na boca, comemos exatamente para dar prazer à boca e ao estômago que ela representa. Poucos preocupam-se que comemos apenas por prazer e para ganhar peso. Os alimentos doces são prazeirosos para a boca, assim comemo-los mais freqüentemente e em grandes quantidades; os alimentos amargos são bons para o coração, mas raramente comemo-los, porque não são prazeirosos para a boca; os alimentos pungentes são bons para os pulmões, mas não comemo-los tão freqüentemente quanto os alimentos doces, porque não são particularmente prazeirosos para a boca; os alimentos salgados são bons para os rins e para a vesícula biliar, mas particularmente não gostamos deles, porque não são muito prazeirosos para a boca; os alimentos azedos são bons para o fígado e para a vesícula biliar, mas não comemo-los freqüentemente, porque não são particularmente prazeirosos para a boca. Em resumo, comemos apenas para dar prazer à boca e ao estômago, o que significa desfrutar o sabor e ganhar peso como um resultado. Isto costumava ser bom no passado quando nossos estômagos eram subnutridos devido à pobreza, mas hoje, na sociedade rica moderna, torna-se fU1ll1. APRECIANDO AS REFEIÇÕES E PERMANECENDO ESBELTO Não é a penas possível, mas também real apreciar suas refeições e permanecer esbelto ao mesmo tempo. Existem muitas maneiras possíveis de perder peso, mas a maioria é irreal e não manejável na vida real: por exemplo, Dieta Chillesa Para Perda de Peso 181 perder peso por jejum é possível e efetivo, mas irreal e perigoso na prática; perder peso seguindo esses livros de dieta rigorosa é possível e pode ser efetivo, mas não é real porque você eventualmente adoece disso, e sem dúvida, você desistirá; perder peso indo para controle de peso e clínicas de dieta é possível e efetivo, mas também irreal, porque depois de um tempo, você desistirá e ganhará novamente todo o peso antes de tomar conhecimento. Até aonde posso ver, uma abordagem real e a longo prazo de pesar menos é ser capaz de apreciar as refeições e perder peso ou permanecer esbelto ao mesmo tempo. Mas isto pode ser feito? A resposta é sim enfaticamente. Alimentos onerosos agradam o nosso paladar e supernutrem o nosso estômago, porque a boca (ou paladar) é um representante do estômago. Existem maneiras pelas quais os alimentos podem ser nUsturados para agradar a boca sem supernutrir o estômago, entretanto, e isto é chamado de arte culinária . Vamos assunUr que possuímos três ingredientes: o primeiro é agradáve l, o segundo é neutro e o terceiro é repugnante para o paladar. Os três ingredientes podem ser cozidos juntos de modo que eles se tornem agradáveis ao palad ar, e ainda nâo supernutrem o estômago . Darei alguns exemplos para demonstrar como isto é possível e também real. Molho de carne Chinês - Esta receita padrão para molho de carne possui 10 ingredientes listados a seguir com suas energias, sabores e ações orgânicas: Casca de laranja seca - morna, pungente e amarga - afeta o baço e os pulmões. \"Star anise\" - morna, pungente e doce - afeta o baço e os rins. Casca de canela - quente, pungente e doce - afeta o fígado e os rins . Cravos - morno, pungente - afeta o estômago, baço e rins. Cabeças brancas de cebolas verdes - morna, pungente - afeta os pulmões e o estômago. Erva-doce - morn a, pungente - afeta os ríns, bexiga e estômago. Pimenta vermelha - quente, pungente - afeta o coração e o baço. Pimenta-da-reino - quente, plUlgente - afeta o estômago e o intestino grosso. Noz-mascada - morna, pungent e - afeta o baço e o intestino grosso . Alcaçuz - neutro, doce - afeta os pulmões, estômago e baço. Cubra os ingredientes do molho num pano limpo; ferva em água com vinho, molho de soja, e um pouco de açúcar. Depois do molho estar pronto, a carne pode ser ou embebida no molho por algumas horas ou fervida no molho sobre fogo baixo durante 2h, que deve nUsturar completamente a carne com o molho. Mas o molho da carne não é sopa de carne e não pode ser bebido. O molho restante deve ser usado nos dias seguintes, mas para conserválo, é sensato ferver o mesmo molho diariamente. 182 Sistema Chinês de Curas Alim entares Como você pode ver, militos dos ingredientes anteriores por eles próprios não são agradáveis para o paladar. Por exemp lo, alguns de nós gostará do sabor dos cravos ou da erva-doce ou do \"star anise\". Mas quando misturados com carne, fazem um prato delicioso. Além do mais, virtualmente todos os órgãos internos e a maior parte dos sabores e energias são assistidos. Quando este molho é usado para cozinhar carnes, a carne não será apenas deliciosa, mas não ganhará peso porque os ingredientes morno, quente e pungente tornam-na muito Yang. Este é o porquê que acredito que não é apenas possível, mas também real apreciar as refeições e permanecer esbelto ao mesmo tempo. Sopas - Um outro exemplo é o hábito Chinês de fazer sopas deliciosas",
+      "cogumelo, gali..nha, carne de boi, ovo, carne de porco, peixe, sopa ue molusco bivalve e muitos outros. As sopas são deliciosas e ajudarão você também a perder peso. Tenho destacado que é a qualidade dos alimentos não suas quantidades que realmente contribuem para seu ganho de peso, mas quando os mesmos alimentos estão para ser consumidos, a qualidade faz a diferença. Por exemp lo, 1 libra de carne de boi (450g) é certamente diferente de 100g, em termos dos efeitos no controle de peso. Tudo mais sendo igual, comer 1 libra de carne de boi ganhará mais peso do que comer 100g; e beber sopas fará você consumü menos alimentos sem sacrificar seu prazer pelas refeições boas. Por exemplo, lOOg de carne de boi pode parecer uma quantidade muito pequena quando for usada para um bife, mas quando se faz uma sopa, a sua quantidade é aumentada significativamente. Para fazer sopa de carne de boi, pique 100g de carne de boi em pequenos pedaços; coloque numa tigela, adicione um pouco de vinho e cinco fatias pequenas de gengibre fresco e uma quantidade adequada de água . Ferva a sopa em fogo baixo por Ih. Isto deve fazer uma deliciosa sopa de carne de boi. Ou, você pode vaporizar os ingredientes por 2h. Esta sopa de carne de boi não engordará. Ao contrário, acredita -se que ela fará você perder peso e permanecer esbelto, porque, como um resultado, fará você comer menos . Além do mais, esta sopa de carne de boi contém vinho e gengibre, que agem sobre muitos outros órgãos internos, além disso para o estõmago, um dos melhores modos de comer carne de boi sem ganhar peso. O mesmo princípio aplica-se para fazer outras sopas para perder peso ou permanecer esbelto. Como as sopas podem promover boa saúde?",
+      "Sopa de carne de boi - Boa para fraqueza e anemia .",
+      "Sopa de galinha - Boa para fadiga e neurastenia.",
+      "Sopa de \"mlmg bean\" - Boa para inflamação dos órgãos internos .",
+      "Sopa de cogumelo - Boa para fígado fraco.",
+      "Sopa de molusco biva lve - Boa para hipertensão. Dieta Chinesa Para Perda de Peso 183",
+      "Sopa da IOllgevidade - Feita de ossos de pernas de galinha e de porco. Os ossos devem ser esmagados para extrair o tutano, a essência dos ossos, que é considerada a parte mais preciosa da sopa de osso. Ao fazer a sopa de osso, embeba os ossos no molho de carne Chinês (descrito anteriormente) e então ferva em fogo baixo com outros ingredientes, tais como amendoins, cogumelos, feijões vermelhos, ou rabanetes, e então tempere com pó de pimenta vermelha ou pimenta-do-reino. ELIMINANDO GORDURAS DAS CARNES Existem métodos externos e internos de eliminar gorduras das carnes . Os métodos externos incluem cortar e descartar a gordura antes de comer ; e o uso de molho de carne é parcialmente planejado para neutralizar os efeitos da gordura. Também, na preparação de carne de porco (que contém uma porcentagem mais alta de gordura), ferva-a por 20 a 30min; remova a carne de porco e lave-a com água fria. Este é um meio de reduzir a gordura da carne de porco. Algumas gorduras entrarão no nosso organismo e algo precisa ser feito a respeito disso, e este é o método interno de remover ou reduzir gorduras das carnes . A população Mongol, que consome mais carnes do que outras populações, contam com beber grandes quantidades de chá forte para agir contra os efeitos da gordura nas carnes . Em Pequim, por exemplo, indivíduos que se servem de carne assada mongólica são rotineiramente presenteados com vinho especial, pois pensam ter um efeito forte em dissolver a gordura no organismo; após a refeição, uma xícara de chá forte é servida como um modo de reduzir os efeitos da gordura. Como um teste, da próxima vez que você tomar chá, não jogue fora as folhas do chá. Como substituto, use-as para limpar alguma gordura das suas mãos para ver quão efetivas as folhas de chá são na remoção de gordura. Então você pode facilmente imaginar os mesmos efeitos tomando lugar dentro do seu organismo depois de beber chá. Portanto, o consumo regular de chá forte é um outro modo efetivo de perder peso e permanecer esbelto. Um amigo médico que recentemente retornou da Inglaterra disse que estava muito surpreso por descobrir que a população britânica geralmente é muito mais esbelta do que seus correlativos americanos e canadenses, que pode ser atribuído ao hábito britânico de beber chá. Para perda de peso, o chá verde é melhor que o chá preto, porque os efeitos do chá preto são enfraquecidos pela fermentação . Ao fazer chá, a água deve estar fervendo; primeiro, despeje um pouco de água fervendo para aquecer o bule de chá; então, ajuste as folhas de chá no bule e rapidamente despeje a água fervendo. Espere alguns minutos antes de beber o chá. Chá oneroso, como alimentos onerosos, não é bom para perda de peso; o chá deve 184 Sistema Olin ês de Curas Alimentares ser forte e amargo, o qual é menos caro. Folhas de chá caras podem ser usadas apenas uma vez, mas as folhas de chá menos caras podem ser usadas duas ou três vezes num dia, então descartadas. Estes princípios gerais podem ser geralmente úteis para pessoas com excesso de peso, mas existem constituições físicas inclividuais que devem também ser consideradas para uma melhor solução do problema de obesidade. Duas pessoas podem comer alimentos idênticos em quantidades idênticas, mas uma pode estar com excesso de peso, enquanto que a outra pode estar abruxo do peso, devido à diferença nas suas constituições físicas. CONSTITUIÇÕES FíSICAS E OBESIDADE Dois tipo s de constituições físicas possuem uma tendência a tornaremse obesas: os tipos quente-úmida e fria-úmida. Pessoas com constituições físicas quente-seca nunca adquirem excesso de peso sem problema com O que ou com quanto elas comem; como um grupo, elas estão praticamente livres de obesidade. Um galo é uma criatura típica com uma constituição física quente-seca. Você já viu um galo gordo? Eu não. Quando era um menininho, costumava alimentar nossas galinhas (e sempre alimentavaas igualmente sem discriminação sexual, porque simplesmente espalhava",
+      "arroz no chão e deixava-as comer; tanto galos como galinhas estavam fora do meu controle). Eu notava que os galos sempre comiam mais rápido que as galinhas, eram mais agitados e mais agressivos. Mas para meu desapontamento, as galinha s facilmente tornavam-se gordas, enquan to que os galos sempre permaneciam magros . Gostaria que todos eles ganhassem peso rápido então poderíamos vendê-los e ganharíamos muito dinheiro. Hoje você vê, alimentos sozinhos não podem ser responsáveis pela obesidade; somente quando certos alimentos são consumidos por certas pessoas nas quais ocorre a obesidade. O objetivo final, portanto, é de tornar as constituições físicas de pessoas com excesso de peso quentes e secas. Pessoas com excesso de peso normalmente possuem uma constituição física úmida; elas retêm uma quantidade excessiva de água no organismo, deixando-as acima do peso. LIDANDO COM A OBESIDADE Médicos Chineses desenvolveram quatro métodos de secar o organismo, um requi sito prévio em lidar com a obesidade: o primeiro é promov er a urinação, que pode ser comparada aos diuréticos na Medicina Ocidental. Feijões vermelhos pequenos, milho e barbas de milho, lágrimas-de-jó e casca de cera da cabaça promovem significantemen te a urinação . Dieta Chillesa Para Perda de Peso 185 Os feijões vermelhos pequenos podem ser comidos freqüentemente como um alimento, mas é freqüentemente usado no herbalismo Chinês como uma erva efetiva para promover a urinação, particularmente no tratamento de edema na nefrite e beribéri. Os feijões vermelhos pequenos parecem feijões vermelhos normais mas são de tamanho mais longo e mais efetivos. Podem ser fervidos com malte ou tâmaras vermelhas e alguns dentes de alho. Algumas pessoas pensam que quanto mais você come, mais peso ganhará, o que não é verdade. De acordo com a Teoria Tradicional Chinesa, depende do que está comendo . Quanto mais feijões vermelhos pequenos você come, por exemplo, mais peso perderá. Portanto, os feijões vermelhos pequenos são absolutamente não recomendados para pessoas magras, particularmente crianças, porque um consumo prolongado deles os fará perder peso. Se você olhar um livro de nutrição normal, você lê que 100g de feijões vermelhos pequenos contêm 319 calorias, que é aproximadamente o mesmo de um bife. Existe uma diferença básica entre os dois, entretanto, no que os feijões e o bife podem fazer, não no que cada um deles possui. É verdade que ambos os feijões vermelhos pequenos e o bife possuem aproximadamente 300 calorias por 100g, mas é importante lembrar que os feijões vermelhos pequenos podem promover a urinação e secar o organismo, o que não ocorre com o bife. Lágrimas-de-jó também é usada pela população Chinesa tanto como um alimento quanto uma erva para promover a urinação. No herbalismo Chinês, a lágrimas-de-jó é considerada um diurético efetivo como os feijões vermelhos pequenos. A população Chinesa frita lágrimas-de-jó, usa-a para fazer chá e beber de forma regular, particularmente quando têm dificuldade de urinar, têm edema ou sentem-se extraordinariamente nervosos. A lágrimas-de-jó pode acalmar seus nervos. O milho e as barbas de milho também são efetivos na promoção da urinação, particularmente as barbas de milho, que, de acordo com uma experiência , podem ser usadas quando coar o café para promover a urinação com efeitos maiores e mais duradouros. Os feijões-de-soja e o alho também podem ser usados para promover a urinação. Ferva 200g de feijões-de-soja com 100g de alho até ficarem macios. Coma-os nas refeições. Se você não gosta de alho, os feijões vermelhos pequenos podem ser usados como um subst itut o, mas o alho é um tônico energético, que pode fazê-lo sentir-se mais energético, e os feijões vermelhos pequenos não possuem tais efeitos. O segundo método de desfazer-se de água no organismo: absorva líquidos teciduais no organismo. Absorver água no organismo é corno usar uma bola de algodão para embeber água num copo; promover urinação remove água do organismo através da excreção. A maioria dos alimentos e ervas que podem absorver a água dentro do organismo são aromáticos, 186 Sistema Chinês de Curas Alime ntares e os dois usados mais freqüentemente são favas e \"hyacinth beans\". Os alimentos aromáticos não apenas podem absorver água dentro do organismo, mas podem interromper diarréia pela mesma razão. A diarréia significa eliminação de fezes extremamente aguadas, e quando a água é absorvida, as fezes secam e não haverá mais diarréia. As favas podem ser moídas até tornarem-se pó para serem tomadas com água morna, mas também podem ser fritas com óleo e sal até que elas se rompam e fiquem aromáticas; use os feijões sem remover as vagens, pois estas possuem um efeito melhor de absorver água dentro do organismo e promover a urinação. Como para os \"hyacinth beans\", use-os igualmente às favas. Na terapia herbal Chinesa, os \"hY'iCinth beans\" são muito freqüentemente usados para aliviar diarréia e dor abdominal devido à água excessiva no intestino. Podem ser usados na sopa ou em forma de pó. O terceiro método para eliminar água é esfriar o corpo para facilitar a passagem de água . Uma constituição física quente-seca não é propensa à obesidade como uma constituição física úmida-quente. Isto é como funciona. O que acontece se você põe fogo em lenha molhada? Não queimará rapidamente, mas poderá apenas produzir fumaça, o que é ruim. Similarmente, quando a água e o calor misturam-se no organismo, nenhum irá embora . O resultado é difícil quando urinação ou eliminação de urina avermelhada se encontra em pequenas quantidades. A estratégia, portanto, é esfriar o organismo, permitindo O fluxo de água. Os alimentos ou ervas com uma energia fria e sabor amargo são usados para este propósito, porque a energia fria pode esfriar o organismo e o sabor amargo pode secá-lo. A cabaça amarga, que tem sabor extremamente amargo, pode esfriar significantemente o organismo, reduzir a tensão nervosa devido a sua energia fria e também pode amolecer as fezes devido a seu sabor amargo. Pessoas com uma constituição física quente-úmida freqüentemente sofrem de constipação, que pode ser efetivament e aliviada usando cabaça amarga na sopa, como um vegetal ou como um chá. Cabaça amarga seca ou em conserva pode ser usada como substituta. üs \"mung beans\", brotos de \"mwlg beans\" ou o pó também podem ser usados por pessoas com uma constituição física quente-úmida para O organismo livrar-se da água excessiva. Ainda que o \"mung bean\" possua uma energia fresca e um sabor doce, é mais precisamente efetivo em remover a água e reduzir o calor corpóreo. O \"mung bean\" também possui um efeito desintoxicante extremamente forte, útil para lidar com os sintomas quentes, tais como erupções cutâneas de natureza quente e inflamação de órgãos internos. O quarto método de eliminar a água corpórea em excesso é aquecer o corpo. Este método pode ser usado por pessoas com uma constituição física fria-úmida, que pode ser comparada com uma montanha de gelo. A Dieta Chinesa rara Perda de Peso 187 estratégia é aquecer o corpo então a água pode brotar do organismo, ou através da urinação ou transpiração. Os alimentos que produzem melhores resultados devem ter uma energia quente ou morna e um sabor pungente-doce. A energ ia quente ou morna aumenta o calor corpóreo, o sabor pungente aumenta a transpiração e um sabor doce ou suave promove a urinação. O galhinho de canela satisfaz estas três condições. Uma fórmula herbal tradicional Chinesa chamada cinco diuréticos contém cinco ingredientes: dois absorvem água do organismo, dois promovem a urinação e o último ingrediente, o galhinho de canela, é incluído para aquecer o organismo e facilitar a passagem de água . O consumo regular de gengibre fresco pode aquecer o organismo e induzir a transpiração simultaneamente. O gengibre fresco é usado freqüentemente para agir contra o frio particularmente no inverno, e quando é usado junto com a casca de laranja seca para fazer chá, os seus efeitos são significantemente reforçados. Depois da água excessiva no organismo ter sido removida e o organismo estar seco, a pessoa deve estar esbelta e permanecer em boa forma. Mas como uma pessoa mantém-se esbelta e permanece em boa forma, a menos que o organismo possa parar de reter água? EVITANDO A RETENÇÃO DE ÁGUA E PERMANECENDO ESBELTO Uma pessoa com excesso de peso possui dois inimigos no organismo: gordura e água. Uma coisa importante é livrar-se desses inimigos e a outra é mantê-los fora do organismo. Pode e como pode isto ser feito? Os Chineses acreditam que uma coisa pode fazer o trabalho e é chamado fogo. Muitos de meus alunos na terapia herbal estão, em primeiro lugar, confundidos pelo conceito de fogo na Medicina Chinesa . Eles gradualmente tornam-se habituados a isso, e finalmente gostam e apreciam como um conceito muito importante e útil. Toda ciência consiste de conceitos e teorias; cada conceito é definido então pode ser usado para representar uma teoria. O fogo é um conceito na Medicina Chinesa, e um conceito muito importante também. O que é fogo? É um certo elemento no organismo que funciona como fogo na culinária. Como o fogo pode livrar-se da gordura? Queimando-a. Como o fogo pode livrar-se da água? Fervendo-a. Na culinária, o fogo pode queimar o óleo e ferver a água em fogo baixo, então eventualmente esta evaporar-se -á. Este é um fenômeno comum que também ocorre no corpo humano. Isto é realmente absurdo para a população Chinesa acreditar que existe fogo no organismo que mantém a gordura em excesso queimando e a água em excesso vaporizando do organismo? Existe algum fato para provar que este é o caso? Já que tenho muitas experiências na criação de galinhas, as usarei agora para provar o ponto que estou discutindo sobre perda de peso. Quando você cria galinhas para uma subsistência como fiz quando era um garoto, você gostaria que suas galinhas crescessem rapidamente grandes e gordas para produzir um negócio lucrativo. Mas como você pode alcançar este objetivo? Uma galinha crescerá gorda mais facilmente, mas a população Chinesa não gosta muito de comer galinhas (suas carnes duras não são fáceis de mastigar, e seus preços são muito mais baixos por esta razão) . Por outro lado, um galo permanecerá magro e leve assim que cresce. Existe um meio de fazer um galo crescer gordo, entretanto, removendo os seus testículos. O galo ganhará en tão peso sigrUficativo em pouco tempo, tomando-o até mais gordo do que uma galinha. Isto era um conhecimento comum e uma prática comum compartilhada por toda a população Chinesa quando eu criava galinhas. Eu certamente não realizava isto a algumas décadas atrás, usaria este conhecimento sobre galos castrados para provar um ponto importante para meus leitores Ocidentais . O fato crucial é que um galo castrado é aproximadamente duas vezes mais pesado que um galo não castrado, e o peso extra é adquirido logo após a castração. Cada galo possui um testículo, mas a presença deste num galo é crucial no controle de peso. Todos nós sabemos que os testículos humanos e animais são responsáveis pelas funções sexuais . Os homens não podem executar o sexo sem testículos. Mas como os testículos contribuem para a perda de peso? Em um homem, os testículos aquecem o organismo como um aquecedor aquece um quarto. O médico Chinês chama esta ação de fogo ardente dos rins. Os testículos, portanto, são o fogo ardente dos rins. Os médicos Chineses diferenciam entre rins internos (os dois rins dentro do corpo) e externos (os dois testículos fora do corpo). Já que nas mulheres faltam os testÍculos e seus ovários não queimam tão violentamente como os testículos dos homens, poucos acham que existem mais mulheres com excesso de peso do que homens, e é muito mais fácil para mulheres ganhar peso que para os homens. Tudo pode ser classificado em Yin e Yang, incluindo os rins. Existe rim Yin e rim Yang; o rim Yil1 refere-se à água no rim, enquanto que o rim Yang refere-se ao fogo no rim. O conceito de fogo é um conceito muito importante na Medicina Chinesa como foi mencionado anteriormente, mas o que se quer dizer por \"fogo renal\"? Refere-se à capacidade do rim de tomar-se energético, ativo tanto no desempenho do estilo de vida quanto sexual. Portanto, na Medicina Chinesa, quando um homem toma-se sexualmente impotente, isto é atribuído ao \"fogo renal insuficiente\"; quando um homem é sexualmente superativo, isto é atribuído ao \"fogo renal excessivo\". Quando um homem possuí um nível mais alto de fogo ardente dos rins, ele permanece magro e possui uma capacidade sexual forte. Para ser esbelto Dieta C/linesa Para Perda de Peso 189 deve ser sensual. Um companheiro gordo não terá uma capacidade sexual forte, e um companheiro com uma capacidade sexual forte não será gordo; a natureza não mistura sexo com obesidade. O fogo ardente dos rins permanecerá queimando gordura e vaporizando água do organismo, mantendo-o livre da obesidade. Permanecer esbelto e em boa forma significa que você deve aumentar o fogo ardente dos rins. AUMENTANDO O FOGO ARDENTE DOS RINS Quando sugiro aos pacientes na minha clínica que eles tentem aumentar o fogo ardente de seus rins para perder peso, muitos por brincadeira me perguntam se eles necessitam de um testíc ulo adicional para perder peso mais efetivamente . De fato, se isto pudesse ser feito, imagino que isto funcionaria no controle de peso; se alguém quer perder peso, um testículo extra é necessário, e para ganhar peso, um dos testículos deve ser removido. Estou impressionado que nossos cirurgiões, tão capazes em \"picar\" o organismo, não tenham considerado a possibilidade da transplantação de testículos, que deve curar a obesidade e a impotência ao mesmo tempo e fazer da profissão médica muito mais respeitável. Algumas pessoas pensam que a obesidade e a impotência estão zombando dos médicos, assim como muitos pacientes obesos e impotentes são desviados todos os dias como incuráveis por nossos médicos. Os alimentos chamados tônicos Yang podem aumentar o fogo ardente dos rins. Na Medicina Chinesa, existem quatro tônicos básicos: tônicos energéticos, sangüineos, Yin e Yang. Um tônico é algo que fortalece e o tônico energético refere-se a algo que fortalece a energia , o tônico sangüíneo a algo que fortalece o sangue, o tônico Yin a algo que fortalece os líquidos, tônico Yang a algo que fortalece o fogo ardente dos rins, também chamado de energia Yang no organismo. Em alguns casos, tipos diferentes de tônicos são usados intercambiavelmente, ou porque um certo alimento simultaneamente desempenha duas ou mais funções ou porque um alimento pode ser usado como um substituto do outro. Os rins dos animais são tônicos Yang altamente recomendados , baseado na crença tradicional Chinesa que quando órgãos internos humanos estão enfraquecendo, é benéfico comer os órgãos correspondentes dos animais. Conseqüentemente, quando nosso fígado está fraco, você deve comer fígado de animal; quando os rins estão fracos, coma rins de animal, e assim por diante. Em uma conferência, lembro-me que uma senhora quase por brincadeira me perguntou se é benéfico comer testículos de animal ou pênis quando se sofre de impotência. Minha resposta foi enfaticamente sim,",
+      "que não foi uma piada . De fato, quando as mulheres Chinesas com nenhum defeito fisiológico não são capazes de conceber, elas come m testículos de animal cozidos em vinho de arroz (particularmente testículos de porco, que estão prontamente disponíveis). E quando uma mulher Chinesa consulta um herbalista Chinês para iniertilidade ou um homem para impotência, é usual para o herbalista presenteá-los com a seguinte receita: prepare dois testículos de cordeiro, de porco ou de boi, quatro rins e 50g de tâmaras pretas; mexa-os em vinho de arroz até que estejam completamente embebidos; então vaporize-os. Coloque os ingredientes vaporizados numa garrafa de vinho e guarde por 3 meses antes que esteja pronto para beber. Isto é chamado de vinho tônico Yang. Comer rins (de porco, de boi, de cordeiro ou de galinha) tem três vantagens: os rins possuem pouca gordura, são facilmente digeridos e tonificam as funções renais. Para pessoas que não gostam de comer rins por causa do seu gosto, o aroma pode ser melhorado. Primeiro, corte o rim na metade, remova todas as partes indesejáveis e lave-o; aqueça a água até a ebulição e adicione um pouco de vinho; despeje no rim e ferva em fogo baixo até que esteja completamente cozido; drene e fatie em pequenos pedaços. Prepare um molho com gengibre, cebola verde, pimenta verde, molho de soja, açúcar, óleo de gergelim e vinagre. Despeje o molho sobre",
+      "rim e está pronto para comer. Um outro modo de cozinhar rins: corte o rim em fatias grandes; coloque 1 colher de sopa cheia de óleo numa \"wok\" ou frigideira e assim que a panela estiver quente, adicione geng ibre fatiado, alho e cebolinha; frite mexendo com o rim por alguns minutos . Alho, gengibre e cebolinha são condimentos e também tônicos Yang. Para tratar impotência nos homens e frigidez nas mulheres, existe uma outra receita Chinesa: corte 2 ou 3 dentes de alho em pequenos pedaços; frite com 30g de gengibre fresco. De fato, se você quer perder peso e permanecer esbelto, use gengibre e alho de forma regular. Fígado (de galinha, de porco e de boi) é o segundo alimento recomendado como um tônico Yang para aumentar o fogo ardente dos rins. O fígado também pode ser cozido para fazê-lo agradável para O paladar. Frite o fígado bem rapidamente em óleo vegetal com condimentos, tal como gengibre, alho ou aipo; use pimenta -da-reino e vinho como temperos. Camarões são o terceiro alimento recomendado como um tônico Yang. Um célebre herbalista Chinês no século XVI recomendava os maridos a não comerem camarões numa viagem, planejado como uma observação engraçada para subentender que os camarões podem aumentar drasticamente os desejos sexuais e eles podem se desesperar sem um parceiro sexual quando separados de suas esposas. É claro, este conselho pode não ser válido hoje, porque os meios sociais têm mudado no curso dos quatro séculos passados . Alguns herbalistas Chineses acreditam que se alguém consome muito camarão sem relação sexual, pode desenvolver hemorragia nasal devido ao fogo excessivo desenvolvido no organismo. Dieta Chinesa Para Perda de Peso 191 Os camarões possuem a maior capacidade de reprodução, acredita-se nisso porque uma única relação sexual produzirá milhares de ovos, muito além da capacidade humana. Existem diferentes modos de comer camarões. Prove esta receita tradicional Chinesa chamada camarões intoxicados: lave os camarões vivos e coloque-os numa panela; despeje conhaque ou whisky o suficiente para cobrir todos os camarões; então adicione alguns temperos favoritos, tais como gengibre, alho e óleo de gergelirn. Imediatamente cubra a panela porque os camarões pularão como loucos. Quando os camarões se acalmarem depois de alguns minutos estão prontos para comer. Os camarões também podem ser fritos com alho para fazer um forte tônico Ynng. Os Chineses estão particu larm ente interessados em cérebros de camarão (que parecem amarelados), testículos de camarões (localizados nas costas), fígado de camarão (torna-se imediatamente vermelho ao cozinhar) e ovos de camarão . O intestino preto fino nas costas do camarão deve ser removido antes de cozinhar. Se os camarões frescos não estiverem disponíveis, camarões secos podem ser usados e cozidos com outros alimentos mais como um condimento do que como um ingrediente principal. O mexilhão também é considerado como um tônico Yal1g efetivo . O mexilhão possui uma energia morna, diferente do molusco bivalve (molusco bivalve de mar ou de rio), que possui uma energia fria. O mexilhão é um tônico Yang; o molusco bivalve é um tônico Yin. Um clássico de dieta Chinesa diz: \"Mexilhão cozido pode promover ereção e curar lumbago.\" De fato, dificuldade de ereção e lumbago são, em muitos casos, atribufdos à fraqueza dos rins, e já que o mexilhão é um tônico Yal1g, deve ser benéfico para dificuldade de ereção e lumbago . Acredita-se que o mexilhão pode aumentar a temperatura corpórea, particularmente nos genitais, este é o porquê dele ser benéfico para impotência sexual nos homens e frigidez nas mulheres. Na China, muitas mulheres cozinham mexilhão com vinho de arroz, gengibre e feijões-de-soja pretos para regular o fluxo menstrual, porque o fluxo menstrual irregular é freqüentemente causado por frio no útero, e mexilhão cozido com vinho pode aumentar significantemente a temperatura do útero. A mesma receita pode ser usada para aquecer as áreas genitais nos homens. De fato, o mexilhão seco é um importante alimento na Medicina Chinesa e é normalmente moído até tomar-se pó para administração oral. Quando usar mexilhão seco, lave tirando o sal, frite e moa o mexilhão até tornar-se pó, tome lOg do pó de mexilhão com água morna ou conhaque de cada vez, duas vezes ao dia, para corrigir impotência e aumentar a capacidade sexual. Além dos tônicos Yal1g de animais, as frutas seguintes e os vegetais também podem ser usados como tônicos Yang, incluindo framboesa (deve ser framboesa verde seca). Na China, quando começa o verão, as crianças apanham framboesas verdes para serem usadas como ervas. Elas limpam as framboesas e embebem-nas em água fervendo por 1 a 2min, e então espalham-nas no chão para secar sob o sol forte. As framboesas podem produzir efeitos similares àqueles dos hormônios femininos, de acordo com uma experiência em coelhos e ratos . (Um herbalista Chinês muitos séculos atrás avisou os homens que se eles tivessem ereções excessivamente fortes que duram muito tempo, deveriam ficar longe das framboesas.) Como o mexilhão, a framboesa pode aumentar a temperatura corpórea, particularmente nos genitais, e por esta razão, é benéfica para mulheres que são incapazes de conceber devido à frieza no útero. Os Chineses também acreditam que um consumo prolongado de framboesas pode melhorar as cond ições de pele de uma mulher e prevenir",
+      "engrisalhamento do cabelo. Outros alimentos usados como tônicos Yang incluem o inhame (que também age nos rins e interrompe a emissão seminal nos homens e o corrimento vaginal nas mulheres, e interrompe a urinação freqüente em ambos os sexos), anoz (que tonifica os rins e beneficia os pulmões) , a semente de cebolinha e a semente de cabaça amarga (ambas boas para uma ampla variedade de propósitos, particularmente na fraqueza de relação sexual). Se minhas experiências clínicas têm me ensinado alguma coisa, é que um grande número de pessoas com excesso de peso não está muito interessados na teoria da obesidade como em perder peso . Muitas delas me perguntam: \"Você pode simplesmente me dizer quais alimentos comer para perder peso? \"Por esta razão ofereço uma simples e prática resposta para a pergunta na forma de um quadro, ApÊNDICE A. Para fazer uso deste quadro, de termine seu tipo de constituição física (como esboçado no Capítulo 3), selecione alimentos que são bons e evite os que são ruins para seu tipo; assim como para alimentos listados como neutros, coma-os sempre que lhe agradar. Apêndice A N úmeros de Pontos Y de Alim entos e Mo vimentos dos Alimento s em R elação às Estações (Alimentos sem indicações de nlÍmero de pontos Y estão ainda indeterminados nos movimentos em relação às estações.) YANG N° de ponto s Y YIN Para fora Para cima Q Para baixo Para d entro -\" A LIMENTO , (V erão) (Primave ra) • (Outono) (Inverno) Z +8 +7 +6 +5 +4 + 3 +2 +1 O - 1 - 2 - 3 --4 - 5 --6 -7 -8 Abacax i x Abóbora x Abóbora-moranga x Açafrão x Açúcar branco x Açúca r mascavo x Aipo x Alcaç uz x Alcarav ia x AJecrim X Alface x Alface (caule) Alface (folha) x Alga marinha x Alho x Alho-po rro x Ameixa azeda x Ameixa x Amendo im x Arroz doce x Arroz polido x Aspargo x Azeitona x Banana x (Continua) (Col1l) YANG N° de pontos Y YIN Para fora Para cima o Para bai xo Para dentr o lo ALIMENTO , (Verão) (Primav era) • (Outono) (Inverno) Z +8 +7 +6 +5 +4 +3 +2 +1 O - 1 -2 -3 -4 -s --6 -7 -8 Barbas de milho x Batata-doce x Batata x Berinjela x Broto de bambu x Cabaça amarga x Cabeça branca de cebola verde x Café x Camarão x Cana-de-açúcar x Caqui x Caranguejo x Carapaça de mo lusco bivalve (de rio) x Carapaça de molusco bivalve (marinho) x Carne de boi x Carne de carneiro x Carne de porco x Caroço de algodão x Carpa (comum) x Carpa (dourada) x Carpa (grama) x Casca de canela x Casca de tanger ina seca x Casca de toranja x Casca do coco x Castanha d'águCl x Castanha x Cebola Cebolinha x Apêndice A 195 YANG N° de po nto s Y YIN Para fora Para cima c Para baixo Para de n tro --ALIMENTO , (Verâo ) ( Primave ra) • (Outono) (Inverno ) Z +8 + 7 +6 +5 +, +3 +2 +1 O - 1 -2 - 3 -4 - 5 -6 -7 - 8 Cenoura x Cera da cabaça chinesa x Cereja x Cevada x Chicória Clara de ovo de galinha x Coa lhada de feijão x Coentro (salsa chinesa) x Cogume lo branco x Cogume lo preto x Cogumelo shiitake x Concha de ostra x Couve-rábano x Cravo-da-índ ia x Damasco x Engu.ia x Erva-doce x Espin afre x Farelo de arroz x Fare lo de trigo x Feijão comum x Feijão vermelho pequeno x Feijão-de-soja (amarelo) x Feij ão-d~a (preto) x Fígado (de boi) x Fígado (de galinha) x Fígado (de ovelha) x (Continua) (Conl ) YANG N° de pontos Y YIN Para fora Para cima e Para baixo Para dentro ALIMENTO • (Verão) (Primavera) \" (Outono) (Inverno) Z +8 +7 +6 +5 +4 +3 +2 +1 O -1 -2 -3 -4 -5 -6 -7 -8 Fígado (de porco) x Figo x Flor de taro x Flor-de-lis x Folha de cebola verde x Folha de goiabeira x Folha de rabanete x Folha de tara x Framboesa x Fruta est relar (carambola) x Fruto do lúpu lo x Galhinh o de canela x Galinha x Geléia real x Gema de ovo de ga linha x Gengibre (fresco) x Gengibre (seco) x Ginsém x Goiaba x Gomo de cogumelo comum x Ha liote x \"Hawthom fruit\" (fruta do espinheiro branco) x \"H orse bean\" (fava) x Hortelã x Hortelã -pimenta x \"Hyacinth bean\" (feijão jacinto) x Apêndice A 197 YANG N° de pontos Y YIN Para fora Para cima o Para baixo Para dentro \" AUMENTO , (Verão) (Primavera) • (Outono) (Inverno) Z +8 +7 +6 +5 +4 +3 +2 +1 O -1 -2 -3 -4 -5 -6 - 7 --1l Inhame x \"Kelp\" x \"Kumquat\" x Lágrimas-de-jó x Lechia x Leite (de ovelha) x Leite (de vaca) x Leite (humano) x Limão x Líquido do coco x \"Longan\" x \"Loquat\" x Lótus (fruta, semente, raiz) x Maçã x Maçã silvestre ácida x Malte x Maltose x Mamão x Mamon a x Manga x Manjericão doce x Manjerona x Mante iga x Mel x Melancia x Melão almiscarado x Mexilhão x Milho x Molusco bivalve (de água doce) x (Continua) 198 Sistema Chi\"És de Curas Alimelltares (Conl) YANG N° de pontos Y Y/N Para fora Para cima ~ Para baixo Para den tro ALIMENTO \" (Verão ) (Primavera) \" (Outono) (Inverno) Z +8 +7 +6 +5 +, +3 +2 +1 O -1 -2 -3 -4 -5 -6 -7 -8 Molusco bivalve (de água salgada) x Morango x Mostarda folhosa x \"Mung bean\" x Noz x Noz-mascada x Óleo de gergelim x Óleo de soja x Ostra x Ovo (pa ta) x Ovo de galinha x Parte comestível do coco x Pato x Pepino x Pêra x Pêssego x Pimenta -do-reino e branca x Pimenta-malagueta ou verde x Plúmula de lótus x Pó de osso de siba x Presunto x Rabanete x Raiz de beterraba x Raiz de figueira Raízes de cebolinha x Repolho (chinês) x Rim (de boi) x Rim (de ovelha) x Rim (de porco) x ALIMENTO Sal Sangue de enguia \"Sea grass\" (grama marinha) Semente de cereja Semente de damasco (amargo) Semente de damasco (doce) Semente de endro Semente de gergelim preta Semente de girassol Sementesdecebolinho Siba \"Star anise\" (anis estrelar) \"Sword bean\" (feijão espada) Tabaco Támara (vermelha e preta) Tangerina Tangerina (\"mandarin orange\") Tara Timo Tomate Toranja Trigo Uva Vagem Vinagre Vinho Apêndice A 199 ~ ________ Y~A~~T'~G ______ ~N~·~de~ponr'O~5~Y ______ ~Y,nv~ ________ --1 Paca tora Para cima Para baixo Paca dentro (Verão) (Primavera) (Outono) (Inverno) +8 +7 +6 +5 +4 +3 +2 +1 O -1 -2 -3 -4 -5 -6 -7 --8 x x x x x x x x x x x x x x x x x x x x x x x x Apêndice B Alimentos em Relação a Energias, Sabores e 6rgãos Int ernos (Alimentos sem indicações de números de pontos Y estão ainda indetenninados em energias e sabores.) O símbolo\" -\" indica \"levemente\", por exemplo, levemente morno 01/ levemente frio. O símbolo\" +\" indica\" extremamente\", por exemplo, exlremmnenfe azedo 011 extremame/lte frio.",
+      "-§ ~ ~ \"ALIMENTO $ -o'q; .::l -S' ~ \" c ~ & ::: \" \" ..$ \" c ~ 'OqJ :.§ ~t::\" '2;\"a' 'tt \" ,$ $\" &~-§~~~ . o 8 o.s rz.\",r.; ~ -:-.,$ ~ ~ ;;.CJ ~6iJ Ji t1 é? ~r..;,:..o(> §or.;;~S\"\"'qz, \"'.Q\"t\"~f\"J:;\"e' \"\"~ c:J ~ ~ ;:: ~.::;. ..... ~ ~ :::,.fl. ,Q:;;r:.. 4.$ó~ ,Q:;;':- çJ ~ Outros Abacaxi x x x Abóbora x x x x Abóbora-mocanga x -x Açafrão x x x x Açúcar branco x x x Açúcar mascavo x x x x x Aipo x x x x x Alcaçuz x x x x x Alcaravia -x x x x Alecrim x x Alface x x x x x Alface (caule) Alface (folha) x x x x x Alga marinha x x Alho x x x x x Alho -porro x x x x obstrutivo Ameixa azeda +x x x ohstrutivae .. Ameixa x x x x x Amendoim x x x x Arroz doce x x x x Arroz polido x x x x Aspargo -x x -x Azeitona x x x x x obstru tiva Banana x x (Contmua) (Conl.)",
+      "'t§' ~tZ'\" A LIMEN TO .s- ~o -l.:! ~ o o ~ & ,f ,,~ -§ ..$-'\" o ~ IOq;:§:§~~ ~ \" 1\",0 \", ~ Ç.,Q, ;;S ~ i$ .\" ê t II ~S' ~\"J ..s-!Ii ~C *Cõ J5 ;p é; ~t;,;l ,,'::' -Q0 ~ '1;'$ \"'~ ~~ 6 ~ \",ç < 4.~ ,~..$'.:::.,.t:; ~q; 4.:~~ ~~ (5) c.(J Outros Barbas de milho x x x x Batata-doce x x Batata x x Berinjela x x x x x Broto de bambu x x acetinado Cabaça amarga x x x x x Cabeça branca de cebola verde x x x x Café x x x Camarão x x Cana - de~açúcar x x x x Caqui x x x x x obstrutivo Caranguejo x x x x Carapaça de molusco bivalve (de rio) x x x x x Carapaça de molusco bivalve (marlnho) x x x Carne de boi x x x x Carne de carneiro x x x x Carne de porco x x x x x x Caroço de algodão x x Carpa (comum) x x x x Carpa (dourada) x x x x x Carpa (grama) x x x x Casca de can ela x x x x x x Casca de tangerina 50ca x x x x x Casca de toranja x x x x x x x Casca do coco x Castanha d'água x x x x Castanha x x x x x Cebola Cebolinha x x x x x ALIMENTO Cenoura Cera da caba<;» minesa Cereja Cevada Chicória Clara de ovo de galinha Coalhada de feijão Coentro (salsa chinesa) Cogumelo branco Cogumelo preto Cogumelo shiitake Concha de ostra Cotlve~rábano Damasco Enguia Erva~doce Espinafre Farelo de arroz Farelo de trigo Feijão comum Feijão vermelho pequeno Feijão~de ~ soja (amarelo) Feijão~de~5oja (pre to) Fígado (de boi) Fígado (de galinha) Fígado (de ovelha) x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x -x x x Apêndice B 203 x x x x x x x x x x x x x x x x x x x x acetinado x x x x x x x x obstrutiva x x x x x x x x x x x x x x acetinado x x x x x x x x x x x x x x x x x x x x x (ContInua) rCont.)",
+      ".,,0 ~ ~,I,. ... 0 ~.~ A UME NTO ~ qo 'tr .~ ~ o o ~ o ;:; ~\"!f ..$' oo ~ \"0~ ·$·$ ''O' 'O' o ,~ ~ ~ '!J \"''O' $\" f $, 8 . ~ ~ r\" o ~.! ~Q.o\"\"~ It''O'~ ~ ~ \",t; ~ ,,-\" (:f .,;; l \",\"<ii ~ .§' ~o .;-;! .... ..,;; ..,;; ~ .. ~,~.~ t;; , '<.; «; O; «; ,,:;:' ..... ~ .... ~ .:::..~ ~~ ~ ~ ~r::- (;04! Outr os Fígado (de porco) x x x x Figo x x x x Flor de tara saoo, x ~ntocpecid Flor-de-l is x x x Folha de cebola verde x x Folha de goiabeira x x obstrutiva Folha de rabane te x x x x x Folha de tara x x Framboesa x x x Fruta estrelar (carambola) x x x Fruto do lúpulo x - x Galhin ho de canela x x x x x x Galinha x x x x Geléia real x Gema de ovo de galinh a x x x x Geng ibre (fresco) x x x x x Gengi bre (seco) x x x x x Ginsém x -x x x x Goiaba x x lobstrutivo conshitivo Gomo de cogumelo comum x x x x x x Haliote x x x \"Hawt horn fruit \" (fruta do espinheiro branco) x x -x x x x \"Horse bean\" (fava) x x x x Horte lã x x x Horte lã-pi menta x x x x \"Hyacinth bean\" (feijão jacinto) x x x x lnhame x x x x x ALIMENTO \"Kelp\" \"Kurnqua t H Lechia Leite (de oveUla) Leite (de vaca) Leite (hu mano) Limão Líquido do coco \"Longan\" \"Loquat\" Lótus (fruta, semente, ra iz) Maçã Maçã silvestre ácida Malte Malto se Mamão Mamona Manga Manjer icão doce Manjerona Manteiga Mel Melancia Melão almiscarado Mexilhão Milho Molusco bivalve (de água doce) Molusco bivalve (de água salgada) x x x x x x x x x x x x +x -x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x Apêndice B 205 x x x x x x x x x x x x x x x x x x x x x x x x x x obstrutiva x x x x x x x x x -x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x (Contimta) (ColIl.) A LIM ENTO Morango x x Mos ta rda folhosa x '·Mung bean\" x Noz x Noz-moscada x Óleo de gergelim x Óleo de soja x x Ostra Ovo (pata) Ovo de gallnha Parte comestível do coco Pato Pepino x x x x x x Pêra x -x Pêssego Pimenta-do- reino e branca Pimenta-malagueta x Oll verde x Plúmu la de lótus PÓ de osso de siba PresW1!O x x Rabane te x x Raiz de beter raba x Raiz de figueira Raízes de ceboUnho x Repolho (chi nês) x Rim (de boi) Rim (de ove lha) x Rim (de porco) x x x x x x x x x x x x x x x x x x x x x x x x x x obstrutiva x x x x x x x x x x x x x x x x x x x x obstrutiva -x x x x x x x x x x x x acetinado x x x x x x x x x x ALIMENTO Sangue de enguia \"Sea grass\" (grama marinha) Semen te de cereja x Semente de damasco (amargo) x Semente de damasco (doce) Semente de endro x Semente de gergex x Um preta x Semente de girassol Sementes de cebolinho x x x x x x x x Siba x \"Star anise\" (anis estre lar) x x \"Sword bean\" (feijão espada) Tabaco Tâmara (vermelha e preta) Tangerina Tangerina (\"mandarin orange\") Taro Timo Tomate Toranja Trigo Uva Vagem Vinag re Vinho x x x x x x x x x x x x x x x x x x x x x x Apêl/dice B 207 x x x x x x tóxico x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x acetinado -x x x x x x x x x x x x x x x x x x x x BIBLIOGRAFIA * Chinese Medical fOllmal (mensalmente). Peking , 1959-1984. Chinese Scientific Nutritional Research Institut e. Nutritional Chart of Chinese Foods, Peking : People's Health Press, 1963. Dai Yin-Fong and Liu Cheng-Jun.Medicinal UsesofFruits. Peking: Guang-Xi People' s Press, 1982. Jiangsu New Medicai College . A Complete Dictionary of Chinese Herbs. Shanghai: Shanghai Technical Press, 1977. fOtlmal ofNew Chinese Medicine (mensalmente). Canton, 1956--1985. Li Shih-Chen. An Olltline of Materia Medica, 1578. Li Yan. Self Healing of Cancers and TI/mors btJ Herbs and Diet. Peking: People's Health Press, 1982. Luo He-Sheng. Common Herbs for Prevention and Cure of Cancers and Tumors. Canton: Canton Technical Press, 1981. Sun Shu Mao. One Thousand Ounces of Gold Classic, seventh century A.D. YehJu-Quan. Chinese Diet and Herbal Formulas. Hong Kong: Shang-Wu Press, 1978. Yellow Emperor's C/assic Df InternaI Medicine, third century B.e.",
+      "Todos os artigos foram publicados na China e na própria LÚlgua Chinesa."
+    ],
+    "needsReview": false
+  }
+];

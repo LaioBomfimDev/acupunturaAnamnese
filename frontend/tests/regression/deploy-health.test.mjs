@@ -232,7 +232,7 @@ test('falha de rede no RPC aparece como check bloqueado com orientação de conf
   assert.match(rpcCheck.correction, /não para api\.supabase\.com/);
 });
 
-test('healthcheck agrega os quatro smoke tests reais de IA', async () => {
+test('healthcheck agrega os smoke tests reais de IA', async () => {
   const { AI_SMOKE_FUNCTIONS, AI_SMOKE_PURPOSE, HEALTH_STATUS, runDeployHealthCheck } = service;
   const invoked = [];
 

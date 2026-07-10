@@ -34,6 +34,11 @@ export const AI_SMOKE_FUNCTIONS = [
     functionName: 'library-qa',
     title: 'IA da Biblioteca: library-qa',
   },
+  {
+    id: 'aiSmokeFoodResearch',
+    functionName: 'food-research',
+    title: 'IA de dietoterapia: food-research',
+  },
 ];
 
 const SUPABASE_URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim();

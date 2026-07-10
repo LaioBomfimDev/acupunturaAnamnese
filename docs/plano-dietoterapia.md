@@ -18,7 +18,7 @@
 
 ## Pré-requisitos (bloqueadores da implementação)
 
-1. **Curadoria humana:** aprovar itens `educativo_aprovado` no `HerbalPlantCurationPanel` (SuperAdm), com `safetyReview` completo e rastreabilidade de fonte. Enquanto for 0, a Fase A começa vazia.
+1. **Curadoria humana:** aprovar itens `educativo_aprovado` no `HerbalPlantCurationPanel` (SuperAdm), com `safetyReview` completo e rastreabilidade de fonte. Enquanto for 0, a Fase A começa vazia. **Trabalho preparado:** [`docs/herbal-curation-worksheet.md`](herbal-curation-worksheet.md) (gerado por `tools/knowledge/build-herbal-curation-worksheet.mjs`) traz 20 ervas de baixo risco com síntese educativa e cautelas já redigidas da fonte (13 propostas como `educativo_aprovado`, 7 como `restrito_profissional`). Essas 20 entram na semente local apenas como `curadoria_tecnica` + `proposedStatus`, com `approvalMode: local_only` e `requiresProfessionalAudit: true`; a acupunturista revisa, edita e marca status + os 6 checks no painel. A planilha não altera dados clínicos, não inventa associação MTC e não publica nada ao paciente.
 2. **Passo de publicação/retrieval revisado (a desenhar/construir):** pipeline que pega decisões `educativo_aprovado` + elegíveis (`isHerbalPatientEligible`) e as disponibiliza para exibição via um gate de publicação explícito — não ler `localStorage` cru na tela clínica.
 
 ## Fase A — aba educativa segura (quando pré-req. 1 e 2 existirem)

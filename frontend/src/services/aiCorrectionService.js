@@ -22,6 +22,9 @@ export const AI_SURFACES = {
   CLINICAL_REASONING: 'clinical_reasoning',
   NARRATIVE: 'narrative',
   LIBRARY_QA: 'library_qa',
+  FOOD_RESEARCH: 'food_research',
+  PSYCH_MARKS: 'psych_marks',
+  PSYCH_READING: 'psych_reading',
 };
 
 export const AI_SURFACE_LABELS = {
@@ -30,6 +33,9 @@ export const AI_SURFACE_LABELS = {
   clinical_reasoning: 'Raciocínio clínico (IA Assistente)',
   narrative: 'Relatório / Evolução',
   library_qa: 'Biblioteca',
+  food_research: 'Dietoterapia (pesquisa de alimento)',
+  psych_marks: 'Psicologia — sugestões da anamnese',
+  psych_reading: 'Psicologia — leitura da IA (rascunho)',
 };
 
 export const CORRECTION_STATUS_LABELS = {

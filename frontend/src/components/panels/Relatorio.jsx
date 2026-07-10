@@ -5,6 +5,7 @@ import { draftReport, REPORT_AI_DISCLAIMER } from '../../services/reportAiServic
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { buildPointEvidence, buildProtocolSummary, buildReferenceList } from '../../knowledge/reportFragments';
+import { FOOD_CATALOG } from '../../knowledge/foodDietoterapia';
 import { summarizeRehabilitation, formatOptionalMetric } from '../../services/rehabilitationService';
 import {
   buildReportAccentPalette,
@@ -47,6 +48,12 @@ function sanitizeHtml(html) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
+
+// Opções do catálogo para o profissional escolher no relatório. Ervas do worksheet
+// ficam fora até existir etapa explícita de publicação/retrieval revisada.
+const DIETO_CATALOG_OPTIONS = [
+  ...FOOD_CATALOG.map(f => ({ name: f.commonName, label: `${f.commonName} · alimento` })),
+];
 
 function InlineRow({ label, value, fallback = 'Aguardando dados.' }) {
   return (
@@ -271,6 +278,7 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   const printHeaderMeasureRef = useRef(null);
   const printFooterMeasureRef = useRef(null);
   const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
+  const [dietoDraft, setDietoDraft] = useState('');
   const { main, detail, protocol, safety, safetyAlerts = [] } = analysis;
 
   const nome    = selectedPatient?.name || state.nome || 'Paciente não informado';
@@ -325,6 +333,26 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   // Texto editado manualmente (persistido na sessão por modo de relatório)
   const edits = state.relatorioEdits || {};
   const editedEntry = edits[modo];
+
+  // Dietoterapia no relatório: o profissional liga (select) e monta
+  // uma lista simples nome + instruções de uso (texto dele, editável). Persistido
+  // na sessão como modelo estruturado, separado das edições de texto por modo.
+  const dieto = state.relatorioDietoterapia || { include: false, items: [] };
+  const dietoItems = Array.isArray(dieto.items) ? dieto.items : [];
+  const dietoActiveItems = dietoItems.filter(it => (it.name || '').trim());
+  function updateDieto(next) { onUpdate?.('relatorioDietoterapia', next); }
+  function setDietoInclude(include) { updateDieto({ ...dieto, include, items: dietoItems }); }
+  function addDietoItem(name) {
+    const n = String(name || '').trim();
+    if (!n) return;
+    updateDieto({ ...dieto, include: true, items: [...dietoItems, { id: `di-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: n, instructions: '' }] });
+  }
+  function updateDietoItem(id, patch) {
+    updateDieto({ ...dieto, items: dietoItems.map(it => (it.id === id ? { ...it, ...patch } : it)) });
+  }
+  function removeDietoItem(id) {
+    updateDieto({ ...dieto, items: dietoItems.filter(it => it.id !== id) });
+  }
   const sanitizedEditedHtml = editedEntry ? sanitizeHtml(editedEntry.html) : '';
   const aiDraftPendingReview = isAiDraftPendingReview(editedEntry);
 
@@ -469,6 +497,22 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
 
   const printFooter = <ReportContactFooter items={contactItems} clinicName={clinicName} />;
 
+  // Seção de dietoterapia — só aparece se o profissional ligou e
+  // preencheu itens. Simples: nome + instruções de uso escritas por ele.
+  const dietoterapiaSection = dieto.include && dietoActiveItems.length > 0 ? (
+    <div style={{ margin: '18px 0 0' }}>
+      <h3 style={{ margin: '0 0 6px', color: 'var(--navy)', fontSize: 17 }}>Orientação alimentar</h3>
+      <p style={{ margin: '0 0 10px', fontSize: 13, color: '#64748b' }}>
+        Orientações individualizadas conforme avaliação do profissional. Suspenda e comunique em caso de reação; mantenha as medicações prescritas por seu médico.
+      </p>
+      {dietoActiveItems.map(it => (
+        <p key={it.id} style={{ margin: '8px 0', lineHeight: 1.6, fontSize: 16 }}>
+          <b>{it.name}</b>{(it.instructions || '').trim() ? ` — ${it.instructions.trim()}` : ''}
+        </p>
+      ))}
+    </div>
+  ) : null;
+
   const generatedBody = (
     <>
       {modo === 'Resumo clínico' && (
@@ -545,6 +589,8 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
             </p>
           )}
 
+          {dietoterapiaSection}
+
           {/* Assinatura */}
           <p style={{ textAlign: 'right', marginTop: 40, lineHeight: 1.8 }}>
             <b>{terapeuta}</b><br />
@@ -573,6 +619,8 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           <p style={{ margin: '16px 0', lineHeight: 1.65, fontSize: 16 }}>
             É importante comunicar qualquer mudança, reação, piora, medicação nova ou intercorrência clínica.
           </p>
+
+          {dietoterapiaSection}
         </>
       )}
     </>
@@ -593,6 +641,69 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
             {m}
           </button>
         ))}
+      </div>
+
+      {/* ── dietoterapia no relatório (não imprime) ── */}
+      <div className="report-dieto-builder no-print box" style={{ margin: '0 0 16px', borderColor: '#2e7d5b', background: '#f2f8f4' }}>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', fontWeight: 600, color: '#1e5c40' }}>
+          Dietoterapia no relatório:
+          <select
+            value={dieto.include ? 'sim' : 'nao'}
+            onChange={e => setDietoInclude(e.target.value === 'sim')}
+            style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid #8fc3aa' }}
+          >
+            <option value="nao">Não incluir</option>
+            <option value="sim">Incluir no relatório</option>
+          </select>
+        </label>
+
+        {dieto.include && (
+          <div style={{ marginTop: 10 }}>
+            <p className="small" style={{ margin: '0 0 8px', color: '#2f4f40' }}>
+              Adicione alimentos curados e escreva a instrução de uso. Ervas só entram após publicação explícita; nada é prescrito automaticamente.
+            </p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              <input
+                list="dieto-catalog"
+                value={dietoDraft}
+                onChange={e => setDietoDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDietoItem(dietoDraft); setDietoDraft(''); } }}
+                placeholder="Nome do alimento…"
+                style={{ flex: '1 1 240px', padding: '6px 10px', borderRadius: 8, border: '1px solid #8fc3aa' }}
+              />
+              <datalist id="dieto-catalog">
+                {DIETO_CATALOG_OPTIONS.map(opt => <option key={opt.label} value={opt.name}>{opt.label}</option>)}
+              </datalist>
+              <button type="button" className="tag" onClick={() => { addDietoItem(dietoDraft); setDietoDraft(''); }}>
+                + Adicionar
+              </button>
+            </div>
+
+            {dietoItems.length === 0 ? (
+              <p className="small" style={{ opacity: 0.7 }}>Nenhum item ainda.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {dietoItems.map(it => (
+                  <div key={it.id} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    <input
+                      value={it.name}
+                      onChange={e => updateDietoItem(it.id, { name: e.target.value })}
+                      placeholder="Nome"
+                      style={{ flex: '1 1 160px', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+                    />
+                    <input
+                      value={it.instructions}
+                      onChange={e => updateDietoItem(it.id, { instructions: e.target.value })}
+                      placeholder="Instruções de uso (ex.: 1 xícara de chá após o almoço)"
+                      style={{ flex: '2 1 280px', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+                    />
+                    <button type="button" className="tag" onClick={() => removeDietoItem(it.id)} title="Remover item">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── alerta de segurança ───────────────────────────── */}

@@ -58,6 +58,7 @@ export function createInitialState(patient = null) {
       avaliacoes: [],
     },
     relatorioEdits: {},
+    relatorioDietoterapia: { include: false, items: [] },
   };
 }
 

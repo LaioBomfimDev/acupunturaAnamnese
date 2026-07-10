@@ -31,6 +31,7 @@ import { AnamneseKnowledgePanel } from './AnamneseKnowledgePanel';
 import { AiInstructionsPanel } from './AiInstructionsPanel';
 import { AICorrectionsPanel } from './AICorrectionsPanel';
 import { HerbalPlantCurationPanel } from './HerbalPlantCurationPanel';
+import { FoodCurationPanel } from './FoodCurationPanel';
 
 const EMPTY_EDIT_FORM = {
   firstName: '',
@@ -400,6 +401,8 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
         <AICorrectionsPanel />
       ) : activeSection === 'herbal-curation' ? (
         <HerbalPlantCurationPanel />
+      ) : activeSection === 'food-curation' ? (
+        <FoodCurationPanel />
       ) : activeSection === 'maps' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <section className="box" style={{ background: '#f8fafc', border: '1px solid var(--line)', borderRadius: 18, padding: 20 }}>

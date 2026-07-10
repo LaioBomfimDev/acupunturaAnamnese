@@ -35,7 +35,9 @@ function TrashIcon() {
   );
 }
 
-export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, therapistName }) {
+// initialDiscipline: matrícula criada junto com o cadastro (Fase 2) —
+// o workspace de cada disciplina passa a sua (acupuntura é o default).
+export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura' }) {
   const { patients, selectedPatient, loading, error, createPatient, selectPatient, deletePatient } = usePatient();
   const [mode, setMode] = useState('new');
   const [query, setQuery] = useState('');
@@ -63,7 +65,7 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, ther
     setSaving(true);
     setListNotice(null);
     try {
-      const patient = await createPatient(formData);
+      const patient = await createPatient(formData, initialDiscipline);
       setFormData({ name: '', phone: '', age: '' });
       onCreatePatient?.(patient);
     } finally {

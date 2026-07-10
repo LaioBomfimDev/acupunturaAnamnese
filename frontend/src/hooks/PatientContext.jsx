@@ -13,6 +13,7 @@ import {
   updatePatient as updatePatientApi,
   deletePatient as deletePatientApi,
 } from '../services/patientService';
+import { enrollPatientInitial } from '../services/clinicPatientsService';
 
 const PatientContext = createContext({});
 
@@ -60,11 +61,14 @@ export const PatientProvider = ({ children }) => {
     loadPatients();
   }, [userId, loadPatients]);
 
-  // Criar novo paciente
-  const createPatient = useCallback(async ({ name, phone, birthDate, age }) => {
+  // Criar novo paciente. A matrícula inicial registra a disciplina do
+  // atendimento (Fase 2 — só o workspace de acupuntura cria por aqui);
+  // é best-effort: pendência fica visível em "Pacientes da clínica".
+  const createPatient = useCallback(async ({ name, phone, birthDate, age }, initialDiscipline = 'acupuntura') => {
     setError(null);
     try {
       const newPatient = await createPatientApi({ name, phone, birthDate, age });
+      await enrollPatientInitial(newPatient.id, initialDiscipline);
       setPatients(prev => [newPatient, ...prev]);
       setSelectedPatient(newPatient);
       return newPatient;

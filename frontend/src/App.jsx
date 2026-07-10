@@ -7,10 +7,15 @@ import { analyze, assistantSynthesis } from './utils/analyzer';
 import { buildRandomClinicalFixture } from './utils/testClinicalFixture';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
+import { DisciplineHub } from './components/DisciplineHub';
+import { ClinicPatientsPanel } from './components/ClinicPatientsPanel';
+import { PsychologyWorkspace } from './components/PsychologyWorkspace';
+import { canEnterDiscipline, getDiscipline } from './data/disciplines';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
 import { AssistantDeepDive } from './components/panels/AssistantDeepDive';
+import { AssistantFoodLinks } from './components/panels/AssistantFoodLinks';
 import './App.css';
 
 const lazyPanel = (loader, exportName) => lazy(() => loader().then(module => ({ default: module[exportName] })));
@@ -28,6 +33,10 @@ const Biblioteca = lazyPanel(() => import('./components/panels/Biblioteca'), 'Bi
 const Relatorio = lazyPanel(() => import('./components/panels/Relatorio'), 'Relatorio');
 const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
 const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
+
+// Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
+// entre logins — sair limpa a chave.
+const DISCIPLINE_STORAGE_KEY = 'acup.activeDiscipline.v1';
 
 function getFirstName(value) {
   const text = String(value || '').trim();
@@ -59,6 +68,8 @@ export default function App() {
   } = useAuth();
   const { selectedPatient } = usePatient();
   const [activeTab, setActiveTab] = useState('Tela inicial');
+  const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
+  const [showClinicPatients, setShowClinicPatients] = useState(false);
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
   const { state, selectedMap, updateField, toggle, setSelection, getSelected, getPulseSelected, setState, setSelectedMap, resetSession, tongueAi, setTongueAi, hydrateTongueAi } = useClinicState();
@@ -209,6 +220,43 @@ export default function App() {
     );
   }
 
+  // Hub de disciplinas: profissional escolhe a área de atendimento antes do
+  // workspace (docs/plano-clinica-multidisciplinar.md, Fase 1). SuperAdm
+  // mantém o painel próprio. A validação cobre também valor antigo/ inválido
+  // no sessionStorage (ex.: disciplina que o perfil não libera).
+  if (!isSuperAdmin && !canEnterDiscipline(profile, activeDiscipline)) {
+    if (showClinicPatients) {
+      return (
+        <ClinicPatientsPanel
+          profile={profile}
+          onBack={() => setShowClinicPatients(false)}
+        />
+      );
+    }
+    return (
+      <DisciplineHub
+        profile={profile}
+        therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+        onSelect={handleSelectDiscipline}
+        onSignOut={handleHubSignOut}
+        onOpenClinicPatients={() => setShowClinicPatients(true)}
+      />
+    );
+  }
+
+  // Workspace por disciplina (Fase 5): Psicologia tem workspace próprio,
+  // enxuto e autocontido — todo o resto deste componente é o pacote MTC.
+  if (!isSuperAdmin && activeDiscipline === 'psicologia') {
+    return (
+      <PsychologyWorkspace
+        profile={profile}
+        therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+        onSwitchDiscipline={handleSwitchDiscipline}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
   // Motor de análise executado a cada render (leve o suficiente para isso)
   const analysis = analyze(state, selectedMap);
   // Síntese ao vivo do assistente: leitura ponderada da anamnese como um todo.
@@ -318,8 +366,29 @@ export default function App() {
     setSelectedMap(testSelectedMap);
   }
 
+  function handleSelectDiscipline(disciplineId) {
+    if (!canEnterDiscipline(profile, disciplineId)) return;
+    sessionStorage.setItem(DISCIPLINE_STORAGE_KEY, disciplineId);
+    setActiveDiscipline(disciplineId);
+    setActiveTab('Tela inicial');
+  }
+
+  function handleSwitchDiscipline() {
+    if (!confirmPendingChanges('Existem alterações ainda não salvas. Deseja trocar de área mesmo assim?')) return;
+    sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
+    setActiveDiscipline(null);
+    setActiveTab('Tela inicial');
+  }
+
+  // Sair a partir do hub: não há atendimento aberto para confirmar.
+  async function handleHubSignOut() {
+    sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
+    await signOut();
+  }
+
   async function handleSignOut() {
     if (!confirmPendingChanges('Existem alterações ainda não salvas. Deseja sair mesmo assim?')) return;
+    sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
     await signOut();
   }
 
@@ -330,6 +399,8 @@ export default function App() {
         onTabChange={handleTabChange}
         therapist={therapistFirstName}
         profileRole={profile?.role}
+        disciplineLabel={getDiscipline(activeDiscipline)?.label}
+        onSwitchDiscipline={handleSwitchDiscipline}
         isSuperAdmin={isSuperAdmin}
         superAdminSection={superAdminSection}
         onSuperAdminSectionChange={setSuperAdminSection}
@@ -449,6 +520,8 @@ export default function App() {
                   synthesis={synthesis}
                   patientName={selectedPatient?.name || state.nome}
                 />
+
+                <AssistantFoodLinks synthesis={synthesis} />
               </div>
             </div>
 

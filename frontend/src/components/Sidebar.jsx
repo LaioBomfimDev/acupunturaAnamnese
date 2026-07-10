@@ -14,6 +14,7 @@ const SUPER_ADMIN_SECTIONS = [
   { id: 'knowledge', label: 'Alimentação', description: 'Biblioteca Viva' },
   { id: 'pdf-sources', label: 'Fontes PDF', description: 'Pontos não respondidos' },
   { id: 'herbal-curation', label: 'Curadoria de ervas', description: 'Fonte e segurança' },
+  { id: 'food-curation', label: 'Curadoria de alimentos', description: 'Dietoterapia educativa' },
   { id: 'anamnese-knowledge', label: 'Conhecimento da Anamnese', description: 'Achados e padrões' },
   { id: 'ai-instructions', label: 'Instruções da IA', description: 'Diretrizes que a IA segue' },
   { id: 'ai-corrections', label: 'Correções da IA', description: 'Ensino e aprovação' },
@@ -146,6 +147,13 @@ const NAV_ICONS = {
       <path d="M4 21c3-5 7-8 12-11" />
     </>
   ),
+  'food-curation': (
+    <>
+      <path d="M6 3v7a3 3 0 0 0 6 0V3" />
+      <path d="M9 10v11" />
+      <path d="M17 3c-1.7 0-3 2-3 5s1.3 4 3 4v9" />
+    </>
+  ),
   'anamnese-knowledge': (
     <>
       <rect x="5" y="3" width="14" height="18" rx="2" />
@@ -214,6 +222,8 @@ export function Sidebar({
   onTabChange,
   therapist,
   profileRole,
+  disciplineLabel,
+  onSwitchDiscipline,
   isSuperAdmin,
   superAdminSection = 'manage',
   onSuperAdminSectionChange,
@@ -235,9 +245,21 @@ export function Sidebar({
         <span>{String(therapist || 'Profissional').slice(0, 2).toUpperCase()}</span>
         <div>
           <b>{therapist || 'Dra. Denise Neves'}</b>
-          <small>{profileRole === 'super_admin' ? 'SuperAdm • Segurança' : 'Acupuntura • MTC'}</small>
+          <small>{profileRole === 'super_admin' ? 'SuperAdm • Segurança' : (disciplineLabel || 'Acupuntura • MTC')}</small>
         </div>
       </div>
+
+      {!isSuperAdmin && onSwitchDiscipline && (
+        <button type="button" className="sidebar-switch-area" onClick={onSwitchDiscipline}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8 3 4 7l4 4" />
+            <path d="M4 7h16" />
+            <path d="m16 21 4-4-4-4" />
+            <path d="M20 17H4" />
+          </svg>
+          Trocar de área
+        </button>
+      )}
 
       {!isSuperAdmin && selectedPatient ? (
         <button className="sidebar-patient" onClick={() => onTabChange('Painel')}>

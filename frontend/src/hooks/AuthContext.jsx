@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getClinicForProfile } from '../services/clinicService';
+import { DISCIPLINE_IDS } from '../data/disciplines';
 
 const AuthContext = createContext({});
 const LOCAL_FALLBACK_ENABLED = import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === 'true';
@@ -35,6 +36,9 @@ function createLocalProfile(user) {
     role: 'therapist',
     is_active: true,
     must_change_password: false,
+    // Contas locais são as de teste do Laio — multi-disciplina por decisão
+    // (docs/plano-clinica-multidisciplinar.md §1).
+    disciplines: [...DISCIPLINE_IDS],
   };
 }
 
@@ -96,9 +100,19 @@ export const AuthProvider = ({ children }) => {
 
     let { data, error } = await supabase
       .from('profiles')
-      .select(`${baseColumns},clinic_id`)
+      .select(`${baseColumns},clinic_id,profession,disciplines`)
       .eq('id', nextUser.id)
       .maybeSingle();
+
+    // Banco ainda sem a migração de disciplinas (20260707): refaz sem ela
+    // (o frontend cai no fallback de resolveUserDisciplines).
+    if (error && /disciplines|profession/i.test(error.message || '')) {
+      ({ data, error } = await supabase
+        .from('profiles')
+        .select(`${baseColumns},clinic_id`)
+        .eq('id', nextUser.id)
+        .maybeSingle());
+    }
 
     // Banco ainda sem a migração de clínicas: refaz sem a coluna clinic_id
     if (error && /clinic_id/i.test(error.message || '')) {
@@ -271,6 +285,21 @@ export const AuthProvider = ({ children }) => {
     return loadProfileForUser(user);
   };
 
+  // Reautenticação para ações sensíveis (ex.: enviar prontuário a outro
+  // profissional). Confirma a senha SEM derrubar a sessão de forma visível
+  // (real → signInWithPassword do próprio e-mail; local → senha conhecida).
+  const verifyPassword = async (password) => {
+    if (!password) return false;
+    if (user?._isLocal) {
+      const username = String(user.id || '').replace(/^local-/, '');
+      return LOCAL_ADMINS[username]?.password === password;
+    }
+    const email = user?.email || profile?.email;
+    if (!email) return false;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
+  };
+
   const changeTemporaryPassword = async (password, confirmPassword) => {
     const { data, error } = await supabase.functions.invoke('complete-first-login', {
       body: { password, confirmPassword },
@@ -297,6 +326,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isSuperAdmin = profile?.role === 'super_admin' && profile?.is_active === true && profile?.must_change_password !== true;
+  const isClinicAdmin = profile?.role === 'clinic_admin' && profile?.is_active === true && profile?.must_change_password !== true;
   const mustChangePassword = profile?.is_active === true && profile?.must_change_password === true;
 
   return (
@@ -305,12 +335,14 @@ export const AuthProvider = ({ children }) => {
       profile,
       profileError,
       isSuperAdmin,
+      isClinicAdmin,
       mustChangePassword,
       signInWithPassword,
       signOut,
       loading,
       refreshProfile,
       changeTemporaryPassword,
+      verifyPassword,
     }}>
       {children}
     </AuthContext.Provider>

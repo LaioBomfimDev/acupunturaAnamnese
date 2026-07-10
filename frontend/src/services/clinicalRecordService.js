@@ -58,11 +58,12 @@ function generateUUID() {
 /**
  * Salva uma nova ficha clínica criptografada.
  * @param {string} patientId - UUID do paciente
- * @param {string} recordType - Tipo: 'anamnesis', 'evolution', 'diagnosis', 'protocol', 'raciocinio', 'tongue', 'pulse'
+ * @param {string} recordType - Tipo: 'anamnesis', 'evolution', 'diagnosis', 'protocol', 'raciocinio', 'tongue', 'pulse', 'psi_anamnese'
  * @param {object} data - Dados clínicos (serão convertidos em JSON)
+ * @param {string} discipline - Disciplina que gerou o registro (coluna clinical_records.discipline)
  * @returns {string} UUID da ficha criada
  */
-export async function saveClinicalRecord(patientId, recordType, data) {
+export async function saveClinicalRecord(patientId, recordType, data, discipline = 'acupuntura') {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
   if (user?._isLocal) {
@@ -72,6 +73,7 @@ export async function saveClinicalRecord(patientId, recordType, data) {
       patient_id: patientId,
       therapist_id: user.id,
       record_type: recordType,
+      discipline,
       sensitive_data: data,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -82,11 +84,33 @@ export async function saveClinicalRecord(patientId, recordType, data) {
     return record.id;
   }
 
-  const { data: recordId, error } = await supabase.rpc('insert_clinical_record', {
+  const baseParams = {
     p_patient_id: patientId,
     p_record_type: recordType,
     p_data: JSON.stringify(data),
-  });
+  };
+
+  // Migração 20260710: a RPC passa a aceitar p_discipline. Fora da
+  // acupuntura tentamos a assinatura nova; se a migração ainda não
+  // foi aplicada (PGRST202 = função não encontrada), caímos para a
+  // antiga com AVISO explícito — o registro fica com a coluna no
+  // default 'acupuntura', mas record_type e o payload preservam a
+  // disciplina real (nada de fallback silencioso).
+  let result;
+  if (discipline !== 'acupuntura') {
+    result = await supabase.rpc('insert_clinical_record', { ...baseParams, p_discipline: discipline });
+    if (result.error?.code === 'PGRST202') {
+      console.warn(
+        `Migração 20260710 pendente no Supabase: registro '${recordType}' salvo sem a coluna discipline='${discipline}'. `
+        + 'Aplique docs/aplicar-sql-disciplinas para corrigir.',
+      );
+      result = await supabase.rpc('insert_clinical_record', baseParams);
+    }
+  } else {
+    result = await supabase.rpc('insert_clinical_record', baseParams);
+  }
+
+  const { data: recordId, error } = result;
 
   if (error) throw error;
   if (!recordId) {

@@ -45,3 +45,6 @@ tools/acukg-source/
 frontend/.local-source-assets/
 frontend/public/knowledge/source-assets/atlas-ednea/pages/
 frontend/public/knowledge/source-assets/atlas-ednea/source-index.local.json
+
+# Fontes PDF de psicologia (copyright — nunca versionar)
+pdfs_psi/

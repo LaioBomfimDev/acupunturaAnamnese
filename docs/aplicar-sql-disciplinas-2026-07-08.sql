@@ -551,7 +551,7 @@ ALTER TABLE public.clinical_records
 
 DROP FUNCTION IF EXISTS public.insert_clinical_record(UUID, TEXT, TEXT);
 
-CREATE FUNCTION public.insert_clinical_record(
+CREATE OR REPLACE FUNCTION public.insert_clinical_record(
   p_patient_id UUID,
   p_record_type TEXT,
   p_data TEXT,

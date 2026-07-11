@@ -39,6 +39,16 @@ export const AI_SMOKE_FUNCTIONS = [
     functionName: 'food-research',
     title: 'IA de dietoterapia: food-research',
   },
+  {
+    id: 'aiSmokePsychSuggestMarks',
+    functionName: 'psych-suggest-marks',
+    title: 'IA de psicologia: psych-suggest-marks',
+  },
+  {
+    id: 'aiSmokePsychReading',
+    functionName: 'psych-reading',
+    title: 'IA de psicologia: psych-reading',
+  },
 ];
 
 const SUPABASE_URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim();

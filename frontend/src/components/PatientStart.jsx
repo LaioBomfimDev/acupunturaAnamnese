@@ -37,7 +37,7 @@ function TrashIcon() {
 
 // initialDiscipline: matrícula criada junto com o cadastro (Fase 2) —
 // o workspace de cada disciplina passa a sua (acupuntura é o default).
-export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura' }) {
+export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline }) {
   const { patients, selectedPatient, loading, error, createPatient, selectPatient, deletePatient } = usePatient();
   const [mode, setMode] = useState('new');
   const [query, setQuery] = useState('');
@@ -115,11 +115,22 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, ther
       <header className="home-hero">
         <div>
           <h2 className="home-greeting-title">Oi, {therapistName || 'profissional'}</h2>
+          {hasMultipleDisciplines && (
+            <div className="home-specialty-switcher-banner">
+              Você está na área de <b>Acupuntura</b>
+              <button type="button" className="btn-switch-specialty-top" onClick={onSwitchDiscipline} title="Alternar para Psicologia">
+                Mudar Especialidade
+              </button>
+            </div>
+          )}
           <h2>Começar atendimento</h2>
           <span>Cadastre um novo paciente ou retome uma ficha existente.</span>
         </div>
         <div className="home-meta">
           <span>{formatPatientCount(patients.length)}</span>
+          {hasMultipleDisciplines && (
+            <button className="quiet-button" onClick={onSwitchDiscipline} style={{ color: 'var(--gold-2)', fontWeight: 'bold' }}>Trocar Especialidade</button>
+          )}
           <button className="quiet-button" onClick={onSignOut}>Sair</button>
         </div>
       </header>

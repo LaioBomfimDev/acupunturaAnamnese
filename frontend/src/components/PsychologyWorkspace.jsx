@@ -34,6 +34,7 @@ import {
   hasPsychologyRiskSelected,
   psychologyRiskChecklist,
 } from '../data/psychologyAnamnese';
+import { resolveUserDisciplines } from '../data/disciplines';
 
 // ============================================================
 // Workspace de Psicologia (Fase 5 — docs/plano-clinica-multidisciplinar.md)
@@ -320,6 +321,7 @@ const SAVE_LABELS = {
 export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
   const { selectedPatient, clearSelection } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
+  const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [modality, setModality] = useState(null); // null = escolher modalidade
   const [session, setSession] = useState(createEmptyPsychologySession);
@@ -486,7 +488,9 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
           <p>Psicologia · {therapistName || 'Profissional'}</p>
         </div>
         <div className="psi-topbar-actions">
-          <button type="button" className="topbar-button" onClick={handleSwitchArea}>Trocar de área</button>
+          <button type="button" className={hasMultipleDisciplines ? 'btn-switch-specialty-top' : 'topbar-button'} onClick={handleSwitchArea}>
+            {hasMultipleDisciplines ? 'Mudar Especialidade' : 'Trocar de área'}
+          </button>
           <button type="button" className="topbar-button" onClick={handleSignOut}>Sair</button>
         </div>
       </header>

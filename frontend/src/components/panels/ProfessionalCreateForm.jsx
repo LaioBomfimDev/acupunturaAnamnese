@@ -13,6 +13,7 @@ import {
   SpecialtyTags,
 } from './professionalFormParts';
 import {
+  CREATABLE_ROLES,
   EMPTY_PROFESSIONAL_FORM,
   buildProfessionalCreatePayload,
   generatePassword,
@@ -155,6 +156,17 @@ export function ProfessionalCreateForm({
             placeholder="CPF/CNPJ"
             inputMode="numeric"
           />
+        </label>
+        <label>
+          Tipo de acesso *
+          <select
+            value={form.role}
+            onChange={event => setField('role', event.target.value)}
+          >
+            {CREATABLE_ROLES.map(item => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
+          </select>
         </label>
         <ProfessionRegistration
           profession={form.profession}

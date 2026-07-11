@@ -24,14 +24,16 @@ import {
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { ClinicAdminPanel } from './ClinicAdminPanel';
 import { DeployHealthPanel } from './DeployHealthPanel';
-import { KnowledgeAdminPanel } from './KnowledgeAdminPanel';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
-import { PdfSourceLearningPanel } from './PdfSourceLearningPanel';
-import { AnamneseKnowledgePanel } from './AnamneseKnowledgePanel';
-import { AiInstructionsPanel } from './AiInstructionsPanel';
-import { AICorrectionsPanel } from './AICorrectionsPanel';
-import { HerbalPlantCurationPanel } from './HerbalPlantCurationPanel';
-import { FoodCurationPanel } from './FoodCurationPanel';
+import { CurationSections, CURATION_SECTIONS } from './CurationSections';
+import { CurationProposalsQueue } from './CurationProposalsQueue';
+
+// Seções de curadoria roteadas pelo CurationSections (maps tem bloco próprio
+// abaixo, com a caixa de solicitações dos terapeutas).
+const CURATION_SECTION_IDS = new Set(
+  CURATION_SECTIONS.map(section => section.id).filter(id => id !== 'maps'),
+);
+const SUPER_ADMIN_ACTOR = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' };
 
 const EMPTY_EDIT_FORM = {
   firstName: '',
@@ -389,20 +391,10 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
         <ClinicAdminPanel />
       ) : activeSection === 'deploy-health' ? (
         <DeployHealthPanel />
-      ) : activeSection === 'knowledge' ? (
-        <KnowledgeAdminPanel />
-      ) : activeSection === 'pdf-sources' ? (
-        <PdfSourceLearningPanel />
-      ) : activeSection === 'anamnese-knowledge' ? (
-        <AnamneseKnowledgePanel />
-      ) : activeSection === 'ai-instructions' ? (
-        <AiInstructionsPanel />
-      ) : activeSection === 'ai-corrections' ? (
-        <AICorrectionsPanel />
-      ) : activeSection === 'herbal-curation' ? (
-        <HerbalPlantCurationPanel />
-      ) : activeSection === 'food-curation' ? (
-        <FoodCurationPanel />
+      ) : activeSection === 'proposals' ? (
+        <CurationProposalsQueue />
+      ) : CURATION_SECTION_IDS.has(activeSection) ? (
+        <CurationSections activeSection={activeSection} actor={SUPER_ADMIN_ACTOR} />
       ) : activeSection === 'maps' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <section className="box" style={{ background: '#f8fafc', border: '1px solid var(--line)', borderRadius: 18, padding: 20 }}>

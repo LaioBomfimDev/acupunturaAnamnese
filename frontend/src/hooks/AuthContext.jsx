@@ -327,6 +327,7 @@ export const AuthProvider = ({ children }) => {
 
   const isSuperAdmin = profile?.role === 'super_admin' && profile?.is_active === true && profile?.must_change_password !== true;
   const isClinicAdmin = profile?.role === 'clinic_admin' && profile?.is_active === true && profile?.must_change_password !== true;
+  const isKnowledgeReviewer = profile?.role === 'knowledge_reviewer' && profile?.is_active === true && profile?.must_change_password !== true;
   const mustChangePassword = profile?.is_active === true && profile?.must_change_password === true;
 
   return (
@@ -336,6 +337,7 @@ export const AuthProvider = ({ children }) => {
       profileError,
       isSuperAdmin,
       isClinicAdmin,
+      isKnowledgeReviewer,
       mustChangePassword,
       signInWithPassword,
       signOut,

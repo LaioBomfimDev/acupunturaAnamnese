@@ -10,7 +10,9 @@ import { PatientStart } from './components/PatientStart';
 import { DisciplineHub } from './components/DisciplineHub';
 import { ClinicPatientsPanel } from './components/ClinicPatientsPanel';
 import { PsychologyWorkspace } from './components/PsychologyWorkspace';
-import { canEnterDiscipline, getDiscipline } from './data/disciplines';
+import { ReviewerHome } from './components/ReviewerHome';
+import { CurationWorkspace } from './components/CurationWorkspace';
+import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
@@ -62,6 +64,7 @@ export default function App() {
     profile,
     profileError,
     isSuperAdmin,
+    isKnowledgeReviewer,
     mustChangePassword,
     signOut,
     changeTemporaryPassword,
@@ -70,6 +73,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewSection, setReviewSection] = useState('points');
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
   const { state, selectedMap, updateField, toggle, setSelection, getSelected, getPulseSelected, setState, setSelectedMap, resetSession, tongueAi, setTongueAi, hydrateTongueAi } = useClinicState();
@@ -220,6 +225,20 @@ export default function App() {
     );
   }
 
+  // Superfície de curadoria da revisora (modo "propor"), independente de
+  // disciplina/paciente. Acessível pela ReviewerHome e pelo atalho na sidebar.
+  if (isKnowledgeReviewer && reviewMode) {
+    return (
+      <CurationWorkspace
+        section={reviewSection}
+        onSectionChange={setReviewSection}
+        therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+        onExit={() => setReviewMode(false)}
+        onSignOut={handleHubSignOut}
+      />
+    );
+  }
+
   // Hub de disciplinas: profissional escolhe a área de atendimento antes do
   // workspace (docs/plano-clinica-multidisciplinar.md, Fase 1). SuperAdm
   // mantém o painel próprio. A validação cobre também valor antigo/ inválido
@@ -230,6 +249,17 @@ export default function App() {
         <ClinicPatientsPanel
           profile={profile}
           onBack={() => setShowClinicPatients(false)}
+        />
+      );
+    }
+    // Revisora: tela inicial própria (bem-vindo + card de curadoria).
+    if (isKnowledgeReviewer) {
+      return (
+        <ReviewerHome
+          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          onEnterAcupuntura={() => handleSelectDiscipline('acupuntura')}
+          onOpenCuration={section => { setReviewSection(section); setReviewMode(true); }}
+          onSignOut={handleHubSignOut}
         />
       );
     }
@@ -282,6 +312,8 @@ export default function App() {
           onSelectPatient={() => setActiveTab('Painel')}
           onSignOut={signOut}
           therapistName={therapistFirstName}
+          hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
+          onSwitchDiscipline={handleSwitchDiscipline}
         />
       );
     }
@@ -408,6 +440,8 @@ export default function App() {
         patientAge={patientAge}
         sessionCount={evolucoes.length}
         lastVisit={lastVisit}
+        hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
+        onOpenCuration={isKnowledgeReviewer ? () => setReviewMode(true) : undefined}
       />
 
       <main className="main">
@@ -415,6 +449,14 @@ export default function App() {
         <div className="app-topbar no-print">
           <div>
             <h1>{isSuperAdminTab ? 'SuperAdm' : 'Paciente em atendimento'}</h1>
+            {!isSuperAdmin && resolveUserDisciplines(profile).length > 1 && (
+              <div className="active-specialty-badge">
+                Especialidade: <b>Acupuntura</b>
+                <button type="button" className="btn-switch-specialty-top" onClick={handleSwitchDiscipline} title="Mudar Especialidade">
+                  Alterar
+                </button>
+              </div>
+            )}
           </div>
           <div className="app-topbar-actions">
             {!isSuperAdminTab && (

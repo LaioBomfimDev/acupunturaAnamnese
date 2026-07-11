@@ -14,11 +14,19 @@ export const EMPTY_PROFESSIONAL_FORM = {
   profession: '',
   professionalRegistration: '',
   specialty: '',
+  role: 'therapist',
   clinicId: '',
   notes: '',
   temporaryPassword: '',
   confirmTemporaryPassword: '',
 };
+
+// Tipos de acesso que o SuperAdm pode criar (allowlist espelha a da
+// edge function super-admin-create-user).
+export const CREATABLE_ROLES = [
+  { value: 'therapist', label: 'Profissional (atendimento)' },
+  { value: 'knowledge_reviewer', label: 'Revisora de curadoria (acupuntura + curadoria)' },
+];
 
 export function normalizeUsername(value) {
   return String(value || '')
@@ -85,6 +93,7 @@ export function buildProfessionalCreatePayload(form, clinics = []) {
     profession: String(form?.profession || '').trim(),
     professionalRegistration: String(form?.professionalRegistration || '').trim(),
     specialty: String(form?.specialty || '').trim(),
+    role: CREATABLE_ROLES.some(item => item.value === form?.role) ? form.role : 'therapist',
     clinicId,
     clinicName: selectedClinic?.name || '',
     notes: String(form?.notes || '').trim(),

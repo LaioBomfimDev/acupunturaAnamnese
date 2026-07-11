@@ -1,0 +1,104 @@
+// ============================================================
+// Fila de propostas de curadoria (Acupunturista Revisora → SuperAdm)
+//
+// A revisora trabalha em modo "propor": cada ação de curadoria vira
+// um registro em `curation_proposals` (Supabase), visível ao SuperAdm
+// em qualquer máquina. Ao aprovar, o SuperAdm reproduz o `payload` no
+// caminho de aprovação local já existente (localStorage + export JSON).
+//
+// Tipos aceitos (espelham o CHECK da migração 20260713_curation_proposals):
+//   point_review | point_promote_common | anamnese_finding |
+//   anamnese_pattern | herb | food | ai_instruction | ai_correction |
+//   map_coordinate
+// ============================================================
+
+import { supabase } from '../lib/supabase';
+
+const TABLE = 'curation_proposals';
+
+/**
+ * Registra uma proposta da revisora. proposer_id sai da sessão autenticada
+ * (a RLS exige proposer_id = auth.uid()).
+ */
+export async function submitCurationProposal({ type, targetRef = '', payload = {}, note = '', proposerName = '' }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  const userId = userData?.user?.id;
+  if (!userId) throw new Error('Sessão expirada. Entre novamente para propor curadoria.');
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({
+      proposer_id: userId,
+      proposer_name: proposerName || userData?.user?.user_metadata?.full_name || null,
+      type,
+      target_ref: targetRef || null,
+      payload,
+      note: note || null,
+      status: 'proposed',
+    })
+    .select('id,created_at,type,target_ref,status')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Lista propostas. SuperAdm vê todas; revisora vê só as próprias (RLS).
+ */
+export async function listCurationProposals({ status = 'proposed' } = {}) {
+  let query = supabase
+    .from(TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * SuperAdm aprova ou rejeita. A aplicação do payload (replay no caminho
+ * de aprovação local) é responsabilidade de quem chama, ANTES de marcar
+ * como aprovado — assim status só muda quando a aplicação deu certo.
+ */
+export async function decideCurationProposal(id, decision, note = '') {
+  if (!['approved', 'rejected'].includes(decision)) {
+    throw new Error('Decisão inválida.');
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({
+      status: decision,
+      decided_by: userData?.user?.id || null,
+      decided_at: new Date().toISOString(),
+      decision_note: note || null,
+    })
+    .eq('id', id)
+    .select('id,status,decided_at')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Contagem de propostas pendentes (para badges no SuperAdm).
+ */
+export async function countPendingProposals() {
+  const { count, error } = await supabase
+    .from(TABLE)
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'proposed');
+
+  if (error) throw error;
+  return count || 0;
+}

@@ -5,6 +5,7 @@
 // A ordem dos blocos preserva a tabela clínica original; use `map` para exibição/agrupamento.
 
 import { normalizePointCode } from './aliases';
+import { isCommonlyUsedOverride } from './commonlyUsedOverrides';
 
 export const COMMONLY_USED_CATEGORY = 'ponto_comumente_usado';
 export const COMMONLY_USED_CATEGORY_LABEL = 'Pontos comumente usados';
@@ -219,8 +220,13 @@ export function getCommonlyUsedAuricularMeta(slugOrName) {
 }
 
 // Aceita código corporal (qualquer alias), slug ou nome auricular.
+// Consulta também as promoções aprovadas (overrides live) — ponto que a
+// revisora promoveu a "comumente usado" e o SuperAdm aprovou.
 export function isCommonlyUsedPointKey(key) {
-  return Boolean(getCommonlyUsedBodyPointMeta(key) || getCommonlyUsedAuricularMeta(key));
+  if (getCommonlyUsedBodyPointMeta(key) || getCommonlyUsedAuricularMeta(key)) return true;
+  if (isCommonlyUsedOverride(key)) return true;
+  if (isCommonlyUsedOverride(`auricular:${key}`)) return true;
+  return false;
 }
 
 // Aceita entidades da base de conhecimento, reviews da Biblioteca Viva e rascunhos KM-Agent.
@@ -228,6 +234,7 @@ export function isCommonlyUsedEntity(entity) {
   if (!entity) return false;
   if (entity.commonlyUsed === true) return true;
   if (entity.slug && getCommonlyUsedAuricularMeta(entity.slug)) return true;
+  if (entity.slug && isCommonlyUsedOverride(`auricular:${entity.slug}`)) return true;
   if (entity.code && isCommonlyUsedPointKey(entity.code)) return true;
   if (entity.displayCode && isCommonlyUsedPointKey(entity.displayCode)) return true;
   if (typeof entity.name === 'string' && getCommonlyUsedAuricularMeta(entity.name)) return true;

@@ -10,7 +10,9 @@ const SUPER_ADMIN_SECTIONS = [
   { id: 'clinics', label: 'Clínicas', description: 'Cadastro e identidade visual' },
   { id: 'create', label: 'Criar profissional', description: 'Cadastro e senha' },
   { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
+  { id: 'proposals', label: 'Propostas de curadoria', description: 'Enviadas pela revisora' },
   { id: 'deploy-health', label: 'Saúde do deploy', description: 'Supabase e migrations' },
+  { id: 'points', label: 'Pontos comuns/ocultos', description: 'Base completa e promoção' },
   { id: 'knowledge', label: 'Alimentação', description: 'Biblioteca Viva' },
   { id: 'pdf-sources', label: 'Fontes PDF', description: 'Pontos não respondidos' },
   { id: 'herbal-curation', label: 'Curadoria de ervas', description: 'Fonte e segurança' },
@@ -179,6 +181,19 @@ const NAV_ICONS = {
       <circle cx="12" cy="10" r="2.5" />
     </>
   ),
+  'proposals': (
+    <>
+      <path d="M4 4h16v12H8l-4 4z" />
+      <path d="M9 9h8M9 12h5" />
+    </>
+  ),
+  'points': (
+    <>
+      <circle cx="7" cy="7" r="2.5" />
+      <circle cx="17" cy="17" r="2.5" />
+      <path d="M9.5 7H20M4 17h10.5" />
+    </>
+  ),
   'logs': (
     <>
       <path d="M9 6h12M9 12h12M9 18h12" />
@@ -231,6 +246,8 @@ export function Sidebar({
   patientAge,
   sessionCount,
   lastVisit,
+  hasMultipleDisciplines,
+  onOpenCuration,
 }) {
   return (
     <aside className="sidebar">
@@ -249,6 +266,16 @@ export function Sidebar({
         </div>
       </div>
 
+      {!isSuperAdmin && onOpenCuration && (
+        <button type="button" className="sidebar-switch-area" onClick={onOpenCuration}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 4h16v12H8l-4 4z" />
+            <path d="M9 9h8M9 12h5" />
+          </svg>
+          Abrir Curadoria
+        </button>
+      )}
+
       {!isSuperAdmin && onSwitchDiscipline && (
         <button type="button" className="sidebar-switch-area" onClick={onSwitchDiscipline}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -257,7 +284,7 @@ export function Sidebar({
             <path d="m16 21 4-4-4-4" />
             <path d="M20 17H4" />
           </svg>
-          Trocar de área
+          {hasMultipleDisciplines ? 'Mudar Especialidade (Acupuntura / Psicologia)' : 'Trocar de área'}
         </button>
       )}
 

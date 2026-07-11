@@ -18,6 +18,13 @@ import {
   validateAnamneseKnowledgeCandidate,
 } from '../../services/anamneseKnowledgeCurationService';
 import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
+import { submitCurationProposal } from '../../services/curationProposalService';
+
+const PROPOSAL_TYPE_BY_CANDIDATE = {
+  finding: 'anamnese_finding',
+  question: 'anamnese_question',
+  pattern: 'anamnese_pattern',
+};
 
 const TYPE_LABELS = {
   finding: 'Achado',
@@ -359,7 +366,8 @@ function CandidateEditor({ editor, setEditor, patternOptions }) {
   );
 }
 
-export function AnamneseKnowledgePanel() {
+export function AnamneseKnowledgePanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
+  const isPropose = actor?.mode === 'propose';
   const [loadState, setLoadState] = useState('loading');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -442,7 +450,7 @@ export function AnamneseKnowledgePanel() {
     setMessage('');
   }
 
-  function save(status) {
+  async function save(status) {
     const candidate = candidateFromEditor(editor);
     if (!candidate) return;
 
@@ -454,9 +462,28 @@ export function AnamneseKnowledgePanel() {
       }
     }
 
+    // Revisora: em vez de gravar decisão local, envia proposta ao SuperAdm.
+    if (isPropose) {
+      try {
+        await submitCurationProposal({
+          type: PROPOSAL_TYPE_BY_CANDIDATE[candidate.type] || 'anamnese_finding',
+          targetRef: candidate.candidateId || candidate.id,
+          payload: { candidate, decision: status },
+          note: titleForCandidate(candidate),
+          proposerName: actor?.label || '',
+        });
+        setMessage(status === 'rejected'
+          ? 'Proposta de reprovação enviada ao SuperAdm.'
+          : 'Proposta enviada ao SuperAdm.');
+      } catch (err) {
+        setMessage(err?.message || 'Não foi possível enviar a proposta.');
+      }
+      return;
+    }
+
     const decision = saveAnamneseKnowledgeDecision(candidate, status, {
-      approvedByRole: 'super_admin',
-      approvedByLabel: 'SuperAdm',
+      approvedByRole: actor?.role || 'super_admin',
+      approvedByLabel: actor?.label || 'SuperAdm',
     });
     const rows = refreshRows(payload);
     const fresh = rows.find(row => (row.candidateId || row.id) === decision.candidateId) || candidate;
@@ -502,10 +529,11 @@ export function AnamneseKnowledgePanel() {
     <section className="admin-knowledge anamnese-knowledge-panel">
       <div className="start-panel-head">
         <div>
-          <p className="small">SuperAdm • Curadoria</p>
+          <p className="small">{actor?.label || 'SuperAdm'} • Curadoria</p>
           <h2>Conhecimento da Anamnese</h2>
           <span>Achados, perguntas e padrões em revisão com fonte visual rastreável.</span>
         </div>
+        {!isPropose && (
         <div className="anamnese-panel-actions">
           <button className="quiet-button" type="button" onClick={() => exportPatternNormalizationMap(payload.normalizationMap)}>
             Exportar mapa
@@ -514,6 +542,7 @@ export function AnamneseKnowledgePanel() {
             Exportar aprovados
           </button>
         </div>
+        )}
       </div>
 
       <div className="admin-stat-grid">
@@ -650,14 +679,16 @@ export function AnamneseKnowledgePanel() {
                   <CandidateEditor editor={editor} setEditor={setEditor} patternOptions={patternOptions} />
                   <div className="anamnese-editor-actions">
                     <button className="primary-button" type="button" onClick={() => save('approved_local')}>
-                      Aprovar
+                      {isPropose ? 'Propor aprovação' : 'Aprovar'}
                     </button>
                     <button className="danger-button" type="button" onClick={() => save('rejected')}>
-                      Reprovar
+                      {isPropose ? 'Propor reprovação' : 'Reprovar'}
                     </button>
-                    <button className="quiet-button" type="button" onClick={() => save('review')}>
-                      Salvar em revisão
-                    </button>
+                    {!isPropose && (
+                      <button className="quiet-button" type="button" onClick={() => save('review')}>
+                        Salvar em revisão
+                      </button>
+                    )}
                   </div>
                 </section>
               </div>

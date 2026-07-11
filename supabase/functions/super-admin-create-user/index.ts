@@ -24,6 +24,8 @@ const ALLOWED_PROFESSIONS = new Set([
   'outro',
 ]);
 
+const ALLOWED_ROLES = new Set(['therapist', 'knowledge_reviewer']);
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function cleanText(value: unknown) {
@@ -56,6 +58,7 @@ Deno.serve(async (req) => {
     const username = normalizeUsername(body.username, email);
     const fullName = cleanText(body.fullName);
     const profession = cleanText(body.profession);
+    const role = ALLOWED_ROLES.has(cleanText(body.role)) ? cleanText(body.role) : 'therapist';
     const clinicId = cleanText(body.clinicId);
     const temporaryPassword = String(body.temporaryPassword || '');
     const confirmTemporaryPassword = String(body.confirmTemporaryPassword || '');
@@ -135,10 +138,10 @@ Deno.serve(async (req) => {
       user_metadata: {
         full_name: fullName,
         username,
-        role: 'therapist',
+        role,
       },
       app_metadata: {
-        role: 'therapist',
+        role,
       },
     });
 
@@ -151,7 +154,7 @@ Deno.serve(async (req) => {
       email,
       username,
       full_name: fullName,
-      role: 'therapist',
+      role,
       phone: cleanText(body.phone) || null,
       document: cleanText(body.document) || null,
       professional_registration: cleanText(body.professionalRegistration) || null,
@@ -184,6 +187,7 @@ Deno.serve(async (req) => {
       details: {
         username,
         email,
+        role,
         profession: profilePayload.profession,
         professional_registration: profilePayload.professional_registration,
         specialty: profilePayload.specialty,

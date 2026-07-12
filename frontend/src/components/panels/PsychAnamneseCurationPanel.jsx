@@ -157,19 +157,34 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 320px) 1fr', gap: 16, alignItems: 'start' }}>
         {/* Lista de grupos */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {groups.map(g => (
-            <button
-              key={g.id}
-              type="button"
-              className={`admin-user-row admin-user-button ${selectedId === g.id ? 'active' : ''}`}
-              onClick={() => selectGroup(g)}
-            >
-              <div className="admin-user-main">
-                <b>{g.label}</b>
-                <small>{g.total_candidates} candidatos · {g.unique_evidence} evidências</small>
-              </div>
-            </button>
-          ))}
+          {groups.map(g => {
+            const isSel = selectedId === g.id;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => selectGroup(g)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  font: 'inherit',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: `1px solid ${isSel ? 'var(--brand, #2f6f4f)' : 'var(--line, #e3e8ee)'}`,
+                  background: isSel ? 'var(--soft, #fff8e8)' : '#fff',
+                }}
+              >
+                <b style={{ display: 'block', color: 'var(--navy, #0b2545)', fontSize: 14, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                  {g.label}
+                </b>
+                <small style={{ display: 'block', color: '#64748b', fontSize: 12, marginTop: 2 }}>
+                  {g.total_candidates} candidatos · {g.unique_evidence} evidências
+                </small>
+              </button>
+            );
+          })}
         </div>
 
         {/* Detalhe do grupo selecionado */}

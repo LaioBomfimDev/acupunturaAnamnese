@@ -12,8 +12,8 @@ const READY_GUIDES = {
     intro: 'Aqui você decide quais pontos entram na lista que os terapeutas usam no dia a dia. Nada é apagado — o ponto só passa a aparecer.',
     steps: [
       'Deixe o filtro em «Ocultos» para ver os pontos que ainda não aparecem.',
-      'Achou um que deveria aparecer? Toque em «Propor como comum».',
-      'Pronto! Sua sugestão vai para o SuperAdm aprovar — você não precisa fazer mais nada.',
+      'Toque no nome do ponto para abrir a ficha e conferir localização, ações e indicações.',
+      'Se ele deve aparecer para todos, toque em «Propor como comum» — vai para o SuperAdm aprovar.',
     ],
   },
   'anamnese-knowledge': {

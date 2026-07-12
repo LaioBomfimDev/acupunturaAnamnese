@@ -26,6 +26,11 @@ const ALLOWED_PROFESSIONS = new Set([
 
 const ALLOWED_ROLES = new Set(['therapist', 'knowledge_reviewer']);
 
+// Disciplinas válidas para a coluna profiles.disciplines. Quando o SuperAdm
+// escolhe explicitamente (ex.: revisora só de psicologia), a coluna vence o
+// fallback por profissão de resolveUserDisciplines (que sempre injeta acupuntura).
+const DISCIPLINE_IDS = new Set(['acupuntura', 'fisioterapia', 'psicologia', 'nutricao']);
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function cleanText(value: unknown) {
@@ -60,6 +65,9 @@ Deno.serve(async (req) => {
     const profession = cleanText(body.profession);
     const role = ALLOWED_ROLES.has(cleanText(body.role)) ? cleanText(body.role) : 'therapist';
     const clinicId = cleanText(body.clinicId);
+    const disciplines = Array.isArray(body.disciplines)
+      ? [...new Set(body.disciplines.map((d: unknown) => cleanText(d)).filter((d: string) => DISCIPLINE_IDS.has(d)))]
+      : [];
     const temporaryPassword = String(body.temporaryPassword || '');
     const confirmTemporaryPassword = String(body.confirmTemporaryPassword || '');
 
@@ -160,6 +168,7 @@ Deno.serve(async (req) => {
       professional_registration: cleanText(body.professionalRegistration) || null,
       specialty: cleanText(body.specialty) || null,
       profession,
+      disciplines: disciplines.length ? disciplines : null,
       clinic_name: clinic?.name || cleanText(body.clinicName) || null,
       clinic_id: clinic?.id || null,
       notes: cleanText(body.notes) || null,

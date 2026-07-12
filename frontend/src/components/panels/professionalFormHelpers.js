@@ -25,7 +25,7 @@ export const EMPTY_PROFESSIONAL_FORM = {
 // edge function super-admin-create-user).
 export const CREATABLE_ROLES = [
   { value: 'therapist', label: 'Profissional (atendimento)' },
-  { value: 'knowledge_reviewer', label: 'Revisora de curadoria (acupuntura + curadoria)' },
+  { value: 'knowledge_reviewer', label: 'Revisora de curadoria (atendimento + curadoria)' },
 ];
 
 export function normalizeUsername(value) {
@@ -75,12 +75,33 @@ export function generatePassword() {
   return `Acup${digits}`;
 }
 
+// Profissão → disciplina (para escopar a revisora de curadoria). Espelha o
+// mapa em data/disciplines.js; mantido aqui para o helper ficar sem JSX/deps.
+const PROFESSION_DISCIPLINE = {
+  acupunturista: 'acupuntura',
+  fisioterapeuta: 'fisioterapia',
+  terapeuta_ocupacional: 'fisioterapia',
+  psicologo: 'psicologia',
+  nutricionista: 'nutricao',
+};
+
+// Disciplinas explícitas ao criar. Só a revisora precisa ser ESCOPADA
+// (a coluna vence o fallback que sempre injeta acupuntura); o terapeuta
+// segue o comportamento atual (coluna nula → fallback por profissão).
+function resolveCreateDisciplines(role, profession) {
+  if (role !== 'knowledge_reviewer') return [];
+  const mapped = PROFESSION_DISCIPLINE[profession];
+  return mapped ? [mapped] : ['acupuntura'];
+}
+
 export function buildProfessionalCreatePayload(form, clinics = []) {
   const email = String(form?.email || '').trim().toLowerCase();
   const clinicId = String(form?.clinicId || '').trim();
   const selectedClinic = Array.isArray(clinics)
     ? clinics.find(clinic => String(clinic?.id || '') === clinicId)
     : null;
+  const role = CREATABLE_ROLES.some(item => item.value === form?.role) ? form.role : 'therapist';
+  const profession = String(form?.profession || '').trim();
 
   return {
     ...form,
@@ -90,10 +111,11 @@ export function buildProfessionalCreatePayload(form, clinics = []) {
     username: normalizeUsername(form?.username || getEmailLogin(email)),
     phone: String(form?.phone || '').trim(),
     document: String(form?.document || '').trim(),
-    profession: String(form?.profession || '').trim(),
+    profession,
     professionalRegistration: String(form?.professionalRegistration || '').trim(),
     specialty: String(form?.specialty || '').trim(),
-    role: CREATABLE_ROLES.some(item => item.value === form?.role) ? form.role : 'therapist',
+    role,
+    disciplines: resolveCreateDisciplines(role, profession),
     clinicId,
     clinicName: selectedClinic?.name || '',
     notes: String(form?.notes || '').trim(),

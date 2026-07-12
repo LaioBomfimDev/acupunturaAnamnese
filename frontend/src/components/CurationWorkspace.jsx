@@ -1,17 +1,24 @@
 // ============================================================
-// Superfície de curadoria da Acupunturista Revisora (tela cheia)
+// Superfície de curadoria da Revisora (tela cheia, genérica por disciplina)
 //
 // Reaproveita CurationSections em modo "propor": cada ação vira uma
-// proposta na fila do SuperAdm. Navegação própria à esquerda, painel
-// à direita, e botão para voltar ao atendimento (workspace de Acupuntura).
+// proposta na fila do SuperAdm. Navegação própria à esquerda (só as
+// seções da disciplina), painel à direita, e botão para voltar ao
+// atendimento (workspace da disciplina).
 // ============================================================
 
-import { CurationSections, CURATION_SECTIONS } from './panels/CurationSections';
+import { CurationSections, sectionsForDiscipline, isCurationSectionReady } from './panels/CurationSections';
+import { getDiscipline } from '../data/disciplines';
 
-const REVIEWER_ACTOR = { role: 'knowledge_reviewer', label: 'Acupunturista', mode: 'propose' };
-
-export function CurationWorkspace({ section, onSectionChange, therapistName, onExit, onSignOut }) {
-  const active = CURATION_SECTIONS.some(item => item.id === section) ? section : CURATION_SECTIONS[0].id;
+export function CurationWorkspace({ section, onSectionChange, therapistName, discipline = 'acupuntura', onExit, onSignOut }) {
+  const meta = getDiscipline(discipline);
+  const label = meta?.label || 'Curadoria';
+  // Prontas primeiro, em preparação ao fim.
+  const sections = [...sectionsForDiscipline(discipline)].sort(
+    (a, b) => Number(isCurationSectionReady(b.id)) - Number(isCurationSectionReady(a.id)),
+  );
+  const active = sections.some(item => item.id === section) ? section : (sections[0]?.id || null);
+  const actor = { role: 'knowledge_reviewer', label, mode: 'propose', discipline };
 
   return (
     <div className="app">
@@ -19,14 +26,14 @@ export function CurationWorkspace({ section, onSectionChange, therapistName, onE
         <div className="logo">
           <div>
             <h1>Curadoria</h1>
-            <p>Revisão clínica · Acupuntura</p>
+            <p>Revisão clínica · {label}</p>
           </div>
         </div>
 
         <div className="sidebar-profile">
-          <span>{String(therapistName || 'AC').slice(0, 2).toUpperCase()}</span>
+          <span>{String(therapistName || label).slice(0, 2).toUpperCase()}</span>
           <div>
-            <b>{therapistName || 'Acupunturista'}</b>
+            <b>{therapistName || label}</b>
             <small>Revisora de curadoria</small>
           </div>
         </div>
@@ -44,7 +51,7 @@ export function CurationWorkspace({ section, onSectionChange, therapistName, onE
         <nav className="nav nav-super-admin">
           <div className="nav-group">
             <span className="nav-group-title">Curadoria</span>
-            {CURATION_SECTIONS.map(item => (
+            {sections.map(item => (
               <button
                 key={item.id}
                 className={active === item.id ? 'active' : ''}
@@ -52,7 +59,10 @@ export function CurationWorkspace({ section, onSectionChange, therapistName, onE
                 aria-current={active === item.id ? 'page' : undefined}
               >
                 <span className="nav-label">
-                  <span>{item.label}</span>
+                  <span>
+                    {item.label}
+                    {!isCurationSectionReady(item.id) && <span className="curation-nav-soon"> · em breve</span>}
+                  </span>
                   <small>{item.description}</small>
                 </span>
               </button>
@@ -64,7 +74,7 @@ export function CurationWorkspace({ section, onSectionChange, therapistName, onE
       <main className="main">
         <div className="app-topbar no-print">
           <div>
-            <h1>Curadoria da Acupuntura</h1>
+            <h1>Curadoria da {label}</h1>
             <div className="active-specialty-badge">
               Suas alterações são enviadas ao SuperAdm para aprovação final.
             </div>
@@ -76,7 +86,9 @@ export function CurationWorkspace({ section, onSectionChange, therapistName, onE
 
         <div className="workspace-grid workspace-grid-full">
           <section>
-            <CurationSections activeSection={active} actor={REVIEWER_ACTOR} />
+            {active ? <CurationSections activeSection={active} actor={actor} /> : (
+              <div className="empty-state">Nenhuma seção de curadoria disponível para esta disciplina.</div>
+            )}
           </section>
         </div>
       </main>

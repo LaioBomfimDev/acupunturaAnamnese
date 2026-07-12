@@ -101,3 +101,17 @@ export function canEnterDiscipline(profile, disciplineId) {
   const discipline = getDiscipline(disciplineId);
   return Boolean(discipline?.available && resolveUserDisciplines(profile).includes(disciplineId));
 }
+
+/**
+ * Disciplina "principal" de uma revisora de curadoria.
+ *
+ * O papel knowledge_reviewer é genérico: a interface (home, workspace de
+ * curadoria) e as seções visíveis derivam desta disciplina, não de um
+ * valor chumbado. Regra: a primeira disciplina liberada que NÃO seja
+ * acupuntura (a revisora de psicologia tem disciplines=['psicologia']);
+ * se só houver acupuntura, mantém acupuntura — preserva a revisora atual.
+ */
+export function resolveReviewerDiscipline(profile) {
+  const licensed = resolveUserDisciplines(profile);
+  return licensed.find(id => id !== 'acupuntura') || 'acupuntura';
+}

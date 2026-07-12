@@ -163,12 +163,12 @@ export function CurationPointsBrowser({ actor = { role: 'super_admin', label: 'S
                     <span className="tag" style={{ color: '#8a6d00', borderColor: '#e0c66b' }}>Enviado ao SuperAdm</span>
                   ) : isPropose ? (
                     <button
-                      className="tag"
+                      className="curation-row-cta"
                       type="button"
                       onClick={() => handlePropose(point)}
                       disabled={status === 'saving'}
                     >
-                      {status === 'saving' ? 'Enviando...' : 'Propor como comum'}
+                      {status === 'saving' ? 'Enviando...' : '+ Propor como comum'}
                     </button>
                   ) : (
                     <button className="tag active" type="button" onClick={() => handlePromoteNow(point)}>

@@ -8502,3 +8502,134 @@ textarea { min-height: 95px; resize: vertical; }
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* ===== Guia das abas de curadoria (revisora) ===== */
+.curation-guide {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--gold);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 6px 18px rgba(6, 26, 49, .06);
+}
+.curation-guide-soon {
+  border-left-color: #cbd5e1;
+}
+.curation-guide-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.curation-guide-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+.curation-guide-head h2 {
+  margin: 0 0 4px;
+  color: var(--navy);
+  font-size: 19px;
+}
+.curation-guide-head p {
+  margin: 0;
+  color: #475569;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.curation-guide-steps {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.curation-guide-steps li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.curation-guide-num {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+}
+.curation-guide-text {
+  color: var(--navy);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* Botões de ação maiores e mais claros no fluxo guiado */
+.curation-guided .curation-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.curation-guided .curation-actions .primary-button,
+.curation-guided .curation-actions .danger-button,
+.curation-guided .curation-actions .quiet-button {
+  font-size: 15px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+.curation-row-cta {
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 9px 16px;
+  background: #e6f4ea;
+  color: #137333;
+  border: 1px solid #9ccdb0;
+  cursor: pointer;
+  font-size: 14px;
+}
+.curation-row-cta:hover:not(:disabled) {
+  background: #d6ecde;
+}
+.curation-row-cta:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+/* Selos de estado da aba de curadoria */
+.curation-tab-flag {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.curation-tab-flag.is-ready {
+  background: #e6f4ea;
+  color: #137333;
+  border: 1px solid #9ccdb0;
+}
+.curation-tab-flag.is-soon {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+.curation-nav-soon {
+  font-size: 11px;
+  opacity: .7;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .curation-guide-steps li {
+    align-items: flex-start;
+  }
+}

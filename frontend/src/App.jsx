@@ -12,7 +12,7 @@ import { ClinicPatientsPanel } from './components/ClinicPatientsPanel';
 import { PsychologyWorkspace } from './components/PsychologyWorkspace';
 import { ReviewerHome } from './components/ReviewerHome';
 import { CurationWorkspace } from './components/CurationWorkspace';
-import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
+import { canEnterDiscipline, getDiscipline, resolveUserDisciplines, resolveReviewerDiscipline } from './data/disciplines';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
@@ -233,6 +233,7 @@ export default function App() {
         section={reviewSection}
         onSectionChange={setReviewSection}
         therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+        discipline={resolveReviewerDiscipline(profile)}
         onExit={() => setReviewMode(false)}
         onSignOut={handleHubSignOut}
       />
@@ -257,7 +258,8 @@ export default function App() {
       return (
         <ReviewerHome
           therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
-          onEnterAcupuntura={() => handleSelectDiscipline('acupuntura')}
+          discipline={resolveReviewerDiscipline(profile)}
+          onEnterDiscipline={disciplineId => handleSelectDiscipline(disciplineId)}
           onOpenCuration={section => { setReviewSection(section); setReviewMode(true); }}
           onSignOut={handleHubSignOut}
         />

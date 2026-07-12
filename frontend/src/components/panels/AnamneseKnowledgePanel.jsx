@@ -677,7 +677,7 @@ export function AnamneseKnowledgePanel({ actor = { role: 'super_admin', label: '
                     <h3>Dados do candidato</h3>
                   </div>
                   <CandidateEditor editor={editor} setEditor={setEditor} patternOptions={patternOptions} />
-                  <div className="anamnese-editor-actions">
+                  <div className="anamnese-editor-actions curation-actions">
                     <button className="primary-button" type="button" onClick={() => save('approved_local')}>
                       {isPropose ? 'Propor aprovação' : 'Aprovar'}
                     </button>

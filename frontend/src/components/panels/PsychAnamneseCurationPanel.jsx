@@ -123,16 +123,13 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
     return (
       <section className="admin-knowledge">
         <div className="inline-error">{error}</div>
-        <p className="small" style={{ marginTop: 8 }}>
-          Se a tabela ainda não foi semeada, rode <code>seed-psych-curation-items.mjs</code>.
-        </p>
       </section>
     );
   }
   if (data.total === 0) {
     return (
       <section className="admin-knowledge">
-        <div className="empty-state">Nenhum item na base ainda. Rode o seed para popular <code>psych_curation_items</code>.</div>
+        <div className="empty-state">Nenhum item na base ainda.</div>
       </section>
     );
   }
@@ -192,7 +189,9 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
                   {g.label}
                 </b>
                 <small style={{ display: 'block', color: '#64748b', fontSize: 12, marginTop: 2 }}>
-                  {g.total_candidates} candidatos · {g.unique_evidence} evidências
+                  {g.meta?.block || g.meta?.framework || g.meta?.category
+                    || (g.meta?.priority ? `prioridade ${g.meta.priority}` : '')
+                    || (g.meta?.summary ? String(g.meta.summary).slice(0, 60) : '')}
                 </small>
               </button>
             );

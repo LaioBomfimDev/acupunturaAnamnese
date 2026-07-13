@@ -7,9 +7,7 @@
 // (trechos de fonte protegida) que a psicóloga aprova/edita/rejeita.
 // ============================================================
 
-import { supabase } from '../lib/supabase';
-
-const TABLE = 'psych_curation_items';
+import draft from '../data/psychAnamneseDraft.json';
 
 // kind da base -> tipo de proposta na fila do SuperAdm.
 export const PSYCH_PROPOSAL_TYPE = {
@@ -26,30 +24,44 @@ export const PSYCH_KIND_LABEL = {
   question: 'Roteiro de anamnese',
 };
 
+// Rascunho curado (síntese pt-BR) empacotado no app — não é dado protegido,
+// então não precisa de tabela/seed no Supabase. As propostas da revisora
+// continuam indo para a fila curation_proposals.
+function buildItems() {
+  const items = [];
+  (draft.risk || []).forEach((r, i) => items.push({
+    id: `risk-${i}`, kind: 'risk', label: r.label, sources: r.sources || [],
+    meta: { priority: r.priority, summary: r.summary, draft: r.draft, screening: r.screening, observe: r.observe, reminder: r.reminder },
+  }));
+  (draft.axis || []).forEach((a, i) => items.push({
+    id: `axis-${i}`, kind: 'axis', label: a.label, sources: a.sources || [],
+    meta: { framework: a.framework, summary: a.summary, draft: a.draft, explore: a.explore },
+  }));
+  (draft.checklist || []).forEach((c, i) => items.push({
+    id: `checklist-${i}`, kind: 'checklist', label: c.label, sources: c.sources || [],
+    meta: { category: c.category, summary: c.summary, examples: c.examples },
+  }));
+  (draft.questionnaire || []).forEach((b, bi) => (b.questions || []).forEach((q, qi) => items.push({
+    id: `question-${bi}-${qi}`, kind: 'question', label: q, sources: [],
+    meta: { block: b.block, draft: q },
+  })));
+  return items;
+}
+
 /**
- * Carrega os itens de curadoria de psicologia, agrupados por kind.
- * Risco vem primeiro (segurança), depois eixos, checklist e perguntas.
+ * Itens de curadoria de psicologia, agrupados por kind.
+ * Risco primeiro (segurança), depois eixos, listas e roteiro de perguntas.
  */
 export async function loadPsychCurationItems() {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .eq('discipline', 'psicologia')
-    .order('kind', { ascending: true })
-    .order('total_candidates', { ascending: false });
-
-  if (error) throw error;
-
+  const all = buildItems();
   const order = { risk: 0, axis: 1, checklist: 2, question: 3 };
   const grouped = { risk: [], axis: [], checklist: [], question: [] };
-  for (const row of data || []) {
-    if (grouped[row.kind]) grouped[row.kind].push(row);
-  }
+  for (const it of all) grouped[it.kind]?.push(it);
   return {
     grouped,
     kinds: Object.keys(grouped)
       .filter(k => grouped[k].length > 0)
       .sort((a, b) => (order[a] ?? 9) - (order[b] ?? 9)),
-    total: (data || []).length,
+    total: all.length,
   };
 }

@@ -187,8 +187,8 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
           })}
         </div>
 
-        {/* Detalhe do grupo selecionado */}
-        <div>
+        {/* Detalhe do grupo selecionado — acompanha o scroll (sticky) */}
+        <div style={{ position: 'sticky', top: 16, alignSelf: 'start', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
           {!selected ? (
             <div className="empty-state">Selecione um grupo para ver a evidência e propor.</div>
           ) : (

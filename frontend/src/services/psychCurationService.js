@@ -8,6 +8,8 @@
 // ============================================================
 
 import draft from '../data/psychAnamneseDraft.json';
+import { getPsychAnamneseSources } from '../data/psychAnamneseProvenance';
+import { getLocalPsychCurationDecisions } from '../knowledge/psychCurationDecisions';
 
 // kind da base -> tipo de proposta na fila do SuperAdm.
 export const PSYCH_PROPOSAL_TYPE = {
@@ -30,22 +32,54 @@ export const PSYCH_KIND_LABEL = {
 function buildItems() {
   const items = [];
   (draft.risk || []).forEach((r, i) => items.push({
-    id: `risk-${i}`, kind: 'risk', label: r.label, sources: r.sources || [],
+    id: `risk-${i}`, kind: 'risk', label: r.label, sources: getPsychAnamneseSources(`risk-${i}`),
     meta: { priority: r.priority, summary: r.summary, draft: r.draft, screening: r.screening, observe: r.observe, reminder: r.reminder },
   }));
   (draft.axis || []).forEach((a, i) => items.push({
-    id: `axis-${i}`, kind: 'axis', label: a.label, sources: a.sources || [],
+    id: `axis-${i}`, kind: 'axis', label: a.label, sources: getPsychAnamneseSources(`axis-${i}`),
     meta: { framework: a.framework, summary: a.summary, draft: a.draft, explore: a.explore },
   }));
   (draft.checklist || []).forEach((c, i) => items.push({
-    id: `checklist-${i}`, kind: 'checklist', label: c.label, sources: c.sources || [],
+    id: `checklist-${i}`, kind: 'checklist', label: c.label, sources: getPsychAnamneseSources(`checklist-${i}`),
     meta: { category: c.category, summary: c.summary, examples: c.examples },
   }));
   (draft.questionnaire || []).forEach((b, bi) => (b.questions || []).forEach((q, qi) => items.push({
-    id: `question-${bi}-${qi}`, kind: 'question', label: q, sources: [],
+    id: `question-${bi}-${qi}`, kind: 'question', label: q,
+    sources: getPsychAnamneseSources(`question-${bi}-${qi}`, bi),
     meta: { block: b.block, draft: q },
   })));
-  return items;
+  const decisions = getLocalPsychCurationDecisions();
+  const byId = new Map(decisions.map(decision => [decision.id, decision]));
+  const materialized = items.map(item => {
+    const decision = byId.get(item.id);
+    if (!decision) return { ...item, status: 'review' };
+    return {
+      ...item,
+      status: decision.status,
+      localDecision: decision,
+      sources: decision.sources?.length ? decision.sources : item.sources,
+      meta: {
+        ...item.meta,
+        draft: decision.wording || item.meta?.draft,
+      },
+    };
+  });
+
+  decisions.filter(decision => decision.id?.startsWith('new:')).forEach(decision => {
+    const item = decision.item || {};
+    materialized.push({
+      id: decision.id,
+      kind: decision.kind,
+      label: item.label,
+      status: decision.status,
+      sources: decision.sources || [],
+      provenanceMode: decision.provenanceMode,
+      localDecision: decision,
+      meta: { ...item, draft: item.draft || item.summary || item.label },
+    });
+  });
+
+  return materialized;
 }
 
 /**

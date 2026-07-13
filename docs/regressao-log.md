@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-07-13 - Curadoria de Psicologia sem replay e com proveniência reduzida
+
+- Sintoma: a revisora conseguia enviar propostas `anamnese_psic_*`, mas o SuperAdm recebia erro de tipo sem replay ao aprovar; paralelamente, a síntese empacotada mostrava apenas nomes genéricos de livros e as perguntas formuladas ficavam sem página-fonte verificável.
+- Causa: os quatro tipos de Psicologia foram adicionados ao CHECK e ao formulário antes de serem ligados ao aplicador da fila; na passagem dos candidatos locais para o rascunho do bundle, página, `assetKey` e natureza direta/contextual do apoio foram descartados.
+- Regra nova: todo tipo de proposta precisa fechar o ciclo revisora → fila → replay `local_only`; síntese derivada de fonte protegida preserva ponteiros mínimos de página e distingue apoio direto de contextual, sem publicar trecho integral nem ativar runtime clínico.
+- Teste ou verificação obrigatória: `frontend/tests/regression/psych-curation-decisions.test.mjs` cobre validação/replay dos quatro tipos, persistência local e itens novos sem colisão; `frontend/tests/regression/psych-curation-provenance.test.mjs` exige ponteiro protegido para todo rascunho e impede texto integral no bundle.
+- Regra destilada em: `docs/agents-mapas.md`.
+
 ### 2026-07-09 - Proposta de erva do worksheet confundida com publicação
 
 - Sintoma: ervas do `docs/herbal-curation-worksheet.md` podiam ser consumidas por fluxos clínicos usando `suggestedStatus` como se fosse liberação, apesar de serem apenas propostas para revisão no SuperAdm.

@@ -31,6 +31,24 @@ function Bullets({ title, items }) {
   );
 }
 
+function SourcePointers({ sources }) {
+  if (!Array.isArray(sources) || sources.length === 0) return null;
+  return (
+    <div className="small" style={{ marginTop: 12, color: '#64748b' }}>
+      <b>Fontes para conferência:</b>
+      <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+        {sources.map(source => (
+          <li key={`${source.key}:${source.pdfPage}`}>
+            {source.title || source.key}, PDF p. {source.pdfPage}
+            {source.supportLevel === 'contextual' ? ' (apoio contextual)' : ''}
+          </li>
+        ))}
+      </ul>
+      <span>As páginas são protegidas e a aprovação profissional continua obrigatória.</span>
+    </div>
+  );
+}
+
 const inputStyle = { width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid var(--line, #d8dcd9)', font: 'inherit' };
 
 // Campos do formulário de "adicionar novo" por tipo — os mesmos tópicos dos
@@ -170,6 +188,7 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
           wording: String(wording).trim(),
           meta: selected.meta,
           evidenceCount: selected.unique_evidence,
+          sources: selected.sources,
         },
         note: `${PSYCH_KIND_LABEL[selected.kind]}: ${selected.label}`,
         proposerName: actor?.label || '',
@@ -364,11 +383,7 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
                 )}
               </div>
 
-              {(selected.sources || []).length > 0 && (
-                <p className="small" style={{ marginTop: 12, color: '#94a3b8' }}>
-                  Baseado em: {(selected.sources || []).join(', ')}
-                </p>
-              )}
+              <SourcePointers sources={selected.sources} />
 
               {message && <div className="inline-notice" style={{ marginTop: 10 }}>{message}</div>}
             </div>

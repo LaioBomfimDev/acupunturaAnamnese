@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { listCurationProposals, decideCurationProposal } from '../../services/curationProposalService';
 import { addCommonlyUsedOverride } from '../../knowledge/commonlyUsedOverrides';
 import { saveAnamneseKnowledgeDecision } from '../../services/anamneseKnowledgeCurationService';
+import { applyPsychCurationProposal } from '../../knowledge/psychCurationDecisions';
 
 const TYPE_LABELS = {
   point_review: 'Revisão de ponto',
@@ -24,6 +25,10 @@ const TYPE_LABELS = {
   ai_instruction: 'Instrução da IA',
   ai_correction: 'Correção da IA',
   map_coordinate: 'Coordenada de mapa',
+  anamnese_psic_risk: 'Psicologia · sinal de risco',
+  anamnese_psic_axis: 'Psicologia · eixo de raciocínio',
+  anamnese_psic_checklist: 'Psicologia · checklist',
+  anamnese_psic_question: 'Psicologia · pergunta',
 };
 
 const SUPER_ADMIN_ACTOR = { approvedByRole: 'super_admin', approvedByLabel: 'SuperAdm' };
@@ -58,6 +63,10 @@ function applyProposal(proposal) {
     if (!candidate) throw new Error('Proposta sem candidato da anamnese.');
     const decision = payload?.decision || 'approved_local';
     saveAnamneseKnowledgeDecision(candidate, decision, SUPER_ADMIN_ACTOR);
+    return;
+  }
+  if (type.startsWith('anamnese_psic_')) {
+    applyPsychCurationProposal(proposal, { role: 'super_admin', label: 'SuperAdm' });
     return;
   }
   // Tipos ainda sem replay automático: apenas registra a decisão.

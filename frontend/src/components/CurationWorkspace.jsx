@@ -61,7 +61,7 @@ export function CurationWorkspace({ section, onSectionChange, therapistName, dis
                 <span className="nav-label">
                   <span>
                     {item.label}
-                    {!isCurationSectionReady(item.id) && <span className="curation-nav-soon"> · em breve</span>}
+                    {!isCurationSectionReady(item.id) && <span className="curation-nav-soon"> · sugerir</span>}
                   </span>
                   <small>{item.description}</small>
                 </span>

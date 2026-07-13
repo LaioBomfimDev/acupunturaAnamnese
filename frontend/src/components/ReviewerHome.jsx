@@ -76,7 +76,7 @@ export function ReviewerHome({ therapistName, discipline = 'acupuntura', onEnter
                     <small>{item.description}</small>
                   </div>
                   <span className={`curation-tab-flag ${ready ? 'is-ready' : 'is-soon'}`}>
-                    {ready ? 'Pronto' : 'Em breve'}
+                    {ready ? 'Editar' : 'Sugerir'}
                   </span>
                 </button>
               );

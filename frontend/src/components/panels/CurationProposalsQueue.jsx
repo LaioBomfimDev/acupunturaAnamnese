@@ -35,9 +35,18 @@ function formatDateTime(value) {
   });
 }
 
+function isObservation(proposal) {
+  return proposal?.payload?.kind === 'observation';
+}
+
 // Reproduz o efeito da proposta no caminho de aprovação local existente.
 function applyProposal(proposal) {
   const { type, payload } = proposal;
+  // Correção por texto: o SuperAdm aplica manualmente na aba correspondente;
+  // aprovar aqui só registra que foi tratada.
+  if (payload?.kind === 'observation') {
+    return;
+  }
   if (type === 'point_promote_common') {
     const code = payload?.code || payload?.displayCode || proposal.target_ref;
     if (!code) throw new Error('Proposta sem código de ponto.');
@@ -83,7 +92,9 @@ export function CurationProposalsQueue() {
     try {
       applyProposal(proposal);
       await decideCurationProposal(proposal.id, 'approved');
-      setMessage(`Proposta aprovada e aplicada: ${TYPE_LABELS[proposal.type] || proposal.type}.`);
+      setMessage(isObservation(proposal)
+        ? 'Marcada como aplicada. Lembre de aplicar a correção na aba correspondente.'
+        : `Proposta aprovada e aplicada: ${TYPE_LABELS[proposal.type] || proposal.type}.`);
       await load();
     } catch (err) {
       setError(err?.message || 'Não foi possível aprovar a proposta.');
@@ -138,6 +149,11 @@ export function CurationProposalsQueue() {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                 <div>
                   <b style={{ color: 'var(--navy)' }}>{TYPE_LABELS[proposal.type] || proposal.type}</b>
+                  {isObservation(proposal) && (
+                    <span className="tag" style={{ marginLeft: 8, color: '#8a6d00', borderColor: '#e0c66b', fontSize: 11 }}>
+                      correção por texto · aplicar manualmente
+                    </span>
+                  )}
                   {proposal.target_ref ? <span style={{ marginLeft: 8, color: '#334155' }}>{proposal.target_ref}</span> : null}
                   <small style={{ display: 'block', color: '#64748b' }}>
                     {proposal.proposer_name || 'Revisora'} • {formatDateTime(proposal.created_at)}
@@ -152,7 +168,7 @@ export function CurationProposalsQueue() {
                     disabled={busyId === proposal.id}
                     style={{ background: '#e6f4ea', color: '#137333', borderColor: '#137333', cursor: 'pointer' }}
                   >
-                    {busyId === proposal.id ? 'Aplicando...' : 'Aprovar'}
+                    {busyId === proposal.id ? 'Salvando...' : isObservation(proposal) ? 'Marcar como aplicada' : 'Aprovar'}
                   </button>
                   <button
                     className="tag"

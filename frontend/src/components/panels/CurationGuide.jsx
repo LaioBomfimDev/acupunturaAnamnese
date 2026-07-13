@@ -38,18 +38,21 @@ const READY_GUIDES = {
   },
 };
 
-const COMING_SOON_GUIDE = {
-  icon: '🛠️',
-  title: 'Esta aba ainda está em preparação',
-  intro: 'O envio ao SuperAdm ainda não está ligado aqui. Por enquanto, foque nas abas já prontas — é onde suas correções realmente chegam para aprovação.',
-  steps: [
-    'Use «Pontos comuns/ocultos» para escolher quais pontos aparecem.',
-    'Use «Conhecimento da Anamnese» para revisar achados e padrões.',
-  ],
-};
+function observationGuide(sectionLabel) {
+  return {
+    icon: '✍️',
+    title: `Sugerir uma correção em ${sectionLabel || 'esta área'}`,
+    intro: 'Você descreve o que deve mudar e envia ao SuperAdm, que aplica e aprova. Nada é publicado direto — ele confere antes.',
+    steps: [
+      'No campo abaixo, descreva a correção: o que está errado e como deveria ser.',
+      'Se puder, informe o código ou nome do item (um ponto, uma erva, um alimento…).',
+      'Toque em «Enviar ao SuperAdm».',
+    ],
+  };
+}
 
-export function CurationGuide({ sectionId, ready = true }) {
-  const guide = ready ? READY_GUIDES[sectionId] : COMING_SOON_GUIDE;
+export function CurationGuide({ sectionId, ready = true, sectionLabel = '' }) {
+  const guide = ready ? READY_GUIDES[sectionId] : observationGuide(sectionLabel);
   if (!guide) return null;
 
   return (

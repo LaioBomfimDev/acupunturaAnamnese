@@ -26,6 +26,7 @@ import { MapCoordinateEditor } from './MapCoordinateEditor';
 import { CurationPointsBrowser } from './CurationPointsBrowser';
 import { PsychAnamneseCurationPanel } from './PsychAnamneseCurationPanel';
 import { CurationGuide } from './CurationGuide';
+import { CurationObservation } from './CurationObservation';
 
 // Cada seção declara a quais disciplinas pertence. Sem `disciplines`
 // (ou 'all') aparece em qualquer disciplina.
@@ -65,12 +66,15 @@ export function CurationSections({ activeSection, actor = { role: 'super_admin',
   const isPropose = actor?.mode === 'propose';
   const ready = PROPOSE_READY.has(activeSection);
 
-  // No modo revisora, abas ainda não integradas mostram só o guia
-  // "em preparação" — sem o painel técnico do SuperAdm, para não confundir.
+  // No modo revisora, abas ainda sem edição estruturada mostram o guia +
+  // a caixa "sugerir correção" (proposta em texto) — sem o painel técnico
+  // do SuperAdm, para não confundir.
   if (isPropose && !ready) {
+    const sectionLabel = CURATION_SECTIONS.find(s => s.id === activeSection)?.label || '';
     return (
-      <div className="curation-guided">
-        <CurationGuide sectionId={activeSection} ready={false} />
+      <div className="curation-guided" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <CurationGuide sectionId={activeSection} ready={false} sectionLabel={sectionLabel} />
+        <CurationObservation section={activeSection} actor={actor} />
       </div>
     );
   }

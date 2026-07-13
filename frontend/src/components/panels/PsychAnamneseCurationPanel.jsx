@@ -31,6 +31,34 @@ function Bullets({ title, items }) {
   );
 }
 
+const inputStyle = { width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid var(--line, #d8dcd9)', font: 'inherit' };
+
+// Campos do formulário de "adicionar novo" por tipo — os mesmos tópicos dos
+// itens existentes. type 'lines' = uma linha por item (vira lista).
+const ADD_FIELDS = {
+  risk: [
+    { key: 'label', label: 'Nome do sinal de risco', type: 'text' },
+    { key: 'summary', label: 'Resumo (o que é / por que destacar)', type: 'text' },
+    { key: 'screening', label: 'Perguntas de triagem (uma por linha)', type: 'lines' },
+    { key: 'observe', label: 'O que observar (uma por linha)', type: 'lines' },
+    { key: 'reminder', label: 'Lembrete de conduta', type: 'text' },
+  ],
+  axis: [
+    { key: 'label', label: 'Nome do eixo', type: 'text' },
+    { key: 'summary', label: 'Resumo', type: 'text' },
+    { key: 'explore', label: 'O que investigar (uma por linha)', type: 'lines' },
+  ],
+  checklist: [
+    { key: 'label', label: 'Nome da lista', type: 'text' },
+    { key: 'summary', label: 'Resumo', type: 'text' },
+    { key: 'examples', label: 'Itens da lista (um por linha)', type: 'lines' },
+  ],
+  question: [
+    { key: 'block', label: 'Bloco (ex.: Queixa, Sono, Rede de apoio)', type: 'text' },
+    { key: 'label', label: 'A pergunta', type: 'text' },
+  ],
+};
+
 export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
   const isPropose = actor?.mode === 'propose';
   const [loadState, setLoadState] = useState('loading');
@@ -41,6 +69,8 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
   const [wording, setWording] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState({});
 
   useEffect(() => {
     let alive = true;
@@ -69,8 +99,46 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
   function selectGroup(group) {
     // ao escolher um item, pré-carrega a redação com o rascunho formulado
     setSelectedId(group.id);
+    setAdding(false);
     setWording(String(group.meta?.draft || group.label || ''));
     setMessage('');
+  }
+
+  function openAdd() {
+    setAdding(true);
+    setSelectedId(null);
+    setAddForm({});
+    setMessage('');
+  }
+
+  async function submitAdd() {
+    const fields = ADD_FIELDS[activeKind] || [];
+    const type = PSYCH_PROPOSAL_TYPE[activeKind];
+    const item = {};
+    for (const f of fields) {
+      const raw = addForm[f.key] || '';
+      item[f.key] = f.type === 'lines'
+        ? String(raw).split('\n').map(s => s.trim()).filter(Boolean)
+        : String(raw).trim();
+    }
+    if (!item.label) { setMessage('Dê um nome ao item antes de enviar.'); return; }
+    setBusy(true);
+    try {
+      await submitCurationProposal({
+        type,
+        targetRef: `novo:${activeKind}`,
+        payload: { decision: 'new', kind: activeKind, item },
+        note: `Novo ${PSYCH_KIND_LABEL[activeKind]}: ${item.label}`,
+        proposerName: actor?.label || '',
+      });
+      setMessage('Novo item enviado ao SuperAdm para aprovação.');
+      setAdding(false);
+      setAddForm({});
+    } catch (err) {
+      setMessage(err?.message || 'Não foi possível enviar o novo item.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -155,7 +223,7 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
             key={kind}
             type="button"
             className="chip"
-            onClick={() => { setActiveKind(kind); setSelectedId(null); }}
+            onClick={() => { setActiveKind(kind); setSelectedId(null); setAdding(false); }}
             style={activeKind === kind ? { background: 'var(--brand, #2f6f4f)', color: '#fff', borderColor: 'transparent' } : undefined}
           >
             {PSYCH_KIND_LABEL[kind]} ({(data.grouped[kind] || []).length})
@@ -166,6 +234,20 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 320px) 1fr', gap: 16, alignItems: 'start' }}>
         {/* Lista de grupos */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {isPropose && (
+            <button
+              type="button"
+              onClick={openAdd}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer', font: 'inherit',
+                padding: '10px 12px', borderRadius: 8, marginBottom: 2, fontWeight: 700,
+                border: `1px dashed ${adding ? 'var(--brand, #2f6f4f)' : 'var(--line, #cbd5e1)'}`,
+                background: adding ? 'var(--soft, #fff8e8)' : '#fff', color: 'var(--brand, #2f6f4f)',
+              }}
+            >
+              + Adicionar {PSYCH_KIND_LABEL[activeKind].toLowerCase()}
+            </button>
+          )}
           {groups.map(g => {
             const isSel = selectedId === g.id;
             return (
@@ -200,8 +282,30 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
 
         {/* Detalhe do grupo selecionado — acompanha o scroll (sticky) */}
         <div style={{ position: 'sticky', top: 16, alignSelf: 'start', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
-          {!selected ? (
-            <div className="empty-state">Selecione um item à esquerda para revisar e propor.</div>
+          {adding ? (
+            <div className="curation-detail">
+              <h3 style={{ marginTop: 0 }}>Novo · {PSYCH_KIND_LABEL[activeKind].toLowerCase()}</h3>
+              <p className="small" style={{ color: '#64748b' }}>
+                Preencha os campos. Vai como proposta para o SuperAdm aprovar.
+              </p>
+              {(ADD_FIELDS[activeKind] || []).map(f => (
+                <div key={f.key} style={{ marginTop: 10 }}>
+                  <label className="small"><b>{f.label}</b></label>
+                  {f.type === 'lines' ? (
+                    <textarea rows={3} value={addForm[f.key] || ''} onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))} style={inputStyle} />
+                  ) : (
+                    <input value={addForm[f.key] || ''} onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))} style={inputStyle} />
+                  )}
+                </div>
+              ))}
+              <div className="curation-actions">
+                <button type="button" className="primary-button" disabled={busy} onClick={submitAdd}>Enviar novo item</button>
+                <button type="button" className="quiet-button" disabled={busy} onClick={() => { setAdding(false); setAddForm({}); }}>Cancelar</button>
+              </div>
+              {message && <div className="inline-notice" style={{ marginTop: 10 }}>{message}</div>}
+            </div>
+          ) : !selected ? (
+            <div className="empty-state">Selecione um item à esquerda, ou clique em <b>+ Adicionar</b>.</div>
           ) : (
             <div className="curation-detail">
               <h3 style={{ marginTop: 0 }}>{selected.label}</h3>

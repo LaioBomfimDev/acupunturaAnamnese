@@ -18,7 +18,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { build } from './build-psych-curation-worksheet.mjs';
+import { buildRows } from './psych-curation-rows.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendRoot = path.resolve(__dirname, '..', '..', 'frontend');
@@ -48,41 +48,21 @@ async function loadSupabaseClient() {
   return mod.createClient || mod.default?.createClient;
 }
 
-// Worksheet (grupos já deduplicados) -> linhas da tabela.
-function toRows(ws, batch) {
-  const rows = [];
-  const s = ws.sections;
-  const pushGroup = (kind, g) => rows.push({
+// Rascunho curado (psych-anamnese-draft.json) -> linhas da tabela.
+function toRows(batch) {
+  return buildRows().map(r => ({
     discipline: DISCIPLINE,
-    kind,
-    label: g.label,
-    meta: g.meta || {},
-    total_candidates: g.totalCandidates || 0,
-    unique_evidence: g.uniqueEvidence || 0,
-    sources: g.sources || [],
-    evidence: g.evidence || [],
+    kind: r.kind,
+    label: r.label,
+    meta: r.meta || {},
+    total_candidates: 0,
+    unique_evidence: 0,
+    sources: r.sources || [],
+    evidence: [],
     status: 'review',
-    copyright: 'source-only',
-    batch,
-  });
-  for (const g of s.riskSigns.groups) pushGroup('risk', g);
-  for (const g of s.reasoningAxes.groups) pushGroup('axis', g);
-  for (const g of s.checklist.groups) pushGroup('checklist', g);
-  // Perguntas: amostra "inspiração/descarte", uma linha por trecho.
-  s.questions.sample.forEach((e, i) => rows.push({
-    discipline: DISCIPLINE,
-    kind: 'question',
-    label: (e.snippet || '').slice(0, 80) || `pergunta ${i + 1}`,
-    meta: { totalInCorpus: s.questions.totalCandidates, note: s.questions.note },
-    total_candidates: 1,
-    unique_evidence: 1,
-    sources: [e.sourceLabel].filter(Boolean),
-    evidence: [e],
-    status: 'review',
-    copyright: 'source-only',
+    copyright: 'draft-synthesis',
     batch,
   }));
-  return rows;
 }
 
 async function main() {
@@ -98,8 +78,7 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
   const batch = new Date().toISOString();
-  const ws = build();
-  const rows = toRows(ws, batch);
+  const rows = toRows(batch);
   console.log(`[seed] preparando ${rows.length} linhas (lote ${batch})`);
 
   // Idempotência: remove o lote anterior da disciplina.

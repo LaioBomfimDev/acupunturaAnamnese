@@ -33,7 +33,8 @@ BEGIN
     -- Psicologia:
     'anamnese_psic_risk',
     'anamnese_psic_axis',
-    'anamnese_psic_checklist'
+    'anamnese_psic_checklist',
+    'anamnese_psic_question'
   ));
 END;
 $$;

@@ -16,13 +16,14 @@ export const PSYCH_PROPOSAL_TYPE = {
   risk: 'anamnese_psic_risk',
   axis: 'anamnese_psic_axis',
   checklist: 'anamnese_psic_checklist',
+  question: 'anamnese_psic_question',
 };
 
 export const PSYCH_KIND_LABEL = {
   risk: 'Sinais de risco',
   axis: 'Eixos de raciocínio',
-  checklist: 'Checklist / vocabulário',
-  question: 'Perguntas (inspiração)',
+  checklist: 'Listas de marcação',
+  question: 'Roteiro de anamnese',
 };
 
 /**

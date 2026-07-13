@@ -19,6 +19,18 @@ import {
 } from '../../services/psychCurationService';
 import { submitCurationProposal } from '../../services/curationProposalService';
 
+function Bullets({ title, items }) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div className="small"><b>{title}</b></div>
+      <ul className="small" style={{ marginTop: 4, paddingLeft: 18 }}>
+        {items.map((it, i) => <li key={i} style={{ marginBottom: 4 }}>{it}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
   const isPropose = actor?.mode === 'propose';
   const [loadState, setLoadState] = useState('loading');
@@ -55,9 +67,9 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
   );
 
   function selectGroup(group) {
-    // ao escolher um grupo, pré-carrega a redação com o rótulo como ponto de partida
+    // ao escolher um item, pré-carrega a redação com o rascunho formulado
     setSelectedId(group.id);
-    setWording(String(group.label || ''));
+    setWording(String(group.meta?.draft || group.label || ''));
     setMessage('');
   }
 
@@ -71,7 +83,7 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
     if (!selected) return;
     const type = PSYCH_PROPOSAL_TYPE[selected.kind];
     if (!type) {
-      setMessage('Este tipo não é proponível (perguntas são apenas inspiração).');
+      setMessage('Tipo de item não reconhecido.');
       return;
     }
     if (decision !== 'rejected' && !String(wording).trim()) {
@@ -135,8 +147,8 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
       </header>
 
       <div className="inline-notice" style={{ marginBottom: 12 }}>
-        Os trechos são <b>evidência de origem</b> (manuais protegidos) — não são conteúdo final.
-        Nada verbatim entra no app. Escreva a <b>síntese pt-BR revisada</b> e proponha.
+        Rascunho <b>já formulado</b> para você revisar — ajuste a redação, aprove, edite ou
+        reprove cada item. Nada vira registro sem a sua aprovação.
       </div>
 
       {/* Abas por tipo */}
@@ -190,64 +202,69 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
         {/* Detalhe do grupo selecionado — acompanha o scroll (sticky) */}
         <div style={{ position: 'sticky', top: 16, alignSelf: 'start', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
           {!selected ? (
-            <div className="empty-state">Selecione um grupo para ver a evidência e propor.</div>
+            <div className="empty-state">Selecione um item à esquerda para revisar e propor.</div>
           ) : (
             <div className="curation-detail">
               <h3 style={{ marginTop: 0 }}>{selected.label}</h3>
-              <p className="small">
-                Fontes: {(selected.sources || []).join(', ') || '—'}
-                {selected.meta?.priority ? ` · prioridade ${selected.meta.priority}` : ''}
-                {selected.meta?.framework ? ` · ${selected.meta.framework}` : ''}
-                {selected.meta?.category ? ` · ${selected.meta.category}` : ''}
+              <p className="small" style={{ color: '#64748b' }}>
+                {[
+                  selected.meta?.priority && `prioridade ${selected.meta.priority}`,
+                  selected.meta?.framework,
+                  selected.meta?.category,
+                  selected.meta?.block,
+                ].filter(Boolean).join(' · ') || PSYCH_KIND_LABEL[selected.kind]}
               </p>
 
-              <details open>
-                <summary className="small"><b>Evidência</b> (origem — não usar verbatim)</summary>
-                <ul className="small" style={{ marginTop: 8 }}>
-                  {(selected.evidence || []).slice(0, 8).map((e, i) => (
-                    <li key={i} style={{ marginBottom: 6 }}>
-                      <i>({e.sourceLabel}, p.{e.page})</i> {e.snippet}
-                    </li>
-                  ))}
-                </ul>
-              </details>
+              {selected.meta?.summary && <p style={{ marginTop: 4 }}>{selected.meta.summary}</p>}
 
-              {selected.kind === 'question' ? (
-                <div className="inline-notice" style={{ marginTop: 12 }}>
-                  Perguntas são <b>inspiração / descarte</b> (OCR cru). O roteiro de anamnese é
-                  redigido a partir dos eixos e do checklist — não se propõe pergunta linha-a-linha.
-                </div>
-              ) : (
-                <div style={{ marginTop: 12 }}>
-                  <label className="small" htmlFor="psic-wording"><b>Redação final (pt-BR, síntese revisada)</b></label>
-                  <textarea
-                    id="psic-wording"
-                    rows={4}
-                    value={wording}
-                    onChange={e => setWording(e.target.value)}
-                    placeholder="Escreva como este item deve aparecer na anamnese de psicologia…"
-                    style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid var(--line, #d8dcd9)', font: 'inherit' }}
-                    disabled={!isPropose}
-                  />
+              <Bullets title="Perguntas de triagem" items={selected.meta?.screening} />
+              <Bullets title="O que observar" items={selected.meta?.observe} />
+              <Bullets title="O que investigar" items={selected.meta?.explore} />
+              <Bullets title="Itens da lista" items={selected.meta?.examples} />
 
-                  {isPropose ? (
-                    <div className="curation-actions">
-                      <button type="button" className="primary-button" disabled={busy} onClick={() => propose('approved_local')}>
-                        Propor aprovação
-                      </button>
-                      <button type="button" className="quiet-button" disabled={busy} onClick={() => propose('review')}>
-                        Propor edição
-                      </button>
-                      <button type="button" className="quiet-button" disabled={busy} onClick={() => propose('rejected')}>
-                        Propor reprovação
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="small" style={{ marginTop: 10 }}>
-                      Leitura. A aprovação final acontece na fila de propostas do SuperAdm.
-                    </p>
-                  )}
+              {selected.meta?.reminder && (
+                <div className="inline-notice" style={{ marginTop: 10 }}>
+                  <b>Lembrete de conduta:</b> {selected.meta.reminder}
                 </div>
+              )}
+
+              <div style={{ marginTop: 14 }}>
+                <label className="small" htmlFor="psic-wording">
+                  <b>Redação final (pt-BR) — revise e ajuste ao seu jeito</b>
+                </label>
+                <textarea
+                  id="psic-wording"
+                  rows={4}
+                  value={wording}
+                  onChange={e => setWording(e.target.value)}
+                  placeholder="Como este item deve aparecer na anamnese…"
+                  style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid var(--line, #d8dcd9)', font: 'inherit' }}
+                  disabled={!isPropose}
+                />
+
+                {isPropose ? (
+                  <div className="curation-actions">
+                    <button type="button" className="primary-button" disabled={busy} onClick={() => propose('approved_local')}>
+                      Propor aprovação
+                    </button>
+                    <button type="button" className="quiet-button" disabled={busy} onClick={() => propose('review')}>
+                      Propor edição
+                    </button>
+                    <button type="button" className="quiet-button" disabled={busy} onClick={() => propose('rejected')}>
+                      Propor reprovação
+                    </button>
+                  </div>
+                ) : (
+                  <p className="small" style={{ marginTop: 10 }}>
+                    Leitura. A aprovação final acontece na fila de propostas do SuperAdm.
+                  </p>
+                )}
+              </div>
+
+              {(selected.sources || []).length > 0 && (
+                <p className="small" style={{ marginTop: 12, color: '#94a3b8' }}>
+                  Baseado em: {(selected.sources || []).join(', ')}
+                </p>
               )}
 
               {message && <div className="inline-notice" style={{ marginTop: 10 }}>{message}</div>}

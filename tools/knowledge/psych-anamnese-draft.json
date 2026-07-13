@@ -1,0 +1,308 @@
+{
+  "_meta": {
+    "title": "Rascunho curado da anamnese de Psicologia",
+    "note": "Síntese formulada (não verbatim) a partir do desenho aprovado pela psicóloga (docs/anamnese-psicologia-apresentacao.md) e da literatura processada (DSM-5-TR, CID-11, ABA/TEA). É RASCUNHO: a profissional revisa, edita e aprova. A IA organiza e redige, nunca diagnostica nem decide conduta.",
+    "gate": "requiresProfessionalAudit"
+  },
+  "risk": [
+    {
+      "label": "Ideação e comportamento suicida",
+      "priority": "alta",
+      "summary": "Pensamentos de morte, ideação, plano ou tentativa. É o sinal prioritário de segurança: sempre investigar de forma direta e acolhedora, e registrar.",
+      "draft": "Investigar presença de ideação suicida (pensamentos de morte, desejo de morrer), existência de plano e método, tentativas prévias e fatores de proteção. Registrar gravidade e rede de apoio.",
+      "screening": [
+        "Nos últimos tempos, você chegou a pensar que não valeria a pena viver, ou em se machucar?",
+        "Esses pensamentos chegaram a virar um plano? Você pensou em como faria?",
+        "Já tentou tirar a própria vida alguma vez? Quando?",
+        "O que te segura hoje — o que te faz continuar? (fatores de proteção)"
+      ],
+      "observe": [
+        "Desesperança, sensação de ser um peso para os outros, despedidas, doação de pertences",
+        "Acesso a meios (medicação acumulada, arma de fogo)",
+        "Tentativa prévia, histórico familiar de suicídio, perda recente"
+      ],
+      "reminder": "Se presente: avaliar gravidade e iminência, construir plano de segurança, acionar rede de apoio e encaminhar conforme o protocolo da clínica. O sistema lembra — a decisão clínica é sua.",
+      "sources": ["DSM-5-TR", "CID-11"]
+    },
+    {
+      "label": "Autolesão não suicida",
+      "priority": "alta",
+      "summary": "Comportamento de se machucar de propósito, sem intenção de morrer (cortes, queimaduras, escoriações). Frequentemente ligado a alívio de tensão emocional.",
+      "draft": "Investigar autolesão sem intenção suicida: forma, frequência, gatilhos e função (o que sente antes e depois). Diferenciar de ideação suicida.",
+      "screening": [
+        "Você tem se machucado de propósito, sem a intenção de morrer (por exemplo, cortes ou queimaduras)?",
+        "Com que frequência isso acontece? O que costuma vir antes?",
+        "O que você sente antes e o que sente depois?"
+      ],
+      "observe": [
+        "Cicatrizes, roupas cobrindo braços/pernas mesmo no calor",
+        "Relato de alívio de tensão ou de 'sentir algo' após o ato"
+      ],
+      "reminder": "Avaliar a função do comportamento e o risco associado; distinguir de intenção suicida; encaminhar conforme o protocolo da clínica.",
+      "sources": ["DSM-5-TR", "ABA/TEA"]
+    },
+    {
+      "label": "Risco a terceiros / heteroagressividade",
+      "priority": "alta",
+      "summary": "Pensamentos, impulsos ou histórico de agredir outra pessoa. Exige atenção a alvo específico e acesso a meios.",
+      "draft": "Investigar impulsos ou pensamentos de agredir terceiros, existência de alvo específico, acesso a meios e histórico de violência.",
+      "screening": [
+        "Tem tido pensamentos ou impulsos de machucar outra pessoa?",
+        "Existe alguém específico? Você teria como (acesso a meios)?",
+        "Já se envolveu em situações de agressão antes?"
+      ],
+      "observe": [
+        "Irritabilidade intensa, ideias persecutórias, histórico de violência",
+        "Menção a alvo concreto e a um plano"
+      ],
+      "reminder": "Considerar dever de proteção/aviso conforme a legislação e o Conselho, e o protocolo da clínica. O sistema lembra — a conduta é sua.",
+      "sources": ["DSM-5-TR"]
+    },
+    {
+      "label": "Violência, abuso ou negligência",
+      "priority": "alta",
+      "summary": "Exposição a violência (física, psicológica, sexual) ou negligência, sofrida pela pessoa ou por alguém sob seus cuidados.",
+      "draft": "Investigar exposição a violência ou negligência, atual ou passada, incluindo risco a crianças, adolescentes, idosos ou pessoas vulneráveis do convívio.",
+      "screening": [
+        "Você está passando, ou já passou, por alguma situação de violência ou negligência?",
+        "Há crianças, adolescentes ou idosos em situação de risco no seu convívio?",
+        "Você se sente seguro(a) em casa e nas suas relações?"
+      ],
+      "observe": [
+        "Relatos indiretos, medo ao falar de certas pessoas, sinais físicos inexplicados",
+        "Isolamento imposto, controle financeiro ou de circulação"
+      ],
+      "reminder": "Atentar para notificação compulsória quando envolver criança, adolescente ou idoso; acionar rede de proteção conforme o protocolo da clínica.",
+      "sources": ["CID-11", "Manual Neuropsicologia (CFP)"]
+    },
+    {
+      "label": "Sinais de crise aguda",
+      "priority": "alta",
+      "summary": "Desorganização importante, agitação intensa, sintomas psicóticos agudos ou dissociação marcada que exigem cuidado imediato.",
+      "draft": "Registrar sinais de crise aguda (desorganização, agitação, alteração do juízo de realidade, dissociação) e avaliar necessidade de cuidado imediato.",
+      "screening": [
+        "Você tem se sentido fora de controle, muito agitado(a) ou desconectado(a) da realidade?",
+        "Tem ouvido ou visto coisas que outras pessoas não percebem?"
+      ],
+      "observe": [
+        "Discurso desorganizado, agitação psicomotora, alteração do juízo de realidade",
+        "Episódios de dissociação ('desligar', não lembrar de trechos)"
+      ],
+      "reminder": "Avaliar necessidade de encaminhamento imediato/emergência e suporte psiquiátrico, conforme o protocolo da clínica.",
+      "sources": ["DSM-5-TR", "CID-11"]
+    }
+  ],
+  "axis": [
+    {
+      "label": "Funcionamento cognitivo",
+      "framework": "Neuropsicologia",
+      "summary": "Como estão atenção, memória, linguagem, funções executivas e orientação — o 'como a mente está operando'.",
+      "draft": "Organizar observações sobre atenção, memória, linguagem, funções executivas e orientação.",
+      "explore": [
+        "Atenção e concentração no dia a dia (foco, distração, esquecimentos)",
+        "Memória para fatos recentes e antigos",
+        "Linguagem e comunicação (encontrar palavras, compreender, se expressar)",
+        "Organização, planejamento e tomada de decisão"
+      ],
+      "sources": ["Manual Neuropsicologia (CFP)", "DSM-5-TR"]
+    },
+    {
+      "label": "Funcionamento afetivo e emocional",
+      "framework": "Clínico",
+      "summary": "Estado de humor, afeto predominante e capacidade de regular emoções.",
+      "draft": "Organizar observações sobre humor predominante, oscilações, afeto e regulação emocional.",
+      "explore": [
+        "Humor predominante nas últimas semanas",
+        "Oscilações, irritabilidade, apatia ou anedonia",
+        "Como lida com emoções intensas (raiva, medo, tristeza)"
+      ],
+      "sources": ["DSM-5-TR", "CID-11"]
+    },
+    {
+      "label": "Funcionamento adaptativo e cotidiano",
+      "framework": "Funcional",
+      "summary": "Como a pessoa se vira no dia a dia: autocuidado, trabalho/estudo, relações e autonomia.",
+      "draft": "Organizar observações sobre autocuidado, desempenho no trabalho/estudo, relações e autonomia.",
+      "explore": [
+        "Autocuidado e rotina básica (higiene, alimentação, sono)",
+        "Desempenho e faltas no trabalho ou nos estudos",
+        "Relações interpessoais e vida social",
+        "Autonomia para tarefas do dia a dia"
+      ],
+      "sources": ["ABA/TEA", "Manual Neuropsicologia (CFP)"]
+    },
+    {
+      "label": "Desenvolvimento e história de vida",
+      "framework": "Desenvolvimental",
+      "summary": "Trajetória: marcos do desenvolvimento, infância, adolescência e eventos significativos.",
+      "draft": "Organizar a linha de vida: marcos do desenvolvimento e eventos significativos (perdas, mudanças, adoecimentos).",
+      "explore": [
+        "Gestação, parto e marcos do desenvolvimento (quando pertinente)",
+        "Infância e adolescência: como foram",
+        "Eventos marcantes (perdas, mudanças, separações, adoecimentos)"
+      ],
+      "sources": ["ABA/TEA", "Manual Neuropsicologia (CFP)"]
+    },
+    {
+      "label": "Contexto familiar e social",
+      "framework": "Sistêmico",
+      "summary": "Configuração familiar, rede de apoio, trabalho/escola e contexto cultural.",
+      "draft": "Organizar observações sobre configuração familiar, rede de apoio e contexto social/cultural.",
+      "explore": [
+        "Com quem mora e como é a dinâmica familiar",
+        "Rede de apoio: com quem pode contar",
+        "Trabalho/escola e contexto socioeconômico e cultural"
+      ],
+      "sources": ["CID-11", "ABA/TEA"]
+    },
+    {
+      "label": "Avaliação funcional do comportamento",
+      "framework": "Análise do comportamento aplicada",
+      "summary": "Leitura de antecedentes, comportamento e consequências (ABC) para entender a função do que acontece.",
+      "draft": "Organizar a análise funcional: o que vem antes (antecedentes), o comportamento em si e o que vem depois (consequências).",
+      "explore": [
+        "Em que situações o comportamento/queixa aparece e em quais não aparece",
+        "O que costuma vir antes (gatilhos) e depois (consequências)",
+        "Que função o comportamento parece cumprir para a pessoa"
+      ],
+      "sources": ["ABA/TEA"]
+    },
+    {
+      "label": "Hipóteses de trabalho e formulação",
+      "framework": "Descritivo",
+      "summary": "Organização PROVISÓRIA do caso para guiar a escuta — descritiva, sem diagnóstico automático.",
+      "draft": "Registrar hipóteses de trabalho provisórias que orientam a escuta, sempre revisáveis e sem valor diagnóstico automático.",
+      "explore": [
+        "Que leitura provisória organiza melhor o que a pessoa traz",
+        "O que ainda falta compreender para sustentar ou rever a hipótese"
+      ],
+      "sources": ["Manual Neuropsicologia (CFP)"]
+    },
+    {
+      "label": "Critérios e diagnóstico diferencial",
+      "framework": "Referência (DSM/CID)",
+      "summary": "Uso de critérios classificatórios como APOIO à escuta e à diferenciação — nunca como fechamento automático.",
+      "draft": "Usar critérios de referência (DSM/CID) como apoio para diferenciar hipóteses, sem qualquer conclusão diagnóstica automática do sistema.",
+      "explore": [
+        "Quais quadros merecem ser diferenciados diante do que a pessoa relata",
+        "Que informações ajudariam a distinguir entre eles"
+      ],
+      "sources": ["DSM-5-TR", "CID-11"]
+    }
+  ],
+  "checklist": [
+    {
+      "label": "Humor e afeto",
+      "category": "listas de marcação",
+      "summary": "Marcação rápida de sinais do humor e do afeto.",
+      "examples": ["Tristeza persistente", "Apatia / anedonia (perda de prazer)", "Oscilações de humor", "Irritabilidade"],
+      "sources": ["DSM-5-TR"]
+    },
+    {
+      "label": "Ansiedade",
+      "category": "listas de marcação",
+      "summary": "Marcação de manifestações ansiosas.",
+      "examples": ["Preocupação excessiva", "Sintomas físicos (taquicardia, tensão)", "Evitação", "Crises de pânico"],
+      "sources": ["DSM-5-TR"]
+    },
+    {
+      "label": "Sono",
+      "category": "listas de marcação",
+      "summary": "Alterações do sono.",
+      "examples": ["Dificuldade para iniciar o sono", "Dificuldade para manter o sono", "Sono excessivo", "Pesadelos"],
+      "sources": ["DSM-5-TR", "CID-11"]
+    },
+    {
+      "label": "Alimentação",
+      "category": "listas de marcação",
+      "summary": "Mudanças no apetite e na relação com a comida.",
+      "examples": ["Redução do apetite", "Aumento do apetite", "Mudança de peso", "Relação disfuncional com a comida"],
+      "sources": ["DSM-5-TR", "ABA/TEA"]
+    },
+    {
+      "label": "Cognição (atenção, memória, linguagem)",
+      "category": "listas de marcação",
+      "summary": "Sinais cognitivos observáveis.",
+      "examples": ["Dificuldade de atenção/concentração", "Queixas de memória", "Dificuldade de linguagem/comunicação"],
+      "sources": ["Manual Neuropsicologia (CFP)"]
+    },
+    {
+      "label": "Desenvolvimento e aprendizagem",
+      "category": "listas de marcação",
+      "summary": "Marcos e dificuldades de desenvolvimento/escolares (quando pertinente).",
+      "examples": ["Atraso em marcos do desenvolvimento", "Dificuldade de aprendizagem escolar", "Dificuldade de interação social"],
+      "sources": ["ABA/TEA", "CID-11"]
+    },
+    {
+      "label": "Trauma e eventos estressores",
+      "category": "listas de marcação",
+      "summary": "Sinais ligados a exposição a evento traumático.",
+      "examples": ["Exposição a evento traumático", "Revivências / pesadelos", "Evitação de lembranças", "Hipervigilância"],
+      "sources": ["DSM-5-TR", "CID-11"]
+    },
+    {
+      "label": "Funcionamento e rotina",
+      "category": "listas de marcação",
+      "summary": "Impacto no dia a dia e uso de substâncias.",
+      "examples": ["Prejuízo no autocuidado", "Prejuízo no trabalho/estudo", "Prejuízo nas relações", "Uso de substâncias"],
+      "sources": ["ABA/TEA", "DSM-5-TR"]
+    }
+  ],
+  "questionnaire": [
+    {
+      "block": "Demanda / queixa principal",
+      "questions": [
+        "O que te trouxe ao atendimento? Com suas palavras, como você descreveria o que está acontecendo?",
+        "Desde quando isso vem acontecendo?",
+        "Como isso tem afetado o seu dia a dia?"
+      ]
+    },
+    {
+      "block": "Por que agora",
+      "questions": [
+        "Por que você procurou ajuda neste momento?",
+        "Aconteceu algo recente que pesou nessa decisão?"
+      ]
+    },
+    {
+      "block": "História pessoal e de vida",
+      "questions": [
+        "Como foi sua infância e adolescência?",
+        "Houve eventos marcantes na sua vida (perdas, mudanças, separações, adoecimentos)?",
+        "Como você descreveria sua trajetória até aqui?"
+      ]
+    },
+    {
+      "block": "Saúde mental e tratamentos anteriores",
+      "questions": [
+        "Você já fez acompanhamento psicológico ou psiquiátrico antes? Como foi?",
+        "Usa ou já usou medicação psiquiátrica? Qual e por quanto tempo?",
+        "Há histórico de saúde mental na sua família?"
+      ]
+    },
+    {
+      "block": "Rede de apoio e contexto familiar/social",
+      "questions": [
+        "Com quem você mora? Como é a convivência?",
+        "Com quem você pode contar quando precisa?",
+        "Como estão suas relações mais próximas (família, amigos, trabalho)?"
+      ]
+    },
+    {
+      "block": "Funcionamento atual (humor, sono, ansiedade, rotina)",
+      "questions": [
+        "Como tem estado o seu humor ultimamente?",
+        "Como está o seu sono?",
+        "E o apetite, houve mudança?",
+        "Você tem se sentido ansioso(a) ou preocupado(a) além do habitual?",
+        "Como está seu dia a dia no trabalho ou nos estudos?"
+      ]
+    },
+    {
+      "block": "Observações da sessão",
+      "questions": [
+        "Registro livre da profissional: postura, contato, afeto observado, aliança e impressões iniciais."
+      ]
+    }
+  ]
+}

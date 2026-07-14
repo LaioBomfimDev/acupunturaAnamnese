@@ -25,6 +25,7 @@ import {
   jsonResponse,
 } from '../_shared/security.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 
@@ -38,17 +39,35 @@ const CATALOG: Record<string, string[]> = {
   psiHumor: [
     'Tristeza persistente', 'Apatia / desânimo', 'Perda de prazer (anedonia)',
     'Oscilações de humor', 'Irritabilidade', 'Choro frequente',
-    'Culpa excessiva', 'Baixa autoestima',
+    'Culpa excessiva', 'Baixa autoestima', 'Desesperança',
   ],
   psiAnsiedade: [
-    'Preocupação excessiva', 'Sintomas físicos (taquicardia, sudorese)',
-    'Inquietação', 'Evitação de situações', 'Crises de pânico',
-    'Medos específicos', 'Tensão constante',
+    'Preocupação excessiva', 'Pensamento acelerado / ruminação',
+    'Sintomas físicos (taquicardia, sudorese)', 'Inquietação',
+    'Evitação de situações', 'Crises de pânico', 'Medos específicos',
+    'Tensão constante',
   ],
   psiSono: [
     'Dificuldade para iniciar sono', 'Despertares frequentes', 'Acorda entre 1h-3h',
     'Acorda entre 3h-5h', 'Sonhos intensos', 'Pesadelos', 'Sudorese noturna',
     'Bruxismo', 'Sono não reparador', 'Sonolência diurna',
+  ],
+  psiAlimentacao: [
+    'Redução do apetite', 'Aumento do apetite', 'Mudança de peso',
+    'Compulsão alimentar', 'Restrição / relação disfuncional com a comida',
+  ],
+  psiCognicao: [
+    'Dificuldade de atenção / concentração', 'Queixas de memória',
+    'Dificuldade de linguagem / comunicação', 'Lentificação do pensamento',
+    'Dificuldade de organização e planejamento',
+  ],
+  psiDesenvolvimento: [
+    'Atraso em marcos do desenvolvimento', 'Dificuldade de aprendizagem escolar',
+    'Dificuldade de interação social', 'Comportamentos repetitivos / restritos',
+  ],
+  psiTrauma: [
+    'Exposição a evento traumático', 'Revivências / pesadelos',
+    'Evitação de lembranças', 'Hipervigilância', 'Entorpecimento emocional',
   ],
   psiFuncionamento: [
     'Prejuízo no trabalho/estudo', 'Prejuízo nas relações',
@@ -60,12 +79,11 @@ const CATALOG: Record<string, string[]> = {
     'Outras substâncias', 'Uso aumentou recentemente',
   ],
   psiRisco: [
-    'Ideação suicida',
-    'Planejamento ou tentativa prévia',
-    'Autolesão',
-    'Risco a terceiros',
+    'Ideação e comportamento suicida',
+    'Autolesão não suicida',
+    'Risco a terceiros / heteroagressividade',
+    'Violência, abuso ou negligência',
     'Sinais de crise aguda',
-    'Suspeita de violência ou negligência sofrida',
   ],
 };
 
@@ -86,7 +104,12 @@ const OUTPUT_SCHEMA = {
           key: {
             type: 'STRING',
             enum: ALLOWED_KEYS,
-            description: 'marcação no formato "grupo:item", exatamente como no catálogo',
+            description: 'sinal no formato "grupo:item", exatamente como no catálogo',
+          },
+          kind: {
+            type: 'STRING',
+            enum: ['sustentado', 'investigar'],
+            description: '"sustentado" = o texto afirma o sinal claramente; "investigar" = só há indício e precisa ser explorado pela profissional',
           },
           confidence: {
             type: 'NUMBER',
@@ -97,7 +120,7 @@ const OUTPUT_SCHEMA = {
             description: 'trecho/sinal do texto que justifica, em pt-BR (curto)',
           },
         },
-        required: ['key', 'confidence', 'rationale'],
+        required: ['key', 'kind', 'confidence', 'rationale'],
       },
     },
     warning: {
@@ -111,15 +134,20 @@ const OUTPUT_SCHEMA = {
 
 const SYSTEM_PROMPT = `Você é um assistente de anamnese para psicólogas clínicas no Brasil.
 
-Sua tarefa: ler o texto livre da anamnese de psicologia (demanda, história, saúde mental, rede de apoio, observações da sessão) e SUGERIR quais itens do checklist marcar. Os itens são fechados — você só pode escolher chaves do catálogo fornecido pelo schema (campo "key", formato "grupo:item").
+Sua tarefa: ler o texto livre da anamnese de psicologia (demanda, história, saúde mental, rede de apoio, observações da sessão) e apontar quais sinais do checklist o texto sugere, para a profissional conferir. Os itens são fechados — você só pode escolher chaves do catálogo fornecido pelo schema (campo "key", formato "grupo:item").
+
+Cada sinal tem um tipo (campo "kind"):
+- "sustentado": o texto AFIRMA o sinal claramente (ex.: "não durmo há semanas" → dificuldade para iniciar sono).
+- "investigar": o texto só dá um INDÍCIO que precisa ser explorado, não uma afirmação (ex.: "tenho tido estresse no trabalho" é um indício a investigar, NÃO confirma "prejuízo no trabalho"). Na dúvida entre os dois, use "investigar".
 
 Regras:
-- Sugira APENAS o que o texto sustenta. Não produza diagnóstico psicológico ou psiquiátrico (CID/DSM), não interprete conteúdo e não sugira conduta — isso é papel da profissional.
-- Cada sugestão precisa de justificativa curta citando o sinal do texto (campo "rationale").
-- Confiança conservadora: 0.8+ só quando o texto afirma o item claramente; 0.4–0.7 quando é provável mas indireto; não sugira abaixo de 0.35.
-- EXCEÇÃO DELIBERADA — RISCO (grupo "psiRisco": ideação suicida, planejamento/tentativa, autolesão, risco a terceiros, crise aguda, violência/negligência sofrida): na dúvida razoável, PREFIRA sugerir para o olhar humano conferir, e liste essas sugestões PRIMEIRO. É melhor um alerta a mais do que um risco não visto.
+- Aponte APENAS o que o texto embasa. Não produza diagnóstico psicológico ou psiquiátrico (CID/DSM), não interprete conteúdo e não sugira conduta — isso é papel da profissional.
+- NÃO transforme uma menção neutra em gravidade ou prejuízo: mencionar um tema (trabalho, família, sono) não é o mesmo que afirmar disfunção. Quando for só menção, marque "investigar" com confiança baixa.
+- Cada sinal precisa de justificativa curta citando o trecho do texto (campo "rationale").
+- Confiança conservadora: 0.8+ só quando o texto afirma o sinal claramente (kind "sustentado"); 0.4–0.7 quando é indício indireto (kind "investigar"); não sugira abaixo de 0.35.
+- EXCEÇÃO DELIBERADA — RISCO (grupo "psiRisco": ideação e comportamento suicida, autolesão não suicida, risco a terceiros/heteroagressividade, violência/abuso/negligência, sinais de crise aguda): na dúvida razoável, PREFIRA apontar para o olhar humano conferir (kind "investigar"), e liste esses sinais PRIMEIRO. É melhor um alerta a mais do que um risco não visto.
 - Não presuma nada a partir de gênero, idade ou profissão — apenas o que o texto afirma.
-- Não repita a mesma chave. Máximo de 12 sugestões, das mais às menos relevantes.
+- Não repita a mesma chave. Máximo de 12 sinais, dos mais aos menos relevantes.
 - O texto pode vir com identificadores mascarados ([NOME], [DATA], [CPF] etc.) — ignore-os, são esperados.
 - Se o texto estiver vazio ou sem conteúdo clínico aproveitável, retorne suggestions vazio e explique em warning (pt-BR).`;
 
@@ -166,7 +194,9 @@ Deno.serve(async (req) => {
     // Teto defensivo: anamnese não deveria passar de alguns milhares de chars.
     const clippedText = text.slice(0, 8000);
 
-    const systemText = await withCorrectionLessons(supabaseAdmin, SYSTEM_PROMPT, {
+    const extraInstructions = await getActiveInstructions(supabaseAdmin, ['psych-global', 'psych-anamnese-marks']);
+    const instructedPrompt = layerSystemPrompt(SYSTEM_PROMPT, extraInstructions);
+    const systemText = await withCorrectionLessons(supabaseAdmin, instructedPrompt, {
       surface: 'psych_marks',
       callerId: caller.user.id,
       relevanceQuery: clippedText,
@@ -176,7 +206,7 @@ Deno.serve(async (req) => {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
         role: 'user',
-        parts: [{ text: `Texto da anamnese de psicologia:\n"""\n${clippedText}\n"""\n\nSugira as marcações do checklist sustentadas por este texto (risco primeiro, se houver).` }],
+        parts: [{ text: `Texto da anamnese de psicologia:\n"""\n${clippedText}\n"""\n\nAponte os sinais do checklist que este texto embasa, cada um com seu tipo (sustentado/investigar). Risco primeiro, se houver.` }],
       }],
       generationConfig: {
         temperature: 0.2,
@@ -210,11 +240,14 @@ Deno.serve(async (req) => {
       .filter((s: { key?: string }) => typeof s.key === 'string' && ALLOWED_KEY_SET.has(s.key))
       .filter((s: { key: string }) => (seen.has(s.key) ? false : (seen.add(s.key), true)))
       .slice(0, 12)
-      .map((s: { key: string; confidence: unknown; rationale?: string }) => {
+      .map((s: { key: string; kind?: string; confidence: unknown; rationale?: string }) => {
         const idx = s.key.indexOf(':');
         return {
           group: s.key.slice(0, idx),
           item: s.key.slice(idx + 1),
+          // Rótulo do card: "investigar" (indício a explorar) vs
+          // "sustentado" (afirmado no texto). Default conservador.
+          kind: s.kind === 'sustentado' ? 'sustentado' : 'investigar',
           confidence: clampConfidence(s.confidence),
           rationale: typeof s.rationale === 'string' ? s.rationale : '',
         };

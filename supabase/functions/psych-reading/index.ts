@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
 
     // Diretrizes adicionais curadas (aditivas; a segurança do prompt fixo
     // é piso). Key própria da leitura psi + a global clínica.
-    const extraInstructions = await getActiveInstructions(supabaseAdmin, ['clinical-global', 'psych-reading']);
+    const extraInstructions = await getActiveInstructions(supabaseAdmin, ['psych-global', 'psych-case-assistant']);
     const systemPromptText = layerSystemPrompt(SYSTEM_PROMPT, extraInstructions);
 
     // Query de relevância p/ correções: textos + itens marcados.

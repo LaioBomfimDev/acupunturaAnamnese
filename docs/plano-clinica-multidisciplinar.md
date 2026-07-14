@@ -175,6 +175,9 @@ Regras de migração de segurança:
 ### 5.2 Workspace por disciplina
 - Sidebar/abas definidas pelo pacote da disciplina (MTC = as 10 atuais; Psi nasce enxuta:
   Anamnese + Evolução + Relatório; Nutri/Fisio análogo).
+- **Regra de shell:** toda disciplina usa a mesma composição clínica (`Sidebar` azul + conteúdo
+  central + rail `IA Assistente`). A disciplina troca as abas, os dados e as funções da IA,
+  mas não cria uma tela paralela baseada no shell do hub.
 - Lista de pacientes do workspace = **matriculados naquela disciplina**.
 - Assistente lateral de IA por disciplina (na Psi, versão conservadora do plano de anamnese).
 
@@ -188,11 +191,15 @@ Regras de migração de segurança:
   de encaminhamento. Uma confirmação clara do que o outro profissional passará a ver.
 
 ### 5.4 Psicologia — modalidades
-Ao abrir o workspace de Psi com um paciente: escolher **"Anamnese clínica"** ou
-**"Avaliação neuropsicológica"** (fluxos distintos, registros distintos, ambos gravando
-`discipline = psicologia` com `record_type` próprio). Conteúdo de cada uma: definido com a
-psicóloga (`docs/plano-anamnese-multidisciplinar.md` + perguntas §2.4; incluir pergunta nova
-sobre a bateria/estrutura da avaliação neuropsicológica).
+Ao abrir o workspace de Psi com um paciente, a tela de boas-vindas oferece três percursos:
+**Anamnese infantil**, **Anamnese adulto** e **Avaliação**. A anamnese abre uma segunda etapa
+com quatro perfis (infantil menina/menino e adulto mulher/homem); infantil é até 17 anos e
+registra o responsável ou outro informante em cada resposta. Anamnese e avaliação são fluxos
+e registros distintos (`psi_anamnese` e `psi_neuro_avaliacao`), ambos ligados ao mesmo paciente.
+
+Todo paciente pode ter evoluções sem estar em avaliação. Quando houver avaliação, ela mantém
+suas próprias sessões/evoluções, instrumentos, observações, resultados, integração profissional
+e relatório. As dez sessões são apenas um roteiro inicial ajustável pela neuropsicóloga.
 
 ---
 
@@ -244,21 +251,22 @@ durante TODA a transição.
   Pacote Psi: anamnese clínica + avaliação neuropsicológica (conteúdo aprovado pela
   psicóloga), IA conservadora, relatório/PDF próprio.
 
-  **Status (2026-07-10): ESQUELETO implementado.** Workspace autocontido
+  **Status (2026-07-14): PRIMEIRO FLUXO COMPLETO EM REVISÃO.** Workspace autocontido
   (`components/PsychologyWorkspace.jsx` + `data/psychologyAnamnese.js`): hub → card
   Psicologia → paciente (reusa `PatientStart`, matrícula inicial em `psicologia`) →
-  escolha de modalidade (anamnese clínica aberta; avaliação neuropsicológica "a definir
-  com a psicóloga") → formulário com os campos/checklists RASCUNHO do plano de anamnese
-  (banner de validação pendente em toda tela), bloco de risco sempre visível com lembrete
-  que destaca e NUNCA decide, auto-save + salvar manual em `clinical_records`
-  (`record_type='psi_anamnese'`, `discipline='psicologia'`). **IA desligada** nesta
-  disciplina até a psicóloga responder as 7 perguntas. Migração
+  boas-vindas com os três percursos → quatro perfis de anamnese ou avaliação separada.
+  Há roteiro infantil/adulto, atalhos em todos os campos, identificação e histórico do
+  informante, correção ortográfica nativa pt-BR, bloco de risco, hipóteses em revisão,
+  evolução clínica e avaliação longitudinal ajustável com instrumentos, sessões, resultados,
+  integração e relatório assistido. Auto-save usa `record_type='psi_anamnese'` e
+  `record_type='psi_neuro_avaliacao'`, ambos com `discipline='psicologia'`. IA só produz
+  rascunho editável; impressão do relatório exige revisão profissional. Migração
   `20260710_insert_record_discipline.sql` (p_discipline na RPC; incluída no consolidado
   `docs/aplicar-sql-disciplinas-2026-07-08.sql`) — sem ela o save cai na assinatura
   antiga com AVISO no console (payload preserva a disciplina). Teste:
-  `tests/regression/psychology-workspace.test.mjs`. Falta (próximas iterações da fase):
-  conteúdo aprovado pela psicóloga, avaliação neuropsicológica, evolução/relatório Psi,
-  lista de pacientes filtrada por matrícula.
+  `tests/regression/psychology-workspace.test.mjs`. Falta: validação clínica da psicóloga/
+  neuropsicóloga, refinamento da bateria e do documento, deploy da Edge Function
+  `psych-report` e lista de pacientes filtrada por matrícula.
 - **Fase 6 — Nutri e Fisio** repetindo o molde da Fase 5.
 
 Ordem defensável: hub primeiro (visível, barato, sem risco), banco depois (invisível,

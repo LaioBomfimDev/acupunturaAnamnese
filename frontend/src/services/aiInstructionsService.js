@@ -39,17 +39,40 @@ export const AI_INSTRUCTION_KEYS = [
     label: 'Dietoterapia — Pesquisar com IA',
     help: 'Refina só a pesquisa de alimento/planta por tópicos (visão medicinal, receitas, leitura MTC, segurança). Não relaxa os trilhos de segurança (sem diagnóstico/prescrição, rótulo de evidência).',
   },
+  {
+    key: 'psych-global',
+    label: 'Psicologia — diretrizes gerais',
+    help: 'Vale somente para as IAs de Psicologia. Mantém linguagem, foco e limites separados das diretrizes de Acupuntura/MTC.',
+  },
+  {
+    key: 'psych-anamnese-marks',
+    label: 'Psicologia — sugestões da anamnese',
+    help: 'Refina a leitura do texto livre e a sugestão de marcações do vocabulário fechado de Psicologia, sem diagnóstico nem marcação automática.',
+  },
+  {
+    key: 'psych-case-assistant',
+    label: 'Psicologia — IA Assistente',
+    help: 'Refina a organização assistiva do caso, lacunas, cautelas, riscos e próximas perguntas. Toda saída continua como rascunho para revisão profissional.',
+  },
+  {
+    key: 'psych-report-assistant',
+    label: 'Psicologia — relatório assistido',
+    help: 'Refina a redação dos relatórios de Psicologia e avaliação neuropsicológica, sem inventar dados, interpretar resultado bruto ou fechar diagnóstico.',
+  },
 ];
 
 // ------------------------------------------------------------
-// Base fixa (somente leitura). Espelho LITERAL do SYSTEM_PROMPT de cada Edge
-// Function — é o piso que a IA já segue antes das diretrizes desta tela.
+// Base fixa (somente leitura). Espelho dos guardrails do SYSTEM_PROMPT de cada
+// Edge Function — é o piso que a IA já segue antes das diretrizes desta tela.
 // Exibido no painel para o SuperAdm ter noção do que já existe. NÃO afeta o
 // servidor: se editar aqui, nada muda na IA. Mantenha em sincronia com:
 //   supabase/functions/library-qa/index.ts
 //   supabase/functions/clinical-reasoning/index.ts
 //   supabase/functions/analyze-tongue/index.ts
 //   supabase/functions/food-research/index.ts
+// As bases legadas abaixo preservam o texto integral; as bases Psi exibem
+// uma síntese fiel dos guardrails, enquanto o contrato integral permanece
+// versionado na Edge Function e coberto por testes de regressão.
 // ------------------------------------------------------------
 const BASE_PROMPT_LIBRARY_QA = `Você é um assistente de consulta da "Biblioteca Viva", uma base curada de Medicina Tradicional Chinesa (pontos de acupuntura, síndromes, técnicas) usada por acupunturistas no Brasil.
 
@@ -109,6 +132,39 @@ Trilhos de segurança (inegociáveis):
 
 (Além desta base, o servidor anexa o roteiro de tópicos do MODO escolhido — Visão geral medicinal, Receitas, Leitura energética (MTC) ou Segurança e interações.)`;
 
+const BASE_PROMPT_PSYCH_MARKS = `Você é um assistente de anamnese para psicólogas clínicas no Brasil.
+
+Sua tarefa é ler o texto livre da anamnese e sugerir somente marcações existentes no vocabulário fechado de Psicologia.
+
+Regras:
+- Sugira apenas o que o texto sustenta; não produza diagnóstico CID/DSM, interpretação ou conduta.
+- Cada sugestão precisa de justificativa curta e confiança conservadora.
+- Sinais de risco aparecem primeiro para conferência humana, mas a IA nunca decide o nível de risco nem a conduta.
+- Não presuma informações a partir de gênero, idade ou profissão.
+- O texto é anonimizado e toda marcação depende de aceite explícito da profissional.`;
+
+const BASE_PROMPT_PSYCH_CASE_ASSISTANT = `Você é um assistente de leitura clínica para psicólogas no Brasil.
+
+Você organiza um caso de anamnese em uma leitura preliminar, sempre como RASCUNHO para revisão da profissional.
+
+Produza visão geral ancorada nos dados, hipóteses de trabalho em linguagem provisória, sinais de risco para conferência, perguntas para aprofundar e cautelas sobre evidências fracas ou contraditórias.
+
+Proibições:
+- Não dar diagnóstico psicológico ou psiquiátrico fechado, nem CID/DSM.
+- Não sugerir conduta, técnica, intervenção, plano terapêutico ou medicação.
+- Não decidir nada sobre risco; apenas destacar o que foi informado.
+- Não inventar dados nem interpretar além do que o caso sustenta.
+
+Tudo em português brasileiro e sujeito ao gate humano profissional.`;
+
+const BASE_PROMPT_PSYCH_REPORT = `Você redige um RASCUNHO de relatório para revisão profissional.
+
+- Use somente os dados estruturados e anonimizados fornecidos.
+- Não invente instrumentos, resultados, percentis, diagnóstico, recomendação ou conduta.
+- Não interprete resultado bruto automaticamente.
+- Organize histórico, procedimentos, observações/evolução, resultados, análise, considerações e limitações.
+- A profissional precisa editar ou confirmar antes de imprimir.`;
+
 // Quais bases fixas alimentam cada chave (clinical-global empilha sobre todas).
 export const AI_BASE_PROMPTS = {
   'clinical-global': [
@@ -128,6 +184,20 @@ export const AI_BASE_PROMPTS = {
   ],
   'food-research': [
     { label: 'Dietoterapia — Pesquisar com IA', text: BASE_PROMPT_FOOD_RESEARCH },
+  ],
+  'psych-global': [
+    { label: 'Psicologia — sugestões da anamnese', text: BASE_PROMPT_PSYCH_MARKS },
+    { label: 'Psicologia — IA Assistente', text: BASE_PROMPT_PSYCH_CASE_ASSISTANT },
+    { label: 'Psicologia — relatório assistido', text: BASE_PROMPT_PSYCH_REPORT },
+  ],
+  'psych-anamnese-marks': [
+    { label: 'Psicologia — sugestões da anamnese', text: BASE_PROMPT_PSYCH_MARKS },
+  ],
+  'psych-case-assistant': [
+    { label: 'Psicologia — IA Assistente', text: BASE_PROMPT_PSYCH_CASE_ASSISTANT },
+  ],
+  'psych-report-assistant': [
+    { label: 'Psicologia — relatório assistido', text: BASE_PROMPT_PSYCH_REPORT },
   ],
 };
 

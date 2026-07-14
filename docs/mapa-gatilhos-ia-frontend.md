@@ -14,6 +14,13 @@ configuração dos secrets da Vertex AI.
 | Biblioteca | **Perguntar** ou `Enter` no campo de pergunta | `askLibrary` → `library-qa` | Pergunta e até 10 cards curados recuperados localmente; não há dado de paciente | Resposta ancorada e citações. Sem cards relevantes, responde localmente sem chamar IA. |
 | Relatório | **Gerar rascunho com IA** | `draftReport` → `draft-narrative` (`kind: report`) | Dados estruturados do relatório e texto livre anonimizado, sem nome | Rascunho editável. A impressão/PDF fica bloqueada até **Confirmar revisão profissional** ou salvar uma edição. |
 | Evolução | **Resumir evolução com IA** | `summarizeEvolution` → `draft-narrative` (`kind: evolution`) | Indicadores e observações de sessões, com campos textuais anonimizados | Resumo exibido para conferência; não grava nem modifica evolução automaticamente. |
+| Psicologia / Anamnese | **Sugerir marcações com IA** | `suggestPsychologyMarks` → `psych-suggest-marks` | Texto Psi anonimizado | Sugestões do vocabulário fechado; só entram após **Aceitar**. Usa `psych-global` + `psych-anamnese-marks`. |
+| Psicologia / rail **IA Assistente** | **Gerar leitura (rascunho)** | `generatePsychologyReading` → `psych-reading` | Caso Psi estruturado e anonimizado | Organização, hipóteses provisórias, riscos, perguntas e cautelas. Não fecha diagnóstico nem decide conduta. Usa `psych-global` + `psych-case-assistant`. |
+
+Contagem atual: Acupuntura tem seis gatilhos clínicos principais (dez fluxos visíveis quando
+os quatro modos de pesquisa alimentar são contados separadamente). Psicologia tem dois
+gatilhos e dois endpoints reais; novas superfícies devem ser adicionadas por pertinência
+clínica, e não para igualar números artificialmente.
 
 ## Feedback e governança
 

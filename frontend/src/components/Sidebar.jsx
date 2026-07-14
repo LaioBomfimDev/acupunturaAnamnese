@@ -101,6 +101,40 @@ const NAV_ICONS = {
       <path d="M9 13h6M9 17h6" />
     </>
   ),
+  // ── Abas do workspace de Psicologia (Plano C) ──
+  'Avaliação neuropsicológica': (
+    <>
+      <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z" />
+      <path d="M9 20h6M10 22h4" />
+    </>
+  ),
+  'Síntese do caso': (
+    <>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 9h6M9 13h6M9 17h4" />
+    </>
+  ),
+  'Hipóteses/diagnóstico': (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
+  'Objetivos': (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v4l3 2" />
+    </>
+  ),
+  'Plano terapêutico': (
+    <>
+      <path d="M10 6h11M10 12h11M10 18h11" />
+      <path d="m3 6 1.5 1.5L7 5" />
+      <path d="m3 12 1.5 1.5L7 11" />
+      <path d="m3 18 1.5 1.5L7 17" />
+    </>
+  ),
   'create': (
     <>
       <circle cx="9" cy="8" r="4" />
@@ -248,6 +282,9 @@ export function Sidebar({
   lastVisit,
   hasMultipleDisciplines,
   onOpenCuration,
+  navGroups = NAV_GROUPS,
+  patientTab = 'Painel',
+  tabsWithoutPatient = ['Tela inicial', 'Biblioteca'],
 }) {
   return (
     <aside className="sidebar">
@@ -289,7 +326,7 @@ export function Sidebar({
       )}
 
       {!isSuperAdmin && selectedPatient ? (
-        <button className="sidebar-patient" onClick={() => onTabChange('Painel')}>
+        <button className="sidebar-patient" onClick={() => onTabChange(patientTab)}>
           <span className="sidebar-patient-avatar">{getInitials(selectedPatient.name)}</span>
           <span className="sidebar-patient-main">
             <b>{selectedPatient.name}</b>
@@ -326,11 +363,11 @@ export function Sidebar({
               </button>
             ))}
           </div>
-        ) : NAV_GROUPS.map(group => (
+        ) : navGroups.map(group => (
           <div className="nav-group" key={group.title || 'inicio'}>
             {group.title ? <span className="nav-group-title">{group.title}</span> : null}
             {group.tabs.map(tab => {
-              const disabled = !selectedPatient && tab !== 'Tela inicial' && tab !== 'Biblioteca';
+              const disabled = !selectedPatient && !tabsWithoutPatient.includes(tab);
               return (
                 <button
                   key={tab}

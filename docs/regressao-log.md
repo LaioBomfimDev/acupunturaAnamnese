@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-07-14 - Psicologia sem percurso infantil e avaliação neuropsicológica inativa
+
+- Sintoma: a anamnese era única e rasa, não havia roteiro infantil acompanhado por responsável, a avaliação aparecia desativada e a autoria das respostas não era preservada para comparação futura.
+- Causa: o primeiro workspace de Psicologia era apenas um esqueleto com um único `psi_anamnese`; modalidade, faixa etária, perfil, informante e processo avaliativo ainda não faziam parte do modelo persistido.
+- Regra nova: Psicologia começa por três percursos; anamnese infantil/adulta seleciona um dos quatro perfis e avaliação permanece em registro próprio. Infantil é até 17 anos e toda resposta identifica o informante e pode guardar versões. Evolução existe em qualquer percurso; avaliação mantém sessões/evoluções, instrumentos, resultados, integração e relatório próprios. Nenhuma hipótese ou saída da IA vira conclusão sem gate profissional.
+- Teste ou verificação obrigatória: `frontend/tests/regression/psychology-workspace.test.mjs` cobre três percursos, quatro perfis, corte 17/18, autoria/histórico, atalhos, correção pt-BR e avaliação com dez sessões; `frontend/tests/regression/psychology-ai.test.mjs` cobre anonimização, prompt dedicado e proibições do relatório.
+- Regra destilada em: `docs/plano-clinica-multidisciplinar.md` §5.4 e `docs/plano-anamnese-multidisciplinar.md` §2.2.
+
 ### 2026-07-13 - Curadoria de Psicologia sem replay e com proveniência reduzida
 
 - Sintoma: a revisora conseguia enviar propostas `anamnese_psic_*`, mas o SuperAdm recebia erro de tipo sem replay ao aprovar; paralelamente, a síntese empacotada mostrava apenas nomes genéricos de livros e as perguntas formuladas ficavam sem página-fonte verificável.

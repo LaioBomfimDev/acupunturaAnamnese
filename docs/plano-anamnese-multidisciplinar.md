@@ -153,6 +153,22 @@ multiprofissional com conselho/especialidade — é o gancho natural para plugar
 anonimização + gate humano se aplicam, mas as **regras de guarda de registro e de risco**
 precisam ser definidas por ela.
 
+**Estrutura implementada para revisão em 2026-07-14:**
+
+- boas-vindas com Anamnese infantil, Anamnese adulto e Avaliação;
+- segunda etapa com infantil menina/menino (até 17 anos) e adulto mulher/homem;
+- perguntas específicas orientadas por sexo clínico apenas quando pertinentes, sem presumir
+  anatomia, contexto reprodutivo ou diagnóstico;
+- autoria por campo na anamnese infantil (mãe, pai, outro responsável, paciente, resposta
+  conjunta ou outro informante), com versões históricas para comparar relatos posteriores;
+- todo campo livre mantém atalhos de digitação e correção ortográfica nativa em pt-BR;
+- evolução existe para todo acompanhamento, independentemente de avaliação;
+- avaliação é registro separado com roteiro inicial de dez sessões ajustáveis, instrumentos,
+  observações, resultados factuais, integração profissional e relatório;
+- hipóteses vindas da leitura/PDF permanecem em revisão até edição ou aceite profissional;
+- relatório usa dados estruturados como gatilhos, gera somente rascunho editável e bloqueia
+  impressão até revisão profissional.
+
 ### 2.3 Fisioterapia — esboço (a detalhar depois, com fisioterapeuta)
 Estrutura análoga: queixa + história; checklists de dor/função/amplitude/força; testes
 funcionais; camada de raciocínio = **diagnóstico cinético-funcional**; segurança = sinais de
@@ -176,13 +192,13 @@ Estas são as perguntas para colar no material que você vai enviar a ela:
 7. **Sigilo e guarda:** há exigências do CFP sobre registro, retenção e compartilhamento que
    precisamos embutir?
 
-### 2.5 Fases de implementação (depois da aprovação)
-0. **Aprovação da psicóloga** deste desenho (esta etapa).
+### 2.5 Fases de implementação e revisão
+0. **Primeiro desenho funcional para a psicóloga/neuropsicóloga revisar.** Implementado; revisão pendente.
 1. Introduzir o conceito de **disciplina** no cadastro/atendimento (acupuntura já é a default).
 2. Empacotar a anamnese de MTC como "disciplina acupuntura" (refactor sem mudança de comportamento).
-3. Criar o **pacote de psicologia**: campos + checklists + prompt de IA + bloco de risco.
+3. Criar o **pacote de psicologia**: campos + checklists + prompt de IA + bloco de risco. Implementado em rascunho.
 4. Curadoria: revisar com a psicóloga o vocabulário e o comportamento da IA (loop *Corrigir*).
-5. Relatório/PDF de psicologia.
+5. Relatório/PDF de psicologia. Rascunho assistido implementado; estrutura clínica e deploy pendentes de validação.
 6. Só então repetir o ciclo para fisioterapia.
 
 > Invariantes que não mudam em nenhuma disciplina: **gate humano, anonimização, sem

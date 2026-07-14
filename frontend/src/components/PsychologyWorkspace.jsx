@@ -3,382 +3,158 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
 import { getPatientAge } from '../hooks/useClinicState';
 import { PatientStart } from './PatientStart';
-import { CheckGrid } from './ui/CheckGrid';
-import { FieldInput } from './ui/FieldInput';
-import { QuickWordChips } from './ui/QuickWordChips';
-import { AiCorrectionButton } from './ui/AiCorrectionButton';
-import { AI_SURFACES } from '../services/aiCorrectionService';
+import { Sidebar } from './Sidebar';
+import { SaveIndicator } from './ui/SaveIndicator';
 import {
   getLatestRecord,
   saveClinicalRecord,
   updateClinicalRecord,
 } from '../services/clinicalRecordService';
 import {
-  PSYCHOLOGY_AI_DISCLAIMER,
-  PSYCHOLOGY_READING_DISCLAIMER,
-  confidenceBand,
-  generatePsychologyReading,
-  suggestPsychologyMarks,
-} from '../services/psychologyAiService';
-import {
   PSI_ANAMNESE_RECORD_TYPE,
-  PSYCHOLOGY_CHECKLIST_SECTIONS,
+  PSI_NEURO_RECORD_TYPE,
   PSYCHOLOGY_CONTENT_STATUS,
   PSYCHOLOGY_DRAFT_NOTICE,
-  PSYCHOLOGY_MODALITIES,
-  PSYCHOLOGY_RISK_GROUP,
-  PSYCHOLOGY_RISK_REMINDER,
-  PSYCHOLOGY_TEXT_FIELDS,
+  PSYCHOLOGY_PLACEHOLDER_TABS,
+  PSYCHOLOGY_TABS,
   appendQuickWord,
   createEmptyPsychologySession,
-  hasPsychologyRiskSelected,
-  psychologyRiskChecklist,
+  normalizePsychologySession,
 } from '../data/psychologyAnamnese';
+import {
+  NEUROPSYCHOLOGY_CONTENT_STATUS,
+  createEmptyNeuropsychologyEvaluation,
+  normalizeNeuropsychologyEvaluation,
+} from '../data/neuropsychologyEvaluation';
+import { PSYCHOLOGY_INFORMANT_OPTIONS } from '../data/psychologyIntakeProfiles';
 import { resolveUserDisciplines } from '../data/disciplines';
+import { PsychologyAnamnese } from './psychology/PsychologyAnamnese';
+import { PsychologyAssistantRail } from './psychology/PsychologyAssistantRail';
+import { PsychologyEvolucao } from './psychology/PsychologyEvolucao';
+import { PsychologyRelatorio } from './psychology/PsychologyRelatorio';
+import { PsychologyPlaceholder } from './psychology/PsychologyPlaceholder';
+import { PsychologyPathChooser } from './psychology/PsychologyPathChooser';
+import { PsychologyNeuroAssessment } from './psychology/PsychologyNeuroAssessment';
+import { PsychologyNeuroReport } from './psychology/PsychologyNeuroReport';
+import { PsychologyHypotheses } from './psychology/PsychologyHypotheses';
 
 // ============================================================
-// Workspace de Psicologia (Fase 5 — docs/plano-clinica-multidisciplinar.md)
-// Nasce enxuto (paciente → modalidade → anamnese clínica), com o
-// vocabulário RASCUNHO do plano de anamnese multidisciplinar.
+// Workspace de Psicologia — SHELL (Plano C, Rodada 1).
+// Espelha o shell da Acupuntura (App.jsx): sidebar completa, topbar,
+// salvamento automático, conteúdo central + rail lateral. Roteia
+// activeTab → painel. Sem conceitos de MTC.
 //
-// Decisões que este arquivo respeita:
-//  * IA assistiva LIGADA (decisão do dono do produto, 2026-07-10):
-//    sugere marcações e redige uma LEITURA EM RASCUNHO — nada entra
-//    sozinho; aceitar/ignorar + botão Corrigir (loop igual ao MTC);
-//  * bloco de risco sempre visível — o sistema destaca e lembra,
-//    NUNCA decide;
-//  * quick-word chips sob os campos: máximo de clique, mínimo de
-//    digitação (pedido do dono do produto);
-//  * registros gravam record_type 'psi_anamnese' + discipline
-//    'psicologia' (payload sempre carrega a disciplina; a coluna
-//    depende da migração 20260710);
-//  * avaliação neuropsicológica aparece como modalidade, mas fica
-//    "a definir com a psicóloga" antes de ganhar formulário.
+// Persistência: UM registro (psi_anamnese) carrega a sessão inteira
+// do paciente — anamnese, evoluções (session.evolucoes) e rascunhos
+// de relatório (session.relatorio). O auto-save cobre tudo.
+//
+// Invariantes: IA sugere e redige RASCUNHO; nada entra sozinho; o
+// bloco de risco destaca e lembra, nunca decide.
 // ============================================================
 
-// Rótulos dos grupos psi para os cards de sugestão.
-const PSI_GROUP_LABELS = Object.fromEntries([
-  ...PSYCHOLOGY_CHECKLIST_SECTIONS.map(section => [section.group, section.title]),
-  [PSYCHOLOGY_RISK_GROUP, 'Sinais de risco'],
-]);
+// Grupos da sidebar (Plano C). Abas teóricas são placeholders na
+// Rodada 1 (ver PSYCHOLOGY_PLACEHOLDER_TABS).
+const PSYCHOLOGY_NAV_GROUPS = [
+  { title: null, tabs: [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.PAINEL] },
+  { title: 'Avaliação', tabs: [PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.NEURO] },
+  { title: 'Formulação clínica', tabs: [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.HIPOTESES] },
+  { title: 'Plano de cuidado', tabs: [PSYCHOLOGY_TABS.OBJETIVOS, PSYCHOLOGY_TABS.PLANO] },
+  { title: 'Acompanhamento', tabs: [PSYCHOLOGY_TABS.EVOLUCAO] },
+  { title: 'Documentos', tabs: [PSYCHOLOGY_TABS.RELATORIO] },
+  { title: 'Apoio', tabs: [PSYCHOLOGY_TABS.BIBLIOTECA] },
+];
 
-// Assistente de sugestões: lê o texto livre e sugere marcações do
-// vocabulário psi para aceitar/ignorar. Sob demanda, nunca ao vivo.
-function PsychologyAiAssistant({ session, onSetSelection, patientName }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [result, setResult] = useState(null);
-
-  async function handleSuggest() {
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await suggestPsychologyMarks(session, { patientName });
-      setResult({
-        ...res,
-        suggestions: res.suggestions.map((s, i) => ({
-          ...s,
-          id: `${s.group}:${s.item}:${i}`,
-          // Já marcado no checklist conta como aceito de saída.
-          status: session.selectedMap[`${s.group}:${s.item}`] ? 'accepted' : 'pending',
-        })),
-      });
-    } catch (err) {
-      setError(err.message || 'Falha ao gerar sugestões.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function updateSuggestion(id, status) {
-    setResult(prev => prev && ({
-      ...prev,
-      suggestions: prev.suggestions.map(s => (s.id === id ? { ...s, status } : s)),
-    }));
-  }
-
-  function handleAccept(s) {
-    onSetSelection(s.group, s.item, true);
-    updateSuggestion(s.id, 'accepted');
-  }
-
-  const pending = result?.suggestions.filter(s => s.status === 'pending').length ?? 0;
-  const isMock = result?.modelVersion?.startsWith('mock');
-
-  return (
-    <div className="box" style={{ borderColor: 'var(--gold)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <b>Assistente de marcações (IA)</b>
-          <p className="small" style={{ margin: '4px 0 0' }}>{PSYCHOLOGY_AI_DISCLAIMER}</p>
-        </div>
-        <button type="button" className="ai-analyze-btn" disabled={loading} onClick={handleSuggest} style={{ margin: 0, whiteSpace: 'nowrap' }}>
-          {loading ? 'Lendo o texto…' : result ? 'Sugerir novamente' : 'Sugerir marcações com IA'}
-        </button>
-      </div>
-
-      {error && <div className="alert" style={{ marginTop: 10 }}>{error}</div>}
-
-      {result && (
-        <div className="ai-findings-section" style={{ marginTop: 12 }}>
-          <p className="small">
-            Modelo: {result.modelVersion}{isMock ? ' (simulado)' : ''}.
-            {pending > 0 && <span className="ai-pending-pill">{pending} pendente{pending === 1 ? '' : 's'}</span>}
-          </p>
-          {result.warning && (
-            <div className="alert" style={{ marginTop: 8 }}><b>Aviso:</b> {result.warning}</div>
-          )}
-          {result.suggestions.length === 0 && (
-            <p className="small" style={{ marginTop: 8 }}>Nenhuma marcação sugerida para este texto.</p>
-          )}
-
-          <div className="ai-findings-grid">
-            {result.suggestions.map(s => {
-              const band = confidenceBand(s.confidence);
-              const pct = Math.round(s.confidence * 100);
-              const isRisk = s.group === PSYCHOLOGY_RISK_GROUP;
-              return (
-                <div key={s.id} className={`ai-finding-card ${s.status}`}>
-                  <div className="ai-finding-head">
-                    <div>
-                      <span className="ai-finding-type">{PSI_GROUP_LABELS[s.group] || s.group}</span>
-                      <h4 style={isRisk ? { color: '#b3261e' } : undefined}>{s.item}</h4>
-                      <p className="ai-finding-pattern small">{s.rationale}</p>
-                    </div>
-                    <div className={`ai-confidence ${band.level}`} title={`Confiança estimada: ${pct}%`}>
-                      <span className="ai-confidence-label">confiança {band.label}</span>
-                      <div className="ai-confidence-bar"><div className="ai-confidence-fill" style={{ width: `${pct}%` }} /></div>
-                      <span className="small">{pct}%</span>
-                    </div>
-                  </div>
-                  <div className="ai-finding-actions">
-                    {s.status === 'pending' ? (
-                      <>
-                        <button type="button" className="btn-mini accept" onClick={() => handleAccept(s)}>✓ Aceitar</button>
-                        <button type="button" className="btn-mini" onClick={() => updateSuggestion(s.id, 'ignored')}>Ignorar</button>
-                      </>
-                    ) : (
-                      <>
-                        <span className={`ai-status-badge ${s.status}`}>
-                          {s.status === 'accepted' ? 'Marcado no checklist' : 'Ignorado'}
-                        </span>
-                        {s.status === 'ignored' && (
-                          <button type="button" className="btn-mini" onClick={() => updateSuggestion(s.id, 'pending')}>Desfazer</button>
-                        )}
-                      </>
-                    )}
-                    <AiCorrectionButton
-                      surface={AI_SURFACES.PSYCH_MARKS}
-                      aiOutput={{ group: s.group, item: s.item, rationale: s.rationale, confidence: s.confidence }}
-                      contextSnapshot={{ group: s.group }}
-                      modelVersion={result.modelVersion}
-                      patientName={patientName}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Leitura da IA (rascunho): visão geral + hipóteses + riscos + perguntas,
-// gerada sob demanda e persistida com a sessão (session.aiReading).
-function PsychologyAiReading({ session, onReadingChange, patientName }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const reading = session.aiReading;
-  const isMock = reading?.modelVersion?.startsWith('mock');
-
-  async function handleGenerate() {
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await generatePsychologyReading(session, { patientName });
-      onReadingChange({ ...res, generatedAt: new Date().toISOString() });
-    } catch (err) {
-      setError(err.message || 'Falha ao gerar a leitura.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="box psi-reading-box">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <b>Leitura da IA <span className="psi-draft-badge">RASCUNHO — revisar</span></b>
-          <p className="small" style={{ margin: '4px 0 0' }}>{PSYCHOLOGY_READING_DISCLAIMER}</p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" className="ai-analyze-btn" disabled={loading} onClick={handleGenerate} style={{ margin: 0, whiteSpace: 'nowrap' }}>
-            {loading ? 'Lendo a anamnese…' : reading ? 'Gerar novamente' : 'Gerar leitura (rascunho)'}
-          </button>
-          {reading && (
-            <button type="button" className="btn-mini" onClick={() => onReadingChange(null)}>Descartar</button>
-          )}
-        </div>
-      </div>
-
-      {error && <div className="alert" style={{ marginTop: 10 }}>{error}</div>}
-
-      {reading && (
-        <div className="psi-reading-body">
-          <p className="small">
-            Modelo: {reading.modelVersion}{isMock ? ' (simulado)' : ''}
-            {reading.generatedAt ? ` · gerada em ${new Date(reading.generatedAt).toLocaleString('pt-BR')}` : ''}.
-          </p>
-
-          {reading.riskAlerts?.length > 0 && (
-            <div className="alert psi-risk-reminder" style={{ marginTop: 8 }}>
-              <b>⚠ Sinais de risco destacados pela IA (confira primeiro):</b>
-              <ul className="psi-reading-list">
-                {reading.riskAlerts.map((alert, i) => (
-                  <li key={i}><b>{alert.sign}</b>{alert.note ? ` — ${alert.note}` : ''}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {reading.overview && (
-            <div className="psi-reading-block">
-              <h4>Visão geral</h4>
-              <p>{reading.overview}</p>
-            </div>
-          )}
-
-          {reading.hypotheses?.length > 0 && (
-            <div className="psi-reading-block">
-              <h4>Hipóteses de trabalho (não é diagnóstico)</h4>
-              {reading.hypotheses.map((h, i) => {
-                const band = confidenceBand(h.confidence);
-                const pct = Math.round(h.confidence * 100);
-                return (
-                  <div key={i} className="psi-hypothesis">
-                    <div className="psi-hypothesis-head">
-                      <b>{h.name}</b>
-                      <span className={`ai-confidence ${band.level}`} title={`Confiança estimada: ${pct}%`}>
-                        <span className="ai-confidence-label">confiança {band.label} · {pct}%</span>
-                      </span>
-                    </div>
-                    {h.basis && <p className="small">{h.basis}</p>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {reading.questions?.length > 0 && (
-            <div className="psi-reading-block">
-              <h4>Perguntas para explorar</h4>
-              <ul className="psi-reading-list">
-                {reading.questions.map((q, i) => <li key={i}>{q}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {reading.cautions?.length > 0 && (
-            <div className="psi-reading-block">
-              <h4>Cautelas da própria IA</h4>
-              <ul className="psi-reading-list">
-                {reading.cautions.map((c, i) => <li key={i}>{c}</li>)}
-              </ul>
-            </div>
-          )}
-
-          <div className="ai-finding-actions" style={{ marginTop: 10 }}>
-            <AiCorrectionButton
-              surface={AI_SURFACES.PSYCH_READING}
-              aiOutput={reading}
-              contextSnapshot={{
-                markedGroups: Object.keys(session.selectedMap || {}).filter(key => session.selectedMap[key]).length,
-                hasRisk: hasPsychologyRiskSelected(session.selectedMap),
-              }}
-              modelVersion={reading.modelVersion}
-              patientName={patientName}
-              summary={reading.overview}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function formatTime(date) {
-  return date?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) || '';
-}
-
-const SAVE_LABELS = {
-  saving: 'Salvando…',
-  saved: 'Salvo',
-  error: 'Erro ao salvar — tente de novo',
-};
+const TABS_WITHOUT_PATIENT = [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.BIBLIOTECA];
 
 export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
-  const { selectedPatient, clearSelection } = usePatient();
+  const { selectedPatient } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
-  const [modality, setModality] = useState(null); // null = escolher modalidade
+  const [activeTab, setActiveTab] = useState(PSYCHOLOGY_TABS.HOME);
+  const [activeJourney, setActiveJourney] = useState(null);
   const [session, setSession] = useState(createEmptyPsychologySession);
+  const [neuroEvaluation, setNeuroEvaluation] = useState(createEmptyNeuropsychologyEvaluation);
   const [recordId, setRecordId] = useState(null);
+  const [neuroRecordId, setNeuroRecordId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle');
+  const [neuroSaveStatus, setNeuroSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [neuroLastSavedAt, setNeuroLastSavedAt] = useState(null);
   const [hasPending, setHasPending] = useState(false);
+  const [neuroHasPending, setNeuroHasPending] = useState(false);
 
   const hydratingRef = useRef(false);
+  const neuroHydratingRef = useRef(false);
   const saveTimerRef = useRef(null);
+  const neuroSaveTimerRef = useRef(null);
   const patientIdRef = useRef(selectedPatient?.id || null);
 
   useEffect(() => {
     patientIdRef.current = selectedPatient?.id || null;
   }, [selectedPatient?.id]);
 
-  // Carrega a última anamnese de Psi ao trocar de paciente.
+  // Carrega anamnese e avaliação em registros independentes do mesmo paciente.
   useEffect(() => {
     const patientId = selectedPatient?.id;
-    setModality(null);
+    setActiveJourney(null);
     setRecordId(null);
+    setNeuroRecordId(null);
     setSaveStatus('idle');
+    setNeuroSaveStatus('idle');
     setLastSavedAt(null);
+    setNeuroLastSavedAt(null);
     setHasPending(false);
+    setNeuroHasPending(false);
     hydratingRef.current = true;
+    neuroHydratingRef.current = true;
 
     if (!patientId) {
       setSession(createEmptyPsychologySession());
+      setNeuroEvaluation(createEmptyNeuropsychologyEvaluation());
       hydratingRef.current = false;
+      neuroHydratingRef.current = false;
       return;
     }
 
     let cancelled = false;
-    getLatestRecord(patientId, PSI_ANAMNESE_RECORD_TYPE)
-      .then(record => {
+    Promise.all([
+      getLatestRecord(patientId, PSI_ANAMNESE_RECORD_TYPE),
+      getLatestRecord(patientId, PSI_NEURO_RECORD_TYPE),
+    ])
+      .then(([record, neuroRecord]) => {
         if (cancelled || patientIdRef.current !== patientId) return;
         if (record?.sensitive_data?.session) {
-          setSession({ ...createEmptyPsychologySession(), ...record.sensitive_data.session });
+          setSession(normalizePsychologySession(record.sensitive_data.session));
           setRecordId(record.id);
           setLastSavedAt(new Date(record.updated_at));
         } else {
           setSession(createEmptyPsychologySession());
         }
+        if (neuroRecord?.sensitive_data?.evaluation) {
+          setNeuroEvaluation(normalizeNeuropsychologyEvaluation(neuroRecord.sensitive_data.evaluation));
+          setNeuroRecordId(neuroRecord.id);
+          setNeuroLastSavedAt(new Date(neuroRecord.updated_at));
+        } else {
+          setNeuroEvaluation(createEmptyNeuropsychologyEvaluation());
+        }
       })
       .catch(err => {
-        console.error('Erro ao carregar anamnese de psicologia:', err);
+        console.error('Erro ao carregar prontuários de psicologia:', err);
       })
       .finally(() => {
         if (!cancelled) {
-          setTimeout(() => { hydratingRef.current = false; }, 0);
+          setTimeout(() => {
+            hydratingRef.current = false;
+            neuroHydratingRef.current = false;
+          }, 0);
         }
       });
 
     return () => { cancelled = true; };
   }, [selectedPatient?.id]);
 
-  const doSave = useCallback(async () => {
+  const doSaveAnamnese = useCallback(async () => {
     const patientId = patientIdRef.current;
     if (!patientId) return;
     setSaveStatus('saving');
@@ -406,28 +182,64 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     }
   }, [session, recordId]);
 
+  const doSaveNeuro = useCallback(async () => {
+    const patientId = patientIdRef.current;
+    if (!patientId) return;
+    setNeuroSaveStatus('saving');
+    const payload = {
+      discipline: 'psicologia',
+      contentStatus: NEUROPSYCHOLOGY_CONTENT_STATUS,
+      evaluation: neuroEvaluation,
+    };
+    try {
+      if (neuroRecordId) {
+        await updateClinicalRecord(neuroRecordId, payload);
+      } else {
+        const newId = await saveClinicalRecord(patientId, PSI_NEURO_RECORD_TYPE, payload, 'psicologia');
+        if (patientIdRef.current === patientId) setNeuroRecordId(newId);
+      }
+      if (patientIdRef.current === patientId) {
+        setNeuroSaveStatus('saved');
+        setNeuroLastSavedAt(new Date());
+        setNeuroHasPending(false);
+        setTimeout(() => setNeuroSaveStatus(status => (status === 'saved' ? 'idle' : status)), 3000);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar avaliação neuropsicológica:', err);
+      if (patientIdRef.current === patientId) setNeuroSaveStatus('error');
+    }
+  }, [neuroEvaluation, neuroRecordId]);
+
   // Auto-save com debounce (mesmo ritmo do MTC: 5s após a última mudança).
   useEffect(() => {
     if (hydratingRef.current || !selectedPatient?.id) return undefined;
     setHasPending(true);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(doSave, 5000);
+    saveTimerRef.current = setTimeout(doSaveAnamnese, 5000);
     return () => clearTimeout(saveTimerRef.current);
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (neuroHydratingRef.current || !selectedPatient?.id) return undefined;
+    setNeuroHasPending(true);
+    if (neuroSaveTimerRef.current) clearTimeout(neuroSaveTimerRef.current);
+    neuroSaveTimerRef.current = setTimeout(doSaveNeuro, 5000);
+    return () => clearTimeout(neuroSaveTimerRef.current);
+  }, [neuroEvaluation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Alerta do navegador se sair com mudanças pendentes.
   useEffect(() => {
     function handleBeforeUnload(event) {
-      if (!hasPending) return;
+      if (!hasPending && !neuroHasPending) return;
       event.preventDefault();
       event.returnValue = '';
     }
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasPending]);
+  }, [hasPending, neuroHasPending]);
 
   function confirmPending(message) {
-    return !hasPending || window.confirm(message);
+    return (!hasPending && !neuroHasPending) || window.confirm(message);
   }
 
   function handleSwitchArea() {
@@ -440,11 +252,25 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     onSignOut?.();
   }
 
-  function handleChangePatient() {
-    if (!confirmPending('Existem alterações ainda não salvas. Deseja trocar de paciente mesmo assim?')) return;
-    clearSelection();
+  function handleTabChange(tab) {
+    if (!selectedPatient && !TABS_WITHOUT_PATIENT.includes(tab)) {
+      setActiveTab(PSYCHOLOGY_TABS.HOME);
+      return;
+    }
+    if (tab === PSYCHOLOGY_TABS.ANAMNESE) {
+      if (!session.intakeProfile) {
+        setActiveJourney(null);
+        setActiveTab(PSYCHOLOGY_TABS.PAINEL);
+        return;
+      }
+      setActiveJourney('anamnese');
+    }
+    if (tab === PSYCHOLOGY_TABS.NEURO) setActiveJourney('avaliacao');
+    if (tab === PSYCHOLOGY_TABS.HIPOTESES) setActiveJourney('anamnese');
+    setActiveTab(tab);
   }
 
+  // ── Handlers de sessão (mutações pontuais) ──
   function toggleCheck(group, item) {
     setSession(prev => {
       const key = `${group}:${item}`;
@@ -452,8 +278,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     });
   }
 
-  // Aceitar sugestão da IA SETA o valor (não alterna): aceitar um item
-  // já marcado não pode desmarcá-lo.
+  // Confirmar sugestão da IA SETA o valor (não alterna).
   function setCheck(group, item, value) {
     setSession(prev => ({
       ...prev,
@@ -465,7 +290,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     setSession(prev => ({ ...prev, fields: { ...prev.fields, [fieldId]: value } }));
   }
 
-  // Quick-word chip: apenda a palavra na caixa de texto do campo.
   function handleQuickWord(fieldId, word) {
     setSession(prev => ({
       ...prev,
@@ -473,170 +297,272 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     }));
   }
 
+  function selectIntakeProfile(profileId) {
+    setSession(prev => ({
+      ...prev,
+      intakeProfile: profileId,
+      intakeSelectedAt: new Date().toISOString(),
+    }));
+    setActiveJourney('anamnese');
+    setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
+  }
+
+  function updateFieldInformant(fieldId, informant) {
+    setSession(prev => ({
+      ...prev,
+      fieldInformants: { ...prev.fieldInformants, [fieldId]: informant },
+    }));
+  }
+
+  function archiveFieldResponse(fieldId) {
+    setSession(prev => {
+      const value = String(prev.fields?.[fieldId] || '').trim();
+      if (!value) return prev;
+      const informant = prev.fieldInformants?.[fieldId] || {};
+      const informantLabel = PSYCHOLOGY_INFORMANT_OPTIONS
+        .find(option => option.id === informant.type)?.label || 'Informante não identificado';
+      const entry = {
+        id: `response-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        value,
+        informantType: informant.type || '',
+        informantLabel,
+        informantName: informant.name || '',
+        recordedAt: new Date().toISOString(),
+      };
+      return {
+        ...prev,
+        fields: { ...prev.fields, [fieldId]: '' },
+        fieldInformants: { ...prev.fieldInformants, [fieldId]: { type: '', name: '' } },
+        responseHistory: {
+          ...prev.responseHistory,
+          [fieldId]: [...(prev.responseHistory?.[fieldId] || []), entry],
+        },
+      };
+    });
+  }
+
+  function handleAxisNote(axisId, value) {
+    setSession(prev => ({ ...prev, axisNotes: { ...prev.axisNotes, [axisId]: value } }));
+  }
+
+  function handleRiskNotes(value) {
+    setSession(prev => ({ ...prev, riskNotes: value }));
+  }
+
   function handleReadingChange(reading) {
     setSession(prev => ({ ...prev, aiReading: reading }));
   }
 
-  const riskSelected = hasPsychologyRiskSelected(session.selectedMap);
+  function handleEvolucoesChange(evolucoes) {
+    setSession(prev => ({ ...prev, evolucoes }));
+  }
+
+  function handleRelatorioChange(relatorio) {
+    setSession(prev => ({ ...prev, relatorio }));
+  }
+
+  function handleHypothesisReviews(hypothesisReviews) {
+    setSession(prev => ({ ...prev, hypothesisReviews }));
+  }
+
+  function openPathChooser() {
+    setActiveJourney(null);
+    setActiveTab(PSYCHOLOGY_TABS.PAINEL);
+  }
+
+  function openEvaluation() {
+    setActiveJourney('avaliacao');
+    setActiveTab(PSYCHOLOGY_TABS.NEURO);
+  }
+
   const patientAge = getPatientAge(selectedPatient);
+  const effectiveTab = !selectedPatient && !TABS_WITHOUT_PATIENT.includes(activeTab)
+    ? PSYCHOLOGY_TABS.HOME
+    : activeTab;
+  const isNeuroContext = activeJourney === 'avaliacao' || effectiveTab === PSYCHOLOGY_TABS.NEURO;
+  const showAssistantRail = effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && Boolean(selectedPatient);
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString('pt-BR', {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+  });
+  const timeLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  function renderPanel() {
+    if (effectiveTab === PSYCHOLOGY_TABS.HOME || (!selectedPatient && effectiveTab !== PSYCHOLOGY_TABS.BIBLIOTECA)) {
+      return (
+        <PatientStart
+          initialDiscipline="psicologia"
+          therapistName={therapistName}
+          onCreatePatient={() => setActiveTab(PSYCHOLOGY_TABS.PAINEL)}
+          onSelectPatient={() => setActiveTab(PSYCHOLOGY_TABS.PAINEL)}
+          onSignOut={handleSignOut}
+        />
+      );
+    }
+
+    if (PSYCHOLOGY_PLACEHOLDER_TABS.includes(effectiveTab)) {
+      return <PsychologyPlaceholder tab={effectiveTab} />;
+    }
+
+    switch (effectiveTab) {
+      case PSYCHOLOGY_TABS.PAINEL:
+        return (
+          <PsychologyPathChooser
+            session={session}
+            neuroEvaluation={neuroEvaluation}
+            selectedPatient={selectedPatient}
+            patientAge={patientAge}
+            onSelectIntakeProfile={selectIntakeProfile}
+            onOpenEvaluation={openEvaluation}
+            onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
+          />
+        );
+      case PSYCHOLOGY_TABS.ANAMNESE:
+        return (
+          <PsychologyAnamnese
+            session={session}
+            onUpdateField={updateFieldValue}
+            onQuickWord={handleQuickWord}
+            onToggleCheck={toggleCheck}
+            onAxisNote={handleAxisNote}
+            onRiskNotesChange={handleRiskNotes}
+            onInformantChange={updateFieldInformant}
+            onArchiveResponse={archiveFieldResponse}
+            onChooseProfile={openPathChooser}
+          />
+        );
+      case PSYCHOLOGY_TABS.NEURO:
+        return (
+          <PsychologyNeuroAssessment
+            evaluation={neuroEvaluation}
+            onChange={setNeuroEvaluation}
+            onChoosePath={openPathChooser}
+          />
+        );
+      case PSYCHOLOGY_TABS.HIPOTESES:
+        return (
+          <PsychologyHypotheses
+            session={session}
+            onReviewsChange={handleHypothesisReviews}
+            onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
+          />
+        );
+      case PSYCHOLOGY_TABS.EVOLUCAO:
+        if (isNeuroContext) {
+          return (
+            <PsychologyNeuroAssessment
+              evaluation={neuroEvaluation}
+              onChange={setNeuroEvaluation}
+              onChoosePath={openPathChooser}
+            />
+          );
+        }
+        return (
+          <PsychologyEvolucao
+            session={session}
+            onEvolucoesChange={handleEvolucoesChange}
+          />
+        );
+      case PSYCHOLOGY_TABS.RELATORIO:
+        if (isNeuroContext) {
+          return (
+            <PsychologyNeuroReport
+              evaluation={neuroEvaluation}
+              selectedPatient={selectedPatient}
+              therapistProfile={profile}
+              onChange={setNeuroEvaluation}
+            />
+          );
+        }
+        return (
+          <PsychologyRelatorio
+            session={session}
+            selectedPatient={selectedPatient}
+            therapistProfile={profile}
+            onRelatorioChange={handleRelatorioChange}
+          />
+        );
+      default:
+        return (
+          <PsychologyPathChooser
+            session={session}
+            neuroEvaluation={neuroEvaluation}
+            selectedPatient={selectedPatient}
+            patientAge={patientAge}
+            onSelectIntakeProfile={selectIntakeProfile}
+            onOpenEvaluation={openEvaluation}
+            onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
+          />
+        );
+    }
+  }
 
   return (
-    <div className="hub-screen psi-screen">
-      <header className="hub-topbar">
-        <div className="hub-brand">
-          <h1>{clinicName}</h1>
-          <p>Psicologia · {therapistName || 'Profissional'}</p>
+    <div className="app psi-app">
+      <Sidebar
+        activeTab={effectiveTab}
+        onTabChange={handleTabChange}
+        therapist={therapistName}
+        profileRole={profile?.role}
+        disciplineLabel="Psicologia"
+        onSwitchDiscipline={handleSwitchArea}
+        selectedPatient={selectedPatient}
+        patientAge={patientAge}
+        sessionCount={(Array.isArray(session.evolucoes) ? session.evolucoes.length : 0)
+          + (Array.isArray(neuroEvaluation.sessions)
+            ? neuroEvaluation.sessions.filter(item => item.status === 'concluida').length
+            : 0)}
+        lastVisit=""
+        hasMultipleDisciplines={hasMultipleDisciplines}
+        navGroups={PSYCHOLOGY_NAV_GROUPS}
+        patientTab={PSYCHOLOGY_TABS.PAINEL}
+        tabsWithoutPatient={TABS_WITHOUT_PATIENT}
+      />
+
+      <main className="main psi-main">
+        <div className="app-topbar no-print">
+          <div>
+            <p className="app-eyebrow">{clinicName} · Psicologia</p>
+            <h1>{selectedPatient ? 'Paciente em atendimento' : 'Workspace de Psicologia'}</h1>
+          </div>
+          <div className="app-topbar-actions">
+            <div className="mini-clock" aria-label="Relógio">
+              <span>{dateLabel}</span>
+              <b>{timeLabel}</b>
+            </div>
+            <SaveIndicator
+              status={isNeuroContext ? neuroSaveStatus : saveStatus}
+              lastSavedAt={isNeuroContext ? neuroLastSavedAt : lastSavedAt}
+              onSave={isNeuroContext ? doSaveNeuro : doSaveAnamnese}
+              hasPatient={Boolean(selectedPatient)}
+              hasPendingChanges={isNeuroContext ? neuroHasPending : hasPending}
+            />
+            <button type="button" className="topbar-button" onClick={handleSignOut}>Sair</button>
+          </div>
         </div>
-        <div className="psi-topbar-actions">
-          <button type="button" className={hasMultipleDisciplines ? 'btn-switch-specialty-top' : 'topbar-button'} onClick={handleSwitchArea}>
-            {hasMultipleDisciplines ? 'Mudar Especialidade' : 'Trocar de área'}
-          </button>
-          <button type="button" className="topbar-button" onClick={handleSignOut}>Sair</button>
-        </div>
-      </header>
 
-      <main className="hub-body psi-body">
-        <div className="alert psi-draft-banner">
-          <b>Vocabulário em validação.</b> {PSYCHOLOGY_DRAFT_NOTICE}
-        </div>
-
-        {!selectedPatient ? (
-          <PatientStart
-            initialDiscipline="psicologia"
-            therapistName={therapistName}
-            onCreatePatient={() => setModality('anamnese_clinica')}
-            onSelectPatient={() => setModality(null)}
-            onSignOut={handleSignOut}
-          />
-        ) : !modality ? (
-          <section className="psi-modalities">
-            <div className="psi-patient-bar">
-              <div>
-                <b>{selectedPatient.name}</b>
-                <small>{patientAge ? `${patientAge} anos` : 'Idade não informada'}</small>
-              </div>
-              <button type="button" className="tag" onClick={handleChangePatient}>Trocar paciente</button>
-            </div>
-
-            <h2>Como você vai atender agora?</h2>
-            <p className="hub-note">Fluxos distintos, registros distintos — os dois gravam na área de Psicologia.</p>
-
-            <div className="hub-grid psi-modality-grid">
-              {PSYCHOLOGY_MODALITIES.map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`hub-card ${item.available ? 'hub-card-enabled' : 'hub-card-soon'}`}
-                  disabled={!item.available}
-                  onClick={item.available ? () => setModality(item.id) : undefined}
-                  title={item.available ? `Abrir ${item.label}` : 'Estrutura a definir com a psicóloga.'}
-                >
-                  <span className="hub-card-text">
-                    <b>{item.label}</b>
-                    <span className="hub-card-desc">{item.description}</span>
-                  </span>
-                  {item.available
-                    ? <span className="hub-card-cta">Abrir →</span>
-                    : <span className="hub-card-badge hub-card-badge-soon">A definir com a psicóloga</span>}
-                </button>
-              ))}
-            </div>
-          </section>
-        ) : (
-          <section className="psi-anamnese">
-            <div className="psi-patient-bar">
-              <div>
-                <b>{selectedPatient.name}</b>
-                <small>{patientAge ? `${patientAge} anos` : 'Idade não informada'} · Anamnese clínica</small>
-              </div>
-              <div className="psi-patient-bar-actions">
-                <span className={`psi-save-status psi-save-${saveStatus}`}>
-                  {SAVE_LABELS[saveStatus] || (lastSavedAt ? `Salvo às ${formatTime(lastSavedAt)}` : 'Sem alterações salvas')}
-                </span>
-                <button type="button" className="tag" onClick={doSave} disabled={saveStatus === 'saving'}>
-                  Salvar agora
-                </button>
-                <button type="button" className="tag" onClick={() => setModality(null)}>Modalidades</button>
-                <button type="button" className="tag" onClick={handleChangePatient}>Trocar paciente</button>
-              </div>
-            </div>
-
-            <div className="panel">
-              <div className="panel-title">Anamnese clínica — Psicologia</div>
-              <div className="panel-body">
-                <h3 className="psi-section-title">1. Escuta livre</h3>
-                <p className="small">
-                  Registre com as suas palavras — os botões abaixo de cada campo escrevem por você.
-                  A IA sugere e redige em rascunho; você decide o que entra e pode corrigi-la.
-                </p>
-                {PSYCHOLOGY_TEXT_FIELDS.map(field => (
-                  <div key={field.id} className="psi-field">
-                    <FieldInput
-                      label={field.label}
-                      field={field.id}
-                      value={session.fields[field.id]}
-                      onChange={updateFieldValue}
-                      textarea={field.textarea}
-                    />
-                    <QuickWordChips
-                      words={field.quickWords}
-                      onPick={word => handleQuickWord(field.id, word)}
-                    />
-                  </div>
-                ))}
-
-                <PsychologyAiAssistant
-                  session={session}
-                  onSetSelection={setCheck}
-                  patientName={selectedPatient?.name}
-                />
-
-                <h3 className="psi-section-title">2. Sinais organizados (proposta a validar)</h3>
-                {PSYCHOLOGY_CHECKLIST_SECTIONS.map(section => (
-                  <div key={section.group}>
-                    <h4>{section.title}</h4>
-                    <CheckGrid
-                      group={section.group}
-                      items={section.items}
-                      selectedMap={session.selectedMap}
-                      onToggle={toggleCheck}
-                    />
-                  </div>
-                ))}
-
-                <h3 className="psi-section-title psi-risk-title">3. Sinais de risco (sempre conferir)</h3>
-                <div className={`box psi-risk-box${riskSelected ? ' psi-risk-active' : ''}`}>
-                  <CheckGrid
-                    group={PSYCHOLOGY_RISK_GROUP}
-                    items={psychologyRiskChecklist}
-                    cols={2}
-                    selectedMap={session.selectedMap}
-                    onToggle={toggleCheck}
-                  />
-                  {riskSelected && (
-                    <div className="alert psi-risk-reminder">
-                      <b>⚠ Atenção.</b> {PSYCHOLOGY_RISK_REMINDER}
-                    </div>
-                  )}
-                  <FieldInput
-                    label="Anotações sobre risco e conduta combinada"
-                    field="riskNotes"
-                    value={session.riskNotes}
-                    onChange={(_, value) => setSession(prev => ({ ...prev, riskNotes: value }))}
-                    textarea
-                  />
-                </div>
-
-                <h3 className="psi-section-title">4. Leitura da IA (rascunho para sua revisão)</h3>
-                <PsychologyAiReading
-                  session={session}
-                  onReadingChange={handleReadingChange}
-                  patientName={selectedPatient?.name}
-                />
-              </div>
-            </div>
-          </section>
+        {effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && (
+          <div className="alert psi-draft-banner">
+            <b>Vocabulário em validação.</b> {PSYCHOLOGY_DRAFT_NOTICE}
+          </div>
         )}
+
+        <div className={`workspace-grid${showAssistantRail ? '' : ' workspace-grid-full'}`}>
+          <section>
+            {renderPanel()}
+          </section>
+
+          {showAssistantRail && (
+            <aside className="assistant-rail no-print">
+              <PsychologyAssistantRail
+                session={session}
+                onSetSelection={setCheck}
+                onReadingChange={handleReadingChange}
+                patientName={selectedPatient?.name}
+              />
+            </aside>
+          )}
+        </div>
       </main>
     </div>
   );

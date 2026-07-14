@@ -26,6 +26,15 @@ export const PSYCH_KIND_LABEL = {
   question: 'Roteiro de anamnese',
 };
 
+// Explicação curta exibida junto aos seletores de tipo. Mantê-la aqui evita
+// que o nome do botão e a legenda da curadoria contem histórias diferentes.
+export const PSYCH_KIND_DESCRIPTION = {
+  risk: 'Alertas prioritários para conferência profissional; o sistema não decide a conduta.',
+  axis: 'Áreas amplas para organizar a investigação e as hipóteses de trabalho; não são diagnósticos.',
+  checklist: 'Grupos de caixinhas para registrar rapidamente sinais relatados ou observados.',
+  question: 'Perguntas que ajudam a investigar os temas durante a entrevista.',
+};
+
 // Rascunho curado (síntese pt-BR) empacotado no app — não é dado protegido,
 // então não precisa de tabela/seed no Supabase. As propostas da revisora
 // continuam indo para a fila curation_proposals.

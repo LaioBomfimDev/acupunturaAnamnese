@@ -14,6 +14,7 @@ import {
   saveHerbalPlantCurationDecision,
 } from '../../services/herbalPlantCurationService';
 import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
+import { submitCurationProposal } from '../../services/curationProposalService';
 
 const SAFETY_FIELDS = [
   ['botanicalIdentityConfirmed', 'Espécie botânica confirmada'],
@@ -228,7 +229,8 @@ function WorksheetPreloadNotice({ row, onApply }) {
   );
 }
 
-export function HerbalPlantCurationPanel() {
+export function HerbalPlantCurationPanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
+  const isPropose = actor?.mode === 'propose';
   const [loadState, setLoadState] = useState('loading');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -288,17 +290,41 @@ export function HerbalPlantCurationPanel() {
     return next.rows;
   }
 
-  function saveDecision(event) {
+  async function saveDecision(event) {
     event.preventDefault();
     if (!selectedRow) return;
     const validation = validateHerbalCurationDecision({
       ...form,
       plantId: selectedRow.id,
-      reviewedByRole: 'super_admin',
-      reviewedByLabel: 'SuperAdm',
+      reviewedByRole: actor?.role || 'super_admin',
+      reviewedByLabel: actor?.label || 'SuperAdm',
     }, selectedRow);
     if (!validation.ok) {
       setMessage(validation.errors.join(' '));
+      return;
+    }
+
+    // Revisora: em vez de gravar localmente, envia proposta ao SuperAdm.
+    if (isPropose) {
+      try {
+        await submitCurationProposal({
+          type: 'herb',
+          targetRef: selectedRow.id,
+          payload: {
+            kind: 'decision',
+            decision: {
+              ...validation.decision,
+              reviewedByRole: actor?.role || 'knowledge_reviewer',
+              reviewedByLabel: actor?.label || 'Revisora',
+            },
+          },
+          note: `Erva: ${selectedRow.commonName} → ${statusLabel(validation.decision.status)}`,
+          proposerName: actor?.label || '',
+        });
+        setMessage('Proposta enviada ao SuperAdm.');
+      } catch (err) {
+        setMessage(err?.message || 'Não foi possível enviar a proposta.');
+      }
       return;
     }
 
@@ -341,11 +367,13 @@ export function HerbalPlantCurationPanel() {
     <section className="admin-knowledge herbal-curation-panel">
       <div className="start-panel-head">
         <div>
-          <p className="small">SuperAdm • Curadoria interna</p>
+          <p className="small">{actor?.label || 'SuperAdm'} • Curadoria</p>
           <h2>Curadoria de ervas</h2>
           <span>Fonte, cautelas e decisão profissional por planta.</span>
         </div>
-        <button className="quiet-button" type="button" onClick={exportDecisions}>Exportar decisões</button>
+        {!isPropose && (
+          <button className="quiet-button" type="button" onClick={exportDecisions}>Exportar decisões</button>
+        )}
       </div>
 
         <div className="admin-stat-grid">
@@ -506,8 +534,8 @@ export function HerbalPlantCurationPanel() {
                   <SafetyChecklist form={form} setForm={setForm} />
 
                   <div className="herbal-curation-actions">
-                    <button className="primary-button" type="submit">Salvar decisão</button>
-                    {selectedRow.localDecision && <button className="quiet-button" type="button" onClick={resetDecision}>Remover decisão</button>}
+                    <button className="primary-button" type="submit">{isPropose ? 'Propor decisão' : 'Salvar decisão'}</button>
+                    {!isPropose && selectedRow.localDecision && <button className="quiet-button" type="button" onClick={resetDecision}>Remover decisão</button>}
                   </div>
                 </form>
               </div>

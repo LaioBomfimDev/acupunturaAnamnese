@@ -38,14 +38,23 @@ export const CURATION_SECTIONS = [
   { id: 'pdf-sources', label: 'Fontes PDF', description: 'Pontos não respondidos', disciplines: ['acupuntura'] },
   { id: 'herbal-curation', label: 'Curadoria de ervas', description: 'Fonte e segurança', disciplines: ['acupuntura'] },
   { id: 'food-curation', label: 'Curadoria de alimentos', description: 'Dietoterapia educativa', disciplines: ['acupuntura'] },
-  { id: 'ai-instructions', label: 'Instruções da IA', description: 'Diretrizes que a IA segue', disciplines: ['acupuntura'] },
+  { id: 'ai-instructions', label: 'Instruções da IA', description: 'Diretrizes que a IA segue', disciplines: ['acupuntura'], superAdminOnly: true },
   { id: 'ai-corrections', label: 'Correções da IA', description: 'Ensino e aprovação', disciplines: ['acupuntura'] },
   { id: 'maps', label: 'Calibração de Mapa', description: 'Coordenadas dos pontos', disciplines: ['acupuntura'] },
   { id: 'anamnese-psic', label: 'Curadoria da Anamnese', description: 'Risco, eixos e checklist (Psicologia)', disciplines: ['psicologia'] },
 ];
 
 // Seções cujo modo "propor" já envia para a fila do SuperAdm.
-const PROPOSE_READY = new Set(['anamnese-knowledge', 'points', 'anamnese-psic']);
+const PROPOSE_READY = new Set([
+  'anamnese-knowledge',
+  'points',
+  'anamnese-psic',
+  'herbal-curation',
+  'food-curation',
+  'maps',
+  'knowledge',
+  'pdf-sources',
+]);
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function isCurationSectionReady(id) {
@@ -54,12 +63,15 @@ export function isCurationSectionReady(id) {
 
 /**
  * Seções visíveis para uma disciplina. O SuperAdm (discipline ausente)
- * vê todas; uma revisora vê apenas as da sua disciplina.
+ * vê todas; uma revisora vê apenas as da sua disciplina — e nunca as
+ * marcadas como `superAdminOnly` (autoridade exclusiva do SuperAdm, ex.:
+ * Instruções da IA).
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function sectionsForDiscipline(discipline) {
   if (!discipline) return CURATION_SECTIONS;
-  return CURATION_SECTIONS.filter(s => !s.disciplines || s.disciplines.includes(discipline));
+  return CURATION_SECTIONS.filter(s =>
+    !s.superAdminOnly && (!s.disciplines || s.disciplines.includes(discipline)));
 }
 
 export function CurationSections({ activeSection, actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
@@ -90,19 +102,20 @@ export function CurationSections({ activeSection, actor = { role: 'super_admin',
       ) : activeSection === 'anamnese-psic' ? (
         <PsychAnamneseCurationPanel actor={actor} />
       ) : activeSection === 'knowledge' ? (
-        <KnowledgeAdminPanel />
+        <KnowledgeAdminPanel actor={actor} />
       ) : activeSection === 'pdf-sources' ? (
-        <PdfSourceLearningPanel />
+        <PdfSourceLearningPanel actor={actor} />
       ) : activeSection === 'herbal-curation' ? (
-        <HerbalPlantCurationPanel />
+        <HerbalPlantCurationPanel actor={actor} />
       ) : activeSection === 'food-curation' ? (
-        <FoodCurationPanel />
+        <FoodCurationPanel actor={actor} />
       ) : activeSection === 'ai-instructions' ? (
         <AiInstructionsPanel />
       ) : activeSection === 'ai-corrections' ? (
         <AICorrectionsPanel />
       ) : activeSection === 'maps' ? (
         <MapCoordinateEditor
+          actor={actor}
           approvalActorRole={actor?.role || 'super_admin'}
           approvalActorLabel={actor?.label || 'SuperAdm'}
         />

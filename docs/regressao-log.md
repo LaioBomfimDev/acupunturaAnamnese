@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-07-14 - Perguntas úteis da IA sem fluxo clínico de seleção e resposta
+
+- Sintoma: a leitura da IA propunha perguntas relevantes, mas elas apareciam como lista descartável; não podiam ser selecionadas, respondidas, atribuídas a um informante nem reaproveitadas na anamnese e no relatório.
+- Causa: `reading.questions` era somente uma saída visual do `psych-reading` e não fazia parte do estado persistido de `psi_anamnese`.
+- Regra nova: pergunta sugerida pela IA só entra no registro após seleção explícita da profissional. Pergunta selecionada fica editável em aba própria, guarda resposta, informante e proveniência, alimenta novas leituras sem ser repetida e entra no relatório apenas quando registrada. Pergunta não selecionada nunca aparece automaticamente no documento.
+- Teste ou verificação obrigatória: `psychology-workspace.test.mjs` cobre seleção, nova aba, resposta/informante e relatório; `psychology-ai.test.mjs` cobre anonimização das respostas, contexto da leitura e bloqueio de repetição.
+- Regra destilada em: `docs/plano-anamnese-multidisciplinar.md` §2.2.
+
 ### 2026-07-14 - Psicologia sem percurso infantil e avaliação neuropsicológica inativa
 
 - Sintoma: a anamnese era única e rasa, não havia roteiro infantil acompanhado por responsável, a avaliação aparecia desativada e a autoria das respostas não era preservada para comparação futura.
@@ -148,3 +156,19 @@ Modelo de entrada:
 - Regra nova: todo novo prefixo de grupo de checklist deve ser ligado em TODOS os consumidores do `selectedMap`: (1) `getAllClinicalText`, (2) pesos de `diagnosticProfile` (`parts`), (3) contadores de UI (`PainelInicial.jsx`, "Achados rápidos" em `App.jsx`). Procurar por `getSelectedItems`/`getSelectedCount`/`getSelected` antes de concluir.
 - Teste ou verificação obrigatória: teste de regressão garantindo que marcar um item do novo grupo altera `parts` e `confidence` do `diagnosticProfile` (ver `tests/regression/tongue-ai.test.mjs`, teste "achado aceito pesa como evidência de língua").
 - Regra destilada em: `docs/agents-lingua.md`.
+
+### 2026-07-13 - Heroes da curadoria sem legenda operacional
+
+- Sintoma: as heroes mostravam passos genéricos, mas não explicavam o significado das abas, filtros, estados ou números. Na Psicologia, “Sinais de risco”, “Eixos de raciocínio”, “Listas de marcação” e “Roteiro de anamnese” pareciam filtros sem função clara.
+- Causa: o guia compartilhado descrevia a ação final, mas pressupunha que a revisora já conhecia o vocabulário e a diferença entre confiança de fonte, estado de curadoria e tipo de conteúdo.
+- Regra nova: toda área de curadoria deve trazer uma legenda específica e um fluxo explícito de localizar, conferir, decidir e enviar. Quando a legenda explicar seletores, deve ficar imediatamente junto deles; proposta não é aprovação/publicação e confiança de fonte não é certeza clínica.
+- Teste ou verificação obrigatória: `frontend/tests/regression/curation-guide.test.mjs` deve exigir legenda e quatro passos em todas as áreas, cobrir os quatro tipos da Psicologia e preservar os avisos de gate humano.
+- Regra destilada em: `AGENTS.md` §8.
+
+### 2026-07-13 - Psicologia fora do shell clínico e sem instruções próprias de IA
+
+- Sintoma: a anamnese de Psicologia abria como uma tela de hub sem a sidebar azul e sem o rail `IA Assistente`; a leitura por IA ficava duplicada no fim do formulário. A Edge Function `psych-reading` ainda consultava `clinical-global`, chave desenhada para as IAs de Acupuntura/MTC, enquanto `psych-suggest-marks` não carregava diretrizes editáveis.
+- Causa: `App.jsx` retornava `PsychologyWorkspace` antes do shell MTC, e o workspace Psi recriava a composição visual em vez de reutilizar os componentes de layout. As chaves Psi não haviam sido incluídas no catálogo de instruções do SuperAdm.
+- Regra nova: toda disciplina usa o shell clínico compartilhado (sidebar + conteúdo + rail), com navegação e assistente específicos da disciplina. Instruções clínicas globais também são separadas por disciplina; Psicologia nunca herda `clinical-global` da MTC.
+- Teste ou verificação obrigatória: `psychology-workspace.test.mjs` bloqueia a ausência do shell/rail e a duplicação da leitura; `psychology-ai.test.mjs` exige `psych-global`, `psych-anamnese-marks` e `psych-case-assistant` nas duas Edge Functions e no painel do SuperAdm.
+- Regra destilada em: `docs/plano-clinica-multidisciplinar.md` §5.2 e `docs/mapa-gatilhos-ia-frontend.md`.

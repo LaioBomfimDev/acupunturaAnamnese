@@ -218,7 +218,7 @@ test('placeholders ficam apenas nas abas ainda não construídas', async () => {
   const placeholder = await readPsi('PsychologyPlaceholder.jsx');
   assert.ok(placeholder.includes('Em construção'), 'placeholder deve avisar que está em construção');
   // As abas placeholder não incluem as já funcionais (anamnese/evolução/relatório/painel).
-  for (const funcional of [PSYCHOLOGY_TABS.PAINEL, PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.NEURO, PSYCHOLOGY_TABS.HIPOTESES, PSYCHOLOGY_TABS.EVOLUCAO, PSYCHOLOGY_TABS.RELATORIO]) {
+  for (const funcional of [PSYCHOLOGY_TABS.PAINEL, PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES, PSYCHOLOGY_TABS.NEURO, PSYCHOLOGY_TABS.HIPOTESES, PSYCHOLOGY_TABS.EVOLUCAO, PSYCHOLOGY_TABS.RELATORIO]) {
     assert.ok(!PSYCHOLOGY_PLACEHOLDER_TABS.includes(funcional), `${funcional} não deveria ser placeholder`);
   }
   for (const futura of [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.OBJETIVOS, PSYCHOLOGY_TABS.PLANO, PSYCHOLOGY_TABS.BIBLIOTECA]) {
@@ -254,6 +254,27 @@ test('anamnese infantil identifica informante e preserva versões para comparaç
   assert.ok(anamnese.includes('session.responseHistory'));
   assert.ok(shell.includes('archiveFieldResponse'));
   assert.ok(shell.includes('informantLabel'));
+});
+
+test('perguntas da IA só entram por seleção e ganham aba com resposta e informante', async () => {
+  const session = createEmptyPsychologySession();
+  assert.deepEqual(session.complementaryQuestions, []);
+
+  const rail = await readPsi('PsychologyAssistantRail.jsx');
+  assert.ok(rail.includes('type="checkbox"'), 'perguntas sugeridas precisam ser selecionáveis');
+  assert.ok(rail.includes('onToggleComplementaryQuestion'), 'seleção precisa persistir no workspace');
+  assert.ok(rail.includes('Selecionar para incluir na anamnese'));
+
+  const complementary = await readPsi('PsychologyComplementaryQuestions.jsx');
+  for (const text of ['Perguntas complementares', 'Quem respondeu', 'Resposta / registro profissional']) {
+    assert.ok(complementary.includes(text), `aba complementar sem "${text}"`);
+  }
+  assert.ok(complementary.includes('spellCheck'), 'resposta precisa manter correção pt-BR');
+
+  const workspace = await readFile(path.resolve(root, 'src/components/PsychologyWorkspace.jsx'), 'utf8');
+  assert.ok(workspace.includes('PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES'));
+  assert.ok(workspace.includes('toggleComplementaryQuestion'));
+  assert.ok(workspace.includes('complementaryQuestions'));
 });
 
 test('avaliação nasce com instrumentos, 10 sessões/evoluções, integração e relatório separado', async () => {
@@ -297,6 +318,9 @@ test('relatório de Psi reusa a infra de impressão compartilhada e nasce como r
   // Gate: rascunho de IA exige revisão profissional antes de imprimir.
   assert.ok(rel.includes('aiDraftPendingReview'), 'gate de revisão do rascunho de IA');
   assert.ok(rel.includes('generatePsychologyReading'), 'rascunho reusa a leitura psych-reading');
+  assert.ok(rel.includes('answeredComplementaryQuestions'), 'respostas complementares entram no relatório');
+  assert.ok(rel.includes('Informações complementares'), 'relatório precisa identificar a nova seção');
+  assert.ok(!rel.includes('reading.questions.join'), 'pergunta não selecionada não pode entrar no relatório');
 });
 
 test('resumo de andamento mede preenchimento e conta evoluções', () => {
@@ -306,6 +330,8 @@ test('resumo de andamento mede preenchimento e conta evoluções', () => {
   const summary = buildPsychologyWorkspaceSummary(session);
   assert.equal(summary.filledFields, 1);
   assert.equal(summary.sessionCount, 1);
+  assert.equal(summary.complementaryQuestions, 0);
+  assert.equal(summary.answeredComplementaryQuestions, 0);
   assert.ok(summary.completion > 0 && summary.completion <= 100);
 });
 

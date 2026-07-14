@@ -24,6 +24,7 @@ import {
   saveLocalKnowledgeReview,
 } from '../../services/knowledgeAdminService';
 import { resolveKnowledgeSourceAssetUrl } from '../../services/knowledgeSourceAssetService';
+import { submitCurationProposal } from '../../services/curationProposalService';
 
 const CONFIDENCE_TABS = [
   { id: 'high', label: 'Alta automática' },
@@ -253,7 +254,8 @@ function AtlasSourceReferencePanel({ reference, loadState }) {
   );
 }
 
-export function KnowledgeAdminPanel() {
+export function KnowledgeAdminPanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
+  const isPropose = actor?.mode === 'propose';
   const [drafts, setDrafts] = useState([]);
   const [draftLoadState, setDraftLoadState] = useState('loading');
   const [atlasSourceIndex, setAtlasSourceIndex] = useState(null);
@@ -450,8 +452,8 @@ export function KnowledgeAdminPanel() {
     setReviewForm(prev => ({ ...prev, [field]: value }));
   }
 
-  function saveReview(status = 'review') {
-    const review = saveLocalKnowledgeReview({
+  async function saveReview(status = 'review') {
+    const reviewInput = {
       ...reviewForm,
       status,
       type: 'acupoint',
@@ -472,7 +474,26 @@ export function KnowledgeAdminPanel() {
       techniques: splitCsv(reviewForm.techniques),
       relatedSymptoms: splitCsv(reviewForm.relatedSymptoms),
       aliases: splitCsv(reviewForm.aliases),
-    });
+    };
+
+    // Revisora: em vez de gravar localmente, envia proposta ao SuperAdm.
+    if (isPropose) {
+      try {
+        await submitCurationProposal({
+          type: 'knowledge_review',
+          targetRef: reviewInput.code || selectedDraft?.code || '',
+          payload: { kind: 'decision', review: reviewInput },
+          note: `Ponto: ${reviewInput.displayCode || reviewInput.code} → ${status === 'approved_local' ? 'propor aprovação' : 'propor revisão'}`,
+          proposerName: actor?.label || '',
+        });
+        setMessage('Proposta enviada ao SuperAdm.');
+      } catch (err) {
+        setMessage(err?.message || 'Não foi possível enviar a proposta.');
+      }
+      return;
+    }
+
+    const review = saveLocalKnowledgeReview(reviewInput);
     setReviews(getLocalKnowledgeReviews());
     setReviewForm(prev => ({
       ...prev,
@@ -514,9 +535,11 @@ export function KnowledgeAdminPanel() {
           <h2>Curadoria de pontos e fontes</h2>
           <span>Importe, revise e aprove conhecimento antes de alimentar protocolo, mapa ou relatório.</span>
         </div>
-        <button className="quiet-button" type="button" onClick={() => downloadKnowledgeReviews()}>
-          Exportar revisões
-        </button>
+        {!isPropose && (
+          <button className="quiet-button" type="button" onClick={() => downloadKnowledgeReviews()}>
+            Exportar revisões
+          </button>
+        )}
       </div>
 
       <div className="admin-stat-grid">
@@ -547,7 +570,7 @@ export function KnowledgeAdminPanel() {
         </div>
       </div>
 
-      {message && <div className="inline-success">{message}</div>}
+      {message && <div className={/não foi|Não foi/.test(message) ? 'inline-error' : 'inline-success'}>{message}</div>}
 
       <div className="admin-knowledge-layout admin-knowledge-layout-contextual">
         <section className="admin-users">
@@ -691,7 +714,7 @@ export function KnowledgeAdminPanel() {
               </div>
             </div>
 
-            {message && <div className="inline-success">{message}</div>}
+            {message && <div className={/não foi|Não foi/.test(message) ? 'inline-error' : 'inline-success'}>{message}</div>}
 
             <div className="knowledge-review-dialog-body">
               <section className="knowledge-review-source-column">
@@ -899,17 +922,21 @@ export function KnowledgeAdminPanel() {
                 </div>
 
                 <div className="form-actions">
-                  <button className="primary-button" type="submit">Salvar revisão</button>
+                  <button className="primary-button" type="submit">{isPropose ? 'Propor revisão' : 'Salvar revisão'}</button>
                   <button className="tag active" type="button" onClick={() => saveReview('approved_local')}>
-                    Aprovar localmente
+                    {isPropose ? 'Propor aprovação' : 'Aprovar localmente'}
                   </button>
-                  {selectedExistingReview && (
+                  {!isPropose && selectedExistingReview && (
                     <button className="danger-button" type="button" onClick={() => removeReview(selectedExistingReview.id)}>
                       Remover revisão
                     </button>
                   )}
                 </div>
-                <p className="small">Aprovação local alimenta o protocolo neste ambiente, mas não publica no Supabase/produção sem migração controlada e auditoria profissional.</p>
+                <p className="small">
+                  {isPropose
+                    ? 'Sua proposta vai para o SuperAdm aprovar e aplicar. Nada é publicado direto — ele confere antes.'
+                    : 'Aprovação local alimenta o protocolo neste ambiente, mas não publica no Supabase/produção sem migração controlada e auditoria profissional.'}
+                </p>
               </section>
             </div>
           </form>

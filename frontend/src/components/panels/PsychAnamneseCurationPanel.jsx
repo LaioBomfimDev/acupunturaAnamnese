@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   loadPsychCurationItems,
   PSYCH_PROPOSAL_TYPE,
+  PSYCH_KIND_DESCRIPTION,
   PSYCH_KIND_LABEL,
 } from '../../services/psychCurationService';
 import { submitCurationProposal } from '../../services/curationProposalService';
@@ -248,6 +249,21 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
             {PSYCH_KIND_LABEL[kind]} ({(data.grouped[kind] || []).length})
           </button>
         ))}
+      </div>
+
+      <div className="curation-guide-legend psych-curation-kind-legend" aria-label="Significado dos tipos de conteúdo">
+        <h3>O que significa cada tipo?</h3>
+        <div className="curation-guide-legend-grid">
+          {data.kinds.map(kind => (
+            <div key={kind} className={`curation-guide-legend-item${activeKind === kind ? ' active' : ''}`}>
+              <b>{PSYCH_KIND_LABEL[kind]}</b>
+              <span>{PSYCH_KIND_DESCRIPTION[kind]}</span>
+            </div>
+          ))}
+        </div>
+        <p className="psych-curation-count-hint">
+          O botão verde é o tipo aberto. O número entre parênteses é a quantidade de itens para revisar.
+        </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 320px) 1fr', gap: 16, alignItems: 'start' }}>

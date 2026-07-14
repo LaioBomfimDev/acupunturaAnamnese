@@ -58,6 +58,13 @@ export function buildPsychologyText(session) {
   }
   const risk = String(session.riskNotes || '').trim();
   if (risk) parts.push(`Anotações de risco/conduta: ${risk}`);
+  for (const item of (session.complementaryQuestions || [])) {
+    const question = String(item.question || '').trim();
+    const answer = String(item.answer || '').trim();
+    if (!question || !answer) continue;
+    const informant = [item.informantType, item.informantName].filter(Boolean).join(' — ');
+    parts.push(`Pergunta complementar: ${question}\nResposta${informant ? ` (${informant})` : ''}: ${answer}`);
+  }
   return parts.join('\n');
 }
 
@@ -141,6 +148,15 @@ export function mockPsychologyReading(psychologyCase) {
       }]
     : [];
 
+  const existingQuestionKeys = new Set((psychologyCase?.complementaryQuestions || [])
+    .map(item => String(item.sourceQuestion || item.question || '').trim()
+      .toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ')));
+  const questions = [
+    'Desde quando os sinais principais estão presentes?',
+    'Houve evento recente que intensificou o quadro?',
+    'Em quais contextos a dificuldade aparece com maior intensidade?',
+  ].filter(question => !existingQuestionKeys.has(question.toLocaleLowerCase('pt-BR'))).slice(0, 2);
+
   return new Promise(resolve => {
     setTimeout(() => {
       resolve({
@@ -153,7 +169,7 @@ export function mockPsychologyReading(psychologyCase) {
             + 'No ambiente real, a IA redige uma visão geral ancorada nos dados da anamnese.',
         hypotheses,
         riskAlerts,
-        questions: ['Desde quando os sinais principais estão presentes?', 'Houve evento recente que intensificou o quadro?'],
+        questions,
         cautions: ['Motor simulado (login local): a leitura real usa IA com os dados completos da anamnese.'],
       });
     }, 900);
@@ -233,6 +249,23 @@ export function buildPsychologyCase(session, context = {}) {
     .filter(Boolean);
 
   const riskNotes = String(session.riskNotes || '').trim();
+  const complementaryQuestions = (session.complementaryQuestions || [])
+    .map(item => {
+      const question = String(item.question || '').trim();
+      if (!question) return null;
+      return {
+        id: String(item.id || ''),
+        question: anonymize(question),
+        sourceQuestion: anonymize(String(item.sourceQuestion || question)),
+        answer: anonymize(String(item.answer || '').trim()),
+        informant: {
+          type: String(item.informantType || ''),
+          name: anonymize(String(item.informantName || '')),
+        },
+        source: item.source === 'manual' ? 'manual' : 'ai_selected_by_professional',
+      };
+    })
+    .filter(Boolean);
 
   return {
     intakeProfile: session.intakeProfile || null,
@@ -240,6 +273,7 @@ export function buildPsychologyCase(session, context = {}) {
     axes,
     selected,
     riskNotes: riskNotes ? anonymize(riskNotes) : '',
+    complementaryQuestions,
   };
 }
 
@@ -249,7 +283,12 @@ export function buildPsychologyCase(session, context = {}) {
  */
 export async function generatePsychologyReading(session, context = {}, runtime) {
   const psychologyCase = buildPsychologyCase(session, context);
-  if (!psychologyCase.fields.length && !psychologyCase.axes.length && !Object.keys(psychologyCase.selected).length) {
+  const hasComplementaryAnswer = psychologyCase.complementaryQuestions
+    .some(item => String(item.answer || '').trim());
+  if (!psychologyCase.fields.length
+    && !psychologyCase.axes.length
+    && !Object.keys(psychologyCase.selected).length
+    && !hasComplementaryAnswer) {
     throw new Error('Preencha a anamnese (texto, eixos ou marcações) antes de gerar a leitura.');
   }
 

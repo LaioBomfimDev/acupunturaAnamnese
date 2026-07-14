@@ -67,9 +67,18 @@ test('buildPsychologyText junta os campos rotulados + anotações de risco', () 
   const session = createEmptyPsychologySession();
   session.fields.demanda = 'muita tristeza';
   session.riskNotes = 'combinado contato de apoio';
+  session.complementaryQuestions = [{
+    id: 'q1',
+    question: 'Quando isso piora?',
+    answer: 'Piora no trabalho.',
+    informantType: 'paciente',
+    informantName: '',
+  }];
   const text = buildPsychologyText(session);
   assert.match(text, /Demanda \/ queixa principal \(nas palavras da pessoa\): muita tristeza/);
   assert.match(text, /Anotações de risco\/conduta: combinado contato de apoio/);
+  assert.match(text, /Pergunta complementar: Quando isso piora\?/);
+  assert.match(text, /Resposta \(paciente\): Piora no trabalho\./);
 });
 
 test('suggestPsychologyMarks rejeita sessão sem texto', async () => {
@@ -133,6 +142,30 @@ test('mock da leitura tem o shape do contrato e destaca risco marcado', async ()
   );
 });
 
+test('caso da IA inclui perguntas selecionadas e respostas anonimizadas sem repetir sugestão', async () => {
+  const { mockPsychologyReading, buildPsychologyCase } = psychologyAiService;
+  const { createEmptyPsychologySession } = psychologyData;
+  const session = createEmptyPsychologySession();
+  session.fields.demanda = 'dificuldade relatada por Maria';
+  session.complementaryQuestions = [{
+    id: 'q1',
+    question: 'Houve evento recente que intensificou o quadro?',
+    answer: 'Maria informou pelo telefone 11999998888 que piorou após uma mudança.',
+    informantType: 'mae',
+    informantName: 'Maria',
+    source: 'ai',
+  }];
+
+  const psychologyCase = buildPsychologyCase(session, { patientName: 'Maria' });
+  assert.equal(psychologyCase.complementaryQuestions.length, 1);
+  const serialized = JSON.stringify(psychologyCase);
+  assert.ok(!serialized.includes('11999998888'));
+  assert.ok(!serialized.includes('Maria'));
+
+  const reading = await mockPsychologyReading(psychologyCase);
+  assert.ok(!reading.questions.includes('Houve evento recente que intensificou o quadro?'));
+});
+
 test('generatePsychologyReading rejeita anamnese vazia', async () => {
   const { generatePsychologyReading } = psychologyAiService;
   const { createEmptyPsychologySession } = psychologyData;
@@ -177,6 +210,9 @@ test('a Edge Function psych-reading proíbe diagnóstico/conduta e usa instruç�
   assert.match(source, /RASCUNHO/, 'prompt deve rotular a saída como rascunho');
   assert.match(source, /Não dar diagnóstico/, 'prompt deve proibir diagnóstico fechado');
   assert.match(source, /Não sugerir conduta/, 'prompt deve proibir conduta');
+  assert.match(source, /Não repita pergunta complementar/i, 'prompt deve evitar pergunta já selecionada/respondida');
+  assert.match(source, /ser neutra/i, 'perguntas novas não podem induzir resposta');
+  assert.ok(source.includes('complementaryQuestions'), 'respostas complementares precisam alimentar a relevância');
   assert.ok(source.includes("getActiveInstructions(supabaseAdmin, ['psych-global', 'psych-case-assistant'])"));
   assert.ok(!source.includes("['clinical-global', 'psych-reading']"), 'Psi não deve herdar diretrizes globais de MTC');
   assert.ok(source.includes("surface: 'psych_reading'"));

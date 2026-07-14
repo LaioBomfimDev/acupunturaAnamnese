@@ -18,6 +18,7 @@ import {
   summarizeFoodCurationRows,
   validateFoodCurationDecision,
 } from '../../knowledge/foodDietoterapiaCuration';
+import { submitCurationProposal } from '../../services/curationProposalService';
 
 const REVIEW_FIELDS = [
   ['sourceConfirmed', 'Fonte e páginas conferidas'],
@@ -52,7 +53,8 @@ function formFromRow(row) {
   };
 }
 
-export function FoodCurationPanel() {
+export function FoodCurationPanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
+  const isPropose = actor?.mode === 'propose';
   const [decisions, setDecisions] = useState(() => getLocalFoodCurationDecisions());
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -74,18 +76,36 @@ export function FoodCurationPanel() {
     setMessage('');
   }
 
-  function saveDecision(event) {
+  async function saveDecision(event) {
     event.preventDefault();
     if (!selectedRow) return;
     const validation = validateFoodCurationDecision({
       ...form,
       foodId: selectedRow.id,
-      reviewedByLabel: 'SuperAdm',
+      reviewedByLabel: actor?.label || 'SuperAdm',
     });
     if (!validation.ok) {
       setMessage(validation.errors.join(' '));
       return;
     }
+
+    // Revisora: em vez de gravar localmente, envia proposta ao SuperAdm.
+    if (isPropose) {
+      try {
+        await submitCurationProposal({
+          type: 'food',
+          targetRef: selectedRow.id,
+          payload: { kind: 'decision', decision: validation.decision },
+          note: `Alimento: ${selectedRow.commonName} → ${statusLabel(validation.decision.status)}`,
+          proposerName: actor?.label || '',
+        });
+        setMessage('Proposta enviada ao SuperAdm.');
+      } catch (err) {
+        setMessage(err?.message || 'Não foi possível enviar a proposta.');
+      }
+      return;
+    }
+
     saveLocalFoodCurationDecision(validation.decision);
     setDecisions(getLocalFoodCurationDecisions());
     setMessage('Decisão salva localmente.');
@@ -109,9 +129,11 @@ export function FoodCurationPanel() {
           <p className="small">Dietoterapia · trilha alimento</p>
           <h3 style={{ margin: 0 }}>Curadoria de alimentos</h3>
         </div>
-        <button type="button" className="tag" onClick={() => downloadFoodCurationDecisions()}>
-          Exportar decisões (JSON)
-        </button>
+        {!isPropose && (
+          <button type="button" className="tag" onClick={() => downloadFoodCurationDecisions()}>
+            Exportar decisões (JSON)
+          </button>
+        )}
       </div>
 
       <div className="alert" style={{ background: '#f8fbff', borderColor: '#c9d8ef', color: '#061F3A' }}>
@@ -251,8 +273,10 @@ export function FoodCurationPanel() {
             {message && <div className="alert" style={{ marginBottom: 8 }}>{message}</div>}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="tag active">Salvar decisão</button>
-              <button type="button" className="tag" onClick={resetDecision}>Remover decisão</button>
+              <button type="submit" className="tag active">{isPropose ? 'Propor decisão' : 'Salvar decisão'}</button>
+              {!isPropose && (
+                <button type="button" className="tag" onClick={resetDecision}>Remover decisão</button>
+              )}
             </div>
           </form>
         )}

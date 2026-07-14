@@ -1889,6 +1889,150 @@ textarea { min-height: 95px; resize: vertical; }
   }
 }
 
+/* Psicologia: perguntas sugeridas pela IA selecionadas pela profissional. */
+.psi-reading-question-list,
+.psi-complementary-list {
+  display: grid;
+  gap: 10px;
+}
+.psi-reading-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #d8e1ea;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.psi-reading-question.selected {
+  border-color: #83b8aa;
+  background: #eef8f5;
+}
+.psi-reading-question input {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: #176b5b;
+}
+.psi-reading-question span {
+  display: grid;
+  gap: 3px;
+  line-height: 1.35;
+}
+.psi-reading-question small {
+  color: #64748b;
+}
+.psi-complementary-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 20px;
+  margin-bottom: 18px;
+  border: 1px solid #cddde7;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f5fbff, #f5faf8);
+}
+.psi-complementary-hero h2 {
+  margin: 3px 0 8px;
+  color: var(--navy);
+}
+.psi-complementary-hero p:last-child {
+  max-width: 780px;
+  margin: 0;
+  line-height: 1.55;
+}
+.psi-complementary-manual {
+  padding: 16px;
+  margin-bottom: 18px;
+  border: 1px solid #d8e1ea;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.psi-complementary-manual > label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.psi-complementary-manual > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.psi-complementary-empty {
+  text-align: center;
+  padding: 30px;
+}
+.psi-complementary-card {
+  display: grid;
+  gap: 14px;
+}
+.psi-complementary-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.psi-complementary-card-head > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.psi-complementary-number,
+.psi-complementary-status,
+.psi-complementary-source {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.psi-complementary-number {
+  color: #173f66;
+  background: #e8f1f8;
+}
+.psi-complementary-status {
+  color: #8a5a10;
+  background: #fff4d8;
+}
+.psi-complementary-status.answered {
+  color: #17613f;
+  background: #e5f5ec;
+}
+.psi-complementary-source {
+  color: #5f6b7a;
+  background: #edf1f5;
+}
+.psi-complementary-card label,
+.psi-complementary-informant label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  color: #334155;
+}
+.psi-complementary-card textarea {
+  min-height: 88px;
+}
+.psi-complementary-informant {
+  display: grid;
+  grid-template-columns: minmax(180px, .7fr) minmax(220px, 1.3fr);
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .psi-complementary-hero,
+  .psi-complementary-card-head {
+    flex-direction: column;
+  }
+  .psi-complementary-manual > div,
+  .psi-complementary-informant {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Psicologia: escolha de percurso, autoria das respostas e avaliação longitudinal. */
 .psi-path-hero {
   padding: 8px 0 18px;

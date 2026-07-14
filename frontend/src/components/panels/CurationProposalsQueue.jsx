@@ -12,7 +12,16 @@ import { useEffect, useState } from 'react';
 import { listCurationProposals, decideCurationProposal } from '../../services/curationProposalService';
 import { addCommonlyUsedOverride } from '../../knowledge/commonlyUsedOverrides';
 import { saveAnamneseKnowledgeDecision } from '../../services/anamneseKnowledgeCurationService';
+import { saveLocalHerbalCurationDecision } from '../../knowledge/herbalPlantCuration';
+import { saveLocalFoodCurationDecision } from '../../knowledge/foodDietoterapiaCuration';
+import { saveLocalKnowledgeReview } from '../../services/knowledgeAdminService';
 import { applyPsychCurationProposal } from '../../knowledge/psychCurationDecisions';
+import {
+  getLocationIdentity,
+  readStoredMapLocations,
+  upsertStoredMapLocation,
+  writeStoredMapLocations,
+} from '../../knowledge/mapLocations';
 
 const TYPE_LABELS = {
   point_review: 'Revisão de ponto',
@@ -25,6 +34,7 @@ const TYPE_LABELS = {
   ai_instruction: 'Instrução da IA',
   ai_correction: 'Correção da IA',
   map_coordinate: 'Coordenada de mapa',
+  knowledge_review: 'Biblioteca Viva / Fontes PDF · ponto',
   anamnese_psic_risk: 'Psicologia · sinal de risco',
   anamnese_psic_axis: 'Psicologia · eixo de raciocínio',
   anamnese_psic_checklist: 'Psicologia · checklist',
@@ -63,6 +73,47 @@ function applyProposal(proposal) {
     if (!candidate) throw new Error('Proposta sem candidato da anamnese.');
     const decision = payload?.decision || 'approved_local';
     saveAnamneseKnowledgeDecision(candidate, decision, SUPER_ADMIN_ACTOR);
+    return;
+  }
+  if (type === 'herb') {
+    const decision = payload?.decision;
+    if (!decision) throw new Error('Proposta de erva sem decisão.');
+    saveLocalHerbalCurationDecision(decision);
+    return;
+  }
+  if (type === 'food') {
+    const decision = payload?.decision;
+    if (!decision) throw new Error('Proposta de alimento sem decisão.');
+    saveLocalFoodCurationDecision(decision);
+    return;
+  }
+  if (type === 'knowledge_review') {
+    const review = payload?.review;
+    if (!review) throw new Error('Proposta de ponto sem revisão.');
+    saveLocalKnowledgeReview(review);
+    return;
+  }
+  if (type === 'map_coordinate') {
+    const location = payload?.location;
+    if (!location) throw new Error('Proposta de coordenada sem posição.');
+    const options = payload?.options || {};
+    const stored = upsertStoredMapLocation(location, {
+      actorRole: 'super_admin',
+      actorLabel: 'SuperAdm',
+      replaceLocationIdentity: options.replaceLocationIdentity || null,
+      replacedFromMapId: options.replacedFromMapId || null,
+    });
+    // Se o ponto cruzou a linha média, a identidade (lado) muda: remove o
+    // registro antigo para não duplicar marcador — espelha o confirmPendingMove.
+    const oldIdentity = options.replaceLocationIdentity;
+    if (oldIdentity) {
+      const newIdentity = getLocationIdentity(stored);
+      if (newIdentity !== oldIdentity) {
+        const remaining = readStoredMapLocations()
+          .filter(item => getLocationIdentity(item) !== oldIdentity);
+        writeStoredMapLocations(remaining);
+      }
+    }
     return;
   }
   if (type.startsWith('anamnese_psic_')) {

@@ -6,10 +6,13 @@
 // em qualquer máquina. Ao aprovar, o SuperAdm reproduz o `payload` no
 // caminho de aprovação local já existente (localStorage + export JSON).
 //
-// Tipos aceitos (espelham o CHECK da migração 20260713_curation_proposals):
+// Tipos aceitos (espelham o CHECK de curation_proposals; ver migrações
+// 20260713 / 20260714 / 20260715):
 //   point_review | point_promote_common | anamnese_finding |
-//   anamnese_pattern | herb | food | ai_instruction | ai_correction |
-//   map_coordinate
+//   anamnese_question | anamnese_pattern | herb | food | ai_instruction |
+//   ai_correction | map_coordinate | knowledge_review |
+//   anamnese_psic_risk | anamnese_psic_axis | anamnese_psic_checklist |
+//   anamnese_psic_question
 // ============================================================
 
 import { supabase } from '../lib/supabase';

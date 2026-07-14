@@ -21,6 +21,7 @@ import {
   ReportContactFooter,
 } from '../report/reportPrint';
 import { paginateReportBody } from '../report/reportPagination';
+import { PSYCHOLOGY_INFORMANT_OPTIONS } from '../../data/psychologyIntakeProfiles';
 
 // ============================================================
 // Relatório de Psicologia. Mesmo papel timbrado, logo, marca d'água e
@@ -102,6 +103,16 @@ export function PsychologyRelatorio({ session, selectedPatient, therapistProfile
   const riskSigns = getPsychologySelected(session.selectedMap, PSYCHOLOGY_RISK_GROUP);
   const riskNotes = String(session.riskNotes || '').trim();
   const evolucoes = Array.isArray(session.evolucoes) ? session.evolucoes : [];
+  const complementaryQuestions = Array.isArray(session.complementaryQuestions)
+    ? session.complementaryQuestions.filter(item => String(item.question || '').trim())
+    : [];
+  const answeredComplementaryQuestions = complementaryQuestions
+    .filter(item => String(item.answer || '').trim());
+  const complementaryInformant = item => {
+    const label = PSYCHOLOGY_INFORMANT_OPTIONS
+      .find(option => option.id === item.informantType)?.label || '';
+    return [label, String(item.informantName || '').trim()].filter(Boolean).join(' — ');
+  };
   const sessaoLabel = evolucoes.length
     ? `${evolucoes.length} sessão(ões) registrada(s)`
     : 'Avaliação inicial';
@@ -207,8 +218,12 @@ export function PsychologyRelatorio({ session, selectedPatient, therapistProfile
       if (Array.isArray(reading.hypotheses) && reading.hypotheses.length) {
         parts.push(`Hipóteses de trabalho (não é diagnóstico): ${reading.hypotheses.map(h => h.name).join('; ')}.`);
       }
-      if (Array.isArray(reading.questions) && reading.questions.length) {
-        parts.push(`Pontos a aprofundar: ${reading.questions.join('; ')}.`);
+      // Pergunta apenas sugerida pela IA não entra no documento. O relatório
+      // consome somente as perguntas que a profissional selecionou e respondeu.
+      if (answeredComplementaryQuestions.length) {
+        parts.push(`Informações complementares registradas: ${answeredComplementaryQuestions
+          .map(item => `${item.question} — ${item.answer}${complementaryInformant(item) ? ` (${complementaryInformant(item)})` : ''}`)
+          .join('; ')}.`);
       }
       const html = parts.map(p => `<p>${escapeHtml(p)}</p>`).join('');
       persistEdits({
@@ -273,6 +288,20 @@ export function PsychologyRelatorio({ session, selectedPatient, therapistProfile
               {riskNotes && <InlineRow label="Conduta anotada" value={`${riskNotes}.`} />}
             </>
           )}
+          {complementaryQuestions.length > 0 && (
+            <>
+              <h3 style={{ margin: '18px 0 6px', color: 'var(--navy)', fontSize: 17 }}>Perguntas complementares</h3>
+              {complementaryQuestions.map((item, index) => (
+                <InlineRow
+                  key={item.id || index}
+                  label={`${index + 1}. ${item.question}`}
+                  value={String(item.answer || '').trim()
+                    ? `${item.answer}${complementaryInformant(item) ? ` — Informante: ${complementaryInformant(item)}` : ''}`
+                    : 'Pendente de resposta.'}
+                />
+              ))}
+            </>
+          )}
         </>
       )}
 
@@ -296,6 +325,19 @@ export function PsychologyRelatorio({ session, selectedPatient, therapistProfile
             <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
               <b>Avaliação de risco:</b> {riskSigns.join(', ')}.{riskNotes ? ` Conduta: ${riskNotes}.` : ''}
             </p>
+          )}
+
+          {answeredComplementaryQuestions.length > 0 && (
+            <>
+              <h3 style={{ margin: '18px 0 6px', color: 'var(--navy)', fontSize: 17 }}>Informações complementares</h3>
+              {answeredComplementaryQuestions.map((item, index) => (
+                <InlineRow
+                  key={item.id || index}
+                  label={item.question}
+                  value={`${item.answer}${complementaryInformant(item) ? ` — Informante: ${complementaryInformant(item)}` : ''}`}
+                />
+              ))}
+            </>
           )}
 
           <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>

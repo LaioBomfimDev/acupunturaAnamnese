@@ -47,6 +47,13 @@ const NAV_ICONS = {
       <path d="M9 10h6M9 14h6M9 18h4" />
     </>
   ),
+  'Perguntas complementares': (
+    <>
+      <circle cx="7" cy="7" r="3" />
+      <path d="M4 14h6M4 18h8" />
+      <path d="M14 6h6v8h-3l-3 3V6Z" />
+    </>
+  ),
   'Língua': (
     <>
       <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />

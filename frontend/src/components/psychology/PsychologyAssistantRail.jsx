@@ -167,7 +167,16 @@ function PsychologyReviewAssist({ session, onSetSelection, patientName }) {
 
 // Leitura da IA (rascunho): visão geral + hipóteses + riscos + perguntas,
 // gerada sob demanda e persistida com a sessão (session.aiReading).
-function PsychologyAiReading({ session, onReadingChange, patientName }) {
+function normalizeQuestionKey(value) {
+  return String(value || '').trim().toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ');
+}
+
+function PsychologyAiReading({
+  session,
+  onReadingChange,
+  onToggleComplementaryQuestion,
+  patientName,
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const reading = session.aiReading;
@@ -194,7 +203,11 @@ function PsychologyAiReading({ session, onReadingChange, patientName }) {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" className="ai-analyze-btn" disabled={loading} onClick={handleGenerate} style={{ margin: 0, whiteSpace: 'nowrap' }}>
-          {loading ? 'Lendo a anamnese…' : reading ? 'Gerar novamente' : 'Gerar leitura (rascunho)'}
+          {loading
+            ? 'Analisando a anamnese…'
+            : reading
+              ? 'Atualizar análise e sugerir novas perguntas'
+              : 'Analisar anamnese e sugerir perguntas'}
         </button>
         {reading && (
           <button type="button" className="btn-mini" onClick={() => onReadingChange(null)}>Descartar</button>
@@ -252,9 +265,30 @@ function PsychologyAiReading({ session, onReadingChange, patientName }) {
           {reading.questions?.length > 0 && (
             <div className="psi-reading-block">
               <h4>Perguntas para explorar</h4>
-              <ul className="psi-reading-list">
-                {reading.questions.map((q, i) => <li key={i}>{q}</li>)}
-              </ul>
+              <p className="small">
+                Selecione somente as perguntas úteis. Elas irão para a aba “Perguntas complementares”,
+                onde você poderá revisar a redação, identificar o informante e registrar a resposta.
+              </p>
+              <div className="psi-reading-question-list">
+                {reading.questions.map((question, index) => {
+                  const selected = (session.complementaryQuestions || []).some(item => (
+                    normalizeQuestionKey(item.sourceQuestion || item.question) === normalizeQuestionKey(question)
+                  ));
+                  return (
+                    <label className={`psi-reading-question${selected ? ' selected' : ''}`} key={`${question}-${index}`}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => onToggleComplementaryQuestion?.(question, reading)}
+                      />
+                      <span>
+                        <b>{question}</b>
+                        <small>{selected ? 'Adicionada em Perguntas complementares' : 'Selecionar para incluir na anamnese'}</small>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -288,7 +322,13 @@ function PsychologyAiReading({ session, onReadingChange, patientName }) {
 }
 
 // Rail completo: andamento da ficha + revisão assistida + leitura.
-export function PsychologyAssistantRail({ session, onSetSelection, onReadingChange, patientName }) {
+export function PsychologyAssistantRail({
+  session,
+  onSetSelection,
+  onReadingChange,
+  onToggleComplementaryQuestion,
+  patientName,
+}) {
   const summary = buildPsychologyWorkspaceSummary(session);
 
   return (
@@ -313,6 +353,7 @@ export function PsychologyAssistantRail({ session, onSetSelection, onReadingChan
             <span className="quick-chip"><b>{summary.filledFields}</b><span>campos</span></span>
             <span className="quick-chip"><b>{summary.markedItems}</b><span>sinais</span></span>
             <span className="quick-chip"><b>{summary.filledAxes}</b><span>eixos</span></span>
+            <span className="quick-chip"><b>{summary.answeredComplementaryQuestions}/{summary.complementaryQuestions}</b><span>perguntas</span></span>
           </div>
         </div>
 
@@ -337,6 +378,7 @@ export function PsychologyAssistantRail({ session, onSetSelection, onReadingChan
           <PsychologyAiReading
             session={session}
             onReadingChange={onReadingChange}
+            onToggleComplementaryQuestion={onToggleComplementaryQuestion}
             patientName={patientName}
           />
         </div>

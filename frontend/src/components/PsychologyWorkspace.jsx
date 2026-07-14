@@ -37,6 +37,7 @@ import { PsychologyPathChooser } from './psychology/PsychologyPathChooser';
 import { PsychologyNeuroAssessment } from './psychology/PsychologyNeuroAssessment';
 import { PsychologyNeuroReport } from './psychology/PsychologyNeuroReport';
 import { PsychologyHypotheses } from './psychology/PsychologyHypotheses';
+import { PsychologyComplementaryQuestions } from './psychology/PsychologyComplementaryQuestions';
 
 // ============================================================
 // Workspace de Psicologia — SHELL (Plano C, Rodada 1).
@@ -56,7 +57,14 @@ import { PsychologyHypotheses } from './psychology/PsychologyHypotheses';
 // Rodada 1 (ver PSYCHOLOGY_PLACEHOLDER_TABS).
 const PSYCHOLOGY_NAV_GROUPS = [
   { title: null, tabs: [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.PAINEL] },
-  { title: 'Avaliação', tabs: [PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.NEURO] },
+  {
+    title: 'Avaliação',
+    tabs: [
+      PSYCHOLOGY_TABS.ANAMNESE,
+      PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES,
+      PSYCHOLOGY_TABS.NEURO,
+    ],
+  },
   { title: 'Formulação clínica', tabs: [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.HIPOTESES] },
   { title: 'Plano de cuidado', tabs: [PSYCHOLOGY_TABS.OBJETIVOS, PSYCHOLOGY_TABS.PLANO] },
   { title: 'Acompanhamento', tabs: [PSYCHOLOGY_TABS.EVOLUCAO] },
@@ -257,7 +265,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       setActiveTab(PSYCHOLOGY_TABS.HOME);
       return;
     }
-    if (tab === PSYCHOLOGY_TABS.ANAMNESE) {
+    if ([PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES].includes(tab)) {
       if (!session.intakeProfile) {
         setActiveJourney(null);
         setActiveTab(PSYCHOLOGY_TABS.PAINEL);
@@ -353,6 +361,58 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     setSession(prev => ({ ...prev, aiReading: reading }));
   }
 
+  function toggleComplementaryQuestion(question, source = {}) {
+    const questionText = String(question || '').trim();
+    if (!questionText) return;
+    const questionKey = questionText.toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ');
+    const currentQuestions = Array.isArray(session.complementaryQuestions)
+      ? session.complementaryQuestions
+      : [];
+    const existing = currentQuestions.find(item => (
+      String(item.sourceQuestion || item.question || '').trim()
+        .toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ') === questionKey
+    ));
+    if (existing) {
+      const hasAnswer = Boolean(String(existing.answer || '').trim());
+      if (hasAnswer && !window.confirm('Esta pergunta já possui resposta. Removê-la também apagará a resposta. Deseja continuar?')) {
+        return;
+      }
+      setSession(prev => ({
+        ...prev,
+        complementaryQuestions: (prev.complementaryQuestions || [])
+          .filter(item => item.id !== existing.id),
+      }));
+      return;
+    }
+    setSession(prev => {
+      const questions = Array.isArray(prev.complementaryQuestions) ? prev.complementaryQuestions : [];
+      const alreadyAdded = questions.some(item => (
+        String(item.sourceQuestion || item.question || '').trim()
+          .toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ') === questionKey
+      ));
+      if (alreadyAdded) return prev;
+      return {
+        ...prev,
+        complementaryQuestions: [...questions, {
+          id: `complementary-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          question: questionText,
+          answer: '',
+          informantType: '',
+          informantName: '',
+          source: 'ai',
+          sourceQuestion: questionText,
+          modelVersion: String(source.modelVersion || ''),
+          selectedAt: new Date().toISOString(),
+          answeredAt: null,
+        }],
+      };
+    });
+  }
+
+  function handleComplementaryQuestionsChange(complementaryQuestions) {
+    setSession(prev => ({ ...prev, complementaryQuestions }));
+  }
+
   function handleEvolucoesChange(evolucoes) {
     setSession(prev => ({ ...prev, evolucoes }));
   }
@@ -429,6 +489,14 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onInformantChange={updateFieldInformant}
             onArchiveResponse={archiveFieldResponse}
             onChooseProfile={openPathChooser}
+          />
+        );
+      case PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES:
+        return (
+          <PsychologyComplementaryQuestions
+            session={session}
+            onQuestionsChange={handleComplementaryQuestionsChange}
+            onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
           />
         );
       case PSYCHOLOGY_TABS.NEURO:
@@ -558,6 +626,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
                 session={session}
                 onSetSelection={setCheck}
                 onReadingChange={handleReadingChange}
+                onToggleComplementaryQuestion={toggleComplementaryQuestion}
                 patientName={selectedPatient?.name}
               />
             </aside>

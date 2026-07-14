@@ -25,11 +25,12 @@ import {
   fetchKnowledgeSourceJsonAsset,
   resolveKnowledgeSourceAssetUrl,
 } from '../../services/knowledgeSourceAssetService';
+import { submitCurationProposal } from '../../services/curationProposalService';
 
 const FILTERS = [
-  { id: 'unanswered', label: 'Nao respondidos' },
-  { id: 'high', label: 'Alta confianca' },
-  { id: 'sistemico', label: 'Sistemicos' },
+  { id: 'unanswered', label: 'Não respondidos' },
+  { id: 'high', label: 'Alta confiança' },
+  { id: 'sistemico', label: 'Sistêmicos' },
   { id: 'auricular', label: 'Auricular' },
   { id: 'blocked', label: 'Idioma' },
   { id: 'saved', label: 'Salvos' },
@@ -195,7 +196,8 @@ function ReliabilityBars({ reliability }) {
   );
 }
 
-export function PdfSourceLearningPanel() {
+export function PdfSourceLearningPanel({ actor = { role: 'super_admin', label: 'SuperAdm', mode: 'approve' } }) {
+  const isPropose = actor?.mode === 'propose';
   const [loadState, setLoadState] = useState('loading');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -285,7 +287,7 @@ export function PdfSourceLearningPanel() {
     }
   }
 
-  function saveDraftReview({ advance = false } = {}) {
+  async function saveDraftReview({ advance = false } = {}) {
     if (!selectedRow) return;
 
     const topReferences = selectedLinks.slice(0, 12).map(link => ({
@@ -302,7 +304,7 @@ export function PdfSourceLearningPanel() {
       translationReliabilityPercent: translatePdfSnippetPtBr(link).reliabilityPercent,
     }));
 
-    saveLocalKnowledgeReview({
+    const reviewInput = {
       code: selectedRow.code,
       displayCode: selectedRow.draft.displayCode || selectedRow.code,
       title: selectedRow.title,
@@ -326,7 +328,27 @@ export function PdfSourceLearningPanel() {
       cautions: asArray(selectedRow.bestReview?.cautions),
       relatedPatterns: asArray(selectedRow.bestReview?.relatedPatterns),
       techniques: asArray(selectedRow.bestReview?.techniques),
-    });
+    };
+
+    // Revisora: em vez de gravar localmente, envia proposta ao SuperAdm.
+    if (isPropose) {
+      try {
+        await submitCurationProposal({
+          type: 'knowledge_review',
+          targetRef: selectedRow.code,
+          payload: { kind: 'decision', review: reviewInput },
+          note: `Fonte PDF: ${selectedRow.code} • ${selectedRow.title}`,
+          proposerName: actor?.label || '',
+        });
+        setMessage(`${selectedRow.code}: rascunho proposto ao SuperAdm.`);
+        if (advance) selectNextPendingRow(selectedRow.code);
+      } catch (err) {
+        setMessage(err?.message || 'Não foi possível enviar a proposta.');
+      }
+      return;
+    }
+
+    saveLocalKnowledgeReview(reviewInput);
     refreshLocalReviews();
     setMessage(`${selectedRow.code} salvo como rascunho local com fontes PDF.`);
     if (advance) selectNextPendingRow(selectedRow.code);
@@ -358,16 +380,16 @@ export function PdfSourceLearningPanel() {
     <section className="admin-knowledge pdf-learning-panel">
       <div className="start-panel-head">
         <div>
-          <p className="small">SuperAdm • Fontes PDF</p>
+          <p className="small">{actor?.label || 'SuperAdm'} • Fontes PDF</p>
           <h2>Aprendizado por pagina</h2>
           <span>Fila local de pontos nao respondidos, fontes, traducao preliminar e confiabilidade.</span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="quiet-button" type="button" onClick={() => saveDraftReview()} disabled={!selectedRow}>
-            {selectedRow?.localReview ? 'Atualizar rascunho' : 'Salvar rascunho'}
+            {isPropose ? 'Propor rascunho' : selectedRow?.localReview ? 'Atualizar rascunho' : 'Salvar rascunho'}
           </button>
           <button className="primary-button" type="button" onClick={() => saveDraftReview({ advance: true })} disabled={!selectedRow}>
-            Salvar e proximo
+            {isPropose ? 'Propor e próximo' : 'Salvar e próximo'}
           </button>
         </div>
       </div>
@@ -400,7 +422,7 @@ export function PdfSourceLearningPanel() {
         </div>
       </div>
 
-      {message && <div className="inline-success">{message}</div>}
+      {message && <div className={/não foi|Não foi/.test(message) ? 'inline-error' : 'inline-success'}>{message}</div>}
 
       <div className="pdf-learning-layout">
         <section className="admin-users pdf-learning-list-panel">

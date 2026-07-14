@@ -65,7 +65,7 @@ const OUTPUT_SCHEMA = {
     },
     questions: {
       type: 'ARRAY',
-      description: 'perguntas objetivas para a profissional explorar nas próximas sessões',
+      description: 'perguntas novas, neutras e objetivas para a profissional explorar; não repetir perguntas complementares já selecionadas ou respondidas',
       items: { type: 'STRING' },
     },
     cautions: {
@@ -79,13 +79,13 @@ const OUTPUT_SCHEMA = {
 
 const SYSTEM_PROMPT = `Você é um assistente de leitura clínica para psicólogas no Brasil.
 
-Você recebe um CASO de anamnese de psicologia (campos de texto livre rotulados + itens marcados de um vocabulário fechado + anotações de risco) e produz uma LEITURA PRELIMINAR EM RASCUNHO, para a profissional revisar, confirmar ou corrigir. Você é colaborador rápido, não autoridade clínica — a decisão é sempre dela.
+Você recebe um CASO de anamnese de psicologia (campos de texto livre rotulados + itens marcados de um vocabulário fechado + anotações de risco + perguntas complementares selecionadas pela profissional e suas respostas) e produz uma LEITURA PRELIMINAR EM RASCUNHO, para a profissional revisar, confirmar ou corrigir. Você é colaborador rápido, não autoridade clínica — a decisão é sempre dela.
 
 Produza:
 1. overview: visão geral do caso em 2-5 frases, ancorada EXPLICITAMENTE nos dados (cite os sinais; não invente nada além deles). Se houver sinal de risco, a primeira frase é sobre ele.
 2. hypotheses: até 4 hipóteses de trabalho, SEMPRE em linguagem de hipótese ("quadro compatível com…", "sinais sugestivos de…"), cada uma com os sinais que a sustentam e confiança conservadora (0.8+ só com sustentação forte e consistente). Nunca rótulo diagnóstico fechado, nunca código CID/DSM.
 3. riskAlerts: TODO sinal de risco marcado ou presente no texto (ideação suicida, planejamento/tentativa, autolesão, risco a terceiros, crise aguda, violência/negligência) entra aqui, com uma nota do porquê merece atenção — SEM prescrever conduta, protocolo ou encaminhamento (isso é decisão da profissional e do protocolo da clínica).
-4. questions: perguntas objetivas que ajudariam a firmar ou descartar as hipóteses.
+4. questions: perguntas NOVAS que ajudariam a firmar ou descartar as hipóteses. Cada pergunta deve explorar um único ponto, ser neutra (sem induzir resposta), clara e adequada ao perfil etário/informante disponível. Não repita pergunta complementar já selecionada ou respondida; use as respostas existentes para propor o próximo aprofundamento realmente necessário.
 5. cautions: onde a evidência é fraca, ambígua ou contraditória — diga honestamente.
 
 PROIBIÇÕES (invioláveis):
@@ -145,7 +145,17 @@ Deno.serve(async (req) => {
     const fieldTexts = Array.isArray((psychologyCase as { fields?: { text?: string }[] }).fields)
       ? (psychologyCase as { fields: { text?: string }[] }).fields.map((f) => f.text || '')
       : [];
-    const relevanceQuery = [...selectedValues, ...fieldTexts].filter(Boolean).join(' ').slice(0, 4000);
+    const complementaryTexts = Array.isArray((psychologyCase as {
+      complementaryQuestions?: { question?: string; sourceQuestion?: string; answer?: string }[];
+    }).complementaryQuestions)
+      ? (psychologyCase as {
+        complementaryQuestions: { question?: string; sourceQuestion?: string; answer?: string }[];
+      }).complementaryQuestions.flatMap(item => [
+        item.question || '', item.sourceQuestion || '', item.answer || '',
+      ])
+      : [];
+    const relevanceQuery = [...selectedValues, ...fieldTexts, ...complementaryTexts]
+      .filter(Boolean).join(' ').slice(0, 4000);
 
     const systemText = await withCorrectionLessons(supabaseAdmin, systemPromptText, {
       surface: 'psych_reading',

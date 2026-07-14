@@ -166,6 +166,10 @@ precisam ser definidas por ela.
 - avaliação é registro separado com roteiro inicial de dez sessões ajustáveis, instrumentos,
   observações, resultados factuais, integração profissional e relatório;
 - hipóteses vindas da leitura/PDF permanecem em revisão até edição ou aceite profissional;
+- perguntas sugeridas pela IA não entram automaticamente na ficha: a profissional seleciona,
+  revisa a redação e responde em uma aba própria de Perguntas complementares. Cada resposta
+  pode identificar o informante, alimenta as próximas leituras e só entra no relatório quando
+  houver sido selecionada e registrada;
 - relatório usa dados estruturados como gatilhos, gera somente rascunho editável e bloqueia
   impressão até revisão profissional.
 

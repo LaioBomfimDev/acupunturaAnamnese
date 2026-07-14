@@ -16,6 +16,7 @@ import {
   isDefaultCommonMapLocationCode,
 } from '../../knowledge/auricularCuration';
 import { buildPointDetail } from '../../knowledge/pointDetails';
+import { submitCurationProposal } from '../../services/curationProposalService';
 import {
   getDeepCuratedKnowledgeReviews,
   getHighConfidenceKnowledgeReviews,
@@ -119,9 +120,11 @@ function mapLabel(mapId) {
 }
 
 export function MapCoordinateEditor({
+  actor = null,
   approvalActorRole = 'therapist',
   approvalActorLabel = 'acupunturista',
 } = {}) {
+  const isPropose = actor?.mode === 'propose';
   const [activeMapId, setActiveMapId] = useState('feet_dorsal');
   const [selectedPoint, setSelectedPoint] = useState('LR3');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -412,11 +415,48 @@ export function MapCoordinateEditor({
     setPendingMove(null);
   }
 
-  function confirmPendingMove() {
+  async function confirmPendingMove() {
     if (!pendingMove || !asset) return;
     const targetMapId = pendingMove.targetMapId || activeMapId;
     const targetAsset = getMapAsset(targetMapId);
     if (!targetAsset) return;
+
+    // Revisora: não grava a coordenada localmente — envia proposta ao SuperAdm,
+    // que aprova e aplica (upsertStoredMapLocation) na fila de curadoria.
+    if (isPropose) {
+      try {
+        await submitCurationProposal({
+          type: 'map_coordinate',
+          targetRef: pendingMove.code,
+          payload: {
+            kind: 'decision',
+            location: {
+              code: pendingMove.code,
+              label: pendingMove.label,
+              mapId: targetMapId,
+              view: targetAsset.view || targetAsset.type,
+              xPct: pendingMove.xPct,
+              yPct: pendingMove.yPct,
+            },
+            options: {
+              replaceLocationIdentity: pendingMove.replaceLocationIdentity || null,
+              replacedFromMapId: pendingMove.sourceMapId || null,
+            },
+          },
+          note: `${pendingMove.displayLabel} em ${mapLabel(targetMapId)} · x ${pendingMove.xPct}% · y ${pendingMove.yPct}%`,
+          proposerName: actor?.label || '',
+        });
+        setPendingMove(null);
+        setMapChangeDraft(null);
+        setActiveMarkerAction(null);
+        setDragPosition(null);
+        setSaveMessage(`Proposta enviada ao SuperAdm: ${pendingMove.displayLabel} em ${mapLabel(targetMapId)}.`);
+      } catch (err) {
+        setSaveMessage(err?.message || 'Não foi possível enviar a proposta.');
+      }
+      return;
+    }
+
     // Snapshot do estado local antes da gravação para suportar "Desfazer".
     const snapshot = readStoredMapLocations();
     const stored = upsertStoredMapLocation({

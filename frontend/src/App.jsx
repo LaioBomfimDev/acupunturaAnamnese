@@ -257,7 +257,7 @@ export default function App() {
     if (isKnowledgeReviewer) {
       return (
         <ReviewerHome
-          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          therapistName={profile?.full_name || user.user_metadata?.full_name || getFirstName(user.email)}
           discipline={resolveReviewerDiscipline(profile)}
           onEnterDiscipline={disciplineId => handleSelectDiscipline(disciplineId)}
           onOpenCuration={section => { setReviewSection(section); setReviewMode(true); }}

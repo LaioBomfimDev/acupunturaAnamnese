@@ -54,6 +54,7 @@ export const PSYCHOLOGY_TABS = {
   HOME: 'Tela inicial',
   PAINEL: 'Painel',
   ANAMNESE: 'Anamnese',
+  PERGUNTAS_COMPLEMENTARES: 'Perguntas complementares',
   NEURO: 'Avaliação neuropsicológica',
   SINTESE: 'Síntese do caso',
   HIPOTESES: 'Hipóteses/diagnóstico',
@@ -299,6 +300,10 @@ export function createEmptyPsychologySession() {
     // Última "Leitura da IA (rascunho)" gerada — persiste com a sessão
     // para o profissional retomar/corrigir depois. null = nunca gerada.
     aiReading: null,
+    // Perguntas propostas pela IA só entram aqui após seleção explícita
+    // da profissional. Pergunta, resposta, informante e proveniência
+    // permanecem editáveis e seguem para a IA/relatório como dados clínicos.
+    complementaryQuestions: [],
     hypothesisReviews: [],
     // Registros de sessão (aba Evolução) e rascunhos de documento
     // (aba Relatório), guardados no mesmo registro da anamnese.
@@ -318,6 +323,23 @@ export function normalizePsychologySession(raw) {
     responseHistory: { ...empty.responseHistory, ...(raw.responseHistory || {}) },
     selectedMap: { ...empty.selectedMap, ...(raw.selectedMap || {}) },
     axisNotes: { ...empty.axisNotes, ...(raw.axisNotes || {}) },
+    complementaryQuestions: Array.isArray(raw.complementaryQuestions)
+      ? raw.complementaryQuestions
+        .filter(item => item && typeof item === 'object' && String(item.question || '').trim())
+        .map((item, index) => ({
+          id: String(item.id || `complementary-question-${index + 1}`),
+          question: String(item.question || '').trim(),
+          answer: String(item.answer || ''),
+          informantType: String(item.informantType || ''),
+          informantName: String(item.informantName || ''),
+          source: item.source === 'manual' ? 'manual' : 'ai',
+          sourceQuestion: String(item.sourceQuestion || item.question || '').trim(),
+          modelVersion: String(item.modelVersion || ''),
+          selectedAt: item.selectedAt || null,
+          answeredAt: item.answeredAt || null,
+        }))
+        .slice(0, 60)
+      : [],
     hypothesisReviews: Array.isArray(raw.hypothesisReviews) ? raw.hypothesisReviews : [],
     evolucoes: Array.isArray(raw.evolucoes) ? raw.evolucoes : [],
     relatorio: { ...empty.relatorio, ...(raw.relatorio || {}) },
@@ -351,6 +373,12 @@ export function buildPsychologyWorkspaceSummary(session) {
     .filter(([key, selected]) => selected && key.startsWith(`${PSYCHOLOGY_RISK_GROUP}:`))
     .length;
   const sessionCount = Array.isArray(session.evolucoes) ? session.evolucoes.length : 0;
+  const complementaryQuestions = Array.isArray(session.complementaryQuestions)
+    ? session.complementaryQuestions.length
+    : 0;
+  const answeredComplementaryQuestions = Array.isArray(session.complementaryQuestions)
+    ? session.complementaryQuestions.filter(item => String(item.answer || '').trim()).length
+    : 0;
   const totalSections = activeFields.length + PSYCHOLOGY_AXES.length + 1;
   const completedSections = filledFields + filledAxes + Number(markedItems > 0);
 
@@ -360,6 +388,8 @@ export function buildPsychologyWorkspaceSummary(session) {
     markedItems,
     riskItems,
     sessionCount,
+    complementaryQuestions,
+    answeredComplementaryQuestions,
     completion: Math.round((completedSections / totalSections) * 100),
     nextAction: riskItems > 0
       ? 'Conferir primeiro os sinais de risco marcados e registrar a avaliação profissional.'

@@ -104,6 +104,7 @@ Vale para anamnese, língua, pulso, pontos e RAG da Biblioteca. Detalhe de catal
 - **Conflito entre fontes → `review`/esperar**, não forçar decisão. Segurança vem de roteamento + confiança/proveniência + gate humano, não de exclusão.
 - A IA pode propor padrões canônicos novos legítimos (além dos existentes), sempre em `review` até o gate humano.
 - **Meta: fazer funcionar, tudo ligado, ~80% de certeza**, estruturado para crítica humana e refino por equipe técnica de acupuntura nas fases finais.
+- **Curadoria precisa se explicar na própria tela.** Toda área deve dizer o que revisa e apresentar um passo a passo concreto de localizar → conferir fonte/contexto → decidir → enviar. A legenda de abas, filtros, estados e contagens deve ficar na hero ou, quando a associação visual for importante, imediatamente junto aos controles explicados. Confiança de fonte nunca pode parecer certeza clínica, e enviar proposta nunca pode parecer publicação ou aprovação automática.
 - **Sexo clínico e contexto reprodutivo orientam perguntas, não diagnóstico.** Só personalize a investigação quando o dado estiver informado; não presuma anatomia, ciclo menstrual, contexto hormonal ou queixa urogenital a partir de gênero/sexo, nem use esse dado isoladamente como peso de padrão.
 - Detalhe clínico: `docs/repertorio-padroes-mtc.md`, `docs/regras-clinicas-lingua-padrao.md`.
 

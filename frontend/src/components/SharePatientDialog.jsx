@@ -1,9 +1,7 @@
-import { useMemo, useState } from 'react';
-import { useAuth } from '../hooks/AuthContext';
+import { useMemo, useRef, useState } from 'react';
 import { DISCIPLINE_IDS, getDiscipline } from '../data/disciplines';
 import { OPTIONAL_SHARE_SCOPES } from '../data/shareScopes';
 import { createRecordShare } from '../services/recordSharesService';
-import { enrollPatient } from '../services/clinicPatientsService';
 
 // ============================================================
 // Diálogo "Enviar para outro profissional" (Fase 3)
@@ -18,8 +16,6 @@ import { enrollPatient } from '../services/clinicPatientsService';
 // ============================================================
 
 export function SharePatientDialog({ patient, onClose, onDone }) {
-  const { verifyPassword } = useAuth();
-
   const enrolledDisciplines = useMemo(
     () => (patient.enrollments || []).map(e => e.discipline).filter(id => DISCIPLINE_IDS.includes(id)),
     [patient.enrollments],
@@ -32,6 +28,7 @@ export function SharePatientDialog({ patient, onClose, onDone }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const idempotencyKeyRef = useRef(null);
 
   const toOptions = DISCIPLINE_IDS.filter(id => id !== fromDiscipline);
 
@@ -54,25 +51,15 @@ export function SharePatientDialog({ patient, onClose, onDone }) {
 
     setSubmitting(true);
     try {
-      const ok = await verifyPassword(password);
-      if (!ok) {
-        setError('Senha incorreta. O envio exige confirmação de senha.');
-        return;
-      }
-
-      // Garante que o paciente aparece na área de destino (matrícula),
-      // ignorando "já matriculado".
-      try {
-        await enrollPatient(patient.id, toDiscipline);
-      } catch (enrollErr) {
-        if (!/já está na área/i.test(enrollErr.message || '')) throw enrollErr;
-      }
+      idempotencyKeyRef.current ||= crypto.randomUUID();
 
       await createRecordShare(patient.id, {
         fromDiscipline,
         toDiscipline,
         scopes,
         note: note.trim() || null,
+        password,
+        idempotencyKey: idempotencyKeyRef.current,
       });
 
       onDone?.({

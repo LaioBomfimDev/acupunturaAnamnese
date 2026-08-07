@@ -13,6 +13,7 @@
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { DISCIPLINE_IDS, getDiscipline } from '../data/disciplines';
 
 const LOCAL_ENROLLMENTS_KEY = 'acup_local_patient_enrollments';
@@ -80,7 +81,7 @@ export async function listClinicPatients() {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const enrollments = getLocalEnrollments();
     return getLocalPatients()
       .filter(patient => !patient.archived_at)
@@ -93,6 +94,7 @@ export async function listClinicPatients() {
   const { data, error } = await supabase
     .from('patients')
     .select('id,name,phone,age,birth_date,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -101,7 +103,6 @@ export async function listClinicPatients() {
   }
 
   return (data || [])
-    .filter(patient => !patient.archived_at)
     .map(({ patient_enrollments: enrollments, ...patient }) => ({
       ...patient,
       enrollments: enrollments || [],
@@ -119,7 +120,7 @@ export async function enrollPatient(patientId, disciplineId, { note } = {}) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const enrollments = getLocalEnrollments();
     if (enrollments.some(item => item.patient_id === patientId && item.discipline === disciplineId)) {
       throw new Error(`Paciente já está na área de ${getDiscipline(disciplineId)?.label || disciplineId}.`);

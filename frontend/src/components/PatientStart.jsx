@@ -37,7 +37,7 @@ function TrashIcon() {
 
 // initialDiscipline: matrícula criada junto com o cadastro (Fase 2) —
 // o workspace de cada disciplina passa a sua (acupuntura é o default).
-export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline }) {
+export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline }) {
   const { patients, selectedPatient, loading, error, createPatient, selectPatient, deletePatient } = usePatient();
   const [mode, setMode] = useState('new');
   const [query, setQuery] = useState('');
@@ -98,12 +98,12 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, ther
     setListNotice(null);
     try {
       await deletePatient(deleteTarget.id);
-      setListNotice({ type: 'success', text: `${patientName} foi excluído da lista.` });
+      setListNotice({ type: 'success', text: `${patientName} foi arquivado e a solicitação de exclusão ficou pendente para análise.` });
       handleCancelDelete();
     } catch (err) {
       setListNotice({
         type: 'error',
-        text: err?.message || 'Não foi possível excluir o paciente.',
+        text: err?.message || 'Não foi possível solicitar a exclusão do paciente.',
       });
     } finally {
       setDeletingPatientId(null);
@@ -179,6 +179,15 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, ther
                 <small>Retomar ficha e resumo clínico</small>
               </span>
             </button>
+            {onOpenDocuments && (
+              <button className="start-action" onClick={onOpenDocuments}>
+                <span className="start-action-icon">⎙</span>
+                <span>
+                  <b>Documentos timbrados</b>
+                  <small>Word → PDF no papel da clínica</small>
+                </span>
+              </button>
+            )}
           </section>
 
           {mode === 'new' ? (
@@ -254,10 +263,10 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, ther
               {deleteTarget && (
                 <form className="patient-delete-panel" onSubmit={handleDeleteConfirm} role="alertdialog" aria-labelledby="patient-delete-title">
                   <div>
-                    <p className="small">Exclusão definitiva</p>
-                    <h3 id="patient-delete-title">Excluir {deleteTarget.name || 'paciente'}?</h3>
+                    <p className="small">Solicitação administrativa</p>
+                    <h3 id="patient-delete-title">Solicitar exclusão de {deleteTarget.name || 'paciente'}?</h3>
                     <p>
-                      Essa ação remove o cadastro e registros vinculados. Para segurança, confirme digitando <b>excluir</b>.
+                      O paciente será arquivado agora. Os registros não serão apagados até revisão da política de retenção. Confirme digitando <b>excluir</b>.
                     </p>
                   </div>
                   <label>
@@ -274,7 +283,7 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onSignOut, ther
                       Cancelar
                     </button>
                     <button className="danger-button" type="submit" disabled={!canConfirmDelete || deletingPatientId === deleteTarget.id}>
-                      {deletingPatientId === deleteTarget.id ? 'Excluindo...' : 'Excluir definitivamente'}
+                      {deletingPatientId === deleteTarget.id ? 'Solicitando...' : 'Arquivar e solicitar exclusão'}
                     </button>
                   </div>
                 </form>
@@ -331,8 +340,8 @@ export function PatientListCard({ patient, isActive = false, isDeleting = false,
         type="button"
         onClick={() => onRequestDelete?.(patient)}
         disabled={isDeleting}
-        aria-label={`Excluir paciente ${name}`}
-        title={`Excluir ${name}`}
+        aria-label={`Solicitar exclusão do paciente ${name}`}
+        title={`Solicitar exclusão de ${name}`}
       >
         <TrashIcon />
       </button>

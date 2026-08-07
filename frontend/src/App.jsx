@@ -1,23 +1,17 @@
-import { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createInitialState, getPatientAge, serializeTongueAi, useClinicState } from './hooks/useClinicState';
 import { useAuth } from './hooks/AuthContext';
 import { usePatient } from './hooks/PatientContext';
 import { useSessionPersistence } from './hooks/useSessionPersistence';
 import { analyze, assistantSynthesis } from './utils/analyzer';
-import { buildRandomClinicalFixture } from './utils/testClinicalFixture';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { DisciplineHub } from './components/DisciplineHub';
-import { ClinicPatientsPanel } from './components/ClinicPatientsPanel';
-import { PsychologyWorkspace } from './components/PsychologyWorkspace';
-import { ReviewerHome } from './components/ReviewerHome';
-import { CurationWorkspace } from './components/CurationWorkspace';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines, resolveReviewerDiscipline } from './data/disciplines';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
-import { AssistantDeepDive } from './components/panels/AssistantDeepDive';
-import { AssistantFoodLinks } from './components/panels/AssistantFoodLinks';
+import { MfaGate } from './components/MfaGate';
 import './App.css';
 
 const lazyPanel = (loader, exportName) => lazy(() => loader().then(module => ({ default: module[exportName] })));
@@ -33,8 +27,15 @@ const Protocolo = lazyPanel(() => import('./components/panels/Protocolo'), 'Prot
 const Evolucao = lazyPanel(() => import('./components/panels/Evolucao'), 'Evolucao');
 const Biblioteca = lazyPanel(() => import('./components/panels/Biblioteca'), 'Biblioteca');
 const Relatorio = lazyPanel(() => import('./components/panels/Relatorio'), 'Relatorio');
+const DocumentosTimbrados = lazyPanel(() => import('./components/panels/DocumentosTimbrados'), 'DocumentosTimbrados');
 const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
 const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
+const ClinicPatientsPanel = lazyPanel(() => import('./components/ClinicPatientsPanel'), 'ClinicPatientsPanel');
+const PsychologyWorkspace = lazyPanel(() => import('./components/PsychologyWorkspace'), 'PsychologyWorkspace');
+const ReviewerHome = lazyPanel(() => import('./components/ReviewerHome'), 'ReviewerHome');
+const CurationWorkspace = lazyPanel(() => import('./components/CurationWorkspace'), 'CurationWorkspace');
+const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
+const AssistantFoodLinks = lazyPanel(() => import('./components/panels/AssistantFoodLinks'), 'AssistantFoodLinks');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
 // entre logins — sair limpa a chave.
@@ -63,9 +64,14 @@ export default function App() {
     user,
     profile,
     profileError,
+    loading,
     isSuperAdmin,
     isKnowledgeReviewer,
     mustChangePassword,
+    needsMfa,
+    mfaFactors,
+    enrollMfa,
+    verifyMfa,
     signOut,
     changeTemporaryPassword,
   } = useAuth();
@@ -73,6 +79,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
+  const [showHubDocuments, setShowHubDocuments] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewSection, setReviewSection] = useState('points');
   const [superAdminSection, setSuperAdminSection] = useState('manage');
@@ -146,7 +153,7 @@ export default function App() {
   }, [isHome, isSuperAdminTab]);
 
   // Carrega sessão salva ao selecionar paciente
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
     isHydratingSessionRef.current = true;
     lastAutoSaveSnapshotRef.current = null;
@@ -197,6 +204,10 @@ export default function App() {
     lastAutoSaveSnapshotRef.current = snapshot;
   }, [selectedPatient?.id, state, selectedMap, tongueAiMeta]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (loading) {
+    return <PanelLoading />;
+  }
+
   if (!user) {
     return (
       <Suspense fallback={<PanelLoading />}>
@@ -225,18 +236,31 @@ export default function App() {
     );
   }
 
+  if (needsMfa) {
+    return (
+      <MfaGate
+        factors={mfaFactors}
+        onEnroll={enrollMfa}
+        onVerify={verifyMfa}
+        onSignOut={signOut}
+      />
+    );
+  }
+
   // Superfície de curadoria da revisora (modo "propor"), independente de
   // disciplina/paciente. Acessível pela ReviewerHome e pelo atalho na sidebar.
   if (isKnowledgeReviewer && reviewMode) {
     return (
-      <CurationWorkspace
-        section={reviewSection}
-        onSectionChange={setReviewSection}
-        therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
-        discipline={resolveReviewerDiscipline(profile)}
-        onExit={() => setReviewMode(false)}
-        onSignOut={handleHubSignOut}
-      />
+      <Suspense fallback={<PanelLoading />}>
+        <CurationWorkspace
+          section={reviewSection}
+          onSectionChange={setReviewSection}
+          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          discipline={resolveReviewerDiscipline(profile)}
+          onExit={() => setReviewMode(false)}
+          onSignOut={handleHubSignOut}
+        />
+      </Suspense>
     );
   }
 
@@ -247,22 +271,48 @@ export default function App() {
   if (!isSuperAdmin && !canEnterDiscipline(profile, activeDiscipline)) {
     if (showClinicPatients) {
       return (
-        <ClinicPatientsPanel
-          profile={profile}
-          onBack={() => setShowClinicPatients(false)}
-        />
+        <Suspense fallback={<PanelLoading />}>
+          <ClinicPatientsPanel
+            profile={profile}
+            onBack={() => setShowClinicPatients(false)}
+          />
+        </Suspense>
+      );
+    }
+    // Documentos timbrados direto do hub: utilitário da clínica inteira,
+    // não exige escolher área nem ter paciente selecionado.
+    if (showHubDocuments) {
+      return (
+        <div className="hub-screen">
+          <header className="hub-topbar">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
+              <p>Documentos timbrados</p>
+            </div>
+            <button type="button" className="topbar-button" onClick={() => setShowHubDocuments(false)}>
+              ← Voltar às áreas
+            </button>
+          </header>
+          <main className="hub-body">
+            <Suspense fallback={<PanelLoading />}>
+              <DocumentosTimbrados therapistProfile={profile} />
+            </Suspense>
+          </main>
+        </div>
       );
     }
     // Revisora: tela inicial própria (bem-vindo + card de curadoria).
     if (isKnowledgeReviewer) {
       return (
-        <ReviewerHome
-          therapistName={profile?.full_name || user.user_metadata?.full_name || getFirstName(user.email)}
-          discipline={resolveReviewerDiscipline(profile)}
-          onEnterDiscipline={disciplineId => handleSelectDiscipline(disciplineId)}
-          onOpenCuration={section => { setReviewSection(section); setReviewMode(true); }}
-          onSignOut={handleHubSignOut}
-        />
+        <Suspense fallback={<PanelLoading />}>
+          <ReviewerHome
+            therapistName={profile?.full_name || user.user_metadata?.full_name || getFirstName(user.email)}
+            discipline={resolveReviewerDiscipline(profile)}
+            onEnterDiscipline={disciplineId => handleSelectDiscipline(disciplineId)}
+            onOpenCuration={section => { setReviewSection(section); setReviewMode(true); }}
+            onSignOut={handleHubSignOut}
+          />
+        </Suspense>
       );
     }
     return (
@@ -272,6 +322,7 @@ export default function App() {
         onSelect={handleSelectDiscipline}
         onSignOut={handleHubSignOut}
         onOpenClinicPatients={() => setShowClinicPatients(true)}
+        onOpenDocuments={() => setShowHubDocuments(true)}
       />
     );
   }
@@ -280,12 +331,14 @@ export default function App() {
   // enxuto e autocontido — todo o resto deste componente é o pacote MTC.
   if (!isSuperAdmin && activeDiscipline === 'psicologia') {
     return (
-      <PsychologyWorkspace
-        profile={profile}
-        therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
-        onSwitchDiscipline={handleSwitchDiscipline}
-        onSignOut={handleSignOut}
-      />
+      <Suspense fallback={<PanelLoading />}>
+        <PsychologyWorkspace
+          profile={profile}
+          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          onSwitchDiscipline={handleSwitchDiscipline}
+          onSignOut={handleSignOut}
+        />
+      </Suspense>
     );
   }
 
@@ -307,11 +360,12 @@ export default function App() {
       );
     }
 
-    if (activeTab === 'Tela inicial' || (!selectedPatient && activeTab !== 'Biblioteca')) {
+    if (activeTab === 'Tela inicial' || (!selectedPatient && activeTab !== 'Biblioteca' && activeTab !== 'Documentos')) {
       return (
         <PatientStart
           onCreatePatient={() => setActiveTab('Anamnese')}
           onSelectPatient={() => setActiveTab('Painel')}
+          onOpenDocuments={() => setActiveTab('Documentos')}
           onSignOut={signOut}
           therapistName={therapistFirstName}
           hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
@@ -334,7 +388,7 @@ export default function App() {
             onConfirmPendingChanges={confirmPendingChanges}
           />
         );
-      case 'Anamnese':          return <Anamnese {...commonProps} onSetSelection={setSelection} onFillTestAnswers={fillTestAnswers} />;
+      case 'Anamnese':          return <Anamnese {...commonProps} onSetSelection={setSelection} onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined} />;
       case 'Língua':            return <Lingua {...commonProps} onSetSelection={setSelection} tongueAi={tongueAi} onTongueAiChange={setTongueAi} />;
       case 'Pulso':             return <Pulso {...commonProps} />;
       case 'Reabilitação':      return <Reabilitacao key={selectedPatient?.id || 'sem-paciente'} {...commonProps} />;
@@ -349,6 +403,7 @@ export default function App() {
           />
         );
       case 'Biblioteca':        return <Biblioteca />;
+      case 'Documentos':        return <DocumentosTimbrados therapistProfile={profile} />;
       case 'Relatório':         return <Relatorio state={state} analysis={analysis} selectedPatient={selectedPatient} therapistProfile={profile} onUpdate={updateField} />;
       default:                  return <PainelInicial {...commonProps} />;
     }
@@ -374,7 +429,7 @@ export default function App() {
       setActiveTab('SuperAdm');
       return;
     }
-    if (!selectedPatient && tab !== 'Tela inicial' && tab !== 'Biblioteca') {
+    if (!selectedPatient && tab !== 'Tela inicial' && tab !== 'Biblioteca' && tab !== 'Documentos') {
       setActiveTab('Tela inicial');
       return;
     }
@@ -385,7 +440,8 @@ export default function App() {
     return !hasPendingChanges || window.confirm(message);
   }
 
-  function fillTestAnswers() {
+  async function fillTestAnswers() {
+    const { buildRandomClinicalFixture } = await import('./utils/testClinicalFixture');
     const { statePatch, selectedMap: testSelectedMap } = buildRandomClinicalFixture();
 
     setState(prev => ({
@@ -427,7 +483,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${isSuperAdmin ? ' super-admin-app' : ''}`}>
       <Sidebar
         activeTab={isSuperAdmin ? 'SuperAdm' : activeTab}
         onTabChange={handleTabChange}
@@ -481,8 +537,8 @@ export default function App() {
         </div>
         )}
 
-        {/* O Relatório tem papel timbrado próprio com os dados da clínica */}
-        {activeTab !== 'Relatório' && (
+        {/* Relatório e Documentos têm papel timbrado próprio com os dados da clínica */}
+        {activeTab !== 'Relatório' && activeTab !== 'Documentos' && (
         <div className="print-header">
           <div>
             <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability MTC'}</h1>
@@ -558,14 +614,16 @@ export default function App() {
                   <p>{synthesis.reading}</p>
                 </div>
 
-                <AssistantDeepDive
-                  state={state}
-                  selectedMap={selectedMap}
-                  synthesis={synthesis}
-                  patientName={selectedPatient?.name || state.nome}
-                />
+                <Suspense fallback={<p className="small">Carregando apoio clínico...</p>}>
+                  <AssistantDeepDive
+                    state={state}
+                    selectedMap={selectedMap}
+                    synthesis={synthesis}
+                    patientName={selectedPatient?.name || state.nome}
+                  />
 
-                <AssistantFoodLinks synthesis={synthesis} />
+                  <AssistantFoodLinks synthesis={synthesis} />
+                </Suspense>
               </div>
             </div>
 

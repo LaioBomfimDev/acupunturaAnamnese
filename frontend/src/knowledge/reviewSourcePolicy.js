@@ -69,8 +69,14 @@ export function isQuarantinedKnowledgeReview(review = {}) {
 }
 
 export function isClinicallyActiveKnowledgeReview(review = {}) {
+  const isServerApproved = (
+    review?.status === 'approved'
+    && review?.approvalMode === 'server_professional'
+    && review?.requiresProfessionalAudit === false
+  );
   return (
-    review?.status === 'approved_local' &&
+    (review?.status === 'approved_local' || isServerApproved) &&
+    review?.requiresProfessionalAudit !== true &&
     isTrustedAtlasKnowledgeReview(review) &&
     !isQuarantinedKnowledgeReview(review)
   );
@@ -78,6 +84,17 @@ export function isClinicallyActiveKnowledgeReview(review = {}) {
 
 export function normalizeKnowledgeReviewForClinicalUse(review = {}) {
   if (!review) return review;
+
+  if (review.status === 'approved_local' && review.requiresProfessionalAudit === true) {
+    return {
+      ...review,
+      status: 'review',
+      previousStatus: 'approved_local',
+      clinicalActivationBlocked: true,
+      clinicalActivationReason:
+        'Aprovação local pendente de auditoria profissional; conteúdo preservado somente para curadoria.',
+    };
+  }
 
   // Quarentena de qualidade tem prioridade: bloqueia mesmo fontes Atlas confiaveis.
   if (review.status === 'approved_local' && isQuarantinedKnowledgeReview(review)) {

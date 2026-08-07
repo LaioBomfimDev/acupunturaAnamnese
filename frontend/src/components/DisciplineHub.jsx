@@ -58,7 +58,7 @@ const STATE_BADGES = {
   locked: 'Não habilitada',
 };
 
-export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients }) {
+export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments }) {
   const cards = buildHubCards(profile);
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Reability';
 
@@ -115,6 +115,13 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
           <button type="button" className="hub-secondary" onClick={onOpenClinicPatients}>
             <b>Pacientes da clínica →</b>
             <span>Cadastro central, matrículas por área e envio entre profissionais.</span>
+          </button>
+        )}
+
+        {onOpenDocuments && (
+          <button type="button" className="hub-secondary" onClick={onOpenDocuments}>
+            <b>Documentos timbrados →</b>
+            <span>Envie um Word (.docx) e receba o documento no papel timbrado da clínica.</span>
           </button>
         )}
       </main>

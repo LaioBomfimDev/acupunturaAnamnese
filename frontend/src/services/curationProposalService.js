@@ -94,6 +94,80 @@ export async function decideCurationProposal(id, decision, note = '') {
 }
 
 /**
+ * Aprova uma proposta de Biblioteca Viva dentro de uma única transação
+ * PostgreSQL: versão da entidade, decisão, auditoria e outbox são gravados
+ * juntos. O banco mantém `review` quando faltar gate profissional.
+ */
+export async function approveKnowledgeCurationProposal(id, note = '') {
+  const decisionNote = String(note || '').trim();
+  if (decisionNote.length < 10) {
+    throw new Error('Registre uma justificativa de pelo menos 10 caracteres.');
+  }
+
+  const { data, error } = await supabase.rpc('approve_knowledge_curation_proposal', {
+    p_proposal_id: id,
+    p_decision_note: decisionNote,
+  });
+
+  if (error) {
+    const details = [error.message, error.details, error.hint, error.code]
+      .filter(Boolean)
+      .join(' ');
+    if (
+      /approve_knowledge_curation_proposal/.test(details)
+      && /does not exist|schema cache|Could not find|PGRST202/i.test(details)
+    ) {
+      throw new Error(
+        'Publicação central da Biblioteca ainda não foi ativada. Aplique a migração de hardening 20260723.',
+      );
+    }
+    throw error;
+  }
+
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result?.proposal_id || !result?.entity_id) {
+    throw new Error('O banco não confirmou a aplicação transacional da proposta.');
+  }
+  return result;
+}
+
+/**
+ * Rejeita uma proposta de conhecimento em transação auditável. O UPDATE direto
+ * permanece bloqueado para que payload, autoria e identidade não possam mudar.
+ */
+export async function rejectKnowledgeCurationProposal(id, note = '') {
+  const decisionNote = String(note || '').trim();
+  if (decisionNote.length < 10) {
+    throw new Error('Registre uma justificativa de pelo menos 10 caracteres.');
+  }
+
+  const { data, error } = await supabase.rpc('reject_knowledge_curation_proposal', {
+    p_proposal_id: id,
+    p_decision_note: decisionNote,
+  });
+  if (error) {
+    const details = [error.message, error.details, error.hint, error.code]
+      .filter(Boolean)
+      .join(' ');
+    if (
+      /reject_knowledge_curation_proposal/.test(details)
+      && /does not exist|schema cache|Could not find|PGRST202/i.test(details)
+    ) {
+      throw new Error(
+        'Rejeição auditável da Biblioteca ainda não foi ativada. Aplique a migração de hardening 20260723.',
+      );
+    }
+    throw error;
+  }
+
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result?.proposal_id || result.status !== 'rejected') {
+    throw new Error('O banco não confirmou a rejeição transacional da proposta.');
+  }
+  return result;
+}
+
+/**
  * Contagem de propostas pendentes (para badges no SuperAdm).
  */
 export async function countPendingProposals() {

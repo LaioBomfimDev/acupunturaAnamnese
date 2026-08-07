@@ -5,6 +5,8 @@ import {
   normalizeKnowledgeReviewForClinicalUse,
 } from '../knowledge/reviewSourcePolicy';
 import { fetchKnowledgeSourceJsonAsset } from './knowledgeSourceAssetService';
+import { getAuthenticatedUser, supabase } from '../lib/supabase';
+import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 
 const LOCAL_KNOWLEDGE_REVIEWS_KEY = 'acup_living_library_reviews_v1';
 export const HIGH_CONFIDENCE_KNOWLEDGE_REVIEWS_ASSET_KEY = 'atlas-ednea/high-confidence-reviews.json';
@@ -73,6 +75,51 @@ export function mergeClinicalKnowledgeReviews({
 }
 
 export async function getClinicalKnowledgeReviews() {
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  // Produção usa exclusivamente a versão aprovada e corrente no Supabase.
+  // Pacotes locais e localStorage continuam disponíveis somente no modo de
+  // desenvolvimento explicitamente local, sem virar fonte clínica distribuída.
+  if (!LOCAL_DEVELOPMENT_MODE || !user._isLocal) {
+    const { data, error } = await supabase.rpc('get_active_knowledge_reviews');
+    if (error) {
+      const details = [error.message, error.details, error.hint, error.code]
+        .filter(Boolean)
+        .join(' ');
+      if (
+        /get_active_knowledge_reviews/.test(details)
+        && /does not exist|schema cache|Could not find|PGRST202/i.test(details)
+      ) {
+        throw new Error(
+          'Base de conhecimento central ainda não foi ativada. Aplique a migração de hardening 20260723.',
+        );
+      }
+      throw error;
+    }
+
+    const reviews = (data || [])
+      .map(row => {
+        const payload = row?.payload && typeof row.payload === 'object'
+          ? row.payload
+          : null;
+        if (!payload) return null;
+        return normalizeKnowledgeReviewForClinicalUse({
+          ...payload,
+          id: payload.id || row.entity_id || row.id,
+          entityKey: row.entity_key || payload.entityKey,
+          knowledgeVersion: Number(row.version) || undefined,
+          serverApprovedAt: row.approved_at || payload.serverApprovedAt,
+          status: 'approved',
+          approvalMode: 'server_professional',
+          requiresProfessionalAudit: false,
+        });
+      })
+      .filter(Boolean);
+
+    return enrichReviewsWithSymptoms(reviews);
+  }
+
   const [deepCuratedReviews, highConfidenceReviews] = await Promise.all([
     getDeepCuratedKnowledgeReviews(),
     getHighConfidenceKnowledgeReviews(),

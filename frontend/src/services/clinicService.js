@@ -10,16 +10,17 @@ import { supabase } from '../lib/supabase';
 const LOCAL_CLINICS_KEY = 'acup_clinics_v1';
 const LOCAL_CLINIC_ASSIGNMENTS_KEY = 'acup_profile_clinics_v1';
 const LOCAL_USER_KEY = 'acup_local_user';
+const LOCAL_AUTH_FALLBACK_ENABLED =
+  import.meta.env.DEV
+  && import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === 'true';
 
 export const DEFAULT_BRAND_COLOR = '#0E2A4A';
 
-// Espelha LOCAL_ADMINS do AuthContext — perfis disponíveis quando
-// o sistema roda com login fallback local, sem banco.
-const LOCAL_PROFILES = [
-  { id: 'local-admlaio', full_name: 'Laio', email: 'laio@acup.com' },
-  { id: 'local-admkaren', full_name: 'Karen', email: 'karen@acup.com' },
-  { id: 'local-admdeni', full_name: 'Deni', email: 'deni@acup.com' },
-];
+async function loadLocalProfiles() {
+  if (!LOCAL_AUTH_FALLBACK_ENABLED) return [];
+  const localAuth = await import('../dev/localAuthFallback.js');
+  return localAuth.listLocalProfiles();
+}
 
 function readLocal(key, fallback) {
   try {
@@ -43,7 +44,7 @@ function hasSupabaseConfig() {
 }
 
 function isLocalAuthFallbackActive() {
-  if (typeof localStorage === 'undefined') return false;
+  if (!LOCAL_AUTH_FALLBACK_ENABLED || typeof localStorage === 'undefined') return false;
   try {
     const localUser = JSON.parse(localStorage.getItem(LOCAL_USER_KEY) || 'null');
     return Boolean(localUser?._isLocal || isLocalId(localUser?.id));
@@ -68,10 +69,12 @@ export function isMissingClinicSchemaError(error) {
 }
 
 function canUseLocalFallback(error, { localEntity = false } = {}) {
-  return localEntity
-    || isLocalAuthFallbackActive()
-    || !hasSupabaseConfig()
-    || isMissingClinicSchemaError(error);
+  return LOCAL_AUTH_FALLBACK_ENABLED && (
+    localEntity
+      || isLocalAuthFallbackActive()
+      || !hasSupabaseConfig()
+      || isMissingClinicSchemaError(error)
+  );
 }
 
 function readLocalClinics() {
@@ -117,6 +120,10 @@ export async function saveClinic(clinic) {
     throw new Error('Informe o nome da clínica.');
   }
 
+  if (isLocalId(clinic.id) && !LOCAL_AUTH_FALLBACK_ENABLED) {
+    throw new Error('Clínicas locais só estão disponíveis no modo de desenvolvimento autorizado.');
+  }
+
   const isUpdate = Boolean(clinic.id) && !String(clinic.id).startsWith('local-');
 
   function runSave(data) {
@@ -151,6 +158,10 @@ export async function saveClinic(clinic) {
 }
 
 export async function deleteClinic(clinicId) {
+  if (isLocalId(clinicId) && !LOCAL_AUTH_FALLBACK_ENABLED) {
+    throw new Error('Clínicas locais só estão disponíveis no modo de desenvolvimento autorizado.');
+  }
+
   if (!isLocalId(clinicId)) {
     try {
       const { error } = await supabase.from('clinics').delete().eq('id', clinicId);
@@ -185,7 +196,8 @@ export async function listProfilesWithClinic() {
     if (canUseLocalFallback(err)) {
       console.warn('Vínculos de clínica: usando armazenamento local.', err?.message);
       const assignments = readLocalAssignments();
-      return LOCAL_PROFILES.map(profile => ({
+      const localProfiles = await loadLocalProfiles();
+      return localProfiles.map(profile => ({
         ...profile,
         role: 'therapist',
         clinic_id: assignments[profile.id] || null,
@@ -196,6 +208,10 @@ export async function listProfilesWithClinic() {
 }
 
 export async function setProfileClinic(profileId, clinicId) {
+  if (isLocalId(profileId) && !LOCAL_AUTH_FALLBACK_ENABLED) {
+    throw new Error('Perfis locais só estão disponíveis no modo de desenvolvimento autorizado.');
+  }
+
   if (!isLocalId(profileId)) {
     try {
       const { error } = await supabase.rpc('admin_set_profile_clinic', {
@@ -253,6 +269,8 @@ export async function getClinicForProfile(profile) {
       console.warn('Clínica do perfil: usando armazenamento local.', err?.message);
     }
   }
+
+  if (!LOCAL_AUTH_FALLBACK_ENABLED) return null;
 
   const clinics = readLocalClinics();
   if (!clinics.length) return null;

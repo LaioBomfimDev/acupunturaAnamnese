@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DEFAULT_BRAND_COLOR,
   deleteClinic,
@@ -9,6 +9,7 @@ import {
   setProfileClinic,
 } from '../../services/clinicService';
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
+import { filterClinicDirectory, filterClinics } from './superAdminFilters';
 
 const EMPTY_CLINIC = {
   id: null,
@@ -103,6 +104,9 @@ export function ClinicAdminPanel() {
   const [logoLoading, setLogoLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [clinicQuery, setClinicQuery] = useState('');
+  const [professionalQuery, setProfessionalQuery] = useState('');
+  const [professionalClinicFilter, setProfessionalClinicFilter] = useState('all');
   // null = diálogo de novo profissional fechado; '' ou id = aberto
   // (com a clínica pré-selecionada quando vier de uma linha da lista).
   const [createForClinic, setCreateForClinic] = useState(null);
@@ -232,6 +236,20 @@ export function ClinicAdminPanel() {
   }
 
   const brandColor = normalizeHexColor(form.brand_color) || DEFAULT_BRAND_COLOR;
+  const visibleClinics = useMemo(
+    () => filterClinics(clinics, clinicQuery),
+    [clinics, clinicQuery],
+  );
+  const visibleProfessionals = useMemo(
+    () => filterClinicDirectory(professionals, {
+      query: professionalQuery,
+      clinicId: professionalClinicFilter,
+    }),
+    [professionals, professionalQuery, professionalClinicFilter],
+  );
+  const hasProfessionalFilters = Boolean(
+    professionalQuery || professionalClinicFilter !== 'all',
+  );
 
   return (
     <div className="clinic-admin">
@@ -437,13 +455,31 @@ export function ClinicAdminPanel() {
           </button>
         </div>
 
+        <div className="admin-toolbar clinic-list-toolbar">
+          <label className="admin-filter-field admin-filter-search">
+            <span>Pesquisar clínica</span>
+            <input
+              className="admin-search"
+              type="search"
+              value={clinicQuery}
+              onChange={event => setClinicQuery(event.target.value)}
+              placeholder="Nome, CNPJ, cidade ou contato"
+            />
+          </label>
+          <div className="admin-filter-summary" aria-live="polite">
+            <b>{visibleClinics.length}</b> de {clinics.length} clínicas
+          </div>
+        </div>
+
         {loading ? (
           <div className="empty-state">Carregando clínicas...</div>
         ) : clinics.length === 0 ? (
           <div className="empty-state">Nenhuma clínica cadastrada ainda.</div>
+        ) : visibleClinics.length === 0 ? (
+          <div className="empty-state">Nenhuma clínica corresponde à pesquisa.</div>
         ) : (
           <div className="admin-user-list">
-            {clinics.map(clinic => {
+            {visibleClinics.map(clinic => {
               const linked = professionals.filter(p => p.clinic_id === clinic.id);
               return (
                 <div className="admin-user-row clinic-row" key={clinic.id}>
@@ -495,13 +531,55 @@ export function ClinicAdminPanel() {
           </button>
         </div>
 
+        <div className="admin-toolbar clinic-directory-toolbar">
+          <label className="admin-filter-field admin-filter-search">
+            <span>Pesquisar profissional</span>
+            <input
+              className="admin-search"
+              type="search"
+              value={professionalQuery}
+              onChange={event => setProfessionalQuery(event.target.value)}
+              placeholder="Nome ou e-mail"
+            />
+          </label>
+          <label className="admin-filter-field">
+            <span>Clínica</span>
+            <select
+              value={professionalClinicFilter}
+              onChange={event => setProfessionalClinicFilter(event.target.value)}
+            >
+              <option value="all">Todas as clínicas</option>
+              <option value="unassigned">Sem clínica</option>
+              {clinics.map(clinic => (
+                <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
+              ))}
+            </select>
+          </label>
+          <div className="admin-filter-summary" aria-live="polite">
+            <b>{visibleProfessionals.length}</b> de {professionals.length} profissionais
+            {hasProfessionalFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setProfessionalQuery('');
+                  setProfessionalClinicFilter('all');
+                }}
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        </div>
+
         {loading ? (
           <div className="empty-state">Carregando profissionais...</div>
         ) : professionals.length === 0 ? (
           <div className="empty-state">Nenhum profissional disponível para vincular.</div>
+        ) : visibleProfessionals.length === 0 ? (
+          <div className="empty-state">Nenhum profissional corresponde aos filtros.</div>
         ) : (
           <div className="admin-user-list">
-            {professionals.map(profile => (
+            {visibleProfessionals.map(profile => (
               <div className="admin-user-row clinic-row" key={profile.id}>
                 <div className="admin-user-main">
                   <b>{profile.full_name || profile.email}</b>

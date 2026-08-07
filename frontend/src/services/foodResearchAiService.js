@@ -1,8 +1,8 @@
 // ============================================================
 // SERVICE: Pesquisa de alimento/planta com IA (Dietoterapia)
 //
-// A profissional escolhe um MODO de pesquisa (visão medicinal, receitas,
-// leitura MTC, segurança) e a IA responde por TÓPICOS FIXOS sobre o alimento
+// A profissional escolhe um MODO educativo (visão geral, leitura MTC ou
+// cautelas) e a IA responde por TÓPICOS FIXOS sobre o alimento publicado
 // selecionado — não é prompt genérico "fale sobre X". O roteiro de tópicos e
 // os trilhos de segurança vivem na Edge Function `food-research`; aqui só
 // listamos os modos (rótulos da UI), montamos o payload curado e chamamos.
@@ -13,40 +13,33 @@
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
-import { FOOD_ENERGIES, FOOD_FLAVORS, FOOD_ORGANS, describeFoodTradition } from '../knowledge/foodDietoterapia';
 
 export const FOOD_RESEARCH_MOCK_VERSION = 'mock-0.1';
 
 export const FOOD_RESEARCH_DISCLAIMER =
-  'Pesquisa gerada por IA a partir de conhecimento geral — apoio ao estudo da profissional, não curada nem verificada, não é prescrição, plano alimentar nem conteúdo para o paciente. Confira antes de usar.';
+  'Síntese educativa gerada somente a partir de publicação profissional aprovada no servidor. Não é prescrição, plano alimentar, cardápio, receita nem orientação individual.';
 
 // Modos de pesquisa. O roteiro de tópicos de cada um está na Edge Function;
-// aqui ficam só os metadados de UI. `needsObjective` habilita o campo de
-// objetivo (ex.: digestão, sono) para direcionar a busca.
+// aqui ficam só os metadados de UI. Não há objetivo personalizado: isso
+// poderia transformar educação geral em orientação individual.
 export const FOOD_RESEARCH_MODES = [
   {
     id: 'visao_geral',
-    label: 'Visão geral medicinal',
-    hint: 'Nome científico, compostos ativos, usos tradicionais, evidência, formas de uso e cuidados.',
+    label: 'Visão geral educativa',
+    hint: 'Síntese, limites da publicação e cautelas revisadas.',
     needsObjective: false,
   },
   {
-    id: 'receitas',
-    label: 'Receitas tradicionais e funcionais',
-    hint: 'Receitas com ingredientes, preparo, finalidade, origem, cuidados e nível de evidência.',
-    needsObjective: true,
-  },
-  {
     id: 'mtc',
-    label: 'Leitura energética (MTC)',
-    hint: 'Natureza, sabor, tropismo, ações, movimento/estação e combinações clássicas.',
+    label: 'Associações tradicionais da MTC',
+    hint: 'Associações publicadas entre alimento, sabores, movimentos e sistemas funcionais.',
     needsObjective: false,
   },
   {
     id: 'seguranca',
-    label: 'Segurança e interações',
-    hint: 'Populações de risco, contraindicações, interações medicamentosas e sinais de alerta.',
-    needsObjective: true,
+    label: 'Cautelas educativas revisadas',
+    hint: 'Somente cautelas e grupos vulneráveis presentes na publicação aprovada.',
+    needsObjective: false,
   },
 ];
 
@@ -56,21 +49,15 @@ export function getFoodResearchMode(modeId) {
   return FOOD_RESEARCH_MODES.find(m => m.id === modeId) || null;
 }
 
-// Reduz o alimento curado ao contexto (rótulos legíveis) enviado à IA.
+// O navegador envia somente a chave de busca. Propriedades locais, cautelas e
+// suposta curadoria nunca entram no prompt; o servidor recupera a publicação.
 export function toFoodResearchPayload(food) {
   if (!food || typeof food !== 'object') return null;
-  return {
-    commonName: food.commonName,
-    energyLabel: FOOD_ENERGIES[food.energy]?.label || '',
-    flavors: (food.flavors || []).map(f => FOOD_FLAVORS[f]?.label).filter(Boolean),
-    organs: (food.organs || []).map(o => FOOD_ORGANS[o]).filter(Boolean),
-    tradition: describeFoodTradition(food),
-    caution: food.caution || '',
-  };
+  return { commonName: String(food.commonName || '').trim() };
 }
 
 // ----- MOCK -----
-export function mockResearchFood(food, mode, objective) {
+export function mockResearchFood(food, mode) {
   const modeMeta = getFoodResearchMode(mode);
   return new Promise(resolve => {
     setTimeout(() => {
@@ -82,7 +69,7 @@ export function mockResearchFood(food, mode, objective) {
         sections: [
           {
             heading: `(Simulado) ${modeMeta?.label || 'Pesquisa'} — ${food?.commonName || ''}`,
-            body: `Resposta simulada${objective ? ` (objetivo: ${objective})` : ''}. Ative a IA real para uma pesquisa por tópicos com nível de evidência.`,
+            body: 'Resposta simulada. Ative a IA real para consultar somente publicações aprovadas no servidor.',
           },
         ],
         evidenceNote: 'Simulação: sem avaliação de evidência.',
@@ -94,14 +81,16 @@ export function mockResearchFood(food, mode, objective) {
 }
 
 /**
- * Pesquisa um alimento/planta por tópicos, no modo escolhido.
+ * Pesquisa um alimento publicado por tópicos, no modo escolhido.
  * @param {object} food - item do FOOD_CATALOG
  * @param {string} modeId - id de FOOD_RESEARCH_MODES
- * @param {{ objective?: string }} [options]
+ * @param {object} [_options] - reservado; nenhum objetivo clínico é enviado
  * @param {{ getAuthenticatedUser?: Function, invoke?: Function }} [runtime]
  * @returns {Promise<{ modelVersion, mode, food, sections, evidenceNote, safety, insufficient }>}
  */
-export async function researchFood(food, modeId, options = {}, runtime) {
+export async function researchFood(food, modeId, _options = {}, runtime) {
+  // Mantém compatibilidade com chamadas antigas sem encaminhar objetivo livre.
+  void _options;
   const payload = toFoodResearchPayload(food);
   if (!payload?.commonName) {
     throw new Error('Selecione um alimento para pesquisar.');
@@ -109,19 +98,17 @@ export async function researchFood(food, modeId, options = {}, runtime) {
   if (!MODE_IDS.has(modeId)) {
     throw new Error('Escolha um tipo de pesquisa.');
   }
-  const objective = String(options.objective || '').trim().slice(0, 200);
-
   const client = resolveAiRuntime(runtime, {
     getAuthenticatedUser,
     invoke: (...args) => supabase.functions.invoke(...args),
   });
   const user = await client.getAuthenticatedUser();
   if (user?._isLocal) {
-    return mockResearchFood(food, modeId, objective);
+    return mockResearchFood(food, modeId);
   }
 
   const { data, error } = await client.invoke('food-research', {
-    body: { mode: modeId, food: payload, objective },
+    body: { mode: modeId, name: payload.commonName },
   });
 
   if (error) {

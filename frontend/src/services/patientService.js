@@ -5,9 +5,11 @@
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 
 const LOCAL_PATIENTS_KEY = 'acup_local_patients';
-const LOCAL_RECORDS_KEY = 'acup_local_clinical_records';
+const PATIENT_SELECT_COLUMNS =
+  'id,therapist_id,name,phone,birth_date,age,archived_at,created_at,clinic_id';
 
 // ---------- helpers localStorage ----------
 
@@ -28,18 +30,6 @@ function saveLocalPatients(patients) {
   localStorage.setItem(LOCAL_PATIENTS_KEY, JSON.stringify(patients));
 }
 
-function deleteLocalClinicalRecords(patientId) {
-  try {
-    const records = JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY) || '[]');
-    localStorage.setItem(
-      LOCAL_RECORDS_KEY,
-      JSON.stringify(records.filter(record => record.patient_id !== patientId))
-    );
-  } catch {
-    localStorage.setItem(LOCAL_RECORDS_KEY, '[]');
-  }
-}
-
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = (Math.random() * 16) | 0;
@@ -56,18 +46,19 @@ function generateUUID() {
 export async function listPatients() {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
-  if (user?._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     return getLocalPatientsForUser(user).filter(patient => !patient.archived_at);
   }
 
   const { data, error } = await supabase
     .from('patients')
-    .select('*')
+    .select(PATIENT_SELECT_COLUMNS)
     .eq('therapist_id', user.id)
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).filter(patient => !patient.archived_at);
+  return data || [];
 }
 
 /**
@@ -76,7 +67,7 @@ export async function listPatients() {
 export async function getPatient(patientId) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
-  if (user?._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     const p = getLocalPatientsForUser(user).find(p => p.id === patientId);
     if (!p) throw new Error('Paciente não encontrado.');
     return p;
@@ -84,7 +75,7 @@ export async function getPatient(patientId) {
 
   const { data, error } = await supabase
     .from('patients')
-    .select('*')
+    .select(PATIENT_SELECT_COLUMNS)
     .eq('id', patientId)
     .eq('therapist_id', user.id)
     .single();
@@ -127,7 +118,7 @@ export async function createPatient({ name, phone, birthDate, age }) {
   if (!user) throw new Error('Usuário não autenticado.');
   const normalizedAge = normalizeAge(age);
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const newPatient = {
       id: generateUUID(),
       therapist_id: user.id,
@@ -155,7 +146,7 @@ export async function createPatient({ name, phone, birthDate, age }) {
   let { data, error } = await supabase
     .from('patients')
     .insert(payload)
-    .select()
+    .select(PATIENT_SELECT_COLUMNS)
     .single();
 
   if (error && isMissingColumnError(error)) {
@@ -168,7 +159,7 @@ export async function createPatient({ name, phone, birthDate, age }) {
         phone: phone || null,
         birth_date: birthDate || null,
       })
-      .select()
+      .select(PATIENT_SELECT_COLUMNS)
       .single();
     data = fallbackData;
     error = fallbackError;
@@ -184,7 +175,7 @@ export async function createPatient({ name, phone, birthDate, age }) {
 export async function updatePatient(patientId, updates) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
-  if (user?._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     const patients = getLocalPatients();
     const idx = patients.findIndex(p => p.id === patientId && p.therapist_id === user.id);
     if (idx === -1) throw new Error('Paciente não encontrado.');
@@ -209,7 +200,7 @@ export async function updatePatient(patientId, updates) {
     .update(payload)
     .eq('id', patientId)
     .eq('therapist_id', user.id)
-    .select()
+    .select(PATIENT_SELECT_COLUMNS)
     .single();
 
   if (error && isMissingColumnError(error)) {
@@ -222,7 +213,7 @@ export async function updatePatient(patientId, updates) {
       .update(fallbackPayload)
       .eq('id', patientId)
       .eq('therapist_id', user.id)
-      .select()
+      .select(PATIENT_SELECT_COLUMNS)
       .single();
     data = fallbackData;
     error = fallbackError;
@@ -233,26 +224,50 @@ export async function updatePatient(patientId, updates) {
 }
 
 /**
- * Remove um paciente (cascata deleta todas as fichas clínicas).
+ * Solicita exclusão administrativa e arquiva o paciente de forma recuperável.
+ * A execução definitiva depende da política de retenção e nunca ocorre aqui.
  */
-export async function deletePatient(patientId) {
+export async function deletePatient(
+  patientId,
+  reason = 'Solicitação de exclusão iniciada pelo profissional responsável.',
+) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
-  if (user?._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     const patients = getLocalPatients();
-    const patient = patients.find(p => p.id === patientId && p.therapist_id === user.id);
-    if (!patient) throw new Error('Paciente não encontrado.');
-    const nextPatients = patients.filter(p => p.id !== patientId);
-    saveLocalPatients(nextPatients);
-    deleteLocalClinicalRecords(patientId);
-    return;
+    const index = patients.findIndex(p => p.id === patientId && p.therapist_id === user.id);
+    if (index < 0) throw new Error('Paciente não encontrado.');
+    const requestedAt = new Date().toISOString();
+    patients[index] = { ...patients[index], archived_at: requestedAt };
+    saveLocalPatients(patients);
+    return {
+      request_id: `local-deletion-request-${Date.now()}`,
+      status: 'pending',
+      requested_at: requestedAt,
+    };
   }
 
-  const { error } = await supabase
-    .from('patients')
-    .delete()
-    .eq('id', patientId)
-    .eq('therapist_id', user.id);
-
-  if (error) throw error;
+  const { data, error } = await supabase.rpc('request_patient_deletion', {
+    p_patient_id: patientId,
+    p_reason: String(reason || '').trim().slice(0, 1000),
+  });
+  if (error) {
+    const details = [error.message, error.details, error.hint, error.code]
+      .filter(Boolean)
+      .join(' ');
+    if (
+      /request_patient_deletion/.test(details)
+      && /does not exist|schema cache|Could not find|PGRST202/i.test(details)
+    ) {
+      throw new Error(
+        'Exclusão segura ainda não foi ativada. Aplique a migração de hardening 20260723.',
+      );
+    }
+    throw error;
+  }
+  const request = Array.isArray(data) ? data[0] : data;
+  if (!request?.request_id) {
+    throw new Error('O banco não confirmou a solicitação de exclusão.');
+  }
+  return request;
 }

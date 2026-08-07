@@ -223,14 +223,14 @@ export function PatientBar() {
                 </div>
               </div>
 
-              {/* Botão de excluir */}
+              {/* Solicitação de exclusão: arquiva agora, sem apagar registros. */}
               {confirmDelete === p.id ? (
                 <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
                   <button
                     style={{ ...btnStyle, background: '#ef4444', color: 'white', border: 'none', fontSize: '11px', padding: '4px 8px' }}
                     onClick={() => handleDelete(p.id)}
                   >
-                    Confirmar
+                    Solicitar
                   </button>
                   <button
                     style={{ ...btnStyle, fontSize: '11px', padding: '4px 8px', color: '#64748b' }}
@@ -243,7 +243,7 @@ export function PatientBar() {
                 <button
                   style={{ ...btnStyle, padding: '4px 8px', fontSize: '11px', color: '#94a3b8', background: 'transparent', border: 'none' }}
                   onClick={(e) => { e.stopPropagation(); setConfirmDelete(p.id); }}
-                  title="Excluir paciente"
+                  title="Arquivar e solicitar exclusão"
                 >
                   🗑
                 </button>

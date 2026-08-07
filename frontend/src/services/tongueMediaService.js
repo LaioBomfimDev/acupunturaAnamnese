@@ -17,6 +17,7 @@
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 
 export const TONGUE_PHOTOS_BUCKET = 'clinical-tongue-photos';
 const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1h — preview dentro da sessão de trabalho
@@ -84,7 +85,7 @@ export async function uploadTonguePhoto({ patientId, slot, file }) {
 
   const blob = await compressTonguePhoto(file);
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     return { path: null, blob, localOnly: true };
   }
 

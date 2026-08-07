@@ -69,10 +69,35 @@ export function maskCpfCnpj(value) {
 }
 
 export function generatePassword() {
-  const bytes = new Uint32Array(4);
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  const bytes = new Uint32Array(12);
   crypto.getRandomValues(bytes);
-  const digits = Array.from(bytes, byte => String(byte % 10)).join('');
-  return `Acup${digits}`;
+  const randomPart = Array.from(
+    bytes,
+    byte => alphabet[byte % alphabet.length],
+  ).join('');
+  return `T7!a${randomPart}`;
+}
+
+export function getTemporaryPasswordValidationError(password, context = []) {
+  const value = String(password || '');
+  const lower = value.toLowerCase();
+  const weakFragments = ['123456', '654321', 'password', 'senha', 'qwerty', 'admin', 'superadm'];
+
+  if (value.length < 8) return 'A senha precisa ter pelo menos 8 caracteres.';
+  if (!/[a-z]/.test(value)) return 'Inclua pelo menos uma letra minúscula.';
+  if (!/[A-Z]/.test(value)) return 'Inclua pelo menos uma letra maiúscula.';
+  if (!/[0-9]/.test(value)) return 'Inclua pelo menos um número.';
+  if (weakFragments.some(fragment => lower.includes(fragment))) {
+    return 'Evite sequências e termos fáceis de adivinhar.';
+  }
+  if (context.some(item => {
+    const normalized = String(item || '').trim().toLowerCase();
+    return normalized.length >= 4 && lower.includes(normalized);
+  })) {
+    return 'A senha não pode conter dados do usuário.';
+  }
+  return '';
 }
 
 // Profissão → disciplina (para escopar a revisora de curadoria). Espelha o
@@ -142,9 +167,11 @@ export function getProfessionalCreateValidationError(payload) {
     return 'A confirmação da senha temporária não confere.';
   }
 
-  if (String(payload.temporaryPassword || '').length < 6) {
-    return 'A senha temporária precisa ter pelo menos 6 caracteres.';
-  }
+  const passwordError = getTemporaryPasswordValidationError(
+    payload.temporaryPassword,
+    [payload.email, payload.username, payload.fullName],
+  );
+  if (passwordError) return passwordError;
 
   return '';
 }

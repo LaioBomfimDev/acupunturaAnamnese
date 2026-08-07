@@ -62,6 +62,7 @@ export const PSYCHOLOGY_TABS = {
   PLANO: 'Plano terapêutico',
   EVOLUCAO: 'Evolução',
   RELATORIO: 'Relatório',
+  DOCUMENTOS: 'Documentos',
   BIBLIOTECA: 'Biblioteca',
 };
 

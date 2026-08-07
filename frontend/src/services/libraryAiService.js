@@ -2,14 +2,13 @@
 // SERVICE: Perguntas à Biblioteca Viva com IA (RAG)
 // Fase 4 da expansão de IA (ver roadmap-ia-expansao).
 //
-// `rankLibraryCards` recupera localmente (sobreposição de termos) os
-// cards mais relevantes — barato, sem vetores. `askLibrary` monta o
-// contexto e chama a Edge Function `library-qa` para a resposta
-// ancorada. Sem dado de paciente (é base de conhecimento). O mock só
-// existe para o login local de demonstração e para os testes.
+// Em produção, `askLibrary` envia somente a pergunta: a Edge Function
+// recupera a versão aprovada da base no servidor. `rankLibraryCards`
+// permanece para busca visual e para o modo local de desenvolvimento.
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 
 export const LIBRARY_AI_MOCK_VERSION = 'mock-0.1';
@@ -73,17 +72,6 @@ export function rankLibraryCards(question, cards, limit = 10) {
     .map(s => s.card);
 }
 
-// Reduz um card ao contexto enviado à IA (sem campos de UI).
-function toContext(card) {
-  return {
-    title: card.title,
-    cat: card.cat,
-    confidence: card.confidence,
-    source: card.source,
-    text: card.txt,
-  };
-}
-
 // ----- MOCK -----
 export function mockAskLibrary(question, topCards) {
   return new Promise(resolve => {
@@ -114,31 +102,28 @@ export async function askLibrary(question, cards, runtime) {
     throw new Error('Digite uma pergunta para consultar a Biblioteca.');
   }
 
-  const topCards = rankLibraryCards(q, cards, 10);
-
-  // Sem matches: não gasta IA — responde direto.
-  if (topCards.length === 0) {
-    return {
-      modelVersion: 'local',
-      analyzedAt: new Date().toISOString(),
-      answer: 'Não encontrei itens na Biblioteca para essa pergunta. Tente outros termos (ex.: nome do ponto, sintoma, síndrome).',
-      citations: [],
-      insufficient: true,
-      usedCount: 0,
-    };
-  }
-
   const client = resolveAiRuntime(runtime, {
     getAuthenticatedUser,
     invoke: (...args) => supabase.functions.invoke(...args),
   });
   const user = await client.getAuthenticatedUser();
-  if (user?._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const topCards = rankLibraryCards(q, cards, 10);
+    if (topCards.length === 0) {
+      return {
+        modelVersion: 'local',
+        analyzedAt: new Date().toISOString(),
+        answer: 'Não encontrei itens na Biblioteca para essa pergunta. Tente outros termos (ex.: nome do ponto, sintoma, síndrome).',
+        citations: [],
+        insufficient: true,
+        usedCount: 0,
+      };
+    }
     return { ...(await mockAskLibrary(q, topCards)), usedCount: topCards.length };
   }
 
   const { data, error } = await client.invoke('library-qa', {
-    body: { question: q, context: topCards.map(toContext) },
+    body: { question: q },
   });
 
   if (error) {
@@ -147,5 +132,8 @@ export async function askLibrary(question, cards, runtime) {
   if (!data || typeof data.answer !== 'string') {
     throw new Error('A consulta retornou um formato inesperado.');
   }
-  return { ...data, usedCount: topCards.length };
+  return {
+    ...data,
+    usedCount: Math.max(0, Number(data.usedCount) || 0),
+  };
 }

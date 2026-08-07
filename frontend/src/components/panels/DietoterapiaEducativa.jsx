@@ -19,7 +19,6 @@ import { linkHerbsToSymptoms } from '../../knowledge/herbalIndicationLinking';
 import {
   FOOD_RESEARCH_DISCLAIMER,
   FOOD_RESEARCH_MODES,
-  getFoodResearchMode,
   researchFood,
 } from '../../services/foodResearchAiService';
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
@@ -44,18 +43,14 @@ function normalize(value) {
 }
 
 /**
- * Diálogo de PESQUISA por IA de um alimento/planta. A profissional escolhe um
- * modo (visão medicinal, receitas, leitura MTC, segurança) e a IA responde por
- * TÓPICOS FIXOS — não é prompt genérico. Estudo da profissional, não prescrição.
+ * Diálogo de síntese educativa por IA de um alimento publicado. A profissional
+ * escolhe visão geral, associações tradicionais da MTC ou cautelas revisadas.
  */
 function FoodResearchDialog({ food, onClose }) {
   const [mode, setMode] = useState(null);
-  const [objective, setObjective] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
-
-  const modeMeta = getFoodResearchMode(mode);
 
   async function handleResearch() {
     if (!mode || loading) return;
@@ -63,7 +58,7 @@ function FoodResearchDialog({ food, onClose }) {
     setLoading(true);
     setResult(null);
     try {
-      const res = await researchFood(food, mode, { objective });
+      const res = await researchFood(food, mode);
       setResult(res);
     } catch (err) {
       setError(err.message || 'Falha ao pesquisar o alimento.');
@@ -118,15 +113,6 @@ function FoodResearchDialog({ food, onClose }) {
           ))}
         </div>
 
-        {modeMeta?.needsObjective && (
-          <input
-            value={objective}
-            onChange={e => setObjective(e.target.value)}
-            placeholder="Objetivo (opcional): digestão, sono, imunidade, ansiedade…"
-            style={{ width: '100%', marginTop: 10, borderRadius: 10, border: '1px solid var(--line)', padding: '9px 12px', fontSize: 13 }}
-          />
-        )}
-
         <div style={{ marginTop: 12 }}>
           <button
             type="button"
@@ -174,7 +160,7 @@ function FoodResearchDialog({ food, onClose }) {
               <AiCorrectionButton
                 surface={AI_SURFACES.FOOD_RESEARCH}
                 aiOutput={{ paragraphs: result.sections.map(s => `${s.heading}: ${s.body}`) }}
-                contextSnapshot={{ food: food.commonName, mode: result.mode, objective }}
+                contextSnapshot={{ food: food.commonName, mode: result.mode }}
                 modelVersion={result.modelVersion}
                 summary={result.sections[0]?.body}
                 label="✎ Corrigir a pesquisa"

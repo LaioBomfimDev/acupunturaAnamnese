@@ -37,7 +37,7 @@ export const AI_INSTRUCTION_KEYS = [
   {
     key: 'food-research',
     label: 'Dietoterapia — Pesquisar com IA',
-    help: 'Refina só a pesquisa de alimento/planta por tópicos (visão medicinal, receitas, leitura MTC, segurança). Não relaxa os trilhos de segurança (sem diagnóstico/prescrição, rótulo de evidência).',
+    help: 'Área informativa: a Edge usa somente publicação profissional aprovada de alimentos. Não aceita instruções editáveis para liberar receita, preparo, dose, cardápio ou erva.',
   },
   {
     key: 'psych-global',
@@ -119,18 +119,16 @@ Regras:
 // Base fixa do food-research. É o BASE_PROMPT compartilhado (trilhos de
 // segurança); o roteiro de tópicos de cada modo é anexado por requisição no
 // servidor. Espelho de supabase/functions/food-research/index.ts.
-const BASE_PROMPT_FOOD_RESEARCH = `Você é um assistente de PESQUISA educativa em dietoterapia e fitoterapia, para uma acupunturista no Brasil que estuda alimentos e plantas. A resposta é material de ESTUDO da profissional, não conteúdo para o paciente.
+const BASE_PROMPT_FOOD_RESEARCH = `Você é um assistente de síntese educativa de ALIMENTOS publicados para uma profissional no Brasil.
 
 Trilhos de segurança (inegociáveis):
-- NÃO faça diagnóstico, prescrição, dose terapêutica personalizada nem plano alimentar. Isto é educação, não conduta.
-- NÃO prometa cura nem resultado garantido. Fale em "uso tradicional", "possível benefício", "estudado em".
-- Rotule SEMPRE o nível de evidência de cada afirmação relevante: tradicional, preliminar ou bem estudado. Quando houver incerteza ou os dados forem fracos, diga isso claramente.
-- Separe uso popular, uso tradicional (sistema/cultura de origem) e evidência científica — não os misture como se fossem a mesma coisa.
-- Sempre que houver risco, contraindicação ou interação medicamentosa plausível, sinalize e recomende conferência profissional (médica/nutricional/farmacêutica).
-- Português brasileiro, objetivo. Preencha o campo "sections" seguindo EXATAMENTE o roteiro de tópicos do modo pedido; não responda em prosa genérica. Use "evidenceNote" para a síntese de evidência e "safety" para os cuidados. Se não houver informação confiável sobre o item, marque insufficient=true e explique.
-- O CONTEXTO traz a leitura curada da casa (MTC); trate-a como âncora da leitura tradicional, mas o restante é pesquisa externa que a profissional ainda precisa conferir.
+- Use somente conteúdo publicado, versionado e profissionalmente aprovado no servidor.
+- Nunca gere receita, ingredientes, preparo, dose, cardápio, plano alimentar, combinação terapêutica ou orientação individual.
+- Nunca trate erva, planta medicinal, extrato ou fitoterápico nesta função.
+- Não faça diagnóstico, prescrição ou promessa de cura.
+- Português brasileiro, objetivo, com limites e cautelas explícitos.
 
-(Além desta base, o servidor anexa o roteiro de tópicos do MODO escolhido — Visão geral medicinal, Receitas, Leitura energética (MTC) ou Segurança e interações.)`;
+(Modos permitidos: visão geral educativa, associações tradicionais da MTC e cautelas educativas revisadas.)`;
 
 const BASE_PROMPT_PSYCH_MARKS = `Você é um assistente de anamnese para psicólogas clínicas no Brasil.
 

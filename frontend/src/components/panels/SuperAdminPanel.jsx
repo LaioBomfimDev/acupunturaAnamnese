@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   listAuditLogs,
   listProfessionals,
+  resetProfessionalMfa,
   resetTemporaryPassword,
   setProfessionalActive,
   updateProfessionalProfile,
@@ -18,6 +19,7 @@ import {
 import {
   generatePassword,
   getFullName,
+  getTemporaryPasswordValidationError,
   maskCpfCnpj,
   splitFullName,
 } from './professionalFormHelpers';
@@ -27,6 +29,7 @@ import { DeployHealthPanel } from './DeployHealthPanel';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
 import { CurationSections, CURATION_SECTIONS } from './CurationSections';
 import { CurationProposalsQueue } from './CurationProposalsQueue';
+import { filterManagedProfessionals } from './superAdminFilters';
 
 // Seções de curadoria roteadas pelo CurationSections (maps tem bloco próprio
 // abaixo, com a caixa de solicitações dos terapeutas).
@@ -107,6 +110,8 @@ function getActionLabel(action) {
     profile_suspended: 'Usuário suspenso',
     profile_reactivated: 'Usuário reativado',
     temporary_password_reset: 'Senha temporária redefinida',
+    mfa_recovery_authorized: 'Recuperação MFA autorizada',
+    mfa_recovery_completed: 'Recuperação MFA concluída',
     first_login_password_changed: 'Senha definitiva criada',
     profile_updated: 'Cadastro atualizado',
   };
@@ -120,12 +125,17 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
   const [auditLogs, setAuditLogs] = useState([]);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [clinicFilter, setClinicFilter] = useState('all');
+  const [professionFilter, setProfessionFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [auditLoading, setAuditLoading] = useState(true);
   const [statusChangingId, setStatusChangingId] = useState('');
   const [resettingId, setResettingId] = useState('');
   const [resetTarget, setResetTarget] = useState(null);
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
+  const [mfaResetTarget, setMfaResetTarget] = useState(null);
+  const [mfaResetReason, setMfaResetReason] = useState('');
+  const [mfaResettingId, setMfaResettingId] = useState('');
   const [passwordVisibility, setPasswordVisibility] = useState({
     reset: false,
     resetConfirm: false,
@@ -180,29 +190,36 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
   }, [professionals, selectedProfile]);
 
   const filteredProfessionals = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    return filterManagedProfessionals(professionals, {
+      query,
+      status: statusFilter,
+      clinicId: clinicFilter,
+      profession: professionFilter,
+    }, value => getProfession(value).label);
+  }, [professionals, query, statusFilter, clinicFilter, professionFilter]);
 
-    return professionals.filter(profile => {
-      const statusMatches =
-        statusFilter === 'all'
-        || (statusFilter === 'active' && profile.is_active && !profile.must_change_password)
-        || (statusFilter === 'pending' && profile.must_change_password)
-        || (statusFilter === 'suspended' && !profile.is_active);
+  const professionOptions = useMemo(() => {
+    const values = [...new Set(professionals.map(profile => profile.profession).filter(Boolean))];
+    return values
+      .map(value => ({ value, label: getProfession(value).label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  }, [professionals]);
 
-      if (!statusMatches) return false;
-      if (!term) return true;
+  const clinicNameById = useMemo(
+    () => new Map(clinics.map(clinic => [clinic.id, clinic.name])),
+    [clinics],
+  );
 
-      return [
-        profile.full_name,
-        profile.username,
-        profile.email,
-        getProfession(profile.profession).label,
-        profile.specialty,
-        profile.professional_registration,
-        profile.clinic_name,
-      ].some(value => String(value || '').toLowerCase().includes(term));
-    });
-  }, [professionals, query, statusFilter]);
+  const hasManagementFilters = Boolean(
+    query || statusFilter !== 'all' || clinicFilter !== 'all' || professionFilter !== 'all',
+  );
+
+  function clearManagementFilters() {
+    setQuery('');
+    setStatusFilter('all');
+    setClinicFilter('all');
+    setProfessionFilter('all');
+  }
 
   async function load() {
     setLoading(true);
@@ -348,6 +365,19 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
     event.preventDefault();
     if (!resetTarget) return;
 
+    if (resetForm.password !== resetForm.confirmPassword) {
+      setError('A confirmação da senha temporária não confere.');
+      return;
+    }
+    const passwordError = getTemporaryPasswordValidationError(
+      resetForm.password,
+      [resetTarget.email, resetTarget.username, resetTarget.full_name],
+    );
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
     setResettingId(resetTarget.id);
     setError('');
     setSuccess('');
@@ -363,6 +393,34 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       setError(err.message || 'Não foi possível redefinir a senha temporária.');
     } finally {
       setResettingId('');
+    }
+  }
+
+  async function handleMfaRecovery(event) {
+    event.preventDefault();
+    if (!mfaResetTarget) return;
+    if (mfaResetReason.trim().length < 10) {
+      setError('Registre uma justificativa de pelo menos 10 caracteres.');
+      return;
+    }
+
+    setMfaResettingId(mfaResetTarget.id);
+    setError('');
+    setSuccess('');
+    try {
+      await resetProfessionalMfa(mfaResetTarget.id, mfaResetReason.trim());
+      setSuccess(
+        `Segundo fator removido para ${mfaResetTarget.full_name || mfaResetTarget.email}. `
+        + 'Se a exigência estiver ativa, a conta cadastrará outro fator no próximo acesso.',
+      );
+      setMfaResetTarget(null);
+      setMfaResetReason('');
+      await load();
+      await loadAudit();
+    } catch (err) {
+      setError(err.message || 'Não foi possível recuperar o segundo fator.');
+    } finally {
+      setMfaResettingId('');
     }
   }
 
@@ -487,12 +545,35 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
           </div>
 
           <div className="admin-toolbar">
-            <input
-              className="admin-search"
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              placeholder="Buscar profissional"
-            />
+            <label className="admin-filter-field admin-filter-search">
+              <span>Pesquisar</span>
+              <input
+                className="admin-search"
+                type="search"
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                placeholder="Nome, e-mail, registro ou especialidade"
+              />
+            </label>
+            <label className="admin-filter-field">
+              <span>Clínica</span>
+              <select value={clinicFilter} onChange={event => setClinicFilter(event.target.value)}>
+                <option value="all">Todas as clínicas</option>
+                <option value="unassigned">Sem clínica</option>
+                {clinics.map(clinic => (
+                  <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="admin-filter-field">
+              <span>Profissão</span>
+              <select value={professionFilter} onChange={event => setProfessionFilter(event.target.value)}>
+                <option value="all">Todas as profissões</option>
+                {professionOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
             <div className="admin-filter" aria-label="Filtrar usuários">
               {[
                 ['all', 'Todos'],
@@ -509,6 +590,12 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                   {label}
                 </button>
               ))}
+            </div>
+            <div className="admin-filter-summary" aria-live="polite">
+              <b>{filteredProfessionals.length}</b> de {professionals.length} profissionais
+              {hasManagementFilters && (
+                <button type="button" onClick={clearManagementFilters}>Limpar filtros</button>
+              )}
             </div>
           </div>
 
@@ -533,6 +620,9 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                       {profile.username || 'sem login'} • {profile.email}
                     </small>
                     <em>{[getProfession(profile.profession).label, profile.specialty].filter(Boolean).join(' · ') || profile.professional_registration || 'Dados profissionais pendentes'}</em>
+                    <span className="admin-user-clinic">
+                      {profile.clinic_name || clinicNameById.get(profile.clinic_id) || 'Sem clínica vinculada'}
+                    </span>
                   </div>
 
                   <div className="admin-user-insights" aria-label="Métricas administrativas">
@@ -733,13 +823,27 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                     : selectedLiveProfile.is_active ? 'Suspender acesso' : 'Reativar acesso'}
                 </button>
                 {selectedLiveProfile.id !== currentUserId && selectedLiveProfile.role !== 'super_admin' && (
-                  <button
-                    className="quiet-button"
-                    type="button"
-                    onClick={() => openResetPassword(selectedLiveProfile)}
-                  >
-                    Redefinir senha temporária
-                  </button>
+                  <>
+                    <button
+                      className="quiet-button"
+                      type="button"
+                      onClick={() => openResetPassword(selectedLiveProfile)}
+                    >
+                      Redefinir senha temporária
+                    </button>
+                    <button
+                      className="quiet-button"
+                      type="button"
+                      onClick={() => {
+                        setMfaResetTarget(selectedLiveProfile);
+                        setMfaResetReason('');
+                        setError('');
+                        setSuccess('');
+                      }}
+                    >
+                      Recuperar segundo fator
+                    </button>
+                  </>
                 )}
               </div>
             </form>
@@ -778,6 +882,55 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                 {resettingId === resetTarget.id ? 'Redefinindo...' : 'Salvar senha temporária'}
               </button>
               <button className="quiet-button" type="button" onClick={() => setResetTarget(null)}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {mfaResetTarget && (
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
+          <form className="admin-reset-modal" onSubmit={handleMfaRecovery}>
+            <div className="force-password-head">
+              <p>Recuperação auditada</p>
+              <h1>Remover segundo fator</h1>
+              <span>{mfaResetTarget.full_name || mfaResetTarget.email}</span>
+            </div>
+
+            <p className="small">
+              Esta ação encerra as sessões do profissional. A exigência MFA
+              permanece inalterada; se estiver ativa, outro autenticador será
+              obrigatório no próximo acesso.
+            </p>
+            <label>
+              Justificativa obrigatória
+              <textarea
+                value={mfaResetReason}
+                onChange={event => setMfaResetReason(event.target.value.slice(0, 500))}
+                minLength={10}
+                maxLength={500}
+                rows={4}
+                required
+              />
+            </label>
+
+            <div className="force-password-actions">
+              <button
+                className="danger-button"
+                type="submit"
+                disabled={mfaResettingId === mfaResetTarget.id}
+              >
+                {mfaResettingId === mfaResetTarget.id
+                  ? 'Recuperando...'
+                  : 'Confirmar recuperação'}
+              </button>
+              <button
+                className="quiet-button"
+                type="button"
+                onClick={() => setMfaResetTarget(null)}
+                disabled={mfaResettingId === mfaResetTarget.id}
+              >
                 Cancelar
               </button>
             </div>

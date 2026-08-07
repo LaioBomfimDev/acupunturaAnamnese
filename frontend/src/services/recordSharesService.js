@@ -12,6 +12,7 @@
 // ============================================================
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
+import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { normalizeSharedScopes } from '../data/shareScopes';
 
@@ -54,18 +55,27 @@ function saveLocalShares(shares) {
  * de origem para outra, com os escopos escolhidos. NÃO copia dados —
  * cria só a autorização de leitura.
  */
-export async function createRecordShare(patientId, { fromDiscipline, toDiscipline, scopes, note } = {}) {
+export async function createRecordShare(patientId, {
+  fromDiscipline,
+  toDiscipline,
+  scopes,
+  note,
+  password,
+  idempotencyKey,
+} = {}) {
   assertDiscipline(fromDiscipline, 'origem');
   assertDiscipline(toDiscipline, 'destino');
   if (fromDiscipline === toDiscipline) {
     throw new Error('Origem e destino não podem ser a mesma disciplina.');
   }
+  if (!password) throw new Error('Confirme sua senha para enviar.');
+  if (!idempotencyKey) throw new Error('Identificador seguro do envio ausente.');
   const sharedScopes = normalizeSharedScopes(scopes);
 
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const share = {
       id: `local-share-${Date.now()}`,
       patient_id: patientId,
@@ -74,6 +84,7 @@ export async function createRecordShare(patientId, { fromDiscipline, toDisciplin
       shared_scopes: sharedScopes,
       shared_by: user.id,
       note: note || null,
+      idempotency_key: idempotencyKey,
       created_at: new Date().toISOString(),
       revoked_at: null,
     };
@@ -81,23 +92,27 @@ export async function createRecordShare(patientId, { fromDiscipline, toDisciplin
     return share;
   }
 
-  const { data, error } = await supabase
-    .from('record_shares')
-    .insert({
-      patient_id: patientId,
-      from_discipline: fromDiscipline,
-      to_discipline: toDiscipline,
-      shared_scopes: sharedScopes,
+  const { data, error } = await supabase.functions.invoke('create-record-share', {
+    body: {
+      patientId,
+      fromDiscipline,
+      toDiscipline,
+      scopes: sharedScopes,
       note: note || null,
-    })
-    .select()
-    .single();
+      password,
+      idempotencyKey,
+    },
+  });
 
   if (error) {
     if (isMissingShareSchemaError(error)) throw new Error(SHARE_MIGRATION_HINT);
-    throw error;
+    throw new Error(data?.error || 'Não foi possível confirmar e criar o compartilhamento.');
   }
-  return data;
+  if (data?.error) throw new Error(data.error);
+  if (!data?.share?.id) {
+    throw new Error('O servidor não confirmou o compartilhamento.');
+  }
+  return data.share;
 }
 
 /** Lista os compartilhamentos ATIVOS de um paciente. */
@@ -105,7 +120,7 @@ export async function listActiveShares(patientId) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     return getLocalShares().filter(s => s.patient_id === patientId && !s.revoked_at);
   }
 
@@ -130,7 +145,7 @@ export async function listActiveSharesForPatients(patientIds = []) {
   if (!user) throw new Error('Usuário não autenticado.');
 
   let rows;
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const ids = new Set(patientIds);
     rows = getLocalShares().filter(s => ids.has(s.patient_id) && !s.revoked_at);
   } else {
@@ -158,7 +173,7 @@ export async function revokeRecordShare(shareId) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const shares = getLocalShares().map(s => (
       s.id === shareId ? { ...s, revoked_at: new Date().toISOString() } : s
     ));
@@ -185,7 +200,7 @@ export async function getSharedSession(patientId) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
 
-  if (user._isLocal) {
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     try {
       const records = JSON.parse(localStorage.getItem('acup_local_clinical_records') || '[]');
       const record = records

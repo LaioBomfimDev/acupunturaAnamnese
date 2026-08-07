@@ -38,7 +38,7 @@ const TERMS_SECTIONS = [
     items: [
       'O acesso é pessoal, identificado e reservado a usuários autorizados. Credenciais não devem ser compartilhadas, anotadas em local inseguro ou usadas por terceiros.',
       'No ambiente Supabase, os pacientes ficam vinculados ao profissional responsável por regras de segurança em nível de linha (RLS), e as fichas clínicas são salvas por RPC com dados sensíveis criptografados no banco. A chave administrativa e a chave de criptografia não ficam no frontend. Ações administrativas relevantes ficam registradas em logs de auditoria.',
-      'Quando o fallback local estiver habilitado para desenvolvimento ou contingência, pacientes e fichas podem ficar no localStorage do navegador. Nesse caso, o usuário deve proteger o dispositivo, evitar computadores compartilhados e sair da sessão ao terminar.',
+      'Somente em desenvolvimento, com habilitação local explícita, pacientes e fichas de teste podem ficar no localStorage do navegador. Esse modo não está disponível em produção.',
     ],
   },
   {
@@ -207,7 +207,7 @@ export function Login() {
             </label>
             <input 
               type="text" 
-              placeholder="Ex: admLaio"
+              placeholder="Digite seu usuário ou e-mail"
               value={username}
               onChange={e => setUsername(e.target.value)}
               disabled={loading}

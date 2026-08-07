@@ -3,7 +3,7 @@ const NAV_GROUPS = [
   { title: 'Avaliação', tabs: ['Anamnese', 'Língua', 'Pulso', 'Reabilitação'] },
   { title: 'Diagnóstico', tabs: ['Raciocínio Clínico', 'Diagnóstico'] },
   { title: 'Tratamento', tabs: ['Protocolo', 'Evolução'] },
-  { title: 'Apoio', tabs: ['Biblioteca', 'Relatório'] },
+  { title: 'Apoio', tabs: ['Biblioteca', 'Relatório', 'Documentos'] },
 ];
 
 const SUPER_ADMIN_SECTIONS = [
@@ -106,6 +106,13 @@ const NAV_ICONS = {
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
       <path d="M14 3v5h5" />
       <path d="M9 13h6M9 17h6" />
+    </>
+  ),
+  'Documentos': (
+    <>
+      <path d="M12 3v10" />
+      <path d="m8 9 4 4 4-4" />
+      <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
     </>
   ),
   // ── Abas do workspace de Psicologia (Plano C) ──
@@ -291,7 +298,7 @@ export function Sidebar({
   onOpenCuration,
   navGroups = NAV_GROUPS,
   patientTab = 'Painel',
-  tabsWithoutPatient = ['Tela inicial', 'Biblioteca'],
+  tabsWithoutPatient = ['Tela inicial', 'Biblioteca', 'Documentos'],
 }) {
   return (
     <aside className="sidebar">

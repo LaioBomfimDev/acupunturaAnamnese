@@ -9,12 +9,15 @@ export function SaveIndicator({ status, lastSavedAt, onSave, hasPatient, hasPend
   const configs = {
     idle: { text: 'Salvar alterações', tone: 'idle', clickable: true },
     dirty: { text: 'Alterações pendentes', tone: 'dirty', clickable: true },
+    loading: { text: 'Carregando ficha...', tone: 'saving', clickable: false },
     saving: { text: 'Salvando...', tone: 'saving', clickable: false },
     saved: { text: 'Salvo', tone: 'saved', clickable: false },
     error: { text: 'Erro ao salvar', tone: 'error', clickable: true },
+    load_error: { text: 'Erro ao carregar a ficha', tone: 'error', clickable: false },
   };
 
-  const cfg = hasPendingChanges && status !== 'saving' && status !== 'error'
+  const cfg = hasPendingChanges
+    && !['loading', 'saving', 'error', 'load_error'].includes(status)
     ? configs.dirty
     : configs[status] || configs.idle;
 
@@ -23,7 +26,11 @@ export function SaveIndicator({ status, lastSavedAt, onSave, hasPatient, hasPend
       className={`save-button save-button-${cfg.tone}`}
       onClick={cfg.clickable ? onSave : undefined}
       disabled={!cfg.clickable}
-      title={lastSavedAt ? `Último salvamento: ${lastSavedAt.toLocaleTimeString('pt-BR')}` : 'Ainda não salvo'}
+      title={status === 'load_error'
+        ? 'Reabra o paciente antes de editar ou salvar.'
+        : lastSavedAt
+          ? `Último salvamento: ${lastSavedAt.toLocaleTimeString('pt-BR')}`
+          : 'Ainda não salvo'}
     >
       <span className="save-dot" />
       <span>{cfg.text}</span>

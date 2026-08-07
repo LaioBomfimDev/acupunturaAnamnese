@@ -9548,3 +9548,612 @@ textarea { min-height: 95px; resize: vertical; }
     align-items: flex-start;
   }
 }
+
+/* ======= SUPERADM — SISTEMA OPERACIONAL NEUTRO =======
+   Escopo próprio: remove a linguagem pastel/dourada do ambiente administrativo
+   sem alterar as telas clínicas usadas pelos profissionais. */
+.super-admin-app {
+  --navy: #111315;
+  --navy-2: #092a47;
+  --navy-3: #0c385e;
+  --gold: #111315;
+  --gold-2: #ffffff;
+  --cream: #f3f3ef;
+  --line: #d7d8d4;
+  --soft: #f7f7f4;
+  --glass: rgba(8, 35, 59, .92);
+  --ink-soft: rgba(255, 255, 255, .72);
+  background: #f3f3ef;
+  color: #111315;
+}
+
+.super-admin-app .sidebar {
+  background: #082a47;
+  border-right: 1px solid rgba(0, 0, 0, .28);
+  box-shadow: none;
+}
+
+.super-admin-app .logo h1,
+.super-admin-app .sidebar-profile > span {
+  color: #ffffff;
+}
+
+.super-admin-app .sidebar-profile,
+.super-admin-app .sidebar-patient {
+  border-color: rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .055);
+}
+
+.super-admin-app .nav button {
+  border-left-width: 2px;
+  border-radius: 0 6px 6px 0;
+}
+
+.super-admin-app .nav button.active {
+  background: rgba(255, 255, 255, .11);
+  border-left-color: #ffffff;
+  color: #ffffff;
+}
+
+.super-admin-app .main {
+  background: #f3f3ef;
+}
+
+.super-admin-app .app-topbar {
+  border-bottom: 1px solid #d7d8d4;
+  padding-bottom: 16px;
+}
+
+.super-admin-app .app-topbar h1 {
+  color: #111315;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.super-admin-app .topbar-button,
+.super-admin-app .quiet-button,
+.super-admin-app .tag {
+  background: #ffffff;
+  border-color: #cfd1cd;
+  color: #111315;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.super-admin-app .quiet-button:hover:not(:disabled),
+.super-admin-app .tag:hover,
+.super-admin-app .topbar-button:hover {
+  background: #eeeeea;
+  border-color: #111315;
+  color: #111315;
+}
+
+.super-admin-app .primary-button,
+.super-admin-app .tag.active,
+.super-admin-app .admin-filter button.active {
+  background: #111315;
+  border-color: #111315;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.super-admin-app .primary-button:hover,
+.super-admin-app .tag.active:hover {
+  background: #2c2f31;
+  border-color: #2c2f31;
+}
+
+.super-admin-app .super-admin {
+  gap: 14px;
+}
+
+.super-admin-app .super-admin-head {
+  min-height: 112px;
+  padding: 22px 24px;
+  background: #ffffff;
+  border-color: #d7d8d4;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.super-admin-app .start-kicker,
+.super-admin-app .start-panel-head .small {
+  color: #5e6264;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.super-admin-app .super-admin-head h2,
+.super-admin-app .start-panel-head h2,
+.super-admin-app .admin-profile-head h2,
+.super-admin-app .force-password-head h1 {
+  color: #111315;
+  font-family: inherit;
+  font-weight: 720;
+  letter-spacing: -.025em;
+}
+
+.super-admin-app .super-admin-head h2 {
+  font-size: clamp(27px, 3vw, 36px);
+}
+
+.super-admin-app .super-admin-head span,
+.super-admin-app .field-hint,
+.super-admin-app .admin-user-row small,
+.super-admin-app .admin-user-row em {
+  color: #686c6e;
+}
+
+.super-admin-app .super-admin-content {
+  gap: 14px;
+}
+
+.super-admin-app .admin-stat-grid {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #d7d8d4;
+  border-radius: 8px;
+  background: #d7d8d4;
+}
+
+.super-admin-app .admin-stat-grid .security-card {
+  min-height: 112px;
+  padding: 16px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  place-items: start;
+  text-align: left;
+}
+
+.super-admin-app .admin-stat-grid .security-card b,
+.super-admin-app .admin-user-insights b,
+.super-admin-app .admin-profile-metrics b {
+  color: #111315;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-weight: 680;
+}
+
+.super-admin-app .admin-stat-grid .security-card b {
+  font-size: 38px;
+  margin: 8px 0 4px;
+}
+
+.super-admin-app .admin-stat-grid .security-card span,
+.super-admin-app .admin-stat-grid .security-card p {
+  color: #686c6e;
+}
+
+.super-admin-app .admin-stat-card::before {
+  inset: 0 0 auto;
+  width: auto;
+  height: 3px;
+  background: #111315;
+}
+
+.super-admin-app .admin-stat-card.patients::before {
+  background: #0b4f7c;
+}
+
+.super-admin-app .admin-stat-card.active::before,
+.super-admin-app .admin-stat-card.pending::before,
+.super-admin-app .admin-stat-card.suspended::before {
+  background: #111315;
+}
+
+.super-admin-app .admin-create-form,
+.super-admin-app .admin-users,
+.super-admin-app .admin-audit,
+.super-admin-app .admin-reset-modal,
+.super-admin-app .admin-profile-panel,
+.super-admin-app .box,
+.super-admin-app .panel {
+  border-color: #d7d8d4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.super-admin-app .admin-create-form,
+.super-admin-app .admin-users,
+.super-admin-app .admin-audit {
+  padding: 20px;
+}
+
+.super-admin-app input,
+.super-admin-app select,
+.super-admin-app textarea,
+.super-admin-app .admin-create-form select,
+.super-admin-app .admin-profile-form select,
+.super-admin-app .clinic-assign-field select {
+  border-color: #cfd1cd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111315;
+  box-shadow: none;
+}
+
+.super-admin-app input:focus,
+.super-admin-app select:focus,
+.super-admin-app textarea:focus {
+  border-color: #0b4f7c;
+  outline: 2px solid rgba(11, 79, 124, .16);
+  outline-offset: 1px;
+}
+
+.super-admin-app .admin-toolbar {
+  grid-template-columns: minmax(260px, 1.4fr) repeat(2, minmax(170px, .62fr));
+  align-items: end;
+  gap: 10px;
+  border-top: 1px solid #e4e5e1;
+  border-bottom: 1px solid #e4e5e1;
+  margin: 2px 0 16px;
+  padding: 14px 0;
+}
+
+.super-admin-app .admin-filter-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #5e6264;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.super-admin-app .admin-filter-field input,
+.super-admin-app .admin-filter-field select {
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.super-admin-app .admin-filter {
+  grid-column: 1 / -1;
+  justify-self: start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  gap: 6px;
+}
+
+.super-admin-app .admin-filter button {
+  border: 1px solid #cfd1cd;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #515557;
+}
+
+.super-admin-app .admin-filter-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  color: #686c6e;
+  font-size: 12px;
+}
+
+.super-admin-app .admin-filter-summary b {
+  color: #111315;
+  font-variant-numeric: tabular-nums;
+}
+
+.super-admin-app .admin-filter-summary button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #0b4f7c;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.super-admin-app .clinic-list-toolbar {
+  grid-template-columns: minmax(260px, 1fr) auto;
+}
+
+.super-admin-app .clinic-directory-toolbar {
+  grid-template-columns: minmax(260px, 1fr) minmax(190px, .55fr);
+}
+
+.super-admin-app .admin-user-list {
+  gap: 0;
+  border: 1px solid #d7d8d4;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.super-admin-app .admin-user-row {
+  border: 0;
+  border-bottom: 1px solid #e3e4e0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.super-admin-app .admin-user-row:last-child {
+  border-bottom: 0;
+}
+
+.super-admin-app .admin-user-row:hover,
+.super-admin-app .admin-user-button.selected {
+  border-color: #e3e4e0;
+  background: #f5f5f2;
+  box-shadow: inset 3px 0 0 #0b4f7c;
+}
+
+.super-admin-app .admin-user-row b {
+  color: #111315;
+}
+
+.super-admin-app .admin-user-clinic {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 8px;
+  border-left: 2px solid #0b4f7c;
+  padding-left: 7px;
+  color: #0b4f7c;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.super-admin-app .admin-user-insights span,
+.super-admin-app .admin-profile-metrics div,
+.super-admin-app .admin-profile-readonly div,
+.super-admin-app .admin-audit-row {
+  border-color: #e1e2de;
+  border-radius: 6px;
+  background: #f7f7f4;
+}
+
+.super-admin-app .admin-user-open {
+  border-radius: 6px;
+  background: #111315;
+  border-color: #111315;
+  color: #ffffff;
+}
+
+.super-admin-app .admin-status,
+.super-admin-app .admin-status.active,
+.super-admin-app .admin-status.pending,
+.super-admin-app .admin-status.warning,
+.super-admin-app .admin-status.blocked {
+  border-color: #cfd1cd;
+  background: #ffffff;
+  color: #111315;
+}
+
+.super-admin-app .admin-status::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: #74787a;
+  vertical-align: 1px;
+}
+
+.super-admin-app .admin-status.active::before {
+  background: #18734c;
+}
+
+.super-admin-app .admin-status.pending::before,
+.super-admin-app .admin-status.warning::before {
+  background: #9a6400;
+}
+
+.super-admin-app .admin-status.blocked::before {
+  background: #a92b2b;
+}
+
+.super-admin-app .council-pill,
+.super-admin-app .specialty-chip,
+.super-admin-app .knowledge-confidence-tab.active,
+.super-admin-app .lib-highlight,
+.super-admin-app .warning,
+.super-admin-app .warning-soft {
+  border-color: #d7d8d4;
+  background: #f3f3ef;
+  color: #111315;
+}
+
+.super-admin-app .clinic-logo-thumb,
+.super-admin-app .clinic-letterhead-preview {
+  border-color: #d7d8d4;
+  border-radius: 6px;
+}
+
+.super-admin-app .clinic-letterhead-preview-monogram,
+.super-admin-app .clinic-letterhead-preview b {
+  font-family: inherit;
+}
+
+.super-admin-app .clinic-color-swatch {
+  border-radius: 3px;
+}
+
+.super-admin-app .admin-modal-backdrop {
+  background: rgba(9, 12, 14, .62);
+  backdrop-filter: blur(2px);
+}
+
+.super-admin-app .admin-reset-modal,
+.super-admin-app .admin-profile-panel {
+  border-color: #cfd1cd;
+}
+
+@media (max-width: 1100px) {
+  .super-admin-app .admin-stat-grid {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+
+  .super-admin-app .admin-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .super-admin-app .admin-filter-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .super-admin-app .admin-stat-grid,
+  .super-admin-app .admin-toolbar,
+  .super-admin-app .clinic-list-toolbar,
+  .super-admin-app .clinic-directory-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .super-admin-app .admin-filter-field,
+  .super-admin-app .admin-filter-search,
+  .super-admin-app .admin-filter,
+  .super-admin-app .admin-filter-summary {
+    grid-column: 1;
+  }
+}
+
+/* ============================================================
+   Aba Documentos timbrados: upload de .docx e padrão único de
+   tabela (.doc-table). Toda formatação de tabela vinda do Word
+   é descartada em documentosDocx.js; o visual da casa vive aqui.
+   ============================================================ */
+.doc-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.doc-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 26px 20px;
+  text-align: center;
+  background: #f8fafc;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.doc-dropzone p {
+  margin: 0 0 6px;
+}
+
+.doc-dropzone-over {
+  border-color: var(--clinic-accent, #0e2a4a);
+  background: #eef4fb;
+}
+
+.doc-note {
+  border: 1px solid #dbe3ee;
+  border-left: 4px solid #94a3b8;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  padding: 10px 14px;
+  font-size: 13.5px;
+}
+
+.doc-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.doc-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  flex: 1 1 320px;
+}
+
+.doc-controls input {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+}
+
+/* Padrão da casa para tabelas de documentos: cabeçalho na cor da
+   clínica, zebra leve, sem justificação — igual na tela e no PDF. */
+.doc-body table.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  page-break-inside: auto;
+}
+
+.doc-body table.doc-table th,
+.doc-body table.doc-table td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.doc-body table.doc-table thead th,
+.doc-body table.doc-table thead td {
+  background: var(--clinic-accent, #0e2a4a);
+  color: #fff;
+  font-weight: 700;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.doc-body table.doc-table tbody tr:nth-child(even) td {
+  background: #f1f5f9;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.doc-body p {
+  margin: 10px 0;
+  line-height: 1.6;
+  font-size: 15px;
+  text-align: left;
+}
+
+/* O mammoth embrulha o conteúdo de cada célula num <p>; sem isto as
+   linhas da tabela ficariam altas demais (margem dupla por célula). */
+.doc-body table.doc-table p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.doc-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.doc-body h1, .doc-body h2, .doc-body h3 {
+  color: var(--clinic-accent-shade, #0e2a4a);
+  margin: 18px 0 8px;
+}

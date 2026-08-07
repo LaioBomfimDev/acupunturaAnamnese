@@ -1,20 +1,24 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import {
+  clearLocalAuthenticatedUser,
+  LOCAL_USER_KEY,
+  readLocalAuthenticatedUser,
+  storeLocalAuthenticatedUser,
+} from '../lib/localAuthStorage';
 import { getClinicForProfile } from '../services/clinicService';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 
 const AuthContext = createContext({});
-const LOCAL_FALLBACK_ENABLED = import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === 'true';
+const LOCAL_FALLBACK_ENABLED =
+  import.meta.env.DEV
+  && import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === 'true';
 
-// Usuários administradores locais (fallback quando Supabase não confirma e-mail)
-const LOCAL_ADMINS = {
-  admlaio:  { email: 'laio@acup.com',  name: 'Laio',  password: '123456' },
-  admkaren: { email: 'karen@acup.com', name: 'Karen', password: '123456' },
-  admdeni:  { email: 'deni@acup.com',  name: 'Deni',  password: '123456' },
-};
-
-const LOCAL_USER_KEY = 'acup_local_user';
+async function loadLocalAuthFallback() {
+  if (!LOCAL_FALLBACK_ENABLED) return null;
+  return import('../dev/localAuthFallback.js');
+}
 
 function createMockUser(admin, username) {
   return {
@@ -62,8 +66,12 @@ async function throwFunctionError(error, fallbackMessage) {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [profileResolvedUserId, setProfileResolvedUserId] = useState(null);
+  const [mfaResolvedUserId, setMfaResolvedUserId] = useState(null);
   const [profileError, setProfileError] = useState('');
+  const [mfaFactors, setMfaFactors] = useState([]);
+  const [mfaLevel, setMfaLevel] = useState({ currentLevel: null, nextLevel: null });
 
   async function loadClinicForProfile(profileData) {
     if (!profileData) return { clinic: null, clinicLoadError: '' };
@@ -88,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
 
-    if (nextUser._isLocal) {
+    if (LOCAL_FALLBACK_ENABLED && nextUser._isLocal) {
       const localProfile = createLocalProfile(nextUser);
       const clinicResult = await loadClinicForProfile(localProfile);
       const withClinic = { ...localProfile, ...clinicResult };
@@ -100,13 +108,13 @@ export const AuthProvider = ({ children }) => {
 
     let { data, error } = await supabase
       .from('profiles')
-      .select(`${baseColumns},clinic_id,profession,disciplines`)
+      .select(`${baseColumns},clinic_id,profession,disciplines,mfa_required`)
       .eq('id', nextUser.id)
       .maybeSingle();
 
     // Banco ainda sem a migração de disciplinas (20260707): refaz sem ela
     // (o frontend cai no fallback de resolveUserDisciplines).
-    if (error && /disciplines|profession/i.test(error.message || '')) {
+    if (error && /disciplines|profession|mfa_required/i.test(error.message || '')) {
       ({ data, error } = await supabase
         .from('profiles')
         .select(`${baseColumns},clinic_id`)
@@ -130,42 +138,46 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
 
+    if (!data) {
+      setProfile(null);
+      setProfileError('Não foi possível carregar o perfil de acesso.');
+      return null;
+    }
+
     const clinicResult = await loadClinicForProfile(data);
-    const withClinic = data ? { ...data, ...clinicResult } : data;
+    const withClinic = { ...data, ...clinicResult };
     setProfile(withClinic);
     return withClinic;
   }
 
   useEffect(() => {
-    // 1. Verifica se há um usuário local salvo no localStorage
-    const savedLocal = localStorage.getItem(LOCAL_USER_KEY);
-    if (savedLocal && LOCAL_FALLBACK_ENABLED) {
-      try {
-        const localUser = JSON.parse(savedLocal);
-        setUser(localUser);
-        setProfile(createLocalProfile(localUser));
-        setLoading(false);
-        return;
-      } catch { /* ignora JSON inválido */ }
-    } else if (savedLocal) {
-      localStorage.removeItem(LOCAL_USER_KEY);
+    // O helper remove sessões locais residuais quando o fallback não está
+    // explicitamente habilitado em desenvolvimento.
+    const localUser = readLocalAuthenticatedUser({
+      enabled: LOCAL_FALLBACK_ENABLED,
+    });
+    if (localUser) {
+      setUser(localUser);
+      setProfile(createLocalProfile(localUser));
+      setSessionLoading(false);
+      return;
     }
 
-    // 2. Busca a sessão atual do Supabase
+    // 1. Busca a sessão atual do Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      setSessionLoading(false);
     }).catch(error => {
       console.error('Erro ao carregar sessão:', error);
-      setLoading(false);
+      setSessionLoading(false);
     });
 
-    // 3. Escuta mudanças no estado de autenticação (ex: login, logout, refresh)
+    // 2. Escuta mudanças no estado de autenticação (ex: login, logout, refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       // Só atualiza se não houver usuário local ativo
-      if (!localStorage.getItem(LOCAL_USER_KEY)) {
+      if (!LOCAL_FALLBACK_ENABLED || !localStorage.getItem(LOCAL_USER_KEY)) {
         setUser(session?.user ?? null);
-        setLoading(false);
+        setSessionLoading(false);
       }
     });
 
@@ -173,131 +185,166 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    loadProfileForUser(user);
+    let active = true;
+    const userId = user?.id || null;
+    setProfileResolvedUserId(null);
+
+    void loadProfileForUser(user).finally(() => {
+      if (active) setProfileResolvedUserId(userId);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function getMfaState(nextUser) {
+    if (!nextUser || nextUser._isLocal) {
+      return {
+        factors: [],
+        level: { currentLevel: null, nextLevel: null },
+      };
+    }
+
+    const [levelResult, factorsResult] = await Promise.all([
+      supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      supabase.auth.mfa.listFactors(),
+    ]);
+    if (levelResult.error) throw levelResult.error;
+    if (factorsResult.error) throw factorsResult.error;
+
+    return {
+      factors: factorsResult.data?.totp || [],
+      level: {
+        currentLevel: levelResult.data?.currentLevel || null,
+        nextLevel: levelResult.data?.nextLevel || null,
+      },
+    };
+  }
+
+  async function refreshMfaState(nextUser = user) {
+    const nextState = await getMfaState(nextUser);
+    setMfaFactors(nextState.factors);
+    setMfaLevel(nextState.level);
+  }
+
+  useEffect(() => {
+    let active = true;
+    const userId = user?.id || null;
+    setMfaResolvedUserId(null);
+    setMfaFactors([]);
+    setMfaLevel({ currentLevel: null, nextLevel: null });
+
+    void getMfaState(user)
+      .then(nextState => {
+        if (!active) return;
+        setMfaFactors(nextState.factors);
+        setMfaLevel(nextState.level);
+      })
+      .catch(error => {
+        if (!active) return;
+        console.error('Falha ao consultar o estado do segundo fator:', {
+          name: error?.name || 'Error',
+          code: error?.code || 'MFA_STATE_ERROR',
+        });
+      })
+      .finally(() => {
+        if (active) setMfaResolvedUserId(userId);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const signInWithPassword = async (emailOrUsername, password) => {
     const identifier = emailOrUsername.trim();
-    const lower = identifier.toLowerCase();
+    let authenticationError = null;
 
-    // Resolve atalhos de username → email
-    let directEmail = lower.includes('@') ? lower : null;
-    let resolvedUsername = null;
-    if (lower === 'admlaio') {
-      directEmail = 'laio@acup.com';
-      resolvedUsername = 'admlaio';
-    } else if (lower === 'admkaren') {
-      directEmail = 'karen@acup.com';
-      resolvedUsername = 'admkaren';
-    } else if (lower === 'admdeni') {
-      directEmail = 'deni@acup.com';
-      resolvedUsername = 'admdeni';
-    } else if (lower === 'superadm') {
-      directEmail = 'superadm@sistema.com';
-      resolvedUsername = 'superadm';
-    }
-
-    let directError = null;
-
-    // Tenta login direto quando já temos o e-mail real.
-    if (directEmail) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: directEmail,
-        password,
+    // Todo login real passa pelo servidor, inclusive quando o identificador já
+    // é um e-mail, para aplicar os mesmos gates e limites sem expor contas.
+    try {
+      const { data, error } = await supabase.functions.invoke('login-with-identifier', {
+        body: { identifier, password },
       });
 
-      if (!error) {
-        localStorage.removeItem(LOCAL_USER_KEY);
-        setUser(data.user ?? null);
-        return data;
+      await throwFunctionError(error, 'Usuário ou senha incorretos.');
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
-      directError = error;
-    }
-
-    // Para login curto, resolve e autentica no servidor sem expor lista de e-mails.
-    if (!directEmail || directError) {
-      try {
-        const { data, error } = await supabase.functions.invoke('login-with-identifier', {
-          body: { identifier, password },
+      if (data?.session?.access_token && data?.session?.refresh_token) {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
         });
 
-        await throwFunctionError(error, 'Usuário ou senha incorretos.');
+        if (sessionError) throw sessionError;
 
-        if (data?.error) {
-          throw new Error(data.error);
-        }
-
-        if (data?.session?.access_token && data?.session?.refresh_token) {
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-
-          if (sessionError) throw sessionError;
-
-          localStorage.removeItem(LOCAL_USER_KEY);
-          setUser(sessionData.user ?? data.user ?? null);
-          return sessionData;
-        }
-      } catch (functionError) {
-        if (directEmail && directError) {
-          throw directError;
-        }
-        if (!LOCAL_FALLBACK_ENABLED) {
-          throw functionError;
-        }
+        clearLocalAuthenticatedUser();
+        setUser(sessionData.user ?? data.user ?? null);
+        return sessionData;
       }
+    } catch (functionError) {
+      authenticationError ||= functionError;
     }
 
-    // Se Supabase falhou, tenta fallback local para admins conhecidos
-    if (!LOCAL_FALLBACK_ENABLED) {
-      throw directError || new Error('Usuário ou senha incorretos.');
-    }
-
-    const adminKey = resolvedUsername || Object.keys(LOCAL_ADMINS).find(
-      k => LOCAL_ADMINS[k].email === directEmail
-    );
-
-    if (adminKey && LOCAL_ADMINS[adminKey]) {
-      const admin = LOCAL_ADMINS[adminKey];
-      if (password === admin.password) {
-        const mockUser = createMockUser(admin, adminKey);
-        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(mockUser));
+    // Credenciais locais só são importadas no servidor Vite de desenvolvimento
+    // quando o opt-in foi explicitamente habilitado.
+    if (LOCAL_FALLBACK_ENABLED) {
+      const localAuth = await loadLocalAuthFallback();
+      const localMatch = localAuth?.authenticateLocalUser(identifier, password);
+      if (localMatch) {
+        const mockUser = createMockUser(localMatch, localMatch.username);
+        storeLocalAuthenticatedUser(mockUser);
         setUser(mockUser);
         setProfile(createLocalProfile(mockUser));
         return { user: mockUser, session: null };
       }
     }
 
-    // Nenhum fallback encontrado — repassa o erro original do Supabase
-    throw directError || new Error('Usuário ou senha incorretos.');
+    throw authenticationError || new Error('Usuário ou senha incorretos.');
   };
 
   const signOut = async () => {
-    localStorage.removeItem(LOCAL_USER_KEY);
+    clearLocalAuthenticatedUser();
     setUser(null);
     setProfile(null);
+    setMfaFactors([]);
+    setMfaLevel({ currentLevel: null, nextLevel: null });
     await supabase.auth.signOut();
+  };
+
+  const enrollMfa = async () => {
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: 'Sistema Acup',
+    });
+    if (error) throw error;
+    return data;
+  };
+
+  const verifyMfa = async (factorId, code) => {
+    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+      factorId,
+    });
+    if (challengeError) throw challengeError;
+
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId,
+      challengeId: challenge.id,
+      code,
+    });
+    if (verifyError) throw verifyError;
+
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) throw refreshError;
+    await refreshMfaState();
   };
 
   const refreshProfile = async () => {
     return loadProfileForUser(user);
-  };
-
-  // Reautenticação para ações sensíveis (ex.: enviar prontuário a outro
-  // profissional). Confirma a senha SEM derrubar a sessão de forma visível
-  // (real → signInWithPassword do próprio e-mail; local → senha conhecida).
-  const verifyPassword = async (password) => {
-    if (!password) return false;
-    if (user?._isLocal) {
-      const username = String(user.id || '').replace(/^local-/, '');
-      return LOCAL_ADMINS[username]?.password === password;
-    }
-    const email = user?.email || profile?.email;
-    if (!email) return false;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return !error;
   };
 
   const changeTemporaryPassword = async (password, confirmPassword) => {
@@ -329,6 +376,12 @@ export const AuthProvider = ({ children }) => {
   const isClinicAdmin = profile?.role === 'clinic_admin' && profile?.is_active === true && profile?.must_change_password !== true;
   const isKnowledgeReviewer = profile?.role === 'knowledge_reviewer' && profile?.is_active === true && profile?.must_change_password !== true;
   const mustChangePassword = profile?.is_active === true && profile?.must_change_password === true;
+  const needsMfa = profile?.mfa_required === true && mfaLevel.currentLevel !== 'aal2';
+  const profileLoading = Boolean(
+    user?.id && profileResolvedUserId !== user.id,
+  );
+  const mfaLoading = Boolean(user?.id && mfaResolvedUserId !== user.id);
+  const loading = sessionLoading || profileLoading || mfaLoading;
 
   return (
     <AuthContext.Provider value={{
@@ -339,12 +392,16 @@ export const AuthProvider = ({ children }) => {
       isClinicAdmin,
       isKnowledgeReviewer,
       mustChangePassword,
+      needsMfa,
+      mfaFactors,
+      mfaLevel,
+      enrollMfa,
+      verifyMfa,
       signInWithPassword,
       signOut,
       loading,
       refreshProfile,
       changeTemporaryPassword,
-      verifyPassword,
     }}>
       {children}
     </AuthContext.Provider>

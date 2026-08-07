@@ -1,20 +1,23 @@
 // ============================================================
 // Fila de propostas de curadoria (visão do SuperAdm)
 //
-// Mostra o que a Acupunturista Revisora propôs. Aprovar reproduz o
-// payload no caminho de aprovação local que já existe (override de
-// ponto comum / decisão de conhecimento da anamnese) ANTES de marcar a
-// proposta como aprovada — se a aplicação falhar, o status não muda.
+// Mostra o que a Acupunturista Revisora propôs. Conhecimento da
+// Biblioteca é versionado transacionalmente no servidor; fluxos legados
+// ainda explicitamente locais são aplicados antes de marcar a decisão.
 // ============================================================
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useEffect, useState } from 'react';
-import { listCurationProposals, decideCurationProposal } from '../../services/curationProposalService';
+import {
+  approveKnowledgeCurationProposal,
+  decideCurationProposal,
+  listCurationProposals,
+  rejectKnowledgeCurationProposal,
+} from '../../services/curationProposalService';
 import { addCommonlyUsedOverride } from '../../knowledge/commonlyUsedOverrides';
 import { saveAnamneseKnowledgeDecision } from '../../services/anamneseKnowledgeCurationService';
 import { saveLocalHerbalCurationDecision } from '../../knowledge/herbalPlantCuration';
 import { saveLocalFoodCurationDecision } from '../../knowledge/foodDietoterapiaCuration';
-import { saveLocalKnowledgeReview } from '../../services/knowledgeAdminService';
 import { applyPsychCurationProposal } from '../../knowledge/psychCurationDecisions';
 import {
   getLocationIdentity,
@@ -54,6 +57,11 @@ function isObservation(proposal) {
   return proposal?.payload?.kind === 'observation';
 }
 
+function hasRequiredDecisionNote(proposal, decisionNotes) {
+  return proposal.type !== 'knowledge_review'
+    || String(decisionNotes[proposal.id] || '').trim().length >= 10;
+}
+
 // Reproduz o efeito da proposta no caminho de aprovação local existente.
 function applyProposal(proposal) {
   const { type, payload } = proposal;
@@ -85,12 +93,6 @@ function applyProposal(proposal) {
     const decision = payload?.decision;
     if (!decision) throw new Error('Proposta de alimento sem decisão.');
     saveLocalFoodCurationDecision(decision);
-    return;
-  }
-  if (type === 'knowledge_review') {
-    const review = payload?.review;
-    if (!review) throw new Error('Proposta de ponto sem revisão.');
-    saveLocalKnowledgeReview(review);
     return;
   }
   if (type === 'map_coordinate') {
@@ -130,6 +132,7 @@ export function CurationProposalsQueue() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [decisionNotes, setDecisionNotes] = useState({});
 
   async function load() {
     setLoading(true);
@@ -150,11 +153,23 @@ export function CurationProposalsQueue() {
     setMessage('');
     setError('');
     try {
-      applyProposal(proposal);
-      await decideCurationProposal(proposal.id, 'approved');
-      setMessage(isObservation(proposal)
-        ? 'Marcada como aplicada. Lembre de aplicar a correção na aba correspondente.'
-        : `Proposta aprovada e aplicada: ${TYPE_LABELS[proposal.type] || proposal.type}.`);
+      if (proposal.type === 'knowledge_review') {
+        const applied = await approveKnowledgeCurationProposal(
+          proposal.id,
+          decisionNotes[proposal.id],
+        );
+        setMessage(
+          applied.entity_approval_status === 'approved'
+            ? 'Proposta versionada e publicada após gate profissional.'
+            : 'Proposta versionada no servidor e mantida em revisão profissional.',
+        );
+      } else {
+        applyProposal(proposal);
+        await decideCurationProposal(proposal.id, 'approved');
+        setMessage(isObservation(proposal)
+          ? 'Marcada como aplicada. Lembre de aplicar a correção na aba correspondente.'
+          : `Proposta aprovada e aplicada: ${TYPE_LABELS[proposal.type] || proposal.type}.`);
+      }
       await load();
     } catch (err) {
       setError(err?.message || 'Não foi possível aprovar a proposta.');
@@ -168,7 +183,14 @@ export function CurationProposalsQueue() {
     setMessage('');
     setError('');
     try {
-      await decideCurationProposal(proposal.id, 'rejected');
+      if (proposal.type === 'knowledge_review') {
+        await rejectKnowledgeCurationProposal(
+          proposal.id,
+          decisionNotes[proposal.id],
+        );
+      } else {
+        await decideCurationProposal(proposal.id, 'rejected');
+      }
       setMessage('Proposta rejeitada.');
       await load();
     } catch (err) {
@@ -184,7 +206,7 @@ export function CurationProposalsQueue() {
         <div>
           <p className="small">Curadoria</p>
           <h2>Propostas da revisora</h2>
-          <span className="small">Enviadas pela acupunturista revisora; aprovar aplica localmente.</span>
+          <span className="small">Enviadas pela acupunturista revisora; a Biblioteca é versionada no servidor e só publica após gate profissional.</span>
         </div>
         <button className="quiet-button" type="button" onClick={load} disabled={loading}>Atualizar</button>
       </div>
@@ -225,7 +247,10 @@ export function CurationProposalsQueue() {
                     className="tag active"
                     type="button"
                     onClick={() => handleApprove(proposal)}
-                    disabled={busyId === proposal.id}
+                    disabled={
+                      busyId === proposal.id
+                      || !hasRequiredDecisionNote(proposal, decisionNotes)
+                    }
                     style={{ background: '#e6f4ea', color: '#137333', borderColor: '#137333', cursor: 'pointer' }}
                   >
                     {busyId === proposal.id ? 'Salvando...' : isObservation(proposal) ? 'Marcar como aplicada' : 'Aprovar'}
@@ -234,12 +259,34 @@ export function CurationProposalsQueue() {
                     className="tag"
                     type="button"
                     onClick={() => handleReject(proposal)}
-                    disabled={busyId === proposal.id}
+                    disabled={
+                      busyId === proposal.id
+                      || !hasRequiredDecisionNote(proposal, decisionNotes)
+                    }
                   >
                     Rejeitar
                   </button>
                 </div>
               </div>
+              {proposal.type === 'knowledge_review' && (
+                <label>
+                  Justificativa da decisão
+                  <textarea
+                    rows={2}
+                    value={decisionNotes[proposal.id] || ''}
+                    onChange={event => setDecisionNotes(current => ({
+                      ...current,
+                      [proposal.id]: event.target.value,
+                    }))}
+                    maxLength={4000}
+                    placeholder="Registre o que foi conferido e por que aprovar ou rejeitar."
+                  />
+                  <small>
+                    Obrigatória, com pelo menos 10 caracteres. Aprovação administrativa
+                    não substitui o gate profissional registrado na proposta.
+                  </small>
+                </label>
+              )}
             </div>
           ))}
         </div>

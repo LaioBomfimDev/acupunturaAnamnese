@@ -55,6 +55,20 @@ export async function resetTemporaryPassword(profileId, temporaryPassword, confi
   return data;
 }
 
+export async function resetProfessionalMfa(profileId, reason) {
+  const { data, error } = await supabase.functions.invoke('super-admin-reset-mfa', {
+    body: { profileId, reason },
+  });
+
+  await throwFunctionError(error, 'Não foi possível recuperar o segundo fator.');
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
 export async function setProfessionalActive(profileId, isActive) {
   const { error } = await supabase.rpc('admin_set_profile_active', {
     p_profile_id: profileId,

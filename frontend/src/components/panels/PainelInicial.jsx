@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { CheckGrid } from '../ui/CheckGrid';
 import { checklists } from '../../data/checklists';
 import { usePatient } from '../../hooks/PatientContext';
 import { getPatientAge } from '../../hooks/useClinicState';
-import { appendPatientAuditLog, readPatientAuditLog } from '../../utils/patientAuditLog';
+import { getPatientAuditLog } from '../../services/clinicalAuditService';
 
 function formatBirthDate(value) {
   if (!value) return '';
@@ -54,10 +54,7 @@ export function PainelInicial({
   const [saving, setSaving] = useState(false);
   const [dangerOpen, setDangerOpen] = useState(false);
   const [deleteText, setDeleteText] = useState('');
-  const [auditState, setAuditState] = useState(() => ({
-    patientId: selectedPatient?.id,
-    items: readPatientAuditLog(selectedPatient?.id),
-  }));
+  const [auditState, setAuditState] = useState({ patientId: null, items: [], error: '' });
   const [patientForm, setPatientForm] = useState({
     name: selectedPatient?.name || '',
     phone: selectedPatient?.phone || '',
@@ -79,15 +76,46 @@ export function PainelInicial({
     getSelectedCount(selectedMap, 'lingua') +
     getSelectedCount(selectedMap, 'linguaOrgao') +
     getSelectedCount(selectedMap, 'pulso');
-  const auditLog = auditState.patientId === selectedPatient?.id
-    ? auditState.items
-    : readPatientAuditLog(selectedPatient?.id);
+  const auditLog = auditState.patientId === selectedPatient?.id ? auditState.items : [];
+
+  useEffect(() => {
+    let cancelled = false;
+    const patientId = selectedPatient?.id;
+    if (!patientId) return () => { cancelled = true; };
+
+    getPatientAuditLog(patientId)
+      .then(items => {
+        if (!cancelled) setAuditState({ patientId, items, error: '' });
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setAuditState({
+            patientId,
+            items: [],
+            error: error?.message || 'Não foi possível carregar a auditoria clínica.',
+          });
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedPatient?.id]);
 
   function addLog(action) {
-    setAuditState({
-      patientId: selectedPatient?.id,
-      items: appendPatientAuditLog(selectedPatient?.id, action),
-    });
+    const patientId = selectedPatient?.id;
+    if (!patientId) return;
+    setAuditState(previous => ({
+      patientId,
+      error: previous.patientId === patientId ? previous.error : '',
+      items: [
+        {
+          id: `session-${Date.now()}`,
+          action,
+          at: new Date().toISOString(),
+          source: 'session',
+        },
+        ...(previous.patientId === patientId ? previous.items : []),
+      ].slice(0, 50),
+    }));
   }
 
   function openEdit() {
@@ -135,10 +163,10 @@ export function PainelInicial({
 
   async function handleDelete() {
     if (!selectedPatient || !canDelete) return;
-    if (onConfirmPendingChanges && !onConfirmPendingChanges('Existem alterações ainda não salvas. Excluir mesmo assim?')) return;
+    if (onConfirmPendingChanges && !onConfirmPendingChanges('Existem alterações ainda não salvas. Arquivar e solicitar exclusão mesmo assim?')) return;
     setSaving(true);
     try {
-      addLog('Exclusão definitiva confirmada');
+      addLog('Solicitação de exclusão registrada; paciente arquivado');
       await deletePatient(selectedPatient.id);
       setDeleteText('');
       onNavigate?.('Tela inicial');
@@ -151,27 +179,6 @@ export function PainelInicial({
     if (onConfirmPendingChanges && !onConfirmPendingChanges('Existem alterações ainda não salvas. Trocar paciente mesmo assim?')) return;
     clearSelection();
     onNavigate?.('Tela inicial');
-  }
-
-  function handleExportBackup() {
-    if (!selectedPatient) return;
-    const backup = {
-      exported_at: new Date().toISOString(),
-      patient: selectedPatient,
-      clinical_state: state,
-      selected_map: selectedMap,
-      analysis,
-      audit_log: auditLog,
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const safeName = String(selectedPatient.name || 'paciente').replace(/[^\w-]+/g, '_').toLowerCase();
-    link.href = url;
-    link.download = `backup-${safeName}-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    addLog('Backup do paciente exportado');
   }
 
   async function handleManualSave() {
@@ -364,15 +371,13 @@ export function PainelInicial({
 
           <div className="security-card">
             <span>Backup</span>
-            <b>Exportar paciente</b>
-            <p>Gera um arquivo JSON com cadastro, ficha clínica, seleções, análise e histórico local.</p>
-            <button className="tag" type="button" onClick={handleExportBackup}>
-              Exportar backup
-            </button>
+            <b>Protegido no servidor</b>
+            <p>Exportação clínica em JSON sem criptografia foi desativada. Recuperação e retenção seguem o plano operacional do banco.</p>
           </div>
 
           <div className="security-card audit-card">
-            <span>Histórico recente</span>
+            <span>Auditoria recente</span>
+            {auditState.error && <p>{auditState.error}</p>}
             {auditLog.length === 0 ? (
               <p>Nenhuma ação importante registrada ainda.</p>
             ) : (
@@ -381,6 +386,7 @@ export function PainelInicial({
                   <li key={item.id}>
                     <b>{item.action}</b>
                     <small>{formatDateTime(item.at)}</small>
+                    {item.source === 'session' && <small> nesta sessão</small>}
                   </li>
                 ))}
               </ul>
@@ -391,21 +397,21 @@ export function PainelInicial({
         <div className="patient-danger-zone">
           <div>
             <p className="small">Ações administrativas</p>
-            <h3>Arquivar ou excluir paciente</h3>
-            <p>Arquivar remove o paciente da lista ativa. Excluir remove definitivamente o cadastro e registros vinculados.</p>
+            <h3>Arquivar ou solicitar exclusão</h3>
+            <p>Arquivar remove o paciente da lista ativa. Solicitar exclusão também registra o pedido para análise, sem apagar prontuários automaticamente.</p>
           </div>
           <div className="danger-actions">
             <button className="tag" type="button" onClick={handleArchive} disabled={saving}>
               Arquivar paciente
             </button>
             <button className="danger-button" type="button" onClick={() => setDangerOpen(open => !open)}>
-              Excluir paciente
+              Solicitar exclusão
             </button>
           </div>
           {dangerOpen && (
             <div className="delete-confirm">
               <label>
-                Para excluir definitivamente, digite <b>excluir</b> ou <b>DELETE</b>.
+                Para arquivar e registrar a solicitação, digite <b>excluir</b> ou <b>DELETE</b>.
                 <input
                   value={deleteText}
                   onChange={e => setDeleteText(e.target.value)}
@@ -413,7 +419,7 @@ export function PainelInicial({
                 />
               </label>
               <button className="danger-button" type="button" onClick={handleDelete} disabled={!canDelete || saving}>
-                Confirmar exclusão definitiva
+                Arquivar e solicitar exclusão
               </button>
             </div>
           )}

@@ -1,8 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { assertSupabasePublicConfig } from './src/lib/supabaseConfig.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const localAtlasRoot = path.resolve(__dirname, '.local-source-assets', 'atlas-ednea')
@@ -67,6 +68,17 @@ function localAtlasSourcesPlugin() {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [localAtlasSourcesPlugin(), react()],
+export default defineConfig(({ command, mode }) => {
+  if (command === 'build') {
+    const env = loadEnv(mode, __dirname, 'VITE_')
+    assertSupabasePublicConfig({
+      supabaseUrl: env.VITE_SUPABASE_URL,
+      supabaseAnonKey: env.VITE_SUPABASE_ANON_KEY,
+      production: true,
+    }, 'Build bloqueado por configuração Supabase inválida')
+  }
+
+  return {
+    plugins: [localAtlasSourcesPlugin(), react()],
+  }
 })

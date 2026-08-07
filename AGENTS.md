@@ -114,6 +114,11 @@ Vale para anamnese, língua, pulso, pontos e RAG da Biblioteca. Detalhe de catal
 - preserve privacidade e integridade dos dados de pacientes; valide entradas antes de gravar;
 - prefira migrações reversíveis ou bem documentadas;
 - teste leitura, escrita, atualização e exclusão quando a mudança afetar persistência.
+- Autosave clínico usa escrita versionada com comparação de revisão, chave de idempotência e fila serial por paciente/tipo. Nunca reintroduza `insert`/`update` concorrentes sem CAS.
+- Gates de conta ativa, troca de senha e MFA precisam existir no banco/RPC/Storage **e** nas Edge Functions que usam service role; checagem apenas no frontend não autoriza dado clínico.
+- Escopo de compartilhamento é fronteira de servidor: RPC nunca devolve `full_session` completo para o cliente filtrar.
+- Exclusão de paciente começa por arquivamento + solicitação auditável. Não use `DELETE ... CASCADE` nem executor automático sem política de retenção aprovada.
+- Produção não usa fallback/localStorage para autenticação ou prontuário, nem exporta dado clínico em JSON sem criptografia. Fallback local exige `DEV` + opt-in e deve desaparecer do bundle de produção.
 
 ## 10. Manutenção contínua
 

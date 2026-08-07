@@ -48,8 +48,21 @@ const SUPER_ADMIN = {
   email: env.SUPER_ADMIN_EMAIL || 'superadm@sistema.com',
   username: env.SUPER_ADMIN_USERNAME || 'superadm',
   fullName: env.SUPER_ADMIN_FULL_NAME || 'SuperAdm',
-  password: env.SUPER_ADMIN_PASSWORD || '654321',
+  // Senha é aceita apenas do ambiente temporário do processo: não deve ficar
+  // persistida em .env/.env.local nem possuir valor padrão previsível.
+  password: process.env.SUPER_ADMIN_PASSWORD || '',
 };
+
+if (
+  !SUPER_ADMIN.password
+  || SUPER_ADMIN.password.length < 12
+  || !/[A-Z]/.test(SUPER_ADMIN.password)
+  || !/[a-z]/.test(SUPER_ADMIN.password)
+  || !/[0-9]/.test(SUPER_ADMIN.password)
+) {
+  console.error('Defina SUPER_ADMIN_PASSWORD apenas no terminal, com pelo menos 12 caracteres, letra maiúscula, letra minúscula e número.');
+  process.exit(1);
+}
 
 async function findExistingUserByEmail(email) {
   let page = 1;
@@ -88,9 +101,9 @@ async function bootstrap() {
 
     if (error) throw error;
     user = data.user;
-    console.log(`SuperAdm criado: ${SUPER_ADMIN.username} (${SUPER_ADMIN.email})`);
+    console.log('SuperAdm criado no Auth com a senha temporária fornecida pelo ambiente.');
   } else {
-    console.log(`SuperAdm já existe no Auth: ${SUPER_ADMIN.email}`);
+    console.log('SuperAdm já existe no Auth.');
 
     if (env.RESET_SUPER_ADMIN_PASSWORD === 'true') {
       const { error } = await supabase.auth.admin.updateUserById(user.id, {
@@ -117,8 +130,6 @@ async function bootstrap() {
   if (profileError) throw profileError;
 
   console.log('Perfil SuperAdm garantido com troca de senha obrigatória no primeiro acesso.');
-  console.log(`Login: ${SUPER_ADMIN.username}`);
-  console.log(`Senha inicial: ${SUPER_ADMIN.password}`);
 }
 
 bootstrap().catch(error => {

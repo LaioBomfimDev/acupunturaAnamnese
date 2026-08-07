@@ -19,6 +19,78 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-07-23 - Autosave concorrente podia sobrescrever revisão clínica mais nova
+
+- Sintoma: salvamento manual e autosave podiam executar juntos; uma resposta antiga podia terminar depois da nova, limpar o indicador de pendência e sobrescrever a ficha mais recente, inclusive entre duas abas.
+- Causa: o frontend disparava `insert`/`update` sem fila, revisão esperada ou chave de idempotência; o banco não mantinha cabeça/revisões imutáveis para a sessão.
+- Regra nova: toda escrita de autosave clínico usa fila serial por paciente e tipo, snapshot imutável, idempotência e CAS. Conflito mantém alterações pendentes e exige recarga; erro de leitura bloqueia escrita para não substituir um prontuário que não foi carregado.
+- Teste ou verificação obrigatória: `clinical-session-persistence.test.mjs` cobre ordem, revisão, falha, snapshot, pacientes/tipos paralelos; a migration de hardening cobre CAS, replay e auditoria.
+- Regra destilada em: `AGENTS.md` §9.
+
+### 2026-07-23 - Fallback local e configuração insegura alcançavam produção
+
+- Sintoma: credenciais locais estavam no grafo do bundle, `acup_local_user` era lido sem gate de ambiente, configuração Supabase ausente apenas gerava aviso e o bootstrap tinha caminho de senha previsível.
+- Causa: desenvolvimento e produção compartilhavam módulos/caminhos de autenticação; não havia validação de build nem teste inspecionando o artefato final.
+- Regra nova: fallback exige `DEV` + opt-in, credenciais vêm apenas de `.env.local` e o módulo deve desaparecer do bundle. Produção falha no build/runtime se URL/chave pública forem inválidas; bootstrap recebe segredos apenas do ambiente temporário e nunca os registra.
+- Teste ou verificação obrigatória: `frontend-auth-config-hardening.test.mjs`, `npm run check:security` e inspeção do bundle de produção.
+- Regra destilada em: `AGENTS.md` §9.
+
+### 2026-07-23 - Edge Functions sem residência, deadline, CORS e gate equivalentes ao banco
+
+- Sintoma: Vertex assumia região externa, CORS aceitava `*`, chamadas podiam ficar sem deadline, erros retornados pela SDK de auditoria eram ignorados e service role podia contornar gates de senha/MFA.
+- Causa: confiabilidade e autorização estavam dispersas por handler; não existia política compartilhada de origem, região, retry, rate limit persistente e acesso clínico.
+- Regra nova: origem e região são allowlists fail-closed; deadline cobre corpo completo; retry só ocorre em falha transitória segura; rate limit é atômico/persistente; Edge valida conta ativa, senha definitiva e AAL2 quando exigido antes de usar service role.
+- Teste ou verificação obrigatória: `tools/edge-functions/reliability.test.mjs` e teste contratual da migration `consume_edge_rate_limit`.
+- Regra destilada em: `AGENTS.md` §9.
+
+### 2026-07-23 - Escopo compartilhado e conhecimento eram filtrados apenas no cliente
+
+- Sintoma: `get_shared_session` descriptografava a sessão inteira apesar dos escopos consentidos; `library-qa` aceitava contexto arbitrário do navegador; aprovações locais divergiam por dispositivo.
+- Causa: consentimento e curadoria eram metadados de UI, não fronteiras de servidor. O runtime misturava assets, `localStorage` e payload do cliente.
+- Regra nova: compartilhamento devolve somente facetas permitidas; RAG recupera no servidor apenas versão corrente `approved`; aprovação/versionamento/auditoria/outbox são transacionais e conteúdo sem gate profissional permanece em `review`.
+- Teste ou verificação obrigatória: testes da migration de hardening, `library-ai.test.mjs`, `review-source-policy.test.mjs` e dry-run de `knowledge:sync-approved`.
+- Regra destilada em: `AGENTS.md` §9 e `docs/agents-mapas.md`.
+
+### 2026-07-23 - Pseudo-auditoria mutável, exportação clínica aberta e exclusão em cascata
+
+- Sintoma: o “histórico” era uma lista curta em `localStorage`, o backup baixava prontuário completo em JSON sem criptografia e excluir paciente apagava cadastro/fichas em cascata.
+- Causa: recursos de conveniência foram tratados como auditoria/backup/retenção sem garantias de imutabilidade, confidencialidade ou processo legal.
+- Regra nova: auditoria clínica é append-only no servidor e sem payload; exportação aberta fica desativada; exclusão começa por arquivamento + solicitação pendente, sem executor automático até política de retenção aprovada.
+- Teste ou verificação obrigatória: `clinical-privacy-hardening.test.mjs`, testes da migration e exercício operacional de restauração.
+- Regra destilada em: `AGENTS.md` §9.
+
+### 2026-07-23 - Compartilhamento podia depender de reautenticação e vínculos no cliente
+
+- Sintoma: o navegador verificava a senha e depois executava matrícula e compartilhamento em etapas separadas; falha parcial ou chamada direta podia deixar vínculo indevido, ampliar disciplina ou ignorar a intenção de reautenticação.
+- Causa: confirmação de identidade, vínculo e concessão não formavam uma transação de servidor; políticas de matrícula e compartilhamento aceitavam escrita direta mais ampla do que o fluxo da tela.
+- Regra nova: compartilhar exige Edge Function autenticada, reautenticação efêmera e RPC transacional/idempotente que valida clínica, disciplina, AAL e perfil ativo. O cliente não insere compartilhamento direto nem muda identidade durante a operação.
+- Teste ou verificação obrigatória: `hardening-blockers.test.mjs`, `record-shares.test.mjs` e contrato da migration para `create_record_share_after_reauthentication`.
+- Regra destilada em: `AGENTS.md` §9.
+
+### 2026-07-23 - Payload clínico e erro de provedor podiam chegar crus à IA e aos logs
+
+- Sintoma: handlers aceitavam objetos amplos do navegador, nomes/identificadores podiam seguir para a Vertex e corpo/mensagem de erro do provedor podia aparecer em resposta ou log.
+- Causa: cada função fazia parsing, redução e tratamento de erro de forma diferente, sem limite de corpo, allowlist recursiva ou sanitização comum.
+- Regra nova: toda Edge Function clínica limita bytes, valida schema/allowlist por finalidade, remove PII no servidor antes do provedor e registra somente código operacional, status e referência. A geração não é repetida automaticamente porque o POST não é idempotente.
+- Teste ou verificação obrigatória: `edge-clinical-payload-hardening.test.mjs` e `tools/edge-functions/reliability.test.mjs`.
+- Regra destilada em: `AGENTS.md` §9.
+
+### 2026-07-23 - Citação de RAG e dietoterapia podia declarar fonte não usada
+
+- Sintoma: respostas podiam devolver todas as versões recuperadas como “usadas”, aceitar identificador de citação inventado pelo modelo e truncar contexto em fronteira textual frágil; a pesquisa de alimentos ainda expunha receita/objetivo individual no cliente.
+- Causa: proveniência era montada a partir da recuperação, não da evidência efetivamente citada, e o contexto era interpolado como pseudo-marcação. Modos antigos misturavam educação com orientação prática.
+- Regra nova: contexto é JSON por item, citações usam IDs opacos validados e somente versões citadas retornam ao cliente. Dietoterapia por IA aceita apenas alimento publicado e modos educativos fechados, sem receita, preparo, dose, cardápio, objetivo individual ou erva.
+- Teste ou verificação obrigatória: `library-ai.test.mjs`, `food-research-ai.test.mjs` e política do servidor `food-research/policy.ts`.
+- Regra destilada em: `docs/agents-mapas.md`.
+
+### 2026-07-23 - Recuperação de conta forte estava incompleta
+
+- Sintoma: senha temporária fraca podia ser criada/alterada, troca no Auth podia ocorrer antes do gate fail-closed e não havia recuperação administrativa auditável quando o segundo fator era perdido.
+- Causa: validação variava entre formulário e Edge Function; compensação de usuário órfão e recuperação MFA não eram fluxos explícitos.
+- Regra nova: senha temporária usa o mesmo contrato forte no cliente e servidor; perfil é fechado antes da alteração de Auth; falha de compensação gera referência operacional. Reset de MFA é exclusivo do SuperAdm, exige motivo, audita e mantém `mfa_required` para novo cadastro TOTP.
+- Teste ou verificação obrigatória: `professional-form-helpers.test.mjs`, `mfa-gate.test.mjs` e `login-auth-hardening.test.mjs`.
+- Regra destilada em: `AGENTS.md` §9.
+
 ### 2026-07-14 - Perguntas úteis da IA sem fluxo clínico de seleção e resposta
 
 - Sintoma: a leitura da IA propunha perguntas relevantes, mas elas apareciam como lista descartável; não podiam ser selecionadas, respondidas, atribuídas a um informante nem reaproveitadas na anamnese e no relatório.

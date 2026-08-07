@@ -20,6 +20,7 @@
 
 import { createServiceClient } from './security.ts';
 import { fitToBudget, rankLessonsByRelevance } from './promptBudget.ts';
+import { logOperationalEvent } from './observability.ts';
 
 // Orçamento do prompt de sistema (base + instruções + correções). Mantém o
 // prompt enxuto para o modelo não diluir a atenção. As correções absorvem o
@@ -73,12 +74,18 @@ export async function fetchCorrectionLessons(
 
     const { data, error } = await scoped;
     if (error) {
-      console.error('fetchCorrectionLessons erro:', error.message);
+      logOperationalEvent('warn', 'correction_lessons_unavailable', {
+        operation: 'fetch_correction_lessons',
+        reason: 'query_failed',
+      });
       return [];
     }
     return Array.isArray(data) ? (data as CorrectionLesson[]) : [];
-  } catch (error) {
-    console.error('fetchCorrectionLessons exceção:', error instanceof Error ? error.message : 'erro');
+  } catch {
+    logOperationalEvent('warn', 'correction_lessons_unavailable', {
+      operation: 'fetch_correction_lessons',
+      reason: 'unexpected_failure',
+    });
     return [];
   }
 }

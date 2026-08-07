@@ -1,13 +1,19 @@
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
+  validateStrongPassword,
   writeAuditLog,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -24,9 +30,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: caller.error }, caller.status);
     }
 
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
     if (!assertSuperAdmin(caller.profile)) {
       return jsonResponse({ error: 'Apenas SuperAdm ativo pode redefinir senha temporária.' }, 403);
     }
+
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'super-admin-reset-password',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await req.json().catch(() => ({}));
     const profileId = String(body.profileId || '').trim();
@@ -45,10 +61,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'A confirmação da senha temporária não confere.' }, 400);
     }
 
-    if (temporaryPassword.length < 6) {
-      return jsonResponse({ error: 'A senha temporária precisa ter pelo menos 6 caracteres.' }, 400);
-    }
-
     const { data: targetProfile, error: targetError } = await supabaseAdmin
       .from('profiles')
       .select('id,email,username,full_name,is_active,role')
@@ -64,14 +76,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Senha de SuperAdm não deve ser redefinida por este fluxo.' }, 400);
     }
 
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(profileId, {
-      password: temporaryPassword,
-    });
-
-    if (authError) {
-      return jsonResponse({ error: authError.message }, 400);
+    const passwordProblems = validateStrongPassword(temporaryPassword, [
+      targetProfile.email,
+      targetProfile.username,
+      targetProfile.full_name,
+    ]);
+    if (passwordProblems.length > 0) {
+      return jsonResponse({ error: passwordProblems[0] }, 400);
     }
 
+    // Ordem fail-closed: o gate é fechado antes de alterar a credencial.
+    // Se o Auth falhar depois, o usuário continua bloqueado para dados
+    // clínicos até o SuperAdm repetir a operação; nunca fica com senha
+    // temporária ativa sem must_change_password.
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({
@@ -81,7 +98,17 @@ Deno.serve(async (req) => {
       .eq('id', profileId);
 
     if (profileError) {
-      return jsonResponse({ error: profileError.message }, 500);
+      return jsonResponse({ error: 'Não foi possível preparar a redefinição com segurança.' }, 500);
+    }
+
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(profileId, {
+      password: temporaryPassword,
+    });
+
+    if (authError) {
+      return jsonResponse({
+        error: 'A credencial não foi alterada. O acesso clínico ficou bloqueado; tente novamente.',
+      }, 502);
     }
 
     await writeAuditLog(supabaseAdmin, {
@@ -95,7 +122,7 @@ Deno.serve(async (req) => {
     });
 
     return jsonResponse({ ok: true });
-  } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : 'Erro inesperado.' }, 500);
+  } catch {
+    return jsonResponse({ error: 'Não foi possível redefinir a senha temporária.' }, 500);
   }
 });

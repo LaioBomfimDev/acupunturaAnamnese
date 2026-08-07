@@ -17,18 +17,105 @@
 // ============================================================
 
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
+import {
+  ClinicalPayloadValidationError,
+  readClinicalJsonBody,
+  sanitizeClinicalPayload,
+  type ClinicalPayloadSchema,
+} from '../_shared/clinicalPayload.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
+const SIGNAL_SCHEMA: ClinicalPayloadSchema = {
+  type: 'array',
+  maxItems: 64,
+  items: { type: 'string', maxLength: 240 },
+};
+const REQUEST_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    case: {
+      type: 'object',
+      required: true,
+      properties: {
+        hypothesis: {
+          type: 'object',
+          properties: {
+            primary: { type: 'string', maxLength: 240, nullable: true },
+            primaryPercent: { type: 'number', min: 0, max: 100 },
+            differential: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                name: { type: 'string', maxLength: 240 },
+                percent: { type: 'number', min: 0, max: 100 },
+              },
+            },
+            isOpenDifferential: { type: 'boolean' },
+            confidence: { type: 'string', maxLength: 80 },
+            confidenceReason: { type: 'string', maxLength: 1200 },
+          },
+        },
+        topPatterns: {
+          type: 'array',
+          maxItems: 4,
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', maxLength: 240 },
+              score: { type: 'number', min: 0, max: 10000 },
+              terms: {
+                type: 'array',
+                maxItems: 64,
+                items: { type: 'string', maxLength: 240 },
+              },
+            },
+          },
+        },
+        signals: {
+          type: 'object',
+          properties: {
+            'língua': SIGNAL_SCHEMA,
+            pulso: SIGNAL_SCHEMA,
+            'emoções': SIGNAL_SCHEMA,
+            sintomas: SIGNAL_SCHEMA,
+            seguranca: SIGNAL_SCHEMA,
+            anamnese: SIGNAL_SCHEMA,
+          },
+        },
+        anamneseText: { type: 'string', maxLength: 8000 },
+        knowledgeContext: {
+          type: 'array',
+          maxItems: 8,
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string', maxLength: 320 },
+              cat: { type: 'string', maxLength: 120 },
+              confidence: { type: 'string', maxLength: 40 },
+              source: { type: 'string', maxLength: 500 },
+              text: { type: 'string', maxLength: 800 },
+            },
+          },
+        },
+      },
+    },
+  },
+};
 
 const OUTPUT_SCHEMA = {
   type: 'OBJECT',
@@ -87,6 +174,11 @@ Regras:
 - Você é assistivo. A decisão final é sempre da profissional.`;
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(req.headers.get('x-correlation-id'));
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -100,33 +192,43 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
-    if (caller.profile.is_active !== true) {
-      return jsonResponse({ error: 'Usuário suspenso.' }, 403);
-    }
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
 
-    const body = await req.json().catch(() => ({}));
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'clinical-reasoning',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const body = await readClinicalJsonBody(req, 32_768);
     if (isDeployHealthSmoke(body)) {
       if (!assertSuperAdmin(caller.profile)) {
         return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
       }
-      return await runAiSmokeCheck({ functionName: 'clinical-reasoning', modelId: MODEL_ID });
+      return await runAiSmokeCheck({
+        functionName: 'clinical-reasoning',
+        jsonResponse,
+        modelId: MODEL_ID,
+      });
     }
 
     if (!isVertexConfigured()) {
       return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
     }
 
-    const clinicalCase = body.case;
-    if (!clinicalCase || typeof clinicalCase !== 'object') {
-      return jsonResponse({ error: 'Caso clínico ausente.' }, 400);
-    }
+    const input = sanitizeClinicalPayload(body, REQUEST_SCHEMA) as {
+      case: Record<string, any>;
+    };
+    const clinicalCase = input.case;
     // Conhecimento curado recuperado no cliente (âncora). Sai do JSON do caso
     // para não competir pelo teto e ser apresentado como bloco próprio.
     const knowledgeContext = Array.isArray(clinicalCase.knowledgeContext) ? clinicalCase.knowledgeContext : [];
     const caseForModel: Record<string, unknown> = { ...clinicalCase };
     delete caseForModel.knowledgeContext;
-    // Teto defensivo no tamanho do caso serializado.
-    const caseText = JSON.stringify(caseForModel).slice(0, 12000);
+    const caseText = JSON.stringify(caseForModel);
     const knowledgeText = knowledgeContext.length
       ? knowledgeContext
           .slice(0, 8)
@@ -170,7 +272,12 @@ Deno.serve(async (req) => {
     });
 
     if (!geminiResponse.ok) {
-      console.error('clinical-reasoning: Gemini API erro', geminiResponse.status);
+      logOperationalEvent('error', 'vertex_upstream_failed', {
+        correlationId,
+        operation: 'clinical_reasoning',
+        status: geminiResponse.status,
+        reason: 'http_error',
+      });
       throw new Error('O raciocínio por IA falhou. Tente novamente em instantes.');
     }
 
@@ -198,9 +305,23 @@ Deno.serve(async (req) => {
       questions: asArray(parsed.questions).filter((s: unknown) => typeof s === 'string').slice(0, 8),
     });
   } catch (error) {
-    console.error('clinical-reasoning:', error instanceof Error ? error.message : 'erro');
+    if (error instanceof ClinicalPayloadValidationError) {
+      logOperationalEvent('warn', 'clinical_payload_rejected', {
+        correlationId,
+        operation: 'clinical_reasoning',
+        reason: error.code,
+      });
+      return jsonResponse({ error: 'Dados do caso clínico inválidos.' }, 400);
+    }
+    logOperationalEvent('error', 'clinical_reasoning_failed', {
+      correlationId,
+      operation: 'clinical_reasoning',
+      reason: error instanceof SyntaxError
+        ? 'invalid_provider_response'
+        : 'request_failed',
+    });
     return jsonResponse(
-      { error: error instanceof Error ? error.message : 'Erro inesperado no raciocínio.' },
+      { error: `Não foi possível concluir o raciocínio. Referência: ${correlationId}.` },
       500,
     );
   }

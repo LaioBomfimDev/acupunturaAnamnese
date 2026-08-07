@@ -16,17 +16,159 @@
 // ============================================================
 
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
+import {
+  ClinicalPayloadValidationError,
+  readClinicalJsonBody,
+  sanitizeClinicalPayload,
+  type ClinicalPayloadSchema,
+} from '../_shared/clinicalPayload.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
+const REPORT_MODES = [
+  'Resumo clínico',
+  'Relatório profissional',
+  'Orientação ao paciente',
+] as const;
+const REPORT_PAYLOAD_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    modo: { type: 'string', maxLength: 40, enum: REPORT_MODES },
+    idade: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 130 },
+    queixa: { type: 'string', maxLength: 3000 },
+    historia: { type: 'string', maxLength: 5000 },
+    hipotese: { type: 'string', maxLength: 500 },
+    raiz: { type: 'string', maxLength: 1600 },
+    manifestacao: { type: 'string', maxLength: 1600 },
+    oitoPrincipios: { type: 'string', maxLength: 1200 },
+    cincoElementos: { type: 'string', maxLength: 1200 },
+    principioTerapeutico: { type: 'string', maxLength: 1600 },
+    protocolo: {
+      type: 'object',
+      properties: {
+        body: { type: 'string', maxLength: 1600 },
+        ear: { type: 'string', maxLength: 1600 },
+        moxa: { type: 'string', maxLength: 1600 },
+        laser: { type: 'string', maxLength: 1600 },
+      },
+    },
+    pontos: {
+      type: 'array',
+      maxItems: 16,
+      items: { type: 'string', maxLength: 800 },
+    },
+    referencias: {
+      type: 'array',
+      maxItems: 24,
+      items: { type: 'string', maxLength: 500 },
+    },
+    evolucao: {
+      type: 'object',
+      properties: {
+        numeroSessao: { type: 'number', integer: true, min: 1, max: 10000 },
+        ultima: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            data: { type: 'string', maxLength: 40 },
+            dor: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+            sono: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+            ansiedade: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+          },
+        },
+      },
+    },
+    seguranca: {
+      type: 'array',
+      maxItems: 32,
+      items: { type: 'string', maxLength: 1200 },
+    },
+    reabilitacao: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        total: { type: 'number', integer: true, min: 1, max: 10000 },
+        periodo: {
+          type: 'object',
+          properties: {
+            de: { type: 'string', maxLength: 40 },
+            ate: { type: 'string', maxLength: 40 },
+          },
+        },
+        objetivoFuncional: { type: 'string', maxLength: 1600 },
+        medidas: {
+          type: 'array',
+          maxItems: 16,
+          items: {
+            type: 'object',
+            properties: {
+              medida: { type: 'string', maxLength: 160 },
+              primeiro: { type: 'number', nullable: true, min: -1000, max: 1000 },
+              ultimo: { type: 'number', nullable: true, min: -1000, max: 1000 },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+const EVOLUTION_SESSION_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    sessao: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10000 },
+    dor: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+    sono: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+    ansiedade: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+    energia: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+    intestino: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+    humor: { type: 'stringOrNumber', maxLength: 40, min: 0, max: 10 },
+    hipotese: { type: 'string', maxLength: 800 },
+    protocolo: { type: 'string', maxLength: 2400 },
+    intercorrencia: { type: 'string', maxLength: 2400 },
+    obs: { type: 'string', maxLength: 3000 },
+    resposta: { type: 'string', maxLength: 3000 },
+  },
+};
+const REPORT_REQUEST_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    kind: { type: 'string', required: true, maxLength: 16, enum: ['report'] },
+    mode: { type: 'string', required: true, maxLength: 40, enum: REPORT_MODES },
+    payload: { ...REPORT_PAYLOAD_SCHEMA, required: true },
+  },
+};
+const EVOLUTION_REQUEST_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    kind: { type: 'string', required: true, maxLength: 16, enum: ['evolution'] },
+    mode: { type: 'string', maxLength: 40, enum: REPORT_MODES, nullable: true },
+    payload: {
+      type: 'object',
+      required: true,
+      properties: {
+        sessions: {
+          type: 'array',
+          required: true,
+          maxItems: 120,
+          items: EVOLUTION_SESSION_SCHEMA,
+        },
+      },
+    },
+  },
+};
 
 const OUTPUT_SCHEMA = {
   type: 'OBJECT',
@@ -71,6 +213,11 @@ Regras:
 - É um rascunho para revisão da profissional. Português brasileiro, dividido em parágrafos (campo paragraphs).`;
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(req.headers.get('x-correlation-id'));
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -84,35 +231,50 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
-    if (caller.profile.is_active !== true) {
-      return jsonResponse({ error: 'Usuário suspenso.' }, 403);
-    }
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
 
-    const body = await req.json().catch(() => ({}));
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'draft-narrative',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const body = await readClinicalJsonBody(req, 32_768);
     if (isDeployHealthSmoke(body)) {
       if (!assertSuperAdmin(caller.profile)) {
         return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
       }
-      return await runAiSmokeCheck({ functionName: 'draft-narrative', modelId: MODEL_ID });
+      return await runAiSmokeCheck({
+        functionName: 'draft-narrative',
+        jsonResponse,
+        modelId: MODEL_ID,
+      });
     }
 
     if (!isVertexConfigured()) {
       return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
     }
 
-    const kind = body.kind;
-    const payload = body.payload;
-    if (kind !== 'report' && kind !== 'evolution') {
+    if (body.kind !== 'report' && body.kind !== 'evolution') {
       return jsonResponse({ error: 'kind inválido.' }, 400);
     }
-    if (!payload || typeof payload !== 'object') {
-      return jsonResponse({ error: 'Dados ausentes.' }, 400);
-    }
+    const input = sanitizeClinicalPayload(
+      body,
+      body.kind === 'report' ? REPORT_REQUEST_SCHEMA : EVOLUTION_REQUEST_SCHEMA,
+    ) as {
+      kind: 'report' | 'evolution';
+      mode?: string | null;
+      payload: Record<string, unknown>;
+    };
+    const { kind, payload } = input;
 
     const baseSystemPrompt = kind === 'report'
-      ? buildReportPrompt(String(body.mode || 'Resumo clínico'))
+      ? buildReportPrompt(input.mode || 'Resumo clínico')
       : EVOLUTION_PROMPT;
-    const payloadText = JSON.stringify(payload).slice(0, 14000);
+    const payloadText = JSON.stringify(payload);
     const systemPrompt = await withCorrectionLessons(supabaseAdmin, baseSystemPrompt, {
       surface: 'narrative',
       callerId: caller.user.id,
@@ -134,7 +296,12 @@ Deno.serve(async (req) => {
     });
 
     if (!geminiResponse.ok) {
-      console.error('draft-narrative: Gemini API erro', geminiResponse.status);
+      logOperationalEvent('error', 'vertex_upstream_failed', {
+        correlationId,
+        operation: 'draft_narrative',
+        status: geminiResponse.status,
+        reason: 'http_error',
+      });
       throw new Error('A geração por IA falhou. Tente novamente em instantes.');
     }
 
@@ -161,9 +328,23 @@ Deno.serve(async (req) => {
       paragraphs,
     });
   } catch (error) {
-    console.error('draft-narrative:', error instanceof Error ? error.message : 'erro');
+    if (error instanceof ClinicalPayloadValidationError) {
+      logOperationalEvent('warn', 'clinical_payload_rejected', {
+        correlationId,
+        operation: 'draft_narrative',
+        reason: error.code,
+      });
+      return jsonResponse({ error: 'Dados do rascunho inválidos.' }, 400);
+    }
+    logOperationalEvent('error', 'draft_narrative_failed', {
+      correlationId,
+      operation: 'draft_narrative',
+      reason: error instanceof SyntaxError
+        ? 'invalid_provider_response'
+        : 'request_failed',
+    });
     return jsonResponse(
-      { error: error instanceof Error ? error.message : 'Erro inesperado na geração.' },
+      { error: `Não foi possível concluir o rascunho. Referência: ${correlationId}.` },
       500,
     );
   }

@@ -17,17 +17,34 @@
 // ============================================================
 
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
+import {
+  ClinicalPayloadValidationError,
+  readClinicalJsonBody,
+  sanitizeClinicalPayload,
+  type ClinicalPayloadSchema,
+} from '../_shared/clinicalPayload.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
+const REQUEST_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    text: { type: 'string', required: true, maxLength: 8000, trim: true },
+  },
+};
 
 // Catálogo de marcações sugeríveis a partir do texto da anamnese.
 // MANTENHA EM SINCRONIA com `checklists.js` (grupos em escopo) — há teste
@@ -159,6 +176,11 @@ function clampConfidence(value: unknown) {
 }
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(req.headers.get('x-correlation-id'));
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -172,40 +194,50 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
-    if (caller.profile.is_active !== true) {
-      return jsonResponse({ error: 'Usuário suspenso.' }, 403);
-    }
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
 
-    const body = await req.json().catch(() => ({}));
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'suggest-marks',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const body = await readClinicalJsonBody(req, 12_000);
     if (isDeployHealthSmoke(body)) {
       if (!assertSuperAdmin(caller.profile)) {
         return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
       }
-      return await runAiSmokeCheck({ functionName: 'suggest-marks', modelId: MODEL_ID });
+      return await runAiSmokeCheck({
+        functionName: 'suggest-marks',
+        jsonResponse,
+        modelId: MODEL_ID,
+      });
     }
 
     if (!isVertexConfigured()) {
       return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
     }
 
-    const text = String(body.text || '').trim();
+    const input = sanitizeClinicalPayload(body, REQUEST_SCHEMA) as { text: string };
+    const text = input.text;
     if (!text) {
       return jsonResponse({ error: 'Texto da anamnese é obrigatório.' }, 400);
     }
-    // Teto defensivo: anamnese não deveria passar de alguns milhares de chars.
-    const clippedText = text.slice(0, 8000);
 
     const systemText = await withCorrectionLessons(supabaseAdmin, SYSTEM_PROMPT, {
       surface: 'anamnese_marks',
       callerId: caller.user.id,
-      relevanceQuery: clippedText,
+      relevanceQuery: text,
     });
 
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
         role: 'user',
-        parts: [{ text: `Texto da anamnese:\n"""\n${clippedText}\n"""\n\nSugira as marcações do checklist sustentadas por este texto.` }],
+        parts: [{ text: `Texto da anamnese:\n"""\n${text}\n"""\n\nSugira as marcações do checklist sustentadas por este texto.` }],
       }],
       generationConfig: {
         temperature: 0.2,
@@ -217,8 +249,12 @@ Deno.serve(async (req) => {
     });
 
     if (!geminiResponse.ok) {
-      // Não inclui o corpo da requisição (texto do paciente) no log.
-      console.error('suggest-marks: Gemini API erro', geminiResponse.status);
+      logOperationalEvent('error', 'vertex_upstream_failed', {
+        correlationId,
+        operation: 'suggest_marks',
+        status: geminiResponse.status,
+        reason: 'http_error',
+      });
       throw new Error('A sugestão por IA falhou. Tente novamente em instantes.');
     }
 
@@ -255,10 +291,23 @@ Deno.serve(async (req) => {
       warning: typeof parsed.warning === 'string' && parsed.warning ? parsed.warning : null,
     });
   } catch (error) {
-    // Mensagem genérica no log — nunca o conteúdo clínico.
-    console.error('suggest-marks:', error instanceof Error ? error.message : 'erro');
+    if (error instanceof ClinicalPayloadValidationError) {
+      logOperationalEvent('warn', 'clinical_payload_rejected', {
+        correlationId,
+        operation: 'suggest_marks',
+        reason: error.code,
+      });
+      return jsonResponse({ error: 'Dados da anamnese inválidos.' }, 400);
+    }
+    logOperationalEvent('error', 'suggest_marks_failed', {
+      correlationId,
+      operation: 'suggest_marks',
+      reason: error instanceof SyntaxError
+        ? 'invalid_provider_response'
+        : 'request_failed',
+    });
     return jsonResponse(
-      { error: error instanceof Error ? error.message : 'Erro inesperado na sugestão.' },
+      { error: `Não foi possível concluir a sugestão. Referência: ${correlationId}.` },
       500,
     );
   }

@@ -15,13 +15,18 @@
 // ============================================================
 
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
   writeAuditLog,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const BUCKET_ID = Deno.env.get('KNOWLEDGE_SOURCE_ASSETS_BUCKET') || 'knowledge-source-assets';
 const SIGNED_URL_TTL_SECONDS = 5 * 60;
@@ -58,6 +63,13 @@ function normalizePurpose(value: unknown) {
 }
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(
+    req.headers.get('x-correlation-id'),
+  );
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -71,9 +83,19 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
     if (!assertSuperAdmin(caller.profile)) {
       return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
     }
+
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'knowledge-source-asset-url',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await req.json().catch(() => ({}));
     const assetKey = String(body?.assetKey || '').trim();
@@ -90,14 +112,22 @@ Deno.serve(async (req) => {
       .maybeSingle<KnowledgeSourceAsset>();
 
     if (assetError) {
-      console.error('knowledge-source-asset-url: manifesto falhou', assetError.message);
+      logOperationalEvent('error', 'knowledge_source_asset_url_failed', {
+        correlationId,
+        operation: 'manifest_lookup',
+        reason: 'storage_error',
+      });
       return jsonResponse({ error: 'Não foi possível validar a fonte visual.' }, 500);
     }
     if (!asset) {
       return jsonResponse({ error: 'Fonte visual não encontrada.' }, 404);
     }
     if (!isSafeAssetPath(asset.object_path, 512)) {
-      console.error('knowledge-source-asset-url: object_path inseguro no manifesto', asset.asset_key);
+      logOperationalEvent('error', 'knowledge_source_asset_url_failed', {
+        correlationId,
+        operation: 'manifest_validate',
+        reason: 'unsafe_object_path',
+      });
       return jsonResponse({ error: 'Manifesto de fonte inválido.' }, 500);
     }
 
@@ -106,7 +136,11 @@ Deno.serve(async (req) => {
       .createSignedUrl(asset.object_path, SIGNED_URL_TTL_SECONDS);
 
     if (signedError || !signedData?.signedUrl) {
-      console.error('knowledge-source-asset-url: assinatura falhou', signedError?.message || 'sem signedUrl');
+      logOperationalEvent('error', 'knowledge_source_asset_url_failed', {
+        correlationId,
+        operation: 'signed_url',
+        reason: 'storage_error',
+      });
       return jsonResponse({ error: 'Fonte visual indisponível no Storage privado.' }, 404);
     }
 
@@ -131,8 +165,12 @@ Deno.serve(async (req) => {
       pdfPage: asset.pdf_page,
       mimeType: asset.mime_type,
     });
-  } catch (error) {
-    console.error('knowledge-source-asset-url:', error instanceof Error ? error.message : 'erro inesperado');
+  } catch {
+    logOperationalEvent('error', 'knowledge_source_asset_url_failed', {
+      correlationId,
+      operation: 'handler',
+      reason: 'unexpected_error',
+    });
     return jsonResponse({ error: 'Erro inesperado ao proteger a fonte visual.' }, 500);
   }
 });

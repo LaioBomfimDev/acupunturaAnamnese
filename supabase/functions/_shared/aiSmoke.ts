@@ -1,5 +1,8 @@
-import { jsonResponse } from './security.ts';
-import { getLocation, isVertexConfigured, vertexGenerateContent } from './vertex.ts';
+import {
+  getLocation,
+  getVertexConfigurationIssue,
+  vertexGenerateContent,
+} from './vertex.ts';
 
 export const AI_SMOKE_PURPOSE = 'deploy-health';
 
@@ -41,18 +44,31 @@ function sanitizeSmokeError(error: unknown) {
   if (/Falha ao autenticar na Vertex AI/i.test(message)) {
     return 'Falha ao autenticar na Vertex AI.';
   }
+  if (/Região da Vertex AI|regiões aprovadas da Vertex AI/i.test(message)) {
+    return 'Configuração de região da Vertex AI inválida.';
+  }
+  if (/Falha ao consultar a Vertex AI/i.test(message)) {
+    return 'Falha de comunicação com a Vertex AI.';
+  }
   return 'Smoke real da IA falhou na Vertex AI.';
 }
 
 export async function runAiSmokeCheck({
   functionName,
+  jsonResponse,
   modelId,
 }: {
   functionName: string;
+  jsonResponse: (
+    body: unknown,
+    status?: number,
+    additionalHeaders?: Record<string, string>,
+  ) => Response;
   modelId: string;
 }) {
-  if (!isVertexConfigured()) {
-    return jsonResponse({ error: 'IA não configurada no servidor (conta de serviço Vertex ausente).' }, 503);
+  const configurationIssue = getVertexConfigurationIssue();
+  if (configurationIssue) {
+    return jsonResponse({ error: configurationIssue }, 503);
   }
 
   try {

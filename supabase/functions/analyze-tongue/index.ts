@@ -20,14 +20,19 @@
 
 import { encodeBase64 } from 'jsr:@std/encoding/base64';
 import {
-  corsHeaders,
+  assertEdgeAccess,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
 const BUCKET = 'clinical-tongue-photos';
@@ -120,6 +125,13 @@ function clampConfidence(value: unknown) {
 }
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(
+    req.headers.get('x-correlation-id'),
+  );
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -137,9 +149,16 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
-    if (caller.profile.is_active !== true) {
-      return jsonResponse({ error: 'Usuário suspenso.' }, 403);
-    }
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
+
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'analyze-tongue',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await req.json().catch(() => ({}));
     const patientId = String(body.patientId || '').trim();
@@ -214,8 +233,12 @@ Deno.serve(async (req) => {
     });
 
     if (!geminiResponse.ok) {
-      const errBody = await geminiResponse.text().catch(() => '');
-      console.error('Gemini API erro:', geminiResponse.status, errBody);
+      logOperationalEvent('error', 'vertex_upstream_failed', {
+        correlationId,
+        operation: 'analyze_tongue',
+        status: geminiResponse.status,
+        reason: 'http_error',
+      });
       throw new Error('A análise por IA falhou. Tente novamente em instantes.');
     }
 
@@ -248,9 +271,17 @@ Deno.serve(async (req) => {
       warning: typeof parsed.warning === 'string' && parsed.warning ? parsed.warning : null,
     });
   } catch (error) {
-    console.error('analyze-tongue:', error);
+    logOperationalEvent('error', 'analyze_tongue_failed', {
+      correlationId,
+      operation: 'analyze_tongue',
+      reason: error instanceof SyntaxError
+        ? 'invalid_provider_response'
+        : 'request_failed',
+    });
     return jsonResponse(
-      { error: error instanceof Error ? error.message : 'Erro inesperado na análise.' },
+      {
+        error: `Não foi possível concluir a análise. Referência: ${correlationId}.`,
+      },
       500,
     );
   }

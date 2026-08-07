@@ -1,14 +1,20 @@
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
   normalizeEmail,
   normalizeUsername,
+  validateStrongPassword,
   validateUsername,
   writeAuditLog,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const ALLOWED_PROFESSIONS = new Set([
   'acupunturista',
@@ -38,6 +44,13 @@ function cleanText(value: unknown) {
 }
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(
+    req.headers.get('x-correlation-id'),
+  );
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -54,9 +67,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: caller.error }, caller.status);
     }
 
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
     if (!assertSuperAdmin(caller.profile)) {
       return jsonResponse({ error: 'Apenas SuperAdm ativo pode criar usuários.' }, 403);
     }
+
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'super-admin-create-user',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await req.json().catch(() => ({}));
     const email = normalizeEmail(body.email);
@@ -87,8 +110,13 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'A confirmação da senha temporária não confere.' }, 400);
     }
 
-    if (temporaryPassword.length < 6) {
-      return jsonResponse({ error: 'A senha temporária precisa ter pelo menos 6 caracteres.' }, 400);
+    const passwordProblems = validateStrongPassword(temporaryPassword, [
+      email,
+      username,
+      fullName,
+    ]);
+    if (passwordProblems.length > 0) {
+      return jsonResponse({ error: passwordProblems[0] }, 400);
     }
 
     if (!ALLOWED_PROFESSIONS.has(profession)) {
@@ -154,7 +182,7 @@ Deno.serve(async (req) => {
     });
 
     if (createError || !created.user) {
-      return jsonResponse({ error: createError?.message || 'Não foi possível criar o usuário.' }, 400);
+      return jsonResponse({ error: 'Não foi possível criar o usuário.' }, 400);
     }
 
     const profilePayload = {
@@ -185,8 +213,24 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError) {
-      await supabaseAdmin.auth.admin.deleteUser(created.user.id);
-      return jsonResponse({ error: profileError.message }, 500);
+      const { error: cleanupError } =
+        await supabaseAdmin.auth.admin.deleteUser(created.user.id);
+      if (cleanupError) {
+        logOperationalEvent('error', 'auth_orphan_cleanup_failed', {
+          correlationId,
+          operation: 'super_admin_create_user',
+          reason: 'compensation_failed',
+          errorCode: cleanupError.code,
+        });
+        return jsonResponse({
+          error: 'O perfil não foi criado e a limpeza automática ficou pendente.',
+          referencia: correlationId,
+        }, 500);
+      }
+      return jsonResponse({
+        error: 'O perfil não foi criado; a conta de autenticação foi revertida.',
+        referencia: correlationId,
+      }, 500);
     }
 
     await writeAuditLog(supabaseAdmin, {
@@ -206,7 +250,15 @@ Deno.serve(async (req) => {
     });
 
     return jsonResponse({ user: profile }, 201);
-  } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : 'Erro inesperado.' }, 500);
+  } catch {
+    logOperationalEvent('error', 'super_admin_create_user_failed', {
+      correlationId,
+      operation: 'super_admin_create_user',
+      reason: 'unexpected_failure',
+    });
+    return jsonResponse({
+      error: 'Não foi possível concluir a criação do usuário.',
+      referencia: correlationId,
+    }, 500);
   }
 });

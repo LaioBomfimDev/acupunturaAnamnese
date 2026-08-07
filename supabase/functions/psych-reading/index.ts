@@ -18,18 +18,116 @@
 // ============================================================
 
 import {
+  assertEdgeAccess,
   assertSuperAdmin,
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
+import {
+  ClinicalPayloadValidationError,
+  readClinicalJsonBody,
+  sanitizeClinicalPayload,
+  type ClinicalPayloadSchema,
+} from '../_shared/clinicalPayload.ts';
+import {
+  createCorrelationId,
+  logOperationalEvent,
+} from '../_shared/observability.ts';
 
 const MODEL_ID = 'gemini-2.5-flash';
+const SELECTED_ITEMS_SCHEMA: ClinicalPayloadSchema = {
+  type: 'array',
+  maxItems: 64,
+  items: { type: 'string', maxLength: 240 },
+};
+const INFORMANT_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  nullable: true,
+  properties: {
+    type: { type: 'string', maxLength: 120 },
+    // O nome do informante não é necessário para o raciocínio.
+    name: { type: 'string', maxLength: 240, redact: true },
+  },
+};
+const REQUEST_SCHEMA: ClinicalPayloadSchema = {
+  type: 'object',
+  properties: {
+    case: {
+      type: 'object',
+      required: true,
+      properties: {
+        intakeProfile: { type: 'string', maxLength: 80, nullable: true },
+        fields: {
+          type: 'array',
+          maxItems: 80,
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', maxLength: 120 },
+              label: { type: 'string', maxLength: 240 },
+              text: { type: 'string', maxLength: 5000 },
+              informant: INFORMANT_SCHEMA,
+            },
+          },
+        },
+        axes: {
+          type: 'array',
+          maxItems: 32,
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', maxLength: 120 },
+              label: { type: 'string', maxLength: 240 },
+              framework: { type: 'string', maxLength: 240 },
+              text: { type: 'string', maxLength: 5000 },
+            },
+          },
+        },
+        selected: {
+          type: 'object',
+          properties: {
+            psiHumor: SELECTED_ITEMS_SCHEMA,
+            psiAnsiedade: SELECTED_ITEMS_SCHEMA,
+            psiSono: SELECTED_ITEMS_SCHEMA,
+            psiAlimentacao: SELECTED_ITEMS_SCHEMA,
+            psiCognicao: SELECTED_ITEMS_SCHEMA,
+            psiDesenvolvimento: SELECTED_ITEMS_SCHEMA,
+            psiTrauma: SELECTED_ITEMS_SCHEMA,
+            psiFuncionamento: SELECTED_ITEMS_SCHEMA,
+            psiSubstancias: SELECTED_ITEMS_SCHEMA,
+            psiRisco: SELECTED_ITEMS_SCHEMA,
+          },
+        },
+        riskNotes: { type: 'string', maxLength: 5000 },
+        complementaryQuestions: {
+          type: 'array',
+          maxItems: 80,
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', maxLength: 160 },
+              question: { type: 'string', maxLength: 1600 },
+              sourceQuestion: { type: 'string', maxLength: 1600 },
+              answer: { type: 'string', maxLength: 5000 },
+              informant: INFORMANT_SCHEMA,
+              source: {
+                type: 'string',
+                maxLength: 40,
+                enum: ['manual', 'ai_selected_by_professional'],
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
 
 const OUTPUT_SCHEMA = {
   type: 'OBJECT',
@@ -97,6 +195,11 @@ PROIBIÇÕES (invioláveis):
 Tudo em português brasileiro, linguagem clínica objetiva. O texto pode conter marcadores de anonimização ([NOME], [DATA] etc.) — ignore-os, são esperados.`;
 
 Deno.serve(async (req) => {
+  const correlationId = createCorrelationId(req.headers.get('x-correlation-id'));
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -110,28 +213,38 @@ Deno.serve(async (req) => {
     if ('error' in caller) {
       return jsonResponse({ error: caller.error }, caller.status);
     }
-    if (caller.profile.is_active !== true) {
-      return jsonResponse({ error: 'Usuário suspenso.' }, 403);
-    }
+    const access = assertEdgeAccess(caller.profile, caller.claims);
+    if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
 
-    const body = await req.json().catch(() => ({}));
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'psych-reading',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const body = await readClinicalJsonBody(req, 32_768);
     if (isDeployHealthSmoke(body)) {
       if (!assertSuperAdmin(caller.profile)) {
         return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
       }
-      return await runAiSmokeCheck({ functionName: 'psych-reading', modelId: MODEL_ID });
+      return await runAiSmokeCheck({
+        functionName: 'psych-reading',
+        jsonResponse,
+        modelId: MODEL_ID,
+      });
     }
 
     if (!isVertexConfigured()) {
       return jsonResponse({ error: 'Análise por IA não configurada no servidor (conta de serviço ausente).' }, 503);
     }
 
-    const psychologyCase = body.case;
-    if (!psychologyCase || typeof psychologyCase !== 'object') {
-      return jsonResponse({ error: 'Caso da anamnese ausente.' }, 400);
-    }
-    // Teto defensivo no tamanho do caso serializado.
-    const caseText = JSON.stringify(psychologyCase).slice(0, 12000);
+    const input = sanitizeClinicalPayload(body, REQUEST_SCHEMA) as {
+      case: Record<string, unknown>;
+    };
+    const psychologyCase = input.case;
+    const caseText = JSON.stringify(psychologyCase);
 
     // Diretrizes adicionais curadas (aditivas; a segurança do prompt fixo
     // é piso). Key própria da leitura psi + a global clínica.
@@ -179,7 +292,12 @@ Deno.serve(async (req) => {
     });
 
     if (!geminiResponse.ok) {
-      console.error('psych-reading: Gemini API erro', geminiResponse.status);
+      logOperationalEvent('error', 'vertex_upstream_failed', {
+        correlationId,
+        operation: 'psych_reading',
+        status: geminiResponse.status,
+        reason: 'http_error',
+      });
       throw new Error('A leitura por IA falhou. Tente novamente em instantes.');
     }
 
@@ -223,9 +341,23 @@ Deno.serve(async (req) => {
       cautions: asArray(parsed.cautions).filter((s: unknown) => typeof s === 'string').slice(0, 5),
     });
   } catch (error) {
-    console.error('psych-reading:', error instanceof Error ? error.message : 'erro');
+    if (error instanceof ClinicalPayloadValidationError) {
+      logOperationalEvent('warn', 'clinical_payload_rejected', {
+        correlationId,
+        operation: 'psych_reading',
+        reason: error.code,
+      });
+      return jsonResponse({ error: 'Dados da anamnese inválidos.' }, 400);
+    }
+    logOperationalEvent('error', 'psych_reading_failed', {
+      correlationId,
+      operation: 'psych_reading',
+      reason: error instanceof SyntaxError
+        ? 'invalid_provider_response'
+        : 'request_failed',
+    });
     return jsonResponse(
-      { error: error instanceof Error ? error.message : 'Erro inesperado na leitura.' },
+      { error: `Não foi possível concluir a leitura. Referência: ${correlationId}.` },
       500,
     );
   }

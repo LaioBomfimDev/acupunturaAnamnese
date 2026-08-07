@@ -1,19 +1,58 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { resolveCorsDecision } from './corsPolicy.ts';
+import { decodeVerifiedAuthClaims } from './edgeAccess.ts';
+export { assertEdgeAccess } from './edgeAccess.ts';
+export { writeAuditLog } from './audit.ts';
 
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+const baseCorsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '600',
 };
 
-export function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/json',
-    },
-  });
+export function createCorsContext(req: Request) {
+  const decision = resolveCorsDecision(
+    req.headers.get('Origin'),
+    Deno.env.get('CORS_ALLOWED_ORIGINS'),
+    Deno.env.get('CORS_ALLOW_DEFAULT_LOCAL_ORIGINS') === 'true',
+  );
+  const headers: Record<string, string> = {
+    ...baseCorsHeaders,
+    Vary: 'Origin',
+  };
+
+  if (decision.allowed && decision.origin) {
+    headers['Access-Control-Allow-Origin'] = decision.origin;
+  }
+
+  const jsonResponse = (
+    body: unknown,
+    status = 200,
+    additionalHeaders: Record<string, string> = {},
+  ) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: {
+        ...headers,
+        ...additionalHeaders,
+        'Content-Type': 'application/json',
+      },
+    });
+
+  return {
+    allowed: decision.allowed,
+    headers,
+    jsonResponse,
+    rejectResponse: () =>
+      jsonResponse(
+        {
+          error: decision.reason === 'invalid_configuration'
+            ? 'CORS não configurado corretamente no servidor.'
+            : 'Origem não permitida.',
+        },
+        decision.reason === 'invalid_configuration' ? 503 : 403,
+      ),
+  };
 }
 
 function getNamedOrFirstKey(rawKeys: string | undefined, preferredName = 'default') {
@@ -79,7 +118,7 @@ export async function getCallerProfile(req: Request, supabaseAdmin: ReturnType<t
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id,email,username,full_name,role,is_active,must_change_password')
+    .select('id,email,username,full_name,role,is_active,must_change_password,mfa_required')
     .eq('id', userData.user.id)
     .maybeSingle();
 
@@ -87,7 +126,10 @@ export async function getCallerProfile(req: Request, supabaseAdmin: ReturnType<t
     return { error: 'Perfil não encontrado.', status: 403 as const };
   }
 
-  return { user: userData.user, profile };
+  // O payload só é decodificado após auth.getUser validar assinatura, expiração
+  // e usuário. O parser local não é usado como verificador de JWT.
+  const claims = decodeVerifiedAuthClaims(token);
+  return { user: userData.user, profile, claims };
 }
 
 export function assertSuperAdmin(profile: { role?: string; is_active?: boolean; must_change_password?: boolean }) {
@@ -132,27 +174,4 @@ export function validateStrongPassword(password: string, context: string[] = [])
   }
 
   return problems;
-}
-
-export async function writeAuditLog(
-  supabaseAdmin: ReturnType<typeof createServiceClient>,
-  payload: {
-    actorId?: string | null;
-    targetId?: string | null;
-    action: string;
-    details?: Record<string, unknown>;
-  },
-) {
-  try {
-    await supabaseAdmin
-      .from('admin_audit_logs')
-      .insert({
-        actor_id: payload.actorId || null,
-        target_id: payload.targetId || null,
-        action: payload.action,
-        details: payload.details || {},
-      });
-  } catch (error) {
-    console.error('Falha ao registrar auditoria:', error);
-  }
 }

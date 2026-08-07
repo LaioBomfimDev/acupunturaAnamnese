@@ -1,13 +1,17 @@
 import {
-  corsHeaders,
+  createCorsContext,
   createServiceClient,
   getCallerProfile,
-  jsonResponse,
   validateStrongPassword,
   writeAuditLog,
 } from '../_shared/security.ts';
+import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 
 Deno.serve(async (req) => {
+  const cors = createCorsContext(req);
+  if (!cors.allowed) return cors.rejectResponse();
+  const { headers: corsHeaders, jsonResponse } = cors;
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -31,6 +35,14 @@ Deno.serve(async (req) => {
     if (caller.profile.must_change_password !== true) {
       return jsonResponse({ ok: true, changed: false });
     }
+
+    const rateLimitResponse = await enforceEdgeRateLimit({
+      supabaseAdmin,
+      subjectId: caller.user.id,
+      functionName: 'complete-first-login',
+      jsonResponse,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await req.json().catch(() => ({}));
     const password = String(body.password || '');

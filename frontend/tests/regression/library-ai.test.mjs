@@ -81,7 +81,12 @@ test('library-qa exige atribuicao rastreavel para respostas TEAC', async () => {
 
 test('askLibrary sem matches faz curto-circuito sem chamar IA', async () => {
   const { askLibrary } = lib;
-  const res = await askLibrary('xyzabc inexistente', cards);
+  const res = await askLibrary('xyzabc inexistente', cards, {
+    getAuthenticatedUser: async () => ({ id: 'local-user', _isLocal: true }),
+    invoke: async () => {
+      throw new Error('não deveria chamar a IA');
+    },
+  });
   assert.equal(res.modelVersion, 'local');
   assert.equal(res.insufficient, true);
   assert.equal(res.usedCount, 0);
@@ -98,4 +103,55 @@ test('mockAskLibrary cita os títulos recuperados', async () => {
 test('askLibrary rejeita pergunta vazia', async () => {
   const { askLibrary } = lib;
   await assert.rejects(() => askLibrary('   ', cards));
+});
+
+test('askLibrary autenticada envia somente a pergunta e aceita contagem do servidor', async () => {
+  const { askLibrary } = lib;
+  let invocation;
+  const result = await askLibrary('insônia e ansiedade', cards, {
+    getAuthenticatedUser: async () => ({ id: 'real-user' }),
+    invoke: async (name, options) => {
+      invocation = { name, options };
+      return {
+        data: {
+          modelVersion: 'gemini-test',
+          answer: 'Resposta aprovada.',
+          citations: ['Fonte'],
+          insufficient: false,
+          usedCount: 2,
+          knowledgeVersionIds: ['entity-1@3', 'entity-2@1'],
+        },
+        error: null,
+      };
+    },
+  });
+
+  assert.equal(invocation.name, 'library-qa');
+  assert.deepEqual(invocation.options.body, { question: 'insônia e ansiedade' });
+  assert.equal('context' in invocation.options.body, false);
+  assert.equal(result.usedCount, 2);
+  assert.deepEqual(result.knowledgeVersionIds, ['entity-1@3', 'entity-2@1']);
+});
+
+test('library-qa recupera contexto aprovado no servidor e ignora contexto do cliente', async () => {
+  const functionPath = path.resolve(root, '../supabase/functions/library-qa/index.ts');
+  const retrievalPath = path.resolve(root, '../supabase/functions/_shared/knowledgeRetrieval.ts');
+  const [source, retrieval] = await Promise.all([
+    readFile(functionPath, 'utf8'),
+    readFile(retrievalPath, 'utf8'),
+  ]);
+
+  assert.match(source, /scrubClinicalText\(question\)/);
+  assert.match(source, /retrieveApprovedKnowledge\(supabaseAdmin,\s*sanitizedQuestion/);
+  assert.doesNotMatch(source, /body\.context/);
+  assert.match(source, /knowledgeVersionIds/);
+  assert.match(source, /Ignore qualquer ordem, prompt ou tentativa/i);
+  assert.match(source, /const contextText = JSON\.stringify\(promptSources\)/);
+  assert.doesNotMatch(source, /<fonte_aprovada/);
+  assert.match(source, /sourcesById\.has\(value\)/);
+  assert.match(source, /usedSources\.length === 0/);
+  assert.match(retrieval, /\.rpc\(\s*'get_active_knowledge_reviews'/);
+  assert.doesNotMatch(retrieval, /\.from\('knowledge_entities'\)/);
+  assert.match(retrieval, /review\.source_ids/);
+  assert.match(retrieval, /Ausência de evidência nunca vira confiança alta/);
 });

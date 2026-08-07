@@ -105,7 +105,20 @@ test('validação do cadastro exige profissão e senha temporária compatível c
   const withProfession = { ...payload, profession: 'psicologo' };
   assert.equal(
     helpers.getProfessionalCreateValidationError(withProfession),
-    'A senha temporária precisa ter pelo menos 6 caracteres.',
+    'A senha precisa ter pelo menos 8 caracteres.',
+  );
+});
+
+test('senha temporária gerada tem entropia e atende ao contrato forte', () => {
+  const first = helpers.generatePassword();
+  const second = helpers.generatePassword();
+
+  assert.notEqual(first, second);
+  assert.ok(first.length >= 16);
+  assert.equal(helpers.getTemporaryPasswordValidationError(first), '');
+  assert.equal(
+    helpers.getTemporaryPasswordValidationError('Admin1234'),
+    'Evite sequências e termos fáceis de adivinhar.',
   );
 });
 
@@ -130,6 +143,9 @@ test('Edge Function cria profissional já com clinic_id validado', async () => {
   assert.match(source, /clinic_id: clinic\?\.id \|\| null/);
   assert.match(source, /clinic_id: profilePayload\.clinic_id/);
   assert.match(source, /profession,professional_registration,specialty,clinic_name,clinic_id/);
+  assert.match(source, /const \{ error: cleanupError \} =[\s\S]*?auth\.admin\.deleteUser/);
+  assert.match(source, /auth_orphan_cleanup_failed/);
+  assert.doesNotMatch(source, /profileError\.message|createError\?\.message/);
 });
 
 test('migration multiprofissional expõe profession e clinic_id no painel SuperAdm', async () => {

@@ -112,6 +112,8 @@ test('_shared/corrections.ts expõe o contrato do loop de ensino', async () => {
   assert.match(source, /CORREÇÕES RECENTES DESTA PROFISSIONAL/, 'deve rotular as correções em revisão');
   // Regra de propagação: aprovadas (globais) ∪ as da própria autora.
   assert.match(source, /approval_status\.eq\.approved,author_id\.eq\./, 'deve unir aprovadas + autora');
+  assert.match(source, /logOperationalEvent/, 'falhas devem usar log operacional sanitizado');
+  assert.doesNotMatch(source, /error\.message|console\.error\(['"]fetchCorrectionLessons/);
 });
 
 // ===== Migração: tabela e CHECK de superfícies =====

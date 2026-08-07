@@ -355,7 +355,7 @@ test('ranking por evidências ignora ponto ainda não aprovado', () => {
   assert.ok(!result.recommendations.some(item => item.point.code === 'LU1'));
 });
 
-test('base clínica do protocolo carrega deep-curated, alta confiança e revisões locais', async () => {
+test('modo local de curadoria combina deep-curated, alta confiança e revisões locais sem publicar PDF', async () => {
   const originalFetch = globalThis.fetch;
   const hadLocalStorage = Object.prototype.hasOwnProperty.call(globalThis, 'localStorage');
   const originalLocalStorage = globalThis.localStorage;
@@ -424,7 +424,15 @@ test('base clínica do protocolo carrega deep-curated, alta confiança e revisõ
   };
 
   try {
-    const reviews = await knowledgeAdminService.getClinicalKnowledgeReviews();
+    const [deepCuratedReviews, highConfidenceReviews] = await Promise.all([
+      knowledgeAdminService.getDeepCuratedKnowledgeReviews(),
+      knowledgeAdminService.getHighConfidenceKnowledgeReviews(),
+    ]);
+    const reviews = knowledgeAdminService.mergeClinicalKnowledgeReviews({
+      deepCuratedReviews,
+      highConfidenceReviews,
+      localReviews: knowledgeAdminService.getLocalKnowledgeReviews(),
+    });
     const byCode = new Map(reviews.map(review => [review.code, review]));
 
     assert.deepEqual(fetchCalls, [
@@ -495,7 +503,7 @@ test('ficha identifica aprovação local por confiança alta', () => {
   assert.equal(detail.name, 'IG4 - Hegu aprovado por confiança');
 });
 
-test('ficha aceita ponto novo aprovado localmente a partir do Atlas', () => {
+test('ficha bloqueia ponto Atlas local enquanto auditoria profissional estiver pendente', () => {
   const detail = pointDetails.buildPointDetail({
     pointKey: 'ATLAS-EXTRA-ANMIAN',
     reviews: [{
@@ -516,9 +524,11 @@ test('ficha aceita ponto novo aprovado localmente a partir do Atlas', () => {
     },
   });
 
-  assert.equal(detail.dataOrigin, 'Biblioteca Viva');
-  assert.equal(detail.displayCode, 'Anmian');
-  assert.equal(detail.reviewStatus, 'approved_local');
+  assert.equal(detail.dataOrigin, 'Pendente');
+  assert.equal(detail.displayCode, 'ATLAS-EXTRA-ANMIAN');
+  assert.equal(detail.locationText, '');
+  assert.doesNotMatch(detail.name, /Sono Tranquilo/);
+  assert.notEqual(detail.reviewStatus, 'approved_local');
   assert.ok(detail.sources.includes('Atlas Ednea Martins, p. 856'));
 });
 

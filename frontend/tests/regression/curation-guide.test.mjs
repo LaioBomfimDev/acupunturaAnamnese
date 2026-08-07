@@ -18,7 +18,9 @@ const psychService = readFileSync(
 test('guias explicam a legenda antes do passo a passo ou junto aos controles relacionados', () => {
   const configuredGuides = guide.match(/icon:\s*'/g) || [];
   const legends = guide.match(/legend:\s*\[/g) || [];
-  const fourStepGuides = guide.match(/steps:\s*\[[\s\S]*?\n\s{6}'[^\n]+',\n\s{6}'[^\n]+',\n\s{6}'[^\n]+',\n\s{6}'[^\n]+',\n\s{4}\]/g) || [];
+  const fourStepGuides = guide.match(
+    /steps:\s*\[[\s\S]*?\r?\n\s{6}'[^\r\n]+',\r?\n\s{6}'[^\r\n]+',\r?\n\s{6}'[^\r\n]+',\r?\n\s{6}'[^\r\n]+',\r?\n\s{4}\]/g,
+  ) || [];
 
   assert.equal(configuredGuides.length, 9, 'todas as oito áreas prontas e a observação devem ter guia');
   assert.equal(legends.length, configuredGuides.length - 1, 'Psicologia posiciona a legenda junto aos quatro seletores');

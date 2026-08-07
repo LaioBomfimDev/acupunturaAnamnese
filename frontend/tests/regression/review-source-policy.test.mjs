@@ -88,3 +88,39 @@ test('registro com localizacao + acoes nao e tratado como nucleo vazio', () => {
   assert.equal(isQuarantinedKnowledgeReview(partial), false);
   assert.equal(isClinicallyActiveKnowledgeReview(partial), true);
 });
+
+test('versao central aprovada por profissional pode alimentar o uso clinico', () => {
+  const serverApproved = {
+    ...healthyAtlasReview,
+    status: 'approved',
+    approvalMode: 'server_professional',
+    requiresProfessionalAudit: false,
+  };
+
+  assert.equal(isClinicallyActiveKnowledgeReview(serverApproved), true);
+});
+
+test('registro central sem gate profissional permanece fora do uso clinico', () => {
+  const missingGate = {
+    ...healthyAtlasReview,
+    status: 'approved',
+    approvalMode: 'server_professional',
+    requiresProfessionalAudit: true,
+  };
+
+  assert.equal(isClinicallyActiveKnowledgeReview(missingGate), false);
+});
+
+test('approved_local com auditoria profissional pendente é preservado em revisão', () => {
+  const pendingProfessionalAudit = {
+    ...healthyAtlasReview,
+    requiresProfessionalAudit: true,
+    approvalMode: 'local_only',
+  };
+
+  assert.equal(isClinicallyActiveKnowledgeReview(pendingProfessionalAudit), false);
+  const normalized = normalizeKnowledgeReviewForClinicalUse(pendingProfessionalAudit);
+  assert.equal(normalized.status, 'review');
+  assert.equal(normalized.clinicalActivationBlocked, true);
+  assert.match(normalized.clinicalActivationReason, /auditoria profissional/i);
+});

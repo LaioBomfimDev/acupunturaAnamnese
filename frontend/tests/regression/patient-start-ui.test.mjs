@@ -27,7 +27,7 @@ after(async () => {
   await server?.close();
 });
 
-test('cartão da seleção de paciente abre a ficha e expõe exclusão por ícone', () => {
+test('cartão abre a ficha e expõe solicitação de exclusão por ícone', () => {
   const { PatientListCard } = patientStart;
   const patient = {
     id: 'patient-1',
@@ -46,7 +46,7 @@ test('cartão da seleção de paciente abre a ficha e expõe exclusão por ícon
   assert.match(html, /aria-label="Abrir ficha de Denise Neves"/);
   assert.doesNotMatch(html, />Abrir ficha</);
   assert.match(html, /class="patient-delete-icon-button"/);
-  assert.match(html, /aria-label="Excluir paciente Denise Neves"/);
+  assert.match(html, /aria-label="Solicitar exclusão do paciente Denise Neves"/);
   assert.doesNotMatch(html, />Excluir</);
 });
 

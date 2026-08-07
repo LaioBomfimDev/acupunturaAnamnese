@@ -1,0 +1,4 @@
+# Esta função é chamada antes de existir uma sessão. A autenticação da
+# credencial e os limites persistentes continuam dentro do próprio handler.
+[functions.login-with-identifier]
+verify_jwt = false

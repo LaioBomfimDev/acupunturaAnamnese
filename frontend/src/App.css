@@ -14,6 +14,44 @@
 
 * { box-sizing: border-box; }
 
+/* ======= BARRAS DE ROLAGEM =======
+   O padrão do Windows desenha uma barra larga, com trilho cinza e setas,
+   que abria uma faixa clara entre a sidebar navy e o conteúdo. Aqui ela
+   vira fina, sem trilho, com polegar arredondado que só ganha contraste
+   sob o ponteiro. Firefox usa scrollbar-width/color; Chromium e Edge usam
+   ::-webkit-scrollbar. Um dos dois sempre pega. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 26, 49, .26) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* A borda transparente + background-clip afina o polegar sem estreitar a
+   área de clique: continua fácil de pegar com o mouse. */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(6, 26, 49, .22);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(6, 26, 49, .4);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: rgba(6, 26, 49, .55);
+}
+
 body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -43,12 +81,49 @@ body {
   position: fixed;
   top: 0; bottom: 0; left: 0;
   padding: 24px 18px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Reserva a calha desde sempre: sem isso o conteúdo dá um pulo lateral
+     quando a lista cresce e a barra aparece. */
+  scrollbar-gutter: stable;
+  /* Chegar ao fim da sidebar não deve começar a rolar a página atrás. */
+  overscroll-behavior: contain;
   z-index: 100;
   border-right: 1px solid rgba(213, 163, 59, .22);
   box-shadow: 18px 0 50px rgba(0,0,0,.22);
   display: flex;
   flex-direction: column;
+}
+
+/* Sobre o navy, o polegar escuro do padrão global sumiria. Aqui ele é
+   claro e discreto, e vira dourado quando o ponteiro entra na sidebar —
+   mostra que aquela coluna rola, sem competir com o menu. */
+.sidebar {
+  scrollbar-color: rgba(255, 255, 255, .16) transparent;
+}
+
+.sidebar:hover {
+  scrollbar-color: rgba(213, 163, 59, .5) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, .14);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  transition: background-color .18s ease;
+}
+
+.sidebar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(213, 163, 59, .48);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(240, 189, 83, .78);
 }
 
 .logo {
@@ -2120,6 +2195,67 @@ textarea { min-height: 95px; resize: vertical; }
 .psi-profile-summary h3,
 .psi-neuro-row-head h3 {
   margin: 2px 0 6px;
+}
+.shared-discipline {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 6px;
+}
+.shared-discipline:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+}
+.shared-discipline-title {
+  margin: 0 0 8px;
+  color: var(--navy-2);
+  font-family: Georgia, serif;
+}
+.shared-evolucao-list {
+  margin: 0;
+  padding-left: 18px;
+}
+.shared-evolucao-list li {
+  margin-bottom: 6px;
+}
+.shared-evolucao-list p {
+  margin: 2px 0 0;
+}
+.psi-context-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.psi-context-module {
+  border-left: 3px solid #cbd5e1;
+}
+.psi-context-module.open {
+  border-left-color: var(--gold);
+}
+.psi-context-module-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.psi-context-module-summary {
+  margin: 4px 0 0;
+  max-width: 70ch;
+}
+.psi-context-module-count {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.psi-profile-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .psi-profile-section {
   padding-top: 4px;

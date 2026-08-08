@@ -27,6 +27,7 @@ import {
   normalizeNeuropsychologyEvaluation,
 } from '../data/neuropsychologyEvaluation';
 import { PSYCHOLOGY_INFORMANT_OPTIONS } from '../data/psychologyIntakeProfiles';
+import { getSuggestedContextModules } from '../data/psychologyContextModules';
 import { resolveUserDisciplines } from '../data/disciplines';
 import { PsychologyAnamnese } from './psychology/PsychologyAnamnese';
 import { PsychologyAssistantRail } from './psychology/PsychologyAssistantRail';
@@ -372,11 +373,56 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     }));
   }
 
+  // DEV: preenche a anamnese inteira com um caso sintético para percorrer o
+  // workspace sem digitar tudo de novo. Com percurso já escolhido, o sorteio
+  // fica restrito a ele — clicar aqui nunca troca a anamnese por baixo da
+  // profissional. Sem percurso (Painel), o caso traz o próprio.
+  async function fillTestAnswers() {
+    const { buildRandomPsychologyFixture } = await import('../utils/testPsychologyFixture');
+    const { sessionPatch } = buildRandomPsychologyFixture(session.intakeProfile || undefined);
+
+    setSession(prev => ({
+      ...prev,
+      ...sessionPatch,
+      // Campos: sobrescreve os do perfil sorteado e mantém as chaves dos
+      // demais perfis, para os inputs seguirem controlados.
+      fields: { ...prev.fields, ...sessionPatch.fields },
+      // Marcações e eixos são TROCADOS, não somados: clicar de novo deve
+      // mostrar o caso novo, não a mistura dele com o anterior.
+      selectedMap: { ...sessionPatch.selectedMap },
+      axisNotes: { ...sessionPatch.axisNotes },
+      // Preserva o que não é anamnese: histórico, evoluções e documentos.
+      evolucoes: prev.evolucoes,
+      relatorio: prev.relatorio,
+      responseHistory: prev.responseHistory,
+    }));
+    setActiveJourney('anamnese');
+    setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
+  }
+
+  // Abrir/fechar módulo de contexto. Fechar não apaga: o texto continua em
+  // session.fields e volta a aparecer se o bloco for reaberto.
+  function toggleContextModule(moduleId) {
+    setSession(prev => ({
+      ...prev,
+      contextModules: {
+        ...prev.contextModules,
+        [moduleId]: !prev.contextModules?.[moduleId],
+      },
+    }));
+  }
+
   function selectIntakeProfile(profileId) {
     setSession(prev => ({
       ...prev,
       intakeProfile: profileId,
       intakeSelectedAt: new Date().toISOString(),
+      // O percurso PRÉ-ABRE os módulos que costumam interessar, sem
+      // sobrescrever o que a profissional já tenha aberto ou fechado.
+      contextModules: {
+        ...getSuggestedContextModules(profileId, getPatientAge(selectedPatient)),
+        ...prev.contextModules,
+      },
     }));
     setActiveJourney('anamnese');
     setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
@@ -552,12 +598,14 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onSelectIntakeProfile={selectIntakeProfile}
             onOpenEvaluation={openEvaluation}
             onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
+            onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );
       case PSYCHOLOGY_TABS.ANAMNESE:
         return (
           <PsychologyAnamnese
             session={session}
+            onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
             onUpdateField={updateFieldValue}
             onQuickWord={handleQuickWord}
             onToggleCheck={toggleCheck}
@@ -566,6 +614,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onInformantChange={updateFieldInformant}
             onArchiveResponse={archiveFieldResponse}
             onChooseProfile={openPathChooser}
+            onToggleContextModule={toggleContextModule}
           />
         );
       case PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES:
@@ -637,6 +686,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onSelectIntakeProfile={selectIntakeProfile}
             onOpenEvaluation={openEvaluation}
             onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
+            onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );
     }

@@ -199,6 +199,10 @@ function materialize(sections) {
   }));
 }
 
+// ---- LEGADO (aposentado em 07/08/2026) ----------------------------
+// Blocos que apareciam conforme o sexo clínico, com um único campo cada.
+// Não são mais renderizados — o contexto virou módulo por pertinência.
+// Ficam declarados só para preservar o conteúdo de registros antigos.
 const adultFemaleSection = {
   id: 'adulto-contexto-feminino',
   title: 'Contexto corporal e reprodutivo — perguntar apenas quando pertinente',
@@ -223,6 +227,13 @@ const childMaleSection = {
   fields: [toField(['childContextoMasculino', 'Há informações relevantes sobre puberdade ou desenvolvimento corporal?', ['não investigado', 'não se aplica à idade', 'sem queixa', 'puberdade iniciada', 'queixa urogenital', 'acompanhamento médico']])],
 };
 
+const LEGACY_SEX_SECTIONS = [
+  adultFemaleSection,
+  adultMaleSection,
+  childFemaleSection,
+  childMaleSection,
+];
+
 const adultMaterialized = materialize(adultSections);
 const childMaterialized = materialize(childSections);
 
@@ -241,13 +252,14 @@ export function isPsychologyPathEligible(path, age) {
   return true;
 }
 
+// O roteiro depende da FAIXA ETÁRIA (infantil x adulto), que muda de fato
+// as perguntas. O sexo clínico não define mais seção alguma: o contexto
+// corporal, reprodutivo, de cuidado e de violência virou módulo aberto por
+// pertinência — ver data/psychologyContextModules.js.
 export function getPsychologyProfileSections(profileId) {
   const profile = getPsychologyIntakeProfile(profileId);
   if (!profile) return [];
-  if (profile.ageGroup === 'adulto') {
-    return [...adultMaterialized, profile.clinicalSex === 'feminino' ? adultFemaleSection : adultMaleSection];
-  }
-  return [...childMaterialized, profile.clinicalSex === 'feminino' ? childFemaleSection : childMaleSection];
+  return profile.ageGroup === 'adulto' ? adultMaterialized : childMaterialized;
 }
 
 export function getAllPsychologyProfileFields() {
@@ -257,5 +269,14 @@ export function getAllPsychologyProfileFields() {
       for (const field of section.fields) byId.set(field.id, field);
     }
   }
+  // Campos dos antigos blocos por sexo: não são mais renderizados, mas as
+  // chaves seguem existindo para que um registro gravado antes de
+  // 07/08/2026 não perca o que foi escrito neles.
+  for (const section of LEGACY_SEX_SECTIONS) {
+    for (const field of section.fields) byId.set(field.id, field);
+  }
   return [...byId.values()];
 }
+
+export const LEGACY_SEX_FIELD_IDS = LEGACY_SEX_SECTIONS
+  .flatMap(section => section.fields.map(field => field.id));

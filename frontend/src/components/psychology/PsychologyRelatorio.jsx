@@ -94,7 +94,7 @@ export function PsychologyRelatorio({ session, selectedPatient, therapistProfile
   const therapistEmail = therapistProfile?.email || '';
 
   // Conteúdo clínico vindo da sessão.
-  const fields = getPsychologyTextFields(session.intakeProfile)
+  const fields = getPsychologyTextFields(session.intakeProfile, session.contextModules)
     .map(f => ({ label: f.label, value: String(session.fields?.[f.id] || '').trim() }))
     .filter(f => f.value);
   const axes = PSYCHOLOGY_AXES

@@ -239,8 +239,12 @@ test('boas-vindas tem 3 caminhos e as anamneses abrem os 4 perfis solicitados', 
   assert.equal(isPsychologyPathEligible('adulto', 18), true);
   for (const profile of PSYCHOLOGY_INTAKE_PROFILES) {
     const sections = getPsychologyProfileSections(profile.id);
-    assert.ok(sections.length >= 6, `${profile.id} precisa de roteiro amplo`);
-    for (const field of sections.flatMap(section => section.fields)) {
+    // O roteiro fixo depende só da faixa etária (adulto 5, infantil 7); o
+    // contexto que antes vinha por sexo virou módulo aberto por pertinência.
+    assert.ok(sections.length >= 5, `${profile.id} precisa de roteiro amplo`);
+    const fields = sections.flatMap(section => section.fields);
+    assert.ok(fields.length >= 15, `${profile.id} precisa de roteiro com profundidade`);
+    for (const field of fields) {
       assert.ok(field.quickWords.length >= 4, `${field.id} precisa de botões de digitação rápida`);
     }
   }

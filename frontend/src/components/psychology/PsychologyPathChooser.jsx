@@ -16,6 +16,7 @@ export function PsychologyPathChooser({
   onSelectIntakeProfile,
   onOpenEvaluation,
   onOpenEvolution,
+  onFillTestAnswers,
 }) {
   const [intakePath, setIntakePath] = useState(null);
   const currentProfile = getPsychologyIntakeProfile(session?.intakeProfile);
@@ -38,6 +39,11 @@ export function PsychologyPathChooser({
           Escolha o percurso deste atendimento. Anamnese e avaliação são registros separados,
           mas permanecem vinculados ao mesmo paciente.
         </p>
+        {onFillTestAnswers && (
+          <button className="tag" type="button" onClick={onFillTestAnswers}>
+            Preencher teste aleatório
+          </button>
+        )}
       </div>
 
       {!intakePath ? (

@@ -28,6 +28,11 @@ import {
   getAllPsychologyProfileFields,
   getPsychologyProfileSections,
 } from './psychologyIntakeProfiles.js';
+import {
+  getAllPsychologyContextFields,
+  getOpenPsychologyContextFields,
+  getSuggestedContextModules,
+} from './psychologyContextModules.js';
 
 // Estado editorial do vocabulário — vira 'aprovado' quando a
 // psicóloga validar (gate humano, AGENTS.md §0/§8).
@@ -160,10 +165,24 @@ export const PSYCHOLOGY_TEXT_FIELDS = [
 
 export const PSYCHOLOGY_PROFILE_FIELDS = getAllPsychologyProfileFields();
 
-export function getPsychologyTextFields(profileId) {
+export const PSYCHOLOGY_CONTEXT_FIELDS = getAllPsychologyContextFields();
+
+/**
+ * Campos de texto ATIVOS da ficha: escuta livre + roteiro da faixa etária
+ * + módulos de contexto abertos. Módulo fechado não entra — é o que impede
+ * pergunta que não cabe no caso de contar como lacuna, no relatório ou na IA.
+ *
+ * @param {string} profileId percurso escolhido
+ * @param {object} [contextModules] mapa {moduleId: boolean} da sessão
+ */
+export function getPsychologyTextFields(profileId, contextModules) {
   const profileFields = getPsychologyProfileSections(profileId)
     .flatMap(section => section.fields);
-  return [...PSYCHOLOGY_TEXT_FIELDS, ...profileFields];
+  return [
+    ...PSYCHOLOGY_TEXT_FIELDS,
+    ...profileFields,
+    ...getOpenPsychologyContextFields(contextModules),
+  ];
 }
 
 // Perguntas de "Funcionamento atual" — guiam a seção de marcações
@@ -288,8 +307,15 @@ export function createEmptyPsychologySession() {
     intakeProfile: null,
     intakeSelectedAt: null,
     fields: Object.fromEntries(
-      [...PSYCHOLOGY_TEXT_FIELDS, ...PSYCHOLOGY_PROFILE_FIELDS].map(field => [field.id, '']),
+      [
+        ...PSYCHOLOGY_TEXT_FIELDS,
+        ...PSYCHOLOGY_PROFILE_FIELDS,
+        ...PSYCHOLOGY_CONTEXT_FIELDS,
+      ].map(field => [field.id, '']),
     ),
+    // Módulos de contexto abertos ({moduleId: boolean}). Abrem por
+    // pertinência clínica; o percurso escolhido apenas pré-abre alguns.
+    contextModules: {},
     // Na anamnese infantojuvenil, cada campo identifica quem respondeu.
     // O histórico preserva versões anteriores para comparação futura.
     fieldInformants: {},
@@ -320,6 +346,11 @@ export function normalizePsychologySession(raw) {
     ...empty,
     ...raw,
     fields: { ...empty.fields, ...(raw.fields || {}) },
+    // Registro anterior a 07/08/2026 não tem contextModules: cai no padrão
+    // do percurso, sem inventar módulo aberto que a profissional não pediu.
+    contextModules: raw.contextModules && typeof raw.contextModules === 'object'
+      ? { ...raw.contextModules }
+      : getSuggestedContextModules(raw.intakeProfile),
     fieldInformants: { ...empty.fieldInformants, ...(raw.fieldInformants || {}) },
     responseHistory: { ...empty.responseHistory, ...(raw.responseHistory || {}) },
     selectedMap: { ...empty.selectedMap, ...(raw.selectedMap || {}) },
@@ -364,7 +395,7 @@ export function hasPsychologyRiskSelected(selectedMap) {
 // rail de IA da Anamnese. O percentual mede APENAS preenchimento da
 // ficha, nunca confiança diagnóstica (invariante de todas as disciplinas).
 export function buildPsychologyWorkspaceSummary(session) {
-  const activeFields = getPsychologyTextFields(session?.intakeProfile);
+  const activeFields = getPsychologyTextFields(session?.intakeProfile, session?.contextModules);
   const filledFields = activeFields
     .filter(field => String(session.fields?.[field.id] || '').trim()).length;
   const filledAxes = PSYCHOLOGY_AXES

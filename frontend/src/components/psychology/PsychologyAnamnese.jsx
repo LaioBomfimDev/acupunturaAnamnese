@@ -18,6 +18,11 @@ import {
   getPsychologyIntakeProfile,
   getPsychologyProfileSections,
 } from '../../data/psychologyIntakeProfiles';
+import {
+  PSYCHOLOGY_CONTEXT_MODULES,
+  PSYCHOLOGY_CONTEXT_MODULES_INTRO,
+  isContextModuleOpen,
+} from '../../data/psychologyContextModules';
 
 // ============================================================
 // Painel: Anamnese clínica de Psicologia (só o formulário).
@@ -124,6 +129,65 @@ function PsychologyFieldBlock({
   );
 }
 
+// Módulos de contexto: abrem por PERTINÊNCIA clínica, não por sexo. O
+// percurso escolhido pré-abre alguns; a profissional decide o resto.
+// Fechar apenas esconde — o texto já escrito continua guardado na sessão.
+function PsychologyContextModules({
+  session,
+  showInformant,
+  onToggleModule,
+  onUpdateField,
+  onQuickWord,
+  onInformantChange,
+  onArchiveResponse,
+}) {
+  return (
+    <div className="psi-context-modules">
+      <p className="small">{PSYCHOLOGY_CONTEXT_MODULES_INTRO}</p>
+      {PSYCHOLOGY_CONTEXT_MODULES.map(module => {
+        const open = isContextModuleOpen(session.contextModules, module.id);
+        const filled = module.fields
+          .filter(field => String(session.fields?.[field.id] || '').trim()).length;
+        return (
+          <div key={module.id} className={`box psi-context-module${open ? ' open' : ''}`}>
+            <div className="psi-context-module-head">
+              <div>
+                <b>{module.label}</b>
+                {filled > 0 && (
+                  <span className="psi-context-module-count">
+                    {filled} campo{filled === 1 ? '' : 's'} preenchido{filled === 1 ? '' : 's'}
+                  </span>
+                )}
+                <p className="small psi-context-module-summary">{module.summary}</p>
+              </div>
+              <button
+                type="button"
+                className={`tag${open ? ' active' : ''}`}
+                aria-expanded={open}
+                onClick={() => onToggleModule(module.id)}
+              >
+                {open ? 'Fechar bloco' : 'Abrir bloco'}
+              </button>
+            </div>
+            {open && module.fields.map(field => (
+              <PsychologyFieldBlock
+                key={field.id}
+                field={field}
+                session={session}
+                showInformant={showInformant}
+                onUpdateField={onUpdateField}
+                onQuickWord={onQuickWord}
+                onInformantChange={onInformantChange}
+                onArchiveResponse={onArchiveResponse}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Cartão de um sinal de risco: marca presença + expõe as perguntas de
 // triagem e o que observar (do rascunho dos livros). O sistema destaca
 // e lembra — nunca decide.
@@ -212,6 +276,8 @@ export function PsychologyAnamnese({
   onInformantChange,
   onArchiveResponse,
   onChooseProfile,
+  onFillTestAnswers,
+  onToggleContextModule,
 }) {
   const riskSelected = hasPsychologyRiskSelected(session.selectedMap);
   const profile = getPsychologyIntakeProfile(session.intakeProfile);
@@ -230,6 +296,11 @@ export function PsychologyAnamnese({
               <button type="button" className="primary-button" onClick={onChooseProfile}>
                 Escolher anamnese
               </button>
+              {onFillTestAnswers && (
+                <button type="button" className="tag" onClick={onFillTestAnswers}>
+                  Preencher teste aleatório
+                </button>
+              )}
             </div>
           ) : (
             <div className="box psi-profile-summary">
@@ -243,7 +314,14 @@ export function PsychologyAnamnese({
                   </p>
                 )}
               </div>
-              <button type="button" className="tag" onClick={onChooseProfile}>Trocar percurso</button>
+              <div className="psi-profile-summary-actions">
+                <button type="button" className="tag" onClick={onChooseProfile}>Trocar percurso</button>
+                {onFillTestAnswers && (
+                  <button type="button" className="tag" onClick={onFillTestAnswers}>
+                    Preencher teste aleatório
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -284,6 +362,19 @@ export function PsychologyAnamnese({
               ))}
             </div>
           ))}
+
+          <h3 className="psi-section-title">
+            {profileSections.length + 2}. Contexto específico (abrir conforme o caso)
+          </h3>
+          <PsychologyContextModules
+            session={session}
+            showInformant={showInformant}
+            onToggleModule={onToggleContextModule}
+            onUpdateField={onUpdateField}
+            onQuickWord={onQuickWord}
+            onInformantChange={onInformantChange}
+            onArchiveResponse={onArchiveResponse}
+          />
 
           <h3 className="psi-section-title">Sinais organizados (proposta a validar)</h3>
           <QuestionGuide questions={PSYCHOLOGY_FUNCTIONING_GUIDE} />

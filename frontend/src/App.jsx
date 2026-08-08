@@ -8,6 +8,7 @@ import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { DisciplineHub } from './components/DisciplineHub';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines, resolveReviewerDiscipline } from './data/disciplines';
+import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
@@ -32,6 +33,7 @@ const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
 const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
 const ClinicPatientsPanel = lazyPanel(() => import('./components/ClinicPatientsPanel'), 'ClinicPatientsPanel');
 const PsychologyWorkspace = lazyPanel(() => import('./components/PsychologyWorkspace'), 'PsychologyWorkspace');
+const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorkspace'), 'DisciplineWorkspace');
 const ReviewerHome = lazyPanel(() => import('./components/ReviewerHome'), 'ReviewerHome');
 const CurationWorkspace = lazyPanel(() => import('./components/CurationWorkspace'), 'CurationWorkspace');
 const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
@@ -342,6 +344,22 @@ export default function App() {
     );
   }
 
+  // Disciplinas com anamnese genérica (fisioterapia, nutrição e as
+  // próximas): mesmo shell, vocabulário vindo de data/anamneseRegistry.
+  if (!isSuperAdmin && GENERIC_ANAMNESE_DISCIPLINES.includes(activeDiscipline)) {
+    return (
+      <Suspense fallback={<PanelLoading />}>
+        <DisciplineWorkspace
+          disciplineId={activeDiscipline}
+          profile={profile}
+          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          onSwitchDiscipline={handleSwitchDiscipline}
+          onSignOut={handleSignOut}
+        />
+      </Suspense>
+    );
+  }
+
   // Motor de análise executado a cada render (leve o suficiente para isso)
   const analysis = analyze(state, selectedMap);
   // Síntese ao vivo do assistente: leitura ponderada da anamnese como um todo.
@@ -388,7 +406,7 @@ export default function App() {
             onConfirmPendingChanges={confirmPendingChanges}
           />
         );
-      case 'Anamnese':          return <Anamnese {...commonProps} onSetSelection={setSelection} onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined} />;
+      case 'Anamnese':          return <Anamnese {...commonProps} onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined} />;
       case 'Língua':            return <Lingua {...commonProps} onSetSelection={setSelection} tongueAi={tongueAi} onTongueAiChange={setTongueAi} />;
       case 'Pulso':             return <Pulso {...commonProps} />;
       case 'Reabilitação':      return <Reabilitacao key={selectedPatient?.id || 'sem-paciente'} {...commonProps} />;

@@ -36,7 +36,14 @@ Arquivo: [Anamnese.jsx](frontend/src/components/panels/Anamnese.jsx) + [checklis
   para raciocinar, em vez de texto solto.
 
 ### Camada 2 — Inteligência assistiva (a IA que lê e sugere)
-Arquivos: [anamneseAiService.js](frontend/src/services/anamneseAiService.js) → Edge Function [suggest-marks](supabase/functions/suggest-marks/index.ts)
+
+> **REMOVIDA na Acupuntura em 07/08/2026** (decisão do dono do produto). Na prática a
+> superfície espelhava o checklist já preenchido à mão, não persistia aceite/ignorado e
+> não alimentava calibração — ver `docs/mapa-gatilhos-ia-frontend.md`. A descrição abaixo
+> permanece como registro do desenho, e continua **válida para a Psicologia**, cuja
+> "Revisão assistida" (`psych-suggest-marks`) segue o mesmo contrato.
+
+Arquivos (removidos): `anamneseAiService.js` → Edge Function `suggest-marks`
 
 - A profissional escreve a queixa em texto livre e clica **"Sugerir marcações com IA"** (sob
   demanda, nunca automático).
@@ -157,8 +164,8 @@ precisam ser definidas por ela.
 
 - boas-vindas com Anamnese infantil, Anamnese adulto e Avaliação;
 - segunda etapa com infantil menina/menino (até 17 anos) e adulto mulher/homem;
-- perguntas específicas orientadas por sexo clínico apenas quando pertinentes, sem presumir
-  anatomia, contexto reprodutivo ou diagnóstico;
+- **contexto específico em módulos abertos por pertinência, não por sexo** (revisto em
+  07/08/2026 — ver §2.4);
 - autoria por campo na anamnese infantil (mãe, pai, outro responsável, paciente, resposta
   conjunta ou outro informante), com versões históricas para comparar relatos posteriores;
 - todo campo livre mantém atalhos de digitação e correção ortográfica nativa em pt-BR;
@@ -173,10 +180,143 @@ precisam ser definidas por ela.
 - relatório usa dados estruturados como gatilhos, gera somente rascunho editável e bloqueia
   impressão até revisão profissional.
 
-### 2.3 Fisioterapia — esboço (a detalhar depois, com fisioterapeuta)
-Estrutura análoga: queixa + história; checklists de dor/função/amplitude/força; testes
-funcionais; camada de raciocínio = **diagnóstico cinético-funcional**; segurança = sinais de
-alerta (red flags) para encaminhamento. Fica para uma segunda rodada — o foco agora é a psicologia.
+### 2.4 Contexto por pertinência, não por sexo (revisão de 2026-08-07)
+
+**O que havia:** cada perfil por sexo clínico carregava um bloco próprio com **um único
+campo** genérico (`adultContextoFeminino`, `adultContextoMasculino`, `childContextoFeminino`,
+`childContextoMasculino`). Era a única diferença entre "adulto mulher" e "adulto homem".
+
+**Problema apurado:** o gatilho estava errado. O dado clinicamente útil nunca é "é mulher" —
+é "existe contexto hormonal", "existe sobrecarga de cuidado", "existe violência do parceiro".
+Amarrar ao sexo produzia campo vazio (pergunta que não cabe no caso) e campo ausente (homem
+como cuidador principal, mulher sem qualquer queixa reprodutiva). Também contradizia a regra
+que a própria IA já segue: nunca presumir anatomia, ciclo, identidade ou queixa a partir de
+sexo/gênero.
+
+**O que passa a valer:** o roteiro fixo depende só da **faixa etária** (adulto: 5 seções;
+infantil: 7 seções — a distinção é real). O contexto específico vira **módulo aberto por
+pertinência**, disponível em qualquer percurso. O perfil escolhido apenas **pré-abre** os
+módulos que costumam interessar; a profissional abre e fecha qualquer um, e fechar apenas
+esconde — o que já foi escrito permanece guardado.
+
+Módulos implementados (`data/psychologyContextModules.js`), 4 campos cada, com perguntas de
+escuta. Rodada 1 em 07/08/2026; rodada 2 no mesmo dia:
+
+| Módulo | Pré-aberto em | Cobre |
+| --- | --- | --- |
+| Ciclo, hormônios e reprodução | adulto mulher | ciclo e humor, gestação/puerpério/perdas, climatério, contracepção hormonal |
+| Violência, segurança e coerção | adultos | situação, autor e contexto, rede de proteção, plano de segurança |
+| Parentalidade e carga de cuidado | adultos | de quem cuida, divisão e carga mental, impacto no sofrimento, projeto parental |
+| Sexualidade, corpo e imagem corporal | adultos | queixa sexual, impacto relacional, imagem corporal, recursos e substâncias |
+| Trabalho, provisão e identidade | adultos | significado do trabalho, quem sustenta, desemprego/afastamento, ambiente e assédio |
+| Expressão emocional e busca de ajuda | adultos | repertório para nomear, como o sofrimento aparece, barreiras para pedir ajuda, modelos familiares |
+| Identidade de gênero e orientação sexual | **nenhum** | autodefinição e pronomes, vínculos, aceitação e discriminação, processos de afirmação |
+| Puberdade e desenvolvimento corporal | infantil **a partir de 9 anos** | sinais e início, informação e preparo, imagem do corpo, autonomia e privacidade |
+| Proteção e segurança infantil | infantil | supervisão e cuidados básicos, sinais de proteção, segurança digital, rede e encaminhamento |
+
+Três regras que os testes protegem:
+
+- **Identidade de gênero nunca é pré-aberta** por perfil algum. Deduzir identidade do cadastro
+  seria repetir exatamente a presunção que motivou a troca do modelo; quem informa é a pessoa.
+- **Módulo com faixa etária (`suggestedMinAge`) só pré-abre com a idade conhecida e dentro da
+  faixa.** Idade ausente não sugere — sugerir puberdade na ficha de uma criança de 4 anos é o
+  campo vazio que se quis eliminar.
+- **Violência (adulto) e proteção (infantil) exigem rastreio a sós**, nunca diante de
+  acompanhante, responsável ou possível autor. Cada um tem campo próprio para o que foi
+  combinado. Suspeita de violência contra criança tem **notificação compulsória (ECA)**: o
+  sistema registra e lembra; a avaliação e a notificação são da profissional.
+
+Testes: `psychology-context-modules.test.mjs` trava a regra — nenhuma seção do roteiro pode
+voltar a depender do sexo, nenhum módulo pode ser exclusivo de um perfil, e fechar um módulo
+não pode apagar conteúdo.
+
+### 2.3 Motor genérico de anamnese (07/08/2026)
+
+A partir daqui a anamnese deixou de ser código por disciplina e virou **configuração sobre um
+motor único**:
+
+| Peça | Arquivo | Papel |
+| --- | --- | --- |
+| Contrato | `data/anamneseKit.js` | monta e consulta a configuração; sessão, normalização e resumo |
+| Registro | `data/anamneseRegistry.js` | disciplina → configuração |
+| Tela | `components/anamnese/DisciplineAnamnese.jsx` | painel genérico da anamnese |
+| Evolução | `components/anamnese/DisciplineEvolucao.jsx` | registro de sessões com indicadores comparáveis |
+| Relatório | `components/anamnese/DisciplineRelatorio.jsx` | papel timbrado, paginação e dois modos |
+| Shell | `components/DisciplineWorkspace.jsx` | sidebar, topbar, autosave e roteamento das abas |
+
+**Relatório em dois modos** (07/08/2026), definidos por disciplina em `config.report.modes`:
+
+- `scope: 'full'` — **registro interno**: ficha completa, eixos, sinais de risco com a conduta
+  registrada e a evolução sessão a sessão. É prontuário.
+- `scope: 'summary'` — **relatório externo**: só os campos declarados em `summaryFieldIds`, a
+  formulação e os sinais de risco marcados. Não leva a anotação de conduta de risco nem a
+  evolução detalhada, e carrega um aviso de que não substitui diagnóstico médico. Documento que
+  sai da clínica não despeja a anamnese inteira — é decisão de privacidade, não de layout.
+
+**Evolução:** indicadores numéricos por disciplina (fisio: EVA, amplitude, força, percepção de
+melhora; nutrição: peso, cintura, adesão, sintomas) para comparar sessões, mais campos de texto
+da conduta. O sistema alinha e guarda; não calcula tendência nem interpreta melhora.
+
+Acrescentar uma disciplina passou a ser: escrever o arquivo de dados, registrar na tabela e
+marcar `available: true` no hub. Nenhuma tela é duplicada.
+
+A estrutura é sempre a mesma, porque a ordem da escuta é a mesma: **escuta livre → roteiro do
+percurso → contexto por pertinência → sinais → risco → eixos de raciocínio**.
+
+**Pendência conhecida:** a Psicologia ainda usa tela própria (`PsychologyAnamnese`), porque
+carrega dois fluxos que as demais não têm — informante por campo e avaliação neuropsicológica.
+Migrá-la para o componente genérico é trabalho de uma próxima rodada; até lá existe duplicação
+consciente entre `PsychologyAnamnese.jsx` e `DisciplineAnamnese.jsx`.
+
+### 2.4 Fisioterapia — implementada em 07/08/2026 (rascunho a validar)
+
+Arquivo: `data/fisioterapiaAnamnese.js` · registro `fisio_anamnese`.
+
+**Percursos por área**, porque a área muda de fato o exame, as escalas e os testes:
+musculoesquelética (5 seções), neurofuncional (5), cardiorrespiratória (4) e pélvica (4).
+
+**Raciocínio na CIF** — estrutura/função → atividade → participação, mais fatores ambientais e
+pessoais, hipótese cinético-funcional e metas. É o vocabulário que a fisioterapia usa para
+justificar conduta e não invade diagnóstico médico.
+
+**Bandeiras vermelhas** como bloco de risco, cada uma com triagem, o que observar e conduta
+lembrada: cauda equina, neoplasia/infecção, fratura, TVP, sinais cardiovasculares ao esforço e
+déficit neurológico progressivo. Duas delas (cauda equina e TVP) trazem "não tratar/não
+mobilizar" explícito.
+
+**Módulos de contexto:** dor persistente e sensibilização; trabalho, ergonomia e afastamento;
+esporte e retorno à prática; quedas e segurança domiciliar (a partir de 60 anos); gestação e
+pós-parto.
+
+### 2.5 Nutrição — implementada em 07/08/2026 (rascunho a validar)
+
+Arquivo: `data/nutricaoAnamnese.js` · registro `nutri_anamnese`.
+
+**Percursos por objetivo:** clínica/ambulatorial (4 seções), materno-infantil (5) e esportiva (4).
+
+**Eixos:** consumo, antropometria, bioquímico/clínico, comportamento e relação com a comida,
+contexto e acesso, diagnóstico nutricional em hipótese e metas pactuadas.
+
+Duas escolhas de conteúdo que merecem registro:
+
+- **Insegurança alimentar é bloco de risco, não curiosidade social.** Prescrever plano que a
+  pessoa não tem como comprar é iatrogenia e produz culpa. A triagem pergunta se a comida
+  acabou antes do dinheiro e se alguma criança deixou de comer.
+- **Transtorno alimentar tem triagem própria e vem antes de qualquer restrição.** Conduta de
+  emagrecimento sobre quadro não reconhecido agrava o quadro; o lembrete manda não prescrever
+  restrição e conduzir em equipe.
+
+Completam o bloco: perda de peso não intencional, risco nutricional/desnutrição e condição
+clínica descompensada ou interação fármaco-nutriente.
+
+**Módulos de contexto:** acesso, orçamento e estrutura; relação com a comida e imagem corporal;
+condições clínicas e interação medicamentosa; cultura, crenças e escolhas; suplementação por
+conta própria.
+
+Testes: `discipline-anamnese.test.mjs` cobre o contrato das duas — configuração completa,
+percurso com roteiro real, campo com id único/perguntas/chips, risco com triagem e conduta,
+módulo nunca amarrado a sexo, módulo fechado fora da ficha e bloqueio de escrita quando a
+leitura do prontuário falha.
 
 ### 2.4 Decisões que dependem da psicóloga (o que precisamos que ela aprove)
 

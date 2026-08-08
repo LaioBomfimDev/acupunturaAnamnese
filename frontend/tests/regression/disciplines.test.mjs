@@ -24,6 +24,10 @@ test('catálogo de disciplinas: ids únicos, textos completos e acupuntura dispo
   assert.equal(getDiscipline('acupuntura')?.available, true);
   // Fase 5: workspace de Psicologia (esqueleto) no ar.
   assert.equal(getDiscipline('psicologia')?.available, true);
+  // 07/08/2026: fisioterapia e nutrição ganharam anamnese no workspace
+  // genérico (evolução e relatório ainda são placeholders).
+  assert.equal(getDiscipline('fisioterapia')?.available, true);
+  assert.equal(getDiscipline('nutricao')?.available, true);
 });
 
 test('resolveUserDisciplines: coluna do banco é a fonte da verdade e ids inválidos são filtrados', () => {
@@ -55,21 +59,28 @@ test('buildHubCards: mostra TODAS as disciplinas — liberadas em cor, demais em
   assert.equal(byId.acupuntura, 'enabled');
   assert.equal(byId.psicologia, 'locked');
 
-  // Multi-disciplina: Psi tem workspace (Fase 5); Fisio/Nutri seguem 'soon'.
+  // Multi-disciplina: as quatro têm workspace desde 07/08/2026, então
+  // disciplina liberada no perfil abre. O estado 'soon' segue existindo
+  // para a próxima disciplina que entrar antes da tela ficar pronta.
   const allCards = buildHubCards({ disciplines: DISCIPLINE_IDS });
   const allById = Object.fromEntries(allCards.map(card => [card.id, card.state]));
-  assert.equal(allById.acupuntura, 'enabled');
-  assert.equal(allById.psicologia, 'enabled');
-  assert.equal(allById.fisioterapia, 'soon');
-  assert.equal(allById.nutricao, 'soon');
+  for (const id of DISCIPLINE_IDS) {
+    assert.equal(allById[id], 'enabled', `${id} liberada no perfil deve abrir`);
+  }
+  // O estado 'soon' (liberada no perfil, sem workspace) segue implementado
+  // em buildHubCards, mas hoje nenhuma disciplina está nessa situação —
+  // volta a ser exercitado quando entrar a próxima disciplina.
 });
 
 test('canEnterDiscipline: só entra em disciplina liberada NO PERFIL e com workspace construído', () => {
   assert.equal(canEnterDiscipline({ disciplines: ['acupuntura'] }, 'acupuntura'), true);
   // Fase 5: psicologia liberada no perfil abre o workspace próprio.
   assert.equal(canEnterDiscipline({ disciplines: DISCIPLINE_IDS }, 'psicologia'), true);
-  // Liberada mas em construção — hub não pode abrir workspace inexistente.
-  assert.equal(canEnterDiscipline({ disciplines: DISCIPLINE_IDS }, 'fisioterapia'), false);
+  // 07/08/2026: fisioterapia e nutrição passaram a ter workspace genérico.
+  assert.equal(canEnterDiscipline({ disciplines: DISCIPLINE_IDS }, 'fisioterapia'), true);
+  assert.equal(canEnterDiscipline({ disciplines: DISCIPLINE_IDS }, 'nutricao'), true);
+  // Liberada no perfil não basta: sem workspace o hub continua sem abrir.
+  assert.equal(canEnterDiscipline({ disciplines: ['fisioterapia'] }, 'inexistente'), false);
   // Psicologia NÃO liberada no perfil continua fechada mesmo com workspace pronto.
   assert.equal(canEnterDiscipline({ disciplines: ['acupuntura'] }, 'psicologia'), false);
   // Não liberada para o perfil.

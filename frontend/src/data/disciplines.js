@@ -24,7 +24,9 @@ export const DISCIPLINES = [
     label: 'Fisioterapia',
     subtitle: 'Avaliação funcional',
     description: 'Anamnese e avaliação cinético-funcional.',
-    available: false,
+    // Anamnese genérica no ar desde 07/08/2026 (vocabulário em validação
+    // por fisioterapeuta). Evolução e relatório ainda são placeholders.
+    available: true,
   },
   {
     id: 'psicologia',
@@ -40,7 +42,9 @@ export const DISCIPLINES = [
     label: 'Nutrição',
     subtitle: 'Avaliação nutricional',
     description: 'Anamnese alimentar e acompanhamento nutricional.',
-    available: false,
+    // Anamnese genérica no ar desde 07/08/2026 (vocabulário em validação
+    // por nutricionista). Evolução e relatório ainda são placeholders.
+    available: true,
   },
 ];
 

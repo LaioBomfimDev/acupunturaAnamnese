@@ -5,6 +5,15 @@
 // remota: substituir uma indisponibilidade por conteúdo simulado pode induzir
 // a profissional a revisar um resultado que nunca foi produzido pela IA.
 
+// Faixas de confiança exibidas nas superfícies de IA (rótulo + nível
+// para o CSS). Mesma escala em todos os módulos, para que "alta" queira
+// dizer a mesma coisa na Língua, na Psicologia e no rail assistente.
+export function confidenceBand(confidence) {
+  if (confidence >= 0.8) return { label: 'alta', level: 'high' };
+  if (confidence >= 0.6) return { label: 'média', level: 'medium' };
+  return { label: 'baixa', level: 'low' };
+}
+
 export function resolveAiRuntime(overrides, defaults) {
   return {
     getAuthenticatedUser: overrides?.getAuthenticatedUser || defaults.getAuthenticatedUser,

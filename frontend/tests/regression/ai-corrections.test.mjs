@@ -10,9 +10,11 @@ const fnDir = path.resolve(root, '../supabase/functions');
 
 // As superfícies de IA e o arquivo da Edge Function de cada uma,
 // com o literal de superfície esperado na injeção de correções.
+// 'anamnese_marks' saiu: a sugestão de marcações da anamnese de MTC foi
+// removida do produto. O rótulo histórico continua em AI_SURFACE_LABELS
+// para as correções antigas, mas não há mais superfície ativa.
 const SURFACES = [
   { id: 'tongue', file: 'analyze-tongue/index.ts' },
-  { id: 'anamnese_marks', file: 'suggest-marks/index.ts' },
   { id: 'clinical_reasoning', file: 'clinical-reasoning/index.ts' },
   { id: 'narrative', file: 'draft-narrative/index.ts' },
   { id: 'library_qa', file: 'library-qa/index.ts' },

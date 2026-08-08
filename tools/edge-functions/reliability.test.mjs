@@ -673,7 +673,6 @@ test('handlers Edge aplicam CORS e rate limit; handlers sensíveis aplicam gate 
     'psych-reading',
     'psych-report',
     'psych-suggest-marks',
-    'suggest-marks',
     'super-admin-create-user',
     'super-admin-reset-mfa',
     'super-admin-reset-password',

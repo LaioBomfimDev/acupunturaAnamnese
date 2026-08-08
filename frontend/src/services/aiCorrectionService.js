@@ -16,9 +16,12 @@
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { anonymizeClinicalText, looksLikeContainsPII } from '../utils/anonymize';
 
+// Superfícies ATIVAS (as que ainda aceitam correção nova). A sugestão de
+// marcações da anamnese de MTC ('anamnese_marks') foi removida do produto;
+// o rótulo continua abaixo para as correções já registradas aparecerem na
+// curadoria, mas nenhuma correção nova pode ser criada para ela.
 export const AI_SURFACES = {
   TONGUE: 'tongue',
-  ANAMNESE_MARKS: 'anamnese_marks',
   CLINICAL_REASONING: 'clinical_reasoning',
   NARRATIVE: 'narrative',
   LIBRARY_QA: 'library_qa',
@@ -29,7 +32,7 @@ export const AI_SURFACES = {
 
 export const AI_SURFACE_LABELS = {
   tongue: 'Língua',
-  anamnese_marks: 'Sugestões da anamnese',
+  anamnese_marks: 'Sugestões da anamnese (superfície removida)',
   clinical_reasoning: 'Raciocínio clínico (IA Assistente)',
   narrative: 'Relatório / Evolução',
   library_qa: 'Biblioteca',

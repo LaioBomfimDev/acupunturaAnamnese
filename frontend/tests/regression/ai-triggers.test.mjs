@@ -8,7 +8,6 @@ import { createServer } from 'vite';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 let server;
-let anamnese;
 let reasoning;
 let library;
 let report;
@@ -21,8 +20,7 @@ before(async () => {
     server: { middlewareMode: true },
     appType: 'custom',
   });
-  [anamnese, reasoning, library, report, tongue] = await Promise.all([
-    server.ssrLoadModule('/src/services/anamneseAiService.js'),
+  [reasoning, library, report, tongue] = await Promise.all([
     server.ssrLoadModule('/src/services/clinicalReasoningService.js'),
     server.ssrLoadModule('/src/services/libraryAiService.js'),
     server.ssrLoadModule('/src/services/reportAiService.js'),
@@ -56,7 +54,6 @@ function realRuntime(calls) {
     invoke: async (name, options) => {
       calls.push({ name, options });
       const dataByFunction = {
-        'suggest-marks': { modelVersion: 'gemini-test', suggestions: [], warning: null },
         'clinical-reasoning': {
           modelVersion: 'gemini-test', interpretation: 'Leitura para conferência.',
           differentialReasoning: null, redFlags: [], contradictions: [], questions: [],
@@ -70,15 +67,10 @@ function realRuntime(calls) {
   };
 }
 
-test('os seis fluxos críticos chamam a Edge Function correspondente em sessão real', async () => {
+test('os cinco fluxos críticos chamam a Edge Function correspondente em sessão real', async () => {
   const calls = [];
   const runtime = realRuntime(calls);
 
-  await anamnese.suggestAnamneseMarks(
-    { queixa: 'Maria Souza relata fadiga e refluxo.' },
-    { patientName: 'Maria Souza' },
-    runtime,
-  );
   await reasoning.deepenClinicalReasoning(
     { queixa: 'Maria Souza relata fadiga.' },
     { 'digestao:Refluxo/azia': true },
@@ -96,13 +88,12 @@ test('os seis fluxos críticos chamam a Edge Function correspondente em sessão 
   );
 
   assert.deepEqual(calls.map(call => call.name), [
-    'suggest-marks', 'clinical-reasoning', 'library-qa', 'draft-narrative', 'draft-narrative', 'analyze-tongue',
+    'clinical-reasoning', 'library-qa', 'draft-narrative', 'draft-narrative', 'analyze-tongue',
   ]);
-  assert.ok(!calls[0].options.body.text.includes('Maria Souza'), 'anamnese deve sair anonimizada');
-  assert.ok(!calls[1].options.body.case.anamneseText.includes('Maria Souza'), 'raciocínio deve sair anonimizado');
-  assert.ok(!JSON.stringify(calls[3].options.body.payload).includes('Maria Souza'), 'relatório deve sair anonimizado');
-  assert.ok(!JSON.stringify(calls[4].options.body.payload).includes('Maria Souza'), 'evolução deve sair anonimizada');
-  assert.deepEqual(calls[5].options.body.photos, {
+  assert.ok(!calls[0].options.body.case.anamneseText.includes('Maria Souza'), 'raciocínio deve sair anonimizado');
+  assert.ok(!JSON.stringify(calls[2].options.body.payload).includes('Maria Souza'), 'relatório deve sair anonimizado');
+  assert.ok(!JSON.stringify(calls[3].options.body.payload).includes('Maria Souza'), 'evolução deve sair anonimizada');
+  assert.deepEqual(calls[4].options.body.photos, {
     top: 'professional-1/patient-1/2026-06-23/top-1.webp',
     sublingual: null,
   });
@@ -118,7 +109,6 @@ test('sessão real recebe erro da infraestrutura em vez de resultado simulado', 
   };
 
   const flows = [
-    () => anamnese.suggestAnamneseMarks({ queixa: 'fadiga' }, {}, unavailableRuntime),
     () => reasoning.deepenClinicalReasoning({ queixa: 'fadiga' }, {}, synthesis, {}, unavailableRuntime),
     () => library.askLibrary('E36 fadiga', libraryCards, unavailableRuntime),
     () => report.draftReport('Resumo clínico', { queixa: 'fadiga' }, {}, unavailableRuntime),
@@ -135,9 +125,8 @@ test('sessão real recebe erro da infraestrutura em vez de resultado simulado', 
   }
 });
 
-test('os botões e ações de teclado permanecem ligados às seis superfícies de IA', async () => {
+test('os botões e ações de teclado permanecem ligados às cinco superfícies de IA', async () => {
   const triggers = [
-    ['src/components/panels/Anamnese.jsx', /Sugerir marcações com IA/, /suggestAnamneseMarks/],
     ['src/components/panels/Lingua.jsx', /Analisar com IA/, /analyzeTongueImages/],
     ['src/components/panels/AssistantDeepDive.jsx', /Aprofundar com IA/, /deepenClinicalReasoning/],
     ['src/components/panels/Biblioteca.jsx', /Perguntar/, /askLibrary/],
@@ -150,4 +139,22 @@ test('os botões e ações de teclado permanecem ligados às seis superfícies d
     assert.match(source, label, `${relativePath} deve manter a ação visível`);
     assert.match(source, serviceCall, `${relativePath} deve continuar ligado ao serviço de IA`);
   }
+});
+
+// A sugestão de marcações da anamnese de MTC foi REMOVIDA (decisão do dono
+// do produto): na prática ela só espelhava o checklist já preenchido à mão,
+// não persistia aceite/ignorado e não ensinava nada ao sistema. A Psicologia
+// mantém a sua ("Revisão assistida"), que é outra superfície.
+test('a anamnese de Acupuntura não tem mais sugestão de marcações por IA', async () => {
+  const anamneseSource = await readFile(
+    path.resolve(root, 'src/components/panels/Anamnese.jsx'),
+    'utf8',
+  );
+  assert.doesNotMatch(anamneseSource, /Sugerir marcações com IA/);
+  assert.doesNotMatch(anamneseSource, /suggestAnamneseMarks|anamneseAiService/);
+
+  await assert.rejects(
+    () => server.ssrLoadModule('/src/services/anamneseAiService.js'),
+    'o service da sugestão de marcações do MTC não deve voltar a existir',
+  );
 });

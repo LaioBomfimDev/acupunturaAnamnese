@@ -15,11 +15,6 @@ export const AI_SMOKE_PURPOSE = 'deploy-health';
 
 export const AI_SMOKE_FUNCTIONS = [
   {
-    id: 'aiSmokeSuggestMarks',
-    functionName: 'suggest-marks',
-    title: 'IA de anamnese: suggest-marks',
-  },
-  {
     id: 'aiSmokeClinicalReasoning',
     functionName: 'clinical-reasoning',
     title: 'IA de raciocínio: clinical-reasoning',

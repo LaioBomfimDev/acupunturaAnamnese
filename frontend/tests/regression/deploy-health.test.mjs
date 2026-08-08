@@ -148,7 +148,7 @@ test('probe real de IA bloqueia qualquer resposta mock em sessão real', async (
     HEALTH_STATUS,
     probeAiEdgeFunction,
   } = service;
-  const definition = AI_SMOKE_FUNCTIONS.find(item => item.functionName === 'suggest-marks');
+  const definition = AI_SMOKE_FUNCTIONS.find(item => item.functionName === 'clinical-reasoning');
 
   const result = await probeAiEdgeFunction(definition, {
     invoke: async (functionName) => ({
@@ -306,7 +306,6 @@ test('migration de saúde usa metadados e não lê linhas de pacientes', async (
 
 test('smoke real de IA nas Edge Functions exige SuperAdm e helper compartilhado', async () => {
   const functionFiles = [
-    'suggest-marks/index.ts',
     'clinical-reasoning/index.ts',
     'draft-narrative/index.ts',
     'library-qa/index.ts',

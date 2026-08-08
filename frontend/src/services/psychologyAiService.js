@@ -20,8 +20,7 @@
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { anonymizeClinicalText } from '../utils/anonymize';
-import { getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
-import { confidenceBand } from './anamneseAiService';
+import { confidenceBand, getAiFunctionErrorMessage, resolveAiRuntime } from './aiRuntime';
 import {
   PSYCHOLOGY_CHECKLIST_SECTIONS,
   PSYCHOLOGY_AXES,
@@ -46,7 +45,7 @@ export const PSYCHOLOGY_READING_DISCLAIMER =
 // Monta o texto clínico rotulado a partir da sessão de Psi.
 export function buildPsychologyText(session) {
   if (!session) return '';
-  const parts = getPsychologyTextFields(session.intakeProfile)
+  const parts = getPsychologyTextFields(session.intakeProfile, session.contextModules)
     .map(({ id, label }) => {
       const value = String(session.fields?.[id] || '').trim();
       return value ? `${label}: ${value}` : '';
@@ -216,7 +215,7 @@ export function buildPsychologyCase(session, context = {}) {
   const anonymize = value =>
     anonymizeClinicalText(String(value || ''), { patientName: context.patientName });
 
-  const fields = getPsychologyTextFields(session.intakeProfile)
+  const fields = getPsychologyTextFields(session.intakeProfile, session.contextModules)
     .map(({ id, label }) => {
       const text = String(session.fields?.[id] || '').trim();
       if (!text) return null;

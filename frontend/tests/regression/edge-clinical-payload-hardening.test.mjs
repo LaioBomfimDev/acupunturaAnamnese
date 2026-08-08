@@ -18,7 +18,6 @@ const protectedFunctions = [
   'draft-narrative',
   'psych-reading',
   'psych-report',
-  'suggest-marks',
   'psych-suggest-marks',
 ];
 

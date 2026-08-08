@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-08-07 - Compartilhamento entre disciplinas entregava conteúdo vazio
+
+- Sintoma: encaminhar um paciente de Psicologia (e, depois, de Fisioterapia ou Nutrição) para outra disciplina criava o compartilhamento, mostrava o chip de origem→destino e liberava o botão **Ver compartilhado** — que abria sem conteúdo algum. A autorização e a auditoria funcionavam; o prontuário nunca aparecia.
+- Causa: duas camadas chumbadas em MTC. No banco, `get_shared_session` filtrava `cr.record_type = 'full_session'`, que é só a sessão de acupuntura, ignorando `psi_anamnese`, `fisio_anamnese` e `nutri_anamnese`. No frontend, o `SharedSessionViewer` desenhava campos de MTC no código (`state.queixa`, grupos do checklist de acupuntura, síntese energética), então nem se o banco devolvesse os outros registros a tela saberia exibir.
+- Regra nova: recurso que atravessa disciplinas (compartilhar, imprimir, relatar, alimentar IA) **não pode filtrar por `record_type` fixo nem assumir o vocabulário de uma disciplina**. Deve resolver o desenho a partir da disciplina do registro. E ao remover um filtro desses, verificar o que ele estava segurando: aqui, tirar o filtro sem mais nada faria um encaminhamento psicologia → fisioterapia expor também a sessão de acupuntura do paciente. A correção passou a restringir pela disciplina de **origem** dos compartilhamentos ativos.
+- Teste ou verificação obrigatória: `record-shares.test.mjs` cobre a migração `20260807_shared_session_multidisciplina.sql` (sem filtro antigo, restrição por disciplina de origem, dono/adm preservados, `SECURITY DEFINER` com `search_path` fixo) e trava o visualizador em escolher o desenho pela disciplina do registro. As asserções sobre SQL ignoram linhas de comentário — o cabeçalho da migração cita o filtro antigo ao explicar o que foi corrigido.
+- Pendência operacional: a migração precisa ser aplicada no Supabase (`docs/aplicar-sql-compartilhamento-2026-08-07.sql`). Antes disso, o compartilhamento segue vazio fora da acupuntura.
+
 ### 2026-07-23 - Autosave concorrente podia sobrescrever revisão clínica mais nova
 
 - Sintoma: salvamento manual e autosave podiam executar juntos; uma resposta antiga podia terminar depois da nova, limpar o indicador de pendência e sobrescrever a ficha mais recente, inclusive entre duas abas.

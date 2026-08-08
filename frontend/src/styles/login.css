@@ -1,0 +1,578 @@
+/* ============================================================
+   REABILITY ONE — tela de entrada
+   Consome só os tokens de tokens.css. Nenhuma cor literal aqui,
+   para que o tema escuro saia de graça e a migração do App.css
+   tenha um exemplo pronto de como ficar.
+   ============================================================ */
+
+.r1-login {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100svh;
+  background: var(--r1-bg);
+  color: var(--r1-text);
+  font-family: var(--r1-font-sans);
+}
+
+/* ---------- Painel de marca ---------- */
+
+.r1-login__brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 44px 48px;
+  background:
+    radial-gradient(120% 90% at 12% 0%, var(--r1-navy-600) 0%, transparent 55%),
+    radial-gradient(90% 70% at 100% 100%, var(--r1-navy-700) 0%, transparent 60%),
+    linear-gradient(155deg, var(--r1-navy-800) 0%, var(--r1-navy-900) 100%);
+  color: var(--r1-text-on-inverse);
+  isolation: isolate;
+}
+
+/* Brilho dourado difuso: dá profundidade sem pesar o carregamento,
+   já que é gradiente e não imagem. */
+.r1-login__brand::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: auto -30% -45% -20%;
+  height: 70%;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(213, 163, 59, 0.26) 0%,
+    transparent 70%
+  );
+  filter: blur(10px);
+}
+
+/* Malha fina de pontos: textura discreta que evita o efeito
+   "retângulo azul chapado" sem virar ruído visual. */
+.r1-login__brand::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.13) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  mask-image: linear-gradient(160deg, #000 0%, transparent 62%);
+  -webkit-mask-image: linear-gradient(160deg, #000 0%, transparent 62%);
+  opacity: 0.5;
+}
+
+.r1-wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--r1-font-display);
+}
+
+.r1-wordmark__main {
+  font-size: 30px;
+  letter-spacing: 5px;
+  font-weight: 400;
+}
+
+.r1-wordmark__one {
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: var(--r1-gold-400);
+  font-style: italic;
+}
+
+.r1-wordmark__rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--r1-gold-500),
+    transparent
+  );
+  margin-left: 6px;
+}
+
+.r1-login__headline {
+  font-family: var(--r1-font-display);
+  font-size: clamp(30px, 3.1vw, 46px);
+  line-height: 1.1;
+  margin: 0 0 16px;
+  font-weight: 400;
+  letter-spacing: -0.4px;
+}
+
+.r1-login__headline em {
+  font-style: italic;
+  color: var(--r1-gold-400);
+}
+
+.r1-login__lede {
+  margin: 0 0 26px;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.r1-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
+}
+
+.r1-chip {
+  border: 1px solid var(--r1-border-inverse);
+  background: rgba(255, 255, 255, 0.055);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+  color: var(--r1-text-on-inverse);
+  backdrop-filter: blur(2px);
+}
+
+.r1-features {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.r1-feature {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.r1-feature__mark {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--r1-accent-wash);
+  color: var(--r1-gold-300);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.r1-login__brand-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 11.5px;
+  letter-spacing: 0.3px;
+  /* 0.5 de opacidade dava 4,28:1 sobre a parte mais clara do gradiente,
+     logo abaixo do 4,5:1 de AA. Medido no ponto pior, não no médio. */
+  color: rgba(255, 255, 255, 0.64);
+}
+
+.r1-login__brand-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.r1-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--r1-gold-500);
+}
+
+/* ---------- Lado do formulário ---------- */
+
+.r1-login__panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 44px 52px;
+  background: var(--r1-surface);
+  border-left: 1px solid var(--r1-accent-wash);
+}
+
+.r1-login__form-wrap {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.r1-eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--r1-accent-strong);
+}
+
+.r1-login__title {
+  margin: 0 0 6px;
+  font-family: var(--r1-font-display);
+  font-size: 29px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--r1-text);
+}
+
+.r1-login__subtitle {
+  margin: 0 0 24px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--r1-text-muted);
+}
+
+.r1-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.r1-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.r1-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: var(--r1-radius-md);
+  border: 1px solid var(--r1-border);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.r1-input::placeholder {
+  color: var(--r1-text-subtle);
+}
+
+.r1-input:focus-visible {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.r1-input:disabled {
+  background: var(--r1-field-bg-disabled);
+  cursor: not-allowed;
+}
+
+.r1-alert {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 11px 14px;
+  border-radius: var(--r1-radius-md);
+  border: 1px solid var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.r1-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+  cursor: pointer;
+}
+
+.r1-consent input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--r1-accent-strong);
+  cursor: pointer;
+}
+
+.r1-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
+  cursor: pointer;
+  text-underline-offset: 2px;
+}
+
+.r1-link:hover,
+.r1-link:focus-visible {
+  text-decoration: underline;
+}
+
+.r1-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--r1-radius-md);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--r1-dur-fast) var(--r1-ease),
+    transform var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.r1-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.r1-btn--primary {
+  margin-top: 6px;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.r1-btn--primary:hover:not(:disabled) {
+  background: var(--r1-navy-700);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.r1-btn--primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.r1-btn--primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* No escuro o navy do botão encosta no fundo; o dourado assume o
+   papel de ação principal para o contraste não sumir. */
+@media (prefers-color-scheme: dark) {
+  .r1-btn--primary {
+    background: var(--r1-accent);
+    color: var(--r1-accent-contrast);
+  }
+  .r1-btn--primary:hover:not(:disabled) {
+    background: var(--r1-accent-strong);
+  }
+}
+
+:root[data-theme='dark'] .r1-btn--primary {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+:root[data-theme='dark'] .r1-btn--primary:hover:not(:disabled) {
+  background: var(--r1-accent-strong);
+}
+
+:root[data-theme='light'] .r1-btn--primary {
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+}
+
+.r1-login__foot {
+  width: 100%;
+  margin-top: 26px;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--r1-border-subtle);
+  background: transparent;
+  text-align: center;
+  font: inherit;
+  cursor: pointer;
+  color: var(--r1-text-muted);
+}
+
+.r1-login__foot:hover .r1-login__foot-main,
+.r1-login__foot:focus-visible .r1-login__foot-main {
+  color: var(--r1-accent-strong);
+}
+
+.r1-login__foot-main {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  transition: color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.r1-login__foot-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--r1-text-subtle);
+}
+
+/* ---------- Modais ---------- */
+
+.r1-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--r1-scrim);
+  backdrop-filter: blur(3px);
+}
+
+.r1-modal__panel {
+  width: 100%;
+  max-width: 580px;
+  overflow: hidden;
+  border: 1px solid var(--r1-accent-wash);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-lg);
+}
+
+.r1-modal__head {
+  padding: 20px 24px;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+}
+
+.r1-modal__eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--r1-gold-400);
+}
+
+.r1-modal__title {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1.18;
+}
+
+.r1-modal__body {
+  padding: 22px 24px;
+  max-height: 62vh;
+  overflow-y: auto;
+  color: var(--r1-text);
+}
+
+.r1-modal__intro {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--r1-text-muted);
+}
+
+.r1-term {
+  margin-bottom: 16px;
+}
+
+.r1-term__title {
+  margin: 0 0 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.r1-term p {
+  margin: 0 0 9px;
+  font-size: 13px;
+  line-height: 1.58;
+  color: var(--r1-text-muted);
+}
+
+.r1-check-list {
+  display: grid;
+  gap: 9px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.r1-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.r1-check__mark {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+/* ---------- Empilhamento ---------- */
+
+@media (max-width: 900px) {
+  .r1-login {
+    grid-template-columns: 1fr;
+  }
+
+  /* No estreito o painel de marca vira faixa de topo: mantém a
+     identidade sem empurrar o formulário para fora da dobra. */
+  .r1-login__brand {
+    gap: 22px;
+    padding: 30px 26px;
+  }
+
+  .r1-login__headline {
+    font-size: 27px;
+  }
+
+  .r1-login__lede,
+  .r1-features {
+    display: none;
+  }
+
+  .r1-login__panel {
+    padding: 32px 26px 44px;
+    border-left: 0;
+    border-top: 1px solid var(--r1-accent-wash);
+  }
+}

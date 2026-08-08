@@ -1,0 +1,241 @@
+/* ============================================================
+   REABILITY ONE — camada de tokens
+   ============================================================
+
+   Por que este arquivo existe: o App.css tem ~10 mil linhas com 710 cores
+   escritas à mão contra 497 usos de var(). Enquanto a cor estiver chumbada
+   no seletor, modo escuro é impossível e "deixar bonito" é retrabalho, não
+   design. Aqui fica a fonte única da paleta; as telas novas consomem só
+   estes tokens e as antigas migram aos poucos.
+
+   Todo token é prefixado com --r1- de propósito. O :root do App.css já
+   define --navy, --gold, --cream, --line, --soft e --glass; o prefixo
+   garante que esta camada não sobrescreva nada existente por acidente
+   enquanto a migração não termina.
+
+   Tema: o padrão segue o sistema operacional (prefers-color-scheme). O
+   atributo data-theme no <html> vence o sistema NOS DOIS SENTIDOS, para que
+   um futuro botão de tema possa forçar claro num aparelho escuro e vice-
+   versa. Sem isso o botão só funcionaria em uma direção.
+   ============================================================ */
+
+:root {
+  /* ---- Primitivas de marca (não usar direto nas telas) ---- */
+  --r1-navy-900: #04121f;
+  --r1-navy-800: #061a31;
+  --r1-navy-700: #082946;
+  --r1-navy-600: #0c365c;
+  --r1-navy-500: #16507f;
+
+  --r1-gold-700: #9a6d1c;
+  --r1-gold-600: #b8862a;
+  --r1-gold-500: #d5a33b;
+  --r1-gold-400: #f0bd53;
+  --r1-gold-300: #f7d489;
+
+  --r1-cream-100: #fffaf0;
+  --r1-cream-200: #f6f1e8;
+  --r1-cream-300: #ebe3d5;
+
+  --r1-slate-100: #f1f5f9;
+  --r1-slate-300: #cbd5e1;
+  /* slate-400 e steel-500 existem para a borda de campo alcançar os 3:1
+     que a WCAG 2.2 (1.4.11) exige de contorno de componente. Os tons mais
+     claros que usávamos ficavam em ~1,4:1 — bonitos e ilegíveis. */
+  --r1-slate-400: #7d8ea3;
+  --r1-slate-500: #64748b;
+  --r1-slate-700: #334155;
+  --r1-steel-500: #4a6f94;
+
+  --r1-red-500: #dc2626;
+  --r1-red-100: #fef2f2;
+  --r1-red-200: #fecaca;
+  --r1-green-500: #15803d;
+
+  /* ---- Tipografia ---- */
+  --r1-font-sans: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --r1-font-display: 'Georgia', 'Iowan Old Style', 'Times New Roman', serif;
+
+  /* ---- Raios e sombras ---- */
+  --r1-radius-sm: 8px;
+  --r1-radius-md: 12px;
+  --r1-radius-lg: 18px;
+  --r1-radius-xl: 26px;
+
+  --r1-shadow-sm: 0 1px 2px rgba(4, 18, 31, 0.06);
+  --r1-shadow-md: 0 8px 24px rgba(4, 18, 31, 0.10);
+  --r1-shadow-lg: 0 24px 70px rgba(4, 18, 31, 0.28);
+
+  /* ---- Movimento ---- */
+  --r1-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --r1-dur-fast: 130ms;
+  --r1-dur: 220ms;
+
+  /* ============================================================
+     Semânticos — tema CLARO (padrão)
+     As telas usam SÓ os tokens abaixo. Trocar de tema é trocar
+     este bloco, nunca reescrever os seletores.
+     ============================================================ */
+  --r1-bg: var(--r1-cream-200);
+  --r1-surface: #ffffff;
+  --r1-surface-sunken: var(--r1-cream-100);
+  --r1-surface-inverse: var(--r1-navy-800);
+
+  --r1-text: var(--r1-navy-800);
+  --r1-text-muted: var(--r1-slate-500);
+  --r1-text-subtle: #6a7686;
+  --r1-text-on-inverse: #ffffff;
+  --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.72);
+
+  --r1-border: var(--r1-slate-400);
+  --r1-border-subtle: #e6ebf1;
+  --r1-border-inverse: rgba(255, 255, 255, 0.14);
+
+  --r1-accent: var(--r1-gold-500);
+  --r1-accent-strong: var(--r1-gold-700);
+  --r1-accent-contrast: var(--r1-navy-900);
+  --r1-accent-wash: rgba(213, 163, 59, 0.14);
+
+  --r1-danger: var(--r1-red-500);
+  --r1-danger-bg: var(--r1-red-100);
+  --r1-danger-border: var(--r1-red-200);
+  --r1-success: var(--r1-green-500);
+
+  --r1-field-bg: #ffffff;
+  --r1-field-bg-disabled: var(--r1-slate-100);
+  --r1-focus-ring: rgba(213, 163, 59, 0.34);
+
+  --r1-scrim: rgba(6, 26, 49, 0.52);
+
+  color-scheme: light;
+}
+
+/* ---- Tema ESCURO por preferência do sistema ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --r1-bg: var(--r1-navy-900);
+    --r1-surface: #0b1c2c;
+    --r1-surface-sunken: #071624;
+    --r1-surface-inverse: #030d17;
+
+    --r1-text: #e8eef5;
+    --r1-text-muted: #93a6bb;
+    --r1-text-subtle: #7b8fa5;
+    --r1-text-on-inverse: #ffffff;
+    --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.7);
+
+    --r1-border: var(--r1-steel-500);
+    --r1-border-subtle: #142434;
+    --r1-border-inverse: rgba(255, 255, 255, 0.1);
+
+    /* O dourado clareia no escuro: o tom claro perde contraste sobre
+       fundo escuro e o texto sobre ele precisa continuar legível. */
+    --r1-accent: var(--r1-gold-400);
+    --r1-accent-strong: var(--r1-gold-300);
+    --r1-accent-contrast: var(--r1-navy-900);
+    --r1-accent-wash: rgba(240, 189, 83, 0.16);
+
+    --r1-danger: #f87171;
+    --r1-danger-bg: rgba(220, 38, 38, 0.14);
+    --r1-danger-border: rgba(248, 113, 113, 0.34);
+    --r1-success: #4ade80;
+
+    --r1-field-bg: #0d2033;
+    --r1-field-bg-disabled: #0a1826;
+    --r1-focus-ring: rgba(240, 189, 83, 0.3);
+
+    --r1-scrim: rgba(2, 8, 15, 0.68);
+
+    --r1-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --r1-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --r1-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.6);
+
+    color-scheme: dark;
+  }
+}
+
+/* ---- Escolha explícita do usuário vence o sistema ----
+   Os dois blocos existem de propósito: data-theme="light" precisa
+   derrubar o @media acima num aparelho configurado como escuro. */
+:root[data-theme='dark'] {
+  --r1-bg: var(--r1-navy-900);
+  --r1-surface: #0b1c2c;
+  --r1-surface-sunken: #071624;
+  --r1-surface-inverse: #030d17;
+
+  --r1-text: #e8eef5;
+  --r1-text-muted: #93a6bb;
+  --r1-text-subtle: #7b8fa5;
+  --r1-text-on-inverse: #ffffff;
+  --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.7);
+
+  --r1-border: var(--r1-steel-500);
+  --r1-border-subtle: #142434;
+  --r1-border-inverse: rgba(255, 255, 255, 0.1);
+
+  --r1-accent: var(--r1-gold-400);
+  --r1-accent-strong: var(--r1-gold-300);
+  --r1-accent-contrast: var(--r1-navy-900);
+  --r1-accent-wash: rgba(240, 189, 83, 0.16);
+
+  --r1-danger: #f87171;
+  --r1-danger-bg: rgba(220, 38, 38, 0.14);
+  --r1-danger-border: rgba(248, 113, 113, 0.34);
+  --r1-success: #4ade80;
+
+  --r1-field-bg: #0d2033;
+  --r1-field-bg-disabled: #0a1826;
+  --r1-focus-ring: rgba(240, 189, 83, 0.3);
+
+  --r1-scrim: rgba(2, 8, 15, 0.68);
+
+  --r1-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --r1-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --r1-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --r1-bg: var(--r1-cream-200);
+  --r1-surface: #ffffff;
+  --r1-surface-sunken: var(--r1-cream-100);
+  --r1-surface-inverse: var(--r1-navy-800);
+
+  --r1-text: var(--r1-navy-800);
+  --r1-text-muted: var(--r1-slate-500);
+  --r1-text-subtle: #6a7686;
+  --r1-text-on-inverse: #ffffff;
+  --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.72);
+
+  --r1-border: var(--r1-slate-400);
+  --r1-border-subtle: #e6ebf1;
+  --r1-border-inverse: rgba(255, 255, 255, 0.14);
+
+  --r1-accent: var(--r1-gold-500);
+  --r1-accent-strong: var(--r1-gold-700);
+  --r1-accent-contrast: var(--r1-navy-900);
+  --r1-accent-wash: rgba(213, 163, 59, 0.14);
+
+  --r1-danger: var(--r1-red-500);
+  --r1-danger-bg: var(--r1-red-100);
+  --r1-danger-border: var(--r1-red-200);
+  --r1-success: var(--r1-green-500);
+
+  --r1-field-bg: #ffffff;
+  --r1-field-bg-disabled: var(--r1-slate-100);
+  --r1-focus-ring: rgba(213, 163, 59, 0.34);
+
+  --r1-scrim: rgba(6, 26, 49, 0.52);
+
+  color-scheme: light;
+}
+
+/* Respeita quem pediu menos animação no sistema operacional. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --r1-dur-fast: 0ms;
+    --r1-dur: 0ms;
+  }
+}

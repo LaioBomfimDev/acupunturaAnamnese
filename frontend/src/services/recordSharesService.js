@@ -192,36 +192,68 @@ export async function revokeRecordShare(shareId) {
   }
 }
 
-/**
- * Lê a sessão compartilhada de um paciente (autorização no banco via
- * get_shared_session). Devolve o objeto de sessão mais recente ou null.
- */
-export async function getSharedSession(patientId) {
-  const user = await getAuthenticatedUser();
-  if (!user) throw new Error('Usuário não autenticado.');
-
-  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
-    try {
-      const records = JSON.parse(localStorage.getItem('acup_local_clinical_records') || '[]');
-      const record = records
-        .filter(r => r.patient_id === patientId && r.record_type === 'full_session')
-        .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
-      return record ? record.sensitive_data : null;
-    } catch {
-      return null;
-    }
-  }
-
-  const { data, error } = await supabase.rpc('get_shared_session', { p_patient_id: patientId });
-  if (error) {
-    if (isMissingShareSchemaError(error)) throw new Error(SHARE_MIGRATION_HINT);
-    throw error;
-  }
-  const record = (data || [])[0];
-  if (!record?.sensitive_data) return null;
+function parseSharedPayload(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'object') return raw;
   try {
-    return JSON.parse(record.sensitive_data);
+    return JSON.parse(raw);
   } catch {
     return null;
   }
+}
+
+/**
+ * Lê os registros compartilhados de um paciente (autorização no banco,
+ * via get_shared_session). Devolve UM registro por disciplina — o mais
+ * recente de cada uma.
+ *
+ * A partir de 07/08/2026 a RPC devolve qualquer disciplina, não só a
+ * sessão de acupuntura, e restringe ao que foi de fato encaminhado.
+ * Registro sem `discipline` é de antes dessa migração: por definição é
+ * acupuntura, que era a única que existia.
+ *
+ * @returns {Promise<Array<{id, recordType, discipline, updatedAt, data}>>}
+ */
+export async function getSharedRecords(patientId) {
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  let rows;
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
+    rows = JSON.parse(localStorage.getItem('acup_local_clinical_records') || '[]')
+      .filter(r => r.patient_id === patientId)
+      .map(r => ({
+        id: r.id,
+        record_type: r.record_type,
+        discipline: r.discipline,
+        sensitive_data: r.sensitive_data,
+        updated_at: r.updated_at,
+      }));
+  } else {
+    const { data, error } = await supabase.rpc('get_shared_session', { p_patient_id: patientId });
+    if (error) {
+      if (isMissingShareSchemaError(error)) throw new Error(SHARE_MIGRATION_HINT);
+      throw error;
+    }
+    rows = data || [];
+  }
+
+  const latestByDiscipline = new Map();
+  for (const row of rows) {
+    const data = parseSharedPayload(row.sensitive_data);
+    if (!data) continue;
+    const discipline = row.discipline || data.discipline || 'acupuntura';
+    const current = latestByDiscipline.get(discipline);
+    if (current && new Date(current.updatedAt) >= new Date(row.updated_at)) continue;
+    latestByDiscipline.set(discipline, {
+      id: row.id,
+      recordType: row.record_type,
+      discipline,
+      updatedAt: row.updated_at,
+      data,
+    });
+  }
+
+  return [...latestByDiscipline.values()]
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 }

@@ -10,8 +10,16 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 let server;
 let lib;
 let docCorpus;
+let previousLocalAuthFallback;
 
 before(async () => {
+  // O curto-circuito "sem matches, não chama a IA" só existe no modo de
+  // desenvolvimento local. Sem forçar a flag aqui, o teste passa ou falha
+  // conforme o .env.local da máquina — e o padrão seguro do .env.example
+  // é false, que era o que derrubava a suíte.
+  previousLocalAuthFallback = process.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK;
+  process.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK = 'true';
+
   server = await createServer({
     root,
     logLevel: 'silent',
@@ -24,6 +32,11 @@ before(async () => {
 
 after(async () => {
   await server?.close();
+  if (previousLocalAuthFallback === undefined) {
+    delete process.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK;
+  } else {
+    process.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK = previousLocalAuthFallback;
+  }
 });
 
 const cards = [

@@ -58,7 +58,7 @@ const STATE_BADGES = {
   locked: 'Não habilitada',
 };
 
-export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments }) {
+export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments, onOpenAgenda }) {
   const cards = buildHubCards(profile);
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Reability';
 
@@ -110,6 +110,13 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
             );
           })}
         </div>
+
+        {onOpenAgenda && (
+          <button type="button" className="hub-secondary" onClick={onOpenAgenda}>
+            <b>Agenda →</b>
+            <span>Calendário de atendimentos, status do dia e aniversários dos pacientes.</span>
+          </button>
+        )}
 
         {onOpenClinicPatients && (
           <button type="button" className="hub-secondary" onClick={onOpenClinicPatients}>

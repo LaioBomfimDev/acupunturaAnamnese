@@ -29,6 +29,7 @@ const Evolucao = lazyPanel(() => import('./components/panels/Evolucao'), 'Evoluc
 const Biblioteca = lazyPanel(() => import('./components/panels/Biblioteca'), 'Biblioteca');
 const Relatorio = lazyPanel(() => import('./components/panels/Relatorio'), 'Relatorio');
 const DocumentosTimbrados = lazyPanel(() => import('./components/panels/DocumentosTimbrados'), 'DocumentosTimbrados');
+const Agenda = lazyPanel(() => import('./components/panels/Agenda'), 'Agenda');
 const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
 const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
 const ClinicPatientsPanel = lazyPanel(() => import('./components/ClinicPatientsPanel'), 'ClinicPatientsPanel');
@@ -82,6 +83,7 @@ export default function App() {
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
   const [showHubDocuments, setShowHubDocuments] = useState(false);
+  const [showHubAgenda, setShowHubAgenda] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewSection, setReviewSection] = useState('points');
   const [superAdminSection, setSuperAdminSection] = useState('manage');
@@ -281,6 +283,28 @@ export default function App() {
         </Suspense>
       );
     }
+    // Agenda direto do hub: é da instituição inteira, não depende de
+    // escolher área nem de ter paciente selecionado.
+    if (showHubAgenda) {
+      return (
+        <div className="hub-screen">
+          <header className="hub-topbar">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
+              <p>Agenda</p>
+            </div>
+            <button type="button" className="topbar-button" onClick={() => setShowHubAgenda(false)}>
+              ← Voltar às áreas
+            </button>
+          </header>
+          <main className="hub-body">
+            <Suspense fallback={<PanelLoading />}>
+              <Agenda profile={profile} />
+            </Suspense>
+          </main>
+        </div>
+      );
+    }
     // Documentos timbrados direto do hub: utilitário da clínica inteira,
     // não exige escolher área nem ter paciente selecionado.
     if (showHubDocuments) {
@@ -325,6 +349,7 @@ export default function App() {
         onSignOut={handleHubSignOut}
         onOpenClinicPatients={() => setShowClinicPatients(true)}
         onOpenDocuments={() => setShowHubDocuments(true)}
+        onOpenAgenda={() => setShowHubAgenda(true)}
       />
     );
   }

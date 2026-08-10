@@ -4,7 +4,7 @@ import { buildHubCards } from '../data/disciplines';
 // Hub de disciplinas (pós-login)
 // Fase 1 do plano docs/plano-clinica-multidisciplinar.md.
 //
-// Mostra TODAS as disciplinas da clínica: as liberadas no perfil
+// Mostra TODAS as disciplinas da instituição: as liberadas no perfil
 // em cor (clicáveis), as demais em cinza — a pessoa enxerga o todo,
 // mas só entra nas suas. Disciplina liberada sem workspace pronto
 // aparece com selo "em construção".
@@ -66,8 +66,9 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
     <div className="hub-screen">
       <header className="hub-topbar">
         <div className="hub-brand">
+          <span className="hub-wordmark">Reability <i>One</i></span>
           <h1>{clinicName}</h1>
-          <p>Clínica multidisciplinar</p>
+          <p>Instituição multidisciplinar</p>
         </div>
         <button type="button" className="topbar-button" onClick={onSignOut}>Sair</button>
       </header>
@@ -76,7 +77,7 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
         <p className="hub-greeting">Oi, {therapistName || 'profissional'}</p>
         <h2>Em qual área você vai atender agora?</h2>
         <p className="hub-note">
-          Você enxerga todas as áreas da clínica; os cards coloridos são os liberados para o seu perfil.
+          Você enxerga todas as áreas da instituição; os cards coloridos são os liberados para o seu perfil.
         </p>
 
         <div className="hub-grid">
@@ -111,25 +112,32 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
           })}
         </div>
 
-        {onOpenAgenda && (
-          <button type="button" className="hub-secondary" onClick={onOpenAgenda}>
-            <b>Agenda →</b>
-            <span>Calendário de atendimentos, status do dia e aniversários dos pacientes.</span>
-          </button>
-        )}
+        {(onOpenAgenda || onOpenClinicPatients || onOpenDocuments) && (
+          <>
+            <p className="hub-tools-title">Da instituição</p>
+            <div className="hub-tools">
+              {onOpenAgenda && (
+                <button type="button" className="hub-secondary" onClick={onOpenAgenda}>
+                  <b>Agenda →</b>
+                  <span>Calendário de atendimentos, status do dia e aniversários dos pacientes.</span>
+                </button>
+              )}
 
-        {onOpenClinicPatients && (
-          <button type="button" className="hub-secondary" onClick={onOpenClinicPatients}>
-            <b>Pacientes da clínica →</b>
-            <span>Cadastro central, matrículas por área e envio entre profissionais.</span>
-          </button>
-        )}
+              {onOpenClinicPatients && (
+                <button type="button" className="hub-secondary" onClick={onOpenClinicPatients}>
+                  <b>Pacientes da instituição →</b>
+                  <span>Cadastro central, matrículas por área e envio entre profissionais.</span>
+                </button>
+              )}
 
-        {onOpenDocuments && (
-          <button type="button" className="hub-secondary" onClick={onOpenDocuments}>
-            <b>Documentos timbrados →</b>
-            <span>Envie um Word (.docx) e receba o documento no papel timbrado da clínica.</span>
-          </button>
+              {onOpenDocuments && (
+                <button type="button" className="hub-secondary" onClick={onOpenDocuments}>
+                  <b>Documentos timbrados →</b>
+                  <span>Envie um Word (.docx) e receba o documento no papel timbrado da instituição.</span>
+                </button>
+              )}
+            </div>
+          </>
         )}
       </main>
     </div>

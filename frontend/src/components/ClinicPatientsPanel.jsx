@@ -13,8 +13,8 @@ import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 
 // ============================================================
-// Pacientes da clínica (Fases 2 e 3 — docs/plano-clinica-multidisciplinar.md)
-// Cadastro central, FORA das anamneses: o paciente é UM, da clínica,
+// Pacientes da instituição (Fases 2 e 3 — docs/plano-clinica-multidisciplinar.md)
+// Cadastro central, FORA das anamneses: o paciente é UM, da instituição,
 // e entra em cada área por MATRÍCULA (nunca cópia).
 //
 // "Enviar para outro profissional" (Fase 3): matrícula no destino +
@@ -58,7 +58,7 @@ export function ClinicPatientsPanel({ profile, onBack }) {
         setSharesByPatient({});
       }
     } catch (err) {
-      setError(err.message || 'Não foi possível carregar os pacientes da clínica.');
+      setError(err.message || 'Não foi possível carregar os pacientes da instituição.');
     } finally {
       setLoading(false);
     }
@@ -126,13 +126,13 @@ export function ClinicPatientsPanel({ profile, onBack }) {
       <header className="hub-topbar">
         <div className="hub-brand">
           <h1>{clinicName}</h1>
-          <p>Pacientes da clínica</p>
+          <p>Pacientes da instituição</p>
         </div>
         <button type="button" className="topbar-button" onClick={onBack}>← Voltar às áreas</button>
       </header>
 
       <main className="hub-body clinic-patients">
-        <h2>Pacientes da clínica</h2>
+        <h2>Pacientes da instituição</h2>
         <p className="hub-note">
           Cadastro central: o paciente é um só e entra em cada área por matrícula. Enviar para outro
           profissional compartilha só o que você escolher, com confirmação de senha, e pode ser revogado.

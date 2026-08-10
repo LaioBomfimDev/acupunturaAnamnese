@@ -1,0 +1,334 @@
+/* ============================================================
+   REABILITY ONE — casco do hub (boas-vindas, agenda e documentos)
+   ============================================================
+
+   Reestiliza as classes .hub-* que já existiam no App.css em vez de
+   criar nomes novos. Três telas usam este mesmo casco (escolha de área,
+   agenda e documentos timbrados); mexer nas classes existentes deixa as
+   três consistentes de uma vez e ainda tira mais um pedaço do App.css
+   do regime de cor chumbada.
+
+   Importado DEPOIS do App.css no main.jsx: mesma especificidade,
+   cascata decide. Se alguém inverter a ordem do import, o visual
+   antigo volta — é o único acoplamento deste arquivo.
+   ============================================================ */
+
+.hub-screen {
+  min-height: 100svh;
+  background:
+    radial-gradient(1100px 520px at 88% -12%, var(--r1-accent-wash), transparent 62%),
+    var(--r1-bg);
+  color: var(--r1-text);
+  font-family: var(--r1-font-sans);
+}
+
+/* ---------- barra superior ---------- */
+
+.hub-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 30px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface);
+}
+
+.hub-brand h1 {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  color: var(--r1-text);
+}
+
+.hub-brand p {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  letter-spacing: 0.4px;
+  color: var(--r1-text-muted);
+}
+
+/* Assinatura do produto ao lado do nome da instituição: quem usa vê a
+   marca da casa dele primeiro, e a plataforma em segundo plano. */
+.hub-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 3px;
+  font-family: var(--r1-font-display);
+  font-size: 10.5px;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.hub-wordmark i {
+  font-style: italic;
+  letter-spacing: 1px;
+  text-transform: none;
+  color: var(--r1-accent-strong);
+}
+
+.topbar-button {
+  padding: 8px 14px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.topbar-button:hover {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.topbar-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* ---------- corpo ---------- */
+
+.hub-body {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 26px 30px 44px;
+}
+
+.hub-greeting {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--r1-accent-strong);
+}
+
+.hub-body h2 {
+  margin: 0 0 6px;
+  font-family: var(--r1-font-display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+  color: var(--r1-text);
+}
+
+.hub-note {
+  margin: 0 0 20px;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--r1-text-muted);
+}
+
+/* ---------- cards de área ---------- */
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.hub-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease),
+    border-color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.hub-card-enabled:hover {
+  transform: translateY(-2px);
+  border-color: var(--r1-accent);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.hub-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.hub-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.hub-card-text {
+  display: grid;
+  gap: 3px;
+}
+
+.hub-card-text b {
+  font-family: var(--r1-font-display);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--r1-text);
+}
+
+.hub-card-text small {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.hub-card-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--r1-text-muted);
+}
+
+.hub-card-cta {
+  margin-top: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
+}
+
+.hub-card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.hub-card-badge-soon {
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.hub-card-badge-locked {
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+  color: var(--r1-text-muted);
+}
+
+/* Área não liberada continua visível — a pessoa enxerga o todo da
+   instituição, mesmo sem poder entrar. Só recua de contraste. */
+.hub-card-soon,
+.hub-card-locked {
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.hub-card-locked {
+  background: var(--r1-surface-sunken);
+  border-style: dashed;
+}
+
+.hub-card-locked .hub-card-icon {
+  background: var(--r1-surface);
+  color: var(--r1-text-subtle);
+}
+
+.hub-card-locked .hub-card-text b {
+  color: var(--r1-text-muted);
+}
+
+.hub-card-locked .hub-card-text small,
+.hub-card-locked .hub-card-desc {
+  color: var(--r1-text-subtle);
+}
+
+/* ---------- atalhos da instituição ---------- */
+
+/* Eram botões largos empilhados, um por linha, que empurravam a página
+   e deixavam faixa vazia à direita. Em grade eles ocupam a mesma faixa
+   dos cards de área e a tela fecha sem sobra. */
+.hub-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: 12px;
+}
+
+.hub-tools-title {
+  margin: 0 0 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.hub-secondary {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.hub-secondary:hover {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.hub-secondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.hub-secondary b {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.hub-secondary span {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--r1-text-muted);
+}
+
+@media (max-width: 720px) {
+  .hub-topbar {
+    padding: 14px 18px;
+  }
+
+  .hub-body {
+    padding: 20px 18px 36px;
+  }
+
+  .hub-body h2 {
+    font-size: 22px;
+  }
+}

@@ -7,7 +7,7 @@ const NAV_GROUPS = [
 ];
 
 const SUPER_ADMIN_SECTIONS = [
-  { id: 'clinics', label: 'Clínicas', description: 'Cadastro e identidade visual' },
+  { id: 'clinics', label: 'Instituições', description: 'Cadastro e identidade visual' },
   { id: 'create', label: 'Criar profissional', description: 'Cadastro e senha' },
   { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
   { id: 'proposals', label: 'Propostas de curadoria', description: 'Enviadas pela revisora' },

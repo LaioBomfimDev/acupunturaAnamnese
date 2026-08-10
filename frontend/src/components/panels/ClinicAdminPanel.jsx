@@ -123,7 +123,7 @@ export function ClinicAdminPanel() {
       setClinics(clinicList);
       setProfessionals(profileList);
     } catch (err) {
-      setError(err.message || 'Não foi possível carregar as clínicas.');
+      setError(err.message || 'Não foi possível carregar as instituições.');
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ export function ClinicAdminPanel() {
     setSuccess('');
 
     if (!form.name.trim()) {
-      setError('Informe o nome da clínica.');
+      setError('Informe o nome da instituição.');
       return;
     }
 
@@ -187,7 +187,7 @@ export function ClinicAdminPanel() {
       resetForm();
       await load();
     } catch (err) {
-      setError(err.message || 'Não foi possível salvar a clínica.');
+      setError(err.message || 'Não foi possível salvar a instituição.');
     } finally {
       setSaving(false);
     }
@@ -205,10 +205,10 @@ export function ClinicAdminPanel() {
     try {
       await deleteClinic(clinic.id);
       if (form.id === clinic.id) resetForm();
-      setSuccess('Clínica removida.');
+      setSuccess('Instituição removida.');
       await load();
     } catch (err) {
-      setError(err.message || 'Não foi possível remover a clínica.');
+      setError(err.message || 'Não foi possível remover a instituição.');
     }
   }
 
@@ -279,8 +279,8 @@ export function ClinicAdminPanel() {
         <form className="admin-create-form" onSubmit={handleSubmit}>
           <div className="start-panel-head">
             <div>
-              <p className="small">{form.id ? 'Editar clínica' : 'Nova clínica'}</p>
-              <h2>{form.id ? form.name || 'Clínica' : 'Cadastrar clínica'}</h2>
+              <p className="small">{form.id ? 'Editar instituição' : 'Nova instituição'}</p>
+              <h2>{form.id ? form.name || 'Instituição' : 'Cadastrar instituição'}</h2>
             </div>
             {form.id && (
               <button className="tag" type="button" onClick={resetForm}>
@@ -358,7 +358,7 @@ export function ClinicAdminPanel() {
               </span>
             </label>
             <div className="admin-notes clinic-logo-field">
-              <span className="clinic-logo-field-label">Logo da clínica</span>
+              <span className="clinic-logo-field-label">Logo da instituição</span>
               <div className="clinic-logo-uploader">
                 <div className={`clinic-logo-thumb${form.logo_url ? '' : ' empty'}`}>
                   {form.logo_url
@@ -417,7 +417,7 @@ export function ClinicAdminPanel() {
                 ? <img className="clinic-letterhead-preview-logo" src={form.logo_url} alt="Logo da clínica" />
                 : <span className="clinic-letterhead-preview-monogram">{(form.name || 'C').trim().charAt(0).toUpperCase()}</span>}
               <div>
-                <b>{form.name || 'Nome da clínica'}</b>
+                <b>{form.name || 'Nome da instituição'}</b>
                 <small>
                   {[form.legal_name, form.cnpj && `CNPJ ${form.cnpj}`].filter(Boolean).join(' • ') || 'Prévia do papel timbrado dos relatórios'}
                 </small>
@@ -438,7 +438,7 @@ export function ClinicAdminPanel() {
 
           <div className="form-actions">
             <button className="primary-button" type="submit" disabled={saving}>
-              {saving ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Cadastrar clínica'}
+              {saving ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Cadastrar instituição'}
             </button>
           </div>
         </form>
@@ -447,7 +447,7 @@ export function ClinicAdminPanel() {
       <section className="admin-users">
         <div className="start-panel-head">
           <div>
-            <p className="small">Clínicas</p>
+            <p className="small">Instituições</p>
             <h2>Unidades cadastradas</h2>
           </div>
           <button className="quiet-button" type="button" onClick={load} disabled={loading}>
@@ -457,7 +457,7 @@ export function ClinicAdminPanel() {
 
         <div className="admin-toolbar clinic-list-toolbar">
           <label className="admin-filter-field admin-filter-search">
-            <span>Pesquisar clínica</span>
+            <span>Pesquisar instituição</span>
             <input
               className="admin-search"
               type="search"
@@ -472,9 +472,9 @@ export function ClinicAdminPanel() {
         </div>
 
         {loading ? (
-          <div className="empty-state">Carregando clínicas...</div>
+          <div className="empty-state">Carregando instituições...</div>
         ) : clinics.length === 0 ? (
-          <div className="empty-state">Nenhuma clínica cadastrada ainda.</div>
+          <div className="empty-state">Nenhuma instituição cadastrada ainda.</div>
         ) : visibleClinics.length === 0 ? (
           <div className="empty-state">Nenhuma clínica corresponde à pesquisa.</div>
         ) : (

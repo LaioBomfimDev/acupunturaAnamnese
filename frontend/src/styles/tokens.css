@@ -27,7 +27,7 @@
   --r1-navy-600: #0c365c;
   --r1-navy-500: #16507f;
 
-  --r1-gold-700: #9a6d1c;
+  --r1-gold-700: #8f6519;
   --r1-gold-600: #b8862a;
   --r1-gold-500: #d5a33b;
   --r1-gold-400: #f0bd53;
@@ -41,9 +41,14 @@
   --r1-slate-300: #cbd5e1;
   /* slate-400 e steel-500 existem para a borda de campo alcançar os 3:1
      que a WCAG 2.2 (1.4.11) exige de contorno de componente. Os tons mais
-     claros que usávamos ficavam em ~1,4:1 — bonitos e ilegíveis. */
+     claros que usávamos ficavam em ~1,4:1 — bonitos e ilegíveis.
+
+     Os tons de texto são calibrados contra --r1-bg (creme), NÃO contra
+     --r1-surface (branco): creme é a superfície mais escura do tema claro,
+     então é ela que decide. Calibrar no branco deixava a tela do hub
+     reprovando em ~4,1:1. */
   --r1-slate-400: #7d8ea3;
-  --r1-slate-500: #64748b;
+  --r1-slate-500: #5d6b80;
   --r1-slate-700: #334155;
   --r1-steel-500: #4a6f94;
 
@@ -84,7 +89,7 @@
 
   --r1-text: var(--r1-navy-800);
   --r1-text-muted: var(--r1-slate-500);
-  --r1-text-subtle: #6a7686;
+  --r1-text-subtle: #646f7c;
   --r1-text-on-inverse: #ffffff;
   --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.72);
 
@@ -205,7 +210,7 @@
 
   --r1-text: var(--r1-navy-800);
   --r1-text-muted: var(--r1-slate-500);
-  --r1-text-subtle: #6a7686;
+  --r1-text-subtle: #646f7c;
   --r1-text-on-inverse: #ffffff;
   --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.72);
 

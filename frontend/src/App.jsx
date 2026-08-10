@@ -101,10 +101,10 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Título da aba segue a clínica logada (ou o nome genérico antes do login).
+  // Título da aba segue a instituição logada (ou o nome do produto antes do login).
   useEffect(() => {
     const clinicName = profile?.clinic?.name || profile?.clinic_name;
-    document.title = clinicName ? `Sistema ${clinicName}` : 'Sistema Acup';
+    document.title = clinicName || 'Reability One';
   }, [profile?.clinic?.name, profile?.clinic_name]);
 
   // Metadados persistíveis da análise de língua (sem imagens/object URLs)
@@ -305,7 +305,7 @@ export default function App() {
         </div>
       );
     }
-    // Documentos timbrados direto do hub: utilitário da clínica inteira,
+    // Documentos timbrados direto do hub: utilitário da instituição inteira,
     // não exige escolher área nem ter paciente selecionado.
     if (showHubDocuments) {
       return (
@@ -580,7 +580,7 @@ export default function App() {
         </div>
         )}
 
-        {/* Relatório e Documentos têm papel timbrado próprio com os dados da clínica */}
+        {/* Relatório e Documentos têm papel timbrado próprio com os dados da instituição */}
         {activeTab !== 'Relatório' && activeTab !== 'Documentos' && (
         <div className="print-header">
           <div>

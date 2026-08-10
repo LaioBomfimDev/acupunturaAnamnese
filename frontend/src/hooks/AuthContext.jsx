@@ -319,7 +319,7 @@ export const AuthProvider = ({ children }) => {
   const enrollMfa = async () => {
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: 'totp',
-      friendlyName: 'Sistema Acup',
+      friendlyName: 'Reability One',
     });
     if (error) throw error;
     return data;

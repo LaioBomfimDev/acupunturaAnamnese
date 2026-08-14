@@ -284,8 +284,21 @@ export async function updateAppointmentStatus(id, status, { reason = null, runti
   return data;
 }
 
-/** Remarca (muda horário) mantendo o mesmo agendamento e seu histórico. */
-export async function rescheduleAppointment(id, { startsAt, endsAt, runtime } = {}) {
+/**
+ * Remarca (muda horário) mantendo o mesmo agendamento e seu histórico.
+ *
+ * A exceção é reavaliada no destino: mover de uma quarta às 9h para um
+ * sábado precisa passar a valer como exceção, e mover de volta precisa
+ * deixar de valer. Sem isso o registro mentiria depois da primeira
+ * remarcação.
+ */
+export async function rescheduleAppointment(id, {
+  startsAt,
+  endsAt,
+  isException = false,
+  exceptionReason = null,
+  runtime,
+} = {}) {
   if (!id) throw new Error('Agendamento não informado.');
 
   const start = new Date(startsAt);
@@ -294,6 +307,9 @@ export async function rescheduleAppointment(id, { startsAt, endsAt, runtime } = 
     throw new Error('Horário inválido.');
   }
   if (end <= start) throw new Error('O término precisa ser depois do início.');
+  if (isException === true && !String(exceptionReason || '').trim()) {
+    throw new Error('Informe o motivo da exceção de horário.');
+  }
 
   const client = {
     getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
@@ -301,7 +317,12 @@ export async function rescheduleAppointment(id, { startsAt, endsAt, runtime } = 
   };
 
   const user = await client.getAuthenticatedUser();
-  const patch = { starts_at: start.toISOString(), ends_at: end.toISOString() };
+  const patch = {
+    starts_at: start.toISOString(),
+    ends_at: end.toISOString(),
+    is_exception: isException === true,
+    exception_reason: isException === true ? String(exceptionReason).trim() : null,
+  };
 
   if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     const list = getLocalAppointments();

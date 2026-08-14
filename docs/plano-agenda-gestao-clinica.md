@@ -76,11 +76,16 @@ segundo por lotes.
 
 ## 3. Fases
 
-> **Estado em 2026-08-09:** Fases 0 e 1 implementadas no código
-> (branch `hardening-clinico`), com 491 testes verdes. As duas migrações
-> da Fase 0 ainda **não foram aplicadas** no Supabase — instruções em
-> `docs/aplicar-sql-agenda-2026-08-10.md`. Cadastro de jornada por tela e
-> visão dia/semana ficaram para a Fase 2, como planejado.
+> **Estado em 2026-08-12.** Fases 0 e 1 completas: código na branch
+> `hardening-clinico` e as duas migrações **aplicadas e verificadas** no
+> Supabase. Fase 2 na primeira rodada — visões Dia/Semana/Mês, tocar no
+> horário, remarcar e cadastro de jornada prontos; **falta recorrência**
+> (pacote de sessões), que fica para a rodada 2. 533 testes verdes.
+>
+> A tela nunca foi vista rodando com dados: fica atrás do login e não há
+> como autenticar em sessão de desenvolvimento. A visão Dia é renderizada
+> de verdade nos testes (`agenda-day-view.test.mjs`), mas a conferência
+> visual humana continua pendente.
 
 ### Fase 0 — Destravar o banco (pré-requisito de tudo)
 
@@ -154,6 +159,14 @@ rolagem horizontal.
   `agenda.css` é o caminho certo.
 
 **Funcionalidades:**
+
+> **Decisão de implementação (rodada 1):** a visão Dia é uma **lista de
+> faixas**, não uma grade com eventos posicionados por pixel. Tocar num
+> bloco de 14px de altura é loteria; numa linha de 44px, não. A grade
+> bonita de calendário desktop é exatamente o que torna agenda ruim de
+> usar no telefone. A visão Semana mantém a grade (sete colunas) porque
+> lá o objetivo é outro: enxergar **buraco**, não operar o dia — e ela
+> some do seletor abaixo de 900px, onde nome de paciente não caberia.
 
 - Agenda por profissional **e** agenda da instituição (colunas por
   profissional no desktop; chip de filtro no celular).

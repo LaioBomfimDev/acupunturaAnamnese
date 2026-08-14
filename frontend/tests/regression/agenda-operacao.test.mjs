@@ -347,6 +347,31 @@ test('bloqueio existente não impede marcar atendimento no mesmo horário', () =
   assert.equal(conflito, null, 'bloqueio avisa pela tela; quem barra é só paciente x paciente');
 });
 
+test('remarcar reavalia a exceção: mover para sábado sem motivo é recusado', async () => {
+  await assert.rejects(
+    () => service.rescheduleAppointment('a1', {
+      startsAt: '2026-08-15T09:00:00Z',
+      endsAt: '2026-08-15T10:00:00Z',
+      isException: true,
+      exceptionReason: '',
+      runtime: runtimeSemBanco,
+    }),
+    /motivo da exceção/,
+    'sem isto, remarcar seria a porta dos fundos para gravar exceção sem motivo',
+  );
+});
+
+test('remarcar continua recusando período invertido', async () => {
+  await assert.rejects(
+    () => service.rescheduleAppointment('a1', {
+      startsAt: '2026-08-12T10:00:00Z',
+      endsAt: '2026-08-12T09:00:00Z',
+      runtime: runtimeSemBanco,
+    }),
+    /término precisa ser depois do início/,
+  );
+});
+
 test('tipo de atendimento inválido não passa', async () => {
   await assert.rejects(
     () => service.createAppointment(

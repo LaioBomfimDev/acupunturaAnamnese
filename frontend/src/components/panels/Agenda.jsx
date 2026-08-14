@@ -9,24 +9,35 @@ import {
   getStatusLabel,
   toDayKey,
 } from '../../utils/agenda';
-import { evaluateSlot } from '../../utils/agendaExceptions';
+import { evaluateSlot, minutesToLabel } from '../../utils/agendaExceptions';
+import { buildDayTimeline, buildWeekStrip } from '../../utils/agendaTimeline';
 import {
   APPOINTMENT_TYPES,
   createAppointment,
   listAppointments,
+  rescheduleAppointment,
   updateAppointmentStatus,
 } from '../../services/appointmentService';
 import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from '../../services/agendaScheduleService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES } from '../../data/disciplines';
+import AgendaDayView from './agenda/AgendaDayView';
+import AgendaWeekView from './agenda/AgendaWeekView';
+import ScheduleEditor from './agenda/ScheduleEditor';
 import '../../styles/agenda.css';
 
-// Estados oferecidos como ação rápida no dia. 'scheduled' fica de fora
-// porque é o estado inicial — voltar para ele é remarcar, não marcar.
+// Estados oferecidos como ação rápida. 'scheduled' fica de fora porque é
+// o estado inicial — voltar para ele é remarcar, não marcar.
 const QUICK_STATUSES = APPOINTMENT_STATUSES.filter(item => item.id !== 'scheduled');
 
 const ALL_PROFESSIONALS = 'all';
+
+const VIEWS = [
+  { id: 'dia', label: 'Dia' },
+  { id: 'semana', label: 'Semana' },
+  { id: 'mes', label: 'Mês' },
+];
 
 function firstOfMonth(year, month) {
   return new Date(year, month - 1, 1, 0, 0, 0, 0);
@@ -44,14 +55,20 @@ function formatTime(iso) {
 
 /** 'YYYY-MM-DD' + 'HH:MM' -> Date local, sem passar pelo parser de ISO. */
 function combineLocal(dayKey, time) {
-  const [year, month, day] = dayKey.split('-').map(Number);
+  const [year, month, day] = String(dayKey || '').split('-').map(Number);
   const [hour, minute] = String(time || '').split(':').map(Number);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+  if (!Number.isFinite(year) || !Number.isFinite(hour) || !Number.isFinite(minute)) return null;
   return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
 function addMinutes(date, minutes) {
   return new Date(date.getTime() + minutes * 60000);
+}
+
+/** No telefone a visão que serve é a do dia; no desktop, a da semana. */
+function defaultView() {
+  if (typeof window === 'undefined' || !window.matchMedia) return 'dia';
+  return window.matchMedia('(max-width: 900px)').matches ? 'dia' : 'semana';
 }
 
 export function Agenda({ profile }) {
@@ -61,6 +78,8 @@ export function Agenda({ profile }) {
     month: today.getMonth() + 1,
   }));
   const [selectedKey, setSelectedKey] = useState(() => toDayKey(today));
+  const [view, setView] = useState(defaultView);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -71,9 +90,15 @@ export function Agenda({ profile }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
 
   // Quem a agenda está mostrando. 'all' é a visão de recepção.
   const [agendaOf, setAgendaOf] = useState(() => profile?.id || ALL_PROFESSIONALS);
+
+  // Agendamento aberto no painel lateral (detalhe/ações).
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  // Agendamento em modo "mover": o próximo toque num horário remarca.
+  const [moving, setMoving] = useState(null);
 
   const availableDisciplines = useMemo(() => {
     const allowed = Array.isArray(profile?.disciplines) ? profile.disciplines : [];
@@ -93,12 +118,10 @@ export function Agenda({ profile }) {
   }));
 
   // Confirmação dupla de horário atípico: enquanto isto tiver conteúdo,
-  // o formulário não grava — mostra o que há de fora do normal e espera
-  // um segundo "sim" explícito.
+  // nada é gravado — a tela mostra o que foge do normal e espera um
+  // segundo "sim" explícito.
   const [pendingException, setPendingException] = useState(null);
 
-  // Derivado, não sincronizado por efeito: enquanto a pessoa não escolher,
-  // vale a primeira disciplina que o perfil libera.
   const disciplineValue = form.discipline || availableDisciplines[0]?.id || '';
   const formProfessionalId = form.professionalId
     || (agendaOf !== ALL_PROFESSIONALS ? agendaOf : profile?.id)
@@ -132,9 +155,8 @@ export function Agenda({ profile }) {
 
       // Equipe, jornada e feriados são configuração: se faltarem, a
       // agenda continua funcionando sem os avisos de horário atípico.
-      // Quebrar a tela inteira por causa de um aviso seria pior do que
-      // não ter o aviso — mas o silêncio precisa aparecer em algum
-      // lugar, então vira recado, não erro.
+      // Quebrar a tela inteira por causa de um aviso seria pior — mas o
+      // silêncio precisa aparecer em algum lugar, então vira recado.
       try {
         const [team, jornada, feriados] = await Promise.all([
           listClinicMembers(),
@@ -156,7 +178,7 @@ export function Agenda({ profile }) {
     })();
 
     return () => { cancelled = true; };
-  }, [cursor.year, cursor.month]);
+  }, [cursor.year, cursor.month, reloadToken]);
 
   const grid = useMemo(
     () => buildMonthGrid(cursor.year, cursor.month, { today }),
@@ -181,6 +203,30 @@ export function Agenda({ profile }) {
     () => sortWithSelfFirst(members, profile?.id),
     [members, profile?.id],
   );
+  const showProfessional = agendaOf === ALL_PROFESSIONALS && teamOptions.length > 1;
+
+  const selectedDate = useMemo(() => combineLocal(selectedKey, '12:00'), [selectedKey]);
+
+  // Na visão de recepção não há uma jornada só; a linha do tempo usa a
+  // do profissional do formulário, que é para quem o horário vai.
+  const timelineSchedules = useMemo(
+    () => schedules.filter(item => item.professional_id === (
+      agendaOf === ALL_PROFESSIONALS ? formProfessionalId : agendaOf
+    )),
+    [schedules, agendaOf, formProfessionalId],
+  );
+
+  const week = useMemo(
+    () => buildWeekStrip(selectedDate || today, { today, counts: byDay }),
+    [selectedDate, today, byDay],
+  );
+
+  const timeline = useMemo(() => buildDayTimeline({
+    date: selectedDate || today,
+    schedules: timelineSchedules,
+    appointments: visibleAppointments,
+    holidays,
+  }), [selectedDate, today, timelineSchedules, visibleAppointments, holidays]);
 
   function patientName(id) {
     return patients.find(item => item.id === id)?.name || 'Paciente';
@@ -195,39 +241,77 @@ export function Agenda({ profile }) {
   const dayAppointments = byDay.get(selectedKey) || [];
   const dayBirthdays = birthdays.get(selectedKey) || [];
 
-  // Avaliação do horário digitado: é o que decide se o "Agendar" grava
-  // direto ou pede o segundo sim.
-  const slotEvaluation = useMemo(() => {
-    const start = selectedKey ? combineLocal(selectedKey, form.time) : null;
+  /** Avalia um horário candidato contra jornada, feriados e bloqueios. */
+  function evaluate({ dayKey, time, durationMinutes, professionalId, ignoreId = null }) {
+    const start = combineLocal(dayKey, time);
     if (!start) return { isException: false, reason: '', exceptions: [] };
-    const end = addMinutes(start, Number(form.durationMinutes) || 60);
 
     return evaluateSlot({
       start,
-      end,
-      schedules: schedules.filter(item => item.professional_id === formProfessionalId),
+      end: addMinutes(start, Number(durationMinutes) || 60),
+      schedules: schedules.filter(item => item.professional_id === professionalId),
       holidays,
-      blocks: appointments.filter(
-        item => item.kind === 'block' && item.professional_id === formProfessionalId,
-      ),
+      blocks: appointments.filter(item => (
+        item.kind === 'block'
+        && item.professional_id === professionalId
+        && item.id !== ignoreId
+      )),
     });
-  }, [selectedKey, form.time, form.durationMinutes, formProfessionalId, schedules, holidays, appointments]);
+  }
+
+  const slotEvaluation = useMemo(
+    () => evaluate({
+      dayKey: selectedKey,
+      time: form.time,
+      durationMinutes: form.durationMinutes,
+      professionalId: formProfessionalId,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedKey, form.time, form.durationMinutes, formProfessionalId, schedules, holidays, appointments],
+  );
+
+  function resetTransient() {
+    setPendingException(null);
+    setSelectedAppointment(null);
+  }
 
   function shiftMonth(delta) {
     setLoading(true);
-    setPendingException(null);
+    resetTransient();
     setCursor(prev => {
       const date = new Date(prev.year, prev.month - 1 + delta, 1);
       return { year: date.getFullYear(), month: date.getMonth() + 1 };
     });
   }
 
-  function goToday() {
-    setLoading(true);
-    setPendingException(null);
-    setCursor({ year: today.getFullYear(), month: today.getMonth() + 1 });
-    setSelectedKey(toDayKey(today));
+  /** Anda um dia (visão Dia) ou sete (visão Semana), trocando de mês se precisar. */
+  function shiftDay(delta) {
+    const base = selectedDate || today;
+    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + delta);
+    resetTransient();
+    setSelectedKey(toDayKey(next));
+
+    if (next.getFullYear() !== cursor.year || next.getMonth() + 1 !== cursor.month) {
+      setLoading(true);
+      setCursor({ year: next.getFullYear(), month: next.getMonth() + 1 });
+    }
   }
+
+  function goToday() {
+    resetTransient();
+    setSelectedKey(toDayKey(today));
+    if (today.getFullYear() !== cursor.year || today.getMonth() + 1 !== cursor.month) {
+      setLoading(true);
+      setCursor({ year: today.getFullYear(), month: today.getMonth() + 1 });
+    }
+  }
+
+  function selectDay(dayKey) {
+    resetTransient();
+    setSelectedKey(dayKey);
+  }
+
+  // ---------- criar ----------
 
   async function persist(evaluation) {
     const start = combineLocal(selectedKey, form.time);
@@ -269,7 +353,7 @@ export function Agenda({ profile }) {
     event.preventDefault();
     setError('');
 
-    // Horário atípico não é proibido — é atípico. Primeiro clique
+    // Horário atípico não é proibido — é atípico. O primeiro clique
     // apresenta o que foge do padrão; só o segundo grava.
     if (slotEvaluation.isException && !pendingException) {
       setPendingException(slotEvaluation);
@@ -279,32 +363,166 @@ export function Agenda({ profile }) {
     persist(pendingException || slotEvaluation);
   }
 
+  // ---------- tocar num horário ----------
+
+  async function moveTo(dayKey, startMinutes, endMinutes) {
+    const appointment = moving;
+    const time = minutesToLabel(startMinutes);
+    const duration = endMinutes - startMinutes;
+
+    const evaluation = evaluate({
+      dayKey,
+      time,
+      durationMinutes: duration,
+      professionalId: appointment.professional_id,
+      ignoreId: appointment.id,
+    });
+
+    // Mover para um sábado também é exceção: a confirmação dupla vale
+    // para remarcar, não só para criar.
+    if (evaluation.isException && !window.confirm(
+      `${evaluation.reason}\n\nMarcar aqui é permitido, e fica registrado como exceção. Confirmar?`,
+    )) {
+      return;
+    }
+
+    const start = combineLocal(dayKey, time);
+    setSaving(true);
+    try {
+      const updated = await rescheduleAppointment(appointment.id, {
+        startsAt: start.toISOString(),
+        // Remarcar mantém a duração original do atendimento, não a da
+        // faixa de destino: mover uma sessão de 90 min para um slot de
+        // 60 não pode encurtar o atendimento sem ninguém pedir.
+        endsAt: addMinutes(
+          start,
+          Math.round((new Date(appointment.ends_at) - new Date(appointment.starts_at)) / 60000) || duration,
+        ).toISOString(),
+        isException: evaluation.isException,
+        exceptionReason: evaluation.reason,
+      });
+      setAppointments(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+      setMoving(null);
+      setSelectedAppointment(null);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Não foi possível remarcar.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function pickSlot(row, dayKey = selectedKey) {
+    if (moving) {
+      moveTo(dayKey, row.startMinutes, row.endMinutes);
+      return;
+    }
+
+    if (dayKey !== selectedKey) setSelectedKey(dayKey);
+    setSelectedAppointment(null);
+    setPendingException(null);
+    setForm(prev => ({
+      ...prev,
+      time: minutesToLabel(row.startMinutes),
+      // A faixa manda na duração — foi ela que a pessoa tocou. Só não
+      // deixa passar faixa degenerada.
+      durationMinutes: Math.max(row.endMinutes - row.startMinutes, 5),
+    }));
+  }
+
+  function pickCell(day, startMinutes, endMinutes) {
+    pickSlot({ startMinutes, endMinutes }, day.key);
+  }
+
+  // ---------- ações no agendamento ----------
+
   async function handleStatus(appointment, status) {
     setError('');
     try {
       const updated = await updateAppointmentStatus(appointment.id, status);
       setAppointments(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+      setSelectedAppointment(prev => (prev?.id === updated.id ? updated : prev));
     } catch (err) {
       setError(err.message || 'Não foi possível atualizar o agendamento.');
     }
   }
 
-  const selectedDate = selectedKey ? combineLocal(selectedKey, '12:00') : null;
+  function openAppointment(appointment) {
+    if (moving) return;
+    setPendingException(null);
+    setSelectedAppointment(appointment);
+  }
+
   const isBlock = form.kind === 'block';
 
+  // ---------- jornada ----------
+
+  if (showSchedule) {
+    return (
+      <ScheduleEditor
+        professionalId={formProfessionalId}
+        professionalLabel={
+          formProfessionalId === profile?.id
+            ? (profile?.full_name || 'Você')
+            : (members.find(item => item.id === formProfessionalId)?.full_name || 'Profissional')
+        }
+        onBack={() => {
+          setShowSchedule(false);
+          // A jornada acabou de mudar: recarrega para a linha do tempo
+          // refletir o que foi cadastrado.
+          setReloadToken(token => token + 1);
+        }}
+      />
+    );
+  }
+
+  const headerLabel = view === 'mes'
+    ? `${MONTH_LABELS[cursor.month - 1]} ${cursor.year}`
+    : selectedDate?.toLocaleDateString('pt-BR', {
+      weekday: 'long', day: '2-digit', month: 'long',
+    }) || '';
+
   return (
-    <div className="ag">
-      <section>
+    <div className={`ag${view === 'dia' ? ' ag--day' : ''}`}>
+      <section className="ag-main">
         <header className="ag-head">
-          <h2 className="ag-month">
-            {MONTH_LABELS[cursor.month - 1]} {cursor.year}
-          </h2>
+          <h2 className="ag-month">{headerLabel}</h2>
           <div className="ag-nav">
-            <button type="button" className="ag-btn" onClick={() => shiftMonth(-1)} aria-label="Mês anterior">←</button>
+            <button
+              type="button"
+              className="ag-btn"
+              onClick={() => (view === 'mes' ? shiftMonth(-1) : shiftDay(view === 'semana' ? -7 : -1))}
+              aria-label={view === 'mes' ? 'Mês anterior' : 'Anterior'}
+            >←</button>
             <button type="button" className="ag-btn" onClick={goToday}>Hoje</button>
-            <button type="button" className="ag-btn" onClick={() => shiftMonth(1)} aria-label="Próximo mês">→</button>
+            <button
+              type="button"
+              className="ag-btn"
+              onClick={() => (view === 'mes' ? shiftMonth(1) : shiftDay(view === 'semana' ? 7 : 1))}
+              aria-label={view === 'mes' ? 'Próximo mês' : 'Próximo'}
+            >→</button>
           </div>
         </header>
+
+        <div className="ag-toolbar">
+          <div className="ag-seg ag-seg--views" role="group" aria-label="Visão da agenda">
+            {VIEWS.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className="ag-seg-btn"
+                aria-pressed={view === item.id}
+                onClick={() => { setView(item.id); resetTransient(); }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <button type="button" className="ag-btn" onClick={() => setShowSchedule(true)}>
+            Horários de atendimento
+          </button>
+        </div>
 
         {teamOptions.length > 1 && (
           <div className="ag-team" role="group" aria-label="Agenda de qual profissional">
@@ -312,7 +530,7 @@ export function Agenda({ profile }) {
               type="button"
               className="ag-chip-btn ag-chip-btn--lg"
               aria-pressed={agendaOf === ALL_PROFESSIONALS}
-              onClick={() => setAgendaOf(ALL_PROFESSIONALS)}
+              onClick={() => { setAgendaOf(ALL_PROFESSIONALS); resetTransient(); }}
             >
               Toda a equipe
             </button>
@@ -322,7 +540,7 @@ export function Agenda({ profile }) {
                 type="button"
                 className="ag-chip-btn ag-chip-btn--lg"
                 aria-pressed={agendaOf === member.id}
-                onClick={() => setAgendaOf(member.id)}
+                onClick={() => { setAgendaOf(member.id); resetTransient(); }}
               >
                 {member.id === profile?.id ? 'Minha agenda' : shortName(member.full_name)}
               </button>
@@ -333,66 +551,117 @@ export function Agenda({ profile }) {
         {error && <div className="ag-alert" role="alert">{error}</div>}
         {notice && <div className="ag-notice">{notice}</div>}
 
-        <div className="ag-cal">
-          <div className="ag-weekdays">
-            {WEEKDAY_LABELS.map(label => (
-              <div key={label} className="ag-weekday">{label}</div>
+        {moving && (
+          <div className="ag-warn ag-warn--confirm">
+            <p className="ag-warn-title">
+              Movendo: {moving.kind === 'block'
+                ? (moving.note?.trim() || 'bloqueio')
+                : patientName(moving.patient_id)}
+            </p>
+            <p className="ag-warn-note">
+              Toque no horário de destino. A duração do atendimento é
+              mantida.
+            </p>
+            <div className="ag-warn-actions">
+              <button type="button" className="ag-btn" onClick={() => setMoving(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {view === 'dia' && (
+          <AgendaDayView
+            week={week}
+            timeline={timeline}
+            selectedKey={selectedKey}
+            onSelectDay={selectDay}
+            onPickSlot={row => pickSlot(row)}
+            onSelectAppointment={openAppointment}
+            patientName={patientName}
+            professionalName={professionalName}
+            showProfessional={showProfessional}
+            movingId={moving?.id || null}
+            onOpenSchedule={() => setShowSchedule(true)}
+          />
+        )}
+
+        {view === 'semana' && (
+          <AgendaWeekView
+            week={week}
+            schedules={timelineSchedules}
+            appointments={visibleAppointments}
+            holidays={holidays}
+            selectedKey={selectedKey}
+            onPickCell={pickCell}
+            onSelectAppointment={openAppointment}
+            patientName={patientName}
+            movingId={moving?.id || null}
+          />
+        )}
+
+        {view === 'mes' && (
+          <div className="ag-cal">
+            <div className="ag-weekdays">
+              {WEEKDAY_LABELS.map(label => (
+                <div key={label} className="ag-weekday">{label}</div>
+              ))}
+            </div>
+
+            {grid.map((weekRow, index) => (
+              <div className="ag-week" key={index}>
+                {weekRow.map(cell => {
+                  const dayItems = byDay.get(cell.key) || [];
+                  const count = dayItems.filter(item => item.kind !== 'block').length;
+                  const blocked = dayItems.some(item => item.kind === 'block');
+                  const cellBirthdays = birthdays.get(cell.key) || [];
+                  const holiday = holidays.find(item => item.day === cell.key);
+                  const classes = [
+                    'ag-day',
+                    cell.inMonth ? '' : 'ag-day--outside',
+                    cell.isToday ? 'ag-day--today' : '',
+                    cell.key === selectedKey ? 'ag-day--selected' : '',
+                    holiday && !holiday.is_working_day ? 'ag-day--holiday' : '',
+                  ].filter(Boolean).join(' ');
+
+                  return (
+                    <button
+                      type="button"
+                      key={cell.key}
+                      className={classes}
+                      onClick={() => selectDay(cell.key)}
+                      aria-pressed={cell.key === selectedKey}
+                    >
+                      <span className="ag-day-num">{cell.day}</span>
+                      <span className="ag-day-marks">
+                        {count > 0 && (
+                          <span className="ag-pill ag-pill--count">
+                            {count} {count === 1 ? 'atend.' : 'atends.'}
+                          </span>
+                        )}
+                        {blocked && (
+                          <span className="ag-pill ag-pill--block" title="Há bloqueio de horário neste dia">
+                            bloqueio
+                          </span>
+                        )}
+                        {holiday && (
+                          <span className="ag-pill ag-pill--holiday" title={holiday.name}>
+                            {holiday.name}
+                          </span>
+                        )}
+                        {cellBirthdays.length > 0 && (
+                          <span className="ag-pill ag-pill--birthday" title={cellBirthdays.map(b => b.name).join(', ')}>
+                            🎂 {cellBirthdays.length}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             ))}
           </div>
-
-          {grid.map((week, index) => (
-            <div className="ag-week" key={index}>
-              {week.map(cell => {
-                const dayItems = byDay.get(cell.key) || [];
-                const count = dayItems.filter(item => item.kind !== 'block').length;
-                const blocked = dayItems.some(item => item.kind === 'block');
-                const cellBirthdays = birthdays.get(cell.key) || [];
-                const holiday = holidays.find(item => item.day === cell.key);
-                const classes = [
-                  'ag-day',
-                  cell.inMonth ? '' : 'ag-day--outside',
-                  cell.isToday ? 'ag-day--today' : '',
-                  cell.key === selectedKey ? 'ag-day--selected' : '',
-                  holiday && !holiday.is_working_day ? 'ag-day--holiday' : '',
-                ].filter(Boolean).join(' ');
-
-                return (
-                  <button
-                    type="button"
-                    key={cell.key}
-                    className={classes}
-                    onClick={() => { setSelectedKey(cell.key); setPendingException(null); }}
-                    aria-pressed={cell.key === selectedKey}
-                  >
-                    <span className="ag-day-num">{cell.day}</span>
-                    <span className="ag-day-marks">
-                      {count > 0 && (
-                        <span className="ag-pill ag-pill--count">
-                          {count} {count === 1 ? 'atend.' : 'atends.'}
-                        </span>
-                      )}
-                      {blocked && (
-                        <span className="ag-pill ag-pill--block" title="Há bloqueio de horário neste dia">
-                          bloqueio
-                        </span>
-                      )}
-                      {holiday && (
-                        <span className="ag-pill ag-pill--holiday" title={holiday.name}>
-                          {holiday.name}
-                        </span>
-                      )}
-                      {cellBirthdays.length > 0 && (
-                        <span className="ag-pill ag-pill--birthday" title={cellBirthdays.map(b => b.name).join(', ')}>
-                          🎂 {cellBirthdays.length}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+        )}
       </section>
 
       <aside className="ag-side">
@@ -406,7 +675,7 @@ export function Agenda({ profile }) {
             {loading
               ? 'Carregando…'
               : `${dayAppointments.filter(item => item.kind !== 'block').length} atendimento(s)`}
-            {agendaOf === ALL_PROFESSIONALS && teamOptions.length > 1 ? ' · equipe inteira' : ''}
+            {showProfessional ? ' · equipe inteira' : ''}
           </p>
         </div>
 
@@ -421,270 +690,316 @@ export function Agenda({ profile }) {
             </div>
           )}
 
-          {dayAppointments.length === 0 ? (
-            <p className="ag-empty">Nenhum atendimento marcado neste dia.</p>
-          ) : (
-            <ul className="ag-list">
-              {dayAppointments.map(item => (
-                <li
-                  key={item.id}
-                  className={`ag-item ag-item--${item.status} ${item.kind === 'block' ? 'ag-item--block' : ''}`}
+          {/* Detalhe do agendamento aberto. Enquanto ele está na tela, o
+              formulário de novo agendamento sai: duas coisas disputando
+              o mesmo painel confundem quem está no meio de uma ação. */}
+          {selectedAppointment ? (
+            <div className="ag-detail">
+              <div className="ag-item-top">
+                <span className="ag-item-time">
+                  {formatTime(selectedAppointment.starts_at)}–{formatTime(selectedAppointment.ends_at)}
+                </span>
+                <button
+                  type="button"
+                  className="ag-chip-btn"
+                  onClick={() => setSelectedAppointment(null)}
                 >
-                  <div className="ag-item-top">
-                    <span className="ag-item-time">
-                      {formatTime(item.starts_at)}–{formatTime(item.ends_at)}
-                    </span>
-                    <span className="ag-item-status">
-                      {item.kind === 'block' ? 'Bloqueio' : getStatusLabel(item.status)}
-                    </span>
-                  </div>
+                  Fechar
+                </button>
+              </div>
 
-                  <span className="ag-item-name">
-                    {item.kind === 'block'
-                      ? (item.note?.trim() || 'Horário reservado')
-                      : patientName(item.patient_id)}
-                  </span>
+              <p className="ag-detail-name">
+                {selectedAppointment.kind === 'block'
+                  ? (selectedAppointment.note?.trim() || 'Horário reservado')
+                  : patientName(selectedAppointment.patient_id)}
+              </p>
+              <p className="ag-item-meta">
+                {[
+                  selectedAppointment.kind === 'block' ? 'bloqueio' : selectedAppointment.discipline,
+                  professionalName(selectedAppointment.professional_id),
+                ].filter(Boolean).join(' · ')}
+              </p>
 
-                  <span className="ag-item-meta">
-                    {[
-                      item.kind === 'block' ? null : item.discipline,
-                      agendaOf === ALL_PROFESSIONALS ? professionalName(item.professional_id) : null,
-                    ].filter(Boolean).join(' · ')}
-                  </span>
+              {selectedAppointment.is_exception && (
+                <p className="ag-item-exception">
+                  Fora do padrão: {selectedAppointment.exception_reason}
+                </p>
+              )}
 
-                  {item.kind !== 'block' && item.note && (
-                    <span className="ag-item-meta">{item.note}</span>
-                  )}
+              {selectedAppointment.kind !== 'block' && (
+                <div className="ag-item-actions">
+                  {QUICK_STATUSES.map(status => (
+                    <button
+                      key={status.id}
+                      type="button"
+                      className="ag-chip-btn"
+                      aria-pressed={selectedAppointment.status === status.id}
+                      onClick={() => handleStatus(selectedAppointment, status.id)}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                  {item.is_exception && (
-                    <span className="ag-item-exception" title={item.exception_reason || ''}>
-                      Fora do padrão: {item.exception_reason}
-                    </span>
-                  )}
-
-                  {item.kind !== 'block' && (
-                    <div className="ag-item-actions">
-                      {QUICK_STATUSES.map(status => (
-                        <button
-                          key={status.id}
-                          type="button"
-                          className="ag-chip-btn"
-                          aria-pressed={item.status === status.id}
-                          onClick={() => handleStatus(item, status.id)}
-                        >
-                          {status.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <form className="ag-form" onSubmit={handleSubmit}>
-            <p className="ag-form-title">{isBlock ? 'Novo bloqueio' : 'Novo agendamento'}</p>
-
-            <div className="ag-seg" role="group" aria-label="O que está sendo marcado">
               <button
                 type="button"
-                className="ag-seg-btn"
-                aria-pressed={!isBlock}
-                onClick={() => { setForm(prev => ({ ...prev, kind: 'appointment' })); setPendingException(null); }}
+                className="ag-btn"
+                onClick={() => { setMoving(selectedAppointment); setSelectedAppointment(null); }}
+                disabled={saving}
               >
-                Atendimento
-              </button>
-              <button
-                type="button"
-                className="ag-seg-btn"
-                aria-pressed={isBlock}
-                onClick={() => { setForm(prev => ({ ...prev, kind: 'block', patientId: '' })); setPendingException(null); }}
-              >
-                Bloquear horário
+                Mover para outro horário
               </button>
             </div>
-
-            {teamOptions.length > 1 && (
-              <div className="ag-field">
-                <label htmlFor="ag-professional">Profissional</label>
-                <select
-                  id="ag-professional"
-                  className="ag-select"
-                  value={formProfessionalId}
-                  onChange={e => { setForm(prev => ({ ...prev, professionalId: e.target.value })); setPendingException(null); }}
-                  disabled={saving}
-                  required
-                >
-                  {teamOptions.map(member => (
-                    <option key={member.id} value={member.id}>
-                      {member.id === profile?.id ? `${member.full_name || 'Você'} (você)` : member.full_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {!isBlock && (
-              <>
-                <div className="ag-field">
-                  <label htmlFor="ag-patient">Paciente</label>
-                  <select
-                    id="ag-patient"
-                    className="ag-select"
-                    value={form.patientId}
-                    onChange={e => setForm(prev => ({ ...prev, patientId: e.target.value }))}
-                    disabled={saving || loading}
-                    required
-                  >
-                    <option value="">Selecione…</option>
-                    {patients.map(patient => (
-                      <option key={patient.id} value={patient.id}>{patient.name}</option>
+          ) : (
+            <>
+              {/* A lista do dia só faz sentido na visão Mês: na visão Dia
+                  a própria linha do tempo já é a lista, e repetir seria
+                  duas fontes da mesma verdade. */}
+              {view === 'mes' && (
+                dayAppointments.length === 0 ? (
+                  <p className="ag-empty">Nenhum atendimento marcado neste dia.</p>
+                ) : (
+                  <ul className="ag-list">
+                    {dayAppointments.map(item => (
+                      <li
+                        key={item.id}
+                        className={`ag-item ag-item--${item.status}${item.kind === 'block' ? ' ag-item--block' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="ag-item-open"
+                          onClick={() => openAppointment(item)}
+                        >
+                          <span className="ag-item-top">
+                            <span className="ag-item-time">
+                              {formatTime(item.starts_at)}–{formatTime(item.ends_at)}
+                            </span>
+                            <span className="ag-item-status">
+                              {item.kind === 'block' ? 'Bloqueio' : getStatusLabel(item.status)}
+                            </span>
+                          </span>
+                          <span className="ag-item-name">
+                            {item.kind === 'block'
+                              ? (item.note?.trim() || 'Horário reservado')
+                              : patientName(item.patient_id)}
+                          </span>
+                          <span className="ag-item-meta">
+                            {[
+                              item.kind === 'block' ? null : item.discipline,
+                              showProfessional ? professionalName(item.professional_id) : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        </button>
+                      </li>
                     ))}
-                  </select>
+                  </ul>
+                )
+              )}
+
+              <form className="ag-form" onSubmit={handleSubmit}>
+                <p className="ag-form-title">{isBlock ? 'Novo bloqueio' : 'Novo agendamento'}</p>
+
+                <div className="ag-seg" role="group" aria-label="O que está sendo marcado">
+                  <button
+                    type="button"
+                    className="ag-seg-btn"
+                    aria-pressed={!isBlock}
+                    onClick={() => { setForm(prev => ({ ...prev, kind: 'appointment' })); setPendingException(null); }}
+                  >
+                    Atendimento
+                  </button>
+                  <button
+                    type="button"
+                    className="ag-seg-btn"
+                    aria-pressed={isBlock}
+                    onClick={() => { setForm(prev => ({ ...prev, kind: 'block', patientId: '' })); setPendingException(null); }}
+                  >
+                    Bloquear horário
+                  </button>
                 </div>
 
-                <div className="ag-row">
+                {teamOptions.length > 1 && (
                   <div className="ag-field">
-                    <label htmlFor="ag-discipline">Área</label>
+                    <label htmlFor="ag-professional">Profissional</label>
                     <select
-                      id="ag-discipline"
+                      id="ag-professional"
                       className="ag-select"
-                      value={disciplineValue}
-                      onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value }))}
+                      value={formProfessionalId}
+                      onChange={e => { setForm(prev => ({ ...prev, professionalId: e.target.value })); setPendingException(null); }}
                       disabled={saving}
                       required
                     >
-                      {availableDisciplines.map(item => (
-                        <option key={item.id} value={item.id}>{item.label}</option>
+                      {teamOptions.map(member => (
+                        <option key={member.id} value={member.id}>
+                          {member.id === profile?.id ? `${member.full_name || 'Você'} (você)` : member.full_name}
+                        </option>
                       ))}
                     </select>
                   </div>
+                )}
 
+                {!isBlock && (
+                  <>
+                    <div className="ag-field">
+                      <label htmlFor="ag-patient">Paciente</label>
+                      <select
+                        id="ag-patient"
+                        className="ag-select"
+                        value={form.patientId}
+                        onChange={e => setForm(prev => ({ ...prev, patientId: e.target.value }))}
+                        disabled={saving || loading}
+                        required
+                      >
+                        <option value="">Selecione…</option>
+                        {patients.map(patient => (
+                          <option key={patient.id} value={patient.id}>{patient.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="ag-row">
+                      <div className="ag-field">
+                        <label htmlFor="ag-discipline">Área</label>
+                        <select
+                          id="ag-discipline"
+                          className="ag-select"
+                          value={disciplineValue}
+                          onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value }))}
+                          disabled={saving}
+                          required
+                        >
+                          {availableDisciplines.map(item => (
+                            <option key={item.id} value={item.id}>{item.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="ag-field">
+                        <label htmlFor="ag-type">Tipo</label>
+                        <select
+                          id="ag-type"
+                          className="ag-select"
+                          value={form.appointmentType}
+                          onChange={e => setForm(prev => ({ ...prev, appointmentType: e.target.value }))}
+                          disabled={saving}
+                        >
+                          <option value="">Não classificado</option>
+                          {APPOINTMENT_TYPES.map(item => (
+                            <option key={item.id} value={item.id}>{item.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="ag-row">
                   <div className="ag-field">
-                    <label htmlFor="ag-kind">Tipo</label>
+                    <label htmlFor="ag-time">Início</label>
+                    <input
+                      id="ag-time"
+                      className="ag-input"
+                      type="time"
+                      value={form.time}
+                      onChange={e => { setForm(prev => ({ ...prev, time: e.target.value })); setPendingException(null); }}
+                      disabled={saving}
+                      required
+                    />
+                  </div>
+                  <div className="ag-field">
+                    <label htmlFor="ag-duration">Duração</label>
                     <select
-                      id="ag-kind"
+                      id="ag-duration"
                       className="ag-select"
-                      value={form.appointmentType}
-                      onChange={e => setForm(prev => ({ ...prev, appointmentType: e.target.value }))}
+                      value={form.durationMinutes}
+                      onChange={e => { setForm(prev => ({ ...prev, durationMinutes: Number(e.target.value) })); setPendingException(null); }}
                       disabled={saving}
                     >
-                      <option value="">Não classificado</option>
-                      {APPOINTMENT_TYPES.map(item => (
-                        <option key={item.id} value={item.id}>{item.label}</option>
-                      ))}
+                      {[...new Set([Number(form.durationMinutes) || 60, 20, 30, 45, 60, 90, 120, 180, 240])]
+                        .sort((a, b) => a - b)
+                        .map(minutes => (
+                          <option key={minutes} value={minutes}>{minutes} min</option>
+                        ))}
                     </select>
                   </div>
                 </div>
-              </>
-            )}
 
-            <div className="ag-row">
-              <div className="ag-field">
-                <label htmlFor="ag-time">Início</label>
-                <input
-                  id="ag-time"
-                  className="ag-input"
-                  type="time"
-                  value={form.time}
-                  onChange={e => { setForm(prev => ({ ...prev, time: e.target.value })); setPendingException(null); }}
-                  disabled={saving}
-                  required
-                />
-              </div>
-              <div className="ag-field">
-                <label htmlFor="ag-duration">Duração</label>
-                <select
-                  id="ag-duration"
-                  className="ag-select"
-                  value={form.durationMinutes}
-                  onChange={e => { setForm(prev => ({ ...prev, durationMinutes: Number(e.target.value) })); setPendingException(null); }}
-                  disabled={saving}
-                >
-                  {[30, 45, 60, 90, 120, 180, 240].map(minutes => (
-                    <option key={minutes} value={minutes}>{minutes} min</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="ag-field">
-              <label htmlFor="ag-note">
-                {isBlock ? 'Motivo do bloqueio' : 'Observação da recepção'}
-              </label>
-              <input
-                id="ag-note"
-                className="ag-input"
-                type="text"
-                placeholder={isBlock ? 'Almoço, reunião, curso…' : 'Sala, encaixe, retorno…'}
-                value={form.note}
-                onChange={e => setForm(prev => ({ ...prev, note: e.target.value }))}
-                disabled={saving}
-                required={isBlock}
-              />
-            </div>
-
-            {/* Aviso de horário atípico. Aparece já na digitação — a
-                pessoa vê antes de tentar salvar, não como punição depois. */}
-            {slotEvaluation.isException && !pendingException && (
-              <div className="ag-warn">
-                <p className="ag-warn-title">Horário fora do padrão</p>
-                <ul className="ag-warn-list">
-                  {slotEvaluation.exceptions.map(item => (
-                    <li key={item.kind}><b>{item.label}</b> — {item.detail}</li>
-                  ))}
-                </ul>
-                <p className="ag-warn-note">
-                  Marcar aqui é permitido. Ao continuar, o sistema pede uma
-                  confirmação e registra a exceção.
-                </p>
-              </div>
-            )}
-
-            {pendingException && (
-              <div className="ag-warn ag-warn--confirm" role="alertdialog" aria-label="Confirmar horário fora do padrão">
-                <p className="ag-warn-title">Confirmar mesmo assim?</p>
-                <ul className="ag-warn-list">
-                  {pendingException.exceptions.map(item => (
-                    <li key={item.kind}><b>{item.label}</b></li>
-                  ))}
-                </ul>
-                <p className="ag-warn-note">
-                  Fica registrado como exceção, com este motivo, para a
-                  clínica saber depois por que este horário saiu do comum.
-                </p>
-                <div className="ag-warn-actions">
-                  <button
-                    type="button"
-                    className="ag-btn"
-                    onClick={() => setPendingException(null)}
+                <div className="ag-field">
+                  <label htmlFor="ag-note">
+                    {isBlock ? 'Motivo do bloqueio' : 'Observação da recepção'}
+                  </label>
+                  <input
+                    id="ag-note"
+                    className="ag-input"
+                    type="text"
+                    placeholder={isBlock ? 'Almoço, reunião, curso…' : 'Sala, encaixe, retorno…'}
+                    value={form.note}
+                    onChange={e => setForm(prev => ({ ...prev, note: e.target.value }))}
                     disabled={saving}
-                  >
-                    Escolher outro horário
-                  </button>
-                  <button
-                    type="submit"
-                    className="ag-btn ag-btn--warn"
-                    disabled={saving}
-                  >
-                    {saving ? 'Salvando…' : 'Sim, marcar assim'}
-                  </button>
+                    required={isBlock}
+                  />
                 </div>
-              </div>
-            )}
 
-            {!pendingException && (
-              <button type="submit" className="ag-btn ag-btn--primary" disabled={saving || loading}>
-                {saving ? 'Salvando…' : isBlock ? 'Bloquear' : 'Agendar'}
-              </button>
-            )}
+                {/* Aviso de horário atípico. Aparece já na digitação — a
+                    pessoa vê antes de tentar salvar, não como punição. */}
+                {slotEvaluation.isException && !pendingException && (
+                  <div className="ag-warn">
+                    <p className="ag-warn-title">Horário fora do padrão</p>
+                    <ul className="ag-warn-list">
+                      {slotEvaluation.exceptions.map(item => (
+                        <li key={item.kind}><b>{item.label}</b> — {item.detail}</li>
+                      ))}
+                    </ul>
+                    <p className="ag-warn-note">
+                      Marcar aqui é permitido. Ao continuar, o sistema pede
+                      uma confirmação e registra a exceção.
+                    </p>
+                  </div>
+                )}
 
-            <p className="ag-note">
-              A agenda é da instituição: dá para marcar para qualquer
-              profissional da casa. O único horário que o sistema recusa é
-              dois pacientes ao mesmo tempo com o mesmo profissional.
-            </p>
-          </form>
+                {pendingException && (
+                  <div className="ag-warn ag-warn--confirm" role="alertdialog" aria-label="Confirmar horário fora do padrão">
+                    <p className="ag-warn-title">Confirmar mesmo assim?</p>
+                    <ul className="ag-warn-list">
+                      {pendingException.exceptions.map(item => (
+                        <li key={item.kind}><b>{item.label}</b></li>
+                      ))}
+                    </ul>
+                    <p className="ag-warn-note">
+                      Fica registrado como exceção, com este motivo, para a
+                      clínica saber depois por que este horário saiu do comum.
+                    </p>
+                    <div className="ag-warn-actions">
+                      <button
+                        type="button"
+                        className="ag-btn"
+                        onClick={() => setPendingException(null)}
+                        disabled={saving}
+                      >
+                        Escolher outro horário
+                      </button>
+                      <button type="submit" className="ag-btn ag-btn--warn" disabled={saving}>
+                        {saving ? 'Salvando…' : 'Sim, marcar assim'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!pendingException && (
+                  <button type="submit" className="ag-btn ag-btn--primary" disabled={saving || loading}>
+                    {saving ? 'Salvando…' : isBlock ? 'Bloquear' : 'Agendar'}
+                  </button>
+                )}
+
+                <p className="ag-note">
+                  Toque num horário livre da agenda para preencher a hora
+                  daqui. O único horário que o sistema recusa é dois
+                  pacientes ao mesmo tempo com o mesmo profissional.
+                </p>
+              </form>
+            </>
+          )}
         </div>
       </aside>
     </div>

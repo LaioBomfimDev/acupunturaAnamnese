@@ -582,6 +582,575 @@
   font-weight: 600;
 }
 
+/* ---------- barra de visões ---------- */
+
+.ag-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ag-seg--views {
+  grid-template-columns: repeat(3, minmax(64px, 1fr));
+}
+
+/* ============================================================
+   Visão Dia — lista de faixas
+   ============================================================ */
+
+.agd {
+  display: grid;
+  gap: 12px;
+}
+
+/* Faixa da semana: navegação de uma mão, sem voltar para o mês. */
+.agd-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.agd-wday {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: var(--r1-tap);
+  padding: 6px 2px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.agd-wday-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.agd-wday-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.agd-wday-dot {
+  height: 8px;
+  font-size: 14px;
+  line-height: 8px;
+  color: var(--r1-accent);
+}
+
+.agd-wday--today .agd-wday-num {
+  color: var(--r1-accent-strong);
+}
+
+.agd-wday--on {
+  background: var(--r1-surface-inverse);
+  border-color: transparent;
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.agd-wday--on .agd-wday-num {
+  color: var(--r1-text-on-inverse);
+}
+
+.agd-wday:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agd-banner {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.agd-banner--warn {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-text);
+}
+
+.agd-linkbtn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--r1-accent-strong);
+  font: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.agd-rows {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agd-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.agd-time {
+  display: grid;
+  align-content: start;
+  padding-top: 9px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.agd-time b {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agd-time small {
+  font-size: 10.5px;
+  color: var(--r1-text-subtle);
+}
+
+.agd-slot {
+  display: grid;
+  gap: 4px;
+}
+
+/* Faixa livre é botão de largura inteira: o alvo é a linha toda, não um
+   "+" de 20px no canto. */
+.agd-free {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--r1-tap);
+  padding: 8px 12px;
+  border: 1px dashed var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: transparent;
+  color: var(--r1-text-subtle);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.agd-free:hover {
+  border-color: var(--r1-accent);
+  border-style: solid;
+  background: var(--r1-accent-wash);
+  color: var(--r1-text);
+}
+
+.agd-free:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agd-free-plus {
+  font-size: 17px;
+  line-height: 1;
+  color: var(--r1-text-subtle);
+}
+
+.agd-row--break .agd-free {
+  border-style: solid;
+  border-color: var(--r1-border-subtle);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    var(--r1-surface-sunken) 6px,
+    var(--r1-surface-sunken) 12px
+  );
+}
+
+.agd-row--outside .agd-time b {
+  color: var(--r1-warning);
+}
+
+.agd-card {
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-left: 3px solid var(--r1-accent);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agd-card:hover {
+  border-color: var(--r1-accent);
+}
+
+.agd-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agd-card--block {
+  border-left-color: var(--r1-text-subtle);
+  border-style: dashed;
+  background: var(--r1-surface-sunken);
+}
+
+.agd-card--moving {
+  border-color: var(--r1-warning);
+  box-shadow: 0 0 0 2px var(--r1-warning-border);
+}
+
+.agd-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.agd-card-meta {
+  font-size: 11.5px;
+  color: var(--r1-text-muted);
+  text-transform: capitalize;
+}
+
+.agd-card-exception {
+  font-size: 11px;
+  color: var(--r1-warning);
+}
+
+.agd-add {
+  justify-self: start;
+  padding: 4px 10px;
+  border: 1px dashed var(--r1-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text-subtle);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.agd-add:hover {
+  border-color: var(--r1-accent);
+  color: var(--r1-text);
+}
+
+/* ============================================================
+   Visão Semana — desktop
+   ============================================================ */
+
+.agw {
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  /* A rolagem horizontal fica no container inteiro, e não só no corpo:
+     se o cabeçalho rolasse separado, a coluna do dia deixaria de bater
+     com a célula embaixo dela. */
+  overflow-x: auto;
+}
+
+.agw-head,
+.agw-line {
+  display: grid;
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+  min-width: 620px;
+}
+
+.agw-head {
+  border-bottom: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+}
+
+.agw-day {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 7px 4px;
+  font-size: 11px;
+  color: var(--r1-text-muted);
+}
+
+.agw-day b {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.agw-day span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.agw-day--today span {
+  color: var(--r1-accent-strong);
+}
+
+.agw-day--on {
+  background: var(--r1-accent-wash);
+}
+
+.agw-body {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+.agw-line {
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.agw-line:last-child {
+  border-bottom: 0;
+}
+
+.agw-hour {
+  padding: 6px 6px 0 0;
+  border-right: 1px solid var(--r1-border-subtle);
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--r1-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.agw-cell {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 34px;
+  padding: 2px;
+  border: 0;
+  border-right: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.agw-cell:last-child {
+  border-right: 0;
+}
+
+.agw-cell--free:hover {
+  background: var(--r1-accent-wash);
+}
+
+/* Fora da jornada: continua clicável (marcar fora é decisão da
+   clínica), só não convida. */
+.agw-cell--none {
+  background: var(--r1-surface-sunken);
+}
+
+.agw-cell--break {
+  background: var(--r1-surface-sunken);
+}
+
+.agw-break {
+  font-size: 9.5px;
+  color: var(--r1-text-subtle);
+}
+
+.agw-item {
+  padding: 3px 6px;
+  border: 0;
+  border-left: 3px solid var(--r1-accent);
+  border-radius: 4px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.agw-item--block {
+  border-left-color: var(--r1-text-subtle);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-muted);
+}
+
+.agw-item--moving {
+  box-shadow: 0 0 0 2px var(--r1-warning);
+}
+
+/* ============================================================
+   Jornada de trabalho
+   ============================================================ */
+
+.agj {
+  display: grid;
+  gap: 14px;
+  font-family: var(--r1-font-sans);
+  color: var(--r1-text);
+}
+
+.agj-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agj-title {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 21px;
+  font-weight: 400;
+}
+
+.agj-sub {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.agj-note {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--r1-text-muted);
+}
+
+.agj-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 8px;
+}
+
+.agj-day {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+}
+
+.agj-day--off {
+  background: var(--r1-surface-sunken);
+}
+
+.agj-day-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.agj-day-empty {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.agj-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agj-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.agj-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+}
+
+.agj-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.agj-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.agj-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--r1-text);
+}
+
+/* ---------- detalhe do agendamento ---------- */
+
+.ag-detail {
+  display: grid;
+  gap: 7px;
+}
+
+.ag-detail-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ag-item-open {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ag-item-open:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
 /* ---------- toque ----------
    Abaixo de 768px o dedo é o ponteiro: todo controle da agenda alcança
    o mínimo de 44px da WCAG 2.2 (2.5.8) e a grade do mês ganha altura
@@ -625,8 +1194,34 @@
   }
 }
 
+@media (max-width: 900px) {
+  /* Sete colunas em 900px dão ~120px por dia: nome de paciente não
+     cabe. A visão Semana some do seletor abaixo disso; o par certo no
+     telefone é Dia + faixa da semana. */
+  .ag-seg--views {
+    grid-template-columns: repeat(2, minmax(64px, 1fr));
+  }
+
+  .ag-seg--views .ag-seg-btn:nth-child(2) {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
   .ag-row {
+    grid-template-columns: 1fr;
+  }
+
+  .agd-row {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .agd-time small {
+    display: none;
+  }
+
+  .agj-grid {
     grid-template-columns: 1fr;
   }
 

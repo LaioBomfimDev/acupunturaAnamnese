@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-08-12 - REVOKE de função sem PUBLIC não bloqueava anon
+
+- Sintoma: a verificação da migração `20260810_clinic_members.sql` devolveu `anon_bloqueado = false` logo na primeira aplicação, apesar da linha `REVOKE EXECUTE ON FUNCTION public.list_clinic_members(UUID) FROM anon;`.
+- Causa: o Postgres concede `EXECUTE` a `PUBLIC` automaticamente ao criar uma função, e o papel `anon` herda dessa concessão. Revogar apenas de `anon` não remove o privilégio herdado, e `has_function_privilege('anon', ...)` continua devolvendo `true`. O padrão correto já existia no projeto desde `20260723_clinical_data_hardening.sql` (`REVOKE ALL ... FROM PUBLIC, anon`); a migração nova copiou o padrão antigo das migrações de maio, que tem o mesmo furo. `can_manage_agenda` (criada em `20260809_appointments.sql`) estava no mesmo caso.
+- Sem exposição de dado: `list_clinic_members` é `SECURITY DEFINER` e barra internamente — sem `p_clinic`, `auth.uid()` nulo faz `v_clinic` nulo e o retorno sai vazio; com `p_clinic` informado, `can_manage_agenda(...) OR is_super_admin()` é falso para anônimo e a função levanta `42501`. O portão interno segurou; a concessão indevida era a segunda camada.
+- Regra nova: **função nova revoga de `PUBLIC` E de `anon`** — `REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon;` antes do `GRANT ... TO authenticated`. Revogar só de `anon` é no-op. Toda migração que cria função com `SECURITY DEFINER` termina com uma verificação `NOT has_function_privilege('anon', ..., 'EXECUTE')`, que foi exatamente o que expôs este caso.
+- Teste ou verificação obrigatória: `agenda-operacao.test.mjs` varre todo `REVOKE ... ON FUNCTION` das migrações da agenda e exige `FROM PUBLIC` junto de `anon`; a verificação da própria migração passou a cobrir também `can_manage_agenda`. Reaplicar `20260810_clinic_members.sql` (idempotente) conserta as duas funções.
+
 ### 2026-08-07 - Compartilhamento entre disciplinas entregava conteúdo vazio
 
 - Sintoma: encaminhar um paciente de Psicologia (e, depois, de Fisioterapia ou Nutrição) para outra disciplina criava o compartilhamento, mostrava o chip de origem→destino e liberava o botão **Ver compartilhado** — que abria sem conteúdo algum. A autorização e a auditoria funcionavam; o prontuário nunca aparecia.

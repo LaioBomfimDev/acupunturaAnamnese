@@ -76,6 +76,12 @@ segundo por lotes.
 
 ## 3. Fases
 
+> **Estado em 2026-08-09:** Fases 0 e 1 implementadas no código
+> (branch `hardening-clinico`), com 491 testes verdes. As duas migrações
+> da Fase 0 ainda **não foram aplicadas** no Supabase — instruções em
+> `docs/aplicar-sql-agenda-2026-08-10.md`. Cadastro de jornada por tela e
+> visão dia/semana ficaram para a Fase 2, como planejado.
+
 ### Fase 0 — Destravar o banco (pré-requisito de tudo)
 
 1. Confirmar aplicação de `20260723_clinical_data_hardening.sql` e
@@ -86,12 +92,16 @@ segundo por lotes.
    `clinic_id`. RLS: membro ativo enxerga colegas da própria instituição.
 3. **Nova migração: jornada e bloqueios.**
    - `professional_schedules` — dia da semana, início, fim, duração padrão
-     do atendimento, intervalo. É o que define "horário disponível".
-   - Bloqueios: **decisão de schema em aberto**, ver §6.
+     do atendimento, intervalo. Define o que é "dentro da jornada"; não
+     define o que é *permitido* (ver §6.1).
+   - `clinic_holidays` — feriados da instituição, para o aviso saber
+     dizer o nome do feriado em vez de "dia atípico".
+   - Bloqueios como linha em `appointments` com `kind = 'block'`.
 4. **Nova migração: colunas de operação em `appointments`** — `kind`
-   (`appointment` | `block`), `appointment_type` (primeira vez / retorno /
-   avaliação), `room`, `confirmed_at`, `checked_in_at`,
-   `recurrence_group_id`.
+   (`appointment` | `block`), `patient_id` anulável, `appointment_type`
+   (primeira vez / retorno / avaliação), `room`, `confirmed_at`,
+   `checked_in_at`, `recurrence_group_id`, `is_exception`,
+   `exception_reason`.
 
 > Regra do AGENTS.md §3 e §9: mudança de schema e de política de acesso
 > passa por aprovação humana antes de escrever. §6 lista as decisões.
@@ -247,15 +257,37 @@ onde está o valor visível.
 
 ## 6. Decisões que precisam de aprovação humana (AGENTS.md §3)
 
-**6.1 — Como representar bloqueios (almoço, feriado, férias).**
-Recomendo **tornar `patient_id` anulável e adicionar `kind`**
-(`appointment` | `block`). Motivo: a constraint `appointments_no_overlap`
-passa a proteger bloqueios de graça — o banco recusa marcar em cima do
-almoço, sem código novo. A alternativa (tabela separada) mantém
-`appointments` mais limpa, mas deixa a proteção de sobreposição por conta
-da tela, e a tela erra.
-*Risco:* `patient_id` anulável exige revisar todo consumidor que hoje
-assume o campo preenchido.
+**6.1 — Bloqueios: aviso forte, não parede. (DECIDIDO em 2026-08-09)**
+
+`patient_id` vira anulável e entra a coluna `kind`
+(`appointment` | `block`) — bloqueio é uma linha em `appointments`.
+
+Mas com uma ressalva que muda o desenho: **a clínica é flexível**. Pode
+atender em feriado, em sábado, no horário do almoço, fora da jornada. O
+sistema **não impede** — ele avisa que aquilo é fora do normal e exige
+**confirmação dupla e explícita** antes de gravar, e marca o registro
+como exceção para o BI enxergar depois.
+
+O que isso implica tecnicamente:
+
+- A constraint `appointments_no_overlap` **não** passa a cobrir
+  bloqueios. Ela continua valendo só para `kind = 'appointment'` — ou
+  seja, o banco segue barrando **dois pacientes no mesmo horário do mesmo
+  profissional**, que é bug de verdade, e **não** barra marcar em cima do
+  almoço, que é decisão da clínica.
+- Cada exceção é gravada, não só tolerada: colunas
+  `is_exception BOOLEAN` e `exception_reason TEXT` registram *que* foi
+  fora do padrão e *por quê*. Sem isso, a taxa de ocupação do dashboard
+  mente.
+- A confirmação dupla é da **UI**, com texto que nomeia a exceção
+  ("Sábado, fora da jornada cadastrada", "Dentro do intervalo de almoço",
+  "Feriado: Independência"), nunca um "Tem certeza?" genérico.
+
+A fronteira: **flexível em horário, rígido em conflito de paciente.**
+Feriado/sábado/almoço/fora de jornada = aviso + confirmação dupla. Dois
+pacientes no mesmo slot = recusa do banco. Se um dia a clínica quiser
+sobreposição deliberada (encaixe simultâneo, atendimento em dupla), isso
+volta como decisão própria — hoje continua barrado.
 
 **6.2 — Escopo de leitura de colegas.**
 Recomendo a **view `clinic_members`** com campos administrativos apenas,

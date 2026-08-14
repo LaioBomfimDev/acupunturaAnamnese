@@ -167,6 +167,10 @@ export function findOverlap(appointments, candidate) {
   return appointments.find(item => {
     if (item.id && item.id === candidate.id) return false;
     if (item.professional_id !== candidate.professional_id) return false;
+    // Bloqueio não disputa horário: ele avisa, não barra. Espelha o
+    // `kind = 'appointment'` no WHERE da constraint de exclusão
+    // (docs/plano-agenda-gestao-clinica.md §6.1).
+    if (item.kind === 'block') return false;
     if (FREEING_STATUSES.includes(item.status)) return false;
     const itemStart = new Date(item.starts_at).getTime();
     const itemEnd = new Date(item.ends_at).getTime();

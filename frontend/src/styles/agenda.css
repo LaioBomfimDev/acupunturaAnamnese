@@ -18,6 +18,15 @@
   }
 }
 
+/* ---------- seletor de agenda (equipe) ---------- */
+
+.ag-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
 /* ---------- cabeçalho do mês ---------- */
 
 .ag-head {
@@ -430,4 +439,209 @@
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--r1-text-muted);
+}
+
+/* Recado, não erro: configuração ausente desliga um aviso, não a tela. */
+.ag-notice {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--r1-text-muted);
+}
+
+/* ---------- atendimento x bloqueio ---------- */
+
+.ag-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.ag-seg-btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: calc(var(--r1-radius-sm) - 3px);
+  background: transparent;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ag-seg-btn[aria-pressed='true'] {
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.ag-seg-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.ag-chip-btn--lg {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.ag-pill--block {
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border);
+  color: var(--r1-text-muted);
+}
+
+.ag-pill--holiday {
+  background: var(--r1-warning-bg);
+  border: 1px solid var(--r1-warning-border);
+  color: var(--r1-warning);
+}
+
+.ag-day--holiday {
+  background: var(--r1-warning-bg);
+}
+
+.ag-item--block {
+  border-left-color: var(--r1-text-subtle);
+  border-style: dashed;
+  background: var(--r1-surface-sunken);
+}
+
+.ag-item-exception {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--r1-warning);
+}
+
+/* ---------- horário fora do padrão ----------
+   Âmbar, não vermelho: isto é permitido. Vermelho aqui ensinaria a
+   ignorar vermelho no resto do sistema. */
+
+.ag-warn {
+  display: grid;
+  gap: 7px;
+  padding: 11px 12px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-warning-bg);
+}
+
+.ag-warn--confirm {
+  border-width: 2px;
+}
+
+.ag-warn-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--r1-warning);
+}
+
+.ag-warn-list {
+  margin: 0;
+  padding-left: 17px;
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--r1-text);
+}
+
+.ag-warn-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.ag-warn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.ag-warn-actions .ag-btn {
+  flex: 1 1 auto;
+}
+
+.ag-btn--warn {
+  background: var(--r1-warning);
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ---------- toque ----------
+   Abaixo de 768px o dedo é o ponteiro: todo controle da agenda alcança
+   o mínimo de 44px da WCAG 2.2 (2.5.8) e a grade do mês ganha altura
+   de célula suficiente para não errar o dia. */
+
+@media (max-width: 768px) {
+  .ag {
+    gap: 14px;
+  }
+
+  .ag-btn,
+  .ag-seg-btn,
+  .ag-chip-btn--lg {
+    min-height: var(--r1-tap);
+  }
+
+  .ag-chip-btn {
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .ag-input,
+  .ag-select {
+    min-height: var(--r1-tap);
+    /* 16px impede o zoom automático do Safari ao focar o campo. */
+    font-size: 16px;
+  }
+
+  .ag-day {
+    min-height: 74px;
+    padding: 6px;
+  }
+
+  .ag-side-body {
+    max-height: none;
+  }
+
+  .ag-month {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ag-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ag-day {
+    min-height: 62px;
+  }
+
+  /* Contagem some; fica o ponto. Em 375px o texto do pill não cabe sem
+     truncar, e pill truncado não informa nada. */
+  .ag-pill {
+    padding: 2px 5px;
+    font-size: 9.5px;
+  }
+
+  .ag-pill--holiday {
+    display: none;
+  }
 }

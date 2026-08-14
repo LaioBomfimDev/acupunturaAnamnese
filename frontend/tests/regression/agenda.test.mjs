@@ -7,6 +7,7 @@ import { createServer } from 'vite';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const migrationPath = path.resolve(root, '../supabase/migrations/20260809_appointments.sql');
+const operacaoMigrationPath = path.resolve(root, '../supabase/migrations/20260810_agenda_operacao.sql');
 
 // utils/agenda.js não importa nada, então carrega direto — sem custo de
 // subir servidor para testar cálculo puro.
@@ -46,8 +47,11 @@ test('status do JS e o CHECK da migration não se separam', async () => {
 });
 
 test('estados que liberam o horário espelham o WHERE da constraint', async () => {
-  const sql = await readFile(migrationPath, 'utf8');
-  const where = sql.match(/WHERE \(status NOT IN \(([^)]+)\)\)/);
+  // A constraint foi redefinida em 20260810 (bloqueio saiu de dentro
+  // dela). O espelho tem que olhar para a definição EM VIGOR, senão o
+  // teste passa validando um SQL que o banco não usa mais.
+  const sql = await readFile(operacaoMigrationPath, 'utf8');
+  const where = sql.match(/status NOT IN \(([^)]+)\)/);
   assert.ok(where, 'a constraint de sobreposição precisa ter o WHERE');
 
   const fromSql = where[1].split(',').map(part => part.trim().replace(/'/g, '')).sort();

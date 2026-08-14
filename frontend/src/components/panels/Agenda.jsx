@@ -9,11 +9,15 @@ import {
   getStatusLabel,
   toDayKey,
 } from '../../utils/agenda';
+import { evaluateSlot } from '../../utils/agendaExceptions';
 import {
+  APPOINTMENT_TYPES,
   createAppointment,
   listAppointments,
   updateAppointmentStatus,
 } from '../../services/appointmentService';
+import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/clinicMembersService';
+import { listHolidays, listProfessionalSchedules } from '../../services/agendaScheduleService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES } from '../../data/disciplines';
 import '../../styles/agenda.css';
@@ -21,6 +25,8 @@ import '../../styles/agenda.css';
 // Estados oferecidos como ação rápida no dia. 'scheduled' fica de fora
 // porque é o estado inicial — voltar para ele é remarcar, não marcar.
 const QUICK_STATUSES = APPOINTMENT_STATUSES.filter(item => item.id !== 'scheduled');
+
+const ALL_PROFESSIONALS = 'all';
 
 function firstOfMonth(year, month) {
   return new Date(year, month - 1, 1, 0, 0, 0, 0);
@@ -58,9 +64,16 @@ export function Agenda({ profile }) {
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Quem a agenda está mostrando. 'all' é a visão de recepção.
+  const [agendaOf, setAgendaOf] = useState(() => profile?.id || ALL_PROFESSIONALS);
 
   const availableDisciplines = useMemo(() => {
     const allowed = Array.isArray(profile?.disciplines) ? profile.disciplines : [];
@@ -69,16 +82,27 @@ export function Agenda({ profile }) {
   }, [profile]);
 
   const [form, setForm] = useState(() => ({
+    kind: 'appointment',
     patientId: '',
     discipline: '',
+    professionalId: profile?.id || '',
+    appointmentType: '',
     time: '09:00',
     durationMinutes: 60,
     note: '',
   }));
 
+  // Confirmação dupla de horário atípico: enquanto isto tiver conteúdo,
+  // o formulário não grava — mostra o que há de fora do normal e espera
+  // um segundo "sim" explícito.
+  const [pendingException, setPendingException] = useState(null);
+
   // Derivado, não sincronizado por efeito: enquanto a pessoa não escolher,
   // vale a primeira disciplina que o perfil libera.
   const disciplineValue = form.discipline || availableDisciplines[0]?.id || '';
+  const formProfessionalId = form.professionalId
+    || (agendaOf !== ALL_PROFESSIONALS ? agendaOf : profile?.id)
+    || '';
 
   // O flag de cancelamento evita que a resposta de um mês antigo
   // sobrescreva a do mês atual quando se troca de mês rápido.
@@ -86,12 +110,12 @@ export function Agenda({ profile }) {
     let cancelled = false;
 
     (async () => {
+      const from = firstOfMonth(cursor.year, cursor.month);
+      const to = lastOfMonth(cursor.year, cursor.month);
+
       try {
         const [monthAppointments, clinicPatients] = await Promise.all([
-          listAppointments({
-            from: firstOfMonth(cursor.year, cursor.month).toISOString(),
-            to: lastOfMonth(cursor.year, cursor.month).toISOString(),
-          }),
+          listAppointments({ from: from.toISOString(), to: to.toISOString() }),
           listClinicPatients(),
         ]);
         if (cancelled) return;
@@ -105,6 +129,30 @@ export function Agenda({ profile }) {
       } finally {
         if (!cancelled) setLoading(false);
       }
+
+      // Equipe, jornada e feriados são configuração: se faltarem, a
+      // agenda continua funcionando sem os avisos de horário atípico.
+      // Quebrar a tela inteira por causa de um aviso seria pior do que
+      // não ter o aviso — mas o silêncio precisa aparecer em algum
+      // lugar, então vira recado, não erro.
+      try {
+        const [team, jornada, feriados] = await Promise.all([
+          listClinicMembers(),
+          listProfessionalSchedules(),
+          listHolidays({ from: toDayKey(from), to: toDayKey(to) }),
+        ]);
+        if (cancelled) return;
+        setMembers(team);
+        setSchedules(jornada);
+        setHolidays(feriados);
+        setNotice('');
+      } catch (err) {
+        if (cancelled) return;
+        setMembers([]);
+        setSchedules([]);
+        setHolidays([]);
+        setNotice(err.message || 'Equipe e jornada indisponíveis: os avisos de horário atípico ficam desligados.');
+      }
     })();
 
     return () => { cancelled = true; };
@@ -114,21 +162,60 @@ export function Agenda({ profile }) {
     () => buildMonthGrid(cursor.year, cursor.month, { today }),
     [cursor.year, cursor.month, today],
   );
-  const byDay = useMemo(() => appointmentsByDay(appointments), [appointments]);
+
+  // A agenda exibida respeita o profissional escolhido; a de recepção
+  // ('all') mostra a casa inteira.
+  const visibleAppointments = useMemo(() => (
+    agendaOf === ALL_PROFESSIONALS
+      ? appointments
+      : appointments.filter(item => item.professional_id === agendaOf)
+  ), [appointments, agendaOf]);
+
+  const byDay = useMemo(() => appointmentsByDay(visibleAppointments), [visibleAppointments]);
   const birthdays = useMemo(
     () => birthdaysByDay(patients, cursor.year, cursor.month),
     [patients, cursor.year, cursor.month],
+  );
+
+  const teamOptions = useMemo(
+    () => sortWithSelfFirst(members, profile?.id),
+    [members, profile?.id],
   );
 
   function patientName(id) {
     return patients.find(item => item.id === id)?.name || 'Paciente';
   }
 
+  function professionalName(id) {
+    if (id === profile?.id) return 'você';
+    const found = members.find(item => item.id === id);
+    return found ? shortName(found.full_name) : 'profissional';
+  }
+
   const dayAppointments = byDay.get(selectedKey) || [];
   const dayBirthdays = birthdays.get(selectedKey) || [];
 
+  // Avaliação do horário digitado: é o que decide se o "Agendar" grava
+  // direto ou pede o segundo sim.
+  const slotEvaluation = useMemo(() => {
+    const start = selectedKey ? combineLocal(selectedKey, form.time) : null;
+    if (!start) return { isException: false, reason: '', exceptions: [] };
+    const end = addMinutes(start, Number(form.durationMinutes) || 60);
+
+    return evaluateSlot({
+      start,
+      end,
+      schedules: schedules.filter(item => item.professional_id === formProfessionalId),
+      holidays,
+      blocks: appointments.filter(
+        item => item.kind === 'block' && item.professional_id === formProfessionalId,
+      ),
+    });
+  }, [selectedKey, form.time, form.durationMinutes, formProfessionalId, schedules, holidays, appointments]);
+
   function shiftMonth(delta) {
     setLoading(true);
+    setPendingException(null);
     setCursor(prev => {
       const date = new Date(prev.year, prev.month - 1 + delta, 1);
       return { year: date.getFullYear(), month: date.getMonth() + 1 };
@@ -137,14 +224,12 @@ export function Agenda({ profile }) {
 
   function goToday() {
     setLoading(true);
+    setPendingException(null);
     setCursor({ year: today.getFullYear(), month: today.getMonth() + 1 });
     setSelectedKey(toDayKey(today));
   }
 
-  async function handleCreate(event) {
-    event.preventDefault();
-    setError('');
-
+  async function persist(evaluation) {
     const start = combineLocal(selectedKey, form.time);
     if (!start) {
       setError('Informe um horário válido.');
@@ -155,24 +240,43 @@ export function Agenda({ profile }) {
     try {
       const created = await createAppointment(
         {
-          patientId: form.patientId,
-          // Sem leitura de colegas no banco (profiles é "só o próprio
-          // perfil"), a agenda é a de quem está logado.
-          professionalId: profile?.id,
-          discipline: disciplineValue,
+          kind: form.kind,
+          patientId: form.kind === 'block' ? null : form.patientId,
+          professionalId: formProfessionalId,
+          discipline: form.kind === 'block' ? null : disciplineValue,
+          appointmentType: form.kind === 'block' ? null : (form.appointmentType || null),
           startsAt: start.toISOString(),
           endsAt: addMinutes(start, Number(form.durationMinutes) || 60).toISOString(),
           note: form.note,
+          isException: evaluation.isException,
+          exceptionReason: evaluation.reason,
         },
         { knownAppointments: appointments },
       );
       setAppointments(prev => [...prev, created]);
       setForm(prev => ({ ...prev, patientId: '', note: '' }));
+      setPendingException(null);
+      setError('');
     } catch (err) {
       setError(err.message || 'Não foi possível criar o agendamento.');
+      setPendingException(null);
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    setError('');
+
+    // Horário atípico não é proibido — é atípico. Primeiro clique
+    // apresenta o que foge do padrão; só o segundo grava.
+    if (slotEvaluation.isException && !pendingException) {
+      setPendingException(slotEvaluation);
+      return;
+    }
+
+    persist(pendingException || slotEvaluation);
   }
 
   async function handleStatus(appointment, status) {
@@ -186,6 +290,7 @@ export function Agenda({ profile }) {
   }
 
   const selectedDate = selectedKey ? combineLocal(selectedKey, '12:00') : null;
+  const isBlock = form.kind === 'block';
 
   return (
     <div className="ag">
@@ -201,7 +306,32 @@ export function Agenda({ profile }) {
           </div>
         </header>
 
+        {teamOptions.length > 1 && (
+          <div className="ag-team" role="group" aria-label="Agenda de qual profissional">
+            <button
+              type="button"
+              className="ag-chip-btn ag-chip-btn--lg"
+              aria-pressed={agendaOf === ALL_PROFESSIONALS}
+              onClick={() => setAgendaOf(ALL_PROFESSIONALS)}
+            >
+              Toda a equipe
+            </button>
+            {teamOptions.map(member => (
+              <button
+                key={member.id}
+                type="button"
+                className="ag-chip-btn ag-chip-btn--lg"
+                aria-pressed={agendaOf === member.id}
+                onClick={() => setAgendaOf(member.id)}
+              >
+                {member.id === profile?.id ? 'Minha agenda' : shortName(member.full_name)}
+              </button>
+            ))}
+          </div>
+        )}
+
         {error && <div className="ag-alert" role="alert">{error}</div>}
+        {notice && <div className="ag-notice">{notice}</div>}
 
         <div className="ag-cal">
           <div className="ag-weekdays">
@@ -213,13 +343,17 @@ export function Agenda({ profile }) {
           {grid.map((week, index) => (
             <div className="ag-week" key={index}>
               {week.map(cell => {
-                const count = (byDay.get(cell.key) || []).length;
+                const dayItems = byDay.get(cell.key) || [];
+                const count = dayItems.filter(item => item.kind !== 'block').length;
+                const blocked = dayItems.some(item => item.kind === 'block');
                 const cellBirthdays = birthdays.get(cell.key) || [];
+                const holiday = holidays.find(item => item.day === cell.key);
                 const classes = [
                   'ag-day',
                   cell.inMonth ? '' : 'ag-day--outside',
                   cell.isToday ? 'ag-day--today' : '',
                   cell.key === selectedKey ? 'ag-day--selected' : '',
+                  holiday && !holiday.is_working_day ? 'ag-day--holiday' : '',
                 ].filter(Boolean).join(' ');
 
                 return (
@@ -227,7 +361,7 @@ export function Agenda({ profile }) {
                     type="button"
                     key={cell.key}
                     className={classes}
-                    onClick={() => setSelectedKey(cell.key)}
+                    onClick={() => { setSelectedKey(cell.key); setPendingException(null); }}
                     aria-pressed={cell.key === selectedKey}
                   >
                     <span className="ag-day-num">{cell.day}</span>
@@ -235,6 +369,16 @@ export function Agenda({ profile }) {
                       {count > 0 && (
                         <span className="ag-pill ag-pill--count">
                           {count} {count === 1 ? 'atend.' : 'atends.'}
+                        </span>
+                      )}
+                      {blocked && (
+                        <span className="ag-pill ag-pill--block" title="Há bloqueio de horário neste dia">
+                          bloqueio
+                        </span>
+                      )}
+                      {holiday && (
+                        <span className="ag-pill ag-pill--holiday" title={holiday.name}>
+                          {holiday.name}
                         </span>
                       )}
                       {cellBirthdays.length > 0 && (
@@ -259,7 +403,10 @@ export function Agenda({ profile }) {
               : 'Selecione um dia'}
           </h3>
           <p className="ag-side-sub">
-            {loading ? 'Carregando…' : `${dayAppointments.length} atendimento(s)`}
+            {loading
+              ? 'Carregando…'
+              : `${dayAppointments.filter(item => item.kind !== 'block').length} atendimento(s)`}
+            {agendaOf === ALL_PROFESSIONALS && teamOptions.length > 1 ? ' · equipe inteira' : ''}
           </p>
         </div>
 
@@ -279,69 +426,158 @@ export function Agenda({ profile }) {
           ) : (
             <ul className="ag-list">
               {dayAppointments.map(item => (
-                <li key={item.id} className={`ag-item ag-item--${item.status}`}>
+                <li
+                  key={item.id}
+                  className={`ag-item ag-item--${item.status} ${item.kind === 'block' ? 'ag-item--block' : ''}`}
+                >
                   <div className="ag-item-top">
                     <span className="ag-item-time">
                       {formatTime(item.starts_at)}–{formatTime(item.ends_at)}
                     </span>
-                    <span className="ag-item-status">{getStatusLabel(item.status)}</span>
+                    <span className="ag-item-status">
+                      {item.kind === 'block' ? 'Bloqueio' : getStatusLabel(item.status)}
+                    </span>
                   </div>
-                  <span className="ag-item-name">{patientName(item.patient_id)}</span>
-                  <span className="ag-item-meta">{item.discipline}</span>
-                  {item.note && <span className="ag-item-meta">{item.note}</span>}
-                  <div className="ag-item-actions">
-                    {QUICK_STATUSES.map(status => (
-                      <button
-                        key={status.id}
-                        type="button"
-                        className="ag-chip-btn"
-                        aria-pressed={item.status === status.id}
-                        onClick={() => handleStatus(item, status.id)}
-                      >
-                        {status.label}
-                      </button>
-                    ))}
-                  </div>
+
+                  <span className="ag-item-name">
+                    {item.kind === 'block'
+                      ? (item.note?.trim() || 'Horário reservado')
+                      : patientName(item.patient_id)}
+                  </span>
+
+                  <span className="ag-item-meta">
+                    {[
+                      item.kind === 'block' ? null : item.discipline,
+                      agendaOf === ALL_PROFESSIONALS ? professionalName(item.professional_id) : null,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+
+                  {item.kind !== 'block' && item.note && (
+                    <span className="ag-item-meta">{item.note}</span>
+                  )}
+
+                  {item.is_exception && (
+                    <span className="ag-item-exception" title={item.exception_reason || ''}>
+                      Fora do padrão: {item.exception_reason}
+                    </span>
+                  )}
+
+                  {item.kind !== 'block' && (
+                    <div className="ag-item-actions">
+                      {QUICK_STATUSES.map(status => (
+                        <button
+                          key={status.id}
+                          type="button"
+                          className="ag-chip-btn"
+                          aria-pressed={item.status === status.id}
+                          onClick={() => handleStatus(item, status.id)}
+                        >
+                          {status.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           )}
 
-          <form className="ag-form" onSubmit={handleCreate}>
-            <p className="ag-form-title">Novo agendamento</p>
+          <form className="ag-form" onSubmit={handleSubmit}>
+            <p className="ag-form-title">{isBlock ? 'Novo bloqueio' : 'Novo agendamento'}</p>
 
-            <div className="ag-field">
-              <label htmlFor="ag-patient">Paciente</label>
-              <select
-                id="ag-patient"
-                className="ag-select"
-                value={form.patientId}
-                onChange={e => setForm(prev => ({ ...prev, patientId: e.target.value }))}
-                disabled={saving || loading}
-                required
+            <div className="ag-seg" role="group" aria-label="O que está sendo marcado">
+              <button
+                type="button"
+                className="ag-seg-btn"
+                aria-pressed={!isBlock}
+                onClick={() => { setForm(prev => ({ ...prev, kind: 'appointment' })); setPendingException(null); }}
               >
-                <option value="">Selecione…</option>
-                {patients.map(patient => (
-                  <option key={patient.id} value={patient.id}>{patient.name}</option>
-                ))}
-              </select>
+                Atendimento
+              </button>
+              <button
+                type="button"
+                className="ag-seg-btn"
+                aria-pressed={isBlock}
+                onClick={() => { setForm(prev => ({ ...prev, kind: 'block', patientId: '' })); setPendingException(null); }}
+              >
+                Bloquear horário
+              </button>
             </div>
 
-            <div className="ag-field">
-              <label htmlFor="ag-discipline">Área</label>
-              <select
-                id="ag-discipline"
-                className="ag-select"
-                value={disciplineValue}
-                onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value }))}
-                disabled={saving}
-                required
-              >
-                {availableDisciplines.map(item => (
-                  <option key={item.id} value={item.id}>{item.label}</option>
-                ))}
-              </select>
-            </div>
+            {teamOptions.length > 1 && (
+              <div className="ag-field">
+                <label htmlFor="ag-professional">Profissional</label>
+                <select
+                  id="ag-professional"
+                  className="ag-select"
+                  value={formProfessionalId}
+                  onChange={e => { setForm(prev => ({ ...prev, professionalId: e.target.value })); setPendingException(null); }}
+                  disabled={saving}
+                  required
+                >
+                  {teamOptions.map(member => (
+                    <option key={member.id} value={member.id}>
+                      {member.id === profile?.id ? `${member.full_name || 'Você'} (você)` : member.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {!isBlock && (
+              <>
+                <div className="ag-field">
+                  <label htmlFor="ag-patient">Paciente</label>
+                  <select
+                    id="ag-patient"
+                    className="ag-select"
+                    value={form.patientId}
+                    onChange={e => setForm(prev => ({ ...prev, patientId: e.target.value }))}
+                    disabled={saving || loading}
+                    required
+                  >
+                    <option value="">Selecione…</option>
+                    {patients.map(patient => (
+                      <option key={patient.id} value={patient.id}>{patient.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="ag-row">
+                  <div className="ag-field">
+                    <label htmlFor="ag-discipline">Área</label>
+                    <select
+                      id="ag-discipline"
+                      className="ag-select"
+                      value={disciplineValue}
+                      onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value }))}
+                      disabled={saving}
+                      required
+                    >
+                      {availableDisciplines.map(item => (
+                        <option key={item.id} value={item.id}>{item.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="ag-field">
+                    <label htmlFor="ag-kind">Tipo</label>
+                    <select
+                      id="ag-kind"
+                      className="ag-select"
+                      value={form.appointmentType}
+                      onChange={e => setForm(prev => ({ ...prev, appointmentType: e.target.value }))}
+                      disabled={saving}
+                    >
+                      <option value="">Não classificado</option>
+                      {APPOINTMENT_TYPES.map(item => (
+                        <option key={item.id} value={item.id}>{item.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="ag-row">
               <div className="ag-field">
@@ -351,7 +587,7 @@ export function Agenda({ profile }) {
                   className="ag-input"
                   type="time"
                   value={form.time}
-                  onChange={e => setForm(prev => ({ ...prev, time: e.target.value }))}
+                  onChange={e => { setForm(prev => ({ ...prev, time: e.target.value })); setPendingException(null); }}
                   disabled={saving}
                   required
                 />
@@ -362,10 +598,10 @@ export function Agenda({ profile }) {
                   id="ag-duration"
                   className="ag-select"
                   value={form.durationMinutes}
-                  onChange={e => setForm(prev => ({ ...prev, durationMinutes: Number(e.target.value) }))}
+                  onChange={e => { setForm(prev => ({ ...prev, durationMinutes: Number(e.target.value) })); setPendingException(null); }}
                   disabled={saving}
                 >
-                  {[30, 45, 60, 90, 120].map(minutes => (
+                  {[30, 45, 60, 90, 120, 180, 240].map(minutes => (
                     <option key={minutes} value={minutes}>{minutes} min</option>
                   ))}
                 </select>
@@ -373,26 +609,80 @@ export function Agenda({ profile }) {
             </div>
 
             <div className="ag-field">
-              <label htmlFor="ag-note">Observação da recepção</label>
+              <label htmlFor="ag-note">
+                {isBlock ? 'Motivo do bloqueio' : 'Observação da recepção'}
+              </label>
               <input
                 id="ag-note"
                 className="ag-input"
                 type="text"
-                placeholder="Sala, encaixe, retorno…"
+                placeholder={isBlock ? 'Almoço, reunião, curso…' : 'Sala, encaixe, retorno…'}
                 value={form.note}
                 onChange={e => setForm(prev => ({ ...prev, note: e.target.value }))}
                 disabled={saving}
+                required={isBlock}
               />
             </div>
 
-            <button type="submit" className="ag-btn ag-btn--primary" disabled={saving || loading}>
-              {saving ? 'Salvando…' : 'Agendar'}
-            </button>
+            {/* Aviso de horário atípico. Aparece já na digitação — a
+                pessoa vê antes de tentar salvar, não como punição depois. */}
+            {slotEvaluation.isException && !pendingException && (
+              <div className="ag-warn">
+                <p className="ag-warn-title">Horário fora do padrão</p>
+                <ul className="ag-warn-list">
+                  {slotEvaluation.exceptions.map(item => (
+                    <li key={item.kind}><b>{item.label}</b> — {item.detail}</li>
+                  ))}
+                </ul>
+                <p className="ag-warn-note">
+                  Marcar aqui é permitido. Ao continuar, o sistema pede uma
+                  confirmação e registra a exceção.
+                </p>
+              </div>
+            )}
+
+            {pendingException && (
+              <div className="ag-warn ag-warn--confirm" role="alertdialog" aria-label="Confirmar horário fora do padrão">
+                <p className="ag-warn-title">Confirmar mesmo assim?</p>
+                <ul className="ag-warn-list">
+                  {pendingException.exceptions.map(item => (
+                    <li key={item.kind}><b>{item.label}</b></li>
+                  ))}
+                </ul>
+                <p className="ag-warn-note">
+                  Fica registrado como exceção, com este motivo, para a
+                  clínica saber depois por que este horário saiu do comum.
+                </p>
+                <div className="ag-warn-actions">
+                  <button
+                    type="button"
+                    className="ag-btn"
+                    onClick={() => setPendingException(null)}
+                    disabled={saving}
+                  >
+                    Escolher outro horário
+                  </button>
+                  <button
+                    type="submit"
+                    className="ag-btn ag-btn--warn"
+                    disabled={saving}
+                  >
+                    {saving ? 'Salvando…' : 'Sim, marcar assim'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!pendingException && (
+              <button type="submit" className="ag-btn ag-btn--primary" disabled={saving || loading}>
+                {saving ? 'Salvando…' : isBlock ? 'Bloquear' : 'Agendar'}
+              </button>
+            )}
 
             <p className="ag-note">
-              Esta é a sua agenda. Marcar para outro profissional depende de
-              liberar a leitura de colegas no banco — hoje cada perfil só
-              enxerga a si mesmo.
+              A agenda é da instituição: dá para marcar para qualquer
+              profissional da casa. O único horário que o sistema recusa é
+              dois pacientes ao mesmo tempo com o mesmo profissional.
             </p>
           </form>
         </div>

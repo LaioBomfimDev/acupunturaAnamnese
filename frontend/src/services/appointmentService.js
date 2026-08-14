@@ -22,7 +22,22 @@ import { APPOINTMENT_STATUS_IDS, findOverlap } from '../utils/agenda';
 const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 
 const APPOINTMENT_COLUMNS =
-  'id,clinic_id,patient_id,professional_id,discipline,starts_at,ends_at,status,note,cancellation_reason,created_by,created_at,updated_at';
+  'id,clinic_id,patient_id,professional_id,discipline,starts_at,ends_at,status,note,cancellation_reason,'
+  + 'kind,appointment_type,room,confirmed_at,checked_in_at,recurrence_group_id,is_exception,exception_reason,'
+  + 'created_by,created_at,updated_at';
+
+// Espelha o CHECK appointments_kind_check da migração 20260810.
+export const APPOINTMENT_KINDS = ['appointment', 'block'];
+
+// Espelha appointments_type_check. Nulo é válido: nem toda clínica
+// classifica o atendimento.
+export const APPOINTMENT_TYPES = [
+  { id: 'first_visit', label: 'Primeira vez' },
+  { id: 'return', label: 'Retorno' },
+  { id: 'evaluation', label: 'Avaliação' },
+];
+
+export const APPOINTMENT_TYPE_IDS = APPOINTMENT_TYPES.map(item => item.id);
 
 export const AGENDA_MIGRATION_HINT =
   'Estrutura de agenda ausente no banco. Aplique a migração ' +
@@ -47,10 +62,32 @@ export function isOverlapError(error) {
 }
 
 function assertValid(input) {
-  if (!input?.patientId) throw new Error('Selecione o paciente.');
+  const kind = input?.kind || 'appointment';
+  if (!APPOINTMENT_KINDS.includes(kind)) {
+    throw new Error(`Tipo de registro inválido: ${kind || '(vazio)'}.`);
+  }
+
+  // Bloqueio (almoço, reunião, férias) não tem paciente nem disciplina —
+  // é hora reservada do profissional, não atendimento.
+  if (kind === 'appointment') {
+    if (!input?.patientId) throw new Error('Selecione o paciente.');
+    if (!DISCIPLINE_IDS.includes(input?.discipline)) {
+      throw new Error(`Disciplina inválida: ${input?.discipline || '(vazia)'}.`);
+    }
+  } else if (input?.patientId) {
+    throw new Error('Bloqueio de horário não recebe paciente.');
+  }
+
   if (!input?.professionalId) throw new Error('Selecione o profissional.');
-  if (!DISCIPLINE_IDS.includes(input?.discipline)) {
-    throw new Error(`Disciplina inválida: ${input?.discipline || '(vazia)'}.`);
+
+  // Exceção sem motivo é ruído: daqui a um ano ninguém sabe por que
+  // aquele sábado foi marcado. Espelha o CHECK appointments_exception_reason.
+  if (input?.isException === true && !String(input?.exceptionReason || '').trim()) {
+    throw new Error('Informe o motivo da exceção de horário.');
+  }
+
+  if (input?.appointmentType && !APPOINTMENT_TYPE_IDS.includes(input.appointmentType)) {
+    throw new Error(`Tipo de atendimento inválido: ${input.appointmentType}.`);
   }
 
   const start = new Date(input?.startsAt);
@@ -114,7 +151,7 @@ export async function listAppointments({ from, to, professionalId = null, runtim
   if (to) query = query.lte('starts_at', new Date(to).toISOString());
   if (professionalId) query = query.eq('professional_id', professionalId);
 
-  const { data, error } = await query.order('starts_at', { ascending: true });
+  const { data, error } = await query.order('starts_at', { ascending: true }).limit(2000);
 
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
@@ -136,18 +173,32 @@ export async function createAppointment(input, { knownAppointments = null, runti
     from: runtime?.from || ((table) => supabase.from(table)),
   };
 
+  const kind = input.kind || 'appointment';
+
   const payload = {
-    patient_id: input.patientId,
+    patient_id: kind === 'block' ? null : input.patientId,
     professional_id: input.professionalId,
-    discipline: input.discipline,
+    discipline: kind === 'block' ? null : input.discipline,
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
     status: input.status || 'scheduled',
     note: input.note?.trim() || null,
+    kind,
+    appointment_type: input.appointmentType || null,
+    room: input.room?.trim() || null,
+    recurrence_group_id: input.recurrenceGroupId || null,
+    // Marcar fora da jornada é permitido; passar despercebido, não. Sem
+    // este par a taxa de ocupação do dashboard mente.
+    is_exception: input.isException === true,
+    exception_reason: input.isException === true
+      ? String(input.exceptionReason || '').trim()
+      : null,
   };
   assertStatus(payload.status);
 
-  if (knownAppointments) {
+  // Só atendimento disputa horário. Bloqueio convive com tudo de
+  // propósito: ele avisa, não barra (§6.1 do plano).
+  if (knownAppointments && kind === 'appointment') {
     const conflict = findOverlap(knownAppointments, {
       ...payload,
       professional_id: payload.professional_id,

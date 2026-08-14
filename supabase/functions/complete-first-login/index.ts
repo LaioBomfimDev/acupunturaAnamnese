@@ -6,6 +6,8 @@ import {
   writeAuditLog,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { createCorrelationId, logOperationalEvent } from '../_shared/observability.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 
 Deno.serve(async (req) => {
   const cors = createCorsContext(req);
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 2_048).catch(() => ({}));
     const password = String(body.password || '');
     const confirmPassword = String(body.confirmPassword || '');
 
@@ -68,7 +70,15 @@ Deno.serve(async (req) => {
     );
 
     if (updateAuthError) {
-      return jsonResponse({ error: updateAuthError.message }, 400);
+      const correlationId = createCorrelationId();
+      logOperationalEvent('error', 'first_login_auth_update_failed', {
+        correlationId,
+        operation: 'complete-first-login',
+      });
+      return jsonResponse({
+        error: 'Não foi possível concluir a troca de senha. Tente novamente.',
+        referencia: correlationId,
+      }, 400);
     }
 
     const { error: profileError } = await supabaseAdmin
@@ -80,7 +90,15 @@ Deno.serve(async (req) => {
       .eq('id', caller.user.id);
 
     if (profileError) {
-      return jsonResponse({ error: profileError.message }, 500);
+      const correlationId = createCorrelationId();
+      logOperationalEvent('error', 'first_login_profile_update_failed', {
+        correlationId,
+        operation: 'complete-first-login',
+      });
+      return jsonResponse({
+        error: 'A senha foi alterada, mas não foi possível liberar o acesso. Contate o SuperAdm.',
+        referencia: correlationId,
+      }, 500);
     }
 
     await writeAuditLog(supabaseAdmin, {
@@ -93,8 +111,20 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Best-effort: derruba sessões antigas (ex.: dispositivo esquecido
+    // logado com a senha temporária). Nunca deve bloquear a resposta —
+    // a senha já foi trocada com sucesso quando chegamos aqui.
+    const { error: revokeError } = await supabaseAdmin.rpc('revoke_user_sessions', {
+      p_user_id: caller.user.id,
+    });
+    if (revokeError) {
+      logOperationalEvent('warn', 'first_login_session_revocation_failed', {
+        operation: 'complete-first-login',
+      });
+    }
+
     return jsonResponse({ ok: true, changed: true });
-  } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : 'Erro inesperado.' }, 500);
+  } catch {
+    return jsonResponse({ error: 'Erro inesperado. Tente novamente.' }, 500);
   }
 });

@@ -6,6 +6,7 @@ import {
   getCallerProfile,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import {
   createCorrelationId,
   logOperationalEvent,
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 4_096).catch(() => ({}));
     const patientId = cleanText(body.patientId);
     const fromDiscipline = cleanText(body.fromDiscipline);
     const toDiscipline = cleanText(body.toDiscipline);

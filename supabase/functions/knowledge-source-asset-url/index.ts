@@ -23,6 +23,7 @@ import {
   writeAuditLog,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import {
   createCorrelationId,
   logOperationalEvent,
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 2_048).catch(() => ({}));
     const assetKey = String(body?.assetKey || '').trim();
     if (!isSafeAssetPath(assetKey)) {
       return jsonResponse({ error: 'Fonte visual inválida.' }, 400);

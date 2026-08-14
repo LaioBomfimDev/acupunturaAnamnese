@@ -22,12 +22,19 @@ function escapeHtml(value) {
   return String(value || '').replace(/[&<>]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char]));
 }
 
+// Remove scripts, atributos de evento e URLs javascript: do HTML editado
+// antes de renderizar/persistir (conteúdo vem do próprio profissional via
+// contentEditable, mas é persistido na sessão). Mesmo padrão de Relatorio.jsx.
 function sanitizeHtml(html) {
   const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
   doc.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(element => element.remove());
   doc.querySelectorAll('*').forEach(element => {
     [...element.attributes].forEach(attribute => {
-      if (attribute.name.toLowerCase().startsWith('on')) element.removeAttribute(attribute.name);
+      const name = attribute.name.toLowerCase();
+      const isEventHandler = name.startsWith('on');
+      const isScriptUrl = ['href', 'src', 'xlink:href'].includes(name)
+        && /^\s*javascript:/i.test(attribute.value);
+      if (isEventHandler || isScriptUrl) element.removeAttribute(attribute.name);
     });
   });
   return doc.body.firstChild?.innerHTML || '';

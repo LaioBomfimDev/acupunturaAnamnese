@@ -55,7 +55,8 @@ export async function listPatients() {
     .select(PATIENT_SELECT_COLUMNS)
     .eq('therapist_id', user.id)
     .is('archived_at', null)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(2000);
 
   if (error) throw error;
   return data || [];

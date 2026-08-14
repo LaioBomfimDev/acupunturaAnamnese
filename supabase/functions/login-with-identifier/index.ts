@@ -6,10 +6,12 @@ import {
   normalizeUsername,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 
 const GENERIC_LOGIN_ERROR = 'Usuário ou senha incorretos.';
 const MAX_IDENTIFIER_LENGTH = 320;
 const MAX_PASSWORD_LENGTH = 1024;
+const TEMPORARY_PASSWORD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function deriveOpaqueRateLimitSubject(
   namespace: string,
@@ -51,7 +53,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 2_048).catch(() => ({}));
     const identifier = String(body.identifier || '').trim();
     const password = String(body.password || '');
 
@@ -89,7 +91,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id,email,is_active')
+      .select('id,email,is_active,must_change_password,temporary_password_set_at')
       .eq(lookupColumn, lookupValue)
       .maybeSingle();
 
@@ -109,17 +111,38 @@ Deno.serve(async (req) => {
     });
     if (accountRateLimitResponse) return accountRateLimitResponse;
 
-    if (!profile?.id || !profile.email || profile.is_active !== true) {
-      return jsonResponse({ error: GENERIC_LOGIN_ERROR }, 401);
-    }
+    // Sempre chama signInWithPassword, mesmo para conta inexistente/inativa
+    // (com um e-mail-isca em domínio reservado a inválido, RFC 2606). Um
+    // identificador ruim retornar imediatamente, sem essa chamada, criava
+    // um oráculo de tempo: resposta rápida = conta não existe/suspensa,
+    // resposta lenta = conta existe e a senha está errada. Chamando sempre,
+    // as duas trilhas fazem o mesmo trabalho de rede antes de decidir.
+    const profileValid = Boolean(profile?.id && profile.email && profile.is_active === true);
+    const authEmail = profileValid
+      ? profile.email
+      : `no-such-account+${accountSubjectId}@login-decoy.invalid`;
 
     const { data, error } = await supabaseAuth.auth.signInWithPassword({
-      email: profile.email,
+      email: authEmail,
       password,
     });
 
-    if (error || !data.session || !data.user) {
+    if (!profileValid || error || !data.session || !data.user) {
       return jsonResponse({ error: GENERIC_LOGIN_ERROR }, 401);
+    }
+
+    // Senha temporária vencida: a credencial é válida, mas parada demais
+    // sem troca. Revoga a sessão que acabou de ser criada e recusa —
+    // só chega aqui quem já provou conhecer a senha certa, então não abre
+    // canal novo de enumeração de conta.
+    if (profile.must_change_password === true && profile.temporary_password_set_at) {
+      const issuedAt = new Date(profile.temporary_password_set_at).getTime();
+      if (Number.isFinite(issuedAt) && Date.now() - issuedAt > TEMPORARY_PASSWORD_TTL_MS) {
+        await supabaseAdmin.auth.admin.signOut(data.session.access_token, 'global').catch(() => undefined);
+        return jsonResponse({
+          error: 'Sua senha temporária expirou. Peça ao SuperAdm uma nova redefinição.',
+        }, 401);
+      }
     }
 
     return jsonResponse({

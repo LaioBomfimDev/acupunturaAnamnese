@@ -19,6 +19,7 @@ let shareDialog;
 let recordSharesService;
 let shareEdge;
 let resetPasswordEdge;
+let completeFirstLoginEdge;
 
 before(async () => {
   [
@@ -32,6 +33,7 @@ before(async () => {
     recordSharesService,
     shareEdge,
     resetPasswordEdge,
+    completeFirstLoginEdge,
   ] = await Promise.all([
     readFile(
       path.resolve(
@@ -79,6 +81,13 @@ before(async () => {
       path.resolve(
         frontendRoot,
         '../supabase/functions/super-admin-reset-password/index.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.resolve(
+        frontendRoot,
+        '../supabase/functions/complete-first-login/index.ts',
       ),
       'utf8',
     ),
@@ -254,6 +263,30 @@ test('reset de senha temporária fecha o gate antes de alterar Auth', () => {
   assert.match(resetPasswordEdge, /validateStrongPassword/);
   assert.ok(gateUpdateAt >= 0 && authUpdateAt > gateUpdateAt);
   assert.doesNotMatch(resetPasswordEdge, /authError\.message|profileError\.message/);
+});
+
+test('primeiro acesso não vaza mensagem interna do Postgres/GoTrue ao cliente', () => {
+  assert.doesNotMatch(
+    completeFirstLoginEdge,
+    /updateAuthError\.message|profileError\.message/,
+    'complete-first-login precisa devolver mensagem genérica, não error.message bruto',
+  );
+  assert.doesNotMatch(
+    completeFirstLoginEdge,
+    /error instanceof Error \? error\.message/,
+    'catch geral não pode repassar error.message ao cliente',
+  );
+});
+
+test('troca/reset de senha revoga sessões antigas do titular', () => {
+  assert.match(
+    completeFirstLoginEdge,
+    /rpc\('revoke_user_sessions',\s*\{[\s\S]*?p_user_id:\s*caller\.user\.id[\s\S]*?\}\)/,
+  );
+  assert.match(
+    resetPasswordEdge,
+    /rpc\('revoke_user_sessions',\s*\{[\s\S]*?p_user_id:\s*profileId[\s\S]*?\}\)/,
+  );
 });
 
 test('decisão de conhecimento exige nota e rejeição também é transacional', () => {

@@ -95,7 +95,8 @@ export async function listClinicPatients() {
     .from('patients')
     .select('id,name,phone,age,birth_date,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
     .is('archived_at', null)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(2000);
 
   if (error) {
     if (isMissingEnrollmentSchemaError(error)) throw new Error(ENROLLMENT_MIGRATION_HINT);

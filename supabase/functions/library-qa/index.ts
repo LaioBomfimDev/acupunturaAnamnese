@@ -18,6 +18,7 @@ import {
   getCallerProfile,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
@@ -98,7 +99,7 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 4_096).catch(() => ({}));
     if (isDeployHealthSmoke(body)) {
       if (!assertSuperAdmin(caller.profile)) {
         return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);

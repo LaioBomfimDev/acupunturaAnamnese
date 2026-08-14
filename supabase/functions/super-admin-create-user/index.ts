@@ -11,6 +11,7 @@ import {
   writeAuditLog,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import {
   createCorrelationId,
   logOperationalEvent,
@@ -81,7 +82,7 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 4_096).catch(() => ({}));
     const email = normalizeEmail(body.email);
     const username = normalizeUsername(body.username, email);
     const fullName = cleanText(body.fullName);
@@ -203,6 +204,7 @@ Deno.serve(async (req) => {
       is_active: true,
       must_change_password: true,
       password_changed_at: null,
+      temporary_password_set_at: new Date().toISOString(),
       created_by: caller.user.id,
     };
 

@@ -8,6 +8,7 @@ import {
   writeAuditLog,
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
+import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 
 Deno.serve(async (req) => {
   const cors = createCorsContext(req);
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readClinicalJsonBody(req, 2_048).catch(() => ({}));
     const profileId = String(body.profileId || '').trim();
     const temporaryPassword = String(body.temporaryPassword || '');
     const confirmTemporaryPassword = String(body.confirmTemporaryPassword || '');
@@ -94,6 +95,7 @@ Deno.serve(async (req) => {
       .update({
         must_change_password: true,
         password_changed_at: null,
+        temporary_password_set_at: new Date().toISOString(),
       })
       .eq('id', profileId);
 
@@ -120,6 +122,11 @@ Deno.serve(async (req) => {
         username: targetProfile.username,
       },
     });
+
+    // Best-effort: um reset administrativo é justamente o cenário em que
+    // uma sessão antiga (ex.: credencial comprometida) precisa morrer.
+    // Nunca deve bloquear a resposta — a credencial já foi trocada.
+    await supabaseAdmin.rpc('revoke_user_sessions', { p_user_id: profileId });
 
     return jsonResponse({ ok: true });
   } catch {

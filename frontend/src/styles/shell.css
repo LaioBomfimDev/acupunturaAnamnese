@@ -1,0 +1,218 @@
+/* ============================================================
+   REABILITY ONE — shell responsivo
+   Fase 1 de docs/plano-agenda-gestao-clinica.md
+
+   Por que este arquivo é separado do App.css: o App.css tem ~10 mil
+   linhas e assume desktop em toda parte (.sidebar fixa de 268px,
+   .main em calc(100% - 268px)). Reescrever aquilo agora seria um diff
+   grande e arriscado sem entregar nada novo. Aqui ficam apenas as
+   regras que transformam a moldura em algo usável no telefone, e elas
+   entram DEPOIS na cascata — o desktop continua byte a byte igual.
+
+   Os breakpoints são os canônicos declarados em tokens.css:
+   1024px (a sidebar vira gaveta) e 768px (barra inferior aparece).
+   ============================================================ */
+
+/* Controles que só existem no telefone/tablet: ficam escondidos por
+   padrão para o desktop não mudar em nada. */
+.shell-menu,
+.shell-scrim,
+.shell-tabs,
+.shell-drawer-close {
+  display: none;
+}
+
+/* 100dvh acompanha a barra do navegador móvel ao aparecer e sumir;
+   100vh (do App.css) mede a tela inteira e deixa um pedaço da
+   interface embaixo da barra. */
+@supports (height: 100dvh) {
+  .app {
+    min-height: 100dvh;
+  }
+}
+
+/* ============================================================
+   ≤ 1024px — a sidebar vira gaveta
+   ============================================================ */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: min(300px, 86vw);
+    transform: translateX(-100%);
+    transition: transform var(--r1-dur) var(--r1-ease);
+    z-index: 120;
+    padding-top: calc(24px + var(--r1-safe-top));
+    will-change: transform;
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
+    /* Espaço para o botão de menu flutuante não cobrir o título. */
+    padding: calc(16px + var(--r1-safe-top)) 16px 28px;
+  }
+
+  .shell-menu {
+    position: fixed;
+    top: calc(10px + var(--r1-safe-top));
+    left: 10px;
+    z-index: 110;
+    display: inline-grid;
+    place-items: center;
+    width: var(--r1-tap);
+    height: var(--r1-tap);
+    border: 1px solid var(--r1-border-subtle);
+    border-radius: var(--r1-radius-sm);
+    background: var(--r1-surface);
+    color: var(--r1-text);
+    box-shadow: var(--r1-shadow-md);
+    cursor: pointer;
+  }
+
+  .shell-menu:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--r1-focus-ring);
+  }
+
+  .shell-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 115;
+    display: block;
+    background: var(--r1-scrim);
+  }
+
+  .shell-drawer-close {
+    position: absolute;
+    top: calc(10px + var(--r1-safe-top));
+    right: 10px;
+    display: inline-grid;
+    place-items: center;
+    width: var(--r1-tap);
+    height: var(--r1-tap);
+    border: 1px solid var(--r1-border-inverse);
+    border-radius: var(--r1-radius-sm);
+    background: transparent;
+    color: #ffffff;
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  /* O topo da gaveta precisa de espaço para o ✕ não cobrir a marca. */
+  .sidebar .logo {
+    padding-right: 52px;
+  }
+
+  /* O trilho do assistente empilha abaixo do conteúdo em vez de
+     espremer as duas colunas em 700px de largura. O App.css já fazia
+     isto a partir de 900px; aqui a faixa começa em 1024, junto com a
+     gaveta, para não existir um degrau de 901–1024px com sidebar
+     escondida e layout ainda de duas colunas. */
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assistant-rail {
+    position: static;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* ============================================================
+   ≤ 768px — barra inferior
+   ============================================================ */
+@media (max-width: 768px) {
+  .shell-tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 105;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: stretch;
+    border-top: 1px solid var(--r1-border-subtle);
+    background: var(--r1-surface);
+    padding-bottom: var(--r1-safe-bottom);
+    box-shadow: 0 -2px 14px rgba(4, 18, 31, 0.10);
+  }
+
+  .shell-tab {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    min-height: var(--r1-bottom-nav-h);
+    padding: 6px 4px;
+    border: 0;
+    background: transparent;
+    color: var(--r1-text-muted);
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .shell-tab span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Marca do destino atual: filete no topo do item, além da cor. Cor
+     sozinha não distingue para quem tem daltonismo. */
+  .shell-tab--active {
+    color: var(--r1-text);
+    box-shadow: inset 0 3px 0 var(--r1-accent);
+  }
+
+  .shell-tab:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  .shell-tab:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--r1-accent);
+  }
+
+  /* O conteúdo termina acima da barra, senão o último campo do
+     formulário fica permanentemente escondido atrás dela. */
+  .main {
+    padding-bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom) + 18px);
+  }
+
+  .app-topbar {
+    flex-wrap: wrap;
+    /* Deixa passar o botão de menu flutuante no canto. */
+    padding-left: calc(var(--r1-tap) + 8px);
+  }
+
+  .app-topbar h1 {
+    font-size: 23px;
+  }
+
+  .mini-clock {
+    display: none;
+  }
+}
+
+/* Nada disso aparece no papel. */
+@media print {
+  .shell-menu,
+  .shell-scrim,
+  .shell-tabs,
+  .shell-drawer-close {
+    display: none !important;
+  }
+}

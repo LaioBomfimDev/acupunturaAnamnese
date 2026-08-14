@@ -1,0 +1,21 @@
+{
+  "name": "Reability One",
+  "short_name": "Reability",
+  "description": "Gestão clínica multidisciplinar: agenda, pacientes e prontuário.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f1e8",
+  "theme_color": "#061a31",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

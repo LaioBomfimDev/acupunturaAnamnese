@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import '../styles/shell.css';
+
 const NAV_GROUPS = [
   { title: null, tabs: ['Tela inicial', 'Painel'] },
   { title: 'Avaliação', tabs: ['Anamnese', 'Língua', 'Pulso', 'Reabilitação'] },
@@ -271,6 +274,22 @@ function NavIcon({ name }) {
   );
 }
 
+/**
+ * Destinos da barra inferior (telefone). Três, não cinco: com quatro ou
+ * mais o alvo cai abaixo dos 44px em 375px de largura, e o quarto lugar
+ * é do botão de menu, que abre a navegação inteira.
+ *
+ * A ordem preferida existe para a barra não virar "os três primeiros da
+ * sidebar" — no telefone o que importa é começar, ver o paciente e
+ * registrar a evolução.
+ */
+function pickBottomTabs(navGroups, patientTab) {
+  const all = navGroups.flatMap(group => group.tabs);
+  const preferred = ['Tela inicial', patientTab, 'Evolução'].filter(tab => all.includes(tab));
+  const rest = all.filter(tab => !preferred.includes(tab));
+  return [...preferred, ...rest].slice(0, 3);
+}
+
 function getInitials(name) {
   return String(name || '?')
     .trim()
@@ -300,8 +319,76 @@ export function Sidebar({
   patientTab = 'Painel',
   tabsWithoutPatient = ['Tela inicial', 'Biblioteca', 'Documentos'],
 }) {
+  // A gaveta mora aqui, e não no App, porque quatro shells diferentes
+  // (MTC, Psicologia, disciplina genérica e curadoria) montam esta mesma
+  // sidebar. Colocar o botão em um deles deixaria os outros três sem
+  // navegação no telefone.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Enquanto a gaveta está aberta, a página atrás não rola: rolar o
+  // conteúdo escondido é o defeito clássico de menu off-canvas.
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function onKeyDown(event) {
+      if (event.key === 'Escape') setDrawerOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [drawerOpen]);
+
+  function selectTab(tab) {
+    onTabChange(tab);
+    setDrawerOpen(false);
+  }
+
+  function selectSuperAdminSection(id) {
+    onSuperAdminSectionChange?.(id);
+    setDrawerOpen(false);
+  }
+
+  const bottomTabs = isSuperAdmin
+    ? SUPER_ADMIN_SECTIONS.slice(0, 3).map(section => section.id)
+    : pickBottomTabs(navGroups, patientTab);
+
   return (
-    <aside className="sidebar">
+    <>
+      <button
+        type="button"
+        className="shell-menu no-print"
+        onClick={() => setDrawerOpen(true)}
+        aria-label="Abrir menu de navegação"
+        aria-expanded={drawerOpen}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+
+      {drawerOpen && (
+        <div
+          className="shell-scrim no-print"
+          role="presentation"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      <aside className={`sidebar${drawerOpen ? ' sidebar--open' : ''}`}>
+        <button
+          type="button"
+          className="shell-drawer-close no-print"
+          onClick={() => setDrawerOpen(false)}
+          aria-label="Fechar menu"
+        >
+          ✕
+        </button>
       <div className="logo">
         <div>
           <h1>Reability</h1>
@@ -318,7 +405,7 @@ export function Sidebar({
       </div>
 
       {!isSuperAdmin && onOpenCuration && (
-        <button type="button" className="sidebar-switch-area" onClick={onOpenCuration}>
+        <button type="button" className="sidebar-switch-area" onClick={() => { setDrawerOpen(false); onOpenCuration(); }}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 4h16v12H8l-4 4z" />
             <path d="M9 9h8M9 12h5" />
@@ -328,7 +415,7 @@ export function Sidebar({
       )}
 
       {!isSuperAdmin && onSwitchDiscipline && (
-        <button type="button" className="sidebar-switch-area" onClick={onSwitchDiscipline}>
+        <button type="button" className="sidebar-switch-area" onClick={() => { setDrawerOpen(false); onSwitchDiscipline(); }}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M8 3 4 7l4 4" />
             <path d="M4 7h16" />
@@ -340,7 +427,7 @@ export function Sidebar({
       )}
 
       {!isSuperAdmin && selectedPatient ? (
-        <button className="sidebar-patient" onClick={() => onTabChange(patientTab)}>
+        <button className="sidebar-patient" onClick={() => selectTab(patientTab)}>
           <span className="sidebar-patient-avatar">{getInitials(selectedPatient.name)}</span>
           <span className="sidebar-patient-main">
             <b>{selectedPatient.name}</b>
@@ -366,7 +453,7 @@ export function Sidebar({
               <button
                 key={section.id}
                 className={superAdminSection === section.id ? 'active' : ''}
-                onClick={() => onSuperAdminSectionChange?.(section.id)}
+                onClick={() => selectSuperAdminSection(section.id)}
                 aria-current={superAdminSection === section.id ? 'page' : undefined}
               >
                 <NavIcon name={section.id} />
@@ -386,7 +473,7 @@ export function Sidebar({
                 <button
                   key={tab}
                   className={`${activeTab === tab ? 'active' : ''}${disabled ? ' disabled' : ''}`}
-                  onClick={() => onTabChange(tab)}
+                  onClick={() => selectTab(tab)}
                   disabled={disabled}
                   aria-current={activeTab === tab ? 'page' : undefined}
                 >
@@ -398,6 +485,47 @@ export function Sidebar({
           </div>
         ))}
       </nav>
-    </aside>
+      </aside>
+
+      {/* Barra inferior: só no telefone. Três destinos + menu, cada um
+          com 44px de alvo. Fica presa ao rodapé respeitando a faixa do
+          gesto de voltar (safe-area) dos aparelhos sem botão físico. */}
+      <nav className="shell-tabs no-print" aria-label="Navegação principal">
+        {bottomTabs.map(tab => {
+          const section = isSuperAdmin
+            ? SUPER_ADMIN_SECTIONS.find(item => item.id === tab)
+            : null;
+          const label = section ? section.label : tab;
+          const current = isSuperAdmin ? superAdminSection === tab : activeTab === tab;
+          const disabled = !isSuperAdmin && !selectedPatient && !tabsWithoutPatient.includes(tab);
+
+          return (
+            <button
+              key={tab}
+              type="button"
+              className={`shell-tab${current ? ' shell-tab--active' : ''}`}
+              onClick={() => (isSuperAdmin ? selectSuperAdminSection(tab) : selectTab(tab))}
+              disabled={disabled}
+              aria-current={current ? 'page' : undefined}
+            >
+              <NavIcon name={tab} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+
+        <button
+          type="button"
+          className="shell-tab"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Abrir menu de navegação"
+        >
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+          <span>Menu</span>
+        </button>
+      </nav>
+    </>
   );
 }

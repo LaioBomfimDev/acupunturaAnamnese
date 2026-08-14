@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover deixa o app pintar sob o notch; o recuo volta
+         pelas safe-area-inset dos tokens, e não por margem chutada. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#061a31" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Reability" />
+    <!-- O manifest permite "Adicionar à tela de início" no iOS e Android.
+         Não há service worker de propósito: cache de bundle em sistema
+         clínico é fonte de tela velha, e offline entra na Fase 7 com
+         estratégia desenhada (docs/plano-agenda-gestao-clinica.md). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <title>Reability One</title>
   </head>
   <body>

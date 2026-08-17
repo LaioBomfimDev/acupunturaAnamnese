@@ -285,6 +285,94 @@ export async function updateAppointmentStatus(id, status, { reason = null, runti
 }
 
 /**
+ * Marca presença: paciente chegou na clínica.
+ *
+ * Grava o instante E move o status para 'ready'. O instante é o que o
+ * BI usa para medir espera; o status é o que a fila lê. Guardar só um
+ * dos dois deixaria a recepção sem o tempo ou o dashboard sem o dado.
+ *
+ * `undo` desfaz — recepção erra de linha, e sem desfazer a correção
+ * seria mudar o status na mão, deixando o carimbo de chegada mentindo.
+ */
+export async function checkInAppointment(id, { undo = false, at = null, runtime } = {}) {
+  if (!id) throw new Error('Agendamento não informado.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const patch = undo
+    ? { checked_in_at: null, status: 'scheduled' }
+    : { checked_in_at: (at ? new Date(at) : new Date()).toISOString(), status: 'ready' };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const list = getLocalAppointments();
+    const found = list.find(item => item.id === id);
+    if (!found) throw new Error('Agendamento não encontrado.');
+    Object.assign(found, patch, { updated_at: new Date().toISOString() });
+    saveLocalAppointments(list);
+    return found;
+  }
+
+  const { data, error } = await client.from('appointments')
+    .update(patch)
+    .eq('id', id)
+    .select(APPOINTMENT_COLUMNS)
+    .single();
+
+  if (error) {
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível registrar a chegada.');
+  }
+
+  return data;
+}
+
+/**
+ * Registra que o paciente confirmou a presença (telefone, WhatsApp).
+ *
+ * Não mexe no status: confirmar é sobre o contato, não sobre o
+ * atendimento. Um confirmado pode faltar, e um não confirmado pode
+ * aparecer — misturar os dois estragaria as duas informações.
+ */
+export async function confirmAppointment(id, { undo = false, at = null, runtime } = {}) {
+  if (!id) throw new Error('Agendamento não informado.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const patch = { confirmed_at: undo ? null : (at ? new Date(at) : new Date()).toISOString() };
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const list = getLocalAppointments();
+    const found = list.find(item => item.id === id);
+    if (!found) throw new Error('Agendamento não encontrado.');
+    Object.assign(found, patch, { updated_at: new Date().toISOString() });
+    saveLocalAppointments(list);
+    return found;
+  }
+
+  const { data, error } = await client.from('appointments')
+    .update(patch)
+    .eq('id', id)
+    .select(APPOINTMENT_COLUMNS)
+    .single();
+
+  if (error) {
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível registrar a confirmação.');
+  }
+
+  return data;
+}
+
+/**
  * Cria uma série (pacote de sessões) num grupo só.
  *
  * PARCIAL É DE PROPÓSITO: se a terceira sessão bate com um atendimento

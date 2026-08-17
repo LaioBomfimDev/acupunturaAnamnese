@@ -1120,6 +1120,194 @@
 }
 
 /* ============================================================
+   Painel "Hoje" — fila da recepção
+   ============================================================ */
+
+.agh {
+  display: grid;
+  gap: 14px;
+}
+
+.agh-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agh-stat {
+  padding: 5px 11px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  font-size: 12px;
+  color: var(--r1-text-muted);
+}
+
+.agh-stat b {
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.agh-stat--wait {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+  color: var(--r1-text);
+}
+
+.agh-stat--late {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.agh-block-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.agh-block-title span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.agh-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.agh-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agh-card {
+  display: grid;
+  gap: 8px;
+  padding: 11px 13px;
+  border: 1px solid var(--r1-border-subtle);
+  border-left: 3px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+}
+
+/* Quem já está na sala é o que a recepção precisa ver primeiro: é o
+   único cartão com a cor de destaque. */
+.agh-card--waiting {
+  border-left-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.agh-card--late {
+  border-left-color: var(--r1-warning);
+}
+
+.agh-card--done {
+  border-left-color: var(--r1-text-subtle);
+  background: var(--r1-surface-sunken);
+  opacity: 0.82;
+}
+
+.agh-open {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agh-open:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agh-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.agh-hour {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.agh-wait,
+.agh-late,
+.agh-confirmed,
+.agh-done {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agh-wait { color: var(--r1-accent-strong); }
+.agh-late { color: var(--r1-warning); }
+.agh-confirmed { color: var(--r1-success); }
+.agh-done { color: var(--r1-text-muted); }
+
+.agh-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.agh-meta {
+  font-size: 11.5px;
+  color: var(--r1-text-muted);
+  text-transform: capitalize;
+}
+
+.agh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agh-actions .ag-btn {
+  flex: 1 1 auto;
+  min-height: var(--r1-tap);
+}
+
+/* ============================================================
+   Cadastro rápido de paciente
+   ============================================================ */
+
+.ag-quick {
+  display: grid;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--r1-accent);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+/* ============================================================
    Pacote de sessões
    ============================================================ */
 

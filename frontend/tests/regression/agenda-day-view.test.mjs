@@ -228,3 +228,94 @@ test('a conferência do pacote distingue "não vai ser criada" de "vai, marcada"
   assert.match(texto, /1 fora do padrão/);
   assert.match(texto, /1 em conflito/);
 });
+
+// ---------- painel Hoje (recepção) ----------
+
+test('a fila da recepção só oferece "Iniciar atendimento" a quem pode abrir o prontuário', async () => {
+  const { TodayPanel } = await server.ssrLoadModule('/src/components/panels/agenda/TodayPanel.jsx');
+  const queueUtils = await server.ssrLoadModule('/src/utils/agendaToday.js');
+
+  const agora = new Date(2026, 7, 12, 10, 0);
+  const naSala = {
+    id: 'a1',
+    kind: 'appointment',
+    status: 'ready',
+    discipline: 'acupuntura',
+    patient_id: 'p1',
+    professional_id: 'prof-1',
+    starts_at: new Date(2026, 7, 12, 9, 0).toISOString(),
+    ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
+    checked_in_at: new Date(2026, 7, 12, 8, 45).toISOString(),
+    confirmed_at: null,
+  };
+
+  function render(canStart) {
+    return renderToStaticMarkup(React.createElement(TodayPanel, {
+      queue: queueUtils.buildTodayQueue({ appointments: [naSala], now: agora }),
+      isToday: true,
+      dateLabel: '12 de agosto',
+      patientName: id => (id === 'p1' ? 'Ana Souza' : 'Paciente'),
+      professionalName: () => 'você',
+      saving: false,
+      onOpen: () => {},
+      onCheckIn: () => {},
+      onUndoCheckIn: () => {},
+      onConfirm: () => {},
+      onStatus: () => {},
+      onStart: () => {},
+      canStart,
+    }));
+  }
+
+  const comAcesso = render(() => true);
+  assert.match(comAcesso, /Iniciar atendimento/);
+  assert.match(comAcesso, /esperando há 1 h 15 min/);
+  assert.match(comAcesso, /Ana Souza/);
+
+  const semAcesso = render(() => false);
+  assert.doesNotMatch(semAcesso, /Iniciar atendimento/,
+    'a recepção marca para todo mundo, mas não abre o prontuário de ninguém');
+  // A ação clínica some; a operacional continua.
+  assert.match(semAcesso, /Atendeu/);
+});
+
+test('a fila mostra atraso e falta sem oferecer ação clínica', async () => {
+  const { TodayPanel } = await server.ssrLoadModule('/src/components/panels/agenda/TodayPanel.jsx');
+  const queueUtils = await server.ssrLoadModule('/src/utils/agendaToday.js');
+
+  const agora = new Date(2026, 7, 12, 10, 0);
+  const atrasado = {
+    id: 'a2',
+    kind: 'appointment',
+    status: 'scheduled',
+    discipline: 'acupuntura',
+    patient_id: 'p2',
+    professional_id: 'prof-1',
+    starts_at: new Date(2026, 7, 12, 9, 30).toISOString(),
+    ends_at: new Date(2026, 7, 12, 10, 30).toISOString(),
+    checked_in_at: null,
+    confirmed_at: null,
+  };
+
+  const html = renderToStaticMarkup(React.createElement(TodayPanel, {
+    queue: queueUtils.buildTodayQueue({ appointments: [atrasado], now: agora }),
+    isToday: true,
+    dateLabel: '12 de agosto',
+    patientName: () => 'Bruno Lima',
+    professionalName: () => 'você',
+    saving: false,
+    onOpen: () => {},
+    onCheckIn: () => {},
+    onUndoCheckIn: () => {},
+    onConfirm: () => {},
+    onStatus: () => {},
+    onStart: () => {},
+    canStart: () => true,
+  }));
+
+  assert.match(html, /30 min de atraso/);
+  assert.match(html, /Chegou/);
+  assert.match(html, /Não veio/);
+  assert.doesNotMatch(html, /Iniciar atendimento/,
+    'quem não chegou não tem atendimento para iniciar');
+});

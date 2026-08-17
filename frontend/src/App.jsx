@@ -299,7 +299,17 @@ export default function App() {
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
-              <Agenda profile={profile} />
+              {/* Ponte agenda → prontuário: a Agenda já selecionou o
+                  paciente no contexto; aqui só se troca de tela para a
+                  disciplina do atendimento. Sem isto, o profissional
+                  saía da agenda e reescolhia o paciente na sidebar. */}
+              <Agenda
+                profile={profile}
+                onStartAppointment={({ discipline }) => {
+                  setShowHubAgenda(false);
+                  handleSelectDiscipline(discipline);
+                }}
+              />
             </Suspense>
           </main>
         </div>

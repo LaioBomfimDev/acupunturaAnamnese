@@ -16,9 +16,12 @@ import {
   describeSeries,
   summarizeSeries,
 } from '../../utils/agendaRecurrence';
+import { buildTodayQueue } from '../../utils/agendaToday';
 import {
   APPOINTMENT_TYPES,
   cancelSeriesFrom,
+  checkInAppointment,
+  confirmAppointment,
   createAppointment,
   createSeries,
   listAppointments,
@@ -33,6 +36,8 @@ import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
+import TodayPanel from './agenda/TodayPanel';
+import { usePatient } from '../../hooks/PatientContext';
 import '../../styles/agenda.css';
 
 // Estados oferecidos como ação rápida. 'scheduled' fica de fora porque é
@@ -42,6 +47,7 @@ const QUICK_STATUSES = APPOINTMENT_STATUSES.filter(item => item.id !== 'schedule
 const ALL_PROFESSIONALS = 'all';
 
 const VIEWS = [
+  { id: 'hoje', label: 'Hoje' },
   { id: 'dia', label: 'Dia' },
   { id: 'semana', label: 'Semana' },
   { id: 'mes', label: 'Mês' },
@@ -73,20 +79,19 @@ function addMinutes(date, minutes) {
   return new Date(date.getTime() + minutes * 60000);
 }
 
-/** No telefone a visão que serve é a do dia; no desktop, a da semana. */
-function defaultView() {
-  if (typeof window === 'undefined' || !window.matchMedia) return 'dia';
-  return window.matchMedia('(max-width: 900px)').matches ? 'dia' : 'semana';
-}
+// A agenda abre em "Hoje": a primeira pergunta de qualquer clínica é o
+// que está acontecendo agora, não como está o mês. Marcar continua a um
+// toque, porque o formulário fica no painel lateral em qualquer visão.
+const DEFAULT_VIEW = 'hoje';
 
-export function Agenda({ profile }) {
+export function Agenda({ profile, onStartAppointment = null }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => ({
     year: today.getFullYear(),
     month: today.getMonth() + 1,
   }));
   const [selectedKey, setSelectedKey] = useState(() => toDayKey(today));
-  const [view, setView] = useState(defaultView);
+  const [view, setView] = useState(DEFAULT_VIEW);
   const [showSchedule, setShowSchedule] = useState(false);
 
   const [appointments, setAppointments] = useState([]);
@@ -107,6 +112,19 @@ export function Agenda({ profile }) {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   // Agendamento em modo "mover": o próximo toque num horário remarca.
   const [moving, setMoving] = useState(null);
+
+  // O painel da recepção mostra "esperando há 12 min"; sem um relógio
+  // que anda, esse número congela no instante em que a tela abriu e
+  // passa a mentir logo na primeira meia hora de expediente.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // A ponte agenda → prontuário e o cadastro rápido de paciente passam
+  // pelo contexto: é ele que o resto do sistema lê.
+  const { selectPatient, createPatient: createPatientInContext } = usePatient();
 
   const availableDisciplines = useMemo(() => {
     const allowed = Array.isArray(profile?.disciplines) ? profile.disciplines : [];
@@ -133,6 +151,11 @@ export function Agenda({ profile }) {
   // Conferência do pacote antes de gravar: dez agendamentos de uma vez
   // é a ação mais cara de desfazer na agenda.
   const [seriesPreview, setSeriesPreview] = useState(null);
+
+  // Cadastro rápido de paciente, dentro do próprio formulário.
+  const [quickPatient, setQuickPatient] = useState({
+    open: false, name: '', phone: '', birthDate: '',
+  });
 
   // Confirmação dupla de horário atípico: enquanto isto tiver conteúdo,
   // nada é gravado — a tela mostra o que foge do normal e espera um
@@ -236,6 +259,11 @@ export function Agenda({ profile }) {
   const week = useMemo(
     () => buildWeekStrip(selectedDate || today, { today, counts: byDay }),
     [selectedDate, today, byDay],
+  );
+
+  const todayQueue = useMemo(
+    () => buildTodayQueue({ appointments: visibleAppointments, now, dayKey: selectedKey }),
+    [visibleAppointments, now, selectedKey],
   );
 
   const timeline = useMemo(() => buildDayTimeline({
@@ -598,6 +626,102 @@ export function Agenda({ profile }) {
     setSelectedAppointment(appointment);
   }
 
+  /** Aplica um patch vindo do service ao agendamento na lista e no detalhe. */
+  function applyUpdate(updated) {
+    setAppointments(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+    setSelectedAppointment(prev => (prev?.id === updated.id ? updated : prev));
+  }
+
+  async function handleCheckIn(appointment, undo = false) {
+    setError('');
+    setSaving(true);
+    try {
+      applyUpdate(await checkInAppointment(appointment.id, { undo }));
+    } catch (err) {
+      setError(err.message || 'Não foi possível registrar a chegada.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirm(appointment, undo = false) {
+    setError('');
+    setSaving(true);
+    try {
+      applyUpdate(await confirmAppointment(appointment.id, { undo }));
+    } catch (err) {
+      setError(err.message || 'Não foi possível registrar a confirmação.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Quem pode abrir o prontuário a partir da agenda.
+   *
+   * O corte é duplo de propósito: precisa ser a agenda da própria pessoa
+   * E uma disciplina que o perfil dela libera. A recepcionista marca
+   * para todo mundo, mas não entra no prontuário de ninguém — e a RLS
+   * recusaria de qualquer forma; barrar aqui evita oferecer um botão
+   * que só daria erro.
+   */
+  function canStart(appointment) {
+    if (!onStartAppointment || appointment.kind === 'block') return false;
+    if (appointment.professional_id !== profile?.id) return false;
+
+    const liberadas = Array.isArray(profile?.disciplines) ? profile.disciplines : [];
+    if (!liberadas.includes(appointment.discipline)) return false;
+
+    return patients.some(item => item.id === appointment.patient_id);
+  }
+
+  function startAppointment(appointment) {
+    const patient = patients.find(item => item.id === appointment.patient_id);
+    if (!patient) {
+      setError('Paciente não encontrado na instituição.');
+      return;
+    }
+    // A seleção mora aqui porque é aqui que o objeto do paciente existe;
+    // ao App cabe só trocar de tela.
+    selectPatient(patient);
+    onStartAppointment({ patient, discipline: appointment.discipline });
+  }
+
+  /**
+   * Cadastro rápido no ato de agendar. Paciente novo chega por telefone
+   * o tempo todo; sem isso a recepção precisa sair da agenda, cadastrar
+   * e voltar — e no meio do caminho perde o horário que estava segurando.
+   *
+   * A matrícula inicial usa a disciplina DO AGENDAMENTO, não um valor
+   * fixo: é ela que decide se o profissional vai enxergar o paciente
+   * (política patients_select_clinic_discipline).
+   */
+  async function handleQuickCreatePatient(event) {
+    event.preventDefault();
+    setError('');
+
+    const nome = quickPatient.name.trim();
+    if (!nome) {
+      setError('Informe o nome do paciente.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const created = await createPatientInContext(
+        { name: nome, phone: quickPatient.phone.trim() || null, birthDate: quickPatient.birthDate || null },
+        disciplineValue,
+      );
+      setPatients(prev => [{ ...created, enrollments: [] }, ...prev]);
+      setForm(prev => ({ ...prev, patientId: created.id }));
+      setQuickPatient({ open: false, name: '', phone: '', birthDate: '' });
+    } catch (err) {
+      setError(err.message || 'Não foi possível cadastrar o paciente.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const isBlock = form.kind === 'block';
 
   // ---------- jornada ----------
@@ -623,6 +747,8 @@ export function Agenda({ profile }) {
 
   const headerLabel = view === 'mes'
     ? `${MONTH_LABELS[cursor.month - 1]} ${cursor.year}`
+    : view === 'hoje' && selectedKey === toDayKey(today)
+    ? 'Hoje na clínica'
     : selectedDate?.toLocaleDateString('pt-BR', {
       weekday: 'long', day: '2-digit', month: 'long',
     }) || '';
@@ -637,6 +763,7 @@ export function Agenda({ profile }) {
               type="button"
               className="ag-btn"
               onClick={() => (view === 'mes' ? shiftMonth(-1) : shiftDay(view === 'semana' ? -7 : -1))}
+              disabled={saving}
               aria-label={view === 'mes' ? 'Mês anterior' : 'Anterior'}
             >←</button>
             <button type="button" className="ag-btn" onClick={goToday}>Hoje</button>
@@ -713,6 +840,25 @@ export function Agenda({ profile }) {
               </button>
             </div>
           </div>
+        )}
+
+        {view === 'hoje' && (
+          <TodayPanel
+            queue={todayQueue}
+            isToday={selectedKey === toDayKey(today)}
+            dateLabel={selectedDate?.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }) || ''}
+            patientName={patientName}
+            professionalName={professionalName}
+            showProfessional={showProfessional}
+            saving={saving}
+            onOpen={openAppointment}
+            onCheckIn={appointment => handleCheckIn(appointment, false)}
+            onUndoCheckIn={appointment => handleCheckIn(appointment, true)}
+            onConfirm={handleConfirm}
+            onStatus={handleStatus}
+            onStart={startAppointment}
+            canStart={canStart}
+          />
         )}
 
         {view === 'dia' && (
@@ -1020,15 +1166,96 @@ export function Agenda({ profile }) {
                         className="ag-select"
                         value={form.patientId}
                         onChange={e => setForm(prev => ({ ...prev, patientId: e.target.value }))}
-                        disabled={saving || loading}
-                        required
+                        disabled={saving || loading || quickPatient.open}
+                        required={!quickPatient.open}
                       >
                         <option value="">Selecione…</option>
                         {patients.map(patient => (
                           <option key={patient.id} value={patient.id}>{patient.name}</option>
                         ))}
                       </select>
+
+                      {!quickPatient.open && (
+                        <button
+                          type="button"
+                          className="agd-linkbtn"
+                          onClick={() => setQuickPatient(prev => ({ ...prev, open: true }))}
+                        >
+                          Paciente novo? Cadastrar aqui
+                        </button>
+                      )}
                     </div>
+
+                    {/* Cadastro rápido. Paciente novo chega por telefone o
+                        tempo todo; sair da agenda para cadastrar faz perder
+                        o horário que estava sendo segurado. */}
+                    {quickPatient.open && (
+                      <div className="ag-quick">
+                        <p className="ag-form-title">Cadastrar paciente</p>
+
+                        <div className="ag-field">
+                          <label htmlFor="ag-qp-name">Nome</label>
+                          <input
+                            id="ag-qp-name"
+                            className="ag-input"
+                            type="text"
+                            value={quickPatient.name}
+                            onChange={e => setQuickPatient(prev => ({ ...prev, name: e.target.value }))}
+                            disabled={saving}
+                          />
+                        </div>
+
+                        <div className="ag-row">
+                          <div className="ag-field">
+                            <label htmlFor="ag-qp-phone">Telefone</label>
+                            <input
+                              id="ag-qp-phone"
+                              className="ag-input"
+                              type="tel"
+                              value={quickPatient.phone}
+                              onChange={e => setQuickPatient(prev => ({ ...prev, phone: e.target.value }))}
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="ag-field">
+                            <label htmlFor="ag-qp-birth">Nascimento</label>
+                            <input
+                              id="ag-qp-birth"
+                              className="ag-input"
+                              type="date"
+                              value={quickPatient.birthDate}
+                              onChange={e => setQuickPatient(prev => ({ ...prev, birthDate: e.target.value }))}
+                              disabled={saving}
+                            />
+                          </div>
+                        </div>
+
+                        <p className="ag-note">
+                          O cadastro entra na área <b>{availableDisciplines.find(item => item.id === disciplineValue)?.label || disciplineValue}</b>,
+                          que é a do agendamento — é ela que decide quem enxerga
+                          o paciente. O restante da ficha se completa na anamnese.
+                        </p>
+
+                        <div className="ag-warn-actions">
+                          <button
+                            type="button"
+                            className="ag-btn"
+                            onClick={() => setQuickPatient({ open: false, name: '', phone: '', birthDate: '' })}
+                            disabled={saving}
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            className="ag-btn ag-btn--primary"
+                            onClick={handleQuickCreatePatient}
+                            disabled={saving}
+                          >
+                            {saving ? 'Cadastrando…' : 'Cadastrar e selecionar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="ag-row">
                       <div className="ag-field">

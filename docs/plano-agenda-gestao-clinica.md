@@ -78,9 +78,14 @@ segundo por lotes.
 
 > **Estado em 2026-08-12.** Fases 0 e 1 completas: código na branch
 > `hardening-clinico` e as duas migrações **aplicadas e verificadas** no
-> Supabase. **Fase 2 completa** — visões Dia/Semana/Mês, tocar no
-> horário, remarcar, cadastro de jornada e pacote de sessões.
-> 549 testes verdes.
+> Supabase. **Fases 2 e 3 completas** — visões Hoje/Dia/Semana/Mês,
+> tocar no horário, remarcar, jornada, pacote de sessões, fila da
+> recepção com check-in e a ponte agenda→prontuário. 564 testes verdes.
+> A Fase 3 **não precisou de migração**: `checked_in_at` e `confirmed_at`
+> já tinham vindo em 20260810.
+>
+> Falta da Fase 3: **convênios**, que é módulo próprio (tabela com
+> vigência e valor por procedimento) e depende de decisões de cobrança.
 >
 > A tela nunca foi vista rodando com dados: fica atrás do login e não há
 > como autenticar em sessão de desenvolvimento. A visão Dia é renderizada
@@ -189,16 +194,28 @@ rolagem horizontal.
 
 ### Fase 3 — Recepção e o dia da clínica
 
-- **Painel "Hoje"** — a tela que fica aberta na recepção: fila do dia,
-  quem chegou, quem está em atendimento, próximos, atrasos.
-- **Check-in em um toque.**
-- **Ponte agenda → prontuário**: "Iniciar atendimento" no agendamento abre
-  o paciente já selecionado na disciplina certa. Hoje o profissional
-  precisa reescolher o paciente na sidebar — é a costura que falta entre o
-  ERP e a parte clínica.
-- **Cadastro rápido de paciente** no ato de agendar (hoje só dá para
-  escolher alguém já cadastrado — paciente novo por telefone não tem como
-  ser marcado).
+- **Painel "Hoje"** — a tela que fica aberta na recepção: quem está na
+  sala, quem está atrasado, quem vem a seguir, o que já encerrou. É a
+  visão padrão da agenda, porque a primeira pergunta de qualquer clínica
+  é o que está acontecendo agora.
+  Três decisões que valem manter: o paciente entra em **um balde só** e a
+  ordem dos baldes é a ordem da atenção; a sala de espera ordena por
+  **horário marcado**, não por ordem de chegada (chegar cedo não passa na
+  frente de quem tem hora antes); e cada cartão tem **no máximo duas
+  ações** — recepção com fila não lê menu.
+- **Check-in em um toque**, com desfazer. Grava o instante *e* o status:
+  o instante alimenta o tempo de espera e o BI, o status alimenta a fila.
+  Confirmação é separada e **não mexe no status** — confirmado pode
+  faltar, e não confirmado pode aparecer.
+- **Ponte agenda → prontuário**: "Iniciar atendimento" seleciona o
+  paciente e entra na disciplina do agendamento. O botão só aparece para
+  a agenda da própria pessoa e numa disciplina que o perfil libera — a
+  recepção marca para todo mundo, mas não abre o prontuário de ninguém
+  (a RLS recusaria de qualquer forma; barrar na tela evita oferecer um
+  botão que só daria erro).
+- **Cadastro rápido de paciente** no ato de agendar. A matrícula inicial
+  usa a disciplina **do agendamento**, não um valor fixo: é ela que
+  decide quem enxerga o paciente (`patients_select_clinic_discipline`).
 - **Convênios**: tabela própria (nome, vigência, valor por procedimento),
   como o comentário da migração de agenda já antecipa. Particular vs
   convênio no agendamento.

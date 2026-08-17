@@ -12,8 +12,15 @@ import {
 import { evaluateSlot, minutesToLabel } from '../../utils/agendaExceptions';
 import { buildDayTimeline, buildWeekStrip } from '../../utils/agendaTimeline';
 import {
+  buildRecurrenceDates,
+  describeSeries,
+  summarizeSeries,
+} from '../../utils/agendaRecurrence';
+import {
   APPOINTMENT_TYPES,
+  cancelSeriesFrom,
   createAppointment,
+  createSeries,
   listAppointments,
   rescheduleAppointment,
   updateAppointmentStatus,
@@ -25,6 +32,7 @@ import { DISCIPLINES } from '../../data/disciplines';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
 import ScheduleEditor from './agenda/ScheduleEditor';
+import SeriesPreview from './agenda/SeriesPreview';
 import '../../styles/agenda.css';
 
 // Estados oferecidos como ação rápida. 'scheduled' fica de fora porque é
@@ -115,7 +123,16 @@ export function Agenda({ profile }) {
     time: '09:00',
     durationMinutes: 60,
     note: '',
+    // Pacote de sessões. Vazio em weekdays significa "o mesmo dia da
+    // semana da data escolhida", que é o caso "toda terça".
+    repeat: false,
+    repeatWeekdays: [],
+    repeatCount: 10,
   }));
+
+  // Conferência do pacote antes de gravar: dez agendamentos de uma vez
+  // é a ação mais cara de desfazer na agenda.
+  const [seriesPreview, setSeriesPreview] = useState(null);
 
   // Confirmação dupla de horário atípico: enquanto isto tiver conteúdo,
   // nada é gravado — a tela mostra o que foge do normal e espera um
@@ -273,6 +290,7 @@ export function Agenda({ profile }) {
   function resetTransient() {
     setPendingException(null);
     setSelectedAppointment(null);
+    setSeriesPreview(null);
   }
 
   function shiftMonth(delta) {
@@ -349,9 +367,97 @@ export function Agenda({ profile }) {
     }
   }
 
+  /** Monta a conferência do pacote a partir do que está no formulário. */
+  function buildSeries() {
+    const start = combineLocal(selectedKey, form.time);
+    if (!start) return null;
+
+    const dates = buildRecurrenceDates({
+      start,
+      weekdays: form.repeatWeekdays,
+      count: Number(form.repeatCount) || 1,
+    });
+
+    const items = describeSeries({
+      dates,
+      time: form.time,
+      durationMinutes: form.durationMinutes,
+      professionalId: formProfessionalId,
+      appointments,
+      // Cada sessão é avaliada sozinha: uma cair em feriado não torna
+      // as outras exceção.
+      evaluate: (sessionStart, sessionEnd) => evaluateSlot({
+        start: sessionStart,
+        end: sessionEnd,
+        schedules: schedules.filter(item => item.professional_id === formProfessionalId),
+        holidays,
+        blocks: appointments.filter(item => (
+          item.kind === 'block' && item.professional_id === formProfessionalId
+        )),
+      }),
+    });
+
+    return { items, summary: summarizeSeries(items) };
+  }
+
+  async function confirmSeries() {
+    const criaveis = seriesPreview.items.filter(item => !item.conflict);
+    if (criaveis.length === 0) {
+      setError('Todas as datas do pacote estão ocupadas. Ajuste o horário ou os dias.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { created, failed } = await createSeries(
+        {
+          kind: 'appointment',
+          patientId: form.patientId,
+          professionalId: formProfessionalId,
+          discipline: disciplineValue,
+          appointmentType: form.appointmentType || null,
+          note: form.note,
+        },
+        { items: criaveis },
+      );
+
+      setAppointments(prev => [...prev, ...created]);
+      setSeriesPreview(null);
+      setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false }));
+
+      // Falha parcial precisa aparecer nomeada: "criei 8 de 10" sem
+      // dizer quais duas faltaram obriga a conferir a agenda inteira.
+      if (failed.length) {
+        setError(
+          `${created.length} sessão(ões) criada(s). Não deu para criar em: `
+          + failed.map(item => item.start.toLocaleDateString('pt-BR')).join(', ')
+          + '. Marque essas manualmente em outro horário.',
+        );
+      } else {
+        setError('');
+      }
+    } catch (err) {
+      setError(err.message || 'Não foi possível criar o pacote.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
     setError('');
+
+    // Pacote: a conferência substitui a confirmação dupla. Ver dez datas
+    // antes de gravar vale mais do que um "tem certeza?".
+    if (form.repeat && form.kind === 'appointment') {
+      const preview = buildSeries();
+      if (!preview || preview.items.length === 0) {
+        setError('Informe um horário e um número de sessões válidos.');
+        return;
+      }
+      setSeriesPreview(preview);
+      return;
+    }
 
     // Horário atípico não é proibido — é atípico. O primeiro clique
     // apresenta o que foge do padrão; só o segundo grava.
@@ -361,6 +467,45 @@ export function Agenda({ profile }) {
     }
 
     persist(pendingException || slotEvaluation);
+  }
+
+  async function handleCancelSeries(appointment) {
+    const total = appointments.filter(item => (
+      item.recurrence_group_id === appointment.recurrence_group_id
+      && new Date(item.starts_at) >= new Date(appointment.starts_at)
+      && item.status === 'scheduled'
+    )).length;
+
+    if (!window.confirm(
+      `Cancelar esta sessão e as ${total - 1} seguintes do pacote?
+
+`
+      + 'As sessões já atendidas não são afetadas.',
+    )) return;
+
+    setSaving(true);
+    try {
+      const cancelled = await cancelSeriesFrom(appointment.recurrence_group_id, {
+        fromIso: appointment.starts_at,
+      });
+      const byId = new Map(cancelled.map(item => [item.id, item]));
+      setAppointments(prev => prev.map(item => byId.get(item.id) || item));
+      setSelectedAppointment(null);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Não foi possível cancelar as sessões.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toggleRepeatWeekday(weekday) {
+    setForm(prev => ({
+      ...prev,
+      repeatWeekdays: prev.repeatWeekdays.includes(weekday)
+        ? prev.repeatWeekdays.filter(item => item !== weekday)
+        : [...prev.repeatWeekdays, weekday].sort(),
+    }));
   }
 
   // ---------- tocar num horário ----------
@@ -690,10 +835,19 @@ export function Agenda({ profile }) {
             </div>
           )}
 
-          {/* Detalhe do agendamento aberto. Enquanto ele está na tela, o
-              formulário de novo agendamento sai: duas coisas disputando
-              o mesmo painel confundem quem está no meio de uma ação. */}
-          {selectedAppointment ? (
+          {/* Um painel, uma coisa por vez: conferência do pacote, detalhe
+              do agendamento ou formulário. Duas delas juntas confundem
+              quem está no meio de uma ação. */}
+          {seriesPreview ? (
+            <SeriesPreview
+              items={seriesPreview.items}
+              summary={seriesPreview.summary}
+              saving={saving}
+              patientName={patientName}
+              onConfirm={confirmSeries}
+              onCancel={() => setSeriesPreview(null)}
+            />
+          ) : selectedAppointment ? (
             <div className="ag-detail">
               <div className="ag-item-top">
                 <span className="ag-item-time">
@@ -742,6 +896,12 @@ export function Agenda({ profile }) {
                 </div>
               )}
 
+              {selectedAppointment.recurrence_group_id && (
+                <p className="ag-detail-series">
+                  Faz parte de um pacote de sessões.
+                </p>
+              )}
+
               <button
                 type="button"
                 className="ag-btn"
@@ -750,6 +910,18 @@ export function Agenda({ profile }) {
               >
                 Mover para outro horário
               </button>
+
+              {selectedAppointment.recurrence_group_id
+                && selectedAppointment.status === 'scheduled' && (
+                <button
+                  type="button"
+                  className="ag-btn"
+                  onClick={() => handleCancelSeries(selectedAppointment)}
+                  disabled={saving}
+                >
+                  Cancelar esta e as próximas do pacote
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -941,9 +1113,67 @@ export function Agenda({ profile }) {
                   />
                 </div>
 
+                {/* Pacote de sessões. Só para atendimento: bloqueio
+                    recorrente é outro problema (jornada), e misturar os
+                    dois faria a tela prometer o que não entrega. */}
+                {!isBlock && (
+                  <div className="ag-repeat">
+                    <label className="agj-check">
+                      <input
+                        type="checkbox"
+                        checked={form.repeat}
+                        onChange={e => setForm(prev => ({ ...prev, repeat: e.target.checked }))}
+                        disabled={saving}
+                      />
+                      Repetir (pacote de sessões)
+                    </label>
+
+                    {form.repeat && (
+                      <>
+                        <div className="ag-field">
+                          <span className="agj-label">
+                            Dias da semana
+                            {form.repeatWeekdays.length === 0 && selectedDate && (
+                              <> — sem escolher, repete toda {WEEKDAY_LABELS[selectedDate.getDay()].toLowerCase()}.</>
+                            )}
+                          </span>
+                          <div className="agj-days">
+                            {WEEKDAY_LABELS.map((label, weekday) => (
+                              <button
+                                key={label}
+                                type="button"
+                                className="ag-chip-btn ag-chip-btn--lg"
+                                aria-pressed={form.repeatWeekdays.includes(weekday)}
+                                onClick={() => toggleRepeatWeekday(weekday)}
+                                disabled={saving}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="ag-field">
+                          <label htmlFor="ag-count">Número de sessões</label>
+                          <input
+                            id="ag-count"
+                            className="ag-input"
+                            type="number"
+                            min="2"
+                            max="60"
+                            value={form.repeatCount}
+                            onChange={e => setForm(prev => ({ ...prev, repeatCount: e.target.value }))}
+                            disabled={saving}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Aviso de horário atípico. Aparece já na digitação — a
                     pessoa vê antes de tentar salvar, não como punição. */}
-                {slotEvaluation.isException && !pendingException && (
+                {slotEvaluation.isException && !pendingException && !form.repeat && (
                   <div className="ag-warn">
                     <p className="ag-warn-title">Horário fora do padrão</p>
                     <ul className="ag-warn-list">
@@ -988,7 +1218,11 @@ export function Agenda({ profile }) {
 
                 {!pendingException && (
                   <button type="submit" className="ag-btn ag-btn--primary" disabled={saving || loading}>
-                    {saving ? 'Salvando…' : isBlock ? 'Bloquear' : 'Agendar'}
+                    {saving
+                      ? 'Salvando…'
+                      : form.repeat && !isBlock
+                        ? `Conferir ${form.repeatCount || 0} sessões`
+                        : isBlock ? 'Bloquear' : 'Agendar'}
                   </button>
                 )}
 

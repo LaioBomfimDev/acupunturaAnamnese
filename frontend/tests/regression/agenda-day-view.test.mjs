@@ -170,3 +170,61 @@ test('feriado em que a clínica atende não vira alarme', () => {
   assert.match(html, /atende normalmente/);
   assert.doesNotMatch(html, /agd-banner--warn/);
 });
+
+// ---------- conferência do pacote ----------
+
+test('a conferência do pacote distingue "não vai ser criada" de "vai, marcada"', async () => {
+  const { SeriesPreview } = await server.ssrLoadModule('/src/components/panels/agenda/SeriesPreview.jsx');
+  const recurrence = await server.ssrLoadModule('/src/utils/agendaRecurrence.js');
+
+  const dates = recurrence.buildRecurrenceDates({ start: new Date(2026, 7, 31), count: 3 });
+  const items = recurrence.describeSeries({
+    dates,
+    time: '14:00',
+    durationMinutes: 60,
+    professionalId: 'prof-1',
+    appointments: [{
+      id: 'x1',
+      kind: 'appointment',
+      status: 'scheduled',
+      patient_id: 'p1',
+      professional_id: 'prof-1',
+      starts_at: new Date(2026, 8, 14, 14, 0).toISOString(),
+      ends_at: new Date(2026, 8, 14, 15, 0).toISOString(),
+    }],
+    evaluate: start => (
+      start.getMonth() === 8 && start.getDate() === 7
+        ? { isException: true, reason: 'Feriado: Independência', exceptions: [] }
+        : { isException: false, reason: '', exceptions: [] }
+    ),
+  });
+
+  const html = renderToStaticMarkup(React.createElement(SeriesPreview, {
+    items,
+    summary: recurrence.summarizeSeries(items),
+    saving: false,
+    onConfirm: () => {},
+    onCancel: () => {},
+    patientName: id => (id === 'p1' ? 'Ana Souza' : 'Paciente'),
+  }));
+
+  // renderToStaticMarkup escapa aspas e afins como entidade; comparar
+  // o texto já decodificado evita asserção frouxa com alternativa.
+  const texto = html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ');
+
+  // O feriado ENTRA no pacote, marcado.
+  assert.match(texto, /Feriado: Independência/);
+  assert.match(texto, /serão criadas/);
+
+  // O conflito NÃO entra, e o botão conta só o que vai ser criado.
+  assert.match(texto, /Já ocupado por Ana Souza/);
+  assert.match(texto, /Criar 2 sessões/);
+
+  assert.match(texto, /1 fora do padrão/);
+  assert.match(texto, /1 em conflito/);
+});

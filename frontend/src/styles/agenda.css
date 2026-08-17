@@ -1119,7 +1119,149 @@
   color: var(--r1-text);
 }
 
+/* ============================================================
+   Pacote de sessões
+   ============================================================ */
+
+.ag-repeat {
+  display: grid;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.ags {
+  display: grid;
+  gap: 10px;
+}
+
+.ags-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ags-range {
+  font-weight: 400;
+  color: var(--r1-text-muted);
+}
+
+.ags-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.ags-flag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ags-flag--warn {
+  background: var(--r1-warning-bg);
+  border: 1px solid var(--r1-warning-border);
+  color: var(--r1-warning);
+}
+
+.ags-flag--danger {
+  background: var(--r1-danger-bg);
+  border: 1px solid var(--r1-danger-border);
+  color: var(--r1-danger);
+}
+
+.ags-list {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  max-height: 34vh;
+  overflow-y: auto;
+  list-style: none;
+  counter-reset: none;
+}
+
+.ags-item {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 12.5px;
+}
+
+.ags-item--warn {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+}
+
+/* Conflito é o único estado vermelho da agenda inteira, e por um motivo
+   estrito: é a única coisa que o sistema realmente vai recusar. */
+.ags-item--conflict {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+}
+
+.ags-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--r1-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.ags-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.ags-when b {
+  text-transform: capitalize;
+}
+
+.ags-when small {
+  font-size: 11px;
+  color: var(--r1-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ags-why {
+  grid-column: 2;
+  display: grid;
+  gap: 1px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ags-why-warn { color: var(--r1-warning); }
+.ags-why-danger { color: var(--r1-danger); font-weight: 600; }
+
+.ags-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
 /* ---------- detalhe do agendamento ---------- */
+
+.ag-detail-series {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--r1-accent-strong);
+}
 
 .ag-detail {
   display: grid;

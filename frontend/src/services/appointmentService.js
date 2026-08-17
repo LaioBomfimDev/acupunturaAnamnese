@@ -17,7 +17,7 @@
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { DISCIPLINE_IDS } from '../data/disciplines';
-import { APPOINTMENT_STATUS_IDS, findOverlap } from '../utils/agenda';
+import { APPOINTMENT_STATUS_IDS, FREEING_STATUSES, findOverlap } from '../utils/agenda';
 
 const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 
@@ -282,6 +282,108 @@ export async function updateAppointmentStatus(id, status, { reason = null, runti
   }
 
   return data;
+}
+
+/**
+ * Cria uma série (pacote de sessões) num grupo só.
+ *
+ * PARCIAL É DE PROPÓSITO: se a terceira sessão bate com um atendimento
+ * já marcado, as outras nove continuam valendo. Recusar o pacote
+ * inteiro por causa de uma data obrigaria a recepção a remontar tudo na
+ * mão — e o conflito é resolvido remarcando aquela sessão.
+ *
+ * @param items [{ start: Date, end: Date, isException, reason }]
+ * @returns { groupId, created: [], failed: [{ start, message }] }
+ */
+export async function createSeries(base, { items = [], runtime } = {}) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('A série precisa de pelo menos uma sessão.');
+  }
+
+  const groupId = runtime?.newGroupId
+    ? runtime.newGroupId()
+    : globalThis.crypto?.randomUUID?.();
+
+  if (!groupId) throw new Error('Não foi possível identificar a série.');
+
+  const created = [];
+  const failed = [];
+  // Serial de propósito: em paralelo, duas sessões do mesmo pacote
+  // podem disputar o mesmo horário e a mensagem de erro sai trocada.
+  for (const item of items) {
+    try {
+      const appointment = await createAppointment(
+        {
+          ...base,
+          startsAt: item.start.toISOString(),
+          endsAt: item.end.toISOString(),
+          isException: item.isException === true,
+          exceptionReason: item.reason,
+          recurrenceGroupId: groupId,
+        },
+        { runtime },
+      );
+      created.push(appointment);
+    } catch (error) {
+      failed.push({ start: item.start, message: error.message || 'Falha ao criar a sessão.' });
+    }
+  }
+
+  return { groupId, created, failed };
+}
+
+/**
+ * Cancela as sessões de uma série a partir de uma data (inclusive).
+ *
+ * "Deste em diante" e não "a série toda" porque desistência no meio do
+ * pacote é o caso real; apagar as sessões já atendidas destruiria o
+ * histórico de que o BI depende.
+ */
+export async function cancelSeriesFrom(groupId, {
+  fromIso,
+  reason = null,
+  runtime,
+} = {}) {
+  if (!groupId) throw new Error('Série não informada.');
+
+  const from = new Date(fromIso);
+  if (Number.isNaN(from.getTime())) throw new Error('Data inicial inválida.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const patch = { status: 'cancelled', cancellation_reason: reason?.trim() || null };
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const list = getLocalAppointments();
+    const alvo = list.filter(item => (
+      item.recurrence_group_id === groupId
+      && new Date(item.starts_at) >= from
+      && !FREEING_STATUSES.includes(item.status)
+    ));
+    alvo.forEach(item => Object.assign(item, patch, { updated_at: new Date().toISOString() }));
+    saveLocalAppointments(list);
+    return alvo;
+  }
+
+  const { data, error } = await client.from('appointments')
+    .update(patch)
+    .eq('recurrence_group_id', groupId)
+    .gte('starts_at', from.toISOString())
+    // Sessão já atendida não é "cancelada" retroativamente: o que
+    // aconteceu, aconteceu.
+    .eq('status', 'scheduled')
+    .select(APPOINTMENT_COLUMNS);
+
+  if (error) {
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível cancelar as sessões.');
+  }
+
+  return data || [];
 }
 
 /**

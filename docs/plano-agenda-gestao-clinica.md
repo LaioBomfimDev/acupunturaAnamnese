@@ -78,9 +78,9 @@ segundo por lotes.
 
 > **Estado em 2026-08-12.** Fases 0 e 1 completas: código na branch
 > `hardening-clinico` e as duas migrações **aplicadas e verificadas** no
-> Supabase. Fase 2 na primeira rodada — visões Dia/Semana/Mês, tocar no
-> horário, remarcar e cadastro de jornada prontos; **falta recorrência**
-> (pacote de sessões), que fica para a rodada 2. 533 testes verdes.
+> Supabase. **Fase 2 completa** — visões Dia/Semana/Mês, tocar no
+> horário, remarcar, cadastro de jornada e pacote de sessões.
+> 549 testes verdes.
 >
 > A tela nunca foi vista rodando com dados: fica atrás do login e não há
 > como autenticar em sessão de desenvolvimento. A visão Dia é renderizada
@@ -175,7 +175,15 @@ rolagem horizontal.
 - Remarcar mantendo o mesmo registro (o service já sabe fazer).
 - Cancelar com motivo obrigatório (a coluna já existe).
 - Recorrência: "10 sessões, toda terça 14h" gera N registros com
-  `recurrence_group_id`; editar oferece "só este" / "este e os futuros".
+  `recurrence_group_id`. Três decisões que valem manter: a série é
+  contada em **sessões**, não em data final (a clínica vende pacote de
+  10, não "até outubro"); **nenhuma data é pulada sozinha** — feriado e
+  sábado entram marcados numa tela de conferência e quem decide é a
+  pessoa; e a criação é **parcialmente tolerante** — uma data em
+  conflito não derruba as outras nove, porque refazer o pacote inteiro
+  na mão é pior do que remarcar uma sessão. Cancelar oferece "esta e as
+  próximas", nunca a série inteira: sessão já atendida não é cancelada
+  retroativamente.
 - Fluxo de status completo: agendado → confirmado → chegou → atendido /
   faltou / cancelado / justificado.
 

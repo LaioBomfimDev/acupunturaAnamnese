@@ -58,6 +58,7 @@ function saveLocalShares(shares) {
 export async function createRecordShare(patientId, {
   fromDiscipline,
   toDiscipline,
+  toUserId,
   scopes,
   note,
   password,
@@ -68,6 +69,7 @@ export async function createRecordShare(patientId, {
   if (fromDiscipline === toDiscipline) {
     throw new Error('Origem e destino não podem ser a mesma disciplina.');
   }
+  if (!toUserId) throw new Error('Escolha o profissional que vai receber.');
   if (!password) throw new Error('Confirme sua senha para enviar.');
   if (!idempotencyKey) throw new Error('Identificador seguro do envio ausente.');
   const sharedScopes = normalizeSharedScopes(scopes);
@@ -81,6 +83,7 @@ export async function createRecordShare(patientId, {
       patient_id: patientId,
       from_discipline: fromDiscipline,
       to_discipline: toDiscipline,
+      to_user_id: toUserId,
       shared_scopes: sharedScopes,
       shared_by: user.id,
       note: note || null,
@@ -97,6 +100,7 @@ export async function createRecordShare(patientId, {
       patientId,
       fromDiscipline,
       toDiscipline,
+      toUserId,
       scopes: sharedScopes,
       note: note || null,
       password,
@@ -126,7 +130,7 @@ export async function listActiveShares(patientId) {
 
   const { data, error } = await supabase
     .from('record_shares')
-    .select('id,patient_id,from_discipline,to_discipline,shared_scopes,note,created_at,revoked_at')
+    .select('id,patient_id,from_discipline,to_discipline,to_user_id,shared_scopes,note,created_at,revoked_at')
     .eq('patient_id', patientId)
     .is('revoked_at', null)
     .order('created_at', { ascending: false });
@@ -151,7 +155,7 @@ export async function listActiveSharesForPatients(patientIds = []) {
   } else {
     const { data, error } = await supabase
       .from('record_shares')
-      .select('id,patient_id,from_discipline,to_discipline,shared_scopes,note,created_at')
+      .select('id,patient_id,from_discipline,to_discipline,to_user_id,shared_scopes,note,created_at')
       .in('patient_id', patientIds)
       .is('revoked_at', null)
       .order('created_at', { ascending: false });

@@ -73,6 +73,7 @@ Deno.serve(async (req) => {
     const patientId = cleanText(body.patientId);
     const fromDiscipline = cleanText(body.fromDiscipline);
     const toDiscipline = cleanText(body.toDiscipline);
+    const toUserId = cleanText(body.toUserId);
     const password = String(body.password || '');
     const note = cleanText(body.note);
     const idempotencyKey = cleanText(body.idempotencyKey);
@@ -84,8 +85,12 @@ Deno.serve(async (req) => {
       )]
       : [];
 
-    if (!UUID_PATTERN.test(patientId) || !UUID_PATTERN.test(idempotencyKey)) {
-      return jsonResponse({ error: 'Paciente ou idempotência inválidos.' }, 400);
+    if (
+      !UUID_PATTERN.test(patientId)
+      || !UUID_PATTERN.test(idempotencyKey)
+      || !UUID_PATTERN.test(toUserId)
+    ) {
+      return jsonResponse({ error: 'Paciente, destinatário ou idempotência inválidos.' }, 400);
     }
     if (
       !DISCIPLINES.has(fromDiscipline)
@@ -129,6 +134,7 @@ Deno.serve(async (req) => {
         p_patient_id: patientId,
         p_from_discipline: fromDiscipline,
         p_to_discipline: toDiscipline,
+        p_to_user_id: toUserId,
         p_shared_scopes: scopes,
         p_note: note || null,
         p_idempotency_key: idempotencyKey,

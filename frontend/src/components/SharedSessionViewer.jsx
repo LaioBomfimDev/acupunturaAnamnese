@@ -38,17 +38,17 @@ function selectedItems(selectedMap = {}, group) {
 function Field({ label, value }) {
   if (!value && value !== 0) return null;
   return (
-    <p className="shared-field"><b>{label}:</b> {value}</p>
+    <p className="shv-field"><b>{label}:</b> {value}</p>
   );
 }
 
 function Chips({ title, items }) {
   if (!items.length) return null;
   return (
-    <div className="shared-chips-block">
-      <span className="shared-chips-title">{title}</span>
-      <div className="shared-chips">
-        {items.map(item => <span key={item} className="shared-chip">{item}</span>)}
+    <div className="shv-chips-block">
+      <span className="shv-chips-title">{title}</span>
+      <div className="shv-chips">
+        {items.map(item => <span key={item} className="shv-chip">{item}</span>)}
       </div>
     </div>
   );
@@ -102,7 +102,7 @@ function EvolucaoSection({ state }) {
   const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
   if (!evolucoes.length) return <p className="small">Sem sessões de evolução registradas.</p>;
   return (
-    <table className="shared-evolucao">
+    <table className="shv-evolucao">
       <thead>
         <tr><th>Sessão</th><th>Data</th><th>Dor</th><th>Sono</th><th>Ansiedade</th><th>Energia</th></tr>
       </thead>
@@ -238,7 +238,7 @@ function GenericEvolucao({ session }) {
   const evolucoes = Array.isArray(session.evolucoes) ? session.evolucoes : [];
   if (!evolucoes.length) return <p className="small">Sem sessões de evolução registradas.</p>;
   return (
-    <ul className="shared-evolucao-list">
+    <ul className="shv-evolucao-list">
       {evolucoes.map((item, index) => (
         <li key={item.id || index}>
           <b>Sessão {item.sessao || index + 1}</b>
@@ -280,12 +280,12 @@ function DisciplineBlock({ record, scopes }) {
     const state = record.data?.state || {};
     const selectedMap = record.data?.selectedMap || {};
     return (
-      <div className="shared-discipline">
-        <h3 className="shared-discipline-title">{disciplineLabel}</h3>
+      <div className="shv-discipline">
+        <h3 className="shv-discipline-title">{disciplineLabel}</h3>
         {scopes.filter(id => MTC_SECTIONS[id]).map(id => {
           const { title, render: Render } = MTC_SECTIONS[id];
           return (
-            <section key={id} className="shared-section">
+            <section key={id} className="shv-section">
               <h4>{title}</h4>
               <Render state={state} selectedMap={selectedMap} />
             </section>
@@ -299,8 +299,8 @@ function DisciplineBlock({ record, scopes }) {
   const view = resolveDisciplineView(record.discipline, session);
   if (!view) {
     return (
-      <div className="shared-discipline">
-        <h3 className="shared-discipline-title">{disciplineLabel}</h3>
+      <div className="shv-discipline">
+        <h3 className="shv-discipline-title">{disciplineLabel}</h3>
         <p className="small">
           Esta disciplina ainda não tem leitura compartilhada. O registro existe e está preservado.
         </p>
@@ -309,15 +309,15 @@ function DisciplineBlock({ record, scopes }) {
   }
 
   return (
-    <div className="shared-discipline">
-      <h3 className="shared-discipline-title">{disciplineLabel}</h3>
+    <div className="shv-discipline">
+      <h3 className="shv-discipline-title">{disciplineLabel}</h3>
       {record.data?.contentStatus === 'rascunho_a_validar' && (
         <p className="small">Vocabulário em validação pela profissional da área.</p>
       )}
       {scopes.filter(id => GENERIC_SECTIONS[id]).map(id => {
         const { title, render: Render } = GENERIC_SECTIONS[id];
         return (
-          <section key={id} className="shared-section">
+          <section key={id} className="shv-section">
             <h4>{title}</h4>
             <Render view={view} session={session} />
           </section>
@@ -344,42 +344,44 @@ export function SharedSessionViewer({ patient, scopes = [], fromDiscipline, onCl
   }, [patient.id]);
 
   return (
-    <div className="share-overlay" role="dialog" aria-modal="true" aria-label={`Prontuário compartilhado de ${patient.name}`}>
-      <div className="share-dialog shared-view">
-        <div className="share-dialog-head">
-          <b>Prontuário compartilhado — {patient.name}</b>
-          <button type="button" className="share-close" onClick={onClose} aria-label="Fechar">×</button>
+    <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Prontuário compartilhado de ${patient.name}`}>
+      <div className="cp-modal-panel cp-modal-panel--wide">
+        <div className="cp-modal-head">
+          <h3 className="cp-modal-title">Prontuário compartilhado — {patient.name}</h3>
+          <button type="button" className="cp-modal-close" onClick={onClose} aria-label="Fechar">×</button>
         </div>
 
-        <p className="small">
-          Somente leitura. Compartilhado {fromDiscipline ? `pela ${getDiscipline(fromDiscipline)?.label}` : ''}.
-          Itens: {scopes.map(id => getShareScope(id)?.label || id).join(', ')}.
-        </p>
+        <div className="cp-modal-body">
+          <p className="cp-modal-intro">
+            Somente leitura. Compartilhado {fromDiscipline ? `pela ${getDiscipline(fromDiscipline)?.label}` : ''}.
+            Itens: {scopes.map(id => getShareScope(id)?.label || id).join(', ')}.
+          </p>
 
-        {loading && <p className="small">Abrindo…</p>}
-        {error && <div className="alert">{error}</div>}
+          {loading && <p className="small">Abrindo…</p>}
+          {error && <div className="cp-notice cp-notice-error">{error}</div>}
 
-        {!loading && !error && (
-          <div className="shared-sections">
-            <section className="shared-section">
-              <h4>Cadastro do paciente</h4>
-              <Field label="Nome" value={patient.name} />
-              <Field label="Contato" value={patient.phone} />
-              <Field label="Idade" value={formatAge(patient)} />
-            </section>
+          {!loading && !error && (
+            <div className="shv-sections">
+              <section className="shv-section">
+                <h4>Cadastro do paciente</h4>
+                <Field label="Nome" value={patient.name} />
+                <Field label="Contato" value={patient.phone} />
+                <Field label="Idade" value={formatAge(patient)} />
+              </section>
 
-            {records.length === 0 && (
-              <p className="small">Ainda não há registro clínico compartilhado para este paciente.</p>
-            )}
+              {records.length === 0 && (
+                <p className="small">Ainda não há registro clínico compartilhado para este paciente.</p>
+              )}
 
-            {records.map(record => (
-              <DisciplineBlock key={record.discipline} record={record} scopes={scopes} />
-            ))}
+              {records.map(record => (
+                <DisciplineBlock key={record.discipline} record={record} scopes={scopes} />
+              ))}
+            </div>
+          )}
+
+          <div className="cps-actions">
+            <button type="button" className="cp-btn cp-btn--primary" onClick={onClose}>Fechar</button>
           </div>
-        )}
-
-        <div className="share-actions">
-          <button type="button" className="tag active" onClick={onClose}>Fechar</button>
         </div>
       </div>
     </div>

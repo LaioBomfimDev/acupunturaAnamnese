@@ -9,6 +9,7 @@ import {
   listClinicPatients,
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
+import { listClinicMembers, shortName } from '../services/clinicMembersService';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 
@@ -39,6 +40,7 @@ export function ClinicPatientsPanel({ profile, onBack }) {
   const [form, setForm] = useState({ name: '', phone: '', age: '', discipline: 'acupuntura' });
   const [saving, setSaving] = useState(false);
   const [sharesByPatient, setSharesByPatient] = useState({});
+  const [members, setMembers] = useState([]);
   const [shareTarget, setShareTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
   const [revokingId, setRevokingId] = useState(null);
@@ -66,7 +68,18 @@ export function ClinicPatientsPanel({ profile, onBack }) {
 
   useEffect(() => {
     load();
+    // Nomes da equipe são só para rotular "→ Ana Paula" nos chips de
+    // compartilhamento — se a busca falhar, os chips caem para o nome
+    // da disciplina (mesmo comportamento de antes desta tela existir).
+    listClinicMembers().then(setMembers).catch(() => setMembers([]));
   }, [load]);
+
+  const membersById = useMemo(() => new Map(members.map(m => [m.id, m])), [members]);
+
+  function shareTargetLabel(share) {
+    const person = membersById.get(share.to_user_id);
+    return person ? shortName(person.full_name) : getDiscipline(share.to_discipline)?.label;
+  }
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -105,7 +118,7 @@ export function ClinicPatientsPanel({ profile, onBack }) {
   }
 
   async function handleRevoke(patient, share) {
-    const toLabel = getDiscipline(share.to_discipline)?.label || share.to_discipline;
+    const toLabel = shareTargetLabel(share) || share.to_discipline;
     if (!window.confirm(`Revogar o compartilhamento de ${patient.name} com ${toLabel}?`)) return;
 
     setRevokingId(share.id);
@@ -139,30 +152,33 @@ export function ClinicPatientsPanel({ profile, onBack }) {
         </p>
 
         {notice && (
-          <div className={`alert clinic-notice-${notice.type}`}>{notice.text}</div>
+          <div className={`cp-notice cp-notice-${notice.type}`}>{notice.text}</div>
         )}
 
-        <form className="box clinic-new-patient" onSubmit={handleCreate}>
-          <b>Novo paciente</b>
-          <div className="clinic-new-patient-grid">
-            <label>
+        <form className="cp-form" onSubmit={handleCreate}>
+          <b className="cp-form-title">Novo paciente</b>
+          <div className="cp-form-grid">
+            <label className="cp-field">
               Nome completo
               <input
+                className="cp-input"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 required
               />
             </label>
-            <label>
+            <label className="cp-field">
               Telefone
               <input
+                className="cp-input"
                 value={form.phone}
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
               />
             </label>
-            <label>
+            <label className="cp-field">
               Idade
               <input
+                className="cp-input"
                 type="number"
                 min="0"
                 max="130"
@@ -170,9 +186,10 @@ export function ClinicPatientsPanel({ profile, onBack }) {
                 onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
               />
             </label>
-            <label>
+            <label className="cp-field">
               Área inicial
               <select
+                className="cp-select"
                 value={form.discipline}
                 onChange={e => setForm(f => ({ ...f, discipline: e.target.value }))}
               >
@@ -181,48 +198,48 @@ export function ClinicPatientsPanel({ profile, onBack }) {
                 ))}
               </select>
             </label>
-            <button className="tag active" type="submit" disabled={saving}>
+            <button className="cp-btn cp-btn--primary" type="submit" disabled={saving}>
               {saving ? 'Cadastrando…' : 'Cadastrar paciente'}
             </button>
           </div>
         </form>
 
-        <div className="clinic-list-head">
+        <div className="cp-toolbar">
           <input
-            className="clinic-search"
+            className="cp-search"
             placeholder="Buscar paciente pelo nome…"
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
-          <span className="small">
+          <span className="cp-count">
             {loading ? 'Carregando…' : `${filtered.length} paciente${filtered.length === 1 ? '' : 's'}`}
           </span>
         </div>
 
-        {error && <div className="alert">{error}</div>}
+        {error && <div className="cp-notice cp-notice-error">{error}</div>}
 
         {!loading && !error && filtered.length === 0 && (
-          <p className="small">Nenhum paciente encontrado.</p>
+          <p className="cp-empty">Nenhum paciente encontrado.</p>
         )}
 
-        <div className="clinic-patient-list">
+        <div className="cp-list">
           {filtered.map(patient => {
             const shares = sharesByPatient[patient.id] || [];
             return (
-              <div key={patient.id} className="clinic-patient-card">
-                <div className="clinic-patient-info">
-                  <b>{patient.name}</b>
-                  <small>{formatAge(patient)}{patient.phone ? ` • ${patient.phone}` : ''}</small>
+              <div key={patient.id} className="cp-card">
+                <div className="cp-card-info">
+                  <span className="cp-card-name">{patient.name}</span>
+                  <span className="cp-card-meta">{formatAge(patient)}{patient.phone ? ` • ${patient.phone}` : ''}</span>
                 </div>
 
-                <div className="clinic-patient-chips">
+                <div className="cp-card-chips">
                   {(patient.enrollments || []).length === 0 && (
-                    <span className="enroll-chip enroll-chip-warn">sem matrícula</span>
+                    <span className="cp-badge cp-badge-warn">sem matrícula</span>
                   )}
                   {(patient.enrollments || []).map(enrollment => (
                     <span
                       key={enrollment.id || enrollment.discipline}
-                      className={`enroll-chip enroll-chip-${enrollment.status || 'active'}`}
+                      className={`cp-badge cp-badge-${enrollment.status || 'active'}`}
                       title={`${getDiscipline(enrollment.discipline)?.label || enrollment.discipline}: ${enrollmentStatusLabel(enrollment.status)}`}
                     >
                       {getDiscipline(enrollment.discipline)?.label || enrollment.discipline}
@@ -231,16 +248,16 @@ export function ClinicPatientsPanel({ profile, onBack }) {
                 </div>
 
                 {shares.length > 0 && (
-                  <div className="clinic-patient-shares">
+                  <div className="cp-card-shares">
                     {shares.map(share => (
-                      <span key={share.id} className="share-tag" title={shareScopeLabels(share.shared_scopes).join(', ')}>
-                        {getDiscipline(share.from_discipline)?.label} → {getDiscipline(share.to_discipline)?.label}
+                      <span key={share.id} className="cp-share-chip" title={shareScopeLabels(share.shared_scopes).join(', ')}>
+                        {getDiscipline(share.from_discipline)?.label} → {shareTargetLabel(share)}
                         <button
                           type="button"
-                          className="share-revoke"
+                          className="cp-share-remove"
                           disabled={revokingId === share.id}
                           onClick={() => handleRevoke(patient, share)}
-                          aria-label={`Revogar compartilhamento com ${getDiscipline(share.to_discipline)?.label}`}
+                          aria-label={`Revogar compartilhamento com ${shareTargetLabel(share)}`}
                         >
                           {revokingId === share.id ? '…' : '×'}
                         </button>
@@ -249,14 +266,14 @@ export function ClinicPatientsPanel({ profile, onBack }) {
                   </div>
                 )}
 
-                <div className="clinic-patient-actions">
-                  <button type="button" className="tag" onClick={() => setShareTarget(patient)}>
+                <div className="cp-card-actions">
+                  <button type="button" className="cp-btn cp-btn--sm" onClick={() => setShareTarget(patient)}>
                     Enviar / compartilhar
                   </button>
                   {shares.length > 0 && (
                     <button
                       type="button"
-                      className="tag"
+                      className="cp-btn cp-btn--sm"
                       onClick={() => setViewTarget({
                         patient,
                         scopes: [...new Set(shares.flatMap(s => s.shared_scopes || []))],

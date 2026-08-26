@@ -23,11 +23,20 @@ const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 
 const APPOINTMENT_COLUMNS =
   'id,clinic_id,patient_id,professional_id,discipline,starts_at,ends_at,status,note,cancellation_reason,'
-  + 'kind,appointment_type,room,confirmed_at,checked_in_at,recurrence_group_id,is_exception,exception_reason,'
+  + 'kind,appointment_type,modality,block_type,room,confirmed_at,checked_in_at,recurrence_group_id,is_exception,exception_reason,'
   + 'created_by,created_at,updated_at';
 
 // Espelha o CHECK appointments_kind_check da migração 20260810.
 export const APPOINTMENT_KINDS = ['appointment', 'block'];
+
+// Espelha appointments_modality_check (migração 20260818). Nulo é
+// válido só para bloqueio — atendimento sempre escolhe um dos dois.
+export const APPOINTMENT_MODALITIES = [
+  { id: 'presencial', label: 'Presencial' },
+  { id: 'online', label: 'Online' },
+];
+
+export const APPOINTMENT_MODALITY_IDS = APPOINTMENT_MODALITIES.map(item => item.id);
 
 // Espelha appointments_type_check. Nulo é válido: nem toda clínica
 // classifica o atendimento.
@@ -38,6 +47,18 @@ export const APPOINTMENT_TYPES = [
 ];
 
 export const APPOINTMENT_TYPE_IDS = APPOINTMENT_TYPES.map(item => item.id);
+
+// Espelha appointments_block_type_check (migração 20260823). Só se
+// aplica a kind='block' — bloqueio não tem paciente nem disciplina,
+// isto é só uma categoria dentro da hora reservada. Sem 'anamnese':
+// aqui anamnese é sempre ligada a um paciente real, nunca é bloqueio.
+export const APPOINTMENT_BLOCK_TYPES = [
+  { id: 'reuniao', label: 'Reunião' },
+  { id: 'entrevista', label: 'Entrevista' },
+  { id: 'outro', label: 'Outro' },
+];
+
+export const APPOINTMENT_BLOCK_TYPE_IDS = APPOINTMENT_BLOCK_TYPES.map(item => item.id);
 
 export const AGENDA_MIGRATION_HINT =
   'Estrutura de agenda ausente no banco. Aplique a migração ' +
@@ -88,6 +109,14 @@ function assertValid(input) {
 
   if (input?.appointmentType && !APPOINTMENT_TYPE_IDS.includes(input.appointmentType)) {
     throw new Error(`Tipo de atendimento inválido: ${input.appointmentType}.`);
+  }
+
+  if (kind === 'appointment' && input?.modality && !APPOINTMENT_MODALITY_IDS.includes(input.modality)) {
+    throw new Error(`Modalidade inválida: ${input.modality}.`);
+  }
+
+  if (kind === 'block' && input?.blockType && !APPOINTMENT_BLOCK_TYPE_IDS.includes(input.blockType)) {
+    throw new Error(`Categoria de bloqueio inválida: ${input.blockType}.`);
   }
 
   const start = new Date(input?.startsAt);
@@ -185,6 +214,12 @@ export async function createAppointment(input, { knownAppointments = null, runti
     note: input.note?.trim() || null,
     kind,
     appointment_type: input.appointmentType || null,
+    // Bloqueio não escolhe modalidade — não é atendimento. Atendimento
+    // sem escolha explícita assume presencial, que é o caso comum de
+    // uma clínica física.
+    modality: kind === 'block' ? null : (input.modality || 'presencial'),
+    // Espelho de modality: só bloqueio tem categoria, atendimento não.
+    block_type: kind === 'block' ? (input.blockType || 'outro') : null,
     room: input.room?.trim() || null,
     recurrence_group_id: input.recurrenceGroupId || null,
     // Marcar fora da jornada é permitido; passar despercebido, não. Sem
@@ -535,6 +570,105 @@ export async function rescheduleAppointment(id, {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
     }
     throw new Error(error.message || 'Não foi possível remarcar.');
+  }
+
+  return data;
+}
+
+/**
+ * Edita os dados de um atendimento (área, tipo, modalidade, duração,
+ * observação) ou de um bloqueio (categoria, observação) já criado. Só
+ * recebe o que for informado — cada campo é opcional para o chamador
+ * poder mandar só o que mudou.
+ *
+ * NÃO edita paciente nem profissional de propósito: trocar o paciente
+ * de um horário já marcado mistura o histórico de duas pessoas na
+ * mesma linha. Quem marcou errado cancela e cria de novo — é mais
+ * lento, mas o registro de cada paciente fica limpo.
+ *
+ * `endsAt` (não `durationMinutes`) porque quem chama já tem o
+ * `starts_at` atual em mãos e calcula o novo término; a função não
+ * busca a linha antes de gravar, então não tem como derivar sozinha.
+ */
+export async function updateAppointmentDetails(id, {
+  discipline,
+  appointmentType,
+  modality,
+  blockType,
+  endsAt,
+  note,
+  runtime,
+} = {}) {
+  if (!id) throw new Error('Agendamento não informado.');
+
+  const patch = {};
+
+  if (discipline !== undefined) {
+    if (!DISCIPLINE_IDS.includes(discipline)) {
+      throw new Error(`Disciplina inválida: ${discipline || '(vazia)'}.`);
+    }
+    patch.discipline = discipline;
+  }
+
+  if (blockType !== undefined) {
+    if (blockType && !APPOINTMENT_BLOCK_TYPE_IDS.includes(blockType)) {
+      throw new Error(`Categoria de bloqueio inválida: ${blockType}.`);
+    }
+    patch.block_type = blockType || 'outro';
+  }
+
+  if (appointmentType !== undefined) {
+    if (appointmentType && !APPOINTMENT_TYPE_IDS.includes(appointmentType)) {
+      throw new Error(`Tipo de atendimento inválido: ${appointmentType}.`);
+    }
+    patch.appointment_type = appointmentType || null;
+  }
+
+  if (modality !== undefined) {
+    if (modality && !APPOINTMENT_MODALITY_IDS.includes(modality)) {
+      throw new Error(`Modalidade inválida: ${modality}.`);
+    }
+    patch.modality = modality;
+  }
+
+  if (endsAt !== undefined) {
+    const end = new Date(endsAt);
+    if (Number.isNaN(end.getTime())) throw new Error('Término inválido.');
+    patch.ends_at = end.toISOString();
+  }
+
+  if (note !== undefined) patch.note = note?.trim() || null;
+
+  if (Object.keys(patch).length === 0) throw new Error('Nada para atualizar.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const list = getLocalAppointments();
+    const found = list.find(item => item.id === id);
+    if (!found) throw new Error('Agendamento não encontrado.');
+    Object.assign(found, patch, { updated_at: new Date().toISOString() });
+    saveLocalAppointments(list);
+    return found;
+  }
+
+  const { data, error } = await client.from('appointments')
+    .update(patch)
+    .eq('id', id)
+    .select(APPOINTMENT_COLUMNS)
+    .single();
+
+  if (error) {
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    if (isOverlapError(error)) {
+      throw new Error('Esse profissional já tem atendimento nesse horário.');
+    }
+    throw new Error(error.message || 'Não foi possível salvar as alterações.');
   }
 
   return data;

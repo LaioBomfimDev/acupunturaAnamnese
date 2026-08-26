@@ -294,11 +294,18 @@
   background: var(--r1-surface);
 }
 
-.ag-item--attended { border-left-color: var(--r1-success); }
+.ag-item--attended { border-left-color: var(--r1-success); opacity: 0.8; }
 .ag-item--ready { border-left-color: var(--r1-accent); }
-.ag-item--no_show { border-left-color: var(--r1-danger); }
-.ag-item--excused { border-left-color: var(--r1-gold-400); }
+.ag-item--no_show { border-left-color: var(--r1-danger); opacity: 0.75; }
+.ag-item--excused { border-left-color: var(--r1-gold-400); opacity: 0.8; }
 .ag-item--cancelled { border-left-color: var(--r1-text-subtle); opacity: 0.72; }
+
+.ag-item--no_show .ag-item-name,
+.ag-item--cancelled .ag-item-name {
+  text-decoration: line-through;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+}
 
 .ag-item-top {
   display: flex;
@@ -660,6 +667,7 @@
 
 .agd-wday--on .agd-wday-num {
   color: var(--r1-text-on-inverse);
+  font-size: 17px;
 }
 
 .agd-wday:focus-visible {
@@ -789,17 +797,26 @@
   color: var(--r1-warning);
 }
 
+.agd-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .agd-card {
+  position: relative;
   display: grid;
   gap: 2px;
-  padding: 9px 12px;
+  padding: 9px 30px 9px 12px;
   border: 1px solid var(--r1-border-subtle);
-  border-left: 3px solid var(--r1-accent);
+  border-left: 3px solid var(--r1-border);
   border-radius: var(--r1-radius-sm);
   background: var(--r1-surface);
   font: inherit;
   text-align: left;
   cursor: pointer;
+  width: 100%;
 }
 
 .agd-card:hover {
@@ -817,9 +834,60 @@
   background: var(--r1-surface-sunken);
 }
 
+/* Mesma convenção de cor por status já usada na visão Mês
+   (.ag-item--*) e no painel Hoje — não inventa paleta nova.
+
+   Cancelado e não compareceu ficam com o NOME riscado: os dois já
+   estão resolvidos, não pedem mais atenção na agenda ao vivo (o
+   no-show ainda vermelho e visível, porque cobrança/retorno é
+   decisão de quem olha, mas o card em si já não é "coisa a fazer
+   hoje"). Atendido fica semitransparente, sem risco — aconteceu,
+   não foi apagado, só recua visualmente. */
+.agd-card--scheduled { border-left-color: var(--r1-accent); }
+.agd-card--attended { border-left-color: var(--r1-success); opacity: 0.72; }
+.agd-card--ready { border-left-color: var(--r1-accent); }
+.agd-card--no_show { border-left-color: var(--r1-danger); opacity: 0.68; }
+.agd-card--excused { border-left-color: var(--r1-gold-400); opacity: 0.72; }
+.agd-card--cancelled { border-left-color: var(--r1-text-subtle); opacity: 0.58; }
+
+.agd-card--no_show .agd-card-name,
+.agd-card--cancelled .agd-card-name {
+  text-decoration: line-through;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+}
+
+/* Horário já passou e ninguém atualizou o status: o esmaecido é o
+   aviso — "isto ficou parado em agendado". Status já resolvido
+   (atendeu/faltou/cancelou) não esmaece de novo aqui, porque já
+   ganhou o próprio tratamento acima. */
+.agd-card--past.agd-card--scheduled,
+.agd-card--past.agd-card--ready {
+  opacity: 0.58;
+}
+
+.agd-card--selected {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 2px var(--r1-accent);
+}
+
 .agd-card--moving {
   border-color: var(--r1-warning);
   box-shadow: 0 0 0 2px var(--r1-warning-border);
+}
+
+.agd-card-confirmed {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--r1-success);
+  color: var(--r1-text-on-inverse);
 }
 
 .agd-card-name {
@@ -829,14 +897,109 @@
 }
 
 .agd-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
   font-size: 11.5px;
   color: var(--r1-text-muted);
-  text-transform: capitalize;
+}
+
+.agd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--r1-text);
+  white-space: nowrap;
+}
+
+.agd-chip--modality,
+.agd-chip--muted {
+  padding-left: 0;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 500;
+  color: var(--r1-text-muted);
 }
 
 .agd-card-exception {
   font-size: 11px;
   color: var(--r1-warning);
+}
+
+/* ---------- ações rápidas inline ---------- */
+
+.agd-slot-items {
+  display: grid;
+  gap: 4px;
+}
+
+.agd-slot-items--split {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.agd-slot-items--split .agd-card-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.agd-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 2px;
+}
+
+.agd-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--r1-border);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.agd-quick-btn:hover {
+  border-color: var(--r1-accent);
+}
+
+.agd-quick-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agd-quick-btn--on {
+  border-color: transparent;
+  background: var(--r1-success);
+  color: var(--r1-text-on-inverse);
+}
+
+.agd-quick-btn--danger:hover {
+  border-color: var(--r1-danger);
+  color: var(--r1-danger);
+}
+
+.agd-quick-btn--ghost {
+  border-style: dashed;
+  font-weight: 500;
+  color: var(--r1-text-muted);
 }
 
 .agd-add {
@@ -967,13 +1130,30 @@
   background: var(--r1-surface-sunken);
 }
 
+/* Sobreposição: colunas lado a lado em vez de empilhar — mesma ideia
+   do "overlap" de calendário contínuo, só que dentro da célula fixa. */
+.agw-cell--split {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.agw-cell--split .agw-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .agw-break {
   font-size: 9.5px;
   color: var(--r1-text-subtle);
 }
 
 .agw-item {
-  padding: 3px 6px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 12px 3px 6px;
   border: 0;
   border-left: 3px solid var(--r1-accent);
   border-radius: 4px;
@@ -988,10 +1168,38 @@
   cursor: pointer;
 }
 
+.agw-item-icon {
+  flex: 0 0 auto;
+  opacity: 0.7;
+}
+
 .agw-item--block {
   border-left-color: var(--r1-text-subtle);
   background: var(--r1-surface-sunken);
   color: var(--r1-text-muted);
+}
+
+/* Mesma convenção de cor por status da visão Dia/Mês. */
+.agw-item--attended { border-left-color: var(--r1-success); opacity: 0.75; }
+.agw-item--ready { border-left-color: var(--r1-accent); }
+.agw-item--no_show { border-left-color: var(--r1-danger); opacity: 0.7; text-decoration: line-through; }
+.agw-item--excused { border-left-color: var(--r1-gold-400); opacity: 0.75; }
+.agw-item--cancelled { border-left-color: var(--r1-text-subtle); opacity: 0.6; text-decoration: line-through; }
+
+.agw-item--past.agw-item--scheduled,
+.agw-item--past.agw-item--ready {
+  opacity: 0.55;
+}
+
+.agw-item--confirmed::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--r1-success);
 }
 
 .agw-item--moving {
@@ -1569,4 +1777,100 @@
   .ag-pill--holiday {
     display: none;
   }
+}
+
+/* ============================================================
+   Diálogo genérico (bottom sheet no celular, modal centrado no
+   desktop) — usado por Compartilhar agenda e por Editar atendimento.
+   Um shell só, pra não duplicar overlay/scrim/radius em cada painel.
+   ============================================================ */
+
+.ag-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: var(--r1-scrim);
+}
+
+.ag-dialog-panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r1-radius-lg) var(--r1-radius-lg) 0 0;
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-lg);
+  overflow: hidden;
+}
+
+.ag-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+}
+
+.ag-dialog-title {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.ag-dialog-body {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 18px;
+  overflow-y: auto;
+}
+
+.ag-dialog-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ag-dialog-actions .ag-btn {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .ag-dialog-overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .ag-dialog-panel {
+    border-radius: var(--r1-radius-lg);
+  }
+}
+
+/* ---------- Compartilhar agenda (conteúdo específico) ---------- */
+
+.agsh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agsh-preview {
+  min-height: 160px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  resize: vertical;
 }

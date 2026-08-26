@@ -18,6 +18,8 @@ import {
 } from '../../utils/agendaRecurrence';
 import { buildTodayQueue } from '../../utils/agendaToday';
 import {
+  APPOINTMENT_BLOCK_TYPES,
+  APPOINTMENT_MODALITIES,
   APPOINTMENT_TYPES,
   cancelSeriesFrom,
   checkInAppointment,
@@ -26,6 +28,7 @@ import {
   createSeries,
   listAppointments,
   rescheduleAppointment,
+  updateAppointmentDetails,
   updateAppointmentStatus,
 } from '../../services/appointmentService';
 import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/clinicMembersService';
@@ -34,8 +37,10 @@ import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES } from '../../data/disciplines';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
+import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
+import ShareAgendaPanel from './agenda/ShareAgendaPanel';
 import TodayPanel from './agenda/TodayPanel';
 import { usePatient } from '../../hooks/PatientContext';
 import '../../styles/agenda.css';
@@ -93,6 +98,8 @@ export function Agenda({ profile, onStartAppointment = null }) {
   const [selectedKey, setSelectedKey] = useState(() => toDayKey(today));
   const [view, setView] = useState(DEFAULT_VIEW);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -138,6 +145,8 @@ export function Agenda({ profile, onStartAppointment = null }) {
     discipline: '',
     professionalId: profile?.id || '',
     appointmentType: '',
+    modality: 'presencial',
+    blockType: 'outro',
     time: '09:00',
     durationMinutes: 60,
     note: '',
@@ -146,6 +155,10 @@ export function Agenda({ profile, onStartAppointment = null }) {
     repeat: false,
     repeatWeekdays: [],
     repeatCount: 10,
+    // 'weekly' | 'biweekly'. Fixado na criação — como a série já nasce
+    // materializada (uma linha por sessão), não existe "base" para
+    // reeditar depois, então não existe ciclo para desalinhar.
+    repeatFrequency: 'weekly',
   }));
 
   // Conferência do pacote antes de gravar: dez agendamentos de uma vez
@@ -286,6 +299,11 @@ export function Agenda({ profile, onStartAppointment = null }) {
   const dayAppointments = byDay.get(selectedKey) || [];
   const dayBirthdays = birthdays.get(selectedKey) || [];
 
+  // O compartilhar ignora o filtro de "qual agenda estou vendo"
+  // (agendaOf): é a visão de clínica inteira, com filtro próprio de
+  // área e profissional dentro do próprio painel.
+  const shareAppointments = appointments.filter(item => toDayKey(new Date(item.starts_at)) === selectedKey);
+
   /** Avalia um horário candidato contra jornada, feriados e bloqueios. */
   function evaluate({ dayKey, time, durationMinutes, professionalId, ignoreId = null }) {
     const start = combineLocal(dayKey, time);
@@ -375,6 +393,8 @@ export function Agenda({ profile, onStartAppointment = null }) {
           professionalId: formProfessionalId,
           discipline: form.kind === 'block' ? null : disciplineValue,
           appointmentType: form.kind === 'block' ? null : (form.appointmentType || null),
+          modality: form.kind === 'block' ? null : form.modality,
+          blockType: form.kind === 'block' ? form.blockType : null,
           startsAt: start.toISOString(),
           endsAt: addMinutes(start, Number(form.durationMinutes) || 60).toISOString(),
           note: form.note,
@@ -404,6 +424,7 @@ export function Agenda({ profile, onStartAppointment = null }) {
       start,
       weekdays: form.repeatWeekdays,
       count: Number(form.repeatCount) || 1,
+      intervalWeeks: form.repeatFrequency === 'biweekly' ? 2 : 1,
     });
 
     const items = describeSeries({
@@ -444,6 +465,7 @@ export function Agenda({ profile, onStartAppointment = null }) {
           professionalId: formProfessionalId,
           discipline: disciplineValue,
           appointmentType: form.appointmentType || null,
+          modality: form.modality,
           note: form.note,
         },
         { items: criaveis },
@@ -632,6 +654,20 @@ export function Agenda({ profile, onStartAppointment = null }) {
     setSelectedAppointment(prev => (prev?.id === updated.id ? updated : prev));
   }
 
+  async function handleSaveEdit(patch) {
+    if (!selectedAppointment) return;
+    setError('');
+    setSaving(true);
+    try {
+      applyUpdate(await updateAppointmentDetails(selectedAppointment.id, patch));
+      setShowEdit(false);
+    } catch (err) {
+      setError(err.message || 'Não foi possível salvar as alterações.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleCheckIn(appointment, undo = false) {
     setError('');
     setSaving(true);
@@ -791,6 +827,9 @@ export function Agenda({ profile, onStartAppointment = null }) {
             ))}
           </div>
 
+          <button type="button" className="ag-btn" onClick={() => setShowShare(true)}>
+            Compartilhar
+          </button>
           <button type="button" className="ag-btn" onClick={() => setShowSchedule(true)}>
             Horários de atendimento
           </button>
@@ -874,6 +913,11 @@ export function Agenda({ profile, onStartAppointment = null }) {
             showProfessional={showProfessional}
             movingId={moving?.id || null}
             onOpenSchedule={() => setShowSchedule(true)}
+            now={now}
+            selectedAppointmentId={selectedAppointment?.id || null}
+            onQuickStatus={handleStatus}
+            onQuickConfirm={appointment => handleConfirm(appointment, Boolean(appointment.confirmed_at))}
+            onQuickMove={appointment => { setMoving(appointment); setSelectedAppointment(null); }}
           />
         )}
 
@@ -888,6 +932,7 @@ export function Agenda({ profile, onStartAppointment = null }) {
             onSelectAppointment={openAppointment}
             patientName={patientName}
             movingId={moving?.id || null}
+            now={now}
           />
         )}
 
@@ -955,7 +1000,7 @@ export function Agenda({ profile, onStartAppointment = null }) {
         )}
       </section>
 
-      <aside className="ag-side">
+      <aside className="ag-side" id="ag-side-panel">
         <div className="ag-side-head">
           <h3 className="ag-side-title">
             {selectedDate
@@ -1016,6 +1061,12 @@ export function Agenda({ profile, onStartAppointment = null }) {
               <p className="ag-item-meta">
                 {[
                   selectedAppointment.kind === 'block' ? 'bloqueio' : selectedAppointment.discipline,
+                  selectedAppointment.kind === 'block' ? null : (
+                    selectedAppointment.modality === 'online' ? 'online' : 'presencial'
+                  ),
+                  selectedAppointment.kind === 'block' ? null : (
+                    APPOINTMENT_TYPES.find(item => item.id === selectedAppointment.appointment_type)?.label
+                  ),
                   professionalName(selectedAppointment.professional_id),
                 ].filter(Boolean).join(' · ')}
               </p>
@@ -1048,14 +1099,24 @@ export function Agenda({ profile, onStartAppointment = null }) {
                 </p>
               )}
 
-              <button
-                type="button"
-                className="ag-btn"
-                onClick={() => { setMoving(selectedAppointment); setSelectedAppointment(null); }}
-                disabled={saving}
-              >
-                Mover para outro horário
-              </button>
+              <div className="ag-row">
+                <button
+                  type="button"
+                  className="ag-btn"
+                  onClick={() => setShowEdit(true)}
+                  disabled={saving}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  className="ag-btn"
+                  onClick={() => { setMoving(selectedAppointment); setSelectedAppointment(null); }}
+                  disabled={saving}
+                >
+                  Mover para outro horário
+                </button>
+              </div>
 
               {selectedAppointment.recurrence_group_id
                 && selectedAppointment.status === 'scheduled' && (
@@ -1136,6 +1197,25 @@ export function Agenda({ profile, onStartAppointment = null }) {
                     Bloquear horário
                   </button>
                 </div>
+
+                {isBlock && (
+                  <div className="ag-field">
+                    <span className="agj-label">Categoria</span>
+                    <div className="ag-seg" role="group" aria-label="Categoria do bloqueio">
+                      {APPOINTMENT_BLOCK_TYPES.map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="ag-seg-btn"
+                          aria-pressed={form.blockType === item.id}
+                          onClick={() => setForm(prev => ({ ...prev, blockType: item.id }))}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {teamOptions.length > 1 && (
                   <div className="ag-field">
@@ -1290,6 +1370,23 @@ export function Agenda({ profile, onStartAppointment = null }) {
                         </select>
                       </div>
                     </div>
+
+                    <div className="ag-field">
+                      <span className="agj-label">Modalidade</span>
+                      <div className="ag-seg" role="group" aria-label="Modalidade do atendimento">
+                        {APPOINTMENT_MODALITIES.map(item => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className="ag-seg-btn"
+                            aria-pressed={form.modality === item.id}
+                            onClick={() => setForm(prev => ({ ...prev, modality: item.id }))}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -1357,6 +1454,30 @@ export function Agenda({ profile, onStartAppointment = null }) {
 
                     {form.repeat && (
                       <>
+                        <div className="ag-field">
+                          <span className="agj-label">Frequência</span>
+                          <div className="ag-seg" role="group" aria-label="Frequência da repetição">
+                            <button
+                              type="button"
+                              className="ag-seg-btn"
+                              aria-pressed={form.repeatFrequency === 'weekly'}
+                              onClick={() => setForm(prev => ({ ...prev, repeatFrequency: 'weekly' }))}
+                              disabled={saving}
+                            >
+                              Semanal
+                            </button>
+                            <button
+                              type="button"
+                              className="ag-seg-btn"
+                              aria-pressed={form.repeatFrequency === 'biweekly'}
+                              onClick={() => setForm(prev => ({ ...prev, repeatFrequency: 'biweekly' }))}
+                              disabled={saving}
+                            >
+                              Quinzenal
+                            </button>
+                          </div>
+                        </div>
+
                         <div className="ag-field">
                           <span className="agj-label">
                             Dias da semana
@@ -1463,6 +1584,27 @@ export function Agenda({ profile, onStartAppointment = null }) {
           )}
         </div>
       </aside>
+
+      <ShareAgendaPanel
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        dateLabel={selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) || ''}
+        appointments={shareAppointments}
+        teamOptions={teamOptions}
+        patientName={patientName}
+        professionalName={professionalName}
+        clinicName={profile?.clinic?.name || profile?.clinic_name}
+      />
+
+      <EditAppointmentPanel
+        key={selectedAppointment?.id || 'none'}
+        open={showEdit}
+        appointment={selectedAppointment}
+        availableDisciplines={availableDisciplines}
+        saving={saving}
+        onClose={() => setShowEdit(false)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }

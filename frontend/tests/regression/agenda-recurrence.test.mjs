@@ -64,6 +64,43 @@ test('duas vezes por semana alterna os dias na ordem certa', () => {
   assert.deepEqual(dates.map(date => date.getDay()), [2, 4, 2, 4, 2, 4]);
 });
 
+test('quinzenal pula uma semana inteira entre as sessões', () => {
+  const dates = recurrence.buildRecurrenceDates({
+    start: TERCA,
+    count: 4,
+    intervalWeeks: 2,
+  });
+
+  assert.deepEqual(dates.map(d => `${d.getDate()}/${d.getMonth() + 1}`), [
+    '11/8', '25/8', '8/9', '22/9',
+  ]);
+});
+
+test('quinzenal com dois dias por semana mantém os dois na mesma semana incluída', () => {
+  // Terça e quinta, quinzenal: as duas caem na MESMA semana, e a semana
+  // seguinte é pulada inteira — não é "cada dia com o próprio ciclo".
+  const dates = recurrence.buildRecurrenceDates({
+    start: TERCA,
+    weekdays: [2, 4],
+    count: 4,
+    intervalWeeks: 2,
+  });
+
+  assert.deepEqual(dates.map(d => `${d.getDate()}/${d.getMonth() + 1}`), [
+    '11/8', '13/8', '25/8', '27/8',
+  ]);
+});
+
+test('intervalWeeks inválido ou ausente cai no semanal (comportamento antigo intacto)', () => {
+  const semExplicitar = recurrence.buildRecurrenceDates({ start: TERCA, count: 3 });
+  const zero = recurrence.buildRecurrenceDates({ start: TERCA, count: 3, intervalWeeks: 0 });
+  const negativo = recurrence.buildRecurrenceDates({ start: TERCA, count: 3, intervalWeeks: -3 });
+
+  for (const dates of [semExplicitar, zero, negativo]) {
+    assert.deepEqual(dates.map(d => d.getDate()), [11, 18, 25]);
+  }
+});
+
 test('a data inicial só entra se o dia dela estiver selecionado', () => {
   const dates = recurrence.buildRecurrenceDates({
     start: TERCA,

@@ -1,6 +1,27 @@
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { ROW_STATES, buildDayTimeline } from '../../../utils/agendaTimeline';
 import { minutesToLabel } from '../../../utils/agendaExceptions';
+import {
+  IconMic, IconPin, IconTag, IconUsers, IconVideo,
+} from './AgendaIcons';
+
+const BLOCK_TYPE_LABEL = {
+  reuniao: 'Reunião',
+  entrevista: 'Entrevista',
+  outro: 'Outro',
+};
+
+const BLOCK_TYPE_ICONS = {
+  reuniao: IconUsers,
+  entrevista: IconMic,
+  outro: IconTag,
+};
+
+function isPast(appointment, now) {
+  if (!(now instanceof Date)) return false;
+  const end = new Date(appointment?.ends_at);
+  return !Number.isNaN(end.getTime()) && end.getTime() < now.getTime();
+}
 
 // ============================================================
 // Visão Semana — para o desktop
@@ -41,6 +62,7 @@ export function AgendaWeekView({
   onSelectAppointment,
   patientName,
   movingId = null,
+  now = null,
 }) {
   const timelines = week.map(day => buildDayTimeline({
     date: day.date,
@@ -106,23 +128,47 @@ export function AgendaWeekView({
                 );
               }
 
+              const split = row.items.length > 1;
+
               return (
-                <div key={day.key} role="cell" className={`agw-cell agw-cell--${row.state}`}>
-                  {row.items.map(appointment => (
-                    <button
-                      key={appointment.id}
-                      type="button"
-                      className={`agw-item${appointment.kind === 'block' ? ' agw-item--block' : ''}${movingId === appointment.id ? ' agw-item--moving' : ''}`}
-                      onClick={() => onSelectAppointment?.(appointment)}
-                      title={appointment.kind === 'block'
-                        ? (appointment.note || 'Bloqueio')
-                        : patientName(appointment.patient_id)}
-                    >
-                      {appointment.kind === 'block'
-                        ? (appointment.note?.trim() || 'Bloqueio')
-                        : patientName(appointment.patient_id)}
-                    </button>
-                  ))}
+                <div
+                  key={day.key}
+                  role="cell"
+                  className={`agw-cell agw-cell--${row.state}${split ? ' agw-cell--split' : ''}`}
+                >
+                  {row.items.map(appointment => {
+                    const isBlock = appointment.kind === 'block';
+                    const confirmed = !isBlock && Boolean(appointment.confirmed_at);
+                    const blockLabel = BLOCK_TYPE_LABEL[appointment.block_type] || BLOCK_TYPE_LABEL.outro;
+                    const BlockIcon = BLOCK_TYPE_ICONS[appointment.block_type] || BLOCK_TYPE_ICONS.outro;
+
+                    return (
+                      <button
+                        key={appointment.id}
+                        type="button"
+                        className={[
+                          'agw-item',
+                          isBlock ? 'agw-item--block' : `agw-item--${appointment.status}`,
+                          movingId === appointment.id ? 'agw-item--moving' : '',
+                          isPast(appointment, now) ? 'agw-item--past' : '',
+                          confirmed ? 'agw-item--confirmed' : '',
+                        ].filter(Boolean).join(' ')}
+                        onClick={() => onSelectAppointment?.(appointment)}
+                        title={isBlock
+                          ? `${blockLabel}${appointment.note ? `: ${appointment.note}` : ''}`
+                          : `${patientName(appointment.patient_id)}${appointment.appointment_type === 'intro_interview' ? ' — Entrevista inicial (grátis)' : ''}`}
+                      >
+                        {isBlock
+                          ? <BlockIcon className="agw-item-icon" />
+                          : (appointment.modality === 'online'
+                            ? <IconVideo className="agw-item-icon" />
+                            : <IconPin className="agw-item-icon" />)}
+                        {isBlock
+                          ? (appointment.note?.trim() || blockLabel)
+                          : patientName(appointment.patient_id)}
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })}

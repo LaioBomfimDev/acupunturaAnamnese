@@ -33,29 +33,43 @@ export const MAX_OCCURRENCES = 60;
  *
  * @param start     Date da primeira sessão (entra na lista se o dia da
  *                  semana dela estiver selecionado)
- * @param weekdays  dias da semana (0=domingo). Vazio = usa o da data
- *                  inicial, que é o caso "toda terça"
- * @param count     número de sessões, incluindo a primeira
+ * @param weekdays      dias da semana (0=domingo). Vazio = usa o da data
+ *                      inicial, que é o caso "toda terça"
+ * @param count         número de sessões, incluindo a primeira
+ * @param intervalWeeks 1 = semanal (padrão), 2 = quinzenal, etc.
  *
  * @returns Date[] em ordem cronológica
  */
-export function buildRecurrenceDates({ start, weekdays = [], count = 1 } = {}) {
+export function buildRecurrenceDates({
+  start, weekdays = [], count = 1, intervalWeeks = 1,
+} = {}) {
   if (!(start instanceof Date) || Number.isNaN(start.getTime())) return [];
 
   const total = Math.min(Math.max(Math.trunc(Number(count) || 0), 0), MAX_OCCURRENCES);
   if (total === 0) return [];
 
   const dias = weekdays.length ? [...new Set(weekdays.map(Number))] : [start.getDay()];
+  const step = Math.max(Math.trunc(Number(intervalWeeks) || 1), 1);
   const dates = [];
 
   // Percorre dia a dia em vez de somar semanas: com dois ou três dias
   // por semana, somar 7 exigiria controlar cada trilha em separado e a
-  // ordem sairia embaralhada.
+  // ordem sairia embaralhada. O domingo da semana da data inicial é a
+  // âncora do quinzenal — fixada aqui, na criação, e nunca recalculada
+  // depois. Diferente de recorrência virtual (base editável que
+  // "desloca o ciclo" quando alguém muda a data), aqui a série já nasce
+  // materializada: não existe base para reeditar, então não existe
+  // ciclo para desalinhar.
   const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const startWeek = new Date(start.getFullYear(), start.getMonth(), start.getDate() - start.getDay());
 
-  for (let step = 0; step < MAX_LOOKAHEAD_DAYS && dates.length < total; step += 1) {
+  for (let dayStep = 0; dayStep < MAX_LOOKAHEAD_DAYS && dates.length < total; dayStep += 1) {
     if (dias.includes(cursor.getDay())) {
-      dates.push(new Date(cursor));
+      const cursorWeek = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - cursor.getDay());
+      const weeksSinceStart = Math.round((cursorWeek - startWeek) / (7 * 86400000));
+      if (weeksSinceStart % step === 0) {
+        dates.push(new Date(cursor));
+      }
     }
     cursor.setDate(cursor.getDate() + 1);
   }

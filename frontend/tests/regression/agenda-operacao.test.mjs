@@ -398,6 +398,26 @@ test('os tipos do JS espelham o CHECK da migração', async () => {
   assert.deepEqual([...service.APPOINTMENT_TYPE_IDS].sort(), fromSql);
 });
 
+test('as modalidades do JS espelham o CHECK da migração', async () => {
+  const modalitySql = path.resolve(root, '../supabase/migrations/20260818_appointment_modality.sql');
+  const sql = await readFile(modalitySql, 'utf8');
+  const check = sql.match(/modality IS NULL OR modality IN \(([^)]+)\)/);
+  assert.ok(check);
+
+  const fromSql = check[1].split(',').map(part => part.trim().replace(/'/g, '')).sort();
+  assert.deepEqual([...service.APPOINTMENT_MODALITY_IDS].sort(), fromSql);
+});
+
+test('as categorias de bloqueio do JS espelham o CHECK da migração', async () => {
+  const blockTypeSql = path.resolve(root, '../supabase/migrations/20260823_appointment_block_type.sql');
+  const sql = await readFile(blockTypeSql, 'utf8');
+  const check = sql.match(/block_type IS NULL OR block_type IN \(([^)]+)\)/);
+  assert.ok(check);
+
+  const fromSql = check[1].split(',').map(part => part.trim().replace(/'/g, '')).sort();
+  assert.deepEqual([...service.APPOINTMENT_BLOCK_TYPE_IDS].sort(), fromSql);
+});
+
 test('os kinds do JS espelham o CHECK da migração', async () => {
   const sql = await readFile(operacaoSql, 'utf8');
   const check = sql.match(/kind IN \(([^)]+)\)/);

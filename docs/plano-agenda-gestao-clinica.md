@@ -68,7 +68,7 @@ segundo por lotes.
 | Só visão de mês | Mês é bom para navegar, péssimo para operar o dia |
 | `rescheduleAppointment` existe no service mas não tem UI | Remarcar hoje é cancelar + criar de novo |
 | Sem confirmação, check-in, sala de espera | O dia da clínica não é acompanhável |
-| Sem convênio/valor, sem financeiro | É o que faz a clínica pagar assinatura |
+| Sem valor por atendimento, sem financeiro | É o que faz a clínica pagar assinatura |
 | Sem recorrência | Pacote de 10 sessões é o caso mais comum em acupuntura e fisio |
 | Sem lista de espera/encaixe | Buraco de agenda vira prejuízo |
 
@@ -84,8 +84,10 @@ segundo por lotes.
 > A Fase 3 **não precisou de migração**: `checked_in_at` e `confirmed_at`
 > já tinham vindo em 20260810.
 >
-> Falta da Fase 3: **convênios**, que é módulo próprio (tabela com
-> vigência e valor por procedimento) e depende de decisões de cobrança.
+> **Decisão do usuário, 2026-08-27: a clínica não trabalha com convênio.**
+> É só particular; quem quer reembolso pede nota fiscal, emitida fora do
+> sistema (não é integração de convênio). Fase 3 **está completa** — o
+> item "convênios" saiu do escopo.
 >
 > A tela nunca foi vista rodando com dados: fica atrás do login e não há
 > como autenticar em sessão de desenvolvimento. A visão Dia é renderizada
@@ -216,9 +218,9 @@ rolagem horizontal.
 - **Cadastro rápido de paciente** no ato de agendar. A matrícula inicial
   usa a disciplina **do agendamento**, não um valor fixo: é ela que
   decide quem enxerga o paciente (`patients_select_clinic_discipline`).
-- **Convênios**: tabela própria (nome, vigência, valor por procedimento),
-  como o comentário da migração de agenda já antecipa. Particular vs
-  convênio no agendamento.
+- ~~Convênios~~ — fora do escopo (decisão do usuário, 2026-08-27): a
+  clínica só atende particular. Paciente que quer reembolso pede nota
+  fiscal, emitida fora do sistema.
 
 ### Fase 4 — Confirmação e lembrete (WhatsApp)
 
@@ -250,8 +252,9 @@ agenda vir antes do dashboard:
 ### Fase 6 — Financeiro básico
 
 Valor por atendimento, recebido/pendente, fechamento do mês, repasse ao
-profissional. É o módulo que sustenta a assinatura do SaaS — mas depende
-de convênio (Fase 3) e de histórico confiável de presença (Fase 2).
+profissional, emissão de nota fiscal de reembolso para quem pedir. É o
+módulo que sustenta a assinatura do SaaS — depende de histórico
+confiável de presença (Fase 2). Sem convênio: só particular.
 
 ### Fase 7 — Mobile completo
 

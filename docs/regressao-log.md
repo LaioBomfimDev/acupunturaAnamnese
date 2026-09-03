@@ -19,6 +19,13 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-09-03 - Cartão de login deslocado para a direita no desktop
+
+- Sintoma: em telas desktop largas, o cartão de login aparecia encostado à direita em vez de centralizado sobre o fundo clínico.
+- Causa: o contêiner usava `place-items: center end` no desktop e `place-items: start end` em telas baixas, alinhando horizontalmente o cartão ao fim da grade.
+- Regra nova: o cartão de autenticação deve permanecer centralizado horizontalmente em todos os breakpoints; telas baixas podem mudar apenas o alinhamento vertical. O desfoque do cenário deve ser aplicado na camada de fundo, nunca no formulário.
+- Teste ou verificação obrigatória: `frontend/tests/regression/login-password-toggle.test.mjs` exige alinhamento `center`, bloqueia variantes terminadas em `end` e confirma o blur leve do cenário.
+
 ### 2026-08-12 - REVOKE de função sem PUBLIC não bloqueava anon
 
 - Sintoma: a verificação da migração `20260810_clinic_members.sql` devolveu `anon_bloqueado = false` logo na primeira aplicação, apesar da linha `REVOKE EXECUTE ON FUNCTION public.list_clinic_members(UUID) FROM anon;`.

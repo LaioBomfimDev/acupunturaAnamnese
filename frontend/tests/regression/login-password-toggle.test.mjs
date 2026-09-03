@@ -34,5 +34,12 @@ test('login usa um único cartão responsivo sobre o fundo clínico', async () =
   assert.doesNotMatch(component, /r1-login__brand/);
   assert.match(component, /className="r1-login__card"/);
   assert.match(styles, /login-clinic-neural-bg\.png/);
+  assert.match(styles, /backdrop-filter:\s*blur\(2px\)/);
+  assert.match(
+    styles,
+    /\.r1-login__panel\s*\{[^}]*place-items:\s*center;/s,
+  );
+  assert.doesNotMatch(styles, /place-items:\s*(?:center|start) end;/);
+  assert.match(styles, /place-items:\s*start center;/);
   assert.match(styles, /@media \(max-width: 600px\)/);
 });

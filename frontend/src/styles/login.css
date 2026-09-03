@@ -35,13 +35,15 @@
       color-mix(in srgb, var(--r1-navy-900) 12%, transparent) 0%,
       color-mix(in srgb, var(--r1-navy-900) 44%, transparent) 100%
     );
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   pointer-events: none;
 }
 
 .r1-login__panel {
   min-height: 100svh;
   display: grid;
-  place-items: center end;
+  place-items: center;
   overflow-y: auto;
   padding:
     max(28px, var(--r1-safe-top))
@@ -577,7 +579,7 @@
 
 @media (max-height: 720px) and (min-width: 601px) {
   .r1-login__panel {
-    place-items: start end;
+    place-items: start center;
     padding-block: 20px;
   }
 

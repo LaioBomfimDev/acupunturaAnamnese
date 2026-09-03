@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/AuthContext';
-import { DISCIPLINES } from '../../data/disciplines';
 import '../../styles/login.css';
 
 const TERMS_SECTIONS = [
@@ -107,12 +106,6 @@ const TERMS_SECTIONS = [
   },
 ];
 
-const BRAND_FEATURES = [
-  'Prontuário único por paciente, compartilhado entre as especialidades da instituição.',
-  'IA assistiva que sugere e nunca decide: toda leitura passa por revisão profissional.',
-  'Registro clínico versionado, com auditoria e dados sensíveis criptografados.',
-];
-
 const SECURITY_POINTS = [
   'Acesso reservado a usuários autorizados e identificados.',
   'Dados clínicos organizados por profissional e por paciente.',
@@ -125,6 +118,7 @@ export function Login() {
   const { signInWithPassword } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -162,52 +156,15 @@ export function Login() {
 
   return (
     <div className="r1-login">
-      <aside className="r1-login__brand">
-        <div className="r1-wordmark">
-          <span className="r1-wordmark__main">REABILITY</span>
-          <span className="r1-wordmark__one">One</span>
-          <span className="r1-wordmark__rule" aria-hidden="true" />
-        </div>
-
-        <div>
-          <h1 className="r1-login__headline">
-            A instituição inteira<br />
-            em um <em>só prontuário</em>.
-          </h1>
-          <p className="r1-login__lede">
-            Anamnese, evolução, protocolo e relatório em um mesmo registro clínico —
-            com cada especialidade falando a sua própria linguagem.
-          </p>
-
-          {/* As disciplinas vêm de data/disciplines para o painel não
-              mentir quando uma nova entrar ou sair do ar. */}
-          <ul className="r1-chips">
-            {DISCIPLINES.filter(item => item.available).map(item => (
-              <li key={item.id} className="r1-chip">{item.label}</li>
-            ))}
-          </ul>
-
-          <ul className="r1-features">
-            {BRAND_FEATURES.map(item => (
-              <li key={item} className="r1-feature">
-                <span className="r1-feature__mark" aria-hidden="true">✦</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="r1-login__brand-foot">
-          <span><i className="r1-dot" aria-hidden="true" /> Conformidade LGPD</span>
-          <span><i className="r1-dot" aria-hidden="true" /> Processamento no Brasil</span>
-          <span><i className="r1-dot" aria-hidden="true" /> Acesso identificado</span>
-        </div>
-      </aside>
-
       <main className="r1-login__panel">
-        <div className="r1-login__form-wrap">
+        <section className="r1-login__card" aria-labelledby="login-title">
+          <div className="r1-wordmark" aria-label="Reability One">
+            <span className="r1-wordmark__main">REABILITY</span>
+            <span className="r1-wordmark__one">One</span>
+          </div>
+
           <p className="r1-eyebrow">Acesso profissional</p>
-          <h2 className="r1-login__title">Entrar na plataforma</h2>
+          <h1 id="login-title" className="r1-login__title">Entrar na plataforma</h1>
           <p className="r1-login__subtitle">
             Use as credenciais fornecidas pela sua instituição.
           </p>
@@ -220,7 +177,7 @@ export function Login() {
           )}
 
           <form onSubmit={handleLogin} className="r1-form">
-            <div>
+            <div className="r1-field">
               <label className="r1-label" htmlFor="login-username">
                 Usuário ou e-mail
               </label>
@@ -236,20 +193,43 @@ export function Login() {
               />
             </div>
 
-            <div>
+            <div className="r1-field">
               <label className="r1-label" htmlFor="login-password">
                 Senha
               </label>
-              <input
-                id="login-password"
-                className="r1-input"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Digite sua senha"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                disabled={loading}
-              />
+              <div className="r1-password-field">
+                <input
+                  id="login-password"
+                  className="r1-input r1-input--password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="r1-password-toggle"
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  aria-pressed={showPassword}
+                  aria-controls="login-password"
+                  title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  onClick={() => setShowPassword(current => !current)}
+                  disabled={loading}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 3l18 18M10.6 10.7a2 2 0 002.8 2.8M9.9 4.2A10.8 10.8 0 0112 4c5.2 0 8.7 4.6 9.5 6a1.9 1.9 0 010 2 15.7 15.7 0 01-2.5 3.1M6.2 6.2A16 16 0 002.5 10a1.9 1.9 0 000 2c.8 1.4 4.3 6 9.5 6 1.3 0 2.5-.3 3.6-.8" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2.5 10a1.9 1.9 0 000 2c.8 1.4 4.3 6 9.5 6s8.7-4.6 9.5-6a1.9 1.9 0 000-2C20.7 8.6 17.2 4 12 4S3.3 8.6 2.5 10z" />
+                      <circle cx="12" cy="11" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             <label className="r1-consent">
@@ -284,7 +264,7 @@ export function Login() {
             <span className="r1-login__foot-main">Plataforma segura • Conformidade LGPD</span>
             <span className="r1-login__foot-sub">Acesso administrativo reservado</span>
           </button>
-        </div>
+        </section>
       </main>
 
       {showTerms && (

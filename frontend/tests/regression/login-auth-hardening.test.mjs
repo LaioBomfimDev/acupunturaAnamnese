@@ -41,7 +41,7 @@ test('login limita o identificador antes da consulta e mantém bucket por conta'
   assert.ok(passwordAuthenticationIndex > accountBucketIndex);
 });
 
-test('login não enumera conta ausente, suspensa nem senha incorreta', async () => {
+test('login distingue usuário inválido de senha incorreta sem devolver erro cru', async () => {
   const source = await readRepositoryFile(
     'supabase',
     'functions',
@@ -55,9 +55,16 @@ test('login não enumera conta ausente, suspensa nem senha incorreta', async () 
   );
   assert.match(
     source,
-    /return jsonResponse\(\{ error: GENERIC_LOGIN_ERROR \}, 401\)/,
+    /const INVALID_IDENTIFIER_ERROR = 'Usuário incorreto\.'/,
   );
-  assert.doesNotMatch(source, /Usuário suspenso|Usuário não encontrado/i);
+  assert.match(
+    source,
+    /const INVALID_PASSWORD_ERROR = 'Senha incorreta\.'/,
+  );
+  assert.match(
+    source,
+    /const DETAILED_LOGIN_ERRORS = Deno\.env\.get\('DETAILED_LOGIN_ERRORS'\) !== 'false'/,
+  );
   assert.doesNotMatch(
     source,
     /catch\s*\([^)]*\)\s*\{[\s\S]*?jsonResponse\(\{ error: [^}]*\.message/,
@@ -84,7 +91,7 @@ test('login sempre chama signInWithPassword, mesmo com identificador inexistente
   assert.match(source, /const profileValid = Boolean\(/);
   assert.match(
     source,
-    /if \(!profileValid \|\| error \|\| !data\.session \|\| !data\.user\)/,
+    /if \(!profileValid\)[\s\S]*?INVALID_IDENTIFIER_ERROR[\s\S]*?if \(error \|\| !data\.session \|\| !data\.user\)[\s\S]*?INVALID_PASSWORD_ERROR/,
   );
 });
 

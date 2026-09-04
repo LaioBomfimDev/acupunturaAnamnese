@@ -9,6 +9,12 @@ import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 
 const GENERIC_LOGIN_ERROR = 'Usuário ou senha incorretos.';
+const INVALID_IDENTIFIER_ERROR = 'Usuário incorreto.';
+const INVALID_PASSWORD_ERROR = 'Senha incorreta.';
+// Decisão temporária de produto: a tela distingue o campo inválido mesmo
+// sabendo que isso permite enumerar contas. Defina DETAILED_LOGIN_ERRORS=false
+// na Edge Function para voltar ao retorno genérico sem alterar o código.
+const DETAILED_LOGIN_ERRORS = Deno.env.get('DETAILED_LOGIN_ERRORS') !== 'false';
 const MAX_IDENTIFIER_LENGTH = 320;
 const MAX_PASSWORD_LENGTH = 1024;
 const TEMPORARY_PASSWORD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -127,8 +133,16 @@ Deno.serve(async (req) => {
       password,
     });
 
-    if (!profileValid || error || !data.session || !data.user) {
-      return jsonResponse({ error: GENERIC_LOGIN_ERROR }, 401);
+    if (!profileValid) {
+      return jsonResponse({
+        error: DETAILED_LOGIN_ERRORS ? INVALID_IDENTIFIER_ERROR : GENERIC_LOGIN_ERROR,
+      }, 401);
+    }
+
+    if (error || !data.session || !data.user) {
+      return jsonResponse({
+        error: DETAILED_LOGIN_ERRORS ? INVALID_PASSWORD_ERROR : GENERIC_LOGIN_ERROR,
+      }, 401);
     }
 
     // Senha temporária vencida: a credencial é válida, mas parada demais

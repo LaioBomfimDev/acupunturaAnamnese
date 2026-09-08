@@ -1,4 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/pesquisa-satisfacao",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/confirmar-agendamento",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

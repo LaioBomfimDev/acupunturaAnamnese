@@ -1,0 +1,257 @@
+/* ============================================================
+   Gestão da instituição — relatórios operacionais (faltosos,
+   acessos, retornos). Mesmo vocabulário visual de clinicPatients.css
+   e agenda.css, prefixo próprio (.gt-) porque é um painel novo.
+   ============================================================ */
+
+.gt-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.gt-tab {
+  min-height: 34px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: calc(var(--r1-radius-sm) - 3px);
+  background: transparent;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gt-tab[aria-pressed='true'] {
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.gt-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-note {
+  margin: 0 0 14px;
+  max-width: 62ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.gt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.gt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.gt-input,
+.gt-select {
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.gt-search {
+  flex: 1 1 220px;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+}
+
+.gt-input:focus-visible,
+.gt-select:focus-visible,
+.gt-search:focus-visible {
+  outline: none;
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-notice {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.gt-notice-error {
+  color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+  border-color: var(--r1-danger-border);
+}
+
+.gt-empty {
+  padding: 16px 12px;
+  border: 1px dashed var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.gt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gt-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.gt-card-info {
+  min-width: 200px;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.gt-card-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.gt-card-meta {
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+  text-transform: capitalize;
+}
+
+.gt-badge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--r1-border);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.gt-badge-no_show {
+  color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+  border-color: var(--r1-danger-border);
+}
+
+.gt-badge-excused {
+  color: var(--r1-warning);
+  background: var(--r1-warning-bg);
+  border-color: var(--r1-warning-border);
+}
+
+.gt-badge-login {
+  color: var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 12%, var(--r1-surface));
+  border-color: color-mix(in srgb, var(--r1-success) 35%, transparent);
+}
+
+.gt-badge-logout {
+  color: var(--r1-text-muted);
+  background: var(--r1-surface-sunken);
+}
+
+.gt-field--grow {
+  flex: 1 1 260px;
+}
+
+.gt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--r1-tap);
+  padding: 9px 16px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.gt-btn:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.gt-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gt-btn--primary {
+  border-color: transparent;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+}
+
+.gt-btn--sm {
+  min-height: 30px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.gt-survey-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.gt-survey-link code {
+  word-break: break-all;
+  font-size: 12.5px;
+}
+
+@media (max-width: 720px) {
+  .gt-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

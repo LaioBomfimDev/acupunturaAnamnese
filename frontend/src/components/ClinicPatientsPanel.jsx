@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import { shareScopeLabels } from '../data/shareScopes';
-import { createPatient } from '../services/patientService';
+import { createPatient, formatCpf, isValidCpf } from '../services/patientService';
 import {
   enrollPatientInitial,
   enrollmentStatusLabel,
@@ -37,7 +37,7 @@ export function ClinicPatientsPanel({ profile, onBack }) {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [query, setQuery] = useState('');
-  const [form, setForm] = useState({ name: '', phone: '', age: '', discipline: 'acupuntura' });
+  const [form, setForm] = useState({ name: '', phone: '', age: '', cpf: '', discipline: 'acupuntura', imageConsent: false });
   const [saving, setSaving] = useState(false);
   const [sharesByPatient, setSharesByPatient] = useState({});
   const [members, setMembers] = useState([]);
@@ -90,13 +90,23 @@ export function ClinicPatientsPanel({ profile, onBack }) {
   async function handleCreate(event) {
     event.preventDefault();
     if (!form.name.trim()) return;
+    if (!isValidCpf(form.cpf)) {
+      setNotice({ type: 'error', text: 'Informe um CPF válido para cadastrar o paciente da instituição.' });
+      return;
+    }
 
     setSaving(true);
     setNotice(null);
     try {
-      const patient = await createPatient({ name: form.name.trim(), phone: form.phone, age: form.age });
+      const patient = await createPatient({
+        name: form.name.trim(),
+        phone: form.phone,
+        age: form.age,
+        cpf: form.cpf,
+        imageConsent: form.imageConsent,
+      });
       const enrollment = await enrollPatientInitial(patient.id, form.discipline);
-      setForm({ name: '', phone: '', age: '', discipline: 'acupuntura' });
+      setForm({ name: '', phone: '', age: '', cpf: '', discipline: 'acupuntura', imageConsent: false });
       setNotice({
         type: enrollment ? 'success' : 'warn',
         text: enrollment
@@ -168,6 +178,17 @@ export function ClinicPatientsPanel({ profile, onBack }) {
               />
             </label>
             <label className="cp-field">
+              CPF
+              <input
+                className="cp-input"
+                value={form.cpf}
+                onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))}
+                placeholder="000.000.000-00"
+                inputMode="numeric"
+                required
+              />
+            </label>
+            <label className="cp-field">
               Telefone
               <input
                 className="cp-input"
@@ -197,6 +218,14 @@ export function ClinicPatientsPanel({ profile, onBack }) {
                   <option key={d.id} value={d.id}>{d.label}</option>
                 ))}
               </select>
+            </label>
+            <label className="cp-consent">
+              <input
+                type="checkbox"
+                checked={form.imageConsent}
+                onChange={e => setForm(f => ({ ...f, imageConsent: e.target.checked }))}
+              />
+              <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
             </label>
             <button className="cp-btn cp-btn--primary" type="submit" disabled={saving}>
               {saving ? 'Cadastrando…' : 'Cadastrar paciente'}
@@ -229,7 +258,11 @@ export function ClinicPatientsPanel({ profile, onBack }) {
               <div key={patient.id} className="cp-card">
                 <div className="cp-card-info">
                   <span className="cp-card-name">{patient.name}</span>
-                  <span className="cp-card-meta">{formatAge(patient)}{patient.phone ? ` • ${patient.phone}` : ''}</span>
+                  <span className="cp-card-meta">
+                    {formatAge(patient)}
+                    {patient.phone ? ` • ${patient.phone}` : ''}
+                    {patient.cpf ? ` • CPF ${formatCpf(patient.cpf)}` : ''}
+                  </span>
                 </div>
 
                 <div className="cp-card-chips">

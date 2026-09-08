@@ -69,3 +69,53 @@ export async function writeAuditLog(
     return false;
   }
 }
+
+type ClinicAccessPayload = {
+  clinicId: string;
+  actorId: string;
+  action: 'login' | 'logout';
+};
+
+/**
+ * Log de login/logout por instituição (clinic_access_logs) — tabela
+ * própria, não admin_audit_logs (ver comentário na migration). Mesmo
+ * espírito best-effort: nunca deve derrubar o login nem o logout.
+ */
+export async function writeClinicAccessLog(
+  supabaseAdmin: unknown,
+  payload: ClinicAccessPayload,
+): Promise<boolean> {
+  const correlationId = createCorrelationId();
+
+  try {
+    const result = await (supabaseAdmin as AuditClient)
+      .from('clinic_access_logs')
+      .insert({
+        clinic_id: payload.clinicId,
+        actor_id: payload.actorId,
+        action: payload.action,
+      });
+
+    if (result?.error) {
+      logOperationalEvent('error', 'clinic_access_write_failed', {
+        correlationId,
+        operation: 'clinic_access_insert',
+        action: payload.action,
+        reason: 'sdk_error',
+        errorCode: safeErrorCode(result.error),
+      });
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logOperationalEvent('error', 'clinic_access_write_failed', {
+      correlationId,
+      operation: 'clinic_access_insert',
+      action: payload.action,
+      reason: 'exception',
+      errorCode: safeErrorCode(error),
+    });
+    return false;
+  }
+}

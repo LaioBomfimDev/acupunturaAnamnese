@@ -1,0 +1,140 @@
+/* ============================================================
+   Pesquisa de satisfação — página pública, sem sessão.
+   Mobile-first: o link chega por WhatsApp/SMS, abre direto no
+   telefone do paciente.
+   ============================================================ */
+
+.sv-page {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--r1-bg);
+  color: var(--r1-text);
+  font-family: var(--r1-font-sans);
+}
+
+.sv-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 24px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.sv-card h1 {
+  margin: 0 0 8px;
+  font-family: var(--r1-font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--r1-text);
+}
+
+.sv-note {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.sv-rating {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.sv-rating-btn {
+  flex: 1;
+  min-height: var(--r1-tap);
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease),
+    color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.sv-rating-btn:hover {
+  border-color: var(--r1-accent);
+}
+
+.sv-rating-btn[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+}
+
+.sv-rating-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.sv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.sv-field textarea {
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.sv-field textarea:focus-visible {
+  outline: none;
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.sv-error {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+  font-size: 13px;
+}
+
+.sv-submit {
+  width: 100%;
+  min-height: var(--r1-tap);
+  border: 0;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sv-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sv-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}

@@ -46,7 +46,7 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
   const [deleteText, setDeleteText] = useState('');
   const [deletingPatientId, setDeletingPatientId] = useState(null);
   const [listNotice, setListNotice] = useState(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', age: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', age: '', cpf: '', imageConsent: false });
   const canConfirmDelete = isPatientDeletionConfirmationValid(deleteText);
 
   const filteredPatients = useMemo(() => {
@@ -66,7 +66,7 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
     setListNotice(null);
     try {
       const patient = await createPatient(formData, initialDiscipline);
-      setFormData({ name: '', phone: '', age: '' });
+      setFormData({ name: '', phone: '', age: '', cpf: '', imageConsent: false });
       onCreatePatient?.(patient);
     } finally {
       setSaving(false);
@@ -227,6 +227,23 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
                     onChange={e => setFormData(f => ({ ...f, age: e.target.value }))}
                     placeholder="Ex: 42"
                   />
+                </label>
+                <label>
+                  CPF
+                  <input
+                    value={formData.cpf}
+                    onChange={e => setFormData(f => ({ ...f, cpf: e.target.value }))}
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                  />
+                </label>
+                <label className="patient-consent">
+                  <input
+                    type="checkbox"
+                    checked={formData.imageConsent}
+                    onChange={e => setFormData(f => ({ ...f, imageConsent: e.target.checked }))}
+                  />
+                  <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
                 </label>
                 <div className="form-actions">
                   <button className="primary-button" type="submit" disabled={saving}>

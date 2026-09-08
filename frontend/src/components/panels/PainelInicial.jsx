@@ -41,6 +41,7 @@ export function PainelInicial({
   onToggle,
   onUpdate,
   analysis,
+  evolucoes: evolucoesProp,
   selectedPatient,
   onNavigate,
   hasPendingChanges,
@@ -59,9 +60,17 @@ export function PainelInicial({
     name: selectedPatient?.name || '',
     phone: selectedPatient?.phone || '',
     age: getPatientAge(selectedPatient),
+    cpf: selectedPatient?.cpf || '',
+    imageConsent: selectedPatient?.image_consent === true,
   });
-  const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+  // Mesclado (legado + patient_evolutions) quando App.jsx passa o prop —
+  // ver utils/evolutionHistory.
+  const evolucoes = Array.isArray(evolucoesProp)
+    ? evolucoesProp
+    : (Array.isArray(state.evolucoes) ? state.evolucoes : []);
   const ultimaEvolucao = evolucoes[evolucoes.length - 1];
+  const ultimaEvolucaoFoiFalta = Boolean(ultimaEvolucao) && ultimaEvolucao.attendanceStatus
+    && ultimaEvolucao.attendanceStatus !== 'attended';
   const patientAge = getPatientAge(selectedPatient) || state.idade;
   const patientBirthDate = formatBirthDate(selectedPatient?.birth_date);
   const patientName = selectedPatient?.name || state.nome || 'Novo atendimento';
@@ -123,6 +132,8 @@ export function PainelInicial({
       name: selectedPatient?.name || '',
       phone: selectedPatient?.phone || '',
       age: getPatientAge(selectedPatient),
+      cpf: selectedPatient?.cpf || '',
+      imageConsent: selectedPatient?.image_consent === true,
     });
     setEditing(true);
   }
@@ -137,6 +148,8 @@ export function PainelInicial({
         name: patientForm.name.trim(),
         phone: patientForm.phone.trim(),
         age: patientForm.age,
+        cpf: patientForm.cpf,
+        imageConsent: patientForm.imageConsent,
       });
       onUpdate?.('nome', updated.name || '');
       onUpdate?.('contato', updated.phone || '');
@@ -271,6 +284,23 @@ export function PainelInicial({
               onChange={e => setPatientForm(f => ({ ...f, age: e.target.value }))}
             />
           </label>
+          <label>
+            CPF
+            <input
+              value={patientForm.cpf}
+              onChange={e => setPatientForm(f => ({ ...f, cpf: e.target.value }))}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+            />
+          </label>
+          <label className="patient-consent">
+            <input
+              type="checkbox"
+              checked={patientForm.imageConsent}
+              onChange={e => setPatientForm(f => ({ ...f, imageConsent: e.target.checked }))}
+            />
+            <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
+          </label>
           <div className="inline-edit-actions">
             <button className="tag active" type="submit" disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar cadastro'}
@@ -329,11 +359,19 @@ export function PainelInicial({
         <div className="box">
           <h3>Última evolução</h3>
           {ultimaEvolucao ? (
-            <>
-              <p><b>Sessão {ultimaEvolucao.sessao}</b> • {ultimaEvolucao.data}</p>
-              <p>Dor {ultimaEvolucao.dor || '-'} • Sono {ultimaEvolucao.sono || '-'} • Ansiedade {ultimaEvolucao.ansiedade || '-'}</p>
-              <p>{ultimaEvolucao.obs || ultimaEvolucao.intercorrencia || 'Sem observações adicionais.'}</p>
-            </>
+            ultimaEvolucaoFoiFalta ? (
+              <>
+                <p><b>Sessão {ultimaEvolucao.sessao}</b> • {ultimaEvolucao.data}</p>
+                <p><b>{ultimaEvolucao.attendanceStatus === 'no_show' ? 'Faltou' : 'Falta justificada'}</b></p>
+                <p>{ultimaEvolucao.observacao || 'Sem observações adicionais.'}</p>
+              </>
+            ) : (
+              <>
+                <p><b>Sessão {ultimaEvolucao.sessao}</b> • {ultimaEvolucao.data}</p>
+                <p>Dor {ultimaEvolucao.dor || '-'} • Sono {ultimaEvolucao.sono || '-'} • Ansiedade {ultimaEvolucao.ansiedade || '-'}</p>
+                <p>{ultimaEvolucao.obs || ultimaEvolucao.intercorrencia || 'Sem observações adicionais.'}</p>
+              </>
+            )
           ) : (
             <p>Nenhuma evolução registrada para este paciente.</p>
           )}

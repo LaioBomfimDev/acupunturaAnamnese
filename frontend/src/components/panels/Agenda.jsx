@@ -38,6 +38,9 @@ import { DISCIPLINES } from '../../data/disciplines';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
 import EditAppointmentPanel from './agenda/EditAppointmentPanel';
+import HolidaysEditor from './agenda/HolidaysEditor';
+import PendingConfirmationView from './agenda/PendingConfirmationView';
+import PendingEvolutionsView from './agenda/PendingEvolutionsView';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
 import ShareAgendaPanel from './agenda/ShareAgendaPanel';
@@ -56,14 +59,27 @@ const VIEWS = [
   { id: 'dia', label: 'Dia' },
   { id: 'semana', label: 'Semana' },
   { id: 'mes', label: 'Mês' },
+  { id: 'pendentes', label: 'Pendentes' },
+  { id: 'evolucoes-pendentes', label: 'Evolução pendente' },
 ];
 
-function firstOfMonth(year, month) {
-  return new Date(year, month - 1, 1, 0, 0, 0, 0);
-}
-
-function lastOfMonth(year, month) {
-  return new Date(year, month, 0, 23, 59, 59, 999);
+/**
+ * Janela de busca da agenda: os mesmos 42 dias (6 semanas) que
+ * buildMonthGrid exibe, não o mês "puro".
+ *
+ * A visão Mês mostra dias do mês vizinho para completar a grade, e a
+ * visão Semana pode ter uma semana que começa num mês e termina no
+ * outro. Buscar só firstOfMonth–lastOfMonth deixava esses dias sem
+ * agendamento carregado — e como pacote de sessões (2x/semana,
+ * quinzenal) atravessa semanas o tempo todo, bastava a seta cair numa
+ * virada de mês para uma sessão real "sumir" ou parecer trocada de
+ * lugar. A busca agora cobre exatamente o que a tela pode mostrar.
+ */
+function monthGridRange(year, month) {
+  const first = new Date(year, month - 1, 1);
+  const start = new Date(year, month - 1, 1 - first.getDay(), 0, 0, 0, 0);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 41, 23, 59, 59, 999);
+  return { start, end };
 }
 
 function formatTime(iso) {
@@ -89,15 +105,18 @@ function addMinutes(date, minutes) {
 // toque, porque o formulário fica no painel lateral em qualquer visão.
 const DEFAULT_VIEW = 'hoje';
 
-export function Agenda({ profile, onStartAppointment = null }) {
+export function Agenda({ profile, onStartAppointment = null, initialView = null }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => ({
     year: today.getFullYear(),
     month: today.getMonth() + 1,
   }));
   const [selectedKey, setSelectedKey] = useState(() => toDayKey(today));
-  const [view, setView] = useState(DEFAULT_VIEW);
+  const [view, setView] = useState(() => (
+    VIEWS.some(item => item.id === initialView) ? initialView : DEFAULT_VIEW
+  ));
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showHolidays, setShowHolidays] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
@@ -131,7 +150,7 @@ export function Agenda({ profile, onStartAppointment = null }) {
 
   // A ponte agenda → prontuário e o cadastro rápido de paciente passam
   // pelo contexto: é ele que o resto do sistema lê.
-  const { selectPatient, createPatient: createPatientInContext } = usePatient();
+  const { selectPatientForAppointment, createPatient: createPatientInContext } = usePatient();
 
   const availableDisciplines = useMemo(() => {
     const allowed = Array.isArray(profile?.disciplines) ? profile.disciplines : [];
@@ -186,8 +205,7 @@ export function Agenda({ profile, onStartAppointment = null }) {
     let cancelled = false;
 
     (async () => {
-      const from = firstOfMonth(cursor.year, cursor.month);
-      const to = lastOfMonth(cursor.year, cursor.month);
+      const { start: from, end: to } = monthGridRange(cursor.year, cursor.month);
 
       try {
         const [monthAppointments, clinicPatients] = await Promise.all([
@@ -288,6 +306,10 @@ export function Agenda({ profile, onStartAppointment = null }) {
 
   function patientName(id) {
     return patients.find(item => item.id === id)?.name || 'Paciente';
+  }
+
+  function patientPhone(id) {
+    return patients.find(item => item.id === id)?.phone || '';
   }
 
   function professionalName(id) {
@@ -718,8 +740,10 @@ export function Agenda({ profile, onStartAppointment = null }) {
       return;
     }
     // A seleção mora aqui porque é aqui que o objeto do paciente existe;
-    // ao App cabe só trocar de tela.
-    selectPatient(patient);
+    // ao App cabe só trocar de tela. Leva o agendamento junto — é dele
+    // que a Evolução tira a data/hora real do atendimento (nunca a hora
+    // em que o profissional efetivamente digitar o texto).
+    selectPatientForAppointment(patient, appointment);
     onStartAppointment({ patient, discipline: appointment.discipline });
   }
 
@@ -781,6 +805,19 @@ export function Agenda({ profile, onStartAppointment = null }) {
     );
   }
 
+  if (showHolidays) {
+    return (
+      <HolidaysEditor
+        onBack={() => {
+          setShowHolidays(false);
+          // Feriado novo entra direto na checagem de exceção; recarrega
+          // para a agenda já considerar o que acabou de mudar.
+          setReloadToken(token => token + 1);
+        }}
+      />
+    );
+  }
+
   const headerLabel = view === 'mes'
     ? `${MONTH_LABELS[cursor.month - 1]} ${cursor.year}`
     : view === 'hoje' && selectedKey === toDayKey(today)
@@ -832,6 +869,9 @@ export function Agenda({ profile, onStartAppointment = null }) {
           </button>
           <button type="button" className="ag-btn" onClick={() => setShowSchedule(true)}>
             Horários de atendimento
+          </button>
+          <button type="button" className="ag-btn" onClick={() => setShowHolidays(true)}>
+            Feriados
           </button>
         </div>
 
@@ -897,6 +937,28 @@ export function Agenda({ profile, onStartAppointment = null }) {
             onStatus={handleStatus}
             onStart={startAppointment}
             canStart={canStart}
+          />
+        )}
+
+        {view === 'pendentes' && (
+          <PendingConfirmationView
+            members={members}
+            patientName={patientName}
+            patientPhone={patientPhone}
+            professionalName={professionalName}
+            showProfessional={showProfessional}
+            clinicName={profile?.clinic?.name || profile?.clinic_name}
+          />
+        )}
+
+        {view === 'evolucoes-pendentes' && (
+          <PendingEvolutionsView
+            members={members}
+            patientName={patientName}
+            professionalName={professionalName}
+            showProfessional={showProfessional}
+            onWrite={startAppointment}
+            canWrite={canStart}
           />
         )}
 

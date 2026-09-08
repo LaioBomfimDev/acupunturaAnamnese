@@ -1503,6 +1503,111 @@
 }
 
 /* ============================================================
+   Fila de confirmação
+   ============================================================ */
+
+.agp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.agp-day {
+  margin-bottom: 18px;
+}
+
+.agp-day-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--r1-text-muted);
+}
+
+.agp-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+}
+
+.agp-hour {
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.agp-name {
+  flex: 1 1 auto;
+  min-width: 120px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.agp-meta {
+  font-size: 11.5px;
+  color: var(--r1-text-muted);
+  text-transform: capitalize;
+}
+
+.agp-whatsapp {
+  text-decoration: none;
+  border-color: color-mix(in srgb, #25d366 45%, var(--r1-border));
+  color: #1a9e4e;
+}
+
+.agp-whatsapp:hover {
+  background: color-mix(in srgb, #25d366 12%, var(--r1-surface));
+}
+
+.agp-no-phone {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--r1-text-subtle);
+}
+
+/* Selo de status em "Evolução pendente" — mesma convenção de cor por
+   status já usada nos cartões de agendamento (attended/no_show/excused),
+   não inventa paleta nova. */
+.ag-badge {
+  flex: 0 0 auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ag-badge--attended {
+  color: var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 16%, transparent);
+}
+
+.ag-badge--no_show {
+  color: var(--r1-danger);
+  background: color-mix(in srgb, var(--r1-danger) 16%, transparent);
+}
+
+.ag-badge--excused {
+  color: var(--r1-gold-400);
+  background: color-mix(in srgb, var(--r1-gold-400) 18%, transparent);
+}
+
+/* ============================================================
    Cadastro rápido de paciente
    ============================================================ */
 

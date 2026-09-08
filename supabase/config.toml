@@ -2,3 +2,14 @@
 # credencial e os limites persistentes continuam dentro do próprio handler.
 [functions.login-with-identifier]
 verify_jwt = false
+
+# Pesquisa de satisfação: paciente responde sem login nenhum (link
+# público). Sem isso o gateway recusaria toda chamada com 401 antes do
+# handler rodar — a validação de token continua 100% dentro da function.
+[functions.satisfaction-survey]
+verify_jwt = false
+
+# Confirmação de agendamento: mesmo motivo de satisfaction-survey — link
+# pessoal que o paciente abre sem conta nenhuma.
+[functions.confirm-appointment]
+verify_jwt = false

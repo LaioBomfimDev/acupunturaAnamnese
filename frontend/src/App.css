@@ -1183,6 +1183,21 @@ textarea { min-height: 95px; resize: vertical; }
   align-items: end;
 }
 
+.patient-consent {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted, #6b7280);
+}
+
+.patient-consent input[type='checkbox'] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
 .primary-button,
 .quiet-button {
   border: 1px solid var(--navy);
@@ -3597,6 +3612,32 @@ textarea { min-height: 95px; resize: vertical; }
   gap: 8px;
   margin-top: 8px;
   align-items: center;
+}
+
+/* Data/hora do atendimento vinda do agendamento — nunca um campo de
+   texto livre quando existe um agendamento de origem. */
+.evo-appointment-banner {
+  background: #fff8e8;
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.evo-appointment-banner b { color: var(--gold); }
+.evo-appointment-banner p.small { flex-basis: 100%; margin: 4px 0 0; }
+
+.evo-appointment-banner--falta {
+  background: #fff1f1;
+  border-color: #f3b2b2;
+}
+.evo-appointment-banner--falta b { color: #7a1010; }
+
+.evo-date-field {
+  margin-bottom: 10px;
 }
 .metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
 .metric-card { border: 1px solid var(--line); background: var(--soft); border-radius: 18px; padding: 14px; }
@@ -7351,6 +7392,41 @@ textarea { min-height: 95px; resize: vertical; }
     justify-content: flex-start;
   }
   .patient-search { max-width: none; }
+
+  /* Mesma lógica das listas acima, só que para grids que ainda não
+     tinham entrado no colapso mobile. */
+  .synth-quick,
+  .start-dashboard,
+  .start-stats,
+  .point-detail-grid,
+  .clinic-letterhead-preview-contact,
+  .anamnese-knowledge-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* .checkgrid.two e as três linhas ".<lista>-list .admin-user-row"
+     abaixo têm 2 classes, então ganham da regra genérica de 1 classe
+     (.checkgrid / .admin-user-row) lá em cima por especificidade —
+     precisam da própria linha para realmente colapsar no telefone. */
+  .checkgrid.two,
+  .knowledge-draft-list .admin-user-row,
+  .pdf-learning-list .admin-user-row,
+  .herbal-curation-list .admin-user-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tabelas (evolução, protocolo, relatório na tela) não tinham rede de
+     segurança: sem isto, uma tabela larga empurra a página inteira e
+     cria scroll horizontal no <body>. display:block + overflow-x
+     confina o scroll à própria tabela. .report-sheet fica restrito a
+     .report-screen-only para nunca alcançar a folha impressa/PDF. */
+  .evo-table,
+  .protocol-table,
+  .report-screen-only .report-sheet {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @media (max-width: 560px) {

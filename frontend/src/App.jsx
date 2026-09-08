@@ -4,6 +4,8 @@ import { useAuth } from './hooks/AuthContext';
 import { usePatient } from './hooks/PatientContext';
 import { useSessionPersistence } from './hooks/useSessionPersistence';
 import { analyze, assistantSynthesis } from './utils/analyzer';
+import { mergeEvolutionHistory } from './utils/evolutionHistory';
+import { listPatientEvolutions } from './services/patientEvolutionService';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { DisciplineHub } from './components/DisciplineHub';
@@ -39,6 +41,7 @@ const ReviewerHome = lazyPanel(() => import('./components/ReviewerHome'), 'Revie
 const CurationWorkspace = lazyPanel(() => import('./components/CurationWorkspace'), 'CurationWorkspace');
 const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
 const AssistantFoodLinks = lazyPanel(() => import('./components/panels/AssistantFoodLinks'), 'AssistantFoodLinks');
+const RelatoriosGestao = lazyPanel(() => import('./components/panels/RelatoriosGestao'), 'RelatoriosGestao');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
 // entre logins — sair limpa a chave.
@@ -78,12 +81,15 @@ export default function App() {
     signOut,
     changeTemporaryPassword,
   } = useAuth();
-  const { selectedPatient } = usePatient();
+  const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
+  const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
+  const [hubAgendaInitialView, setHubAgendaInitialView] = useState(null);
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
   const [showHubDocuments, setShowHubDocuments] = useState(false);
   const [showHubAgenda, setShowHubAgenda] = useState(false);
+  const [showHubGestao, setShowHubGestao] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewSection, setReviewSection] = useState('points');
   const [superAdminSection, setSuperAdminSection] = useState('manage');
@@ -175,10 +181,19 @@ export default function App() {
           }, 0);
         }
       });
+      // Evolução vinculada ao atendimento (patient_evolutions) vive fora
+      // do JSON de state — carrega junto para o merge com o histórico
+      // legado (ver utils/evolutionHistory).
+      listPatientEvolutions(selectedPatient.id, 'acupuntura')
+        .then(records => { if (!cancelled) setPatientEvolutionRecords(records); })
+        .catch(() => { if (!cancelled) setPatientEvolutionRecords([]); });
     } else {
       resetSession();
       setTimeout(() => {
-        if (!cancelled) isHydratingSessionRef.current = false;
+        if (!cancelled) {
+          setPatientEvolutionRecords([]);
+          isHydratingSessionRef.current = false;
+        }
       }, 0);
     }
 
@@ -293,20 +308,29 @@ export default function App() {
               <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
               <p>Agenda</p>
             </div>
-            <button type="button" className="topbar-button" onClick={() => setShowHubAgenda(false)}>
+            <button
+              type="button"
+              className="topbar-button"
+              onClick={() => { setShowHubAgenda(false); setHubAgendaInitialView(null); }}
+            >
               ← Voltar às áreas
             </button>
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
               {/* Ponte agenda → prontuário: a Agenda já selecionou o
-                  paciente no contexto; aqui só se troca de tela para a
-                  disciplina do atendimento. Sem isto, o profissional
-                  saía da agenda e reescolhia o paciente na sidebar. */}
+                  paciente e o agendamento de origem no contexto (ver
+                  selectPatientForAppointment); aqui só se troca de tela
+                  para a disciplina do atendimento. Sem isto, o
+                  profissional saía da agenda e reescolhia o paciente na
+                  sidebar — e perdia o vínculo com a data/hora real do
+                  atendimento. */}
               <Agenda
                 profile={profile}
+                initialView={hubAgendaInitialView}
                 onStartAppointment={({ discipline }) => {
                   setShowHubAgenda(false);
+                  setHubAgendaInitialView(null);
                   handleSelectDiscipline(discipline);
                 }}
               />
@@ -337,6 +361,29 @@ export default function App() {
         </div>
       );
     }
+    // Gestão da instituição direto do hub: relatórios operacionais
+    // (faltosos, e o que entrar depois) não dependem de disciplina nem
+    // de paciente selecionado — mesmo casco de Agenda/Documentos.
+    if (showHubGestao) {
+      return (
+        <div className="hub-screen">
+          <header className="hub-topbar">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
+              <p>Gestão</p>
+            </div>
+            <button type="button" className="topbar-button" onClick={() => setShowHubGestao(false)}>
+              ← Voltar às áreas
+            </button>
+          </header>
+          <main className="hub-body">
+            <Suspense fallback={<PanelLoading />}>
+              <RelatoriosGestao profile={profile} />
+            </Suspense>
+          </main>
+        </div>
+      );
+    }
     // Revisora: tela inicial própria (bem-vindo + card de curadoria).
     if (isKnowledgeReviewer) {
       return (
@@ -360,6 +407,8 @@ export default function App() {
         onOpenClinicPatients={() => setShowClinicPatients(true)}
         onOpenDocuments={() => setShowHubDocuments(true)}
         onOpenAgenda={() => setShowHubAgenda(true)}
+        onOpenGestao={() => setShowHubGestao(true)}
+        onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
       />
     );
   }
@@ -432,6 +481,7 @@ export default function App() {
         return (
           <PainelInicial
             {...commonProps}
+            evolucoes={evolucoes}
             selectedPatient={selectedPatient}
             onNavigate={setActiveTab}
             hasPendingChanges={hasPendingChanges}
@@ -453,11 +503,19 @@ export default function App() {
           <Evolucao
             key={selectedPatient?.id || 'sem-paciente'}
             {...commonProps}
+            evolucoes={evolucoes}
+            patientId={selectedPatient?.id || null}
+            activeAppointment={
+              activeAppointment && activeAppointment.patientId === selectedPatient?.id
+                ? activeAppointment
+                : null
+            }
+            onEvolutionSaved={handleEvolutionSaved}
           />
         );
       case 'Biblioteca':        return <Biblioteca />;
       case 'Documentos':        return <DocumentosTimbrados therapistProfile={profile} />;
-      case 'Relatório':         return <Relatorio state={state} analysis={analysis} selectedPatient={selectedPatient} therapistProfile={profile} onUpdate={updateField} />;
+      case 'Relatório':         return <Relatorio state={state} evolucoes={evolucoes} analysis={analysis} selectedPatient={selectedPatient} therapistProfile={profile} onUpdate={updateField} />;
       default:                  return <PainelInicial {...commonProps} />;
     }
   }
@@ -472,7 +530,10 @@ export default function App() {
     minute: '2-digit',
   });
   const patientAge = getPatientAge(selectedPatient) || state.idade;
-  const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+  // Mescla o JSON legado (state.evolucoes) com os registros novos vindos
+  // de patient_evolutions — ver utils/evolutionHistory para o porquê de
+  // não reordenar o array antigo.
+  const evolucoes = mergeEvolutionHistory(state.evolucoes, patientEvolutionRecords);
   const lastVisit = evolucoes[evolucoes.length - 1]?.data || '';
   const therapistFullName = profile?.full_name || user.user_metadata?.full_name || user.email;
   const therapistFirstName = getFirstName(therapistFullName);
@@ -491,6 +552,21 @@ export default function App() {
 
   function confirmPendingChanges(message = 'Existem alterações ainda não salvas. Deseja continuar mesmo assim?') {
     return !hasPendingChanges || window.confirm(message);
+  }
+
+  // Depois de gravar uma evolução vinculada a um agendamento
+  // (patient_evolutions), o vínculo se encerra — a próxima "Escrever
+  // evolução" precisa passar de novo pela lista de pendências, para não
+  // deixar uma data de atendimento antiga grudada na tela por engano.
+  async function handleEvolutionSaved() {
+    clearActiveAppointment();
+    if (!selectedPatient?.id) return;
+    try {
+      const records = await listPatientEvolutions(selectedPatient.id, 'acupuntura');
+      setPatientEvolutionRecords(records);
+    } catch {
+      // A tela de Evolução já mostra o próprio erro de salvar, se houver.
+    }
   }
 
   async function fillTestAnswers() {

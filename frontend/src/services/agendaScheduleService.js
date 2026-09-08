@@ -38,6 +38,19 @@ export function isMissingAgendaConfigError(error) {
 }
 
 /**
+ * Feriado é gerenciado só por admin da clínica (RLS de clinic_holidays,
+ * migração 20260810). Sem tradução, o Postgres devolve o texto cru da
+ * policy — ilegível pra quem não é de tecnologia.
+ */
+function isHolidayPermissionError(error) {
+  const text = [error?.message, error?.details].filter(Boolean).join(' ');
+  return /row-level security policy/i.test(text) || error?.code === '42501';
+}
+
+const HOLIDAY_PERMISSION_MESSAGE =
+  'Só administrador desta instituição pode cadastrar ou remover feriados.';
+
+/**
  * Valida a jornada antes de ir ao banco. Espelha os CHECKs da migração —
  * a mensagem daqui é para gente, a do Postgres é para log.
  */
@@ -262,9 +275,36 @@ export async function saveHoliday({ id = null, day, name, isWorkingDay = false, 
 
   if (error) {
     if (isMissingAgendaConfigError(error)) throw new Error(AGENDA_CONFIG_MIGRATION_HINT);
+    if (isHolidayPermissionError(error)) throw new Error(HOLIDAY_PERMISSION_MESSAGE);
     if (error.code === '23505') throw new Error('Já existe um feriado cadastrado nessa data.');
     throw new Error(error.message || 'Não foi possível salvar o feriado.');
   }
 
   return data;
+}
+
+export async function deleteHoliday(id, { runtime } = {}) {
+  if (!id) throw new Error('Feriado não informado.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    writeLocal(LOCAL_HOLIDAYS_KEY, readLocal(LOCAL_HOLIDAYS_KEY).filter(item => item.id !== id));
+    return true;
+  }
+
+  const { error } = await client.from('clinic_holidays').delete().eq('id', id);
+
+  if (error) {
+    if (isMissingAgendaConfigError(error)) throw new Error(AGENDA_CONFIG_MIGRATION_HINT);
+    if (isHolidayPermissionError(error)) throw new Error(HOLIDAY_PERMISSION_MESSAGE);
+    throw new Error(error.message || 'Não foi possível remover o feriado.');
+  }
+
+  return true;
 }

@@ -54,7 +54,12 @@ function InlineRow({ label, value, fallback = 'Não preenchido.' }) {
 
 const DEFAULT_ACCENT = '#0E2A4A';
 
-export function DisciplineRelatorio({ config, session, selectedPatient, therapistProfile, onRelatorioChange }) {
+const ATTENDANCE_REPORT_LABELS = {
+  no_show: 'faltou',
+  excused: 'faltou (com justificativa)',
+};
+
+export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp, selectedPatient, therapistProfile, onRelatorioChange }) {
   const modes = config.report.modes;
   const [modeId, setModeId] = useState(modes[0].id);
   const [editing, setEditing] = useState(false);
@@ -85,7 +90,11 @@ export function DisciplineRelatorio({ config, session, selectedPatient, therapis
     .filter(axis => axis.value);
   const riskSigns = getSelected(session.selectedMap, config.riskGroup);
   const riskNotes = String(session.riskNotes || '').trim();
-  const evolucoes = Array.isArray(session.evolucoes) ? session.evolucoes : [];
+  // evolucoesProp já vem mesclada (legado + patient_evolutions, data do
+  // atendimento travada no servidor) quando DisciplineWorkspace passa.
+  const evolucoes = Array.isArray(evolucoesProp)
+    ? evolucoesProp
+    : (Array.isArray(session.evolucoes) ? session.evolucoes : []);
   const sessaoLabel = evolucoes.length
     ? `${evolucoes.length} sessão(ões) registrada(s)`
     : 'Avaliação inicial';
@@ -203,10 +212,12 @@ export function DisciplineRelatorio({ config, session, selectedPatient, therapis
             <InlineRow
               key={evolucao.id || index}
               label={`Sessão ${evolucao.sessao || index + 1}${evolucao.data ? ` — ${evolucao.data}` : ''}`}
-              value={config.evolution.fields
-                .map(field => String(evolucao[field.id] || '').trim())
-                .filter(Boolean)
-                .join(' ')}
+              value={evolucao.attendanceStatus && evolucao.attendanceStatus !== 'attended'
+                ? `${ATTENDANCE_REPORT_LABELS[evolucao.attendanceStatus] || 'faltou'}.${evolucao.observacao ? ` ${evolucao.observacao}` : ''}`
+                : config.evolution.fields
+                  .map(field => String(evolucao[field.id] || '').trim())
+                  .filter(Boolean)
+                  .join(' ')}
               fallback="sem descrição registrada."
             />
           ))}

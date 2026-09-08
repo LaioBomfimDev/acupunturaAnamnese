@@ -254,7 +254,19 @@ agenda vir antes do dashboard:
 Valor por atendimento, recebido/pendente, fechamento do mês, repasse ao
 profissional, emissão de nota fiscal de reembolso para quem pedir. É o
 módulo que sustenta a assinatura do SaaS — depende de histórico
-confiável de presença (Fase 2). Sem convênio: só particular.
+confiável de presença (Fase 2).
+
+**Atualização 2026-09-08:** a decisão de 27/08 ("sem convênio") mudou —
+usuária confirmou que quer integração real com convênio, não só
+particular. Preço por procedimento vira dois preços (particular e por
+convênio) e o repasse ao profissional é calculado por
+procedimento/disciplina (não um % único da clínica inteira). Fechamento
+é resumo agregado por período (sem rotina de abrir/fechar caixa
+diário). Backend (schema + serviço, sem tela — redesenho de UI em
+andamento em paralelo) entra primeiro; a integração de verdade com a
+API/portal do convênio fica pendente até a usuária confirmar qual
+operadora/site — normalmente cada uma tem endpoint e cadastro próprios,
+não existe uma API única (padrão TISS/ANS).
 
 ### Fase 7 — Mobile completo
 

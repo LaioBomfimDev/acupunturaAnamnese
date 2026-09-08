@@ -74,7 +74,7 @@ function InlineRow({ label, value, fallback = 'Não preenchido.' }) {
 const MODOS = ['Registro interno', 'Relatório psicológico'];
 const DEFAULT_ACCENT = '#0E2A4A';
 
-export function PsychologyRelatorio({ session, selectedPatient, therapistProfile, onRelatorioChange }) {
+export function PsychologyRelatorio({ session, evolucoes: evolucoesProp, selectedPatient, therapistProfile, onRelatorioChange }) {
   const [modo, setModo] = useState('Registro interno');
   const [editing, setEditing] = useState(false);
   const [draftHtml, setDraftHtml] = useState('');
@@ -102,7 +102,11 @@ export function PsychologyRelatorio({ session, selectedPatient, therapistProfile
     .filter(a => a.value);
   const riskSigns = getPsychologySelected(session.selectedMap, PSYCHOLOGY_RISK_GROUP);
   const riskNotes = String(session.riskNotes || '').trim();
-  const evolucoes = Array.isArray(session.evolucoes) ? session.evolucoes : [];
+  // evolucoesProp já vem mesclada (legado + patient_evolutions) quando
+  // PsychologyWorkspace passa — ver utils/evolutionHistory.
+  const evolucoes = Array.isArray(evolucoesProp)
+    ? evolucoesProp
+    : (Array.isArray(session.evolucoes) ? session.evolucoes : []);
   const complementaryQuestions = Array.isArray(session.complementaryQuestions)
     ? session.complementaryQuestions.filter(item => String(item.question || '').trim())
     : [];

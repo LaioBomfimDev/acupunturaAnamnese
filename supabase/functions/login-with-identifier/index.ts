@@ -7,6 +7,7 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
+import { writeClinicAccessLog } from '../_shared/audit.ts';
 
 const GENERIC_LOGIN_ERROR = 'Usuário ou senha incorretos.';
 const INVALID_IDENTIFIER_ERROR = 'Usuário incorreto.';
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id,email,is_active,must_change_password,temporary_password_set_at')
+      .select('id,email,is_active,must_change_password,temporary_password_set_at,clinic_id')
       .eq(lookupColumn, lookupValue)
       .maybeSingle();
 
@@ -157,6 +158,16 @@ Deno.serve(async (req) => {
           error: 'Sua senha temporária expirou. Peça ao SuperAdm uma nova redefinição.',
         }, 401);
       }
+    }
+
+    // Best-effort: nunca falha o login por causa do log de acesso. Sem
+    // clínica (perfil solto, ex. SuperAdm) não há o que registrar aqui.
+    if (profile.clinic_id) {
+      await writeClinicAccessLog(supabaseAdmin, {
+        clinicId: profile.clinic_id,
+        actorId: profile.id,
+        action: 'login',
+      });
     }
 
     return jsonResponse({

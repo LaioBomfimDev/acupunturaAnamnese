@@ -1,0 +1,130 @@
+/* ============================================================
+   Confirmação de agendamento — página pública, sem sessão.
+   Mobile-first: o link chega pelo WhatsApp do profissional, abre
+   direto no telefone do paciente. Mesmos tokens de surveyPage.css,
+   prefixo próprio porque é outra página.
+   ============================================================ */
+
+.cf-page {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--r1-bg);
+  color: var(--r1-text);
+  font-family: var(--r1-font-sans);
+}
+
+.cf-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 24px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.cf-card h1 {
+  margin: 0 0 8px;
+  font-family: var(--r1-font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--r1-text);
+}
+
+.cf-clinic {
+  margin: 0 0 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--r1-accent-strong);
+}
+
+.cf-note {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.cf-summary {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.cf-summary div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.cf-summary dt {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.cf-summary dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--r1-text);
+}
+
+.cf-error {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+  font-size: 13px;
+}
+
+.cf-submit {
+  width: 100%;
+  min-height: var(--r1-tap);
+  border: 0;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cf-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cf-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.cf-confirmed-badge {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--r1-radius-sm);
+  background: color-mix(in srgb, var(--r1-success) 12%, var(--r1-surface));
+  border: 1px solid color-mix(in srgb, var(--r1-success) 35%, transparent);
+  color: var(--r1-success);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}

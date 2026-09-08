@@ -21,6 +21,14 @@ import {
 } from '../report/reportPrint';
 import { paginateReportBody } from '../report/reportPagination';
 
+// Rótulo de impressão para sessões que são falta, não atendimento —
+// nunca mistura com os campos clínicos (dor/sono/ansiedade não fazem
+// sentido pra uma sessão que não aconteceu).
+const ATTENDANCE_REPORT_LABELS = {
+  no_show: 'faltou',
+  excused: 'faltou (com justificativa)',
+};
+
 /* ── helpers ─────────────────────────────────────────────── */
 function today() {
   return new Date().toLocaleDateString('pt-BR', {
@@ -81,7 +89,7 @@ function rehabMetricText(metric, single) {
 const MODOS = ['Resumo clínico', 'Relatório profissional', 'Orientação ao paciente'];
 const DEFAULT_ACCENT = '#0E2A4A';
 
-export function Relatorio({ state, analysis, selectedPatient, therapistProfile, onUpdate }) {
+export function Relatorio({ state, evolucoes: evolucoesProp, analysis, selectedPatient, therapistProfile, onUpdate }) {
   const [modo, setModo] = useState('Resumo clínico');
   const [editing, setEditing] = useState(false);
   const [draftHtml, setDraftHtml] = useState('');
@@ -104,8 +112,16 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
   const therapistSpecialty = therapistProfile?.specialty || 'Acupuntura e MTC';
   const therapistRegistration = therapistProfile?.professional_registration || '';
   const therapistEmail = therapistProfile?.email || '';
-  const evolucoes = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+  // evolucoesProp já vem mesclada (legado + patient_evolutions, com a
+  // data do atendimento travada no servidor) quando o App.jsx passa —
+  // o fallback local cobre só quem ainda chama este componente sem o
+  // prop (testes antigos, por exemplo).
+  const evolucoes = Array.isArray(evolucoesProp)
+    ? evolucoesProp
+    : (Array.isArray(state.evolucoes) ? state.evolucoes : []);
   const ultimaEvolucao = evolucoes[evolucoes.length - 1];
+  const ultimaEvolucaoFoiFalta = Boolean(ultimaEvolucao) && ultimaEvolucao.attendanceStatus
+    && ultimaEvolucao.attendanceStatus !== 'attended';
   const rehab = summarizeRehabilitation(state.reabilitacao);
   const rehabSingle = rehab?.total === 1;
 
@@ -256,7 +272,9 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
         evolucao: {
           numeroSessao: reportSessionNumber,
           ultima: ultimaEvolucao
-            ? { data: ultimaEvolucao.data, dor: ultimaEvolucao.dor, sono: ultimaEvolucao.sono, ansiedade: ultimaEvolucao.ansiedade }
+            ? (ultimaEvolucaoFoiFalta
+              ? { data: ultimaEvolucao.data, falta: ATTENDANCE_REPORT_LABELS[ultimaEvolucao.attendanceStatus] }
+              : { data: ultimaEvolucao.data, dor: ultimaEvolucao.dor, sono: ultimaEvolucao.sono, ansiedade: ultimaEvolucao.ansiedade })
             : null,
         },
         seguranca: safetyMessages,
@@ -383,7 +401,9 @@ export function Relatorio({ state, analysis, selectedPatient, therapistProfile, 
           <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
             <b>10. Evolução longitudinal:</b> relatório emitido {reportSessionNumber === 0 ? 'na avaliação inicial, antes da primeira sessão registrada' : `após a ${reportSessionNumber}ª sessão`}.
             {ultimaEvolucao
-              ? ` Última sessão em ${ultimaEvolucao.data}: dor ${ultimaEvolucao.dor || 'não informada'}, sono ${ultimaEvolucao.sono || 'não informado'}, ansiedade ${ultimaEvolucao.ansiedade || 'não informada'}.`
+              ? (ultimaEvolucaoFoiFalta
+                ? ` Último registro em ${ultimaEvolucao.data}: ${ATTENDANCE_REPORT_LABELS[ultimaEvolucao.attendanceStatus]}.`
+                : ` Última sessão em ${ultimaEvolucao.data}: dor ${ultimaEvolucao.dor || 'não informada'}, sono ${ultimaEvolucao.sono || 'não informado'}, ansiedade ${ultimaEvolucao.ansiedade || 'não informada'}.`)
               : ' Sem registros evolutivos.'}
           </p>
           {rehab && (

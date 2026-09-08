@@ -296,7 +296,10 @@ test('a evolução não grava sessão vazia e confirma antes de excluir', async 
     'utf8',
   );
   assert.match(source, /const hasContent = config\.evolution\.fields/);
-  assert.match(source, /if \(!hasContent\) return;/);
+  // Sessão vazia não é gravada silenciosamente: agora avisa o motivo em
+  // vez de só ignorar o clique (ver supabase/migrations/20260903, que
+  // trouxe o registro de evolução vinculado ao atendimento).
+  assert.match(source, /if \(!hasContent\) \{\s*\n\s*setSaveError/);
   assert.match(source, /window\.confirm\('Excluir este registro de sessão\?/);
 });
 

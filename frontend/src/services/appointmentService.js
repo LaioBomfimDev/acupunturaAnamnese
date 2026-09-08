@@ -407,6 +407,224 @@ export async function confirmAppointment(id, { undo = false, at = null, runtime 
   return data;
 }
 
+function isPending(item) {
+  return item.kind === 'appointment'
+    && !item.confirmed_at
+    && (item.status === 'scheduled' || item.status === 'ready');
+}
+
+function isMissingConfirmationTokenError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /confirmation_token/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
+}
+
+/**
+ * Fila de confirmação: atendimentos futuros que ninguém confirmou ainda.
+ *
+ * Busca própria (não delega a listAppointments) só para incluir
+ * confirmation_token — colocar essa coluna no APPOINTMENT_COLUMNS
+ * compartilhado quebraria toda leitura de agenda enquanto a migração
+ * 20260901_appointment_confirmation_token.sql não tivesse rodado. Sem a
+ * coluna, cai no fallback: mesma lista, só sem o link de WhatsApp.
+ */
+export async function listPendingConfirmations({ from, to, professionalId = null, runtime } = {}) {
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const appointments = await listAppointments({ from, to, professionalId, runtime });
+    return appointments.filter(isPending);
+  }
+
+  let query = client.from('appointments').select(`${APPOINTMENT_COLUMNS},confirmation_token`);
+  if (from) query = query.gte('starts_at', new Date(from).toISOString());
+  if (to) query = query.lte('starts_at', new Date(to).toISOString());
+  if (professionalId) query = query.eq('professional_id', professionalId);
+
+  const { data, error } = await query.order('starts_at', { ascending: true }).limit(2000);
+
+  if (error) {
+    if (isMissingConfirmationTokenError(error)) {
+      const appointments = await listAppointments({ from, to, professionalId, runtime });
+      return appointments.filter(isPending);
+    }
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível carregar a fila de confirmação.');
+  }
+
+  return (data || []).filter(isPending);
+}
+
+/**
+ * Faltosos: atendimentos marcados 'no_show' ou 'excused' no período.
+ *
+ * Mesmo espírito de listPendingConfirmations — filtra em memória o que
+ * listAppointments já traz, sem query própria. Filtrar por paciente é
+ * responsabilidade de quem chama (a lista de nomes já vive no chamador).
+ */
+export async function listMissedAppointments({ from, to, professionalId = null, runtime } = {}) {
+  const appointments = await listAppointments({ from, to, professionalId, runtime });
+  return appointments.filter(item => (
+    item.kind === 'appointment'
+    && (item.status === 'no_show' || item.status === 'excused')
+  ));
+}
+
+export const RETURN_VIEW_MIGRATION_HINT =
+  'View de retornos pendentes ausente no banco. Aplique a migração ' +
+  'supabase/migrations/20260901_patients_awaiting_return.sql no Supabase.';
+
+function isMissingReturnViewError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /patients_awaiting_return/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
+}
+
+/**
+ * Pacientes cujo último atendimento não teve retorno agendado depois.
+ *
+ * Sem cron/notificação no projeto: a view faz a conta pesada (último
+ * 'attended' de cada paciente x ausência de marcação futura), aqui só
+ * lê o resultado e filtra por dias mínimos.
+ */
+export async function listPatientsAwaitingReturn({ minDays = 0, runtime } = {}) {
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const appointments = getLocalAppointments().filter(item => item.kind === 'appointment');
+    const lastAttendedByPatient = new Map();
+    for (const item of appointments) {
+      if (item.status !== 'attended') continue;
+      const current = lastAttendedByPatient.get(item.patient_id);
+      if (!current || new Date(item.starts_at) > new Date(current.starts_at)) {
+        lastAttendedByPatient.set(item.patient_id, item);
+      }
+    }
+
+    const now = Date.now();
+    const results = [];
+    for (const [patientId, last] of lastAttendedByPatient) {
+      const hasFutureBooking = appointments.some(item => (
+        item.patient_id === patientId
+        && (item.status === 'scheduled' || item.status === 'ready')
+        && new Date(item.starts_at) > new Date(last.starts_at)
+      ));
+      if (hasFutureBooking) continue;
+
+      const daysSince = Math.floor((now - new Date(last.starts_at).getTime()) / 86400000);
+      if (daysSince < minDays) continue;
+
+      results.push({
+        patient_id: patientId,
+        professional_id: last.professional_id,
+        last_attended_at: last.starts_at,
+        days_since: daysSince,
+      });
+    }
+    return results.sort((a, b) => b.days_since - a.days_since);
+  }
+
+  let query = client.from('patients_awaiting_return')
+    .select('patient_id,clinic_id,patient_name,professional_id,last_attended_at,days_since');
+  if (minDays > 0) query = query.gte('days_since', minDays);
+
+  const { data, error } = await query.order('days_since', { ascending: false });
+
+  if (error) {
+    if (isMissingReturnViewError(error)) throw new Error(RETURN_VIEW_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível carregar os retornos pendentes.');
+  }
+
+  return data || [];
+}
+
+export const PENDING_EVOLUTIONS_VIEW_MIGRATION_HINT =
+  'View de atendimentos aguardando evolução ausente no banco. Aplique a migração ' +
+  'supabase/migrations/20260903_patient_evolutions.sql no Supabase.';
+
+function isMissingPendingEvolutionsViewError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /appointments_awaiting_evolution/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
+}
+
+/**
+ * Atendimentos concluídos (atendido, faltou ou falta justificada) que
+ * ainda não têm evolução registrada — sem filtro de período, de
+ * propósito: o objetivo é não deixar nada esquecido para trás.
+ *
+ * Só mostra os PRÓPRIOS atendimentos do profissional (a view no banco já
+ * filtra por auth.uid(), admin vê a clínica inteira) — ver comentário na
+ * migração 20260903 sobre por que isto não pode ser clínica inteira como
+ * `patients_awaiting_return`.
+ */
+export async function listAppointmentsAwaitingEvolution({ runtime } = {}) {
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    // Import tardio evita ciclo de módulo (patientEvolutionService não
+    // depende de appointmentService, mas ambos vivem em services/).
+    const { LOCAL_PATIENT_EVOLUTIONS_KEY } = await import('./patientEvolutionService');
+    let existingEvolutions;
+    try {
+      existingEvolutions = JSON.parse(localStorage.getItem(LOCAL_PATIENT_EVOLUTIONS_KEY) || '[]');
+    } catch {
+      existingEvolutions = [];
+    }
+    const appointmentIdsWithEvolution = new Set(
+      existingEvolutions.map(item => item.appointment_id).filter(Boolean),
+    );
+
+    return getLocalAppointments()
+      .filter(item => (
+        item.kind === 'appointment'
+        && ['attended', 'no_show', 'excused'].includes(item.status)
+        && (item.professional_id === user.id)
+        && !appointmentIdsWithEvolution.has(item.id)
+      ))
+      .map(item => ({
+        appointment_id: item.id,
+        clinic_id: item.clinic_id,
+        patient_id: item.patient_id,
+        patient_name: item.patient_name || null,
+        professional_id: item.professional_id,
+        discipline: item.discipline,
+        starts_at: item.starts_at,
+        attendance_status: item.status,
+      }))
+      .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
+  }
+
+  const { data, error } = await client.from('appointments_awaiting_evolution')
+    .select('appointment_id,clinic_id,patient_id,patient_name,professional_id,discipline,starts_at,attendance_status')
+    .order('starts_at', { ascending: false });
+
+  if (error) {
+    if (isMissingPendingEvolutionsViewError(error)) throw new Error(PENDING_EVOLUTIONS_VIEW_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível carregar os atendimentos aguardando evolução.');
+  }
+
+  return data || [];
+}
+
 /**
  * Cria uma série (pacote de sessões) num grupo só.
  *

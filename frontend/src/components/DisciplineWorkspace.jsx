@@ -11,6 +11,8 @@ import {
   upsertVersionedClinicalRecord,
 } from '../services/clinicalRecordService';
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
+import { listPatientEvolutions } from '../services/patientEvolutionService';
+import { mergeEvolutionHistory } from '../utils/evolutionHistory';
 import { resolveUserDisciplines } from '../data/disciplines';
 import { getAnamneseConfig } from '../data/anamneseRegistry';
 import {
@@ -106,7 +108,7 @@ export function DisciplineWorkspace({
   onSignOut,
 }) {
   const config = getAnamneseConfig(disciplineId);
-  const { selectedPatient } = usePatient();
+  const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
@@ -115,6 +117,9 @@ export function DisciplineWorkspace({
   const [saveStatus, setSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [hasPending, setHasPending] = useState(false);
+  // Evolução vinculada ao atendimento (patient_evolutions) vive fora do
+  // registro clínico deste workspace — ver supabase/migrations/20260903.
+  const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
 
   const hydratingRef = useRef(false);
   const saveTimerRef = useRef(null);
@@ -139,6 +144,7 @@ export function DisciplineWorkspace({
     setSaveStatus(patientId ? 'loading' : 'idle');
     setLastSavedAt(null);
     setHasPending(false);
+    setPatientEvolutionRecords([]);
     changeVersionRef.current = 0;
     loadBlockedRef.current = false;
     hydratingRef.current = true;
@@ -149,6 +155,9 @@ export function DisciplineWorkspace({
     }
 
     let cancelled = false;
+    listPatientEvolutions(patientId, disciplineId)
+      .then(records => { if (!cancelled) setPatientEvolutionRecords(records); })
+      .catch(() => { if (!cancelled) setPatientEvolutionRecords([]); });
     getLatestRecord(patientId, config.recordType, disciplineId)
       .then(record => {
         if (cancelled || patientIdRef.current !== patientId) return;
@@ -315,6 +324,21 @@ export function DisciplineWorkspace({
     setSession(prev => ({ ...prev, evolucoes }));
   }
 
+  // Depois de gravar uma evolução vinculada a um agendamento, o vínculo
+  // se encerra — a próxima "Escrever evolução" passa de novo pela lista
+  // de pendências, sem deixar uma data antiga grudada na tela.
+  async function handleEvolutionSaved() {
+    if (scopedActiveAppointment) clearActiveAppointment();
+    const patientId = patientIdRef.current;
+    if (!patientId) return;
+    try {
+      const records = await listPatientEvolutions(patientId, disciplineId);
+      setPatientEvolutionRecords(records);
+    } catch {
+      // A tela de Evolução já mostra o próprio erro de salvar, se houver.
+    }
+  }
+
   function handleRelatorioChange(relatorio) {
     setSession(prev => ({ ...prev, relatorio }));
   }
@@ -338,6 +362,17 @@ export function DisciplineWorkspace({
     ? TABS.HOME
     : activeTab;
   const summary = buildWorkspaceSummary(config, session);
+  // Mescla o legado (session.evolucoes) com os registros novos vindos de
+  // patient_evolutions — ver utils/evolutionHistory.
+  const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
+  // Só vale para ESTA disciplina/paciente: o mesmo contexto de agendamento
+  // é compartilhado entre workspaces (Fisio, Nutrição...), então sem essa
+  // checagem um agendamento de outra área "vazaria" pra cá.
+  const scopedActiveAppointment = (
+    activeAppointment
+    && activeAppointment.patientId === selectedPatient?.id
+    && activeAppointment.discipline === disciplineId
+  ) ? activeAppointment : null;
   const now = new Date();
   const dateLabel = now.toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
@@ -371,7 +406,12 @@ export function DisciplineWorkspace({
         <DisciplineEvolucao
           config={config}
           session={session}
+          evolucoes={evolucoes}
+          patientId={selectedPatient?.id || null}
+          discipline={disciplineId}
+          activeAppointment={scopedActiveAppointment}
           onEvolucoesChange={handleEvolucoesChange}
+          onEvolutionSaved={handleEvolutionSaved}
         />
       );
     }
@@ -381,6 +421,7 @@ export function DisciplineWorkspace({
         <DisciplineRelatorio
           config={config}
           session={session}
+          evolucoes={evolucoes}
           selectedPatient={selectedPatient}
           therapistProfile={profile}
           onRelatorioChange={handleRelatorioChange}
@@ -425,7 +466,7 @@ export function DisciplineWorkspace({
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
-        sessionCount={Array.isArray(session.evolucoes) ? session.evolucoes.length : 0}
+        sessionCount={evolucoes.length}
         lastVisit=""
         hasMultipleDisciplines={hasMultipleDisciplines}
         navGroups={NAV_GROUPS}

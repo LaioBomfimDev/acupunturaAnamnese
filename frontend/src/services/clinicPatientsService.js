@@ -32,6 +32,15 @@ export function isMissingEnrollmentSchemaError(error) {
     && /does not exist|schema cache|Could not find/i.test(text);
 }
 
+// CPF (20260901_patient_cpf.sql) é exibição, não estrutura de matrícula —
+// sem a migração, a lista continua funcionando, só sem essa coluna.
+function isMissingCpfColumnError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /\bcpf\b/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
+}
+
 export function assertValidDiscipline(disciplineId) {
   if (!DISCIPLINE_IDS.includes(disciplineId)) {
     throw new Error(`Disciplina inválida: ${disciplineId || '(vazia)'}.`);
@@ -91,12 +100,21 @@ export async function listClinicPatients() {
       }));
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('patients')
-    .select('id,name,phone,age,birth_date,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+    .select('id,name,phone,age,birth_date,cpf,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(2000);
+
+  if (error && isMissingCpfColumnError(error)) {
+    ({ data, error } = await supabase
+      .from('patients')
+      .select('id,name,phone,age,birth_date,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(2000));
+  }
 
   if (error) {
     if (isMissingEnrollmentSchemaError(error)) throw new Error(ENROLLMENT_MIGRATION_HINT);

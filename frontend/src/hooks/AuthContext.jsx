@@ -308,6 +308,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
+    // Precisa ser chamado ANTES de auth.signOut(): depois disso não há
+    // mais token para o servidor identificar quem saiu. Best-effort —
+    // nunca deve atrasar ou bloquear o logout no cliente.
+    if (!user?._isLocal) {
+      try {
+        await supabase.functions.invoke('log-logout', { body: {} });
+      } catch {
+        // silencioso de propósito — ver comentário acima
+      }
+    }
+
     clearLocalAuthenticatedUser();
     setUser(null);
     setProfile(null);

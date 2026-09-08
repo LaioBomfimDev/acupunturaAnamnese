@@ -4,6 +4,7 @@ import { summarizeEvolution, REPORT_AI_DISCLAIMER } from '../../services/reportA
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { summarizeRehabilitation, formatOptionalMetric } from '../../services/rehabilitationService';
+import { insertPatientEvolution } from '../../services/patientEvolutionService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toNum(v) {
@@ -13,12 +14,33 @@ function toNum(v) {
 
 function createEmptyForm() {
   return {
-    data: '', dor: '', sono: '', ansiedade: '',
+    dor: '', sono: '', ansiedade: '',
     energia: '', intestino: '', humor: '',
     protocolo: '', intercorrencia: '', obs: '',
     pontosUsados: [], pontoLivre: '', tecnica: '', resposta: ''
   };
 }
+
+// input datetime-local não aceita segundos/timezone — formata "agora"
+// no fuso local para servir de valor inicial do atendimento avulso.
+function nowForDateTimeLocal() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+}
+
+function formatDateTimeBR(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+const ATTENDANCE_LABELS = {
+  no_show: 'Paciente faltou',
+  excused: 'Falta justificada',
+};
 
 // Pontos candidatos ao registro da sessão: o que a profissional selecionou no
 // Protocolo + o restante da sugestão, sem duplicar códigos.
@@ -87,13 +109,21 @@ function TrendCard({ label, arr, inverse = false }) {
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
-export function Evolucao({ state, onUpdate, analysis }) {
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  const sessions = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointment, onEvolutionSaved, analysis }) {
+  const sessions = Array.isArray(evolucoes) ? evolucoes : (Array.isArray(state.evolucoes) ? state.evolucoes : []);
   const rehab = summarizeRehabilitation(state.reabilitacao);
   const rehabSingle = rehab?.total === 1;
 
+  // Atendimento sem agendamento (encaixe): a data/hora é informada à
+  // mão, já que não existe um agendamento pra conferir contra.
+  const isLinked = Boolean(activeAppointment);
+  const isFalta = isLinked && activeAppointment.attendanceStatus !== 'attended';
+
   const [form, setForm] = useState(() => createEmptyForm());
+  const [faltaObs, setFaltaObs] = useState('');
+  const [avulsoDateTime, setAvulsoDateTime] = useState(() => nowForDateTimeLocal());
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiSummary, setAiSummary] = useState(null);
@@ -109,11 +139,6 @@ export function Evolucao({ state, onUpdate, analysis }) {
     } finally {
       setAiLoading(false);
     }
-  }
-
-  function setSessions(updater) {
-    const next = typeof updater === 'function' ? updater(sessions) : updater;
-    onUpdate('evolucoes', next);
   }
 
   function setF(key, val) {
@@ -166,34 +191,83 @@ export function Evolucao({ state, onUpdate, analysis }) {
     });
   }
 
-  function addSession() {
-    const newSess = {
-      sessao: sessions.length + 1,
-      data:   form.data || hoje,
-      dor: form.dor, sono: form.sono, ansiedade: form.ansiedade,
-      energia: form.energia, intestino: form.intestino, humor: form.humor,
-      protocolo: form.protocolo, intercorrencia: form.intercorrencia,
-      obs: form.obs,
-      // Snapshot sugerido vs usado: base do aprendizado clínico longitudinal
-      pontosUtilizados: form.pontosUsados,
-      pontosSugeridos: sessaoSugestao.sugeridos || null,
-      tecnica: form.tecnica,
-      resposta: form.resposta,
-      dx: analysis.main
-    };
-    setSessions(prev => [...prev, newSess]);
-    setForm(createEmptyForm());
+  async function addSession() {
+    setSaveError(null);
+
+    if (!patientId) {
+      setSaveError('Selecione um paciente antes de registrar a evolução.');
+      return;
+    }
+
+    let atendimentoEm = null;
+    if (!isLinked) {
+      if (!avulsoDateTime) {
+        setSaveError('Informe a data e hora do atendimento.');
+        return;
+      }
+      const parsed = new Date(avulsoDateTime);
+      if (Number.isNaN(parsed.getTime())) {
+        setSaveError('Data do atendimento inválida.');
+        return;
+      }
+      if (parsed.getTime() > Date.now()) {
+        setSaveError('Data do atendimento não pode ser no futuro.');
+        return;
+      }
+      atendimentoEm = parsed.toISOString();
+    }
+
+    const conteudo = isFalta
+      ? { tipo: 'falta', observacao: faltaObs.trim() }
+      : {
+        dor: form.dor, sono: form.sono, ansiedade: form.ansiedade,
+        energia: form.energia, intestino: form.intestino, humor: form.humor,
+        protocolo: form.protocolo, intercorrencia: form.intercorrencia,
+        obs: form.obs,
+        pontosUtilizados: form.pontosUsados,
+        pontosSugeridos: sessaoSugestao.sugeridos || null,
+        tecnica: form.tecnica,
+        resposta: form.resposta,
+        dx: analysis.main,
+      };
+
+    setSaving(true);
+    try {
+      await insertPatientEvolution({
+        patientId,
+        discipline: 'acupuntura',
+        data: conteudo,
+        appointmentId: activeAppointment?.id || null,
+        atendimentoEm,
+      });
+      setForm(createEmptyForm());
+      setFaltaObs('');
+      setAvulsoDateTime(nowForDateTimeLocal());
+      onEvolutionSaved?.();
+    } catch (err) {
+      setSaveError(err.message || 'Não foi possível salvar a evolução.');
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function removeSession(idx) {
-    setSessions(prev => {
-      const next = prev.filter((_, i) => i !== idx);
-      return next.map((s, i) => ({ ...s, sessao: i + 1 }));
-    });
+  // Sessões do array legado (state.evolucoes) continuam editáveis inline,
+  // exatamente como antes — só os registros novos (source: 'record') são
+  // travados, porque a data/auditoria deles vive no servidor.
+  //
+  // O índice bate direto com state.evolucoes porque mergeEvolutionHistory
+  // sempre põe o legado primeiro, na mesma ordem — ver utils/evolutionHistory.
+  function updateSessionField(index, key, val) {
+    const legacy = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+    onUpdate('evolucoes', legacy.map((item, idx) => (idx === index ? { ...item, [key]: val } : item)));
   }
 
-  function updateSession(idx, key, val) {
-    setSessions(prev => prev.map((s, i) => i === idx ? { ...s, [key]: val } : s));
+  function removeLegacySession(index) {
+    const legacy = Array.isArray(state.evolucoes) ? state.evolucoes : [];
+    const next = legacy
+      .filter((_, idx) => idx !== index)
+      .map((item, idx) => ({ ...item, sessao: idx + 1 }));
+    onUpdate('evolucoes', next);
   }
 
   // Valores para radar e trend
@@ -220,83 +294,120 @@ export function Evolucao({ state, onUpdate, analysis }) {
         {/* Formulário novo registro */}
         <div className="box">
           <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif' }}>Novo registro de sessão</h3>
-          <div className="form-grid two">
-            <label>Data<input value={form.data} onChange={e => setF('data', e.target.value)} placeholder={hoje} /></label>
-            <label>Dor 0–10<input value={form.dor} onChange={e => setF('dor', e.target.value)} type="number" min="0" max="10" /></label>
-            <label>Sono 0–10<input value={form.sono} onChange={e => setF('sono', e.target.value)} type="number" min="0" max="10" /></label>
-            <label>Ansiedade 0–10<input value={form.ansiedade} onChange={e => setF('ansiedade', e.target.value)} type="number" min="0" max="10" /></label>
-            <label>Energia 0–10<input value={form.energia} onChange={e => setF('energia', e.target.value)} type="number" min="0" max="10" /></label>
-            <label>Intestino 0–10<input value={form.intestino} onChange={e => setF('intestino', e.target.value)} type="number" min="0" max="10" /></label>
-            <label>Humor 0–10<input value={form.humor} onChange={e => setF('humor', e.target.value)} type="number" min="0" max="10" /></label>
-          </div>
-          <div style={{ marginTop:14 }}>
-            <div className="evo-points-header">
-              <b>Pontos trabalhados na sessão</b>
-              {(sessaoSugestao.selecionados || []).length > 0 && (
-                <button type="button" className="tag" onClick={applyProtocolSelection}>
-                  Usar seleção do Protocolo
-                </button>
-              )}
+
+          {isLinked ? (
+            <div className={`evo-appointment-banner${isFalta ? ' evo-appointment-banner--falta' : ''}`}>
+              <b>{isFalta ? ATTENDANCE_LABELS[activeAppointment.attendanceStatus] : 'Atendimento'}</b>
+              <span>{formatDateTimeBR(activeAppointment.startsAt)}</span>
+              <p className="small">
+                {isFalta
+                  ? 'A data vem do agendamento e não pode ser alterada — mesmo faltas contam na evolução do paciente.'
+                  : 'A data/hora vem do agendamento e é gravada assim, mesmo que você escreva a evolução depois.'}
+              </p>
             </div>
-            {pointPool.length === 0 && customPoints.length === 0 ? (
-              <p className="small">Nenhuma sugestão registrada no Protocolo ainda. Adicione pontos manualmente abaixo.</p>
-            ) : (
-              <div className="evo-point-list">
-                {[...pointPool, ...customPoints].map(point => (
-                  <label key={point.code} className="evo-point-row">
-                    <span className="suggestion-check">
-                      <input
-                        type="checkbox"
-                        checked={usedCodes.has(point.code)}
-                        onChange={() => togglePontoUsado(point)}
-                      />
-                      <span className="suggestion-checkmark" aria-hidden="true" />
-                    </span>
-                    <span className="evo-point-label">
-                      {point.label}
-                      {point.selecionadoNoProtocolo && <small> • selecionado no Protocolo</small>}
-                      {point.origem === 'livre' && <small> • adicionado manualmente</small>}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-            <div className="evo-point-add">
+          ) : (
+            <label className="evo-date-field">
+              Data e hora do atendimento (avulso)
               <input
-                value={form.pontoLivre}
-                onChange={e => setF('pontoLivre', e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPontoLivre(); } }}
-                placeholder="Usou um ponto fora da sugestão? Digite aqui (ex.: IG4, C7, Shen Men)"
+                type="datetime-local"
+                value={avulsoDateTime}
+                max={nowForDateTimeLocal()}
+                onChange={e => setAvulsoDateTime(e.target.value)}
               />
-              <button type="button" className="tag" onClick={addPontoLivre}>Adicionar</button>
-            </div>
-          </div>
-
-          <div className="form-grid two" style={{ marginTop:10 }}>
-            <label>
-              Técnica usada
-              <input value={form.tecnica} onChange={e => setF('tecnica', e.target.value)} placeholder="Agulha, laser, moxa, ventosa..." />
             </label>
-            <label>
-              Resposta do paciente
-              <input value={form.resposta} onChange={e => setF('resposta', e.target.value)} placeholder="Relaxou, dor reduziu, tonturas..." />
-            </label>
-          </div>
+          )}
 
-          <label style={{ marginTop:10, display:'block' }}>
-            Protocolo aplicado na sessão
-            <textarea value={form.protocolo} onChange={e => setF('protocolo', e.target.value)} />
-          </label>
-          <label style={{ display:'block' }}>
-            Intercorrência / entrave / reação clínica
-            <textarea value={form.intercorrencia} onChange={e => setF('intercorrencia', e.target.value)} />
-          </label>
-          <label style={{ display:'block' }}>
-            Observações evolutivas
-            <textarea value={form.obs} onChange={e => setF('obs', e.target.value)} />
-          </label>
-          <button className="tag active" onClick={addSession} style={{ marginTop:10 }}>
-            Adicionar sessão
+          {isFalta ? (
+            <label style={{ marginTop:10, display:'block' }}>
+              Observação (opcional)
+              <textarea
+                value={faltaObs}
+                onChange={e => setFaltaObs(e.target.value)}
+                placeholder="Ex.: 3ª falta consecutiva, considerar contato de reengajamento."
+              />
+            </label>
+          ) : (
+            <>
+              <div className="form-grid two">
+                <label>Dor 0–10<input value={form.dor} onChange={e => setF('dor', e.target.value)} type="number" min="0" max="10" /></label>
+                <label>Sono 0–10<input value={form.sono} onChange={e => setF('sono', e.target.value)} type="number" min="0" max="10" /></label>
+                <label>Ansiedade 0–10<input value={form.ansiedade} onChange={e => setF('ansiedade', e.target.value)} type="number" min="0" max="10" /></label>
+                <label>Energia 0–10<input value={form.energia} onChange={e => setF('energia', e.target.value)} type="number" min="0" max="10" /></label>
+                <label>Intestino 0–10<input value={form.intestino} onChange={e => setF('intestino', e.target.value)} type="number" min="0" max="10" /></label>
+                <label>Humor 0–10<input value={form.humor} onChange={e => setF('humor', e.target.value)} type="number" min="0" max="10" /></label>
+              </div>
+              <div style={{ marginTop:14 }}>
+                <div className="evo-points-header">
+                  <b>Pontos trabalhados na sessão</b>
+                  {(sessaoSugestao.selecionados || []).length > 0 && (
+                    <button type="button" className="tag" onClick={applyProtocolSelection}>
+                      Usar seleção do Protocolo
+                    </button>
+                  )}
+                </div>
+                {pointPool.length === 0 && customPoints.length === 0 ? (
+                  <p className="small">Nenhuma sugestão registrada no Protocolo ainda. Adicione pontos manualmente abaixo.</p>
+                ) : (
+                  <div className="evo-point-list">
+                    {[...pointPool, ...customPoints].map(point => (
+                      <label key={point.code} className="evo-point-row">
+                        <span className="suggestion-check">
+                          <input
+                            type="checkbox"
+                            checked={usedCodes.has(point.code)}
+                            onChange={() => togglePontoUsado(point)}
+                          />
+                          <span className="suggestion-checkmark" aria-hidden="true" />
+                        </span>
+                        <span className="evo-point-label">
+                          {point.label}
+                          {point.selecionadoNoProtocolo && <small> • selecionado no Protocolo</small>}
+                          {point.origem === 'livre' && <small> • adicionado manualmente</small>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="evo-point-add">
+                  <input
+                    value={form.pontoLivre}
+                    onChange={e => setF('pontoLivre', e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPontoLivre(); } }}
+                    placeholder="Usou um ponto fora da sugestão? Digite aqui (ex.: IG4, C7, Shen Men)"
+                  />
+                  <button type="button" className="tag" onClick={addPontoLivre}>Adicionar</button>
+                </div>
+              </div>
+
+              <div className="form-grid two" style={{ marginTop:10 }}>
+                <label>
+                  Técnica usada
+                  <input value={form.tecnica} onChange={e => setF('tecnica', e.target.value)} placeholder="Agulha, laser, moxa, ventosa..." />
+                </label>
+                <label>
+                  Resposta do paciente
+                  <input value={form.resposta} onChange={e => setF('resposta', e.target.value)} placeholder="Relaxou, dor reduziu, tonturas..." />
+                </label>
+              </div>
+
+              <label style={{ marginTop:10, display:'block' }}>
+                Protocolo aplicado na sessão
+                <textarea value={form.protocolo} onChange={e => setF('protocolo', e.target.value)} />
+              </label>
+              <label style={{ display:'block' }}>
+                Intercorrência / entrave / reação clínica
+                <textarea value={form.intercorrencia} onChange={e => setF('intercorrencia', e.target.value)} />
+              </label>
+              <label style={{ display:'block' }}>
+                Observações evolutivas
+                <textarea value={form.obs} onChange={e => setF('obs', e.target.value)} />
+              </label>
+            </>
+          )}
+
+          {saveError && <div className="alert" style={{ marginTop:10 }}>{saveError}</div>}
+          <button className="tag active" onClick={addSession} disabled={saving} style={{ marginTop:10 }}>
+            {saving ? 'Salvando…' : 'Adicionar sessão'}
           </button>
         </div>
 
@@ -423,35 +534,51 @@ export function Evolucao({ state, onUpdate, analysis }) {
             {sessions.length === 0 ? (
               <tr><td colSpan={6}>Nenhuma evolução registrada ainda.</td></tr>
             ) : sessions.map((s, i) => (
-              <tr key={i}>
-                <td><b>{s.sessao}</b><br /><span className="small">{s.data}</span></td>
+              <tr key={s.id || i}>
                 <td>
-                  Dor: <input className="mini-input" value={s.dor ?? ''} onChange={e => updateSession(i,'dor',e.target.value)} /><br />
-                  Sono: <input className="mini-input" value={s.sono ?? ''} onChange={e => updateSession(i,'sono',e.target.value)} /><br />
-                  Ans.: <input className="mini-input" value={s.ansiedade ?? ''} onChange={e => updateSession(i,'ansiedade',e.target.value)} />
-                </td>
-                <td>
-                  Energia: <input className="mini-input" value={s.energia ?? ''} onChange={e => updateSession(i,'energia',e.target.value)} /><br />
-                  Intestino: <input className="mini-input" value={s.intestino ?? ''} onChange={e => updateSession(i,'intestino',e.target.value)} /><br />
-                  Humor: <input className="mini-input" value={s.humor ?? ''} onChange={e => updateSession(i,'humor',e.target.value)} />
-                </td>
-                <td>
-                  <b>{s.dx}</b><br />
-                  {Array.isArray(s.pontosUtilizados) && s.pontosUtilizados.length > 0 && (
-                    <span className="small">
-                      Pontos: {s.pontosUtilizados.map(p => String(p.label || '').split(' — ')[0]).join(', ')}<br />
-                    </span>
+                  <b>{s.sessao}</b><br />
+                  <span className="small">{s.data}</span>
+                  {s.attendanceStatus && s.attendanceStatus !== 'attended' && (
+                    <><br /><span className="small">{ATTENDANCE_LABELS[s.attendanceStatus] || s.attendanceStatus}</span></>
                   )}
-                  {s.tecnica && <span className="small">Técnica: {s.tecnica}<br /></span>}
-                  <span className="small">{s.protocolo || 'Protocolo não descrito'}</span>
                 </td>
+                {s.tipo === 'falta' ? (
+                  <td colSpan={4}>{s.observacao || 'Sem observações.'}</td>
+                ) : (
+                  <>
+                    <td>
+                      Dor: <input className="mini-input" value={s.dor ?? ''} disabled={!s.editable} onChange={e => s.editable && updateSessionField(i, 'dor', e.target.value)} /><br />
+                      Sono: <input className="mini-input" value={s.sono ?? ''} disabled={!s.editable} onChange={e => s.editable && updateSessionField(i, 'sono', e.target.value)} /><br />
+                      Ans.: <input className="mini-input" value={s.ansiedade ?? ''} disabled={!s.editable} onChange={e => s.editable && updateSessionField(i, 'ansiedade', e.target.value)} />
+                    </td>
+                    <td>
+                      Energia: <input className="mini-input" value={s.energia ?? ''} disabled={!s.editable} onChange={e => s.editable && updateSessionField(i, 'energia', e.target.value)} /><br />
+                      Intestino: <input className="mini-input" value={s.intestino ?? ''} disabled={!s.editable} onChange={e => s.editable && updateSessionField(i, 'intestino', e.target.value)} /><br />
+                      Humor: <input className="mini-input" value={s.humor ?? ''} disabled={!s.editable} onChange={e => s.editable && updateSessionField(i, 'humor', e.target.value)} />
+                    </td>
+                    <td>
+                      <b>{s.dx}</b><br />
+                      {Array.isArray(s.pontosUtilizados) && s.pontosUtilizados.length > 0 && (
+                        <span className="small">
+                          Pontos: {s.pontosUtilizados.map(p => String(p.label || '').split(' — ')[0]).join(', ')}<br />
+                        </span>
+                      )}
+                      {s.tecnica && <span className="small">Técnica: {s.tecnica}<br /></span>}
+                      <span className="small">{s.protocolo || 'Protocolo não descrito'}</span>
+                    </td>
+                    <td>
+                      {s.intercorrencia || '—'}<br />
+                      {s.resposta && <span className="small">Resposta: {s.resposta}<br /></span>}
+                      <span className="small">{s.obs || 'Sem observações.'}</span>
+                    </td>
+                  </>
+                )}
                 <td>
-                  {s.intercorrencia || '—'}<br />
-                  {s.resposta && <span className="small">Resposta: {s.resposta}<br /></span>}
-                  <span className="small">{s.obs || 'Sem observações.'}</span>
-                </td>
-                <td>
-                  <button className="tag" onClick={() => removeSession(i)}>Excluir</button>
+                  {s.editable ? (
+                    <button className="tag" onClick={() => removeLegacySession(i)}>Excluir</button>
+                  ) : (
+                    <span className="small">registro travado</span>
+                  )}
                 </td>
               </tr>
             ))}

@@ -77,6 +77,22 @@
   }
 }
 
+.cp-consent {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 400;
+  color: var(--r1-text-muted);
+}
+
+.cp-consent input[type='checkbox'] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
 .cp-field {
   display: flex;
   flex-direction: column;
@@ -698,4 +714,15 @@
 
 .shv-evolucao-list p {
   margin: 2px 0 0;
+}
+
+/* Link compartilhado é lido sem login, com frequência no celular de
+   quem recebeu o encaminhamento — a tabela precisa do próprio scroll
+   horizontal em vez de empurrar a página inteira. */
+@media (max-width: 768px) {
+  .shv-evolucao {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

@@ -10,6 +10,8 @@ import {
   upsertVersionedClinicalRecord,
 } from '../services/clinicalRecordService';
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
+import { listPatientEvolutions } from '../services/patientEvolutionService';
+import { mergeEvolutionHistory } from '../utils/evolutionHistory';
 import {
   PSI_ANAMNESE_RECORD_TYPE,
   PSI_NEURO_RECORD_TYPE,
@@ -79,13 +81,16 @@ const PSYCHOLOGY_NAV_GROUPS = [
 const TABS_WITHOUT_PATIENT = [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.BIBLIOTECA, PSYCHOLOGY_TABS.DOCUMENTOS];
 
 export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
-  const { selectedPatient } = usePatient();
+  const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [activeTab, setActiveTab] = useState(PSYCHOLOGY_TABS.HOME);
   const [activeJourney, setActiveJourney] = useState(null);
   const [session, setSession] = useState(createEmptyPsychologySession);
+  // Evolução vinculada ao atendimento (patient_evolutions) vive fora do
+  // registro clínico deste workspace — ver supabase/migrations/20260903.
+  const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
   const [neuroEvaluation, setNeuroEvaluation] = useState(createEmptyNeuropsychologyEvaluation);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [neuroSaveStatus, setNeuroSaveStatus] = useState('idle');
@@ -126,6 +131,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     setNeuroLastSavedAt(null);
     setHasPending(false);
     setNeuroHasPending(false);
+    setPatientEvolutionRecords([]);
     sessionChangeVersionRef.current = 0;
     neuroChangeVersionRef.current = 0;
     loadBlockedRef.current = false;
@@ -141,6 +147,9 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     }
 
     let cancelled = false;
+    listPatientEvolutions(patientId, 'psicologia')
+      .then(records => { if (!cancelled) setPatientEvolutionRecords(records); })
+      .catch(() => { if (!cancelled) setPatientEvolutionRecords([]); });
     Promise.all([
       getLatestRecord(patientId, PSI_ANAMNESE_RECORD_TYPE, 'psicologia'),
       getLatestRecord(patientId, PSI_NEURO_RECORD_TYPE, 'psicologia'),
@@ -530,6 +539,21 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     setSession(prev => ({ ...prev, evolucoes }));
   }
 
+  // Depois de gravar uma evolução vinculada a um agendamento, o vínculo
+  // se encerra — a próxima "Escrever evolução" passa de novo pela lista
+  // de pendências, sem deixar uma data antiga grudada na tela.
+  async function handleEvolutionSaved() {
+    if (scopedActiveAppointment) clearActiveAppointment();
+    const patientId = patientIdRef.current;
+    if (!patientId) return;
+    try {
+      const records = await listPatientEvolutions(patientId, 'psicologia');
+      setPatientEvolutionRecords(records);
+    } catch {
+      // A tela de Evolução já mostra o próprio erro de salvar, se houver.
+    }
+  }
+
   function handleRelatorioChange(relatorio) {
     setSession(prev => ({ ...prev, relatorio }));
   }
@@ -553,6 +577,14 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     ? PSYCHOLOGY_TABS.HOME
     : activeTab;
   const isNeuroContext = activeJourney === 'avaliacao' || effectiveTab === PSYCHOLOGY_TABS.NEURO;
+  // Mescla o legado (session.evolucoes) com os registros novos vindos de
+  // patient_evolutions — ver utils/evolutionHistory.
+  const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
+  const scopedActiveAppointment = (
+    activeAppointment
+    && activeAppointment.patientId === selectedPatient?.id
+    && activeAppointment.discipline === 'psicologia'
+  ) ? activeAppointment : null;
   const showAssistantRail = effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && Boolean(selectedPatient);
   const now = new Date();
   const dateLabel = now.toLocaleDateString('pt-BR', {
@@ -654,7 +686,11 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         return (
           <PsychologyEvolucao
             session={session}
+            evolucoes={evolucoes}
+            patientId={selectedPatient?.id || null}
+            activeAppointment={scopedActiveAppointment}
             onEvolucoesChange={handleEvolucoesChange}
+            onEvolutionSaved={handleEvolutionSaved}
           />
         );
       case PSYCHOLOGY_TABS.RELATORIO:
@@ -671,6 +707,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         return (
           <PsychologyRelatorio
             session={session}
+            evolucoes={evolucoes}
             selectedPatient={selectedPatient}
             therapistProfile={profile}
             onRelatorioChange={handleRelatorioChange}
@@ -703,7 +740,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
-        sessionCount={(Array.isArray(session.evolucoes) ? session.evolucoes.length : 0)
+        sessionCount={evolucoes.length
           + (Array.isArray(neuroEvaluation.sessions)
             ? neuroEvaluation.sessions.filter(item => item.status === 'concluida').length
             : 0)}

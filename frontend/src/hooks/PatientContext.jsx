@@ -25,6 +25,12 @@ export const PatientProvider = ({ children }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Agendamento de origem quando o paciente foi selecionado a partir de
+  // "Atender"/"Atendimentos aguardando evolução" na Agenda — é essa
+  // referência que deixa a tela de Evolução saber a data/hora real do
+  // atendimento (appointments.starts_at) e o status (atendido/faltou),
+  // em vez de deixar o profissional digitar a data à mão.
+  const [activeAppointment, setActiveAppointment] = useState(null);
 
   // Carrega pacientes ao logar
   const loadPatients = useCallback(async () => {
@@ -64,10 +70,10 @@ export const PatientProvider = ({ children }) => {
   // Criar novo paciente. A matrícula inicial registra a disciplina do
   // atendimento (Fase 2 — só o workspace de acupuntura cria por aqui);
   // é best-effort: pendência fica visível em "Pacientes da clínica".
-  const createPatient = useCallback(async ({ name, phone, birthDate, age }, initialDiscipline = 'acupuntura') => {
+  const createPatient = useCallback(async ({ name, phone, birthDate, age, imageConsent, cpf }, initialDiscipline = 'acupuntura') => {
     setError(null);
     try {
-      const newPatient = await createPatientApi({ name, phone, birthDate, age });
+      const newPatient = await createPatientApi({ name, phone, birthDate, age, imageConsent, cpf });
       await enrollPatientInitial(newPatient.id, initialDiscipline);
       setPatients(prev => [newPatient, ...prev]);
       setSelectedPatient(newPatient);
@@ -115,19 +121,45 @@ export const PatientProvider = ({ children }) => {
     }
   }, [selectedPatient]);
 
-  // Selecionar paciente
+  // Selecionar paciente "puro" (busca manual, sidebar): nunca vem de um
+  // agendamento específico, então qualquer vínculo anterior é limpo —
+  // senão a evolução do paciente errado herdaria a data do atendimento
+  // de quem estava selecionado antes.
   const selectPatient = useCallback((patient) => {
     setSelectedPatient(patient);
+    setActiveAppointment(null);
+  }, []);
+
+  // Selecionar paciente a partir de um agendamento concreto (Agenda →
+  // "Atender" ou lista de pendências de evolução). `appointment` é o
+  // registro de `appointments` (id, starts_at, status, discipline...).
+  const selectPatientForAppointment = useCallback((patient, appointment) => {
+    setSelectedPatient(patient);
+    setActiveAppointment(appointment ? {
+      id: appointment.id,
+      startsAt: appointment.starts_at,
+      discipline: appointment.discipline,
+      attendanceStatus: appointment.status,
+      patientId: appointment.patient_id,
+    } : null);
+  }, []);
+
+  // Limpar o vínculo depois que a evolução daquele atendimento for
+  // salva (ou se o profissional sair da tela sem salvar).
+  const clearActiveAppointment = useCallback(() => {
+    setActiveAppointment(null);
   }, []);
 
   // Limpar seleção (novo atendimento)
   const clearSelection = useCallback(() => {
     setSelectedPatient(null);
+    setActiveAppointment(null);
   }, []);
 
   const archivePatient = useCallback(async (patientId) => {
     const archived = await updatePatient(patientId, { archivedAt: new Date().toISOString() });
     setSelectedPatient(prev => prev?.id === patientId ? null : prev);
+    setActiveAppointment(prev => (prev?.patientId === patientId ? null : prev));
     return archived;
   }, [updatePatient]);
 
@@ -135,6 +167,7 @@ export const PatientProvider = ({ children }) => {
     <PatientContext.Provider value={{
       patients,
       selectedPatient,
+      activeAppointment,
       loading,
       error,
       createPatient,
@@ -142,6 +175,8 @@ export const PatientProvider = ({ children }) => {
       archivePatient,
       deletePatient,
       selectPatient,
+      selectPatientForAppointment,
+      clearActiveAppointment,
       clearSelection,
       refreshPatients: loadPatients,
     }}>

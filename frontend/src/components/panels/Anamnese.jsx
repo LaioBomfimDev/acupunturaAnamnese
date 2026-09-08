@@ -39,6 +39,8 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
     name: selectedPatient?.name || '',
     phone: selectedPatient?.phone || '',
     age: getPatientAge(selectedPatient),
+    cpf: selectedPatient?.cpf || '',
+    imageConsent: selectedPatient?.image_consent === true,
   });
   const sexContext = getClinicalSexContext(state.sexo);
   const reproductiveModule = sexContext === 'feminino'
@@ -66,6 +68,8 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       name: selectedPatient?.name || '',
       phone: selectedPatient?.phone || '',
       age: getPatientAge(selectedPatient),
+      cpf: selectedPatient?.cpf || '',
+      imageConsent: selectedPatient?.image_consent === true,
     });
     setEditingPatient(true);
   }
@@ -147,6 +151,23 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
               value={patientForm.age || ''}
               onChange={e => setPatientForm(f => ({ ...f, age: e.target.value }))}
             />
+          </label>
+          <label>
+            CPF
+            <input
+              value={patientForm.cpf}
+              onChange={e => setPatientForm(f => ({ ...f, cpf: e.target.value }))}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+            />
+          </label>
+          <label className="patient-consent">
+            <input
+              type="checkbox"
+              checked={patientForm.imageConsent}
+              onChange={e => setPatientForm(f => ({ ...f, imageConsent: e.target.checked }))}
+            />
+            <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
           </label>
           <div className="inline-edit-actions">
             <button className="tag active" type="submit" disabled={savingPatient}>

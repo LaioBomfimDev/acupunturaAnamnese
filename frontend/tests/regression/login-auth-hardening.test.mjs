@@ -159,15 +159,26 @@ test('loading só libera a aplicação após sessão, perfil e MFA resolverem', 
   assert.doesNotMatch(source, /setLoading\(false\)/);
 });
 
-test('configuração versionada libera JWT somente para o login pré-sessão', async () => {
+test('configuração versionada libera JWT só para as functions deliberadamente pré-sessão', async () => {
   const config = await readRepositoryFile('supabase', 'config.toml');
   const publicFunctionOverrides = config.match(/verify_jwt\s*=\s*false/g) || [];
 
+  // Lista fechada de propósito: cada function aqui é uma superfície sem
+  // autenticação, revisada individualmente. Uma quarta aparecer sem
+  // passar por este teste é o sinal de alarme que ele existe para dar.
   assert.match(
     config,
     /\[functions\.login-with-identifier\][\s\S]*?verify_jwt\s*=\s*false/,
   );
-  assert.equal(publicFunctionOverrides.length, 1);
+  assert.match(
+    config,
+    /\[functions\.satisfaction-survey\][\s\S]*?verify_jwt\s*=\s*false/,
+  );
+  assert.match(
+    config,
+    /\[functions\.confirm-appointment\][\s\S]*?verify_jwt\s*=\s*false/,
+  );
+  assert.equal(publicFunctionOverrides.length, 3);
 });
 
 test('fonte visual registra somente eventos operacionais sanitizados', async () => {

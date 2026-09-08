@@ -58,7 +58,7 @@ const STATE_BADGES = {
   locked: 'Não habilitada',
 };
 
-export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments, onOpenAgenda }) {
+export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments, onOpenAgenda, onOpenGestao, onOpenPendingEvolutions }) {
   const cards = buildHubCards(profile);
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Reability';
 
@@ -112,7 +112,7 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
           })}
         </div>
 
-        {(onOpenAgenda || onOpenClinicPatients || onOpenDocuments) && (
+        {(onOpenAgenda || onOpenClinicPatients || onOpenDocuments || onOpenGestao || onOpenPendingEvolutions) && (
           <>
             <p className="hub-tools-title">Da instituição</p>
             <div className="hub-tools">
@@ -120,6 +120,20 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
                 <button type="button" className="hub-secondary" onClick={onOpenAgenda}>
                   <b>Agenda →</b>
                   <span>Calendário de atendimentos, status do dia e aniversários dos pacientes.</span>
+                </button>
+              )}
+
+              {onOpenPendingEvolutions && (
+                <button type="button" className="hub-secondary" onClick={onOpenPendingEvolutions}>
+                  <b>Atendimentos aguardando evolução →</b>
+                  <span>Atendido, faltou ou falta justificada: escreva a evolução sem procurar na agenda.</span>
+                </button>
+              )}
+
+              {onOpenGestao && (
+                <button type="button" className="hub-secondary" onClick={onOpenGestao}>
+                  <b>Gestão →</b>
+                  <span>Relatórios operacionais da clínica: faltosos e o que vier depois.</span>
                 </button>
               )}
 

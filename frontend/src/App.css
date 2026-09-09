@@ -21,6 +21,51 @@
   --ink-soft: rgba(255,255,255,.72);
 }
 
+/* Mesmo alias, agora reativo ao tema: liga estas variáveis legadas aos
+   tokens SEMÂNTICOS (que já mudam com o tema) em vez de primitivas fixas.
+   Sem isto o botão de tema escuro já trocava a sidebar/hub/login (100%
+   tokenizados) mas deixava as ~9 mil linhas antigas deste arquivo sempre
+   no visual claro. --navy vira texto claro no escuro (era só tinta
+   escura); --gold já É o accent, que o tokens.css já inverte sozinho.
+   Onde --navy/--gold eram usados como PREENCHIMENTO sólido (badge/botão
+   escuro, ou botão de accent com texto fixo em branco) isso quebraria —
+   esses casos pontuais foram repontados para --r1-surface-inverse /
+   --r1-accent-contrast diretamente no lugar, não aqui. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --navy: var(--r1-text);
+    --navy-2: var(--r1-text-muted);
+    --navy-3: var(--r1-text-subtle);
+    --gold: var(--r1-accent);
+    --gold-2: var(--r1-accent-strong);
+    --cream: var(--r1-surface);
+    --line: color-mix(in srgb, var(--r1-accent) 30%, transparent);
+    --soft: var(--r1-surface-sunken);
+  }
+}
+
+:root[data-theme='dark'] {
+  --navy: var(--r1-text);
+  --navy-2: var(--r1-text-muted);
+  --navy-3: var(--r1-text-subtle);
+  --gold: var(--r1-accent);
+  --gold-2: var(--r1-accent-strong);
+  --cream: var(--r1-surface);
+  --line: color-mix(in srgb, var(--r1-accent) 30%, transparent);
+  --soft: var(--r1-surface-sunken);
+}
+
+:root[data-theme='light'] {
+  --navy: var(--r1-navy-800);
+  --navy-2: var(--r1-navy-700);
+  --navy-3: var(--r1-navy-600);
+  --gold: var(--r1-gold-500);
+  --gold-2: var(--r1-gold-400);
+  --cream: var(--r1-cream-200);
+  --line: color-mix(in srgb, var(--r1-gold-500) 24%, transparent);
+  --soft: var(--r1-cream-100);
+}
+
 * { box-sizing: border-box; }
 
 /* ======= BARRAS DE ROLAGEM =======
@@ -132,7 +177,7 @@ body {
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(240, 189, 83, .78);
+  background-color: rgba(79, 196, 182, .78);
 }
 
 .logo {
@@ -342,7 +387,7 @@ body {
 }
 
 .nav button.active {
-  background: rgba(240,189,83,.13);
+  background: rgba(79, 196, 182, .13);
   border-left-color: var(--gold-2);
   color: var(--gold-2);
   font-weight: 700;
@@ -583,7 +628,7 @@ body {
   border-radius: var(--r1-radius-sm); overflow: hidden;
   box-shadow: 0 2px 10px rgba(0,0,0,.04); margin-bottom: 22px;
 }
-.panel-title { background: var(--navy); color: white; padding: 15px 20px; font-weight: 700; }
+.panel-title { background: var(--r1-surface-inverse); color: var(--r1-text-on-inverse); padding: 15px 20px; font-weight: 700; }
 .panel-body { padding: 20px; }
 
 .assistant-rail {
@@ -630,7 +675,7 @@ body {
   height: 8px;
   border-radius: 999px;
   background: var(--gold-2);
-  box-shadow: 0 0 0 5px rgba(240, 189, 83, .16);
+  box-shadow: 0 0 0 5px rgba(79, 196, 182, .16);
   flex: 0 0 auto;
 }
 
@@ -727,7 +772,7 @@ body {
   letter-spacing: .04em;
   text-transform: uppercase;
   color: #9a6a12;
-  background: rgba(240, 189, 83, .22);
+  background: rgba(79, 196, 182, .22);
   border: 1px solid rgba(15, 76, 73, .45);
   padding: 2px 8px;
   border-radius: 999px;
@@ -751,7 +796,7 @@ body {
 }
 
 .synth-badge-alta { color: #1c7a44; background: rgba(46, 160, 90, .15); border: 1px solid rgba(46, 160, 90, .4); }
-.synth-badge-moderada { color: #9a6a12; background: rgba(240, 189, 83, .2); border: 1px solid rgba(15, 76, 73, .45); }
+.synth-badge-moderada { color: #9a6a12; background: rgba(79, 196, 182, .2); border: 1px solid rgba(15, 76, 73, .45); }
 .synth-badge-baixa { color: rgba(19, 35, 33, .7); background: rgba(19, 35, 33, .07); border: 1px solid var(--line); }
 
 .synth-reason {
@@ -935,7 +980,7 @@ textarea { min-height: 95px; resize: vertical; }
   transition: all 0.15s;
 }
 .tag:hover { background: var(--cream); }
-.tag.active { background: var(--navy); color: white; border-color: var(--navy); }
+.tag.active { background: var(--r1-surface-inverse); color: var(--r1-text-on-inverse); border-color: var(--r1-surface-inverse); }
 
 /* ======= BOXES E CARDS ======= */
 .box {
@@ -1167,7 +1212,7 @@ textarea { min-height: 95px; resize: vertical; }
   border-radius: var(--r1-radius-sm);
   display: grid;
   place-items: center;
-  background: var(--navy);
+  background: var(--r1-surface-inverse);
   color: white;
   font-size: 22px;
   flex: 0 0 auto;
@@ -1240,8 +1285,8 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .primary-button {
-  background: var(--navy);
-  color: white;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
 }
 
 .primary-button:hover {
@@ -1350,7 +1395,7 @@ textarea { min-height: 95px; resize: vertical; }
   height: 38px;
   border-radius: var(--r1-radius-sm);
   background: var(--gold);
-  color: white;
+  color: var(--r1-accent-contrast);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -1571,7 +1616,7 @@ textarea { min-height: 95px; resize: vertical; }
   border-radius: var(--r1-radius-sm);
   padding: 14px 20px;
   background: linear-gradient(180deg, var(--gold-2), var(--gold));
-  color: var(--r1-text-on-inverse);
+  color: var(--r1-accent-contrast);
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 12px 24px rgba(0,0,0,.18);
@@ -1630,9 +1675,9 @@ textarea { min-height: 95px; resize: vertical; }
 
 .home-screen .start-action-icon,
 .home-screen .patient-avatar {
-  background: var(--navy);
-  color: white;
-  border: 1px solid var(--navy);
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+  border: 1px solid var(--r1-surface-inverse);
 }
 
 .home-screen .start-panel {
@@ -1664,9 +1709,9 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .home-screen .primary-button {
-  background: var(--navy);
-  border-color: var(--navy);
-  color: white;
+  background: var(--r1-surface-inverse);
+  border-color: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
 }
 
 .home-screen .quiet-button {
@@ -2212,7 +2257,7 @@ textarea { min-height: 95px; resize: vertical; }
   height: 42px;
   place-items: center;
   border-radius: var(--r1-radius-md);
-  background: var(--navy);
+  background: var(--r1-surface-inverse);
   color: #fff;
   font-weight: 800;
 }
@@ -2455,7 +2500,7 @@ textarea { min-height: 95px; resize: vertical; }
   border-radius: var(--r1-radius-md);
   display: grid;
   place-items: center;
-  background: var(--navy);
+  background: var(--r1-surface-inverse);
   color: var(--gold-2);
   border: 1px solid rgba(15, 76, 73, .42);
   font-weight: 900;
@@ -2575,8 +2620,8 @@ textarea { min-height: 95px; resize: vertical; }
 .summary-action-primary {
   grid-column: 1 / -1;
   min-height: 56px;
-  background: var(--navy);
-  border-color: var(--navy);
+  background: var(--r1-surface-inverse);
+  border-color: var(--r1-surface-inverse);
   color: white;
   box-shadow: 0 12px 28px rgba(19, 35, 33, .16);
 }
@@ -3061,7 +3106,7 @@ textarea { min-height: 95px; resize: vertical; }
 .ai-analyze-btn {
   width: 100%; margin-top: 12px; padding: 12px;
   border: 1px solid var(--gold); border-radius: var(--r1-radius-md);
-  background: var(--gold); color: #fff; font-weight: 700; font-size: 14px;
+  background: var(--gold); color: var(--r1-accent-contrast); font-weight: 700; font-size: 14px;
   cursor: pointer; transition: filter 0.2s;
 }
 .ai-analyze-btn:hover:not(:disabled) { filter: brightness(1.06); }
@@ -3180,7 +3225,7 @@ textarea { min-height: 95px; resize: vertical; }
 /* ======= RACIOCÍNIO CLÍNICO ======= */
 .movement-card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-lg); padding: 16px; position: relative; overflow: hidden; }
 .movement-card h3 { font-family: var(--r1-font-display); margin: 0 0 6px; color: var(--gold); }
-.score-pill { display: inline-block; background: var(--navy); color: white; border-radius: 999px; padding: 5px 10px; font-size: 12px; margin-top: 6px; }
+.score-pill { display: inline-block; background: var(--r1-surface-inverse); color: var(--r1-text-on-inverse); border-radius: 999px; padding: 5px 10px; font-size: 12px; margin-top: 6px; }
 .evidence { font-size: 13px; line-height: 1.6; margin-top: 10px; }
 
 .barline { display: grid; grid-template-columns: 110px 1fr 38px; gap: 8px; align-items: center; margin: 10px 0; }
@@ -3196,7 +3241,7 @@ textarea { min-height: 95px; resize: vertical; }
 .diag-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
 .diag-card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-lg); padding: 16px; margin-bottom: 14px; }
 .diag-card h3 { font-family: var(--r1-font-display); color: var(--gold); margin: 0 0 8px; }
-.diag-badge { display: inline-block; border-radius: 999px; background: var(--navy); color: white; padding: 6px 11px; font-size: 12px; margin: 3px; }
+.diag-badge { display: inline-block; border-radius: 999px; background: var(--r1-surface-inverse); color: var(--r1-text-on-inverse); padding: 6px 11px; font-size: 12px; margin: 3px; }
 .causal { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
 .causal-step { background: white; border: 1px solid var(--line); border-radius: var(--r1-radius-lg); padding: 11px; text-align: center; font-weight: 700; }
 .causal-arrow { text-align: center; color: var(--gold); font-size: 22px; line-height: 1; }
@@ -3209,9 +3254,9 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* ======= PROTOCOLO ======= */
 .protocol-hero {
-  background: linear-gradient(135deg,var(--navy),var(--navy-3)); color: white;
+  background: linear-gradient(135deg, var(--r1-navy-800), var(--r1-navy-600)); color: white;
   border-radius: var(--r1-radius-xl); padding: 22px; margin-bottom: 18px;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--navy) 16%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--r1-navy-800) 16%, transparent);
 }
 .protocol-hero h2 { font-family: var(--r1-font-display); color: var(--gold); margin: 0 0 8px; font-size: 28px; }
 .protocol-hero p { margin: 5px 0; line-height: 1.55; }
@@ -3486,8 +3531,8 @@ textarea { min-height: 95px; resize: vertical; }
 .point-recommendation-row strong {
   min-width: 34px;
   border-radius: 999px;
-  background: var(--navy);
-  color: white;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
   padding: 6px 8px;
   text-align: center;
   font-size: 12px;
@@ -3593,8 +3638,8 @@ textarea { min-height: 95px; resize: vertical; }
 .suggestion-score {
   min-width: 34px;
   border-radius: 999px;
-  background: var(--navy);
-  color: white;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
   padding: 6px 8px;
   text-align: center;
   font-size: 12px;
@@ -3690,7 +3735,7 @@ textarea { min-height: 95px; resize: vertical; }
 /* Filtros do Protocolo */
 .filterbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .filterbar .tag { background: var(--soft); }
-.filterbar .tag.active { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 700; }
+.filterbar .tag.active { background: var(--gold); border-color: var(--gold); color: var(--r1-accent-contrast); font-weight: 700; }
 
 /* ======= RELATÓRIO ======= */
 /* Congela a paleta do papel timbrado na cor antiga: o rebranding do app
@@ -4034,7 +4079,7 @@ textarea { min-height: 95px; resize: vertical; }
 .clinic-letterhead-preview .clinic-letterhead-bar {
   height: 9px;
   margin: 0 -16px;
-  background: var(--clinic-accent, var(--navy));
+  background: var(--clinic-accent, var(--r1-surface-inverse));
 }
 
 .clinic-letterhead-preview-contact {
@@ -4080,7 +4125,7 @@ textarea { min-height: 95px; resize: vertical; }
   height: 42px;
   flex: 0 0 auto;
   border-radius: var(--r1-radius-md);
-  background: var(--clinic-accent, var(--navy));
+  background: var(--clinic-accent, var(--r1-surface-inverse));
   color: #fff;
   font-family: var(--r1-font-display);
   font-size: 20px;
@@ -4270,9 +4315,9 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .map-edit-toggle.active {
-  background: var(--navy);
+  background: var(--r1-surface-inverse);
   color: var(--gold);
-  border-color: var(--navy);
+  border-color: var(--r1-surface-inverse);
 }
 
 .map-edit-toggle:disabled {
@@ -4521,8 +4566,8 @@ textarea { min-height: 95px; resize: vertical; }
 .map-point-row-code {
   min-height: 34px;
   border-radius: 999px;
-  background: var(--navy);
-  color: white;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
   display: grid;
   place-items: center;
   padding: 6px;
@@ -4761,7 +4806,7 @@ textarea { min-height: 95px; resize: vertical; }
 .point-review-nav-btn:hover:not(:disabled) {
   background: var(--gold);
   border-color: var(--gold);
-  color: var(--navy);
+  color: var(--r1-accent-contrast);
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(15, 76, 73, .22);
 }
@@ -4922,7 +4967,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .point-review-source-arrow:hover {
   background: var(--gold);
-  color: var(--navy);
+  color: var(--r1-accent-contrast);
   transform: translateY(-50%) scale(1.06);
   box-shadow: 0 18px 42px rgba(15, 76, 73, .30);
 }
@@ -5019,7 +5064,7 @@ textarea { min-height: 95px; resize: vertical; }
   border: 2px solid var(--navy);
   border-radius: 999px;
   background: var(--gold);
-  color: var(--navy);
+  color: var(--r1-accent-contrast);
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
@@ -5497,7 +5542,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .admin-stat-card.active::before { background: #166534; }
-.admin-stat-card.patients::before { background: var(--navy); }
+.admin-stat-card.patients::before { background: var(--r1-navy-800); }
 .admin-stat-card.pending::before { background: #c47a00; }
 .admin-stat-card.suspended::before { background: #b91c1c; }
 
@@ -5706,8 +5751,8 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .admin-filter button.active {
-  background: var(--navy);
-  color: white;
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
 }
 
 .admin-user-row {
@@ -9333,7 +9378,7 @@ textarea { min-height: 95px; resize: vertical; }
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--navy);
+  background: var(--r1-surface-inverse);
   color: #fff;
   font-weight: 700;
   font-size: 15px;

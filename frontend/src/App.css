@@ -8546,184 +8546,6 @@ textarea { min-height: 95px; resize: vertical; }
   .app { min-height: auto !important; display: block !important; }
 }
 
-/* ── Hub de disciplinas (pós-login) ─────────────────────────── */
-.hub-screen {
-  min-height: 100vh;
-  background:
-    radial-gradient(1200px 500px at 85% -10%, rgba(213, 163, 59, .16), transparent 60%),
-    linear-gradient(180deg, #f7f9fc, #eef2f7);
-  color: var(--navy);
-}
-
-.hub-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 22px 34px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255,255,255,.65);
-}
-
-.hub-brand h1 {
-  margin: 0;
-  font-family: Georgia, serif;
-  font-size: 22px;
-  color: var(--navy);
-}
-
-.hub-brand p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #53657a;
-}
-
-.hub-body {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 48px 24px 64px;
-}
-
-.hub-greeting {
-  margin: 0;
-  color: #53657a;
-  font-size: 15px;
-}
-
-.hub-body h2 {
-  margin: 6px 0 8px;
-  font-family: Georgia, serif;
-  font-size: 32px;
-  color: var(--gold);
-  line-height: 1.15;
-}
-
-.hub-note {
-  margin: 0 0 28px;
-  color: #53657a;
-  font-size: 14px;
-}
-
-.hub-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 16px;
-}
-
-.hub-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  text-align: left;
-  padding: 20px 18px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: white;
-  box-shadow: 0 2px 10px rgba(0,0,0,.05);
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-  font: inherit;
-  color: var(--navy);
-}
-
-.hub-card-enabled:hover {
-  transform: translateY(-3px);
-  border-color: var(--gold);
-  box-shadow: 0 10px 24px rgba(6, 26, 49, .12);
-}
-
-.hub-card-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: var(--gold);
-  background: rgba(213, 163, 59, .12);
-  border: 1px solid rgba(213, 163, 59, .35);
-}
-
-.hub-card-text b {
-  display: block;
-  font-size: 17px;
-}
-
-.hub-card-text small {
-  display: block;
-  margin-top: 2px;
-  color: var(--gold);
-  font-weight: 700;
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.hub-card-desc {
-  display: block;
-  margin-top: 8px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #53657a;
-}
-
-.hub-card-cta {
-  margin-top: auto;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--navy);
-}
-
-.hub-card-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 4px 9px;
-  border-radius: 999px;
-  letter-spacing: .02em;
-}
-
-.hub-card-badge-soon {
-  background: rgba(213, 163, 59, .14);
-  color: #8a6614;
-  border: 1px solid rgba(213, 163, 59, .4);
-}
-
-.hub-card-badge-locked {
-  background: rgba(6, 26, 49, .06);
-  color: #6b7787;
-  border: 1px solid rgba(6, 26, 49, .12);
-}
-
-/* Liberada mas em construção: colorida, sem clique */
-.hub-card-soon {
-  cursor: default;
-}
-
-/* Não habilitada para o perfil: visível, porém em cinza */
-.hub-card-locked {
-  cursor: not-allowed;
-  background: #f2f4f7;
-  border-color: rgba(6, 26, 49, .1);
-  box-shadow: none;
-  filter: grayscale(1);
-  opacity: .72;
-}
-
-.hub-card-locked .hub-card-icon {
-  color: #6b7787;
-  background: rgba(6, 26, 49, .05);
-  border-color: rgba(6, 26, 49, .12);
-}
-
-.hub-card-locked .hub-card-text small,
-.hub-card-locked .hub-card-desc {
-  color: #6b7787;
-}
-
 /* ── Trocar de área (sidebar) ───────────────────────────────── */
 /* ── Trocar de área (sidebar) ───────────────────────────────── */
 .sidebar-switch-area {
@@ -8734,21 +8556,21 @@ textarea { min-height: 95px; resize: vertical; }
   width: 100%;
   margin: -12px 0 16px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r1-radius-sm);
   border: 1px solid var(--gold-2);
-  background: rgba(213, 163, 59, .12);
+  background: rgba(15, 76, 73, .12);
   color: var(--gold-2);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(213, 163, 59, 0.1);
+  box-shadow: 0 4px 12px rgba(15, 76, 73, 0.1);
   transition: all .15s ease;
 }
 
 .sidebar-switch-area:hover {
   background: var(--gold-2);
-  color: #051c34;
-  box-shadow: 0 4px 16px rgba(213, 163, 59, 0.25);
+  color: var(--r1-navy-900);
+  box-shadow: 0 4px 16px rgba(15, 76, 73, 0.25);
   transform: translateY(-1px);
 }
 
@@ -8757,27 +8579,27 @@ textarea { min-height: 95px; resize: vertical; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(213, 163, 59, 0.08);
-  border: 1px solid rgba(213, 163, 59, 0.25);
+  background: rgba(15, 76, 73, 0.08);
+  border: 1px solid rgba(15, 76, 73, 0.25);
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--r1-radius-lg);
   font-size: 12px;
-  color: #6b7787;
+  color: var(--r1-text-muted);
   margin-top: 6px;
 }
 
 .active-specialty-badge b {
-  color: #2c3e50;
+  color: var(--navy);
   font-weight: 600;
 }
 
 .btn-switch-specialty-top {
   background: var(--gold-2);
   border: 1px solid var(--gold-2);
-  color: #051c34;
+  color: var(--r1-navy-900);
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--r1-radius-md);
   cursor: pointer;
   font-size: 11px;
   transition: all 0.2s ease;
@@ -8787,7 +8609,7 @@ textarea { min-height: 95px; resize: vertical; }
 .btn-switch-specialty-top:hover {
   background: transparent;
   color: var(--gold-2);
-  box-shadow: 0 2px 8px rgba(213, 163, 59, 0.2);
+  box-shadow: 0 2px 8px rgba(15, 76, 73, 0.2);
 }
 
 /* ── Banner de especialidade no topo da Tela Inicial ── */
@@ -8796,18 +8618,18 @@ textarea { min-height: 95px; resize: vertical; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: linear-gradient(90deg, rgba(213, 163, 59, 0.12), rgba(213, 163, 59, 0.04));
+  background: linear-gradient(90deg, rgba(15, 76, 73, 0.12), rgba(15, 76, 73, 0.04));
   border-left: 4px solid var(--gold-2);
   padding: 10px 16px;
   border-radius: 4px;
   margin: 12px 0 20px 0;
   font-size: 13px;
-  color: #2c3e50;
+  color: var(--navy);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .home-specialty-switcher-banner b {
-  color: #051c34;
+  color: var(--r1-navy-900);
 }
 
 .home-specialty-switcher-banner .btn-switch-specialty-top {
@@ -8815,35 +8637,6 @@ textarea { min-height: 95px; resize: vertical; }
   border-radius: 6px;
   font-size: 12px;
   margin-left: 0;
-}
-
-/* ── Pacientes da clínica (Fase 2) ──────────────────────────── */
-.hub-secondary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  margin-top: 22px;
-  padding: 16px 18px;
-  width: 100%;
-  border-radius: 12px;
-  border: 1px dashed rgba(213, 163, 59, .5);
-  background: rgba(255,255,255,.6);
-  color: var(--navy);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: border-color .12s ease, background .12s ease;
-}
-
-.hub-secondary:hover {
-  border-color: var(--gold);
-  background: white;
-}
-
-.hub-secondary span {
-  font-size: 12.5px;
-  color: #53657a;
 }
 
 /* A tela "Pacientes da instituição" (cadastro, matrícula e envio entre

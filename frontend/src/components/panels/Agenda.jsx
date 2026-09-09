@@ -34,7 +34,7 @@ import {
 import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from '../../services/agendaScheduleService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
-import { DISCIPLINES } from '../../data/disciplines';
+import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
@@ -1042,6 +1042,13 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
                   const dayItems = byDay.get(cell.key) || [];
                   const count = dayItems.filter(item => item.kind !== 'block').length;
                   const blocked = dayItems.some(item => item.kind === 'block');
+                  // Um pontinho por disciplina presente no dia — não é
+                  // preciso mais que isso na grade, o preenchimento cheio
+                  // fica pra lista/card (a célula é pequena demais pra
+                  // outra coisa).
+                  const disciplinesToday = [...new Set(
+                    dayItems.filter(item => item.kind !== 'block' && item.discipline).map(item => item.discipline),
+                  )];
                   const cellBirthdays = birthdays.get(cell.key) || [];
                   const holiday = holidays.find(item => item.day === cell.key);
                   const classes = [
@@ -1083,6 +1090,18 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
                           </span>
                         )}
                       </span>
+                      {disciplinesToday.length > 0 && (
+                        <span className="ag-day-dots" aria-hidden="true">
+                          {disciplinesToday.map(id => (
+                            <span
+                              key={id}
+                              className="ag-day-dot"
+                              style={{ background: getDiscipline(id)?.color }}
+                              title={getDiscipline(id)?.label}
+                            />
+                          ))}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -1131,7 +1150,12 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
               onCancel={() => setSeriesPreview(null)}
             />
           ) : selectedAppointment ? (
-            <div className="ag-detail">
+            <div
+              className="ag-detail"
+              style={selectedAppointment.kind !== 'block' && getDiscipline(selectedAppointment.discipline)?.color
+                ? { '--card-color': getDiscipline(selectedAppointment.discipline).color }
+                : undefined}
+            >
               <div className="ag-item-top">
                 <span className="ag-item-time">
                   {formatTime(selectedAppointment.starts_at)}–{formatTime(selectedAppointment.ends_at)}
@@ -1232,10 +1256,18 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
                   <p className="ag-empty">Nenhum atendimento marcado neste dia.</p>
                 ) : (
                   <ul className="ag-list">
-                    {dayAppointments.map(item => (
+                    {dayAppointments.map(item => {
+                      const isBlock = item.kind === 'block';
+                      const disciplineColor = !isBlock ? getDiscipline(item.discipline)?.color : null;
+                      return (
                       <li
                         key={item.id}
-                        className={`ag-item ag-item--${item.status}${item.kind === 'block' ? ' ag-item--block' : ''}`}
+                        className={[
+                          'ag-item',
+                          isBlock ? 'ag-item--block' : 'ag-item--filled',
+                          isBlock ? '' : `ag-item--${item.status}`,
+                        ].filter(Boolean).join(' ')}
+                        style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
                       >
                         <button
                           type="button"
@@ -1263,7 +1295,8 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
                           </span>
                         </button>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )
               )}

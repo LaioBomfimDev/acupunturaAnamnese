@@ -110,6 +110,65 @@ test('atendimento aparece com o nome do paciente e some do estado livre', () => 
   assert.match(html, /encaixe/);
 });
 
+test('cor do card vem da disciplina (--card-color), não do status', () => {
+  const html = render({
+    appointments: [{
+      id: 'a1',
+      kind: 'appointment',
+      status: 'scheduled',
+      discipline: 'psicologia',
+      patient_id: 'p1',
+      professional_id: 'prof-1',
+      starts_at: new Date(2026, 7, 12, 9, 0).toISOString(),
+      ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
+    }],
+  });
+
+  assert.match(html, /class="agd-card agd-card--filled agd-card--scheduled"/);
+  assert.match(html, /--card-color:var\(--r1-discipline-psicologia\)/);
+});
+
+test('cancelado/não-compareceu viram cinza por cima de QUALQUER disciplina', () => {
+  const base = {
+    id: 'a1',
+    kind: 'appointment',
+    discipline: 'nutricao',
+    patient_id: 'p1',
+    professional_id: 'prof-1',
+    starts_at: new Date(2026, 7, 12, 9, 0).toISOString(),
+    ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
+  };
+
+  for (const status of ['no_show', 'cancelled']) {
+    const html = render({ appointments: [{ ...base, status }] });
+    // A classe --card-color continua apontando pra disciplina (nutrição);
+    // é a regra .agd-card--filled.agd-card--{status} no CSS que sobrepõe
+    // pra cinza — aqui só travamos que as DUAS classes coexistem, o
+    // resto é responsabilidade do CSS (não dá pra computar estilo em
+    // renderToStaticMarkup).
+    assert.match(html, new RegExp(`agd-card--filled agd-card--${status}`),
+      `${status}: precisa das duas classes pro override cinza funcionar`);
+    assert.match(html, /--card-color:var\(--r1-discipline-nutricao\)/);
+  }
+});
+
+test('bloqueio nunca ganha cor de disciplina (não tem discipline)', () => {
+  const html = render({
+    appointments: [{
+      id: 'b1',
+      kind: 'block',
+      block_type: 'reuniao',
+      professional_id: 'prof-1',
+      starts_at: new Date(2026, 7, 12, 9, 0).toISOString(),
+      ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
+    }],
+  });
+
+  assert.match(html, /agd-card--block/);
+  assert.doesNotMatch(html, /agd-card--filled/);
+  assert.doesNotMatch(html, /--card-color/);
+});
+
 test('exceção gravada aparece na própria faixa, não escondida num tooltip', () => {
   const html = render({
     appointments: [{

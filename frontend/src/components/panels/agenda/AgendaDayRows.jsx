@@ -1,4 +1,5 @@
 import { ROW_STATES } from '../../../utils/agendaTimeline';
+import { getDiscipline } from '../../../data/disciplines';
 import {
   IconCheck, IconMic, IconPin, IconTag, IconUsers, IconVideo,
 } from './AgendaIcons';
@@ -119,6 +120,9 @@ function AppointmentCard({
   const isBlock = appointment.kind === 'block';
   const confirmed = Boolean(appointment.confirmed_at);
   const BlockIcon = BLOCK_TYPE_ICONS[appointment.block_type] || BLOCK_TYPE_ICONS.outro;
+  // Cor por disciplina (não por status) — ver tokens.css. Bloqueio nunca
+  // tem disciplina (constraint do banco), continua no visual tracejado.
+  const disciplineColor = !isBlock ? getDiscipline(appointment.discipline)?.color : null;
 
   return (
     <div className="agd-card-wrap">
@@ -126,11 +130,13 @@ function AppointmentCard({
         type="button"
         className={[
           'agd-card',
-          isBlock ? 'agd-card--block' : `agd-card--${appointment.status}`,
+          isBlock ? 'agd-card--block' : 'agd-card--filled',
+          isBlock ? '' : `agd-card--${appointment.status}`,
           isMoving ? 'agd-card--moving' : '',
           isPastItem ? 'agd-card--past' : '',
           isSelected ? 'agd-card--selected' : '',
         ].filter(Boolean).join(' ')}
+        style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
         onClick={() => onSelect?.(appointment)}
       >
         {!isBlock && confirmed && (

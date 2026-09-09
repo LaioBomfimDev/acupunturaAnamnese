@@ -203,6 +203,22 @@
   margin-top: auto;
 }
 
+/* Um pontinho por disciplina presente no dia — a célula é pequena
+   demais pro preenchimento cheio dos cards/itens, isso já basta pra
+   ver "tem psico e fisio hoje" num relance. */
+.ag-day-dots {
+  display: flex;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.ag-day-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
 .ag-pill {
   display: inline-flex;
   align-items: center;
@@ -296,17 +312,47 @@
   background: var(--r1-surface);
 }
 
-.ag-item--attended { border-left-color: var(--r1-success); opacity: 0.8; }
-.ag-item--ready { border-left-color: var(--r1-accent); }
-.ag-item--no_show { border-left-color: var(--r1-danger); opacity: 0.75; }
-.ag-item--excused { border-left-color: var(--r1-gold-400); opacity: 0.8; }
-.ag-item--cancelled { border-left-color: var(--r1-text-subtle); opacity: 0.72; }
+/* Cor por disciplina — mesmo mecanismo do card da visão Dia
+   (.agd-card--filled, agenda.css). */
+.ag-item--filled {
+  border-color: var(--card-color);
+  background: var(--card-color);
+  color: var(--r1-text-on-inverse);
+}
+
+.ag-item--filled .ag-item-status,
+.ag-item--filled .ag-item-meta {
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.ag-item--attended { opacity: 0.8; }
+.ag-item--excused { opacity: 0.8; }
+
+.ag-item--filled.ag-item--no_show,
+.ag-item--filled.ag-item--cancelled {
+  /* --r1-text-subtle é claro demais no tema escuro pra sustentar
+     4.5:1 com texto branco (contraste medido: ~3.3:1) — usa o slate
+     escuro fixo em vez do token de texto, mesma ideia das outras
+     cores "sempre escuras" desta paleta de preenchimento. */
+  border-color: var(--r1-slate-700);
+  background: var(--r1-slate-700);
+  opacity: 0.72;
+}
 
 .ag-item--no_show .ag-item-name,
 .ag-item--cancelled .ag-item-name {
   text-decoration: line-through;
   text-decoration-color: currentColor;
   text-decoration-thickness: 1px;
+}
+
+/* Painel de detalhe de um agendamento — não é a lista compacta, tem
+   botão/ação dentro, então não recebe fundo cheio (colidiria com os
+   `.ag-chip-btn` desenhados pra fundo claro): só uma faixa lateral com
+   a cor da disciplina. */
+.ag-detail {
+  border-left: 4px solid var(--card-color, var(--r1-border-subtle));
+  padding-left: 10px;
 }
 
 .ag-item-top {
@@ -836,21 +882,57 @@
   background: var(--r1-surface-sunken);
 }
 
-/* Mesma convenção de cor por status já usada na visão Mês
-   (.ag-item--*) e no painel Hoje — não inventa paleta nova.
+/* Cor por DISCIPLINA (--card-color, definida inline por AppointmentCard
+   a partir de getDiscipline().color) — canal separado de status. Status
+   continua só com 3 tons semânticos (perigo/sucesso/aviso), sem
+   inventar um quarto: cancelado/não-compareceu viram cinza por CIMA de
+   qualquer disciplina (.agd-card--filled.agd-card--{status} abaixo tem
+   duas classes, ganha de --filled sozinho não importa a ordem no
+   arquivo); os demais status só ajustam opacidade. Texto/chip/ícone
+   viram claros porque o fundo deixou de ser quase-branco. */
+.agd-card--filled {
+  border-color: var(--card-color);
+  background: var(--card-color);
+  color: var(--r1-text-on-inverse);
+}
 
-   Cancelado e não compareceu ficam com o NOME riscado: os dois já
-   estão resolvidos, não pedem mais atenção na agenda ao vivo (o
-   no-show ainda vermelho e visível, porque cobrança/retorno é
-   decisão de quem olha, mas o card em si já não é "coisa a fazer
-   hoje"). Atendido fica semitransparente, sem risco — aconteceu,
-   não foi apagado, só recua visualmente. */
-.agd-card--scheduled { border-left-color: var(--r1-accent); }
-.agd-card--attended { border-left-color: var(--r1-success); opacity: 0.72; }
-.agd-card--ready { border-left-color: var(--r1-accent); }
-.agd-card--no_show { border-left-color: var(--r1-danger); opacity: 0.68; }
-.agd-card--excused { border-left-color: var(--r1-gold-400); opacity: 0.72; }
-.agd-card--cancelled { border-left-color: var(--r1-text-subtle); opacity: 0.58; }
+.agd-card--filled .agd-card-meta {
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.agd-card--filled .agd-chip {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--r1-text-on-inverse);
+}
+
+.agd-card--filled .agd-chip--modality,
+.agd-card--filled .agd-chip--muted {
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.agd-card--filled .agd-card-exception {
+  color: var(--r1-text-on-inverse);
+}
+
+/* Atendido/faltou-com-aviso: mesma disciplina, só recua visualmente —
+   aconteceu (ou não), não foi apagado. Cancelado/não-compareceu, com
+   nome riscado, são os únicos que TROCAM de cor (cinza, não importa a
+   disciplina): já estão resolvidos e não pedem mais atenção na agenda
+   ao vivo. */
+.agd-card--attended { opacity: 0.72; }
+.agd-card--excused { opacity: 0.72; }
+
+.agd-card--filled.agd-card--no_show,
+.agd-card--filled.agd-card--cancelled {
+  /* --r1-text-subtle é claro demais no tema escuro pra sustentar
+     4.5:1 com texto branco (contraste medido: ~3.3:1) — usa o slate
+     escuro fixo em vez do token de texto, mesma ideia das outras
+     cores "sempre escuras" desta paleta de preenchimento. */
+  border-color: var(--r1-slate-700);
+  background: var(--r1-slate-700);
+  opacity: 0.7;
+}
 
 .agd-card--no_show .agd-card-name,
 .agd-card--cancelled .agd-card-name {
@@ -1157,10 +1239,8 @@
   gap: 3px;
   padding: 3px 12px 3px 6px;
   border: 0;
-  border-left: 3px solid var(--r1-accent);
+  border-left: 3px solid transparent;
   border-radius: 4px;
-  background: var(--r1-accent-wash);
-  color: var(--r1-text);
   font: inherit;
   font-size: 11px;
   text-align: left;
@@ -1181,12 +1261,28 @@
   color: var(--r1-text-muted);
 }
 
-/* Mesma convenção de cor por status da visão Dia/Mês. */
-.agw-item--attended { border-left-color: var(--r1-success); opacity: 0.75; }
-.agw-item--ready { border-left-color: var(--r1-accent); }
-.agw-item--no_show { border-left-color: var(--r1-danger); opacity: 0.7; text-decoration: line-through; }
-.agw-item--excused { border-left-color: var(--r1-gold-400); opacity: 0.75; }
-.agw-item--cancelled { border-left-color: var(--r1-text-subtle); opacity: 0.6; text-decoration: line-through; }
+/* Cor por DISCIPLINA (--card-color) — mesmo mecanismo do card da visão
+   Dia, ver .agd-card--filled acima pro raciocínio completo. Status
+   continua só ajustando opacidade/risco; cancelado/não-compareceu
+   trocam pra cinza por cima de qualquer disciplina. */
+.agw-item--filled {
+  border-left-color: var(--card-color);
+  background: var(--card-color);
+  color: var(--r1-text-on-inverse);
+}
+
+.agw-item--attended { opacity: 0.75; }
+.agw-item--excused { opacity: 0.75; }
+.agw-item--no_show,
+.agw-item--cancelled { text-decoration: line-through; }
+
+.agw-item--filled.agw-item--no_show,
+.agw-item--filled.agw-item--cancelled {
+  /* Mesmo ajuste de contraste do card da visão Dia — ver comentário lá. */
+  border-left-color: var(--r1-slate-700);
+  background: var(--r1-slate-700);
+  opacity: 0.65;
+}
 
 .agw-item--past.agw-item--scheduled,
 .agw-item--past.agw-item--ready {
@@ -1551,9 +1647,22 @@
 .agh-done { color: var(--r1-text-muted); }
 
 .agh-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14.5px;
   font-weight: 600;
   line-height: 1.3;
+}
+
+/* A borda esquerda do card já é a cor de tono da fila (na sala/atrasado)
+   — é o motivo do painel existir, não é pra disputar espaço. Disciplina
+   entra só como um pontinho, não preenchimento. */
+.agh-discipline-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
 }
 
 .agh-meta {

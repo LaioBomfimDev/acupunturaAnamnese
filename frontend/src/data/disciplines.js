@@ -11,6 +11,8 @@
 // sem entrada) — decisão do Laio em 2026-07-07.
 // ============================================================
 
+// Cor de cada disciplina nos cartões da Agenda (var(--r1-discipline-*),
+// tokens.css) — fonte única; nenhuma tela deve manter um mapa próprio.
 export const DISCIPLINES = [
   {
     id: 'acupuntura',
@@ -18,6 +20,7 @@ export const DISCIPLINES = [
     subtitle: 'Medicina Tradicional Chinesa',
     description: 'Anamnese energética, língua, pulso, protocolo e evolução.',
     available: true,
+    color: 'var(--r1-discipline-acupuntura)',
   },
   {
     id: 'fisioterapia',
@@ -27,6 +30,7 @@ export const DISCIPLINES = [
     // Anamnese genérica no ar desde 07/08/2026 (vocabulário em validação
     // por fisioterapeuta). Evolução e relatório ainda são placeholders.
     available: true,
+    color: 'var(--r1-discipline-fisioterapia)',
   },
   {
     id: 'psicologia',
@@ -36,6 +40,7 @@ export const DISCIPLINES = [
     // Fase 5: workspace esqueleto no ar (vocabulário em validação
     // pela psicóloga; IA desligada nesta disciplina).
     available: true,
+    color: 'var(--r1-discipline-psicologia)',
   },
   {
     id: 'nutricao',
@@ -45,6 +50,7 @@ export const DISCIPLINES = [
     // Anamnese genérica no ar desde 07/08/2026 (vocabulário em validação
     // por nutricionista). Evolução e relatório ainda são placeholders.
     available: true,
+    color: 'var(--r1-discipline-nutricao)',
   },
 ];
 

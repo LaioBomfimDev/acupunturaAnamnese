@@ -1,5 +1,6 @@
 import { getStatusLabel } from '../../../utils/agenda';
 import { humanMinutes } from '../../../utils/agendaToday';
+import { getDiscipline } from '../../../data/disciplines';
 
 // ============================================================
 // Painel "Hoje" — a fila da recepção
@@ -49,7 +50,14 @@ function QueueCard({
           )}
         </span>
 
-        <span className="agh-name">{patientName(appointment.patient_id)}</span>
+        <span className="agh-name">
+          <span
+            className="agh-discipline-dot"
+            style={{ background: getDiscipline(appointment.discipline)?.color }}
+            aria-hidden="true"
+          />
+          {patientName(appointment.patient_id)}
+        </span>
 
         <span className="agh-meta">
           {[

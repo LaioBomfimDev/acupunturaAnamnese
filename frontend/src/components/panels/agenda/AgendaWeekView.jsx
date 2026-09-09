@@ -1,6 +1,7 @@
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { ROW_STATES, buildDayTimeline } from '../../../utils/agendaTimeline';
 import { minutesToLabel } from '../../../utils/agendaExceptions';
+import { getDiscipline } from '../../../data/disciplines';
 import { BLOCK_TYPE_ICONS, BLOCK_TYPE_LABEL, isPast } from './AgendaDayRows';
 import { IconPin, IconVideo } from './AgendaIcons';
 
@@ -122,6 +123,7 @@ export function AgendaWeekView({
                     const confirmed = !isBlock && Boolean(appointment.confirmed_at);
                     const blockLabel = BLOCK_TYPE_LABEL[appointment.block_type] || BLOCK_TYPE_LABEL.outro;
                     const BlockIcon = BLOCK_TYPE_ICONS[appointment.block_type] || BLOCK_TYPE_ICONS.outro;
+                    const disciplineColor = !isBlock ? getDiscipline(appointment.discipline)?.color : null;
 
                     return (
                       <button
@@ -129,11 +131,13 @@ export function AgendaWeekView({
                         type="button"
                         className={[
                           'agw-item',
-                          isBlock ? 'agw-item--block' : `agw-item--${appointment.status}`,
+                          isBlock ? 'agw-item--block' : 'agw-item--filled',
+                          isBlock ? '' : `agw-item--${appointment.status}`,
                           movingId === appointment.id ? 'agw-item--moving' : '',
                           isPast(appointment, now) ? 'agw-item--past' : '',
                           confirmed ? 'agw-item--confirmed' : '',
                         ].filter(Boolean).join(' ')}
+                        style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
                         onClick={() => onSelectAppointment?.(appointment)}
                         title={isBlock
                           ? `${blockLabel}${appointment.note ? `: ${appointment.note}` : ''}`

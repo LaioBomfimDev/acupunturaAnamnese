@@ -110,7 +110,7 @@ export default function App() {
   // Título da aba segue a instituição logada (ou o nome do produto antes do login).
   useEffect(() => {
     const clinicName = profile?.clinic?.name || profile?.clinic_name;
-    document.title = clinicName || 'Reability One';
+    document.title = clinicName || 'Vitalis';
   }, [profile?.clinic?.name, profile?.clinic_name]);
 
   // Metadados persistíveis da análise de língua (sem imagens/object URLs)
@@ -305,7 +305,7 @@ export default function App() {
         <div className="hub-screen">
           <header className="hub-topbar">
             <div className="hub-brand">
-              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Agenda</p>
             </div>
             <button
@@ -346,7 +346,7 @@ export default function App() {
         <div className="hub-screen">
           <header className="hub-topbar">
             <div className="hub-brand">
-              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Documentos timbrados</p>
             </div>
             <button type="button" className="topbar-button" onClick={() => setShowHubDocuments(false)}>
@@ -369,7 +369,7 @@ export default function App() {
         <div className="hub-screen">
           <header className="hub-topbar">
             <div className="hub-brand">
-              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Reability'}</h1>
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Gestão</p>
             </div>
             <button type="button" className="topbar-button" onClick={() => setShowHubGestao(false)}>

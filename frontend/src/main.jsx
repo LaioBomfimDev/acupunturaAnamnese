@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource-variable/inter'
 import './styles/tokens.css'
 import './App.css'
 // Depois do App.css de propósito: reestiliza as classes .hub-* com

@@ -16,6 +16,17 @@ const LOCAL_AUTH_FALLBACK_ENABLED =
 
 export const DEFAULT_BRAND_COLOR = '#0E2A4A';
 
+// Paleta curada da cor da clínica: em vez de um seletor livre (qualquer
+// hex), a instituição escolhe entre estas 5 opções — evita cor de baixo
+// contraste ou fora do tom institucional indo parar no papel timbrado.
+export const CLINIC_BRAND_COLORS = [
+  { value: '#2E5A7D', label: 'Azul' },
+  { value: '#3F7D5C', label: 'Verde' },
+  { value: '#B3413C', label: 'Vermelho' },
+  { value: '#8C4460', label: 'Rosa' },
+  { value: '#A3691F', label: 'Dourado escuro' },
+];
+
 async function loadLocalProfiles() {
   if (!LOCAL_AUTH_FALLBACK_ENABLED) return [];
   const localAuth = await import('../dev/localAuthFallback.js');

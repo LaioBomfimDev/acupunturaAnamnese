@@ -158,9 +158,8 @@ export function Login() {
     <div className="r1-login">
       <main className="r1-login__panel">
         <section className="r1-login__card" aria-labelledby="login-title">
-          <div className="r1-wordmark" aria-label="Reability One">
-            <span className="r1-wordmark__main">REABILITY</span>
-            <span className="r1-wordmark__one">One</span>
+          <div className="r1-wordmark" aria-label="Vitalis">
+            <span className="r1-wordmark__main">VITALIS</span>
           </div>
 
           <p className="r1-eyebrow">Acesso profissional</p>

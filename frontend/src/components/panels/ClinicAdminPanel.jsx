@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  CLINIC_BRAND_COLORS,
   DEFAULT_BRAND_COLOR,
   deleteClinic,
   listClinics,
@@ -341,22 +342,33 @@ export function ClinicAdminPanel() {
                 placeholder="contato@clinica.com"
               />
             </label>
-            <label>
-              Cor da clínica
-              <span className="clinic-color-field">
-                <input
-                  type="color"
-                  value={brandColor}
-                  onChange={event => setField('brand_color', event.target.value)}
-                  aria-label="Selecionar cor da clínica"
-                />
-                <input
-                  value={form.brand_color}
-                  onChange={event => setField('brand_color', event.target.value)}
-                  placeholder={DEFAULT_BRAND_COLOR}
-                />
-              </span>
-            </label>
+            <div className="admin-notes">
+              <span className="clinic-logo-field-label">Cor da clínica</span>
+              <div className="clinic-color-presets" role="radiogroup" aria-label="Cor da clínica">
+                {CLINIC_BRAND_COLORS.map(option => {
+                  const selected = brandColor.toUpperCase() === option.value.toUpperCase();
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`clinic-color-preset${selected ? ' selected' : ''}`}
+                      style={{ background: option.value }}
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={option.label}
+                      title={option.label}
+                      onClick={() => setField('brand_color', option.value)}
+                    >
+                      {selected && (
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M4 12l5 5L20 6" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="admin-notes clinic-logo-field">
               <span className="clinic-logo-field-label">Logo da instituição</span>
               <div className="clinic-logo-uploader">

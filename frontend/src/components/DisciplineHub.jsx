@@ -60,13 +60,13 @@ const STATE_BADGES = {
 
 export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments, onOpenAgenda, onOpenGestao, onOpenPendingEvolutions }) {
   const cards = buildHubCards(profile);
-  const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Reability';
+  const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Vitalis';
 
   return (
     <div className="hub-screen">
       <header className="hub-topbar">
         <div className="hub-brand">
-          <span className="hub-wordmark">Reability <i>One</i></span>
+          <span className="hub-wordmark">Vitalis</span>
           <h1>{clinicName}</h1>
           <p>Instituição multidisciplinar</p>
         </div>

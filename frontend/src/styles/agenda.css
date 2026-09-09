@@ -31,6 +31,8 @@
 
 .ag-head {
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 8px;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -1207,6 +1209,75 @@
 }
 
 /* ============================================================
+   Visão Semana — celular (AgendaWeekMobileView.jsx)
+
+   Sete dias empilhados, cada um com as MESMAS faixas/cards da visão
+   Dia (agd-row/agd-card, ver AgendaDayRows.jsx) — não um terceiro
+   layout. Sem @media aqui: o componente só monta este markup quando
+   JS já decidiu (useMediaQuery) que a largura é mobile, então o CSS
+   não precisa regatear a mesma condição de novo.
+   ============================================================ */
+.agwm {
+  display: grid;
+  gap: 22px;
+}
+
+.agwm-day {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.agwm-day:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.agwm-day-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.agwm-day-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.agwm-day-name b {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  color: var(--r1-text-muted);
+  margin-right: 4px;
+}
+
+.agwm-day--today .agwm-day-head {
+  background: var(--r1-accent-wash);
+}
+
+.agwm-day--today .agwm-day-name {
+  color: var(--r1-accent-strong);
+}
+
+.agwm-day--on .agwm-day-head {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: -2px;
+}
+
+.agwm-day-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--r1-text-subtle);
+}
+
+/* ============================================================
    Jornada de trabalho
    ============================================================ */
 
@@ -1838,15 +1909,16 @@
 }
 
 @media (max-width: 900px) {
-  /* Sete colunas em 900px dão ~120px por dia: nome de paciente não
-     cabe. A visão Semana some do seletor abaixo disso; o par certo no
-     telefone é Dia + faixa da semana. */
+  /* Seis botões ficam apertados em 3 colunas nesta largura; 2 colunas
+     (3 linhas) dá mais espaço por rótulo. Nenhuma visão precisa sumir
+     do seletor: a Semana ganhou layout próprio pro celular (.agwm-*,
+     AgendaWeekMobileView.jsx) em vez do grid de 620px que não cabia.
+     (Uma versão anterior desta regra escondia :nth-child(2) achando
+     que era "Semana" — a ordem real de VIEWS faz isso esconder "Dia",
+     a visão pensada pro telefone; por isso a troca por layout, não
+     esconderijo.) */
   .ag-seg--views {
     grid-template-columns: repeat(2, minmax(64px, 1fr));
-  }
-
-  .ag-seg--views .ag-seg-btn:nth-child(2) {
-    display: none;
   }
 }
 

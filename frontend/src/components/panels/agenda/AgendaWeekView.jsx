@@ -1,27 +1,8 @@
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { ROW_STATES, buildDayTimeline } from '../../../utils/agendaTimeline';
 import { minutesToLabel } from '../../../utils/agendaExceptions';
-import {
-  IconMic, IconPin, IconTag, IconUsers, IconVideo,
-} from './AgendaIcons';
-
-const BLOCK_TYPE_LABEL = {
-  reuniao: 'Reunião',
-  entrevista: 'Entrevista',
-  outro: 'Outro',
-};
-
-const BLOCK_TYPE_ICONS = {
-  reuniao: IconUsers,
-  entrevista: IconMic,
-  outro: IconTag,
-};
-
-function isPast(appointment, now) {
-  if (!(now instanceof Date)) return false;
-  const end = new Date(appointment?.ends_at);
-  return !Number.isNaN(end.getTime()) && end.getTime() < now.getTime();
-}
+import { BLOCK_TYPE_ICONS, BLOCK_TYPE_LABEL, isPast } from './AgendaDayRows';
+import { IconPin, IconVideo } from './AgendaIcons';
 
 // ============================================================
 // Visão Semana — para o desktop

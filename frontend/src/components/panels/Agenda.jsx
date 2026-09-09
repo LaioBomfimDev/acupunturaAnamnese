@@ -35,8 +35,10 @@ import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/
 import { listHolidays, listProfessionalSchedules } from '../../services/agendaScheduleService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES } from '../../data/disciplines';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
+import AgendaWeekMobileView from './agenda/AgendaWeekMobileView';
 import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
@@ -62,6 +64,12 @@ const VIEWS = [
   { id: 'pendentes', label: 'Pendentes' },
   { id: 'evolucoes-pendentes', label: 'Evolução pendente' },
 ];
+
+// Mesma largura que já rege o resto do recorte mobile da Agenda
+// (agenda.css: .ag vira 1 coluna em 1080px, sidebar vira gaveta em
+// 1024px) — em 900px a Semana já tem a tela inteira só pra ela, não
+// existe faixa intermediária que mudaria a conta.
+const AGENDA_WEEK_MOBILE_QUERY = '(max-width: 900px)';
 
 /**
  * Janela de busca da agenda: os mesmos 42 dias (6 semanas) que
@@ -291,6 +299,8 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
     () => buildWeekStrip(selectedDate || today, { today, counts: byDay }),
     [selectedDate, today, byDay],
   );
+
+  const isMobileWeek = useMediaQuery(AGENDA_WEEK_MOBILE_QUERY);
 
   const todayQueue = useMemo(
     () => buildTodayQueue({ appointments: visibleAppointments, now, dayKey: selectedKey }),
@@ -856,6 +866,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
                 key={item.id}
                 type="button"
                 className="ag-seg-btn"
+                data-view={item.id}
                 aria-pressed={view === item.id}
                 onClick={() => { setView(item.id); resetTransient(); }}
               >
@@ -983,7 +994,26 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
           />
         )}
 
-        {view === 'semana' && (
+        {view === 'semana' && (isMobileWeek ? (
+          <AgendaWeekMobileView
+            week={week}
+            schedules={timelineSchedules}
+            appointments={visibleAppointments}
+            holidays={holidays}
+            selectedKey={selectedKey}
+            onPickSlot={pickSlot}
+            onSelectAppointment={openAppointment}
+            patientName={patientName}
+            professionalName={professionalName}
+            showProfessional={showProfessional}
+            movingId={moving?.id || null}
+            now={now}
+            selectedAppointmentId={selectedAppointment?.id || null}
+            onQuickStatus={handleStatus}
+            onQuickConfirm={appointment => handleConfirm(appointment, Boolean(appointment.confirmed_at))}
+            onQuickMove={appointment => { setMoving(appointment); setSelectedAppointment(null); }}
+          />
+        ) : (
           <AgendaWeekView
             week={week}
             schedules={timelineSchedules}
@@ -996,7 +1026,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
             movingId={moving?.id || null}
             now={now}
           />
-        )}
+        ))}
 
         {view === 'mes' && (
           <div className="ag-cal">

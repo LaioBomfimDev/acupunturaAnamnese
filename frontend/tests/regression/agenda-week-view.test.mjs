@@ -113,6 +113,24 @@ test('visão Semana desktop: célula ganha a cor da disciplina do atendimento (A
   assert.match(html, /--card-color:var\(--r1-discipline-acupuntura\)/);
 });
 
+test('visão Semana desktop: status "ready" ganha classe e aviso no title, diferente de "scheduled"', () => {
+  const html = renderToStaticMarkup(React.createElement(WeekView, {
+    week: week(),
+    schedules: JORNADA,
+    appointments: [{ ...ATENDIMENTO, status: 'ready' }],
+    holidays: [],
+    selectedKey: '2026-08-12',
+    onPickCell: () => {},
+    onSelectAppointment: () => {},
+    patientName: id => (id === 'p1' ? 'Ana Souza' : 'Paciente'),
+    movingId: null,
+    now: null,
+  }));
+
+  assert.match(html, /agw-item--ready/);
+  assert.match(html, /Ana Souza — Chegou/);
+});
+
 test('visão Semana celular: 7 dias empilhados, cada um com suas próprias faixas', () => {
   const html = renderToStaticMarkup(React.createElement(WeekMobileView, {
     week: week(),

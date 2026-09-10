@@ -54,6 +54,11 @@
   align-items: center;
 }
 
+.ag-date-jump {
+  width: auto;
+  min-height: 38px;
+}
+
 .ag-btn {
   display: inline-flex;
   align-items: center;
@@ -562,8 +567,17 @@
   color: var(--r1-warning);
 }
 
+/* Feriado precisa saltar aos olhos na grade do Mês, não só o pill de
+   texto (que some no celular — ver a regra dele mais abaixo): fundo +
+   contorno + número do dia na cor de aviso, mesma força visual que
+   ".ag-day--selected" já usa pro accent, só que na família âmbar. */
 .ag-day--holiday {
   background: var(--r1-warning-bg);
+  box-shadow: inset 0 0 0 2px var(--r1-warning-border);
+}
+
+.ag-day--holiday .ag-day-num {
+  color: var(--r1-warning);
 }
 
 .ag-item--block {
@@ -646,6 +660,18 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.ag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ag-filters .ag-select {
+  width: auto;
+  min-width: 150px;
 }
 
 .ag-seg--views {
@@ -911,6 +937,17 @@
   color: var(--r1-text-on-inverse-muted);
 }
 
+/* "Chegou" (status ready) precisa se destacar dos outros chips (que são
+   metadado discreto, translúcidos de propósito) — fundo sólido branco +
+   texto na cor de destaque, mesmo contraste garantido de um botão
+   primário, não a mistura ~16% que os chips comuns usam. */
+.agd-card--filled .agd-chip--ready {
+  background: var(--r1-accent-contrast);
+  border-color: var(--r1-accent-contrast);
+  color: var(--r1-accent);
+  font-weight: 800;
+}
+
 .agd-card--filled .agd-card-exception {
   color: var(--r1-text-on-inverse);
 }
@@ -973,6 +1010,7 @@
   background: var(--r1-success);
   color: var(--r1-text-on-inverse);
 }
+
 
 .agd-card-name {
   font-size: 13.5px;
@@ -1300,6 +1338,20 @@
   background: var(--r1-success);
 }
 
+/* "Chegou" (status ready) — canto oposto ao confirmado; só um sinal
+   visual (célula é apertada demais pra texto), o `title` do botão já
+   carrega "— Chegou" por extenso pra quem passa o mouse/usa leitor. */
+.agw-item--ready::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--r1-accent);
+}
+
 .agw-item--moving {
   box-shadow: 0 0 0 2px var(--r1-warning);
 }
@@ -1459,10 +1511,19 @@
 .agj-list li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
   font-size: 12px;
   line-height: 1.4;
+}
+
+.agj-list li > span {
+  flex: 1 1 220px;
+}
+
+.agj-list li .agj-check {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .agj-form {

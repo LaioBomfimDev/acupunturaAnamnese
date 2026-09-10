@@ -141,7 +141,7 @@ export function AgendaWeekView({
                         onClick={() => onSelectAppointment?.(appointment)}
                         title={isBlock
                           ? `${blockLabel}${appointment.note ? `: ${appointment.note}` : ''}`
-                          : `${patientName(appointment.patient_id)}${appointment.appointment_type === 'intro_interview' ? ' — Entrevista inicial (grátis)' : ''}`}
+                          : `${patientName(appointment.patient_id)}${appointment.appointment_type === 'intro_interview' ? ' — Entrevista inicial (grátis)' : ''}${appointment.status === 'ready' ? ' — Chegou' : ''}`}
                       >
                         {isBlock
                           ? <BlockIcon className="agw-item-icon" />

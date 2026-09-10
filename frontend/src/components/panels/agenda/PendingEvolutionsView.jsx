@@ -59,8 +59,9 @@ export function PendingEvolutionsView({
   showProfessional = false,
   onWrite,
   canWrite,
+  initialProfessionalId = '',
 }) {
-  const [professionalId, setProfessionalId] = useState('');
+  const [professionalId, setProfessionalId] = useState(initialProfessionalId);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

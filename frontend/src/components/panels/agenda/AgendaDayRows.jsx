@@ -150,6 +150,9 @@ function AppointmentCard({
         </span>
 
         <span className="agd-card-meta">
+          {!isBlock && appointment.status === 'ready' && (
+            <span className="agd-chip agd-chip--ready">Chegou</span>
+          )}
           {isBlock && (
             <span className="agd-chip">
               <BlockIcon />

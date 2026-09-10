@@ -82,6 +82,30 @@ export function HolidaysEditor({ onBack }) {
     }
   }
 
+  // Alterna "clínica atende neste dia" de um feriado já cadastrado, sem
+  // precisar apagar e recriar — importante agora que a maioria chega
+  // pré-cadastrada (feriados nacionais) e o trabalho do admin é só
+  // validar/ajustar, não digitar um por um.
+  async function handleToggleWorkingDay(holiday, isWorkingDay) {
+    setError('');
+    const anterior = holidays;
+    setHolidays(prev => prev.map(item => (
+      item.id === holiday.id ? { ...item, is_working_day: isWorkingDay } : item
+    )));
+
+    try {
+      await saveHoliday({
+        id: holiday.id,
+        day: holiday.day,
+        name: holiday.name,
+        isWorkingDay,
+      });
+    } catch (err) {
+      setHolidays(anterior);
+      setError(err.message || 'Não foi possível atualizar o feriado.');
+    }
+  }
+
   return (
     <div className="agj">
       <header className="agj-head">
@@ -109,10 +133,15 @@ export function HolidaysEditor({ onBack }) {
         ) : (
           sorted.map(holiday => (
             <li key={holiday.id}>
-              <span>
-                {formatDay(holiday.day)} — {holiday.name}
-                {holiday.is_working_day ? ' · clínica atende' : ''}
-              </span>
+              <span>{formatDay(holiday.day)} — {holiday.name}</span>
+              <label className="agj-check">
+                <input
+                  type="checkbox"
+                  checked={holiday.is_working_day}
+                  onChange={e => handleToggleWorkingDay(holiday, e.target.checked)}
+                />
+                Clínica atende neste dia
+              </label>
               <button
                 type="button"
                 className="ag-chip-btn"

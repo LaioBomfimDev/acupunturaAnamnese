@@ -128,6 +128,25 @@ test('cor do card vem da disciplina (--card-color), não do status', () => {
   assert.match(html, /--card-color:var\(--r1-discipline-psicologia\)/);
 });
 
+test('status "ready" (chegou) ganha selo próprio; "scheduled" não tem selo nenhum', () => {
+  const base = {
+    id: 'a1',
+    kind: 'appointment',
+    discipline: 'acupuntura',
+    patient_id: 'p1',
+    professional_id: 'prof-1',
+    starts_at: new Date(2026, 7, 12, 9, 0).toISOString(),
+    ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
+  };
+
+  const chegou = render({ appointments: [{ ...base, status: 'ready' }] });
+  assert.match(chegou, /class="agd-chip agd-chip--ready">Chegou/);
+
+  const agendado = render({ appointments: [{ ...base, status: 'scheduled' }] });
+  assert.doesNotMatch(agendado, /agd-chip--ready/,
+    '"Agendado" e "Pronto para atender" não podem ficar visualmente idênticos');
+});
+
 test('cancelado/não-compareceu viram cinza por cima de QUALQUER disciplina', () => {
   const base = {
     id: 'a1',

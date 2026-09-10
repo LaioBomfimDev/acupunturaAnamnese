@@ -65,6 +65,11 @@ const VIEWS = [
   { id: 'evolucoes-pendentes', label: 'Evolução pendente' },
 ];
 
+// Pendentes/Evolução pendente têm escopo e filtro próprios (fila de
+// trabalho, não navegação de calendário) — o filtro por disciplina/
+// status/modalidade e o campo "pular pra data" só fazem sentido aqui.
+const CALENDAR_VIEWS = new Set(['hoje', 'dia', 'semana', 'mes']);
+
 // Mesma largura que já rege o resto do recorte mobile da Agenda
 // (agenda.css: .ag vira 1 coluna em 1080px, sidebar vira gaveta em
 // 1024px) — em 900px a Semana já tem a tela inteira só pra ela, não
@@ -141,6 +146,12 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
 
   // Quem a agenda está mostrando. 'all' é a visão de recepção.
   const [agendaOf, setAgendaOf] = useState(() => profile?.id || ALL_PROFESSIONALS);
+
+  // Filtros do calendário (Hoje/Dia/Semana/Mês) — '' é "todos". Pendentes
+  // e Evolução pendente ficam de fora: já têm escopo/filtro próprio.
+  const [disciplineFilter, setDisciplineFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [modalityFilter, setModalityFilter] = useState('');
 
   // Agendamento aberto no painel lateral (detalhe/ações).
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -265,12 +276,27 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
   );
 
   // A agenda exibida respeita o profissional escolhido; a de recepção
-  // ('all') mostra a casa inteira.
-  const visibleAppointments = useMemo(() => (
-    agendaOf === ALL_PROFESSIONALS
+  // ('all') mostra a casa inteira. Disciplina/status/modalidade são uma
+  // segunda camada por cima, só sobre ATENDIMENTO — bloqueio (reunião/
+  // entrevista/outro) nunca tem disciplina/modalidade (constraint do
+  // banco) e continua aparecendo sempre: escondê-lo faria o horário
+  // parecer livre quando na verdade está bloqueado (buildDayTimeline
+  // decide ROW_STATES.BLOCKED pela presença do bloqueio na lista).
+  const visibleAppointments = useMemo(() => {
+    const byProfessional = agendaOf === ALL_PROFESSIONALS
       ? appointments
-      : appointments.filter(item => item.professional_id === agendaOf)
-  ), [appointments, agendaOf]);
+      : appointments.filter(item => item.professional_id === agendaOf);
+
+    if (!disciplineFilter && !statusFilter && !modalityFilter) return byProfessional;
+
+    return byProfessional.filter(item => {
+      if (item.kind === 'block') return true;
+      if (disciplineFilter && item.discipline !== disciplineFilter) return false;
+      if (statusFilter && item.status !== statusFilter) return false;
+      if (modalityFilter && item.modality !== modalityFilter) return false;
+      return true;
+    });
+  }, [appointments, agendaOf, disciplineFilter, statusFilter, modalityFilter]);
 
   const byDay = useMemo(() => appointmentsByDay(visibleAppointments), [visibleAppointments]);
   const birthdays = useMemo(
@@ -399,6 +425,18 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
     if (today.getFullYear() !== cursor.year || today.getMonth() + 1 !== cursor.month) {
       setLoading(true);
       setCursor({ year: today.getFullYear(), month: today.getMonth() + 1 });
+    }
+  }
+
+  /** Pula direto pra uma data qualquer (campo de data do cabeçalho). */
+  function goToDate(dayKey) {
+    const target = combineLocal(dayKey, '12:00');
+    if (!target) return;
+    resetTransient();
+    setSelectedKey(dayKey);
+    if (target.getFullYear() !== cursor.year || target.getMonth() + 1 !== cursor.month) {
+      setLoading(true);
+      setCursor({ year: target.getFullYear(), month: target.getMonth() + 1 });
     }
   }
 
@@ -856,6 +894,15 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
               onClick={() => (view === 'mes' ? shiftMonth(1) : shiftDay(view === 'semana' ? 7 : 1))}
               aria-label={view === 'mes' ? 'Próximo mês' : 'Próximo'}
             >→</button>
+            {view !== 'hoje' && CALENDAR_VIEWS.has(view) && (
+              <input
+                type="date"
+                className="ag-input ag-date-jump"
+                value={selectedKey}
+                onChange={e => e.target.value && goToDate(e.target.value)}
+                aria-label="Pular para uma data"
+              />
+            )}
           </div>
         </header>
 
@@ -885,6 +932,44 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
             Feriados
           </button>
         </div>
+
+        {CALENDAR_VIEWS.has(view) && (
+          <div className="ag-filters" role="group" aria-label="Filtrar a agenda">
+            <select
+              className="ag-select"
+              value={disciplineFilter}
+              onChange={e => setDisciplineFilter(e.target.value)}
+              aria-label="Filtrar por disciplina"
+            >
+              <option value="">Toda disciplina</option>
+              {DISCIPLINES.map(item => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+            <select
+              className="ag-select"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              aria-label="Filtrar por status"
+            >
+              <option value="">Todo status</option>
+              {APPOINTMENT_STATUSES.map(item => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+            <select
+              className="ag-select"
+              value={modalityFilter}
+              onChange={e => setModalityFilter(e.target.value)}
+              aria-label="Filtrar por modalidade"
+            >
+              <option value="">Toda modalidade</option>
+              {APPOINTMENT_MODALITIES.map(item => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {teamOptions.length > 1 && (
           <div className="ag-team" role="group" aria-label="Agenda de qual profissional">
@@ -959,6 +1044,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
             professionalName={professionalName}
             showProfessional={showProfessional}
             clinicName={profile?.clinic?.name || profile?.clinic_name}
+            initialProfessionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
           />
         )}
 
@@ -970,6 +1056,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
             showProfessional={showProfessional}
             onWrite={startAppointment}
             canWrite={canStart}
+            initialProfessionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
           />
         )}
 
@@ -1066,6 +1153,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
                       className={classes}
                       onClick={() => selectDay(cell.key)}
                       aria-pressed={cell.key === selectedKey}
+                      title={holiday ? holiday.name : undefined}
                     >
                       <span className="ag-day-num">{cell.day}</span>
                       <span className="ag-day-marks">

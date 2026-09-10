@@ -49,9 +49,10 @@ export function PendingConfirmationView({
   professionalName,
   showProfessional = false,
   clinicName = '',
+  initialProfessionalId = '',
 }) {
   const [days, setDays] = useState(7);
-  const [professionalId, setProfessionalId] = useState('');
+  const [professionalId, setProfessionalId] = useState(initialProfessionalId);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState(null);

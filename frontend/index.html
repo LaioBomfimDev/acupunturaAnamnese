@@ -2,19 +2,6 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <!-- Aplica o tema salvo ANTES do primeiro paint, pra não piscar o
-         tema errado enquanto o React ainda não montou. Fica cedo de
-         propósito, antes de qualquer CSS. -->
-    <script>
-      (function () {
-        try {
-          var t = localStorage.getItem('acup.theme.v1');
-          if (t === 'light' || t === 'dark') {
-            document.documentElement.setAttribute('data-theme', t);
-          }
-        } catch (e) {}
-      })();
-    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- viewport-fit=cover deixa o app pintar sob o notch; o recuo volta
          pelas safe-area-inset dos tokens, e não por margem chutada. -->

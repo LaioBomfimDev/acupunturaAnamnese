@@ -350,31 +350,6 @@
   opacity: 0.55;
 }
 
-@media (prefers-color-scheme: dark) {
-  .r1-btn--primary {
-    background: var(--r1-accent);
-    color: var(--r1-accent-contrast);
-  }
-
-  .r1-btn--primary:hover:not(:disabled) {
-    background: var(--r1-accent-strong);
-  }
-}
-
-:root[data-theme='dark'] .r1-btn--primary {
-  background: var(--r1-accent);
-  color: var(--r1-accent-contrast);
-}
-
-:root[data-theme='dark'] .r1-btn--primary:hover:not(:disabled) {
-  background: var(--r1-accent-strong);
-}
-
-:root[data-theme='light'] .r1-btn--primary {
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
-}
-
 .r1-login__foot {
   width: 100%;
   margin-top: 28px;

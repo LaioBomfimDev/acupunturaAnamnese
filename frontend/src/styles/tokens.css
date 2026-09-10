@@ -16,10 +16,12 @@
    petróleo do Vitalis, não azul-marinho/dourado. Renomear é só cosmético
    e foi propositalmente adiado para não aumentar a área de risco.)
 
-   Tema: o padrão segue o sistema operacional (prefers-color-scheme). O
-   atributo data-theme no <html> vence o sistema NOS DOIS SENTIDOS, para que
-   um futuro botão de tema possa forçar claro num aparelho escuro e vice-
-   versa. Sem isso o botão só funcionaria em uma direção.
+   Tema: só existe o claro. O tema escuro foi removido de propósito (ver
+   histórico do branch rebrand/vitalis) — a reatividade de tema deixava
+   ~100 lugares com fundo fixo em branco e texto que clareava sozinho,
+   fonte repetida de bug visual. Cor fica reservada pros elementos
+   principais (botão primário, aba ativa, marca), que agora seguem a cor
+   da clínica logada (ver AuthContext.jsx) em vez do petróleo fixo.
    ============================================================ */
 
 :root {
@@ -54,6 +56,12 @@
   --r1-slate-500: #55696a;
   --r1-slate-700: #33403f;
   --r1-steel-500: #4a726b;
+
+  /* Preto neutro pra FONTE — sem matiz de marca. --r1-navy-800 continua
+     existindo pra superfície (badge escuro, .protocol-hero), mas texto
+     não usa mais ele: "petróleo escurecido" ainda é cor, e a pedida foi
+     fonte sempre preta. R=G=B de propósito, zero matiz. */
+  --r1-ink: #111111;
 
   --r1-red-500: #b3413c;
   --r1-red-100: #fbf1f0;
@@ -129,7 +137,7 @@
   --r1-surface-sunken: var(--r1-cream-100);
   --r1-surface-inverse: var(--r1-navy-800);
 
-  --r1-text: var(--r1-navy-800);
+  --r1-text: var(--r1-ink);
   --r1-text-muted: var(--r1-slate-500);
   --r1-text-subtle: #5a7170;
   --r1-text-on-inverse: #ffffff;
@@ -139,146 +147,16 @@
   --r1-border-subtle: #e3e9ec;
   --r1-border-inverse: rgba(255, 255, 255, 0.14);
 
-  --r1-accent: var(--r1-gold-500);
-  --r1-accent-strong: var(--r1-gold-700);
-  /* O accent do tema claro é ESCURO (petróleo) — diferente do dourado
-     antigo, que era sempre claro. Texto sobre um botão preenchido de
-     accent precisa ser branco aqui, não escuro; ver bloco escuro abaixo
-     para a assimetria (lá o accent é claro e navy-900 volta a servir). */
-  --r1-accent-contrast: var(--r1-text-on-inverse);
-  --r1-accent-wash: rgba(15, 76, 73, 0.14);
-
-  --r1-danger: var(--r1-red-500);
-  --r1-danger-bg: var(--r1-red-100);
-  --r1-danger-border: var(--r1-red-200);
-  --r1-success: var(--r1-green-500);
-  --r1-warning: var(--r1-amber-600);
-  --r1-warning-bg: var(--r1-amber-100);
-  --r1-warning-border: var(--r1-amber-200);
-
-  --r1-field-bg: #ffffff;
-  --r1-field-bg-disabled: var(--r1-slate-100);
-  --r1-focus-ring: rgba(15, 76, 73, 0.34);
-
-  --r1-scrim: rgba(11, 22, 20, 0.52);
-
-  color-scheme: light;
-}
-
-/* ---- Tema ESCURO por preferência do sistema ---- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --r1-bg: var(--r1-navy-900);
-    --r1-surface: #12201d;
-    --r1-surface-sunken: #0a1512;
-    --r1-surface-inverse: #05100e;
-
-    --r1-text: #e7f0ee;
-    --r1-text-muted: #93aaa7;
-    --r1-text-subtle: #7f9491;
-    --r1-text-on-inverse: #ffffff;
-    --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.7);
-
-    --r1-border: var(--r1-steel-500);
-    --r1-border-subtle: #16221f;
-    --r1-border-inverse: rgba(255, 255, 255, 0.1);
-
-    /* O petróleo clareia no escuro (--r1-gold-400/300 são a ponta clara
-       da escala) para manter contraste sobre fundo escuro. Diferente do
-       tema claro, esse accent claro combina com texto escuro por cima —
-       navy-900 continua certo aqui, não precisa virar branco. */
-    --r1-accent: var(--r1-gold-400);
-    --r1-accent-strong: var(--r1-gold-300);
-    --r1-accent-contrast: var(--r1-navy-900);
-    --r1-accent-wash: rgba(79, 196, 182, 0.16);
-
-    --r1-danger: #e2918d;
-    --r1-danger-bg: rgba(179, 65, 60, 0.16);
-    --r1-danger-border: rgba(226, 145, 141, 0.34);
-    --r1-success: #8fcaa8;
-    --r1-warning: var(--r1-amber-500);
-    --r1-warning-bg: rgba(224, 172, 92, 0.15);
-    --r1-warning-border: rgba(224, 172, 92, 0.38);
-
-    --r1-field-bg: #0f1e1b;
-    --r1-field-bg-disabled: #0a1613;
-    --r1-focus-ring: rgba(79, 196, 182, 0.32);
-
-    --r1-scrim: rgba(4, 10, 9, 0.68);
-
-    --r1-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --r1-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --r1-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.6);
-
-    color-scheme: dark;
-  }
-}
-
-/* ---- Escolha explícita do usuário vence o sistema ----
-   Os dois blocos existem de propósito: data-theme="light" precisa
-   derrubar o @media acima num aparelho configurado como escuro. */
-:root[data-theme='dark'] {
-  --r1-bg: var(--r1-navy-900);
-  --r1-surface: #12201d;
-  --r1-surface-sunken: #0a1512;
-  --r1-surface-inverse: #05100e;
-
-  --r1-text: #e7f0ee;
-  --r1-text-muted: #93aaa7;
-  --r1-text-subtle: #7f9491;
-  --r1-text-on-inverse: #ffffff;
-  --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.7);
-
-  --r1-border: var(--r1-steel-500);
-  --r1-border-subtle: #16221f;
-  --r1-border-inverse: rgba(255, 255, 255, 0.1);
-
-  --r1-accent: var(--r1-gold-400);
-  --r1-accent-strong: var(--r1-gold-300);
-  --r1-accent-contrast: var(--r1-navy-900);
-  --r1-accent-wash: rgba(79, 196, 182, 0.16);
-
-  --r1-danger: #e2918d;
-  --r1-danger-bg: rgba(179, 65, 60, 0.16);
-  --r1-danger-border: rgba(226, 145, 141, 0.34);
-  --r1-success: #8fcaa8;
-  --r1-warning: var(--r1-amber-500);
-  --r1-warning-bg: rgba(224, 172, 92, 0.15);
-  --r1-warning-border: rgba(224, 172, 92, 0.38);
-
-  --r1-field-bg: #0f1e1b;
-  --r1-field-bg-disabled: #0a1613;
-  --r1-focus-ring: rgba(79, 196, 182, 0.32);
-
-  --r1-scrim: rgba(4, 10, 9, 0.68);
-
-  --r1-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --r1-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --r1-shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.6);
-
-  color-scheme: dark;
-}
-
-:root[data-theme='light'] {
-  --r1-bg: var(--r1-cream-200);
-  --r1-surface: #ffffff;
-  --r1-surface-sunken: var(--r1-cream-100);
-  --r1-surface-inverse: var(--r1-navy-800);
-
-  --r1-text: var(--r1-navy-800);
-  --r1-text-muted: var(--r1-slate-500);
-  --r1-text-subtle: #5a7170;
-  --r1-text-on-inverse: #ffffff;
-  --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.72);
-
-  --r1-border: var(--r1-slate-400);
-  --r1-border-subtle: #e3e9ec;
-  --r1-border-inverse: rgba(255, 255, 255, 0.14);
-
+  /* accent/accent-strong são a cor da CLÍNICA: valor abaixo é só o
+     padrão do Vitalis pra quem ainda não tem clínica carregada (login,
+     SuperAdmin) — AuthContext.jsx sobrescreve os dois via
+     setProperty assim que profile.clinic.brand_color existe. Texto
+     sobre um botão preenchido de accent é sempre branco (as 5 cores da
+     clínica + o padrão foram medidas ≥4.5:1 com texto branco). */
   --r1-accent: var(--r1-gold-500);
   --r1-accent-strong: var(--r1-gold-700);
   --r1-accent-contrast: var(--r1-text-on-inverse);
-  --r1-accent-wash: rgba(15, 76, 73, 0.14);
+  --r1-accent-wash: color-mix(in srgb, var(--r1-accent) 14%, transparent);
 
   --r1-danger: var(--r1-red-500);
   --r1-danger-bg: var(--r1-red-100);

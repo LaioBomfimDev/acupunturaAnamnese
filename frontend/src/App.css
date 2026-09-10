@@ -4,66 +4,30 @@
    mais divergir uma da outra. Os NOMES ficaram (renomear é só cosmético
    e aumentaria à toa a área de risco), só os VALORES mudaram.
 
-   .report (seção RELATÓRIO, mais abaixo) redeclara essas mesmas variáveis
-   com os hex antigos de propósito — o papel timbrado não deve herdar o
-   rebrand do app quando a clínica não tem cor própria configurada. */
+   --navy aponta pro preto neutro (--r1-ink), não pra primitiva petróleo:
+   é usado quase só como cor de FONTE neste arquivo, e fonte é sempre
+   preta agora — sem matiz de marca. --gold/--gold-2/--line seguem o
+   accent SEMÂNTICO (--r1-accent/--r1-accent-strong), que por sua vez é a
+   cor da clínica logada (AuthContext.jsx injeta via setProperty) — assim
+   os ~110 usos de var(--gold) no resto deste arquivo acompanham a cor da
+   clínica de graça, sem editar um por um.
+
+   Não existe mais tema escuro (removido de propósito — reatividade de
+   tema era fonte repetida de bug visual). .report (seção RELATÓRIO, mais
+   abaixo) redeclara estas mesmas variáveis com os hex antigos de
+   propósito — o papel timbrado não deve herdar a cor do app. */
 :root {
-  --navy: var(--r1-navy-800);
+  --navy: var(--r1-ink);
   --navy-2: var(--r1-navy-700);
   --navy-3: var(--r1-navy-600);
-  --gold: var(--r1-gold-500);
-  --gold-2: var(--r1-gold-400);
+  --gold: var(--r1-accent);
+  --gold-2: var(--r1-accent-strong);
   --cream: var(--r1-cream-200);
-  --line: color-mix(in srgb, var(--r1-gold-500) 24%, transparent);
+  --line: color-mix(in srgb, var(--r1-accent) 24%, transparent);
   --soft: var(--r1-cream-100);
   --glass: rgba(9, 38, 66, .72);
   --glass-2: rgba(255, 255, 255, .055);
   --ink-soft: rgba(255,255,255,.72);
-}
-
-/* Mesmo alias, agora reativo ao tema: liga estas variáveis legadas aos
-   tokens SEMÂNTICOS (que já mudam com o tema) em vez de primitivas fixas.
-   Sem isto o botão de tema escuro já trocava a sidebar/hub/login (100%
-   tokenizados) mas deixava as ~9 mil linhas antigas deste arquivo sempre
-   no visual claro. --navy vira texto claro no escuro (era só tinta
-   escura); --gold já É o accent, que o tokens.css já inverte sozinho.
-   Onde --navy/--gold eram usados como PREENCHIMENTO sólido (badge/botão
-   escuro, ou botão de accent com texto fixo em branco) isso quebraria —
-   esses casos pontuais foram repontados para --r1-surface-inverse /
-   --r1-accent-contrast diretamente no lugar, não aqui. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --navy: var(--r1-text);
-    --navy-2: var(--r1-text-muted);
-    --navy-3: var(--r1-text-subtle);
-    --gold: var(--r1-accent);
-    --gold-2: var(--r1-accent-strong);
-    --cream: var(--r1-surface);
-    --line: color-mix(in srgb, var(--r1-accent) 30%, transparent);
-    --soft: var(--r1-surface-sunken);
-  }
-}
-
-:root[data-theme='dark'] {
-  --navy: var(--r1-text);
-  --navy-2: var(--r1-text-muted);
-  --navy-3: var(--r1-text-subtle);
-  --gold: var(--r1-accent);
-  --gold-2: var(--r1-accent-strong);
-  --cream: var(--r1-surface);
-  --line: color-mix(in srgb, var(--r1-accent) 30%, transparent);
-  --soft: var(--r1-surface-sunken);
-}
-
-:root[data-theme='light'] {
-  --navy: var(--r1-navy-800);
-  --navy-2: var(--r1-navy-700);
-  --navy-3: var(--r1-navy-600);
-  --gold: var(--r1-gold-500);
-  --gold-2: var(--r1-gold-400);
-  --cream: var(--r1-cream-200);
-  --line: color-mix(in srgb, var(--r1-gold-500) 24%, transparent);
-  --soft: var(--r1-cream-100);
 }
 
 * { box-sizing: border-box; }
@@ -188,24 +152,6 @@ body {
   text-align: left;
   border-bottom: 1px solid rgba(255,255,255,.10);
   padding: 4px 10px 24px;
-}
-
-.theme-toggle {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r1-radius-sm);
-  border: 1px solid rgba(255,255,255,.16);
-  background: transparent;
-  color: rgba(255,255,255,.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.theme-toggle:hover {
-  background: rgba(255,255,255,.08);
 }
 
 .logo h1 {
@@ -477,7 +423,7 @@ body {
 
 .app-eyebrow {
   margin: 0 !important;
-  color: var(--gold) !important;
+  color: var(--navy) !important;
   font-size: 12px !important;
   font-weight: 800;
   text-transform: uppercase;
@@ -511,7 +457,7 @@ body {
 }
 
 .mini-clock b {
-  color: var(--gold);
+  color: var(--navy);
   font-family: var(--r1-font-display);
   font-size: 26px;
   font-weight: 400;
@@ -699,7 +645,7 @@ body {
   font-weight: 700;
   letter-spacing: .09em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--navy);
   margin-bottom: 8px;
 }
 
@@ -989,7 +935,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 .cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
 .card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-sm); padding: 15px; }
-.card h3 { font-family: var(--r1-font-display); color: var(--gold); margin: 0 0 6px; }
+.card h3 { font-family: var(--r1-font-display); color: var(--navy); font-weight: 700; margin: 0 0 6px; }
 
 .upload {
   border: 2px dashed var(--gold); border-radius: var(--r1-radius-lg);
@@ -1171,7 +1117,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .start-kicker {
-  color: var(--gold);
+  color: var(--navy);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
@@ -1562,7 +1508,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .home-hero h2 {
-  color: var(--gold);
+  color: var(--navy);
   font-family: var(--r1-font-display);
   font-size: 30px;
   line-height: 1.1;
@@ -1775,7 +1721,8 @@ textarea { min-height: 95px; resize: vertical; }
 .reviewer-home-hero h1 {
   max-width: 850px;
   margin: 0 0 12px;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
   font-family: var(--r1-font-display);
   font-size: clamp(34px, 4.4vw, 58px);
   line-height: 1.08;
@@ -2327,10 +2274,6 @@ textarea { min-height: 95px; resize: vertical; }
 .psi-profile-section {
   padding-top: 4px;
 }
-.psi-spellcheck-note {
-  margin: -6px 0 8px;
-  color: #64748b;
-}
 .psi-informant-box {
   margin-top: 10px;
   padding: 12px;
@@ -2514,7 +2457,8 @@ textarea { min-height: 95px; resize: vertical; }
 
 .summary-hero h2 {
   font-family: var(--r1-font-display);
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
   margin: 3px 0 10px;
   font-size: 30px;
   line-height: 1.12;
@@ -2920,7 +2864,8 @@ textarea { min-height: 95px; resize: vertical; }
 
 .summary-grid h3 {
   margin-top: 0;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
   font-family: var(--r1-font-display);
 }
 
@@ -3004,7 +2949,8 @@ textarea { min-height: 95px; resize: vertical; }
 }
 .tongue-card-head h3 {
   margin: 2px 0 0;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
   font-family: var(--r1-font-display);
 }
 .tongue-card-head .small {
@@ -3040,7 +2986,7 @@ textarea { min-height: 95px; resize: vertical; }
   gap: 10px;
   margin-bottom: 8px;
 }
-.organ-box h4 { margin: 0; color: var(--gold); font-family: var(--r1-font-display); }
+.organ-box h4 { margin: 0; color: var(--navy); font-weight: 700; font-family: var(--r1-font-display); }
 .organ-note { font-size: 12px; color: #64748b; margin: 6px 0 0; }
 .organ-count {
   border-color: rgba(22, 101, 52, .2);
@@ -3124,7 +3070,7 @@ textarea { min-height: 95px; resize: vertical; }
   gap: 14px;
 }
 .ai-findings-headline h3 {
-  margin: 0 0 4px; color: var(--gold); font-family: var(--r1-font-display);
+  margin: 0 0 4px; color: var(--navy); font-weight: 700; font-family: var(--r1-font-display);
   display: flex; align-items: center; gap: 10px;
 }
 .ai-findings-headline p {
@@ -3165,7 +3111,7 @@ textarea { min-height: 95px; resize: vertical; }
 .ai-finding-card.accepted { border-color: #9bd4ae; background: #f7fdf9; }
 .ai-finding-card.ignored { opacity: .6; }
 .ai-finding-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-.ai-finding-head h4 { margin: 2px 0; color: var(--gold); font-family: var(--r1-font-display); }
+.ai-finding-head h4 { margin: 2px 0; color: var(--navy); font-weight: 700; font-family: var(--r1-font-display); }
 .ai-finding-type {
   font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
   color: #64748b; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px;
@@ -3217,14 +3163,14 @@ textarea { min-height: 95px; resize: vertical; }
 }
 .pulse-organ-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
 .pulse-organ-box { border: 1px solid var(--line); background: #fff; border-radius: var(--r1-radius-lg); padding: 14px; }
-.pulse-organ-box h4 { margin: 0 0 8px; color: var(--gold); font-family: var(--r1-font-display); }
+.pulse-organ-box h4 { margin: 0 0 8px; color: var(--navy); font-weight: 700; font-family: var(--r1-font-display); }
 
 /* ======= MAPAS ======= */
 .mapwrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 /* ======= RACIOCÍNIO CLÍNICO ======= */
 .movement-card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-lg); padding: 16px; position: relative; overflow: hidden; }
-.movement-card h3 { font-family: var(--r1-font-display); margin: 0 0 6px; color: var(--gold); }
+.movement-card h3 { font-family: var(--r1-font-display); margin: 0 0 6px; color: var(--navy); font-weight: 700; }
 .score-pill { display: inline-block; background: var(--r1-surface-inverse); color: var(--r1-text-on-inverse); border-radius: 999px; padding: 5px 10px; font-size: 12px; margin-top: 6px; }
 .evidence { font-size: 13px; line-height: 1.6; margin-top: 10px; }
 
@@ -3234,18 +3180,18 @@ textarea { min-height: 95px; resize: vertical; }
 
 .cycle-box { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin: 16px 0; }
 .node { border: 1px solid var(--line); border-radius: 999px; padding: 12px 16px; background: white; font-weight: 700; }
-.arrow { font-size: 22px; color: var(--gold); }
+.arrow { font-size: 22px; color: var(--navy); }
 .warning { background: var(--r1-warning-bg); border: 1px solid var(--gold); border-radius: var(--r1-radius-lg); padding: 14px; margin: 10px 0; }
 
 /* ======= DIAGNÓSTICO ======= */
 .diag-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
 .diag-card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-lg); padding: 16px; margin-bottom: 14px; }
-.diag-card h3 { font-family: var(--r1-font-display); color: var(--gold); margin: 0 0 8px; }
+.diag-card h3 { font-family: var(--r1-font-display); color: var(--navy); font-weight: 700; margin: 0 0 8px; }
 .diag-badge { display: inline-block; border-radius: 999px; background: var(--r1-surface-inverse); color: var(--r1-text-on-inverse); padding: 6px 11px; font-size: 12px; margin: 3px; }
 .causal { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
 .causal-step { background: white; border: 1px solid var(--line); border-radius: var(--r1-radius-lg); padding: 11px; text-align: center; font-weight: 700; }
-.causal-arrow { text-align: center; color: var(--gold); font-size: 22px; line-height: 1; }
-.confidence-big { font-family: var(--r1-font-display); font-size: 46px; color: var(--gold); margin: 0; }
+.causal-arrow { text-align: center; color: var(--navy); font-size: 22px; line-height: 1; }
+.confidence-big { font-family: var(--r1-font-display); font-size: 46px; color: var(--navy); margin: 0; }
 .conf-row { display: grid; grid-template-columns: 95px 1fr 42px; gap: 8px; align-items: center; margin: 9px 0; }
 .conf-track { height: 12px; background: var(--r1-warning-border); border-radius: 999px; overflow: hidden; }
 .conf-fill { height: 100%; background: var(--gold); border-radius: 999px; transition: width 0.4s; }
@@ -3273,7 +3219,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* Mapa corporal e auricular */
 .map-card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-lg); padding: 16px; overflow: hidden; margin-bottom: 16px; }
-.map-card h3 { font-family: var(--r1-font-display); color: var(--gold); margin: 0 0 8px; }
+.map-card h3 { font-family: var(--r1-font-display); color: var(--navy); font-weight: 700; margin: 0 0 8px; }
 .map-stage { position: relative; background: white; border: 1px solid var(--line); border-radius: var(--r1-radius-lg); overflow: hidden; min-height: 320px; }
 .map-stage img { display: block; width: 100%; height: auto; }
 
@@ -3300,7 +3246,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* Tech cards / tabela de pontos */
 .tech-card { border: 1px solid var(--line); background: white; border-radius: var(--r1-radius-lg); padding: 14px; margin-bottom: 12px; }
-.tech-card h4 { font-family: var(--r1-font-display); color: var(--gold); margin: 0 0 8px; }
+.tech-card h4 { font-family: var(--r1-font-display); color: var(--navy); font-weight: 700; margin: 0 0 8px; }
 .warning-soft { background: var(--r1-warning-bg); border: 1px solid var(--gold); border-radius: var(--r1-radius-lg); padding: 12px; margin: 10px 0; font-size: 13px; }
 .warning-soft p { margin: 0 0 6px; }
 .warning-soft p:last-child { margin-bottom: 0; }
@@ -3351,7 +3297,8 @@ textarea { min-height: 95px; resize: vertical; }
   font-size: 12px;
   letter-spacing: .04em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
 }
 .tech-list {
   margin: 0;
@@ -3371,7 +3318,7 @@ textarea { min-height: 95px; resize: vertical; }
 .dose-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 10px; }
 .dose-grid.tech-params { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .dose-box { background: var(--soft); border: 1px solid var(--line); border-radius: var(--r1-radius-lg); padding: 12px; font-size: 13px; }
-.dose-box b { color: var(--gold); }
+.dose-box b { color: var(--navy); }
 
 .point-chip { display: inline-block; border-radius: 999px; background: #fff; border: 1px solid var(--line); padding: 6px 9px; margin: 3px; font-size: 12px; }
 
@@ -3545,7 +3492,8 @@ textarea { min-height: 95px; resize: vertical; }
   font-size: 12px;
   letter-spacing: .04em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
 }
 .suggestion-group h5 span {
   margin-left: 6px;
@@ -3648,7 +3596,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .protocol-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
 .protocol-table td { background: white; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 10px; font-size: 13px; }
-.protocol-table td:first-child { border-left: 1px solid var(--line); border-radius: 12px 0 0 12px; font-weight: 700; color: var(--gold); width: 95px; }
+.protocol-table td:first-child { border-left: 1px solid var(--line); border-radius: 12px 0 0 12px; font-weight: 700; color: var(--navy); width: 95px; }
 .protocol-table td:last-child { border-right: 1px solid var(--line); border-radius: 0 12px 12px 0; }
 
 /* ======= EVOLUÇÃO ======= */
@@ -3703,7 +3651,7 @@ textarea { min-height: 95px; resize: vertical; }
   align-items: baseline;
   gap: 4px 10px;
 }
-.evo-appointment-banner b { color: var(--gold); }
+.evo-appointment-banner b { color: var(--navy); }
 .evo-appointment-banner p.small { flex-basis: 100%; margin: 4px 0 0; }
 
 .evo-appointment-banner--falta {
@@ -3717,7 +3665,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 .metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
 .metric-card { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r1-radius-lg); padding: 14px; }
-.metric-card h4 { margin: 0 0 6px; color: var(--gold); font-family: var(--r1-font-display); }
+.metric-card h4 { margin: 0 0 6px; color: var(--navy); font-weight: 700; font-family: var(--r1-font-display); }
 .trend-up   { color: #1f7a3a; font-weight: 700; }
 .trend-down { color: #9b1c1c; font-weight: 700; }
 .trend-neutral { color: #64748b; font-weight: 700; }
@@ -4183,11 +4131,11 @@ textarea { min-height: 95px; resize: vertical; }
 /* ======= BIBLIOTECA ======= */
 .lib-card { border: 1px solid var(--line); background: white; border-radius: var(--r1-radius-lg); padding: 16px; position: relative; transition: box-shadow 0.2s; }
 .lib-card:hover { box-shadow: 0 4px 18px rgba(6,31,58,.08); }
-.lib-card h3 { font-family: var(--r1-font-display); color: var(--gold); margin: 4px 0 8px; }
+.lib-card h3 { font-family: var(--r1-font-display); color: var(--navy); font-weight: 700; margin: 4px 0 8px; }
 .lib-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .chip { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; background: var(--soft); }
 .lib-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.lib-count { font-family: var(--r1-font-display); font-size: 34px; color: var(--gold); margin: 0; }
+.lib-count { font-family: var(--r1-font-display); font-size: 34px; color: var(--navy); margin: 0; }
 .lib-mini { font-size: 12px; color: #64748b; line-height: 1.45; }
 .lib-highlight { background: var(--r1-warning-bg); border: 1px solid var(--gold); border-radius: var(--r1-radius-lg); padding: 12px; margin: 10px 0; }
 
@@ -5384,7 +5332,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .force-password-head p {
   margin: 0 0 8px;
-  color: var(--gold);
+  color: var(--navy);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0;
@@ -8760,7 +8708,8 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .psi-section-title {
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
   font-family: var(--r1-font-display);
   margin-top: 26px;
 }
@@ -8882,7 +8831,8 @@ textarea { min-height: 95px; resize: vertical; }
 
 .psi-placeholder-box h3 {
   margin: 0 0 10px;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
 }
 
 .psi-placeholder-box p {
@@ -8900,7 +8850,8 @@ textarea { min-height: 95px; resize: vertical; }
 
 .psi-reading-block h4 {
   margin: 0 0 6px;
-  color: var(--gold);
+  color: var(--navy);
+  font-weight: 700;
 }
 
 .psi-reading-list {

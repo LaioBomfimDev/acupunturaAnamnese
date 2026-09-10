@@ -9,6 +9,7 @@ import {
 } from '../lib/localAuthStorage';
 import { getClinicForProfile } from '../services/clinicService';
 import { DISCIPLINE_IDS } from '../data/disciplines';
+import { buildReportAccentPalette } from '../utils/reportUtils';
 
 const AuthContext = createContext({});
 const LOCAL_FALLBACK_ENABLED =
@@ -256,6 +257,26 @@ export const AuthProvider = ({ children }) => {
       active = false;
     };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Elementos principais do app (botão primário, aba ativa, marca) seguem a
+  // cor que a clínica escolheu no cadastro (mesma paleta usada no papel
+  // timbrado — buildReportAccentPalette) em vez do petróleo fixo do Vitalis.
+  // Sem clínica carregada (login, SuperAdmin, erro), volta pro padrão do
+  // tokens.css removendo o override.
+  useEffect(() => {
+    const root = document.documentElement.style;
+    const brandColor = profile?.clinic?.brand_color;
+
+    if (!brandColor) {
+      root.removeProperty('--r1-accent');
+      root.removeProperty('--r1-accent-strong');
+      return;
+    }
+
+    const { accent, shade } = buildReportAccentPalette(brandColor);
+    root.setProperty('--r1-accent', accent);
+    root.setProperty('--r1-accent-strong', shade);
+  }, [profile?.clinic?.brand_color]);
 
   const signInWithPassword = async (emailOrUsername, password) => {
     const identifier = emailOrUsername.trim();

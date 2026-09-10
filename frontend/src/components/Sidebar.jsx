@@ -325,35 +325,6 @@ export function Sidebar({
   // navegação no telefone.
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Tema claro/escuro: só dois estados. A preferência do sistema
-  // operacional já é o padrão via prefers-color-scheme (tokens.css); este
-  // botão apenas sobrepõe essa preferência numa direção, e localStorage
-  // guarda a escolha. index.html já aplica o atributo antes do primeiro
-  // paint, então aqui só refletimos o estado — nunca aplicamos no mount.
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem('acup.theme.v1');
-    } catch {
-      return null;
-    }
-  });
-  const prefersDark = typeof window !== 'undefined'
-    && window.matchMedia
-    && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const effectiveTheme = theme || (prefersDark ? 'dark' : 'light');
-
-  function toggleTheme() {
-    const next = effectiveTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    try {
-      localStorage.setItem('acup.theme.v1', next);
-    } catch {
-      // Sem localStorage (modo privado, por ex.): o tema ainda muda na
-      // sessão atual, só não persiste — comportamento aceitável aqui.
-    }
-    setTheme(next);
-  }
-
   // Enquanto a gaveta está aberta, a página atrás não rola: rolar o
   // conteúdo escondido é o defeito clássico de menu off-canvas.
   useEffect(() => {
@@ -423,24 +394,6 @@ export function Sidebar({
           <h1>Vitalis</h1>
           <p>Transformando limites em possibilidades</p>
         </div>
-        <button
-          type="button"
-          className="theme-toggle no-print"
-          onClick={toggleTheme}
-          aria-label={effectiveTheme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-          title={effectiveTheme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-        >
-          {effectiveTheme === 'dark' ? (
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.4 1.4M17.6 17.6L19 19M19 5l-1.4 1.4M6.4 17.6L5 19" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 14.5A8 8 0 1 1 9.5 4a6.4 6.4 0 0 0 10.5 10.5Z" />
-            </svg>
-          )}
-        </button>
       </div>
 
       <div className="sidebar-profile">

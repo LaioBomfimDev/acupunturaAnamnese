@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getStatusLabel } from '../../utils/agenda';
+import { DASHBOARD_PERIOD_PRESETS, presetToRange } from '../../utils/gestaoDashboard';
 import { listMissedAppointments, listPatientsAwaitingReturn } from '../../services/appointmentService';
 import { listClinicMembers, shortName } from '../../services/clinicMembersService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { listClinicAccessLogs } from '../../services/clinicAccessLogService';
+import { loadDashboardMetrics } from '../../services/gestaoDashboardService';
 import {
   buildSurveyLink,
   createSatisfactionSurvey,
@@ -23,7 +25,83 @@ const SECTIONS = [
   { id: 'retornos', label: 'Retornos' },
   { id: 'acessos', label: 'Acessos' },
   { id: 'pesquisa', label: 'Pesquisa de satisfação' },
+  { id: 'indicadores', label: 'Indicadores' },
 ];
+
+const MONTH_SHORT_LABELS = [
+  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez',
+];
+
+function monthLabel(monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  return `${MONTH_SHORT_LABELS[month - 1]}/${String(year).slice(2)}`;
+}
+
+function formatPercent(rate) {
+  if (rate === null || rate === undefined) return '—';
+  return `${Math.round(rate * 100)}%`;
+}
+
+// Barra ranqueada única (faltas/cancelamentos, dia da semana, período do
+// dia): largura relativa ao maior valor da própria lista, não a um teto
+// fixo — o objetivo é comparar os itens entre si, não medir contra 100%.
+function BarList({ items, emptyLabel }) {
+  if (!items.length) return <p className="gt-empty">{emptyLabel}</p>;
+  const max = Math.max(1, ...items.map(item => item.count));
+  return (
+    <ul className="gt-bars">
+      {items.map(item => (
+        <li key={item.id} className="gt-bar-row">
+          <span className="gt-bar-label">{item.label}</span>
+          <span className="gt-bar-track">
+            <span className="gt-bar-fill" style={{ width: `${(item.count / max) * 100}%` }} />
+          </span>
+          <span className="gt-bar-value">{item.count}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Barra empilhada de duas séries (novos vs. retorno por mês): largura
+// total relativa ao maior total entre os meses, faixa de "novos" vem
+// primeiro (destaque), "retorno" continua em seguida (neutro).
+function StackedBarList({ items, emptyLabel }) {
+  if (!items.length) return <p className="gt-empty">{emptyLabel}</p>;
+  const max = Math.max(1, ...items.map(item => item.firstVisit + item.returning));
+  return (
+    <>
+      <div className="gt-bar-legend">
+        <span className="gt-bar-legend-item">
+          <span className="gt-bar-legend-swatch" /> Novos
+        </span>
+        <span className="gt-bar-legend-item">
+          <span className="gt-bar-legend-swatch gt-bar-legend-swatch--muted" /> Retorno
+        </span>
+      </div>
+      <ul className="gt-bars">
+        {items.map(item => {
+          const total = item.firstVisit + item.returning;
+          const firstPct = (item.firstVisit / max) * 100;
+          const returningPct = (item.returning / max) * 100;
+          return (
+            <li key={item.monthKey} className="gt-bar-row">
+              <span className="gt-bar-label">{monthLabel(item.monthKey)}</span>
+              <span className="gt-bar-track">
+                <span className="gt-bar-fill" style={{ width: `${firstPct}%` }} />
+                <span
+                  className="gt-bar-fill gt-bar-fill--muted gt-bar-fill--stacked-end"
+                  style={{ left: `${firstPct}%`, width: `${returningPct}%` }}
+                />
+              </span>
+              <span className="gt-bar-value">{total}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
 
 const ACCESS_ACTION_LABELS = { login: 'Entrou', logout: 'Saiu' };
 
@@ -159,6 +237,48 @@ export function RelatoriosGestao({ profile }) {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
+
+  const [dashboardPreset, setDashboardPreset] = useState('month');
+  const [dashboardProfessionalId, setDashboardProfessionalId] = useState('');
+  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState('');
+
+  useEffect(() => {
+    if (section !== 'indicadores') return undefined;
+    let cancelled = false;
+
+    (async () => {
+      setDashboardLoading(true);
+      try {
+        const team = members.length ? members : await listClinicMembers();
+        const clinicPatients = patients.length ? patients : await listClinicPatients();
+        if (cancelled) return;
+        if (!members.length) setMembers(team);
+        if (!patients.length) setPatients(clinicPatients);
+
+        const { from, to } = presetToRange(dashboardPreset);
+        const metrics = await loadDashboardMetrics({
+          from,
+          to,
+          professionalId: dashboardProfessionalId || null,
+          patients: clinicPatients,
+        });
+        if (cancelled) return;
+        setDashboardData(metrics);
+        setDashboardError('');
+      } catch (err) {
+        if (cancelled) return;
+        setDashboardError(err.message || 'Não foi possível carregar os indicadores.');
+        setDashboardData(null);
+      } finally {
+        if (!cancelled) setDashboardLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, dashboardPreset, dashboardProfessionalId]);
 
   async function handleGenerateSurvey(e) {
     e.preventDefault();
@@ -502,6 +622,122 @@ export function RelatoriosGestao({ profile }) {
                 );
               })}
             </ul>
+          )}
+        </section>
+      )}
+
+      {section === 'indicadores' && (
+        <section>
+          <p className="gt-note">
+            Panorama do período: ocupação da jornada, faltas e cancelamentos,
+            horários mais procurados, novos pacientes vs. retorno e quem faz
+            aniversário este mês.
+          </p>
+
+          <div className="gt-filters">
+            <div className="gt-field">
+              <label htmlFor="gt-dash-preset">Período</label>
+              <select
+                id="gt-dash-preset"
+                className="gt-select"
+                value={dashboardPreset}
+                onChange={e => setDashboardPreset(e.target.value)}
+              >
+                {DASHBOARD_PERIOD_PRESETS.map(option => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            {members.length > 1 && (
+              <div className="gt-field">
+                <label htmlFor="gt-dash-prof">Profissional</label>
+                <select
+                  id="gt-dash-prof"
+                  className="gt-select"
+                  value={dashboardProfessionalId}
+                  onChange={e => setDashboardProfessionalId(e.target.value)}
+                >
+                  <option value="">Toda a equipe</option>
+                  {members.map(member => (
+                    <option key={member.id} value={member.id}>{member.full_name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {dashboardError && <div className="gt-notice gt-notice-error" role="alert">{dashboardError}</div>}
+
+          {dashboardLoading ? (
+            <p className="gt-empty">Carregando…</p>
+          ) : !dashboardData ? null : (
+            <>
+              <div className="gt-kpis">
+                <div className="gt-kpi">
+                  <span className="gt-kpi-label">Taxa de ocupação</span>
+                  <span className="gt-kpi-value">{formatPercent(dashboardData.occupancy.rate)}</span>
+                  {dashboardData.occupancy.rate === null ? (
+                    <span className="gt-kpi-sub">Sem jornada cadastrada no período</span>
+                  ) : (
+                    <div className="gt-meter">
+                      <span className="gt-meter-track">
+                        <span
+                          className="gt-meter-fill"
+                          style={{ width: `${Math.min(100, dashboardData.occupancy.rate * 100)}%` }}
+                        />
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="gt-kpi">
+                  <span className="gt-kpi-label">Faltas e cancelamentos</span>
+                  <span className="gt-kpi-value">{dashboardData.absences.total}</span>
+                  <span className="gt-kpi-sub">no período selecionado</span>
+                </div>
+                <div className="gt-kpi">
+                  <span className="gt-kpi-label">Aniversariantes do mês</span>
+                  <span className="gt-kpi-value">{dashboardData.birthdays.length}</span>
+                  <span className="gt-kpi-sub">independente do período acima</span>
+                </div>
+              </div>
+
+              <h4 className="gt-chart-title">Faltas e cancelamentos por profissional</h4>
+              <BarList
+                items={dashboardData.absences.byProfessional.map(item => ({ ...item, label: professionalName(item.id) }))}
+                emptyLabel="Nenhuma falta ou cancelamento no período."
+              />
+
+              <h4 className="gt-chart-title">Faltas e cancelamentos por disciplina</h4>
+              <BarList items={dashboardData.absences.byDiscipline} emptyLabel="Nenhuma falta ou cancelamento no período." />
+
+              <h4 className="gt-chart-title">Atendimentos por dia da semana</h4>
+              <BarList items={dashboardData.byWeekday} emptyLabel="Nenhum atendimento no período." />
+
+              <h4 className="gt-chart-title">Atendimentos por período do dia</h4>
+              <BarList items={dashboardData.byTimeOfDay} emptyLabel="Nenhum atendimento no período." />
+
+              <h4 className="gt-chart-title">Pacientes novos vs. retorno por mês</h4>
+              <StackedBarList
+                items={dashboardData.newVsReturning}
+                emptyLabel="Nenhum atendimento classificado como primeira vez ou retorno no período."
+              />
+
+              <h4 className="gt-chart-title">Aniversariantes deste mês</h4>
+              {dashboardData.birthdays.length === 0 ? (
+                <p className="gt-empty">Ninguém faz aniversário este mês.</p>
+              ) : (
+                <ul className="gt-list">
+                  {dashboardData.birthdays.map(patient => (
+                    <li key={patient.id} className="gt-card">
+                      <div className="gt-card-info">
+                        <span className="gt-card-name">{patient.name}</span>
+                        <span className="gt-card-meta">dia {patient.day} · completa {patient.age} anos</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </section>
       )}

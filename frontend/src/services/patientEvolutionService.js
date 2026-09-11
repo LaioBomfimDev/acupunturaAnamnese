@@ -20,7 +20,7 @@ export const PATIENT_EVOLUTIONS_MIGRATION_HINT =
   'Estrutura de evolução vinculada ao atendimento ausente no banco. Aplique a migração ' +
   'supabase/migrations/20260903_patient_evolutions.sql no Supabase.';
 
-function isMissingPatientEvolutionsRpc(error) {
+export function isMissingPatientEvolutionsRpc(error) {
   const text = [error?.message, error?.details, error?.hint, error?.code]
     .filter(Boolean)
     .join(' ');

@@ -9,10 +9,14 @@ import { DISCIPLINE_IDS } from '../../src/data/disciplines.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260708_clinic_patients_enrollments.sql');
+// 10/09/2026: Neuropsicologia entrou como disciplina nova — migração
+// ADITIVA própria, não edita o arquivo original.
+const NEUROPSICOLOGIA_PATH = path.resolve(root, '../supabase/migrations/20260910_neuropsicologia_discipline.sql');
 
 let server;
 let clinicPatientsService;
 let migrationSql;
+let neuropsicologiaSql;
 
 before(async () => {
   server = await createServer({
@@ -22,7 +26,10 @@ before(async () => {
     appType: 'custom',
   });
   clinicPatientsService = await server.ssrLoadModule('/src/services/clinicPatientsService.js');
-  migrationSql = await readFile(MIGRATION_PATH, 'utf8');
+  [migrationSql, neuropsicologiaSql] = await Promise.all([
+    readFile(MIGRATION_PATH, 'utf8'),
+    readFile(NEUROPSICOLOGIA_PATH, 'utf8'),
+  ]);
 });
 
 after(async () => {
@@ -40,7 +47,12 @@ test('migração Fase 2: estruturas centrais presentes (clinic_id, matrículas, 
 
 test('migração Fase 2: toda disciplina do catálogo está nos CHECKs (contrato hub ↔ banco)', () => {
   for (const id of DISCIPLINE_IDS) {
-    assert.ok(migrationSql.includes(`'${id}'`), `disciplina ${id} ausente da migração`);
+    const presentInOriginal = migrationSql.includes(`'${id}'`);
+    const presentInLaterMigration = neuropsicologiaSql.includes(`'${id}'`);
+    assert.ok(
+      presentInOriginal || presentInLaterMigration,
+      `disciplina ${id} ausente da migração original e das extensões aditivas`,
+    );
   }
 });
 
@@ -103,4 +115,16 @@ test('schema desatualizado gera erro EXPLÍCITO citando a migração (sem fallba
   );
   assert.equal(isMissingEnrollmentSchemaError({ message: 'permission denied for table patients' }), false);
   assert.match(ENROLLMENT_MIGRATION_HINT, /20260708_clinic_patients_enrollments\.sql/);
+});
+
+test('ficha do paciente imprime o cadastro no papel timbrado da clínica (mesma infra dos relatórios)', async () => {
+  const source = await readFile(path.resolve(root, 'src/components/ClinicPatientProfile.jsx'), 'utf8');
+  assert.ok(source.includes("from './report/reportPrint'"), 'papel timbrado/rodapé compartilhados com os relatórios');
+  assert.ok(source.includes("from './report/reportPagination'"), 'paginação compartilhada com os relatórios');
+  assert.ok(source.includes('therapistProfile?.clinic'), 'cada clínica imprime com a própria logo/cor, não uma marca genérica');
+  assert.ok(source.includes('handlePrintCadastro'), 'botão dedicado imprime o cadastro');
+  assert.ok(source.includes('Ficha cadastral'), 'cabeçalho identifica o documento impresso');
+
+  const panel = await readFile(path.resolve(root, 'src/components/ClinicPatientsPanel.jsx'), 'utf8');
+  assert.match(panel, /<ClinicPatientProfile[\s\S]*?therapistProfile=\{profile\}/, 'perfil da clínica logada chega até a ficha impressa');
 });

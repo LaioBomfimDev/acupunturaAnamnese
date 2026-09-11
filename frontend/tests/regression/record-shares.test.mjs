@@ -14,11 +14,16 @@ const RPC_ORIGINAL_PATH = path.resolve(root, '../supabase/migrations/20260521_fi
 // 07/08/2026: get_shared_session deixou de ler só a sessão de acupuntura.
 const MULTI_PATH = path.resolve(root, '../supabase/migrations/20260807_shared_session_multidisciplina.sql');
 const MULTI_APPLY_PATH = path.resolve(root, '../docs/aplicar-sql-compartilhamento-2026-08-07.sql');
+// 10/09/2026: Neuropsicologia entrou como disciplina nova — migração
+// ADITIVA própria, não edita o arquivo original (migrations aplicadas
+// não se reescrevem). from/to_discipline dela são liberados aqui.
+const NEUROPSICOLOGIA_PATH = path.resolve(root, '../supabase/migrations/20260910_neuropsicologia_discipline.sql');
 
 let server;
 let recordSharesService;
 let migrationSql;
 let multiSql;
+let neuropsicologiaSql;
 
 before(async () => {
   server = await createServer({
@@ -28,9 +33,10 @@ before(async () => {
     appType: 'custom',
   });
   recordSharesService = await server.ssrLoadModule('/src/services/recordSharesService.js');
-  [migrationSql, multiSql] = await Promise.all([
+  [migrationSql, multiSql, neuropsicologiaSql] = await Promise.all([
     readFile(MIGRATION_PATH, 'utf8'),
     readFile(MULTI_PATH, 'utf8'),
+    readFile(NEUROPSICOLOGIA_PATH, 'utf8'),
   ]);
 });
 
@@ -82,7 +88,12 @@ test('migração Fase 3: record_shares, is_clinic_admin e get_shared_session pre
   assert.match(migrationSql, /FUNCTION public\.is_clinic_admin/);
   assert.match(migrationSql, /FUNCTION public\.get_shared_session/);
   for (const id of DISCIPLINE_IDS) {
-    assert.ok(migrationSql.includes(`'${id}'`), `disciplina ${id} ausente da migração`);
+    const presentInOriginal = migrationSql.includes(`'${id}'`);
+    const presentInLaterMigration = neuropsicologiaSql.includes(`'${id}'`);
+    assert.ok(
+      presentInOriginal || presentInLaterMigration,
+      `disciplina ${id} ausente da migração original e das extensões aditivas`,
+    );
   }
 });
 

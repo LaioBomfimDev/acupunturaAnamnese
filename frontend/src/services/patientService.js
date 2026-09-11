@@ -9,7 +9,86 @@ import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 
 const LOCAL_PATIENTS_KEY = 'acup_local_patients';
 const PATIENT_SELECT_COLUMNS =
-  'id,therapist_id,name,phone,birth_date,age,archived_at,created_at,clinic_id,image_consent,image_consent_at,cpf';
+  'id,therapist_id,name,phone,birth_date,age,archived_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
+  'nome_social,nome_mae,nome_pai,nome_conjuge,sexo_biologico,genero,' +
+  'responsavel_nome,responsavel_telefone,responsavel_cpf,' +
+  'convenio_nome,convenio_carteirinha,' +
+  'endereco_cep,endereco_logradouro,endereco_numero,endereco_complemento,endereco_bairro,endereco_cidade,endereco_uf';
+
+// Usado só no fallback de migração pendente (isMissingColumnError): não
+// pode repetir PATIENT_SELECT_COLUMNS, senão o próprio re-select falha
+// pela mesma coluna ausente que causou o fallback.
+const LEGACY_PATIENT_SELECT_COLUMNS = 'id,therapist_id,name,phone,birth_date,created_at';
+
+// Colunas do cadastro adicionadas em 20260910_patient_registration_open_clinic.sql —
+// usado pra montar o payload de insert/update sem repetir a lista em cada função,
+// e pra detectar de forma explícita quando a migração ainda não foi aplicada.
+const REGISTRATION_FIELD_TO_COLUMN = {
+  nomeSocial: 'nome_social',
+  nomeMae: 'nome_mae',
+  nomePai: 'nome_pai',
+  nomeConjuge: 'nome_conjuge',
+  sexoBiologico: 'sexo_biologico',
+  genero: 'genero',
+  responsavelNome: 'responsavel_nome',
+  responsavelTelefone: 'responsavel_telefone',
+  responsavelCpf: 'responsavel_cpf',
+  convenioNome: 'convenio_nome',
+  convenioCarteirinha: 'convenio_carteirinha',
+  enderecoCep: 'endereco_cep',
+  enderecoLogradouro: 'endereco_logradouro',
+  enderecoNumero: 'endereco_numero',
+  enderecoComplemento: 'endereco_complemento',
+  enderecoBairro: 'endereco_bairro',
+  enderecoCidade: 'endereco_cidade',
+  enderecoUf: 'endereco_uf',
+};
+
+function buildRegistrationFieldsPayload(fields = {}) {
+  const payload = {};
+  for (const [key, column] of Object.entries(REGISTRATION_FIELD_TO_COLUMN)) {
+    if (fields[key] !== undefined) payload[column] = fields[key] || null;
+  }
+  return payload;
+}
+
+/**
+ * Idade calculada a partir da data de nascimento — fonte única usada
+ * tanto pra exibir quanto pra decidir se o responsável é obrigatório.
+ */
+export function calculateAgeFromBirthDate(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(`${birthDate}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age >= 0 ? age : null;
+}
+
+export function isMinor(birthDate) {
+  const age = calculateAgeFromBirthDate(birthDate);
+  return age !== null && age < 18;
+}
+
+/**
+ * Paciente menor de idade sem nome/telefone/CPF do responsável é um
+ * cadastro incompleto que ninguém mais vai perceber depois — recusar na
+ * hora é mais seguro do que silenciar (mesmo raciocínio de
+ * assertCanFallbackWithoutImageConsent/assertCanFallbackWithoutCpf).
+ */
+export function assertResponsavelRequiredIfMinor(birthDate, responsavel = {}) {
+  if (!isMinor(birthDate)) return;
+  const { nome, telefone, cpf } = responsavel || {};
+  if (!String(nome || '').trim() || !String(telefone || '').trim() || !String(cpf || '').trim()) {
+    throw new Error(
+      'Paciente menor de idade: informe nome, telefone e CPF do responsável.'
+    );
+  }
+}
 
 // ---------- helpers localStorage ----------
 
@@ -69,16 +148,18 @@ export async function getPatient(patientId) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
   if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
-    const p = getLocalPatientsForUser(user).find(p => p.id === patientId);
+    const p = getLocalPatients().find(p => p.id === patientId);
     if (!p) throw new Error('Paciente não encontrado.');
     return p;
   }
 
+  // Sem filtro por therapist_id: o cadastro é aberto à clínica inteira
+  // (20260910_patient_registration_open_clinic.sql) — a RLS decide
+  // quem pode ver este paciente, não o client.
   const { data, error } = await supabase
     .from('patients')
     .select(PATIENT_SELECT_COLUMNS)
     .eq('id', patientId)
-    .eq('therapist_id', user.id)
     .single();
 
   if (error) throw error;
@@ -179,6 +260,22 @@ export function assertCanFallbackWithoutCpf(error, normalizedCpf) {
 }
 
 /**
+ * Mesmo raciocínio: nome social, filiação, responsável, convênio e
+ * endereço preenchidos que somem silenciosamente por falta da migração
+ * são piores do que a tela quebrar na hora.
+ */
+export function assertCanFallbackWithoutRegistrationFields(error, registrationFields = {}) {
+  if (!isMissingColumnError(error)) return;
+  const hasAnyValue = Object.values(registrationFields).some(value => value !== null && value !== undefined);
+  if (!hasAnyValue) return;
+  throw new Error(
+    'Não foi possível salvar os novos campos do cadastro (endereço, responsável, convênio etc.) ' +
+    'porque as colunas ainda não estão disponíveis no banco. Execute a migration ' +
+    'supabase/migrations/20260910_patient_registration_open_clinic.sql antes de preenchê-los.'
+  );
+}
+
+/**
  * CPF vazio é válido (documento nem sempre está em mãos no cadastro);
  * CPF preenchido e incorreto não é — silenciar um dígito errado é pior
  * do que recusar na hora, porque ninguém mais vai conferir depois.
@@ -190,13 +287,26 @@ function assertValidCpfIfProvided(cpf) {
   return normalized;
 }
 
-export async function createPatient({ name, phone, birthDate, age, imageConsent, cpf }) {
+export async function createPatient({
+  name, phone, birthDate, age, imageConsent, cpf,
+  nomeSocial, nomeMae, nomePai, nomeConjuge, sexoBiologico, genero,
+  responsavelNome, responsavelTelefone, responsavelCpf,
+  convenioNome, convenioCarteirinha,
+  enderecoCep, enderecoLogradouro, enderecoNumero, enderecoComplemento, enderecoBairro, enderecoCidade, enderecoUf,
+}) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
-  const normalizedAge = normalizeAge(age);
+  const normalizedAge = normalizeAge(age !== undefined ? age : calculateAgeFromBirthDate(birthDate));
   const normalizedCpf = assertValidCpfIfProvided(cpf);
   const consentGiven = imageConsent === true;
   const consentAt = consentGiven ? new Date().toISOString() : null;
+  assertResponsavelRequiredIfMinor(birthDate, { nome: responsavelNome, telefone: responsavelTelefone, cpf: responsavelCpf });
+  const registrationFields = buildRegistrationFieldsPayload({
+    nomeSocial, nomeMae, nomePai, nomeConjuge, sexoBiologico, genero,
+    responsavelNome, responsavelTelefone, responsavelCpf,
+    convenioNome, convenioCarteirinha,
+    enderecoCep, enderecoLogradouro, enderecoNumero, enderecoComplemento, enderecoBairro, enderecoCidade, enderecoUf,
+  });
 
   if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
     const newPatient = {
@@ -211,6 +321,7 @@ export async function createPatient({ name, phone, birthDate, age, imageConsent,
       image_consent: consentGiven,
       image_consent_at: consentAt,
       cpf: normalizedCpf,
+      ...registrationFields,
     };
     const patients = getLocalPatients();
     patients.unshift(newPatient);
@@ -226,8 +337,9 @@ export async function createPatient({ name, phone, birthDate, age, imageConsent,
     image_consent: consentGiven,
     image_consent_at: consentAt,
     cpf: normalizedCpf,
+    ...registrationFields,
   };
-  if (hasSubmittedAge(age)) payload.age = normalizedAge;
+  if (hasSubmittedAge(age) || birthDate) payload.age = normalizedAge;
 
   let { data, error } = await supabase
     .from('patients')
@@ -239,6 +351,7 @@ export async function createPatient({ name, phone, birthDate, age, imageConsent,
     assertCanFallbackWithoutPatientAge(error, age);
     assertCanFallbackWithoutImageConsent(error, imageConsent);
     assertCanFallbackWithoutCpf(error, normalizedCpf);
+    assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')
       .insert({
@@ -247,7 +360,7 @@ export async function createPatient({ name, phone, birthDate, age, imageConsent,
         phone: phone || null,
         birth_date: birthDate || null,
       })
-      .select(PATIENT_SELECT_COLUMNS)
+      .select(LEGACY_PATIENT_SELECT_COLUMNS)
       .single();
     data = fallbackData;
     error = fallbackError;
@@ -264,10 +377,19 @@ export async function updatePatient(patientId, updates) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
   const normalizedCpf = updates.cpf !== undefined ? assertValidCpfIfProvided(updates.cpf) : undefined;
+  if (updates.birthDate !== undefined || updates.responsavelNome !== undefined
+    || updates.responsavelTelefone !== undefined || updates.responsavelCpf !== undefined) {
+    assertResponsavelRequiredIfMinor(updates.birthDate, {
+      nome: updates.responsavelNome,
+      telefone: updates.responsavelTelefone,
+      cpf: updates.responsavelCpf,
+    });
+  }
+  const registrationFields = buildRegistrationFieldsPayload(updates);
 
   if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     const patients = getLocalPatients();
-    const idx = patients.findIndex(p => p.id === patientId && p.therapist_id === user.id);
+    const idx = patients.findIndex(p => p.id === patientId);
     if (idx === -1) throw new Error('Paciente não encontrado.');
     if (updates.name !== undefined) patients[idx].name = updates.name;
     if (updates.phone !== undefined) patients[idx].phone = updates.phone;
@@ -280,11 +402,12 @@ export async function updatePatient(patientId, updates) {
       patients[idx].image_consent = consentGiven;
       patients[idx].image_consent_at = consentGiven ? new Date().toISOString() : null;
     }
+    Object.assign(patients[idx], registrationFields);
     saveLocalPatients(patients);
     return patients[idx];
   }
 
-  const payload = {};
+  const payload = { ...registrationFields };
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.phone !== undefined) payload.phone = updates.phone;
   if (updates.birthDate !== undefined) payload.birth_date = updates.birthDate;
@@ -297,11 +420,13 @@ export async function updatePatient(patientId, updates) {
     payload.image_consent_at = consentGiven ? new Date().toISOString() : null;
   }
 
+  // Sem filtro por therapist_id: o cadastro é editável por qualquer
+  // profissional ativo da clínica (20260910_patient_registration_open_clinic.sql)
+  // — a RLS de UPDATE decide quem pode escrever, não o client.
   let { data, error } = await supabase
     .from('patients')
     .update(payload)
     .eq('id', patientId)
-    .eq('therapist_id', user.id)
     .select(PATIENT_SELECT_COLUMNS)
     .single();
 
@@ -309,18 +434,19 @@ export async function updatePatient(patientId, updates) {
     assertCanFallbackWithoutPatientAge(error, updates.age);
     assertCanFallbackWithoutImageConsent(error, updates.imageConsent);
     assertCanFallbackWithoutCpf(error, normalizedCpf);
+    assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const fallbackPayload = { ...payload };
     delete fallbackPayload.age;
     delete fallbackPayload.archived_at;
     delete fallbackPayload.image_consent;
     delete fallbackPayload.image_consent_at;
     delete fallbackPayload.cpf;
+    for (const column of Object.values(REGISTRATION_FIELD_TO_COLUMN)) delete fallbackPayload[column];
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')
       .update(fallbackPayload)
       .eq('id', patientId)
-      .eq('therapist_id', user.id)
-      .select(PATIENT_SELECT_COLUMNS)
+      .select(LEGACY_PATIENT_SELECT_COLUMNS)
       .single();
     data = fallbackData;
     error = fallbackError;

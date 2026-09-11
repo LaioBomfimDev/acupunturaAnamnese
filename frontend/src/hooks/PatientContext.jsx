@@ -8,12 +8,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import {
-  listPatients,
   createPatient as createPatientApi,
   updatePatient as updatePatientApi,
   deletePatient as deletePatientApi,
 } from '../services/patientService';
-import { enrollPatientInitial } from '../services/clinicPatientsService';
+import { enrollPatientInitial, listClinicPatients } from '../services/clinicPatientsService';
 
 const PatientContext = createContext({});
 
@@ -32,7 +31,10 @@ export const PatientProvider = ({ children }) => {
   // em vez de deixar o profissional digitar a data à mão.
   const [activeAppointment, setActiveAppointment] = useState(null);
 
-  // Carrega pacientes ao logar
+  // Carrega os pacientes da CLÍNICA (não só os que este profissional
+  // cadastrou) — o cadastro é aberto à clínica inteira desde
+  // 20260910_patient_registration_open_clinic.sql; a RLS decide o
+  // alcance de verdade, isto é só a lista pra "selecionar paciente".
   const loadPatients = useCallback(async () => {
     if (!userId) {
       setLoading(false);
@@ -41,7 +43,7 @@ export const PatientProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await listPatients();
+      const data = await listClinicPatients();
       if (activeUserIdRef.current !== userId) return;
       setPatients(data);
       setSelectedPatient(prev => (

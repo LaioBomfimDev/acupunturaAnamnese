@@ -155,7 +155,7 @@ function saveLocalAppointments(list) {
  * instantes (ISO), não datas soltas: o calendário monta o intervalo do
  * mês visível no fuso local e manda pronto.
  */
-export async function listAppointments({ from, to, professionalId = null, runtime } = {}) {
+export async function listAppointments({ from, to, professionalId = null, patientId = null, runtime } = {}) {
   const client = {
     getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
     from: runtime?.from || ((table) => supabase.from(table)),
@@ -170,7 +170,8 @@ export async function listAppointments({ from, to, professionalId = null, runtim
       .filter(item => {
         const itemStart = new Date(item.starts_at).getTime();
         if (itemStart < start || itemStart > end) return false;
-        return !professionalId || item.professional_id === professionalId;
+        if (professionalId && item.professional_id !== professionalId) return false;
+        return !patientId || item.patient_id === patientId;
       })
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
   }
@@ -179,6 +180,7 @@ export async function listAppointments({ from, to, professionalId = null, runtim
   if (from) query = query.gte('starts_at', new Date(from).toISOString());
   if (to) query = query.lte('starts_at', new Date(to).toISOString());
   if (professionalId) query = query.eq('professional_id', professionalId);
+  if (patientId) query = query.eq('patient_id', patientId);
 
   const { data, error } = await query.order('starts_at', { ascending: true }).limit(2000);
 

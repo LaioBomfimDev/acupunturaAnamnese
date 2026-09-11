@@ -1,27 +1,7 @@
 import { useMemo, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
-import { formatPatientCount, isPatientDeletionConfirmationValid } from '../utils/patientUi';
-
-function formatDate(value) {
-  if (!value) return 'Sem nascimento';
-  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR');
-}
-
-function formatAge(patient) {
-  if (patient?.age !== undefined && patient?.age !== null && patient?.age !== '') {
-    return `${patient.age} anos`;
-  }
-  return formatDate(patient?.birth_date);
-}
-
-function getInitials(name) {
-  return String(name || '?')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(part => part.charAt(0).toUpperCase())
-    .join('');
-}
+import { enrollPatientInitial } from '../services/clinicPatientsService';
+import { formatPatientCount, isPatientDeletionConfirmationValid, formatAge, getInitials } from '../utils/patientUi';
 
 function TrashIcon() {
   return (
@@ -35,18 +15,23 @@ function TrashIcon() {
   );
 }
 
-// initialDiscipline: matrícula criada junto com o cadastro (Fase 2) —
-// o workspace de cada disciplina passa a sua (acupuntura é o default).
-export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline }) {
-  const { patients, selectedPatient, loading, error, createPatient, selectPatient, deletePatient } = usePatient();
-  const [mode, setMode] = useState('new');
+// Cadastro de paciente novo saiu daqui (2026-09-10): passou a existir só
+// na aba central "Pacientes da instituição" (ClinicPatientsPanel). Este
+// componente só SELECIONA um paciente já cadastrado — de toda a clínica,
+// não só os que este profissional criou — pra retomar/iniciar o
+// atendimento nesta disciplina.
+//
+// initialDiscipline: se o paciente escolhido ainda não tem matrícula
+// nesta disciplina (pode nunca ter passado por aqui — o cadastro é da
+// clínica inteira), a matrícula é criada aqui, best-effort, antes de
+// abrir a anamnese.
+export function PatientStart({ onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline }) {
+  const { patients, selectedPatient, loading, error, selectPatient, deletePatient } = usePatient();
   const [query, setQuery] = useState('');
-  const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteText, setDeleteText] = useState('');
   const [deletingPatientId, setDeletingPatientId] = useState(null);
   const [listNotice, setListNotice] = useState(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', age: '', cpf: '', imageConsent: false });
   const canConfirmDelete = isPatientDeletionConfirmationValid(deleteText);
 
   const filteredPatients = useMemo(() => {
@@ -58,23 +43,12 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
     });
   }, [patients, query]);
 
-  async function handleCreate(e) {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
-
-    setSaving(true);
-    setListNotice(null);
-    try {
-      const patient = await createPatient(formData, initialDiscipline);
-      setFormData({ name: '', phone: '', age: '', cpf: '', imageConsent: false });
-      onCreatePatient?.(patient);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleSelect(patient) {
+  async function handleSelect(patient) {
     selectPatient(patient);
+    const alreadyEnrolled = (patient.enrollments || []).some(e => e.discipline === initialDiscipline);
+    if (!alreadyEnrolled) {
+      await enrollPatientInitial(patient.id, initialDiscipline);
+    }
     onSelectPatient?.(patient);
   }
 
@@ -124,7 +98,7 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
             </div>
           )}
           <h2>Começar atendimento</h2>
-          <span>Cadastre um novo paciente ou retome uma ficha existente.</span>
+          <span>Selecione um paciente já cadastrado para retomar ou iniciar o atendimento.</span>
         </div>
         <div className="home-meta">
           <span>{formatPatientCount(patients.length)}</span>
@@ -140,7 +114,7 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
           <div className="start-workspace-head">
             <div>
               <p className="start-kicker">Fluxo de entrada</p>
-              <h2>{mode === 'new' ? 'Novo paciente' : 'Selecionar paciente'}</h2>
+              <h2>Selecionar paciente</h2>
             </div>
             {selectedPatient && (
               <button className="quiet-button" onClick={() => onSelectPatient?.(selectedPatient)}>
@@ -155,177 +129,78 @@ export function PatientStart({ onCreatePatient, onSelectPatient, onOpenDocuments
             </div>
           )}
 
-          <section className="start-actions" aria-label="Fluxo de atendimento">
-            <button
-              className={`start-action${mode === 'new' ? ' active' : ''}`}
-              onClick={() => setMode('new')}
-            >
-              <span className="start-action-icon">+</span>
-              <span>
-                <b>Novo paciente</b>
-                <small>Criar cadastro e abrir anamnese</small>
-              </span>
-            </button>
-            <button
-              className={`start-action${mode === 'select' ? ' active' : ''}`}
-              onClick={() => {
-                setMode('select');
-                setListNotice(null);
-              }}
-            >
-              <span className="start-action-icon">⌕</span>
-              <span>
-                <b>Selecionar paciente</b>
-                <small>Retomar ficha e resumo clínico</small>
-              </span>
-            </button>
-            {onOpenDocuments && (
-              <button className="start-action" onClick={onOpenDocuments}>
-                <span className="start-action-icon">⎙</span>
-                <span>
-                  <b>Documentos timbrados</b>
-                  <small>Word → PDF no papel da clínica</small>
+          <section className="start-panel">
+            <div className="start-panel-head">
+              <div>
+                <p className="small">Pacientes</p>
+                <h2>Selecionar paciente</h2>
+                <span className="patient-list-count">
+                  {formatPatientCount(filteredPatients.length)} na lista
                 </span>
-              </button>
-            )}
-          </section>
-
-          {mode === 'new' ? (
-            <section className="start-panel">
-              <div className="start-panel-head">
-                <div>
-                  <p className="small">Cadastro</p>
-                  <h2>Novo paciente</h2>
-                </div>
               </div>
+              <input
+                className="patient-search"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Buscar por nome"
+              />
+            </div>
 
-              <form className="patient-form" onSubmit={handleCreate}>
+            {listNotice && (
+              <div className={`inline-notice ${listNotice.type === 'error' ? 'inline-error' : 'inline-success'}`}>
+                {listNotice.text}
+              </div>
+            )}
+
+            {deleteTarget && (
+              <form className="patient-delete-panel" onSubmit={handleDeleteConfirm} role="alertdialog" aria-labelledby="patient-delete-title">
+                <div>
+                  <p className="small">Solicitação administrativa</p>
+                  <h3 id="patient-delete-title">Solicitar exclusão de {deleteTarget.name || 'paciente'}?</h3>
+                  <p>
+                    O paciente será arquivado agora. Os registros não serão apagados até revisão da política de retenção. Confirme digitando <b>excluir</b>.
+                  </p>
+                </div>
                 <label>
-                  Nome completo *
+                  Confirmação
                   <input
-                    value={formData.name}
-                    onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Nome do paciente"
-                    required
+                    value={deleteText}
+                    onChange={e => setDeleteText(e.target.value)}
+                    placeholder="Digite excluir"
+                    autoFocus
                   />
                 </label>
-                <label>
-                  Telefone
-                  <input
-                    value={formData.phone}
-                    onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="(00) 00000-0000"
-                  />
-                </label>
-                <label>
-                  Idade
-                  <input
-                    type="number"
-                    min="0"
-                    max="130"
-                    value={formData.age}
-                    onChange={e => setFormData(f => ({ ...f, age: e.target.value }))}
-                    placeholder="Ex: 42"
-                  />
-                </label>
-                <label>
-                  CPF
-                  <input
-                    value={formData.cpf}
-                    onChange={e => setFormData(f => ({ ...f, cpf: e.target.value }))}
-                    placeholder="000.000.000-00"
-                    inputMode="numeric"
-                  />
-                </label>
-                <label className="patient-consent">
-                  <input
-                    type="checkbox"
-                    checked={formData.imageConsent}
-                    onChange={e => setFormData(f => ({ ...f, imageConsent: e.target.checked }))}
-                  />
-                  <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
-                </label>
-                <div className="form-actions">
-                  <button className="primary-button" type="submit" disabled={saving}>
-                    {saving ? 'Salvando...' : 'Criar e abrir anamnese'}
+                <div className="patient-delete-confirm-actions">
+                  <button className="tag" type="button" onClick={handleCancelDelete} disabled={deletingPatientId === deleteTarget.id}>
+                    Cancelar
+                  </button>
+                  <button className="danger-button" type="submit" disabled={!canConfirmDelete || deletingPatientId === deleteTarget.id}>
+                    {deletingPatientId === deleteTarget.id ? 'Solicitando...' : 'Arquivar e solicitar exclusão'}
                   </button>
                 </div>
               </form>
-              {error && <div className="inline-error">{error}</div>}
-            </section>
-          ) : (
-            <section className="start-panel">
-              <div className="start-panel-head">
-                <div>
-                  <p className="small">Pacientes</p>
-                  <h2>Selecionar paciente</h2>
-                  <span className="patient-list-count">
-                    {formatPatientCount(filteredPatients.length)} na lista
-                  </span>
-                </div>
-                <input
-                  className="patient-search"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Buscar por nome"
-                />
+            )}
+
+            {loading ? (
+              <div className="empty-state">Carregando pacientes...</div>
+            ) : filteredPatients.length === 0 ? (
+              <div className="empty-state">Nenhum paciente encontrado.</div>
+            ) : (
+              <div className="patient-list">
+                {filteredPatients.map(patient => (
+                  <PatientListCard
+                    key={patient.id}
+                    patient={patient}
+                    isActive={selectedPatient?.id === patient.id}
+                    isDeleting={deletingPatientId === patient.id}
+                    onSelect={handleSelect}
+                    onRequestDelete={handleDeleteRequest}
+                  />
+                ))}
               </div>
-
-              {listNotice && (
-                <div className={`inline-notice ${listNotice.type === 'error' ? 'inline-error' : 'inline-success'}`}>
-                  {listNotice.text}
-                </div>
-              )}
-
-              {deleteTarget && (
-                <form className="patient-delete-panel" onSubmit={handleDeleteConfirm} role="alertdialog" aria-labelledby="patient-delete-title">
-                  <div>
-                    <p className="small">Solicitação administrativa</p>
-                    <h3 id="patient-delete-title">Solicitar exclusão de {deleteTarget.name || 'paciente'}?</h3>
-                    <p>
-                      O paciente será arquivado agora. Os registros não serão apagados até revisão da política de retenção. Confirme digitando <b>excluir</b>.
-                    </p>
-                  </div>
-                  <label>
-                    Confirmação
-                    <input
-                      value={deleteText}
-                      onChange={e => setDeleteText(e.target.value)}
-                      placeholder="Digite excluir"
-                      autoFocus
-                    />
-                  </label>
-                  <div className="patient-delete-confirm-actions">
-                    <button className="tag" type="button" onClick={handleCancelDelete} disabled={deletingPatientId === deleteTarget.id}>
-                      Cancelar
-                    </button>
-                    <button className="danger-button" type="submit" disabled={!canConfirmDelete || deletingPatientId === deleteTarget.id}>
-                      {deletingPatientId === deleteTarget.id ? 'Solicitando...' : 'Arquivar e solicitar exclusão'}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {loading ? (
-                <div className="empty-state">Carregando pacientes...</div>
-              ) : filteredPatients.length === 0 ? (
-                <div className="empty-state">Nenhum paciente encontrado.</div>
-              ) : (
-                <div className="patient-list">
-                  {filteredPatients.map(patient => (
-                    <PatientListCard
-                      key={patient.id}
-                      patient={patient}
-                      isActive={selectedPatient?.id === patient.id}
-                      isDeleting={deletingPatientId === patient.id}
-                      onSelect={handleSelect}
-                      onRequestDelete={handleDeleteRequest}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
+            )}
+          </section>
+          {error && <div className="inline-error">{error}</div>}
         </section>
       </div>
     </section>

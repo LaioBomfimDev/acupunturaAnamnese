@@ -1,8 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePatient } from '../hooks/PatientContext';
 import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import { shareScopeLabels } from '../data/shareScopes';
-import { createPatient, formatCpf, isValidCpf } from '../services/patientService';
+import {
+  createPatient, formatCpf, isValidCpf, isMinor,
+} from '../services/patientService';
+import { buscarEnderecoPorCep, formatCep, isValidCepFormat } from '../services/cepService';
 import {
   enrollPatientInitial,
   enrollmentStatusLabel,
@@ -10,40 +14,61 @@ import {
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
+import { formatAge } from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
+import { ClinicPatientProfile } from './ClinicPatientProfile';
 
 // ============================================================
 // Pacientes da instituição (Fases 2 e 3 — docs/plano-clinica-multidisciplinar.md)
 // Cadastro central, FORA das anamneses: o paciente é UM, da instituição,
-// e entra em cada área por MATRÍCULA (nunca cópia).
+// e entra em cada área por MATRÍCULA (nunca cópia). A partir de 2026-09-10
+// é também o ÚNICO lugar onde um paciente é criado — os workspaces por
+// disciplina só selecionam paciente já cadastrado (PatientStart.jsx).
 //
 // "Enviar para outro profissional" (Fase 3): matrícula no destino +
 // compartilhamento explícito com escopos escolhidos, confirmado por
-// senha e revogável. Nada é copiado.
+// senha e revogável. Nada é copiado. Isso continua existindo só para os
+// dados CLÍNICOS (anamnese/evolução/relatório) — o cadastro em si já é
+// visível/editável por qualquer profissional ativo da clínica.
 // ============================================================
 
-function formatAge(patient) {
-  if (patient?.age !== undefined && patient?.age !== null && patient?.age !== '') {
-    return `${patient.age} anos`;
-  }
-  return 'Idade não informada';
-}
+const UF_OPTIONS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+];
 
-export function ClinicPatientsPanel({ profile, onBack }) {
+const EMPTY_FORM = {
+  name: '', nomeSocial: '', birthDate: '', sexoBiologico: '', genero: '', cpf: '',
+  phone: '', nomeMae: '', nomePai: '', nomeConjuge: '',
+  responsavelNome: '', responsavelTelefone: '', responsavelCpf: '',
+  convenioNome: '', convenioCarteirinha: '',
+  enderecoCep: '', enderecoLogradouro: '', enderecoNumero: '', enderecoComplemento: '', enderecoBairro: '', enderecoCidade: '', enderecoUf: '',
+  discipline: 'acupuntura', imageConsent: false,
+};
+
+export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) {
+  // refreshPatients recarrega a lista que PatientStart.jsx usa dentro de
+  // cada disciplina — sem isso, um paciente criado aqui só aparecia lá
+  // depois de deslogar/logar de novo (o contexto carrega uma vez só).
+  const { refreshPatients } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [query, setQuery] = useState('');
-  const [form, setForm] = useState({ name: '', phone: '', age: '', cpf: '', discipline: 'acupuntura', imageConsent: false });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepNotice, setCepNotice] = useState(null);
   const [sharesByPatient, setSharesByPatient] = useState({});
   const [members, setMembers] = useState([]);
   const [shareTarget, setShareTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
+  const [profileTarget, setProfileTarget] = useState(null);
   const [revokingId, setRevokingId] = useState(null);
+  const responsavelRequired = isMinor(form.birthDate);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,7 +89,8 @@ export function ClinicPatientsPanel({ profile, onBack }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+    refreshPatients?.();
+  }, [refreshPatients]);
 
   useEffect(() => {
     load();
@@ -87,6 +113,37 @@ export function ClinicPatientsPanel({ profile, onBack }) {
     return patients.filter(patient => (patient.name || '').toLowerCase().includes(term));
   }, [patients, query]);
 
+  function setField(field, value) {
+    setForm(f => ({ ...f, [field]: value }));
+  }
+
+  async function handleCepBlur() {
+    if (!form.enderecoCep || !isValidCepFormat(form.enderecoCep)) return;
+    setCepLoading(true);
+    setCepNotice(null);
+    try {
+      const endereco = await buscarEnderecoPorCep(form.enderecoCep);
+      if (!endereco) {
+        setCepNotice('CEP não encontrado — preencha o endereço manualmente.');
+        return;
+      }
+      // Cidade com CEP único (Catu, Pojuca...) costuma devolver logradouro/
+      // bairro vazios — preenche só o que veio, sem apagar o que a pessoa
+      // já tinha digitado à mão.
+      setForm(f => ({
+        ...f,
+        enderecoLogradouro: endereco.logradouro || f.enderecoLogradouro,
+        enderecoBairro: endereco.bairro || f.enderecoBairro,
+        enderecoCidade: endereco.localidade || f.enderecoCidade,
+        enderecoUf: endereco.uf || f.enderecoUf,
+      }));
+    } catch (err) {
+      setCepNotice(err.message || 'Não foi possível consultar o CEP agora.');
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
   async function handleCreate(event) {
     event.preventDefault();
     if (!form.name.trim()) return;
@@ -100,13 +157,32 @@ export function ClinicPatientsPanel({ profile, onBack }) {
     try {
       const patient = await createPatient({
         name: form.name.trim(),
+        nomeSocial: form.nomeSocial.trim() || null,
         phone: form.phone,
-        age: form.age,
+        birthDate: form.birthDate || null,
+        sexoBiologico: form.sexoBiologico || null,
+        genero: form.genero.trim() || null,
         cpf: form.cpf,
+        nomeMae: form.nomeMae.trim() || null,
+        nomePai: form.nomePai.trim() || null,
+        nomeConjuge: form.nomeConjuge.trim() || null,
+        responsavelNome: form.responsavelNome.trim() || null,
+        responsavelTelefone: form.responsavelTelefone.trim() || null,
+        responsavelCpf: form.responsavelCpf.trim() || null,
+        convenioNome: form.convenioNome.trim() || null,
+        convenioCarteirinha: form.convenioCarteirinha.trim() || null,
+        enderecoCep: form.enderecoCep || null,
+        enderecoLogradouro: form.enderecoLogradouro.trim() || null,
+        enderecoNumero: form.enderecoNumero.trim() || null,
+        enderecoComplemento: form.enderecoComplemento.trim() || null,
+        enderecoBairro: form.enderecoBairro.trim() || null,
+        enderecoCidade: form.enderecoCidade.trim() || null,
+        enderecoUf: form.enderecoUf || null,
         imageConsent: form.imageConsent,
       });
       const enrollment = await enrollPatientInitial(patient.id, form.discipline);
-      setForm({ name: '', phone: '', age: '', cpf: '', discipline: 'acupuntura', imageConsent: false });
+      setForm(EMPTY_FORM);
+      setCepNotice(null);
       setNotice({
         type: enrollment ? 'success' : 'warn',
         text: enrollment
@@ -144,6 +220,27 @@ export function ClinicPatientsPanel({ profile, onBack }) {
     }
   }
 
+  if (profileTarget) {
+    return (
+      <ClinicPatientProfile
+        patient={profileTarget}
+        therapistProfile={profile}
+        isClinicAdmin={isClinicAdmin}
+        onBack={() => setProfileTarget(null)}
+        onPatientUpdated={async updated => {
+          // patientService.updatePatient() não devolve .enrollments (é um
+          // campo só de listClinicPatients) — sem isso a ficha "esquecia"
+          // a matrícula do paciente logo depois de salvar o cadastro.
+          setProfileTarget(prev => ({ ...updated, enrollments: prev?.enrollments || [] }));
+          const list = await listClinicPatients();
+          setPatients(list);
+          const refreshed = list.find(p => p.id === updated.id);
+          if (refreshed) setProfileTarget(refreshed);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="hub-screen">
       <header className="hub-topbar">
@@ -167,22 +264,39 @@ export function ClinicPatientsPanel({ profile, onBack }) {
 
         <form className="cp-form" onSubmit={handleCreate}>
           <b className="cp-form-title">Novo paciente</b>
+
+          <p className="cp-form-group-title">Identificação</p>
           <div className="cp-form-grid">
             <label className="cp-field">
-              Nome completo
-              <input
-                className="cp-input"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                required
-              />
+              Nome completo (civil)
+              <input className="cp-input" value={form.name} onChange={e => setField('name', e.target.value)} required />
+            </label>
+            <label className="cp-field">
+              Nome social
+              <input className="cp-input" value={form.nomeSocial} onChange={e => setField('nomeSocial', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Data de nascimento
+              <input className="cp-input" type="date" value={form.birthDate} onChange={e => setField('birthDate', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Sexo biológico
+              <select className="cp-select" value={form.sexoBiologico} onChange={e => setField('sexoBiologico', e.target.value)}>
+                <option value="">Selecione</option>
+                <option value="masculino">Masculino</option>
+                <option value="feminino">Feminino</option>
+              </select>
+            </label>
+            <label className="cp-field">
+              Gênero
+              <input className="cp-input" value={form.genero} onChange={e => setField('genero', e.target.value)} />
             </label>
             <label className="cp-field">
               CPF
               <input
                 className="cp-input"
                 value={form.cpf}
-                onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))}
+                onChange={e => setField('cpf', e.target.value)}
                 placeholder="000.000.000-00"
                 inputMode="numeric"
                 required
@@ -190,30 +304,121 @@ export function ClinicPatientsPanel({ profile, onBack }) {
             </label>
             <label className="cp-field">
               Telefone
+              <input className="cp-input" value={form.phone} onChange={e => setField('phone', e.target.value)} />
+            </label>
+          </div>
+
+          <p className="cp-form-group-title">Filiação</p>
+          <div className="cp-form-grid">
+            <label className="cp-field">
+              Mãe
+              <input className="cp-input" value={form.nomeMae} onChange={e => setField('nomeMae', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Pai
+              <input className="cp-input" value={form.nomePai} onChange={e => setField('nomePai', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Cônjuge
+              <input className="cp-input" value={form.nomeConjuge} onChange={e => setField('nomeConjuge', e.target.value)} />
+            </label>
+          </div>
+
+          <p className="cp-form-group-title">
+            Responsável {responsavelRequired && <span className="cp-form-required-hint">(obrigatório — paciente menor de idade)</span>}
+          </p>
+          <div className="cp-form-grid">
+            <label className="cp-field">
+              Nome do responsável
               <input
                 className="cp-input"
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                value={form.responsavelNome}
+                onChange={e => setField('responsavelNome', e.target.value)}
+                required={responsavelRequired}
               />
             </label>
             <label className="cp-field">
-              Idade
+              Telefone do responsável
               <input
                 className="cp-input"
-                type="number"
-                min="0"
-                max="130"
-                value={form.age}
-                onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                value={form.responsavelTelefone}
+                onChange={e => setField('responsavelTelefone', e.target.value)}
+                required={responsavelRequired}
               />
             </label>
+            <label className="cp-field">
+              CPF do responsável
+              <input
+                className="cp-input"
+                value={form.responsavelCpf}
+                onChange={e => setField('responsavelCpf', e.target.value)}
+                inputMode="numeric"
+                required={responsavelRequired}
+              />
+            </label>
+          </div>
+
+          <p className="cp-form-group-title">Convênio (se tiver)</p>
+          <div className="cp-form-grid">
+            <label className="cp-field">
+              Nome do convênio
+              <input className="cp-input" value={form.convenioNome} onChange={e => setField('convenioNome', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Número da carteirinha
+              <input className="cp-input" value={form.convenioCarteirinha} onChange={e => setField('convenioCarteirinha', e.target.value)} />
+            </label>
+          </div>
+
+          <p className="cp-form-group-title">Endereço</p>
+          <div className="cp-form-grid">
+            <label className="cp-field">
+              CEP
+              <input
+                className="cp-input"
+                value={form.enderecoCep}
+                onChange={e => setField('enderecoCep', formatCep(e.target.value))}
+                onBlur={handleCepBlur}
+                placeholder="00000-000"
+                inputMode="numeric"
+              />
+            </label>
+            <label className="cp-field">
+              Logradouro
+              <input className="cp-input" value={form.enderecoLogradouro} onChange={e => setField('enderecoLogradouro', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Número
+              <input className="cp-input" value={form.enderecoNumero} onChange={e => setField('enderecoNumero', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Complemento
+              <input className="cp-input" value={form.enderecoComplemento} onChange={e => setField('enderecoComplemento', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Bairro
+              <input className="cp-input" value={form.enderecoBairro} onChange={e => setField('enderecoBairro', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              Cidade
+              <input className="cp-input" value={form.enderecoCidade} onChange={e => setField('enderecoCidade', e.target.value)} />
+            </label>
+            <label className="cp-field">
+              UF
+              <select className="cp-select" value={form.enderecoUf} onChange={e => setField('enderecoUf', e.target.value)}>
+                <option value="">Selecione</option>
+                {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+              </select>
+            </label>
+          </div>
+          {cepLoading && <p className="cp-cep-hint">Consultando CEP…</p>}
+          {cepNotice && <p className="cp-cep-hint">{cepNotice}</p>}
+
+          <p className="cp-form-group-title">Atendimento</p>
+          <div className="cp-form-grid">
             <label className="cp-field">
               Área inicial
-              <select
-                className="cp-select"
-                value={form.discipline}
-                onChange={e => setForm(f => ({ ...f, discipline: e.target.value }))}
-              >
+              <select className="cp-select" value={form.discipline} onChange={e => setField('discipline', e.target.value)}>
                 {DISCIPLINES.map(d => (
                   <option key={d.id} value={d.id}>{d.label}</option>
                 ))}
@@ -223,7 +428,7 @@ export function ClinicPatientsPanel({ profile, onBack }) {
               <input
                 type="checkbox"
                 checked={form.imageConsent}
-                onChange={e => setForm(f => ({ ...f, imageConsent: e.target.checked }))}
+                onChange={e => setField('imageConsent', e.target.checked)}
               />
               <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
             </label>
@@ -256,14 +461,19 @@ export function ClinicPatientsPanel({ profile, onBack }) {
             const shares = sharesByPatient[patient.id] || [];
             return (
               <div key={patient.id} className="cp-card">
-                <div className="cp-card-info">
+                <button
+                  type="button"
+                  className="cp-card-info cp-card-info--link"
+                  onClick={() => setProfileTarget(patient)}
+                  aria-label={`Abrir ficha de ${patient.name}`}
+                >
                   <span className="cp-card-name">{patient.name}</span>
                   <span className="cp-card-meta">
                     {formatAge(patient)}
                     {patient.phone ? ` • ${patient.phone}` : ''}
                     {patient.cpf ? ` • CPF ${formatCpf(patient.cpf)}` : ''}
                   </span>
-                </div>
+                </button>
 
                 <div className="cp-card-chips">
                   {(patient.enrollments || []).length === 0 && (

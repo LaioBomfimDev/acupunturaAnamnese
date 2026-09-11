@@ -42,7 +42,7 @@ test('exportação clínica em JSON sem criptografia permanece desativada', asyn
   assert.match(dashboard, /Exportação clínica em JSON sem criptografia foi desativada/);
 });
 
-test('Psicologia usa CAS e idempotência em lanes separadas', async () => {
+test('Psicologia usa CAS e idempotência na lane de anamnese', async () => {
   const source = await readFile(
     path.join(root, 'src/components/PsychologyWorkspace.jsx'),
     'utf8',
@@ -50,20 +50,34 @@ test('Psicologia usa CAS e idempotência em lanes separadas', async () => {
   assert.match(source, /createClinicalSaveQueue/);
   assert.match(source, /upsertVersionedClinicalRecord/);
   assert.match(source, /const laneKey = `\$\{patientId\}:\$\{PSI_ANAMNESE_RECORD_TYPE\}`/);
+  assert.doesNotMatch(source, /updateClinicalRecord|saveClinicalRecord/);
+});
+
+// Avaliação neuropsicológica migrou para a disciplina própria
+// Neuropsicologia em 10/09/2026 — mesma proteção de CAS/idempotência,
+// agora no workspace novo.
+test('Neuropsicologia usa CAS e idempotência na lane de avaliação', async () => {
+  const source = await readFile(
+    path.join(root, 'src/components/NeuropsychologyWorkspace.jsx'),
+    'utf8',
+  );
+  assert.match(source, /createClinicalSaveQueue/);
+  assert.match(source, /upsertVersionedClinicalRecord/);
   assert.match(source, /const laneKey = `\$\{patientId\}:\$\{PSI_NEURO_RECORD_TYPE\}`/);
   assert.doesNotMatch(source, /updateClinicalRecord|saveClinicalRecord/);
 });
 
 test('troca de paciente limpa a ficha anterior antes da próxima pintura', async () => {
-  const [app, hook, psychology] = await Promise.all([
+  const [app, hook, psychology, neuropsychology] = await Promise.all([
     readFile(path.join(root, 'src/App.jsx'), 'utf8'),
     readFile(path.join(root, 'src/hooks/useSessionPersistence.js'), 'utf8'),
     readFile(path.join(root, 'src/components/PsychologyWorkspace.jsx'), 'utf8'),
+    readFile(path.join(root, 'src/components/NeuropsychologyWorkspace.jsx'), 'utf8'),
   ]);
 
   assert.match(app, /useLayoutEffect\(\(\) => \{[\s\S]*?isHydratingSessionRef\.current = true/);
   assert.match(hook, /useLayoutEffect\(\(\) => \{[\s\S]*?activePatientIdRef\.current = patientId/);
   assert.match(hook, /setState\(emptyState\);\s*setSelectedMap\(\{\}\)/);
   assert.match(psychology, /useLayoutEffect\(\(\) => \{[\s\S]*?setSession\(createEmptyPsychologySession\(\)\)/);
-  assert.match(psychology, /setNeuroEvaluation\(createEmptyNeuropsychologyEvaluation\(\)\)/);
+  assert.match(neuropsychology, /useLayoutEffect\(\(\) => \{[\s\S]*?setNeuroEvaluation\(createEmptyNeuropsychologyEvaluation\(\)\)/);
 });

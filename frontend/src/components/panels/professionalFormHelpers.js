@@ -19,6 +19,10 @@ export const EMPTY_PROFESSIONAL_FORM = {
   notes: '',
   temporaryPassword: '',
   confirmTemporaryPassword: '',
+  // Só usado quando role === 'clinic_admin': disciplinas que a admin
+  // TAMBÉM atende, além de administrar. Vazio = admin pura, sem área
+  // própria (cai na home administrativa em vez do Hub — ver App.jsx).
+  disciplines: [],
 };
 
 // Tipos de acesso que o SuperAdm pode criar (allowlist espelha a da
@@ -26,6 +30,7 @@ export const EMPTY_PROFESSIONAL_FORM = {
 export const CREATABLE_ROLES = [
   { value: 'therapist', label: 'Profissional (atendimento)' },
   { value: 'knowledge_reviewer', label: 'Revisora de curadoria (atendimento + curadoria)' },
+  { value: 'clinic_admin', label: 'Admin de clínica (administração, com ou sem atendimento)' },
 ];
 
 export function normalizeUsername(value) {
@@ -110,10 +115,16 @@ const PROFESSION_DISCIPLINE = {
   nutricionista: 'nutricao',
 };
 
-// Disciplinas explícitas ao criar. Só a revisora precisa ser ESCOPADA
-// (a coluna vence o fallback que sempre injeta acupuntura); o terapeuta
-// segue o comportamento atual (coluna nula → fallback por profissão).
-function resolveCreateDisciplines(role, profession) {
+// Disciplinas explícitas ao criar. Revisora e admin de clínica precisam
+// ser ESCOPADAS (a coluna vence o fallback que sempre injeta acupuntura);
+// o terapeuta segue o comportamento atual (coluna nula → fallback por
+// profissão). Admin de clínica é a única com escolha livre no formulário
+// (form.disciplines) — vazio é válido e intencional: admin pura, sem
+// área de atendimento própria.
+function resolveCreateDisciplines(role, profession, selectedDisciplines = []) {
+  if (role === 'clinic_admin') {
+    return Array.isArray(selectedDisciplines) ? selectedDisciplines.filter(Boolean) : [];
+  }
   if (role !== 'knowledge_reviewer') return [];
   const mapped = PROFESSION_DISCIPLINE[profession];
   return mapped ? [mapped] : ['acupuntura'];
@@ -140,7 +151,7 @@ export function buildProfessionalCreatePayload(form, clinics = []) {
     professionalRegistration: String(form?.professionalRegistration || '').trim(),
     specialty: String(form?.specialty || '').trim(),
     role,
-    disciplines: resolveCreateDisciplines(role, profession),
+    disciplines: resolveCreateDisciplines(role, profession, form?.disciplines),
     clinicId,
     clinicName: selectedClinic?.name || '',
     notes: String(form?.notes || '').trim(),

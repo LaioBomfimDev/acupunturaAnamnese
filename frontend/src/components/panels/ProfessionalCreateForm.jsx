@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { createTherapist } from '../../services/adminService';
+import { DISCIPLINES } from '../../data/disciplines';
 import {
   ClinicSelect,
   PasswordField,
@@ -43,6 +44,15 @@ export function ProfessionalCreateForm({
 
   function togglePasswordVisibility(field) {
     setPasswordVisibility(prev => ({ ...prev, [field]: !prev[field] }));
+  }
+
+  function toggleDiscipline(disciplineId) {
+    setForm(prev => ({
+      ...prev,
+      disciplines: prev.disciplines.includes(disciplineId)
+        ? prev.disciplines.filter(id => id !== disciplineId)
+        : [...prev.disciplines, disciplineId],
+    }));
   }
 
   function fillGeneratedPassword() {
@@ -175,6 +185,24 @@ export function ProfessionalCreateForm({
           onRegistration={value => setField('professionalRegistration', value)}
           required
         />
+        {form.role === 'clinic_admin' && (
+          <label className="admin-notes">
+            Também atende nestas áreas (opcional)
+            <div className="professional-form-disciplines">
+              {DISCIPLINES.map(discipline => (
+                <label key={discipline.id} className="professional-form-discipline-option">
+                  <input
+                    type="checkbox"
+                    checked={form.disciplines.includes(discipline.id)}
+                    onChange={() => toggleDiscipline(discipline.id)}
+                  />
+                  {discipline.label}
+                </label>
+              ))}
+            </div>
+            <small>Deixe tudo desmarcado para uma admin sem atendimento — ela cai direto na home administrativa.</small>
+          </label>
+        )}
         <ClinicSelect
           value={form.clinicId}
           onChange={value => setField('clinicId', value)}

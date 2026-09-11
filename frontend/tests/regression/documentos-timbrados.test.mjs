@@ -14,21 +14,18 @@ const psychSource = read('../../src/components/PsychologyWorkspace.jsx');
 const docxHelpers = read('../../src/components/panels/documentosDocx.js');
 const pagination = read('../../src/components/report/reportPagination.js');
 
-test('aba Documentos acessível sem paciente nos dois workspaces', () => {
-  // MTC: renderPanel e handleTabChange liberam a aba sem paciente.
+test('Documentos timbrados só pelo Hub (10/09/2026: saiu da lateral e do PatientStart)', () => {
+  // MTC: o render ainda existe (chamado só pelo botão do Hub, fora do
+  // workspace) — mas não sobra nenhum botão dentro do workspace que
+  // troque activeTab para 'Documentos'.
   assert.match(appSource, /case 'Documentos':\s*return <DocumentosTimbrados/);
-  assert.match(appSource, /tab !== 'Biblioteca' && tab !== 'Documentos'/);
-  assert.match(appSource, /activeTab !== 'Biblioteca' && activeTab !== 'Documentos'/);
-  // O print-header genérico não pode imprimir por cima do timbrado.
-  assert.match(appSource, /activeTab !== 'Relatório' && activeTab !== 'Documentos'/);
+  assert.doesNotMatch(sidebarSource, /'Biblioteca', 'Relatório', 'Documentos'/,
+    'Documentos não deve mais aparecer no grupo Apoio da lateral');
 
-  // Sidebar: aba no grupo Apoio e liberada sem paciente.
-  assert.match(sidebarSource, /'Biblioteca', 'Relatório', 'Documentos'/);
-  assert.match(sidebarSource, /'Tela inicial', 'Biblioteca', 'Documentos'/);
-
-  // Psicologia: mesma aba, mesmo componente.
-  assert.match(psychSource, /PSYCHOLOGY_TABS\.DOCUMENTOS/);
+  // Psicologia: mesmo componente, mas sem aba própria na lateral.
   assert.match(psychSource, /<DocumentosTimbrados therapistProfile=\{profile\}/);
+  assert.doesNotMatch(psychSource, /tabs: \[PSYCHOLOGY_TABS\.RELATORIO, PSYCHOLOGY_TABS\.DOCUMENTOS\]/,
+    'Documentos não deve mais aparecer nos grupos da lateral de Psicologia');
 });
 
 test('conversão é local e só aceita .docx (com orientação para .doc e PDF)', () => {

@@ -118,7 +118,7 @@ function addMinutes(date, minutes) {
 // toque, porque o formulário fica no painel lateral em qualquer visão.
 const DEFAULT_VIEW = 'hoje';
 
-export function Agenda({ profile, onStartAppointment = null, initialView = null }) {
+export function Agenda({ profile, onStartAppointment = null, initialView = null, initialAgendaOf = null }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => ({
     year: today.getFullYear(),
@@ -145,7 +145,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null 
   const [reloadToken, setReloadToken] = useState(0);
 
   // Quem a agenda está mostrando. 'all' é a visão de recepção.
-  const [agendaOf, setAgendaOf] = useState(() => profile?.id || ALL_PROFESSIONALS);
+  const [agendaOf, setAgendaOf] = useState(() => initialAgendaOf || profile?.id || ALL_PROFESSIONALS);
 
   // Filtros do calendário (Hoje/Dia/Semana/Mês) — '' é "todos". Pendentes
   // e Evolução pendente ficam de fora: já têm escopo/filtro próprio.

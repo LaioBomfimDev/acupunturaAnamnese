@@ -60,7 +60,6 @@ export const PSYCHOLOGY_TABS = {
   PAINEL: 'Painel',
   ANAMNESE: 'Anamnese',
   PERGUNTAS_COMPLEMENTARES: 'Perguntas complementares',
-  NEURO: 'Avaliação neuropsicológica',
   SINTESE: 'Síntese do caso',
   HIPOTESES: 'Hipóteses/diagnóstico',
   OBJETIVOS: 'Objetivos',
@@ -80,21 +79,15 @@ export const PSYCHOLOGY_PLACEHOLDER_TABS = [
   PSYCHOLOGY_TABS.BIBLIOTECA,
 ];
 
-// Duas modalidades do workspace de Psi (decisão da psicóloga em
-// 2026-07-07): fluxos distintos, registros distintos.
+// Modalidade do workspace de Psi (decisão da psicóloga em 2026-07-07).
+// A avaliação neuropsicológica migrou para a disciplina própria
+// Neuropsicologia em 10/09/2026 — ver NeuropsychologyWorkspace.jsx.
 export const PSYCHOLOGY_MODALITIES = [
   {
     id: 'anamnese_clinica',
     label: 'Anamnese clínica',
     description: 'Demanda, história, triagem de risco, eixos de avaliação e registro de sessão.',
     recordType: PSI_ANAMNESE_RECORD_TYPE,
-    available: true,
-  },
-  {
-    id: 'avaliacao_neuropsicologica',
-    label: 'Avaliação neuropsicológica',
-    description: 'Instrumentos, sessões, observações, resultados, integração profissional e relatório.',
-    recordType: PSI_NEURO_RECORD_TYPE,
     available: true,
   },
 ];

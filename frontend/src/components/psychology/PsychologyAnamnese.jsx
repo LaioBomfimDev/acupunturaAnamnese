@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckGrid } from '../ui/CheckGrid';
 import { FieldInput } from '../ui/FieldInput';
 import { QuickWordChips } from '../ui/QuickWordChips';
+import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
 import {
   PSYCHOLOGY_AXES,
   PSYCHOLOGY_AXES_INTRO,
@@ -98,6 +99,8 @@ function PsychologyFieldBlock({
   onQuickWord,
   onInformantChange,
   onArchiveResponse,
+  mergeWords,
+  onAddWord,
 }) {
   return (
     <div className="psi-field">
@@ -108,13 +111,11 @@ function PsychologyFieldBlock({
         onChange={onUpdateField}
         textarea={field.textarea}
       />
-      <p className="small psi-spellcheck-note">
-        Correção ortográfica em pt-BR ativada: palavras suspeitas podem ser sublinhadas pelo navegador.
-      </p>
       <QuestionGuide questions={field.questionGuide} />
       <QuickWordChips
-        words={field.quickWords}
+        words={mergeWords ? mergeWords(field.id, field.quickWords) : field.quickWords}
         onPick={word => onQuickWord(field.id, word)}
+        onAddWord={onAddWord ? word => onAddWord(field.id, word) : undefined}
       />
       {showInformant && (
         <InformantControl
@@ -140,6 +141,8 @@ function PsychologyContextModules({
   onQuickWord,
   onInformantChange,
   onArchiveResponse,
+  mergeWords,
+  onAddWord,
 }) {
   return (
     <div className="psi-context-modules">
@@ -179,6 +182,8 @@ function PsychologyContextModules({
                 onQuickWord={onQuickWord}
                 onInformantChange={onInformantChange}
                 onArchiveResponse={onArchiveResponse}
+                mergeWords={mergeWords}
+                onAddWord={onAddWord}
               />
             ))}
           </div>
@@ -283,6 +288,7 @@ export function PsychologyAnamnese({
   const profile = getPsychologyIntakeProfile(session.intakeProfile);
   const profileSections = getPsychologyProfileSections(session.intakeProfile);
   const showInformant = profile?.ageGroup === 'infantojuvenil';
+  const { mergeWords, addWord } = useCustomQuickWords('psicologia');
 
   return (
     <section className="psi-anamnese">
@@ -342,6 +348,8 @@ export function PsychologyAnamnese({
               onQuickWord={onQuickWord}
               onInformantChange={onInformantChange}
               onArchiveResponse={onArchiveResponse}
+              mergeWords={mergeWords}
+              onAddWord={addWord}
             />
           ))}
 
@@ -358,6 +366,8 @@ export function PsychologyAnamnese({
                   onQuickWord={onQuickWord}
                   onInformantChange={onInformantChange}
                   onArchiveResponse={onArchiveResponse}
+                  mergeWords={mergeWords}
+                  onAddWord={addWord}
                 />
               ))}
             </div>
@@ -374,6 +384,8 @@ export function PsychologyAnamnese({
             onQuickWord={onQuickWord}
             onInformantChange={onInformantChange}
             onArchiveResponse={onArchiveResponse}
+            mergeWords={mergeWords}
+            onAddWord={addWord}
           />
 
           <h3 className="psi-section-title">Sinais organizados (proposta a validar)</h3>

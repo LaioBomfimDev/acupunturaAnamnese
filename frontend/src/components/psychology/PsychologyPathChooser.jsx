@@ -6,27 +6,19 @@ import {
   getPsychologyProfilesForPath,
   isPsychologyPathEligible,
 } from '../../data/psychologyIntakeProfiles';
-import { buildNeuropsychologySummary } from '../../data/neuropsychologyEvaluation';
 
 export function PsychologyPathChooser({
   session,
-  neuroEvaluation,
   selectedPatient,
   patientAge,
   onSelectIntakeProfile,
-  onOpenEvaluation,
   onOpenEvolution,
   onFillTestAnswers,
 }) {
   const [intakePath, setIntakePath] = useState(null);
   const currentProfile = getPsychologyIntakeProfile(session?.intakeProfile);
-  const neuroSummary = buildNeuropsychologySummary(neuroEvaluation);
 
   function choosePath(path) {
-    if (path.id === 'avaliacao_neuropsicologica') {
-      onOpenEvaluation?.();
-      return;
-    }
     setIntakePath(path.id);
   }
 
@@ -59,7 +51,7 @@ export function PsychologyPathChooser({
                 onClick={() => choosePath(path)}
               >
                 <span className="psi-path-card-icon" aria-hidden="true">
-                  {path.id === 'infantojuvenil' ? '01' : path.id === 'adulto' ? '02' : '03'}
+                  {path.id === 'infantojuvenil' ? '01' : '02'}
                 </span>
                 <b>{path.label}</b>
                 <small>{path.description}</small>
@@ -107,10 +99,6 @@ export function PsychologyPathChooser({
         <div className="card">
           <p className="small">Anamnese selecionada</p>
           <h3>{currentProfile?.shortLabel || 'Ainda não definida'}</h3>
-        </div>
-        <div className="card">
-          <p className="small">Avaliação neuropsicológica</p>
-          <h3>{neuroSummary.completedSessions}/{neuroSummary.plannedSessions} sessões</h3>
         </div>
         <button type="button" className="card psi-path-evolution-card" onClick={onOpenEvolution}>
           <p className="small">Acompanhamento</p>

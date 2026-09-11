@@ -5,8 +5,8 @@ const NAV_GROUPS = [
   { title: null, tabs: ['Tela inicial', 'Painel'] },
   { title: 'Avaliação', tabs: ['Anamnese', 'Língua', 'Pulso', 'Reabilitação'] },
   { title: 'Diagnóstico', tabs: ['Raciocínio Clínico', 'Diagnóstico'] },
-  { title: 'Tratamento', tabs: ['Protocolo', 'Evolução'] },
-  { title: 'Apoio', tabs: ['Biblioteca', 'Relatório', 'Documentos'] },
+  { title: 'Tratamento', tabs: ['Protocolo'] },
+  { title: 'Apoio', tabs: ['Biblioteca', 'Relatório'] },
 ];
 
 const SUPER_ADMIN_SECTIONS = [

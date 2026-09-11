@@ -52,15 +52,14 @@ const TABS = {
 const NAV_GROUPS = [
   { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
   { title: 'Avaliação', tabs: [TABS.ANAMNESE] },
-  { title: 'Acompanhamento', tabs: [TABS.EVOLUCAO] },
-  { title: 'Documentos', tabs: [TABS.RELATORIO, TABS.DOCUMENTOS] },
+  { title: 'Documentos', tabs: [TABS.RELATORIO] },
 ];
 
 const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.DOCUMENTOS];
 
 // Escolha do percurso: define o roteiro específico e pré-abre os
 // módulos de contexto pertinentes.
-function PathChooser({ config, session, selectedPatient, onSelectProfile, onFillTestAnswers }) {
+function PathChooser({ config, session, selectedPatient, onSelectProfile, onFillTestAnswers, onOpenEvolution }) {
   const current = config.profiles.find(profile => profile.id === session.intakeProfile);
   return (
     <Panel title={`Boas-vindas — ${config.label}`}>
@@ -95,6 +94,10 @@ function PathChooser({ config, session, selectedPatient, onSelectProfile, onFill
           <p className="small">Percurso selecionado</p>
           <h3>{current?.shortLabel || 'Ainda não definido'}</h3>
         </div>
+        <button type="button" className="card psi-path-evolution-card" onClick={onOpenEvolution}>
+          <p className="small">Acompanhamento</p>
+          <h3>Registrar evolução</h3>
+        </button>
       </div>
     </Panel>
   );
@@ -385,9 +388,7 @@ export function DisciplineWorkspace({
         <PatientStart
           initialDiscipline={disciplineId}
           therapistName={therapistName}
-          onCreatePatient={() => setActiveTab(TABS.PAINEL)}
           onSelectPatient={() => setActiveTab(TABS.PAINEL)}
-          onOpenDocuments={() => setActiveTab(TABS.DOCUMENTOS)}
           onSignOut={handleSignOut}
         />
       );
@@ -451,6 +452,7 @@ export function DisciplineWorkspace({
         session={session}
         selectedPatient={selectedPatient}
         onSelectProfile={selectProfile}
+        onOpenEvolution={() => setActiveTab(TABS.EVOLUCAO)}
       />
     );
   }

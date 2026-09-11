@@ -13,11 +13,6 @@ export const PSYCHOLOGY_WELCOME_PATHS = [
     label: 'Anamnese adulto',
     description: 'A partir de 18 anos, com roteiro longitudinal de história e funcionamento.',
   },
-  {
-    id: 'avaliacao_neuropsicologica',
-    label: 'Avaliação',
-    description: 'Processo separado, com instrumentos, sessões, resultados, integração e relatório.',
-  },
 ];
 
 export const PSYCHOLOGY_INTAKE_PROFILES = [

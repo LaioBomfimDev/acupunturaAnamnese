@@ -31,7 +31,7 @@ const ALLOWED_PROFESSIONS = new Set([
   'outro',
 ]);
 
-const ALLOWED_ROLES = new Set(['therapist', 'knowledge_reviewer']);
+const ALLOWED_ROLES = new Set(['therapist', 'knowledge_reviewer', 'clinic_admin']);
 
 // Disciplinas válidas para a coluna profiles.disciplines. Quando o SuperAdm
 // escolhe explicitamente (ex.: revisora só de psicologia), a coluna vence o

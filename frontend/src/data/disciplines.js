@@ -52,6 +52,17 @@ export const DISCIPLINES = [
     available: true,
     color: 'var(--r1-discipline-nutricao)',
   },
+  {
+    id: 'neuropsicologia',
+    label: 'Neuropsicologia',
+    subtitle: 'Avaliação neuropsicológica',
+    description: 'Instrumentos, sessões, resultados, integração e relatório.',
+    // Extraída de dentro de Psicologia em 10/09/2026 (era a opção
+    // "Avaliação" do PathChooser). Escopo mínimo: Avaliação + Relatório,
+    // sem Anamnese/Evolução próprias.
+    available: true,
+    color: 'var(--r1-discipline-neuropsicologia)',
+  },
 ];
 
 export const DISCIPLINE_IDS = DISCIPLINES.map(item => item.id);

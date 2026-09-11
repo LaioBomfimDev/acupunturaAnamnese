@@ -1216,6 +1216,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .patient-consent input[type='checkbox'] {
+  width: auto;
   margin-top: 2px;
   flex-shrink: 0;
 }
@@ -5540,6 +5541,25 @@ textarea { min-height: 95px; resize: vertical; }
   grid-column: 1 / -1;
 }
 
+.professional-form-disciplines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 6px 0;
+}
+
+.professional-form-discipline-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+}
+
+.professional-form-discipline-option input[type='checkbox'] {
+  width: auto;
+  flex-shrink: 0;
+}
+
 /* Selects do cadastro de profissional seguem o visual dos inputs. */
 .admin-create-form select,
 .admin-profile-form select {
@@ -8492,6 +8512,11 @@ textarea { min-height: 95px; resize: vertical; }
 
   .workspace-grid { display: block !important; }
   .app { min-height: auto !important; display: block !important; }
+
+  /* Ficha do paciente (ClinicPatientProfile): o fundo em gradiente do
+     hub não pode vazar atrás da folha timbrada — mesmo tratamento que
+     .app acima recebe pra telas de relatório. */
+  .hub-screen { background: white !important; min-height: auto !important; }
 }
 
 /* ── Trocar de área (sidebar) ───────────────────────────────── */
@@ -8759,6 +8784,21 @@ textarea { min-height: 95px; resize: vertical; }
 
 .quick-word-chip:hover {
   background: rgba(163, 130, 58, .18);
+}
+
+.quick-word-chip-add {
+  border-style: dashed;
+  font-weight: 600;
+  padding: 3px 12px;
+}
+
+.quick-word-chip-input {
+  border: 1px solid rgba(163, 130, 58, .45);
+  background: var(--r1-surface, #fff);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  width: 120px;
 }
 
 .psi-field {

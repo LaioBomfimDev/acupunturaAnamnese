@@ -14,7 +14,6 @@ import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { mergeEvolutionHistory } from '../utils/evolutionHistory';
 import {
   PSI_ANAMNESE_RECORD_TYPE,
-  PSI_NEURO_RECORD_TYPE,
   PSYCHOLOGY_CONTENT_STATUS,
   PSYCHOLOGY_DRAFT_NOTICE,
   PSYCHOLOGY_PLACEHOLDER_TABS,
@@ -23,11 +22,6 @@ import {
   createEmptyPsychologySession,
   normalizePsychologySession,
 } from '../data/psychologyAnamnese';
-import {
-  NEUROPSYCHOLOGY_CONTENT_STATUS,
-  createEmptyNeuropsychologyEvaluation,
-  normalizeNeuropsychologyEvaluation,
-} from '../data/neuropsychologyEvaluation';
 import { PSYCHOLOGY_INFORMANT_OPTIONS } from '../data/psychologyIntakeProfiles';
 import { getSuggestedContextModules } from '../data/psychologyContextModules';
 import { resolveUserDisciplines } from '../data/disciplines';
@@ -37,8 +31,6 @@ import { PsychologyEvolucao } from './psychology/PsychologyEvolucao';
 import { PsychologyRelatorio } from './psychology/PsychologyRelatorio';
 import { PsychologyPlaceholder } from './psychology/PsychologyPlaceholder';
 import { PsychologyPathChooser } from './psychology/PsychologyPathChooser';
-import { PsychologyNeuroAssessment } from './psychology/PsychologyNeuroAssessment';
-import { PsychologyNeuroReport } from './psychology/PsychologyNeuroReport';
 import { PsychologyHypotheses } from './psychology/PsychologyHypotheses';
 import { PsychologyComplementaryQuestions } from './psychology/PsychologyComplementaryQuestions';
 
@@ -68,13 +60,11 @@ const PSYCHOLOGY_NAV_GROUPS = [
     tabs: [
       PSYCHOLOGY_TABS.ANAMNESE,
       PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES,
-      PSYCHOLOGY_TABS.NEURO,
     ],
   },
   { title: 'Formulação clínica', tabs: [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.HIPOTESES] },
   { title: 'Plano de cuidado', tabs: [PSYCHOLOGY_TABS.OBJETIVOS, PSYCHOLOGY_TABS.PLANO] },
-  { title: 'Acompanhamento', tabs: [PSYCHOLOGY_TABS.EVOLUCAO] },
-  { title: 'Documentos', tabs: [PSYCHOLOGY_TABS.RELATORIO, PSYCHOLOGY_TABS.DOCUMENTOS] },
+  { title: 'Documentos', tabs: [PSYCHOLOGY_TABS.RELATORIO] },
   { title: 'Apoio', tabs: [PSYCHOLOGY_TABS.BIBLIOTECA] },
 ];
 
@@ -86,26 +76,18 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [activeTab, setActiveTab] = useState(PSYCHOLOGY_TABS.HOME);
-  const [activeJourney, setActiveJourney] = useState(null);
   const [session, setSession] = useState(createEmptyPsychologySession);
   // Evolução vinculada ao atendimento (patient_evolutions) vive fora do
   // registro clínico deste workspace — ver supabase/migrations/20260903.
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
-  const [neuroEvaluation, setNeuroEvaluation] = useState(createEmptyNeuropsychologyEvaluation);
   const [saveStatus, setSaveStatus] = useState('idle');
-  const [neuroSaveStatus, setNeuroSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
-  const [neuroLastSavedAt, setNeuroLastSavedAt] = useState(null);
   const [hasPending, setHasPending] = useState(false);
-  const [neuroHasPending, setNeuroHasPending] = useState(false);
 
   const hydratingRef = useRef(false);
-  const neuroHydratingRef = useRef(false);
   const saveTimerRef = useRef(null);
-  const neuroSaveTimerRef = useRef(null);
   const patientIdRef = useRef(selectedPatient?.id || null);
   const sessionChangeVersionRef = useRef(0);
-  const neuroChangeVersionRef = useRef(0);
   const loadBlockedRef = useRef(false);
   const [saveQueue] = useState(() => (
     createClinicalSaveQueue({
@@ -118,31 +100,22 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     })
   ));
 
-  // Carrega anamnese e avaliação em registros independentes do mesmo paciente.
+  // Carrega a anamnese do paciente atual.
   useLayoutEffect(() => {
     const patientId = selectedPatient?.id;
     patientIdRef.current = patientId || null;
-    setActiveJourney(null);
     setSession(createEmptyPsychologySession());
-    setNeuroEvaluation(createEmptyNeuropsychologyEvaluation());
     setSaveStatus(patientId ? 'loading' : 'idle');
-    setNeuroSaveStatus(patientId ? 'loading' : 'idle');
     setLastSavedAt(null);
-    setNeuroLastSavedAt(null);
     setHasPending(false);
-    setNeuroHasPending(false);
     setPatientEvolutionRecords([]);
     sessionChangeVersionRef.current = 0;
-    neuroChangeVersionRef.current = 0;
     loadBlockedRef.current = false;
     hydratingRef.current = true;
-    neuroHydratingRef.current = true;
 
     if (!patientId) {
       setSession(createEmptyPsychologySession());
-      setNeuroEvaluation(createEmptyNeuropsychologyEvaluation());
       hydratingRef.current = false;
-      neuroHydratingRef.current = false;
       return;
     }
 
@@ -150,11 +123,8 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     listPatientEvolutions(patientId, 'psicologia')
       .then(records => { if (!cancelled) setPatientEvolutionRecords(records); })
       .catch(() => { if (!cancelled) setPatientEvolutionRecords([]); });
-    Promise.all([
-      getLatestRecord(patientId, PSI_ANAMNESE_RECORD_TYPE, 'psicologia'),
-      getLatestRecord(patientId, PSI_NEURO_RECORD_TYPE, 'psicologia'),
-    ])
-      .then(([record, neuroRecord]) => {
+    getLatestRecord(patientId, PSI_ANAMNESE_RECORD_TYPE, 'psicologia')
+      .then(record => {
         if (cancelled || patientIdRef.current !== patientId) return;
         if (record?.sensitive_data?.session) {
           setSession(normalizePsychologySession(record.sensitive_data.session));
@@ -164,34 +134,19 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
           `${patientId}:${PSI_ANAMNESE_RECORD_TYPE}`,
           record,
         );
-        if (neuroRecord?.sensitive_data?.evaluation) {
-          setNeuroEvaluation(normalizeNeuropsychologyEvaluation(neuroRecord.sensitive_data.evaluation));
-          setNeuroLastSavedAt(new Date(neuroRecord.updated_at));
-        }
-        saveQueue.setHead(
-          `${patientId}:${PSI_NEURO_RECORD_TYPE}`,
-          neuroRecord,
-        );
         setSaveStatus('idle');
-        setNeuroSaveStatus('idle');
       })
       .catch(err => {
         if (cancelled || patientIdRef.current !== patientId) return;
         loadBlockedRef.current = true;
         setSaveStatus('load_error');
-        setNeuroSaveStatus('load_error');
         console.error('Erro ao carregar prontuários de psicologia:', {
           name: err?.name || 'Error',
           code: err?.code || 'PSYCHOLOGY_LOAD_ERROR',
         });
       })
       .finally(() => {
-        if (!cancelled) {
-          setTimeout(() => {
-            hydratingRef.current = false;
-            neuroHydratingRef.current = false;
-          }, 0);
-        }
+        if (!cancelled) setTimeout(() => { hydratingRef.current = false; }, 0);
       });
 
     return () => { cancelled = true; };
@@ -245,54 +200,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     }
   }, [saveQueue, session]);
 
-  const doSaveNeuro = useCallback(async () => {
-    const patientId = patientIdRef.current;
-    if (!patientId || loadBlockedRef.current) return;
-    const laneKey = `${patientId}:${PSI_NEURO_RECORD_TYPE}`;
-    const changeVersion = neuroChangeVersionRef.current;
-    setNeuroSaveStatus('saving');
-    const payload = {
-      discipline: 'psicologia',
-      contentStatus: NEUROPSYCHOLOGY_CONTENT_STATUS,
-      evaluation: neuroEvaluation,
-    };
-    try {
-      const result = await saveQueue.enqueue({
-        patientId,
-        laneKey,
-        recordType: PSI_NEURO_RECORD_TYPE,
-        discipline: 'psicologia',
-        data: payload,
-        changeVersion,
-      });
-      if (patientIdRef.current === patientId) {
-        const current = result.changeVersion === neuroChangeVersionRef.current;
-        const queued = saveQueue.pendingFor(laneKey) > 0;
-        setNeuroSaveStatus(current && !queued ? 'saved' : 'idle');
-        setNeuroLastSavedAt(result.updated_at ? new Date(result.updated_at) : new Date());
-        setNeuroHasPending(!current || queued);
-        setTimeout(() => {
-          if (
-            patientIdRef.current === patientId
-            && result.changeVersion === neuroChangeVersionRef.current
-            && saveQueue.pendingFor(laneKey) === 0
-          ) {
-            setNeuroSaveStatus(status => (status === 'saved' ? 'idle' : status));
-          }
-        }, 3000);
-      }
-    } catch (err) {
-      console.error('Erro ao salvar avaliação neuropsicológica:', {
-        name: err?.name || 'Error',
-        code: err?.code || 'PSYCHOLOGY_NEURO_SAVE_ERROR',
-      });
-      if (patientIdRef.current === patientId) {
-        setNeuroSaveStatus('error');
-        setNeuroHasPending(true);
-      }
-    }
-  }, [neuroEvaluation, saveQueue]);
-
   // Auto-save com debounce (mesmo ritmo do MTC: 5s após a última mudança).
   useEffect(() => {
     if (hydratingRef.current || !selectedPatient?.id) return undefined;
@@ -303,28 +210,19 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     return () => clearTimeout(saveTimerRef.current);
   }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (neuroHydratingRef.current || !selectedPatient?.id) return undefined;
-    neuroChangeVersionRef.current += 1;
-    setNeuroHasPending(true);
-    if (neuroSaveTimerRef.current) clearTimeout(neuroSaveTimerRef.current);
-    neuroSaveTimerRef.current = setTimeout(doSaveNeuro, 5000);
-    return () => clearTimeout(neuroSaveTimerRef.current);
-  }, [neuroEvaluation]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Alerta do navegador se sair com mudanças pendentes.
   useEffect(() => {
     function handleBeforeUnload(event) {
-      if (!hasPending && !neuroHasPending) return;
+      if (!hasPending) return;
       event.preventDefault();
       event.returnValue = '';
     }
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasPending, neuroHasPending]);
+  }, [hasPending]);
 
   function confirmPending(message) {
-    return (!hasPending && !neuroHasPending) || window.confirm(message);
+    return !hasPending || window.confirm(message);
   }
 
   function handleSwitchArea() {
@@ -344,14 +242,10 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     }
     if ([PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES].includes(tab)) {
       if (!session.intakeProfile) {
-        setActiveJourney(null);
         setActiveTab(PSYCHOLOGY_TABS.PAINEL);
         return;
       }
-      setActiveJourney('anamnese');
     }
-    if (tab === PSYCHOLOGY_TABS.NEURO) setActiveJourney('avaliacao');
-    if (tab === PSYCHOLOGY_TABS.HIPOTESES) setActiveJourney('anamnese');
     setActiveTab(tab);
   }
 
@@ -405,7 +299,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       relatorio: prev.relatorio,
       responseHistory: prev.responseHistory,
     }));
-    setActiveJourney('anamnese');
     setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
   }
 
@@ -433,7 +326,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         ...prev.contextModules,
       },
     }));
-    setActiveJourney('anamnese');
     setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
   }
 
@@ -563,20 +455,13 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
   }
 
   function openPathChooser() {
-    setActiveJourney(null);
     setActiveTab(PSYCHOLOGY_TABS.PAINEL);
-  }
-
-  function openEvaluation() {
-    setActiveJourney('avaliacao');
-    setActiveTab(PSYCHOLOGY_TABS.NEURO);
   }
 
   const patientAge = getPatientAge(selectedPatient);
   const effectiveTab = !selectedPatient && !TABS_WITHOUT_PATIENT.includes(activeTab)
     ? PSYCHOLOGY_TABS.HOME
     : activeTab;
-  const isNeuroContext = activeJourney === 'avaliacao' || effectiveTab === PSYCHOLOGY_TABS.NEURO;
   // Mescla o legado (session.evolucoes) com os registros novos vindos de
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
@@ -599,9 +484,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         <PatientStart
           initialDiscipline="psicologia"
           therapistName={therapistName}
-          onCreatePatient={() => setActiveTab(PSYCHOLOGY_TABS.PAINEL)}
           onSelectPatient={() => setActiveTab(PSYCHOLOGY_TABS.PAINEL)}
-          onOpenDocuments={() => setActiveTab(PSYCHOLOGY_TABS.DOCUMENTOS)}
           onSignOut={handleSignOut}
         />
       );
@@ -624,11 +507,9 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         return (
           <PsychologyPathChooser
             session={session}
-            neuroEvaluation={neuroEvaluation}
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
-            onOpenEvaluation={openEvaluation}
             onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
@@ -657,14 +538,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
           />
         );
-      case PSYCHOLOGY_TABS.NEURO:
-        return (
-          <PsychologyNeuroAssessment
-            evaluation={neuroEvaluation}
-            onChange={setNeuroEvaluation}
-            onChoosePath={openPathChooser}
-          />
-        );
       case PSYCHOLOGY_TABS.HIPOTESES:
         return (
           <PsychologyHypotheses
@@ -674,15 +547,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
           />
         );
       case PSYCHOLOGY_TABS.EVOLUCAO:
-        if (isNeuroContext) {
-          return (
-            <PsychologyNeuroAssessment
-              evaluation={neuroEvaluation}
-              onChange={setNeuroEvaluation}
-              onChoosePath={openPathChooser}
-            />
-          );
-        }
         return (
           <PsychologyEvolucao
             session={session}
@@ -694,16 +558,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
           />
         );
       case PSYCHOLOGY_TABS.RELATORIO:
-        if (isNeuroContext) {
-          return (
-            <PsychologyNeuroReport
-              evaluation={neuroEvaluation}
-              selectedPatient={selectedPatient}
-              therapistProfile={profile}
-              onChange={setNeuroEvaluation}
-            />
-          );
-        }
         return (
           <PsychologyRelatorio
             session={session}
@@ -717,11 +571,9 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         return (
           <PsychologyPathChooser
             session={session}
-            neuroEvaluation={neuroEvaluation}
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
-            onOpenEvaluation={openEvaluation}
             onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
@@ -740,10 +592,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
-        sessionCount={evolucoes.length
-          + (Array.isArray(neuroEvaluation.sessions)
-            ? neuroEvaluation.sessions.filter(item => item.status === 'concluida').length
-            : 0)}
+        sessionCount={evolucoes.length}
         lastVisit=""
         hasMultipleDisciplines={hasMultipleDisciplines}
         navGroups={PSYCHOLOGY_NAV_GROUPS}
@@ -763,11 +612,11 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
               <b>{timeLabel}</b>
             </div>
             <SaveIndicator
-              status={isNeuroContext ? neuroSaveStatus : saveStatus}
-              lastSavedAt={isNeuroContext ? neuroLastSavedAt : lastSavedAt}
-              onSave={isNeuroContext ? doSaveNeuro : doSaveAnamnese}
+              status={saveStatus}
+              lastSavedAt={lastSavedAt}
+              onSave={doSaveAnamnese}
               hasPatient={Boolean(selectedPatient)}
-              hasPendingChanges={isNeuroContext ? neuroHasPending : hasPending}
+              hasPendingChanges={hasPending}
             />
             <button type="button" className="topbar-button" onClick={handleSignOut}>Sair</button>
           </div>

@@ -6,7 +6,6 @@ import { readFile } from 'node:fs/promises';
 
 import {
   PSI_ANAMNESE_RECORD_TYPE,
-  PSI_NEURO_RECORD_TYPE,
   PSYCHOLOGY_AXES,
   PSYCHOLOGY_CHECKLIST_SECTIONS,
   PSYCHOLOGY_CONTENT_STATUS,
@@ -33,10 +32,6 @@ import {
   getPsychologyProfileSections,
   isPsychologyPathEligible,
 } from '../../src/data/psychologyIntakeProfiles.js';
-import {
-  createEmptyNeuropsychologyEvaluation,
-  buildNeuropsychologySummary,
-} from '../../src/data/neuropsychologyEvaluation.js';
 
 // Lê um componente do workspace de Psi pelo nome do arquivo.
 async function readPsi(file) {
@@ -56,15 +51,10 @@ test('conteúdo de psicologia está explicitamente marcado como rascunho (gate h
   assert.equal(PSYCHOLOGY_CONTENT_STATUS, 'rascunho_a_validar');
 });
 
-test('modalidades: anamnese e avaliação estão abertas, com registros independentes', () => {
-  assert.equal(PSYCHOLOGY_MODALITIES.length, 2);
+test('modalidade: anamnese clínica aberta (avaliação neuro migrou para Neuropsicologia)', () => {
+  assert.equal(PSYCHOLOGY_MODALITIES.length, 1);
   assert.equal(getPsychologyModality('anamnese_clinica')?.available, true);
-  assert.equal(getPsychologyModality('avaliacao_neuropsicologica')?.available, true);
-  // record_types distintos: fluxos distintos, registros distintos.
-  const types = new Set(PSYCHOLOGY_MODALITIES.map(m => m.recordType));
-  assert.equal(types.size, 2);
-  assert.ok(types.has(PSI_ANAMNESE_RECORD_TYPE));
-  assert.ok(types.has(PSI_NEURO_RECORD_TYPE));
+  assert.equal(getPsychologyModality('anamnese_clinica')?.recordType, PSI_ANAMNESE_RECORD_TYPE);
 });
 
 test('campos de texto livre cobrem os 6 blocos do plano (§2.2)', () => {
@@ -162,10 +152,12 @@ test('shell: sidebar clínica reusada, disciplina no registro e roteamento por a
   // Quick-word chips: digitação mínima (o append vive no shell).
   assert.ok(source.includes('appendQuickWord'));
   // Roteia para os painéis próprios de cada aba.
-  for (const panel of ['PsychologyPathChooser', 'PsychologyAnamnese', 'PsychologyNeuroAssessment', 'PsychologyHypotheses', 'PsychologyEvolucao', 'PsychologyRelatorio', 'PsychologyNeuroReport', 'PsychologyPlaceholder']) {
+  for (const panel of ['PsychologyPathChooser', 'PsychologyAnamnese', 'PsychologyHypotheses', 'PsychologyEvolucao', 'PsychologyRelatorio', 'PsychologyPlaceholder']) {
     assert.ok(source.includes(panel), `shell deve rotear para ${panel}`);
   }
-  assert.ok(source.includes('PSI_NEURO_RECORD_TYPE'), 'avaliação deve usar record_type independente');
+  // Avaliação neuropsicológica migrou para a disciplina própria
+  // Neuropsicologia (10/09/2026) — ver neuropsychology-workspace.test.mjs.
+  assert.ok(!source.includes('PSI_NEURO_RECORD_TYPE'), 'avaliação neuro não deve mais viver no shell de Psicologia');
 });
 
 test('sidebar do Plano C: grupos completos e SEM vocabulário de MTC (isolamento)', async () => {
@@ -174,7 +166,7 @@ test('sidebar do Plano C: grupos completos e SEM vocabulário de MTC (isolamento
     'utf8',
   );
   // Abas do Plano C presentes.
-  for (const tab of ['PAINEL', 'ANAMNESE', 'NEURO', 'SINTESE', 'HIPOTESES', 'OBJETIVOS', 'PLANO', 'EVOLUCAO', 'RELATORIO', 'BIBLIOTECA']) {
+  for (const tab of ['PAINEL', 'ANAMNESE', 'SINTESE', 'HIPOTESES', 'OBJETIVOS', 'PLANO', 'EVOLUCAO', 'RELATORIO', 'BIBLIOTECA']) {
     assert.ok(source.includes(`PSYCHOLOGY_TABS.${tab}`), `sidebar sem a aba ${tab}`);
   }
   // Nomes teóricos corretos (Formulação/Plano de cuidado), não "Diagnóstico" solto.
@@ -218,7 +210,7 @@ test('placeholders ficam apenas nas abas ainda não construídas', async () => {
   const placeholder = await readPsi('PsychologyPlaceholder.jsx');
   assert.ok(placeholder.includes('Em construção'), 'placeholder deve avisar que está em construção');
   // As abas placeholder não incluem as já funcionais (anamnese/evolução/relatório/painel).
-  for (const funcional of [PSYCHOLOGY_TABS.PAINEL, PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES, PSYCHOLOGY_TABS.NEURO, PSYCHOLOGY_TABS.HIPOTESES, PSYCHOLOGY_TABS.EVOLUCAO, PSYCHOLOGY_TABS.RELATORIO]) {
+  for (const funcional of [PSYCHOLOGY_TABS.PAINEL, PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES, PSYCHOLOGY_TABS.HIPOTESES, PSYCHOLOGY_TABS.EVOLUCAO, PSYCHOLOGY_TABS.RELATORIO]) {
     assert.ok(!PSYCHOLOGY_PLACEHOLDER_TABS.includes(funcional), `${funcional} não deveria ser placeholder`);
   }
   for (const futura of [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.OBJETIVOS, PSYCHOLOGY_TABS.PLANO, PSYCHOLOGY_TABS.BIBLIOTECA]) {
@@ -226,9 +218,11 @@ test('placeholders ficam apenas nas abas ainda não construídas', async () => {
   }
 });
 
-test('boas-vindas tem 3 caminhos e as anamneses abrem os 4 perfis solicitados', () => {
+test('boas-vindas tem 2 caminhos e as anamneses abrem os 4 perfis solicitados', () => {
+  // Avaliação neuropsicológica saiu do PathChooser de Psicologia em
+  // 10/09/2026 — virou a disciplina própria Neuropsicologia.
   assert.deepEqual(PSYCHOLOGY_WELCOME_PATHS.map(path => path.id), [
-    'infantojuvenil', 'adulto', 'avaliacao_neuropsicologica',
+    'infantojuvenil', 'adulto',
   ]);
   assert.deepEqual(PSYCHOLOGY_INTAKE_PROFILES.map(profile => profile.id), [
     'infantojuvenil_feminino', 'infantojuvenil_masculino', 'adulto_feminino', 'adulto_masculino',
@@ -279,23 +273,6 @@ test('perguntas da IA só entram por seleção e ganham aba com resposta e infor
   assert.ok(workspace.includes('PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES'));
   assert.ok(workspace.includes('toggleComplementaryQuestion'));
   assert.ok(workspace.includes('complementaryQuestions'));
-});
-
-test('avaliação nasce com instrumentos, 10 sessões/evoluções, integração e relatório separado', async () => {
-  const evaluation = createEmptyNeuropsychologyEvaluation();
-  assert.equal(evaluation.sessions.length, 10);
-  assert.ok(evaluation.instruments.length >= 4);
-  assert.ok(Object.hasOwn(evaluation.integration, 'professionalConclusion'));
-  assert.deepEqual(evaluation.report, {});
-  const summary = buildNeuropsychologySummary(evaluation);
-  assert.equal(summary.plannedSessions, 10);
-  const assessment = await readPsi('PsychologyNeuroAssessment.jsx');
-  for (const text of ['Instrumentos e procedimentos', 'Sessões e evoluções da avaliação', 'Integração profissional']) {
-    assert.ok(assessment.includes(text));
-  }
-  const report = await readPsi('PsychologyNeuroReport.jsx');
-  assert.ok(report.includes('generateNeuropsychologyReport'));
-  assert.ok(report.includes('pendente de revisão'));
 });
 
 test('campos de texto ativam corretor ortográfico pt-BR sem substituir silenciosamente', async () => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckGrid } from '../ui/CheckGrid';
 import { FieldInput } from '../ui/FieldInput';
 import { QuickWordChips } from '../ui/QuickWordChips';
+import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
 import {
   getProfile,
   getProfileSections,
@@ -32,7 +33,7 @@ export function QuestionGuide({ questions }) {
   );
 }
 
-export function AnamneseFieldBlock({ field, session, onUpdateField, onQuickWord, children }) {
+export function AnamneseFieldBlock({ field, session, onUpdateField, onQuickWord, mergeWords, onAddWord, children }) {
   return (
     <div className="psi-field">
       <FieldInput
@@ -42,13 +43,11 @@ export function AnamneseFieldBlock({ field, session, onUpdateField, onQuickWord,
         onChange={onUpdateField}
         textarea={field.textarea}
       />
-      <p className="small psi-spellcheck-note">
-        Correção ortográfica em pt-BR ativada: palavras suspeitas podem ser sublinhadas pelo navegador.
-      </p>
       <QuestionGuide questions={field.questionGuide} />
       <QuickWordChips
-        words={field.quickWords}
+        words={mergeWords ? mergeWords(field.id, field.quickWords) : field.quickWords}
         onPick={word => onQuickWord(field.id, word)}
+        onAddWord={onAddWord ? word => onAddWord(field.id, word) : undefined}
       />
       {children}
     </div>
@@ -57,7 +56,7 @@ export function AnamneseFieldBlock({ field, session, onUpdateField, onQuickWord,
 
 // Módulos de contexto: abrem por PERTINÊNCIA clínica. Fechar apenas
 // esconde — o texto já escrito continua guardado na sessão.
-function ContextModules({ config, session, onToggleModule, onUpdateField, onQuickWord }) {
+function ContextModules({ config, session, onToggleModule, onUpdateField, onQuickWord, mergeWords, onAddWord }) {
   return (
     <div className="psi-context-modules">
       <p className="small">
@@ -96,6 +95,8 @@ function ContextModules({ config, session, onToggleModule, onUpdateField, onQuic
                 session={session}
                 onUpdateField={onUpdateField}
                 onQuickWord={onQuickWord}
+                mergeWords={mergeWords}
+                onAddWord={onAddWord}
               />
             ))}
           </div>
@@ -196,6 +197,7 @@ export function DisciplineAnamnese({
   const riskSelected = hasRiskSelected(config, session.selectedMap);
   const profile = getProfile(config, session.intakeProfile);
   const profileSections = getProfileSections(config, session.intakeProfile);
+  const { mergeWords, addWord } = useCustomQuickWords(config.discipline);
 
   return (
     <section className="psi-anamnese">
@@ -249,6 +251,8 @@ export function DisciplineAnamnese({
                   session={session}
                   onUpdateField={onUpdateField}
                   onQuickWord={onQuickWord}
+                  mergeWords={mergeWords}
+                  onAddWord={addWord}
                 />
               ))}
 
@@ -262,6 +266,8 @@ export function DisciplineAnamnese({
                       session={session}
                       onUpdateField={onUpdateField}
                       onQuickWord={onQuickWord}
+                      mergeWords={mergeWords}
+                      onAddWord={addWord}
                     />
                   ))}
                 </div>
@@ -276,6 +282,8 @@ export function DisciplineAnamnese({
                 onToggleModule={onToggleContextModule}
                 onUpdateField={onUpdateField}
                 onQuickWord={onQuickWord}
+                mergeWords={mergeWords}
+                onAddWord={addWord}
               />
 
               <h3 className="psi-section-title">{config.checklistsTitle}</h3>

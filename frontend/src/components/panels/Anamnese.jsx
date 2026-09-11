@@ -2,10 +2,37 @@ import { useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { CheckGrid } from '../ui/CheckGrid';
 import { FieldInput } from '../ui/FieldInput';
+import { QuickWordChips } from '../ui/QuickWordChips';
 import { checklists } from '../../data/checklists';
 import { usePatient } from '../../hooks/PatientContext';
 import { getPatientAge } from '../../hooks/useClinicState';
 import { getClinicalSexContext } from '../../utils/analyzer';
+import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
+
+// Mesmo comportamento de appendQuickWord das demais disciplinas
+// (Fisio/Nutrição/Psicologia): pontuação e maiúscula na primeira
+// palavra. Acupuntura não tinha esse helper porque nunca teve quick
+// words — só ganhou o recurso com o botão "+" (10/09/2026).
+function appendQuickWord(current, word) {
+  const base = String(current || '').trimEnd();
+  const clean = String(word || '').trim();
+  if (!clean) return base;
+  return !base
+    ? clean.charAt(0).toUpperCase() + clean.slice(1)
+    : `${base}${/[.,;:!?]$/.test(base) ? ' ' : ', '}${clean}`;
+}
+
+// Acupuntura não tem quick words estáticas (nenhum data file de
+// vocabulário) — só o "+" pra atalhos criados pela clínica.
+function AnamneseQuickWords({ fieldId, value, onUpdate, mergeWords, onAddWord }) {
+  return (
+    <QuickWordChips
+      words={mergeWords(fieldId, [])}
+      onPick={word => onUpdate(fieldId, appendQuickWord(value, word))}
+      onAddWord={word => onAddWord(fieldId, word)}
+    />
+  );
+}
 
 const SEXO_CLINICO_OPTIONS = [
   { value: '', label: 'Não informado' },
@@ -42,6 +69,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
     cpf: selectedPatient?.cpf || '',
     imageConsent: selectedPatient?.image_consent === true,
   });
+  const { mergeWords, addWord } = useCustomQuickWords('acupuntura');
   const sexContext = getClinicalSexContext(state.sexo);
   const reproductiveModule = sexContext === 'feminino'
     ? {
@@ -188,7 +216,9 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>2. Queixa principal</h3>
       <FieldInput label="Queixa principal" field="queixa" value={state.queixa} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="queixa" value={state.queixa} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
       <FieldInput label="História da queixa / evolução / fatores de piora e melhora" field="historia" value={state.historia} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="historia" value={state.historia} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
       <h4>Características da queixa</h4>
       <CheckGrid group="queixaEstruturada" items={checklists.queixaEstruturada} selectedMap={selectedMap} onToggle={onToggle} />
 
@@ -201,12 +231,14 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <h4>Emoções predominantes</h4>
       <CheckGrid group="emocoes" items={checklists.emocoes} selectedMap={selectedMap} onToggle={onToggle} />
       <FieldInput label="Observações sobre sono, sonhos, rotina e estado emocional" field="obsSonoEmocoes" value={state.obsSonoEmocoes} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="obsSonoEmocoes" value={state.obsSonoEmocoes} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>4. Digestão, eliminação e hidratação</h3>
       <div className="form-grid">
         <FieldInput label="Consumo de água" field="agua" value={state.agua} onChange={onUpdate} />
       </div>
       <FieldInput label="Observações digestivas relevantes" field="obsDigestao" value={state.obsDigestao} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="obsDigestao" value={state.obsDigestao} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
       <h4>Digestão</h4>
       <CheckGrid group="digestao" items={checklists.digestao} selectedMap={selectedMap} onToggle={onToggle} />
       <h4>Fezes / Bristol / eliminação</h4>
@@ -227,11 +259,14 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <h4>Relação climática</h4>
       <CheckGrid group="clima" items={checklists.clima} selectedMap={selectedMap} onToggle={onToggle} />
       <FieldInput label="Observações sobre dor, postura, irradiação, exames ou limitações funcionais" field="obsDor" value={state.obsDor} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="obsDor" value={state.obsDor} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>6. Histórico clínico integrado</h3>
       <CheckGrid group="historico" items={checklists.historico} selectedMap={selectedMap} onToggle={onToggle} />
       <FieldInput label="Medicamentos, exames, diagnósticos prévios e observações médicas" field="medicacoes" value={state.medicacoes} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="medicacoes" value={state.medicacoes} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
       <FieldInput label="Atividade física (tipo, frequência e duração)" field="atividadeFisica" value={state.atividadeFisica} onChange={onUpdate} textarea />
+      <AnamneseQuickWords fieldId="atividadeFisica" value={state.atividadeFisica} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
       <h4>Medicamentos, substâncias e estimulantes</h4>
       <CheckGrid group="substanciasUso" items={checklists.substanciasUso} selectedMap={selectedMap} onToggle={onToggle} />
 

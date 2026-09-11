@@ -15,6 +15,7 @@ let curationService;
 let clinicalService;
 let persistenceHook;
 let psychologyWorkspace;
+let neuropsychologyWorkspace;
 let shareDialog;
 let recordSharesService;
 let shareEdge;
@@ -29,6 +30,7 @@ before(async () => {
     clinicalService,
     persistenceHook,
     psychologyWorkspace,
+    neuropsychologyWorkspace,
     shareDialog,
     recordSharesService,
     shareEdge,
@@ -60,6 +62,10 @@ before(async () => {
     ),
     readFile(
       path.join(frontendRoot, 'src/components/PsychologyWorkspace.jsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(frontendRoot, 'src/components/NeuropsychologyWorkspace.jsx'),
       'utf8',
     ),
     readFile(
@@ -198,9 +204,11 @@ test('Psicologia carrega a lane correta e promove legado sem sobrescrever coexis
     psychologyWorkspace,
     /getLatestRecord\(patientId, PSI_ANAMNESE_RECORD_TYPE, 'psicologia'\)/,
   );
+  // Avaliação neuropsicológica migrou para a disciplina própria
+  // Neuropsicologia em 10/09/2026 — não vive mais no shell de Psicologia.
   assert.match(
-    psychologyWorkspace,
-    /getLatestRecord\(patientId, PSI_NEURO_RECORD_TYPE, 'psicologia'\)/,
+    neuropsychologyWorkspace,
+    /getLatestRecord\(patientId, PSI_NEURO_RECORD_TYPE, 'neuropsicologia'\)/,
   );
   assert.match(migration, /WITH ranked_legacy_psychology AS/);
   assert.match(

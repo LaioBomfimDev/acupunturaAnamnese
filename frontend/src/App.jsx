@@ -35,7 +35,9 @@ const Agenda = lazyPanel(() => import('./components/panels/Agenda'), 'Agenda');
 const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
 const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
 const ClinicPatientsPanel = lazyPanel(() => import('./components/ClinicPatientsPanel'), 'ClinicPatientsPanel');
+const ClinicAdminHome = lazyPanel(() => import('./components/ClinicAdminHome'), 'ClinicAdminHome');
 const PsychologyWorkspace = lazyPanel(() => import('./components/PsychologyWorkspace'), 'PsychologyWorkspace');
+const NeuropsychologyWorkspace = lazyPanel(() => import('./components/NeuropsychologyWorkspace'), 'NeuropsychologyWorkspace');
 const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorkspace'), 'DisciplineWorkspace');
 const ReviewerHome = lazyPanel(() => import('./components/ReviewerHome'), 'ReviewerHome');
 const CurationWorkspace = lazyPanel(() => import('./components/CurationWorkspace'), 'CurationWorkspace');
@@ -72,6 +74,7 @@ export default function App() {
     profileError,
     loading,
     isSuperAdmin,
+    isClinicAdmin,
     isKnowledgeReviewer,
     mustChangePassword,
     needsMfa,
@@ -288,11 +291,37 @@ export default function App() {
   // mantém o painel próprio. A validação cobre também valor antigo/ inválido
   // no sessionStorage (ex.: disciplina que o perfil não libera).
   if (!isSuperAdmin && !canEnterDiscipline(profile, activeDiscipline)) {
+    // Admin de clínica SEM disciplina própria (ex.: administração pura,
+    // sem atender): cai direto numa home administrativa dedicada — não
+    // faz sentido oferecer o Hub de disciplinas pra quem não tem
+    // nenhuma liberada. Checagem direta em profile.disciplines (não via
+    // resolveUserDisciplines, que sempre injeta acupuntura em array
+    // vazio/nulo pra quem É profissional — comportamento que continua
+    // valendo pra quem não é admin).
+    const clinicAdminWithoutDiscipline = isClinicAdmin
+      && (!Array.isArray(profile?.disciplines) || profile.disciplines.length === 0);
+    if (clinicAdminWithoutDiscipline && !showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao) {
+      return (
+        <Suspense fallback={<PanelLoading />}>
+          <ClinicAdminHome
+            profile={profile}
+            therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+            onSignOut={handleHubSignOut}
+            onOpenClinicPatients={() => setShowClinicPatients(true)}
+            onOpenDocuments={() => setShowHubDocuments(true)}
+            onOpenGestao={() => setShowHubGestao(true)}
+            onOpenAgenda={() => setShowHubAgenda(true)}
+            onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
+          />
+        </Suspense>
+      );
+    }
     if (showClinicPatients) {
       return (
         <Suspense fallback={<PanelLoading />}>
           <ClinicPatientsPanel
             profile={profile}
+            isClinicAdmin={isClinicAdmin}
             onBack={() => setShowClinicPatients(false)}
           />
         </Suspense>
@@ -328,6 +357,7 @@ export default function App() {
               <Agenda
                 profile={profile}
                 initialView={hubAgendaInitialView}
+                initialAgendaOf={clinicAdminWithoutDiscipline ? 'all' : null}
                 onStartAppointment={({ discipline }) => {
                   setShowHubAgenda(false);
                   setHubAgendaInitialView(null);
@@ -428,6 +458,21 @@ export default function App() {
     );
   }
 
+  // Neuropsicologia (extraída de dentro de Psicologia em 10/09/2026):
+  // workspace próprio e enxuto, escopo mínimo (Avaliação + Relatório).
+  if (!isSuperAdmin && activeDiscipline === 'neuropsicologia') {
+    return (
+      <Suspense fallback={<PanelLoading />}>
+        <NeuropsychologyWorkspace
+          profile={profile}
+          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          onSwitchDiscipline={handleSwitchDiscipline}
+          onSignOut={handleSignOut}
+        />
+      </Suspense>
+    );
+  }
+
   // Disciplinas com anamnese genérica (fisioterapia, nutrição e as
   // próximas): mesmo shell, vocabulário vindo de data/anamneseRegistry.
   if (!isSuperAdmin && GENERIC_ANAMNESE_DISCIPLINES.includes(activeDiscipline)) {
@@ -465,9 +510,7 @@ export default function App() {
     if (activeTab === 'Tela inicial' || (!selectedPatient && activeTab !== 'Biblioteca' && activeTab !== 'Documentos')) {
       return (
         <PatientStart
-          onCreatePatient={() => setActiveTab('Anamnese')}
           onSelectPatient={() => setActiveTab('Painel')}
-          onOpenDocuments={() => setActiveTab('Documentos')}
           onSignOut={signOut}
           therapistName={therapistFirstName}
           hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}

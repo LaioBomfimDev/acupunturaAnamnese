@@ -9001,6 +9001,43 @@ textarea { min-height: 95px; resize: vertical; }
   font-style: italic;
 }
 
+/* Cartão de referência: Escala de Bristol (forma das fezes) */
+.bristol-scale {
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.bristol-scale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.bristol-scale-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r1-radius-sm);
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.bristol-scale-icon {
+  flex: none;
+  width: 48px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bristol-scale-item p {
+  margin: 2px 0 0;
+  color: #53657a;
+}
+
 /* Eixos de avaliação e formulação (a "avaliação") */
 .psi-axes {
   margin-top: 6px;

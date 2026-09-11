@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckGrid } from '../ui/CheckGrid';
 import { FieldInput } from '../ui/FieldInput';
 import { QuickWordChips } from '../ui/QuickWordChips';
+import { BristolScale } from '../ui/BristolScale';
 import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
 import {
   getProfile,
@@ -44,6 +45,7 @@ export function AnamneseFieldBlock({ field, session, onUpdateField, onQuickWord,
         textarea={field.textarea}
       />
       <QuestionGuide questions={field.questionGuide} />
+      {field.showBristolScale && <BristolScale />}
       <QuickWordChips
         words={mergeWords ? mergeWords(field.id, field.quickWords) : field.quickWords}
         onPick={word => onQuickWord(field.id, word)}

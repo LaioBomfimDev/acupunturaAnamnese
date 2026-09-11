@@ -20,11 +20,12 @@
 
 /**
  * Campo de texto livre.
- * @param {[string, string, string[], string[]?]} tuple
- *   [id, rótulo, chips de digitação rápida, perguntas de escuta]
+ * @param {[string, string, string[], string[]?, boolean?]} tuple
+ *   [id, rótulo, chips de digitação rápida, perguntas de escuta,
+ *    mostrar a Escala de Bristol como apoio visual (forma das fezes)]
  */
-export function toField([id, label, quickWords, questionGuide = []]) {
-  return { id, label, textarea: true, quickWords, questionGuide };
+export function toField([id, label, quickWords, questionGuide = [], showBristolScale = false]) {
+  return { id, label, textarea: true, quickWords, questionGuide, showBristolScale };
 }
 
 export function toSection({ id, title, fields }) {

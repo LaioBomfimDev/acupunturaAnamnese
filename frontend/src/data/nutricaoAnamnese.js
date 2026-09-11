@@ -81,6 +81,7 @@ const textFields = [
       'Consegue relacionar com algum alimento ou horário?',
       'Como está o funcionamento do intestino?',
     ],
+    true,
   ],
   [
     'contextoRotinaSono',

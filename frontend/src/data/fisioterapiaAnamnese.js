@@ -334,7 +334,8 @@ const pelvica = [
     fields: [
       ['pvHabitoIntestinal', 'Hábito intestinal e consistência',
         ['diário', 'a cada 2-3 dias', 'menos de 3 vezes por semana', 'fezes endurecidas', 'fezes pastosas', 'alternância', 'uso de laxante'],
-        ['Com que frequência evacua?', 'Como é a consistência (escala de Bristol)?', 'Usa laxante ou algum recurso para conseguir evacuar?']],
+        ['Com que frequência evacua?', 'Como é a consistência (escala de Bristol)?', 'Usa laxante ou algum recurso para conseguir evacuar?'],
+        true],
       ['pvPerdasFecais', 'Perdas de fezes ou gases e urgência',
         ['sem perdas', 'perda de gases', 'perda de fezes líquidas', 'perda de fezes sólidas', 'urgência para evacuar', 'usa proteção', 'suja a roupa íntima'],
         ['Perde gases ou fezes sem querer?', 'Consegue segurar até chegar ao banheiro?', 'Isso mudou depois de algum evento (parto, cirurgia)?']],

@@ -3,6 +3,7 @@ import { Panel } from '../ui/Panel';
 import { CheckGrid } from '../ui/CheckGrid';
 import { FieldInput } from '../ui/FieldInput';
 import { QuickWordChips } from '../ui/QuickWordChips';
+import { BristolScale } from '../ui/BristolScale';
 import { checklists } from '../../data/checklists';
 import { usePatient } from '../../hooks/PatientContext';
 import { getPatientAge } from '../../hooks/useClinicState';
@@ -242,6 +243,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <h4>Digestão</h4>
       <CheckGrid group="digestao" items={checklists.digestao} selectedMap={selectedMap} onToggle={onToggle} />
       <h4>Fezes / Bristol / eliminação</h4>
+      <BristolScale />
       <CheckGrid group="fezes" items={checklists.fezes} selectedMap={selectedMap} onToggle={onToggle} />
 
       <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>5. Dor e sinais físicos</h3>

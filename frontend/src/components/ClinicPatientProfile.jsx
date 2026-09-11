@@ -1,12 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { getDiscipline } from '../data/disciplines';
+import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
   getPatient, updatePatient, formatCpf, isValidCpf, isMinor,
 } from '../services/patientService';
 import { formatAge, formatBirthDate } from '../utils/patientUi';
-import { listAppointments } from '../services/appointmentService';
+import { listAppointments, listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
@@ -18,20 +18,7 @@ import { buscarEnderecoPorCep, formatCep, isValidCepFormat } from '../services/c
 import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems } from '../utils/reportUtils';
-
-const DEFAULT_ACCENT = '#0E2A4A';
-
-function shortDate() {
-  return new Date().toLocaleDateString('pt-BR');
-}
-
-// Uma "pergunta" do cadastro impresso: só entra na folha timbrada se
-// tiver resposta (mesmo critério do <Field> em tela — nada de linha
-// em branco "não informado" poluindo o papel timbrado).
-function PrintRow({ label, value }) {
-  if (value === undefined || value === null || value === '') return null;
-  return <p style={{ margin: '8px 0', lineHeight: 1.6, fontSize: 15 }}><b>{label}:</b> {value}</p>;
-}
+import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
 
 // ============================================================
 // Ficha do paciente (Fase 5) — página própria, aberta ao clicar num
@@ -40,6 +27,15 @@ function PrintRow({ label, value }) {
 // cadastro (aberta a qualquer profissional da clínica, mesma regra da
 // listagem); upload de anexos restrito a clinic_admin/super_admin —
 // ação administrativa, feita fora do atendimento.
+//
+// Navegação por abas (2026-09-11): a tela empilhava seis seções com
+// scroll longo. Cada aba agora mostra só a sua parte. "Matrículas"
+// lista TODAS as disciplinas da clínica, não só as ativas — o objetivo
+// é deixar claro pra qualquer um quem enxerga este paciente e quem não
+// enxerga, não só quem já está matriculado. "Evolução" deixou de listar
+// os registros ali dentro: agora é um resumo + atalho pra
+// PatientEvolutionTimeline, que mostra o texto integral (é isso que
+// serve de prova pra fiscalização) com opção de corrigir/imprimir.
 // ============================================================
 
 function Field({ label, value }) {
@@ -68,6 +64,14 @@ const UF_OPTIONS = [
   'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ];
 
+const TABS = [
+  { id: 'cadastro', label: 'Cadastro' },
+  { id: 'matriculas', label: 'Matrículas & compartilhamento' },
+  { id: 'agenda', label: 'Agendamentos' },
+  { id: 'evolucao', label: 'Evolução' },
+  { id: 'anexos', label: 'Anexos' },
+];
+
 function buildEditForm(p) {
   return {
     name: p?.name || '', nomeSocial: p?.nome_social || '', birthDate: p?.birth_date || '',
@@ -80,12 +84,32 @@ function buildEditForm(p) {
   };
 }
 
+// Estatística da aba Evolução mostra só dia/mês (cabe no tile); o
+// cabeçalho impresso usa shortDate(), com o ano — são usos diferentes.
+function shortMonthDay(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+function shortDate() {
+  return new Date().toLocaleDateString('pt-BR');
+}
+
+const DEFAULT_ACCENT = '#0E2A4A';
+
+function PrintRow({ label, value }) {
+  if (value === undefined || value === null || value === '') return null;
+  return <p style={{ margin: '8px 0', lineHeight: 1.6, fontSize: 15 }}><b>{label}:</b> {value}</p>;
+}
+
 export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin = false, onBack, onPatientUpdated }) {
   const [full, setFull] = useState(patient);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [evolutions, setEvolutions] = useState([]);
+  const [pendingEvolutions, setPendingEvolutions] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [shares, setShares] = useState([]);
   const [members, setMembers] = useState([]);
@@ -95,6 +119,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState(null);
   const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
+  const [activeTab, setActiveTab] = useState('cadastro');
+  const [showTimeline, setShowTimeline] = useState(false);
   const printSourceRef = useRef(null);
   const printMeasureRef = useRef(null);
   const printHeaderMeasureRef = useRef(null);
@@ -108,14 +134,16 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       getPatient(patient.id),
       listAppointments({ patientId: patient.id }).catch(() => []),
       listPatientEvolutions(patient.id).catch(() => []),
+      listAppointmentsAwaitingEvolution({ patientId: patient.id }).catch(() => []),
       listPatientAttachments(patient.id).catch(() => []),
       listActiveSharesForPatients([patient.id]).catch(() => ({})),
       listClinicMembers().catch(() => []),
-    ]).then(([p, appts, evos, files, sharesByPatient, memberList]) => {
+    ]).then(([p, appts, evos, awaiting, files, sharesByPatient, memberList]) => {
       if (cancelled) return;
       setFull(p);
       setAppointments(appts);
       setEvolutions(evos);
+      setPendingEvolutions(awaiting);
       setAttachments(files);
       setShares(sharesByPatient?.[patient.id] || []);
       setMembers(memberList);
@@ -234,6 +262,16 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     }
   }
 
+  if (showTimeline) {
+    return (
+      <PatientEvolutionTimeline
+        patient={full}
+        therapistProfile={therapistProfile}
+        onBack={() => setShowTimeline(false)}
+      />
+    );
+  }
+
   const enderecoLinha = [full?.endereco_logradouro, full?.endereco_numero].filter(Boolean).join(', ')
     || null;
   const enderecoComplementoLinha = [full?.endereco_bairro, full?.endereco_cidade, full?.endereco_uf].filter(Boolean).join(' — ')
@@ -266,6 +304,14 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const hasConvenio = Boolean(full?.convenio_nome || full?.convenio_carteirinha);
   const hasEndereco = Boolean(enderecoLinha || full?.endereco_complemento || enderecoComplementoLinha || full?.endereco_cep);
   const enrollments = patient.enrollments || [];
+  const enrollmentByDiscipline = new Map(enrollments.map(e => [e.discipline, e]));
+
+  const lastEvolutionAt = evolutions.reduce((latest, evo) => {
+    const at = evo.atendimento_em ? new Date(evo.atendimento_em) : null;
+    return at && (!latest || at > latest) ? at : latest;
+  }, null);
+  const cycleRemaining = evolutions.length >= 10 ? 0 : 10 - evolutions.length;
+  const hasPending = pendingEvolutions.length > 0;
 
   function handlePrintCadastro() {
     const html = printSourceRef.current?.innerHTML || '';
@@ -358,235 +404,307 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
         {loading && <p className="small">Carregando ficha…</p>}
 
         {!loading && !error && (
-          <div className="shv-sections">
-            <section className="shv-section">
-              <div className="pf-section-head">
-                <h4>Dados cadastrais</h4>
-                {!editing && (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir cadastro</button>
-                    <button type="button" className="cp-btn cp-btn--sm" onClick={startEdit}>Editar</button>
-                  </div>
-                )}
-              </div>
+          <>
+            <div className="pf-tabs" role="tablist">
+              {TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  className="pf-tab"
+                  aria-selected={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                  {tab.id === 'matriculas' && <span className="pf-tab-count">{enrollments.length}</span>}
+                  {tab.id === 'agenda' && <span className="pf-tab-count">{appointments.length}</span>}
+                  {tab.id === 'evolucao' && <span className="pf-tab-count">{evolutions.length}</span>}
+                  {tab.id === 'anexos' && <span className="pf-tab-count">{attachments.length}</span>}
+                  {tab.id === 'evolucao' && hasPending && <span className="pf-pulse-dot" title="Há evolução pendente" />}
+                </button>
+              ))}
+            </div>
 
-              {!editing ? (
-                <>
-                  <Field label="Nome completo (civil)" value={full?.name} />
-                  <Field label="Nome social" value={full?.nome_social} />
-                  <Field label="Data de nascimento" value={formatBirthDate(full?.birth_date)} />
-                  <Field label="Idade" value={formatAge(full)} />
-                  <Field label="Sexo biológico" value={full?.sexo_biologico === 'masculino' ? 'Masculino' : full?.sexo_biologico === 'feminino' ? 'Feminino' : null} />
-                  <Field label="Gênero" value={full?.genero} />
-                  <Field label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
-                  <Field label="Telefone" value={full?.phone} />
-                  <Field label="Mãe" value={full?.nome_mae} />
-                  <Field label="Pai" value={full?.nome_pai} />
-                  <Field label="Cônjuge" value={full?.nome_conjuge} />
-                  {isMinor(full?.birth_date) && (
+            {/* ================= CADASTRO ================= */}
+            <section className="pf-panel" hidden={activeTab !== 'cadastro'}>
+              <div className="shv-sections">
+                <section className="shv-section">
+                  <div className="pf-section-head">
+                    <h4>Dados cadastrais</h4>
+                    {!editing && (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir cadastro</button>
+                        <button type="button" className="cp-btn cp-btn--sm" onClick={startEdit}>Editar</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {!editing ? (
                     <>
-                      <Field label="Responsável" value={full?.responsavel_nome} />
-                      <Field label="Telefone do responsável" value={full?.responsavel_telefone} />
-                      <Field label="CPF do responsável" value={full?.responsavel_cpf ? formatCpf(full.responsavel_cpf) : null} />
-                    </>
-                  )}
-                  <Field label="Convênio" value={full?.convenio_nome} />
-                  <Field label="Carteirinha" value={full?.convenio_carteirinha} />
-                  <Field label="Endereço" value={enderecoLinha} />
-                  <Field label="Complemento/bairro/cidade" value={[full?.endereco_complemento, enderecoComplementoLinha].filter(Boolean).join(' — ')} />
-                  <Field label="CEP" value={full?.endereco_cep ? formatCep(full.endereco_cep) : null} />
-                </>
-              ) : (
-                <form className="cp-form" onSubmit={handleSaveEdit} style={{ boxShadow: 'none', border: 'none', padding: 0 }}>
-                  <div className="cp-form-grid">
-                    <label className="cp-field">Nome completo (civil)
-                      <input className="cp-input" value={editForm.name} onChange={e => setEditField('name', e.target.value)} required />
-                    </label>
-                    <label className="cp-field">Nome social
-                      <input className="cp-input" value={editForm.nomeSocial} onChange={e => setEditField('nomeSocial', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Data de nascimento
-                      <input className="cp-input" type="date" value={editForm.birthDate} onChange={e => setEditField('birthDate', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Sexo biológico
-                      <select className="cp-select" value={editForm.sexoBiologico} onChange={e => setEditField('sexoBiologico', e.target.value)}>
-                        <option value="">Selecione</option>
-                        <option value="masculino">Masculino</option>
-                        <option value="feminino">Feminino</option>
-                      </select>
-                    </label>
-                    <label className="cp-field">Gênero
-                      <input className="cp-input" value={editForm.genero} onChange={e => setEditField('genero', e.target.value)} />
-                    </label>
-                    <label className="cp-field">CPF
-                      <input className="cp-input" value={editForm.cpf} onChange={e => setEditField('cpf', e.target.value)} inputMode="numeric" required />
-                    </label>
-                    <label className="cp-field">Telefone
-                      <input className="cp-input" value={editForm.phone} onChange={e => setEditField('phone', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Mãe
-                      <input className="cp-input" value={editForm.nomeMae} onChange={e => setEditField('nomeMae', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Pai
-                      <input className="cp-input" value={editForm.nomePai} onChange={e => setEditField('nomePai', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Cônjuge
-                      <input className="cp-input" value={editForm.nomeConjuge} onChange={e => setEditField('nomeConjuge', e.target.value)} />
-                    </label>
-                  </div>
-
-                  <p className="cp-form-group-title">
-                    Responsável {isMinor(editForm.birthDate) && <span className="cp-form-required-hint">(obrigatório — paciente menor de idade)</span>}
-                  </p>
-                  <div className="cp-form-grid">
-                    <label className="cp-field">Nome do responsável
-                      <input className="cp-input" value={editForm.responsavelNome} onChange={e => setEditField('responsavelNome', e.target.value)} required={isMinor(editForm.birthDate)} />
-                    </label>
-                    <label className="cp-field">Telefone do responsável
-                      <input className="cp-input" value={editForm.responsavelTelefone} onChange={e => setEditField('responsavelTelefone', e.target.value)} required={isMinor(editForm.birthDate)} />
-                    </label>
-                    <label className="cp-field">CPF do responsável
-                      <input className="cp-input" value={editForm.responsavelCpf} onChange={e => setEditField('responsavelCpf', e.target.value)} inputMode="numeric" required={isMinor(editForm.birthDate)} />
-                    </label>
-                  </div>
-
-                  <p className="cp-form-group-title">Convênio</p>
-                  <div className="cp-form-grid">
-                    <label className="cp-field">Nome do convênio
-                      <input className="cp-input" value={editForm.convenioNome} onChange={e => setEditField('convenioNome', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Número da carteirinha
-                      <input className="cp-input" value={editForm.convenioCarteirinha} onChange={e => setEditField('convenioCarteirinha', e.target.value)} />
-                    </label>
-                  </div>
-
-                  <p className="cp-form-group-title">Endereço</p>
-                  <div className="cp-form-grid">
-                    <label className="cp-field">CEP
-                      <input
-                        className="cp-input"
-                        value={editForm.enderecoCep}
-                        onChange={e => setEditField('enderecoCep', formatCep(e.target.value))}
-                        onBlur={handleEditCepBlur}
-                        placeholder="00000-000"
-                        inputMode="numeric"
-                      />
-                    </label>
-                    <label className="cp-field">Logradouro
-                      <input className="cp-input" value={editForm.enderecoLogradouro} onChange={e => setEditField('enderecoLogradouro', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Número
-                      <input className="cp-input" value={editForm.enderecoNumero} onChange={e => setEditField('enderecoNumero', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Complemento
-                      <input className="cp-input" value={editForm.enderecoComplemento} onChange={e => setEditField('enderecoComplemento', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Bairro
-                      <input className="cp-input" value={editForm.enderecoBairro} onChange={e => setEditField('enderecoBairro', e.target.value)} />
-                    </label>
-                    <label className="cp-field">Cidade
-                      <input className="cp-input" value={editForm.enderecoCidade} onChange={e => setEditField('enderecoCidade', e.target.value)} />
-                    </label>
-                    <label className="cp-field">UF
-                      <select className="cp-select" value={editForm.enderecoUf} onChange={e => setEditField('enderecoUf', e.target.value)}>
-                        <option value="">Selecione</option>
-                        {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="cps-actions">
-                    <button type="button" className="cp-btn" onClick={() => setEditing(false)} disabled={saving}>Cancelar</button>
-                    <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar cadastro'}</button>
-                  </div>
-                </form>
-              )}
-            </section>
-
-            <section className="shv-section">
-              <h4>Matrículas por disciplina</h4>
-              {(patient.enrollments || []).length === 0 && <p className="small">Sem matrícula em nenhuma área ainda.</p>}
-              <div className="cp-card-chips">
-                {(patient.enrollments || []).map(enrollment => (
-                  <span
-                    key={enrollment.id || enrollment.discipline}
-                    className={`cp-badge cp-badge-${enrollment.status || 'active'}`}
-                    title={enrollmentStatusLabel(enrollment.status)}
-                  >
-                    {getDiscipline(enrollment.discipline)?.label || enrollment.discipline}
-                  </span>
-                ))}
-              </div>
-            </section>
-
-            <section className="shv-section">
-              <h4>Compartilhamentos ativos</h4>
-              {shares.length === 0 && <p className="small">Nenhum compartilhamento clínico ativo com outro profissional.</p>}
-              <div className="cp-card-chips">
-                {shares.map(share => (
-                  <span key={share.id} className="cp-share-chip">
-                    {getDiscipline(share.from_discipline)?.label} → {shareLabel(share)}
-                  </span>
-                ))}
-              </div>
-            </section>
-
-            <section className="shv-section">
-              <h4>Agendamentos</h4>
-              {appointments.length === 0 && <p className="small">Nenhum agendamento registrado.</p>}
-              {appointments.length > 0 && (
-                <ul className="shv-evolucao-list">
-                  {appointments.map(appt => (
-                    <li key={appt.id}>
-                      <b>{formatDateTime(appt.starts_at)}</b> — {getDiscipline(appt.discipline)?.label || appt.discipline || 'bloqueio'} — {statusLabel(appt.status)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="shv-section">
-              <h4>Evolução</h4>
-              {evolutions.length === 0 && <p className="small">Sem evoluções visíveis para o seu perfil.</p>}
-              {evolutions.length > 0 && (
-                <ul className="shv-evolucao-list">
-                  {evolutions.map(evo => (
-                    <li key={evo.id}>
-                      <b>{formatDateTime(evo.atendimento_em)}</b> — {getDiscipline(evo.discipline)?.label || evo.discipline} ({statusLabel(evo.attendance_status)})
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="shv-section">
-              <div className="pf-section-head">
-                <h4>Anexos</h4>
-                {isClinicAdmin && (
-                  <label className="cp-btn cp-btn--sm pf-upload-btn">
-                    {uploading ? 'Enviando…' : 'Enviar arquivo'}
-                    <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={handleUpload} disabled={uploading} hidden />
-                  </label>
-                )}
-              </div>
-              {attachments.length === 0 && <p className="small">Nenhum anexo enviado ainda.</p>}
-              {attachments.length > 0 && (
-                <ul className="shv-evolucao-list">
-                  {attachments.map(att => (
-                    <li key={att.id}>
-                      <button type="button" className="pf-attachment-link" onClick={() => handleOpenAttachment(att)}>
-                        {att.file_name}
-                      </button>
-                      <span className="small"> — {formatFileSize(att.size_bytes)} — {formatDateTime(att.created_at)}</span>
-                      {isClinicAdmin && (
-                        <button type="button" className="pf-attachment-remove" onClick={() => handleDeleteAttachment(att)} aria-label={`Remover ${att.file_name}`}>×</button>
+                      <Field label="Nome completo (civil)" value={full?.name} />
+                      <Field label="Nome social" value={full?.nome_social} />
+                      <Field label="Data de nascimento" value={formatBirthDate(full?.birth_date)} />
+                      <Field label="Idade" value={formatAge(full)} />
+                      <Field label="Sexo biológico" value={full?.sexo_biologico === 'masculino' ? 'Masculino' : full?.sexo_biologico === 'feminino' ? 'Feminino' : null} />
+                      <Field label="Gênero" value={full?.genero} />
+                      <Field label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
+                      <Field label="Telefone" value={full?.phone} />
+                      <Field label="Mãe" value={full?.nome_mae} />
+                      <Field label="Pai" value={full?.nome_pai} />
+                      <Field label="Cônjuge" value={full?.nome_conjuge} />
+                      {isMinor(full?.birth_date) && (
+                        <>
+                          <Field label="Responsável" value={full?.responsavel_nome} />
+                          <Field label="Telefone do responsável" value={full?.responsavel_telefone} />
+                          <Field label="CPF do responsável" value={full?.responsavel_cpf ? formatCpf(full.responsavel_cpf) : null} />
+                        </>
                       )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      <Field label="Convênio" value={full?.convenio_nome} />
+                      <Field label="Carteirinha" value={full?.convenio_carteirinha} />
+                      <Field label="Endereço" value={enderecoLinha} />
+                      <Field label="Complemento/bairro/cidade" value={[full?.endereco_complemento, enderecoComplementoLinha].filter(Boolean).join(' — ')} />
+                      <Field label="CEP" value={full?.endereco_cep ? formatCep(full.endereco_cep) : null} />
+                    </>
+                  ) : (
+                    <form className="cp-form" onSubmit={handleSaveEdit} style={{ boxShadow: 'none', border: 'none', padding: 0 }}>
+                      <div className="cp-form-grid">
+                        <label className="cp-field">Nome completo (civil)
+                          <input className="cp-input" value={editForm.name} onChange={e => setEditField('name', e.target.value)} required />
+                        </label>
+                        <label className="cp-field">Nome social
+                          <input className="cp-input" value={editForm.nomeSocial} onChange={e => setEditField('nomeSocial', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Data de nascimento
+                          <input className="cp-input" type="date" value={editForm.birthDate} onChange={e => setEditField('birthDate', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Sexo biológico
+                          <select className="cp-select" value={editForm.sexoBiologico} onChange={e => setEditField('sexoBiologico', e.target.value)}>
+                            <option value="">Selecione</option>
+                            <option value="masculino">Masculino</option>
+                            <option value="feminino">Feminino</option>
+                          </select>
+                        </label>
+                        <label className="cp-field">Gênero
+                          <input className="cp-input" value={editForm.genero} onChange={e => setEditField('genero', e.target.value)} />
+                        </label>
+                        <label className="cp-field">CPF
+                          <input className="cp-input" value={editForm.cpf} onChange={e => setEditField('cpf', e.target.value)} inputMode="numeric" required />
+                        </label>
+                        <label className="cp-field">Telefone
+                          <input className="cp-input" value={editForm.phone} onChange={e => setEditField('phone', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Mãe
+                          <input className="cp-input" value={editForm.nomeMae} onChange={e => setEditField('nomeMae', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Pai
+                          <input className="cp-input" value={editForm.nomePai} onChange={e => setEditField('nomePai', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Cônjuge
+                          <input className="cp-input" value={editForm.nomeConjuge} onChange={e => setEditField('nomeConjuge', e.target.value)} />
+                        </label>
+                      </div>
+
+                      <p className="cp-form-group-title">
+                        Responsável {isMinor(editForm.birthDate) && <span className="cp-form-required-hint">(obrigatório — paciente menor de idade)</span>}
+                      </p>
+                      <div className="cp-form-grid">
+                        <label className="cp-field">Nome do responsável
+                          <input className="cp-input" value={editForm.responsavelNome} onChange={e => setEditField('responsavelNome', e.target.value)} required={isMinor(editForm.birthDate)} />
+                        </label>
+                        <label className="cp-field">Telefone do responsável
+                          <input className="cp-input" value={editForm.responsavelTelefone} onChange={e => setEditField('responsavelTelefone', e.target.value)} required={isMinor(editForm.birthDate)} />
+                        </label>
+                        <label className="cp-field">CPF do responsável
+                          <input className="cp-input" value={editForm.responsavelCpf} onChange={e => setEditField('responsavelCpf', e.target.value)} inputMode="numeric" required={isMinor(editForm.birthDate)} />
+                        </label>
+                      </div>
+
+                      <p className="cp-form-group-title">Convênio</p>
+                      <div className="cp-form-grid">
+                        <label className="cp-field">Nome do convênio
+                          <input className="cp-input" value={editForm.convenioNome} onChange={e => setEditField('convenioNome', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Número da carteirinha
+                          <input className="cp-input" value={editForm.convenioCarteirinha} onChange={e => setEditField('convenioCarteirinha', e.target.value)} />
+                        </label>
+                      </div>
+
+                      <p className="cp-form-group-title">Endereço</p>
+                      <div className="cp-form-grid">
+                        <label className="cp-field">CEP
+                          <input
+                            className="cp-input"
+                            value={editForm.enderecoCep}
+                            onChange={e => setEditField('enderecoCep', formatCep(e.target.value))}
+                            onBlur={handleEditCepBlur}
+                            placeholder="00000-000"
+                            inputMode="numeric"
+                          />
+                        </label>
+                        <label className="cp-field">Logradouro
+                          <input className="cp-input" value={editForm.enderecoLogradouro} onChange={e => setEditField('enderecoLogradouro', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Número
+                          <input className="cp-input" value={editForm.enderecoNumero} onChange={e => setEditField('enderecoNumero', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Complemento
+                          <input className="cp-input" value={editForm.enderecoComplemento} onChange={e => setEditField('enderecoComplemento', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Bairro
+                          <input className="cp-input" value={editForm.enderecoBairro} onChange={e => setEditField('enderecoBairro', e.target.value)} />
+                        </label>
+                        <label className="cp-field">Cidade
+                          <input className="cp-input" value={editForm.enderecoCidade} onChange={e => setEditField('enderecoCidade', e.target.value)} />
+                        </label>
+                        <label className="cp-field">UF
+                          <select className="cp-select" value={editForm.enderecoUf} onChange={e => setEditField('enderecoUf', e.target.value)}>
+                            <option value="">Selecione</option>
+                            {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="cps-actions">
+                        <button type="button" className="cp-btn" onClick={() => setEditing(false)} disabled={saving}>Cancelar</button>
+                        <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar cadastro'}</button>
+                      </div>
+                    </form>
+                  )}
+                </section>
+              </div>
             </section>
-          </div>
+
+            {/* ================= MATRÍCULAS & COMPARTILHAMENTO ================= */}
+            <section className="pf-panel" hidden={activeTab !== 'matriculas'}>
+              <div className="shv-sections">
+                <section className="shv-section">
+                  <h4>Quem enxerga este paciente</h4>
+                  <p className="small" style={{ marginTop: -4, marginBottom: 12 }}>
+                    Todas as disciplinas da clínica — não só as matriculadas — para o entendimento ficar completo.
+                  </p>
+                  <div className="pf-discipline-list">
+                    {DISCIPLINES.map(discipline => {
+                      const enrollment = enrollmentByDiscipline.get(discipline.id);
+                      return (
+                        <div key={discipline.id} className={`pf-discipline-row${enrollment ? ' is-active' : ''}`}>
+                          <span className="pf-discipline-check">{enrollment ? '✓' : ''}</span>
+                          <span className="pf-discipline-dot" style={{ background: discipline.color }} />
+                          <span className="pf-discipline-name">{discipline.label}</span>
+                          <span className="pf-discipline-sub">
+                            {enrollment
+                              ? `Matriculado em ${new Date(enrollment.created_at).toLocaleDateString('pt-BR')}`
+                              : 'Sem matrícula — não é atendido nesta área'}
+                          </span>
+                          <span className={`cp-badge${enrollment ? (enrollment.status === 'active' ? '' : ` cp-badge-${enrollment.status}`) : ' cp-badge-off'}`}>
+                            {enrollment ? enrollmentStatusLabel(enrollment.status) : 'Não matriculado'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="shv-section">
+                  <h4>Compartilhamentos ativos</h4>
+                  {shares.length === 0 && <p className="small">Nenhum compartilhamento clínico ativo com outro profissional.</p>}
+                  <div className="cp-card-chips">
+                    {shares.map(share => (
+                      <span key={share.id} className="cp-share-chip">
+                        {getDiscipline(share.from_discipline)?.label} → {shareLabel(share)}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </section>
+
+            {/* ================= AGENDAMENTOS ================= */}
+            <section className="pf-panel" hidden={activeTab !== 'agenda'}>
+              <div className="shv-sections">
+                <section className="shv-section">
+                  <h4>Agendamentos</h4>
+                  {appointments.length === 0 && <p className="small">Nenhum agendamento registrado.</p>}
+                  {appointments.length > 0 && (
+                    <ul className="shv-evolucao-list">
+                      {appointments.map(appt => (
+                        <li key={appt.id}>
+                          <b>{formatDateTime(appt.starts_at)}</b> — {getDiscipline(appt.discipline)?.label || appt.discipline || 'bloqueio'} — {statusLabel(appt.status)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            </section>
+
+            {/* ================= EVOLUÇÃO ================= */}
+            <section className="pf-panel" hidden={activeTab !== 'evolucao'}>
+              <div className="shv-sections">
+                <section className="shv-section">
+                  {hasPending && (
+                    <div className="cp-notice cp-notice-error" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className="pf-pulse-dot" />
+                      <span>
+                        {pendingEvolutions.length === 1 ? '1 atendimento aguardando evolução' : `${pendingEvolutions.length} atendimentos aguardando evolução`}
+                        {' — '}
+                        {getDiscipline(pendingEvolutions[0].discipline)?.label || pendingEvolutions[0].discipline}, {formatDateTime(pendingEvolutions[0].starts_at)}
+                        {pendingEvolutions.length > 1 ? ' e outros.' : '.'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="pf-evo-summary">
+                    <div className="pf-evo-stat"><b>{evolutions.length}</b><span>{evolutions.length === 1 ? 'sessão registrada' : 'sessões registradas'}</span></div>
+                    <div className="pf-evo-stat"><b>{lastEvolutionAt ? shortMonthDay(lastEvolutionAt) : '—'}</b><span>Última sessão</span></div>
+                    <div className="pf-evo-stat"><b>{cycleRemaining}</b><span>Faltam p/ reavaliação de ciclo</span></div>
+                  </div>
+
+                  <div className="pf-evo-cta">
+                    <div>
+                      <h3>Ver evolução completa</h3>
+                      <p>Abre o registro integral do que a profissional escreveu em cada sessão deste paciente — o texto que serve de prova pra fiscalização. Dá pra corrigir, imprimir ou baixar em PDF.</p>
+                    </div>
+                    <button type="button" className="cp-btn" onClick={() => setShowTimeline(true)}>Ver evolução →</button>
+                  </div>
+
+                  <p className="pf-cycle-note">Reavaliação de ciclo sugerida a cada 10 sessões (língua, pulso, hipótese energética e protocolo).</p>
+                </section>
+              </div>
+            </section>
+
+            {/* ================= ANEXOS ================= */}
+            <section className="pf-panel" hidden={activeTab !== 'anexos'}>
+              <div className="shv-sections">
+                <section className="shv-section">
+                  <div className="pf-section-head">
+                    <h4>Anexos</h4>
+                    {isClinicAdmin && (
+                      <label className="cp-btn cp-btn--sm pf-upload-btn">
+                        {uploading ? 'Enviando…' : 'Enviar arquivo'}
+                        <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={handleUpload} disabled={uploading} hidden />
+                      </label>
+                    )}
+                  </div>
+                  {attachments.length === 0 && <p className="small">Nenhum anexo enviado ainda.</p>}
+                  {attachments.length > 0 && (
+                    <ul className="shv-evolucao-list">
+                      {attachments.map(att => (
+                        <li key={att.id}>
+                          <button type="button" className="pf-attachment-link" onClick={() => handleOpenAttachment(att)}>
+                            {att.file_name}
+                          </button>
+                          <span className="small"> — {formatFileSize(att.size_bytes)} — {formatDateTime(att.created_at)}</span>
+                          {isClinicAdmin && (
+                            <button type="button" className="pf-attachment-remove" onClick={() => handleDeleteAttachment(att)} aria-label={`Remover ${att.file_name}`}>×</button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            </section>
+          </>
         )}
       </main>
 

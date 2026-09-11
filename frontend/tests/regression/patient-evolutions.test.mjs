@@ -16,12 +16,17 @@ import { createServer } from 'vite';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ORIGINAL_MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260903_patient_evolutions.sql');
 const ADMIN_ACCESS_MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260911_patient_evolutions_clinic_admin_access.sql');
+const CLINIC_PATIENT_PROFILE_PATH = path.resolve(root, 'src/components/ClinicPatientProfile.jsx');
+const TIMELINE_PATH = path.resolve(root, 'src/components/PatientEvolutionTimeline.jsx');
 
 let server;
 let patientEvolutionService;
 let evolutionHistory;
+let appointmentService;
 let originalSql;
 let adminAccessSql;
+let profileSource;
+let timelineSource;
 
 before(async () => {
   server = await createServer({
@@ -32,9 +37,12 @@ before(async () => {
   });
   patientEvolutionService = await server.ssrLoadModule('/src/services/patientEvolutionService.js');
   evolutionHistory = await server.ssrLoadModule('/src/utils/evolutionHistory.js');
-  [originalSql, adminAccessSql] = await Promise.all([
+  appointmentService = await server.ssrLoadModule('/src/services/appointmentService.js');
+  [originalSql, adminAccessSql, profileSource, timelineSource] = await Promise.all([
     readFile(ORIGINAL_MIGRATION_PATH, 'utf8'),
     readFile(ADMIN_ACCESS_MIGRATION_PATH, 'utf8'),
+    readFile(CLINIC_PATIENT_PROFILE_PATH, 'utf8'),
+    readFile(TIMELINE_PATH, 'utf8'),
   ]);
 });
 
@@ -128,4 +136,77 @@ test('migração de acesso do admin: list_patient_evolutions ganha exceção de 
   // escrita continua restrita a quem atende o paciente.
   assert.ok(!/FUNCTION public\.insert_patient_evolution/.test(adminAccessSql));
   assert.ok(!/FUNCTION public\.update_patient_evolution/.test(adminAccessSql));
+});
+
+// ---------- ficha do paciente: abas, aviso de pendência e linha do tempo ----------
+// Entrega de 11/09/2026: a ficha (ClinicPatientProfile) virou abas em vez de
+// seções empilhadas; "Evolução" deixou de listar registros ali dentro e virou
+// um resumo + atalho pra PatientEvolutionTimeline (tela própria, só deste
+// paciente — o texto que a profissional escreveu, para fiscalização).
+
+function makeAwaitingEvolutionRuntime({ onEq, rows = [] } = {}) {
+  return {
+    getAuthenticatedUser: async () => ({ id: 'u1' }),
+    from: () => {
+      const chain = {
+        select: () => chain,
+        order: () => chain,
+        eq(column, value) { onEq?.(column, value); return chain; },
+        then(resolve) { resolve({ data: rows, error: null }); },
+      };
+      return chain;
+    },
+  };
+}
+
+test('listAppointmentsAwaitingEvolution filtra por paciente quando patientId é informado', async () => {
+  const seen = {};
+  const runtime = makeAwaitingEvolutionRuntime({
+    onEq: (column, value) => { seen[column] = value; },
+    rows: [{ appointment_id: 'ap1', patient_id: 'p1' }],
+  });
+  const list = await appointmentService.listAppointmentsAwaitingEvolution({ patientId: 'p1', runtime });
+  assert.deepEqual(seen, { patient_id: 'p1' });
+  assert.equal(list.length, 1);
+});
+
+test('listAppointmentsAwaitingEvolution sem patientId não filtra (comportamento clínica-inteira preservado)', async () => {
+  let calledEq = false;
+  const runtime = makeAwaitingEvolutionRuntime({ onEq: () => { calledEq = true; } });
+  await appointmentService.listAppointmentsAwaitingEvolution({ runtime });
+  assert.equal(calledEq, false);
+});
+
+test('ficha do paciente: navegação por abas substitui as seções empilhadas', () => {
+  assert.match(profileSource, /className="pf-tabs"/);
+  assert.match(profileSource, /role="tab"/);
+  assert.match(profileSource, /hidden=\{activeTab !== 'cadastro'\}/);
+  assert.match(profileSource, /hidden=\{activeTab !== 'evolucao'\}/);
+});
+
+test('ficha do paciente: matrículas listam TODAS as disciplinas, com check pra quem enxerga', () => {
+  assert.match(profileSource, /DISCIPLINES\.map\(discipline/);
+  assert.match(profileSource, /enrollmentByDiscipline\.get\(discipline\.id\)/);
+  assert.match(profileSource, /Não matriculado/);
+});
+
+test('ficha do paciente: evolução é resumo + atalho, com aviso pulsante quando há pendência', () => {
+  assert.match(profileSource, /listAppointmentsAwaitingEvolution\(\{ patientId: patient\.id \}\)/);
+  assert.match(profileSource, /pf-pulse-dot/);
+  assert.match(profileSource, /setShowTimeline\(true\)/);
+  assert.match(profileSource, /<PatientEvolutionTimeline/);
+  // A lista crua de evoluções não deve mais ser renderizada dentro da ficha.
+  assert.ok(!/evolutions\.map\(evo =>/.test(profileSource));
+});
+
+test('linha do tempo da evolução: só o registro do paciente, sem navegar pra outros', () => {
+  assert.match(timelineSource, /updatePatientEvolution/);
+  assert.match(timelineSource, /listAppointmentsAwaitingEvolution/);
+  assert.match(timelineSource, /Corrigir texto/);
+  assert.match(timelineSource, /Imprimir/);
+  assert.match(timelineSource, /Baixar PDF/);
+  // Mesma infra de papel timbrado dos relatórios/cadastro, nenhuma
+  // biblioteca de PDF nova.
+  assert.match(timelineSource, /from '\.\/report\/reportPrint'/);
+  assert.match(timelineSource, /from '\.\/report\/reportPagination'/);
 });

@@ -807,3 +807,438 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ============================================================
+   Ficha do paciente — abas (ClinicPatientProfile)
+   Cada aba mostra só o que é dela; sem empilhar tudo com scroll.
+   ============================================================ */
+
+.pf-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  margin-bottom: 18px;
+  overflow-x: auto;
+}
+
+.pf-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 15px 11px;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  background: none;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pf-tab:hover {
+  color: var(--r1-text);
+}
+
+.pf-tab[aria-selected='true'] {
+  color: var(--r1-accent-strong);
+  border-bottom-color: var(--r1-accent);
+}
+
+.pf-tab-count {
+  padding: 1px 7px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Bolinha vermelha pulsante — avisa evolução pendente mesmo com a aba
+   fechada. prefers-reduced-motion desliga só a animação, a cor fica. */
+.pf-pulse-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--r1-danger);
+  animation: pf-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-pulse-dot {
+    animation: none;
+  }
+}
+
+@keyframes pf-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--r1-danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--r1-danger) 0%, transparent); }
+}
+
+.pf-panel[hidden] {
+  display: none;
+}
+
+.cp-notice-error .pf-pulse-dot {
+  margin-right: 2px;
+}
+
+/* ---------- matrículas: todas as disciplinas, não só as ativas ---------- */
+
+.pf-discipline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-discipline-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+}
+
+.pf-discipline-row.is-active {
+  border-color: color-mix(in srgb, var(--r1-accent) 35%, transparent);
+  background: var(--r1-accent-wash);
+}
+
+.pf-discipline-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid var(--r1-border-subtle);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pf-discipline-row.is-active .pf-discipline-check {
+  border-color: var(--r1-success);
+  background: var(--r1-success);
+  color: #fff;
+}
+
+.pf-discipline-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.pf-discipline-name {
+  flex-shrink: 0;
+  min-width: 150px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.pf-discipline-sub {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.cp-badge-off {
+  flex-shrink: 0;
+  background: var(--r1-surface-sunken);
+  border-color: var(--r1-border-subtle);
+  color: var(--r1-border);
+}
+
+/* ---------- evolução: resumo + atalho, não mais lista crua ---------- */
+
+.pf-evo-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.pf-evo-stat {
+  padding: 14px 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.pf-evo-stat b {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--r1-text);
+}
+
+.pf-evo-stat span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.pf-evo-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-accent-strong);
+  color: #fff;
+}
+
+.pf-evo-cta h3 {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pf-evo-cta p {
+  margin: 4px 0 0;
+  max-width: 48ch;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.pf-evo-cta .cp-btn {
+  flex-shrink: 0;
+  border-color: #fff;
+  background: #fff;
+  color: var(--r1-accent-strong);
+  font-weight: 700;
+}
+
+.pf-evo-cta .cp-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, #fff 88%, var(--r1-accent));
+}
+
+.pf-cycle-note {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+/* ============================================================
+   Linha do tempo da evolução (PatientEvolutionTimeline)
+   Só o registro deste paciente — o texto que a profissional
+   escreveu, para fiscalização. Editar/imprimir/baixar em PDF.
+   ============================================================ */
+
+.pet-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.pet-topbar h1 {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--r1-text);
+}
+
+.pet-topbar p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--r1-text-muted);
+}
+
+.pet-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pet-list {
+  position: relative;
+  padding-left: 26px;
+}
+
+.pet-list::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--r1-border-subtle);
+}
+
+.pet-item {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.pet-item::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: 20px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--r1-surface);
+  border: 3px solid var(--r1-accent);
+}
+
+.pet-item.is-pending::before {
+  border-color: var(--r1-danger);
+}
+
+.pet-card {
+  padding: 18px 22px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.pet-card.is-pending {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+}
+
+.pet-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pet-when {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--r1-text);
+}
+
+.pet-when span {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--r1-text-muted);
+}
+
+.pet-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pet-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.pet-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.pet-metric {
+  padding: 3px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pet-metric b {
+  color: var(--r1-accent-strong);
+  font-weight: 700;
+}
+
+.pet-body dl {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  gap: 8px 14px;
+  margin: 0;
+}
+
+.pet-body dt {
+  padding-top: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.pet-body dd {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--r1-text);
+  white-space: pre-wrap;
+}
+
+.pet-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.pet-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pet-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pet-edit-field.wide {
+  grid-column: 1 / -1;
+}
+
+.pet-edit-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+@media (max-width: 640px) {
+  .pet-body dl {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-evo-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+}

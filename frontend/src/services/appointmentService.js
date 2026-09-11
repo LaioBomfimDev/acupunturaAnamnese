@@ -572,8 +572,12 @@ function isMissingPendingEvolutionsViewError(error) {
  * filtra por auth.uid(), admin vê a clínica inteira) — ver comentário na
  * migração 20260903 sobre por que isto não pode ser clínica inteira como
  * `patients_awaiting_return`.
+ *
+ * `patientId` filtra pra um paciente só (ficha do paciente/timeline de
+ * evolução) — mesma view, só um `.eq()` a mais; o RLS de quem pode ver o
+ * quê continua todo no banco.
  */
-export async function listAppointmentsAwaitingEvolution({ runtime } = {}) {
+export async function listAppointmentsAwaitingEvolution({ patientId, runtime } = {}) {
   const client = {
     getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
     from: runtime?.from || ((table) => supabase.from(table)),
@@ -601,6 +605,7 @@ export async function listAppointmentsAwaitingEvolution({ runtime } = {}) {
         && ['attended', 'no_show', 'excused'].includes(item.status)
         && (item.professional_id === user.id)
         && !appointmentIdsWithEvolution.has(item.id)
+        && (!patientId || item.patient_id === patientId)
       ))
       .map(item => ({
         appointment_id: item.id,
@@ -615,9 +620,12 @@ export async function listAppointmentsAwaitingEvolution({ runtime } = {}) {
       .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
   }
 
-  const { data, error } = await client.from('appointments_awaiting_evolution')
+  let query = client.from('appointments_awaiting_evolution')
     .select('appointment_id,clinic_id,patient_id,patient_name,professional_id,discipline,starts_at,attendance_status')
     .order('starts_at', { ascending: false });
+  if (patientId) query = query.eq('patient_id', patientId);
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingPendingEvolutionsViewError(error)) throw new Error(PENDING_EVOLUTIONS_VIEW_MIGRATION_HINT);

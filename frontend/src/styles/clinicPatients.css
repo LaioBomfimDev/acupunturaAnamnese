@@ -44,7 +44,20 @@
   border-color: var(--r1-danger-border);
 }
 
+/* ---------- escolha: cadastrar ou ver a lista ---------- */
+
+/* Reaproveita .hub-grid/.hub-card (hub.css) — mesma linguagem visual dos
+   cards de disciplina do Hub, só com 2 opções em vez de N. */
+.cp-mode-grid {
+  max-width: 720px;
+  margin-bottom: 26px;
+}
+
 /* ---------- cadastro de paciente ---------- */
+
+.cp-form-back {
+  margin-bottom: 12px;
+}
 
 .cp-form {
   padding: 18px;
@@ -271,9 +284,14 @@
 
 .cp-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin: 0 0 12px;
+}
+
+.cp-toolbar .cp-search {
+  min-width: 200px;
 }
 
 .cp-search {

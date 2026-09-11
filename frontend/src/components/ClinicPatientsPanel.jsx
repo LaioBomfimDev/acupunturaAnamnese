@@ -14,7 +14,7 @@ import {
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { formatAge } from '../utils/patientUi';
+import { formatAge, formatPatientCount } from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
@@ -47,12 +47,38 @@ const EMPTY_FORM = {
   discipline: 'acupuntura', imageConsent: false,
 };
 
+function CpPersonAddIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M17 8v6M14 11h6" />
+    </svg>
+  );
+}
+
+function CpPeopleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M16 9.5a3 3 0 1 0 0-6" />
+      <path d="M15 14.5c2.8.4 4.8 1.9 5.5 4" />
+    </svg>
+  );
+}
+
 export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) {
   // refreshPatients recarrega a lista que PatientStart.jsx usa dentro de
   // cada disciplina — sem isso, um paciente criado aqui só aparecia lá
   // depois de deslogar/logar de novo (o contexto carrega uma vez só).
   const { refreshPatients } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
+  // Cadastro e lista viviam empilhados numa página só, separados por
+  // scroll — o formulário inteiro (7 grupos de campos) sempre aparecia
+  // primeiro, mesmo pra quem só queria abrir a ficha de alguém já
+  // cadastrado. Agora é uma escolha explícita (redesenho 2026-09-11).
+  const [mode, setMode] = useState(null); // null (escolha) | 'create' | 'list'
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -190,6 +216,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
           : `${patient.name} cadastrado, mas a matrícula inicial não foi criada — matricule pela lista abaixo.`,
       });
       await load();
+      setMode('list');
     } catch (err) {
       setNotice({ type: 'error', text: err.message || 'Não foi possível cadastrar o paciente.' });
     } finally {
@@ -262,7 +289,39 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
           <div className={`cp-notice cp-notice-${notice.type}`}>{notice.text}</div>
         )}
 
+        {mode === null && (
+          <div className="hub-grid cp-mode-grid">
+            <button type="button" className="hub-card hub-card-enabled" onClick={() => setMode('create')}>
+              <span className="hub-card-icon"><CpPersonAddIcon /></span>
+              <span className="hub-card-text">
+                <b>Cadastrar paciente</b>
+                <small>Novo na instituição</small>
+                <span className="hub-card-desc">
+                  Ficha completa: identificação, filiação, responsável, convênio, endereço e matrícula inicial.
+                </span>
+              </span>
+              <span className="hub-card-cta">Cadastrar →</span>
+            </button>
+
+            <button type="button" className="hub-card hub-card-enabled" onClick={() => setMode('list')}>
+              <span className="hub-card-icon"><CpPeopleIcon /></span>
+              <span className="hub-card-text">
+                <b>Ver pacientes cadastrados</b>
+                <small>{loading ? 'Carregando…' : formatPatientCount(patients.length)}</small>
+                <span className="hub-card-desc">
+                  Buscar pelo nome, abrir a ficha, compartilhar com outro profissional ou solicitar exclusão.
+                </span>
+              </span>
+              <span className="hub-card-cta">Ver lista →</span>
+            </button>
+          </div>
+        )}
+
+        {mode === 'create' && (
         <form className="cp-form" onSubmit={handleCreate}>
+          <div className="cp-form-back">
+            <button type="button" className="cp-btn cp-btn--sm" onClick={() => setMode(null)}>← Voltar</button>
+          </div>
           <b className="cp-form-title">Novo paciente</b>
 
           <p className="cp-form-group-title">Identificação</p>
@@ -437,26 +496,33 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
             </button>
           </div>
         </form>
-
-        <div className="cp-toolbar">
-          <input
-            className="cp-search"
-            placeholder="Buscar paciente pelo nome…"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
-          <span className="cp-count">
-            {loading ? 'Carregando…' : `${filtered.length} paciente${filtered.length === 1 ? '' : 's'}`}
-          </span>
-        </div>
-
-        {error && <div className="cp-notice cp-notice-error">{error}</div>}
-
-        {!loading && !error && filtered.length === 0 && (
-          <p className="cp-empty">Nenhum paciente encontrado.</p>
         )}
 
-        <div className="cp-list">
+        {mode === 'list' && (
+        <div className="cp-list-mode">
+          <div className="cp-toolbar">
+            <button type="button" className="cp-btn cp-btn--sm" onClick={() => setMode(null)}>← Voltar</button>
+            <input
+              className="cp-search"
+              placeholder="Buscar paciente pelo nome…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+            <span className="cp-count">
+              {loading ? 'Carregando…' : `${filtered.length} paciente${filtered.length === 1 ? '' : 's'}`}
+            </span>
+            <button type="button" className="cp-btn cp-btn--sm cp-btn--primary" onClick={() => setMode('create')}>
+              + Novo paciente
+            </button>
+          </div>
+
+          {error && <div className="cp-notice cp-notice-error">{error}</div>}
+
+          {!loading && !error && filtered.length === 0 && (
+            <p className="cp-empty">Nenhum paciente encontrado.</p>
+          )}
+
+          <div className="cp-list">
           {filtered.map(patient => {
             const shares = sharesByPatient[patient.id] || [];
             return (
@@ -530,7 +596,9 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
               </div>
             );
           })}
+          </div>
         </div>
+        )}
       </main>
 
       {shareTarget && (

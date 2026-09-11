@@ -1,4 +1,5 @@
 import { buildHubCards } from '../data/disciplines';
+import { InstitutionShortcuts } from './ui/InstitutionShortcuts';
 
 // ============================================================
 // Hub de disciplinas (pós-login)
@@ -122,42 +123,35 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
         {(onOpenAgenda || onOpenClinicPatients || onOpenDocuments || onOpenGestao || onOpenPendingEvolutions) && (
           <>
             <p className="hub-tools-title">Da instituição</p>
-            <div className="hub-tools">
-              {onOpenAgenda && (
-                <button type="button" className="hub-secondary" onClick={onOpenAgenda}>
-                  <b>Agenda →</b>
-                  <span>Calendário de atendimentos, status do dia e aniversários dos pacientes.</span>
-                </button>
-              )}
-
-              {onOpenPendingEvolutions && (
-                <button type="button" className="hub-secondary" onClick={onOpenPendingEvolutions}>
-                  <b>Atendimentos aguardando evolução →</b>
-                  <span>Atendido, faltou ou falta justificada: escreva a evolução sem procurar na agenda.</span>
-                </button>
-              )}
-
-              {onOpenGestao && (
-                <button type="button" className="hub-secondary" onClick={onOpenGestao}>
-                  <b>Gestão →</b>
-                  <span>Relatórios operacionais da clínica: faltosos e o que vier depois.</span>
-                </button>
-              )}
-
-              {onOpenClinicPatients && (
-                <button type="button" className="hub-secondary" onClick={onOpenClinicPatients}>
-                  <b>Pacientes da instituição →</b>
-                  <span>Cadastro central, matrículas por área e envio entre profissionais.</span>
-                </button>
-              )}
-
-              {onOpenDocuments && (
-                <button type="button" className="hub-secondary" onClick={onOpenDocuments}>
-                  <b>Documentos timbrados →</b>
-                  <span>Envie um Word (.docx) e receba o documento no papel timbrado da instituição.</span>
-                </button>
-              )}
-            </div>
+            <InstitutionShortcuts
+              tools={[
+                onOpenAgenda && {
+                  id: 'agenda', icon: 'agenda', primary: true, onClick: onOpenAgenda,
+                  title: 'Agenda',
+                  description: 'Calendário de atendimentos, status do dia e aniversários dos pacientes.',
+                },
+                onOpenPendingEvolutions && {
+                  id: 'evolucao', icon: 'evolucao', primary: true, onClick: onOpenPendingEvolutions,
+                  title: 'Atendimentos aguardando evolução',
+                  description: 'Atendido, faltou ou falta justificada: escreva a evolução sem procurar na agenda.',
+                },
+                onOpenGestao && {
+                  id: 'gestao', icon: 'gestao', onClick: onOpenGestao,
+                  title: 'Gestão',
+                  description: 'Relatórios operacionais da clínica: faltosos e o que vier depois.',
+                },
+                onOpenClinicPatients && {
+                  id: 'pacientes', icon: 'pacientes', onClick: onOpenClinicPatients,
+                  title: 'Pacientes da instituição',
+                  description: 'Cadastro central, matrículas por área e envio entre profissionais.',
+                },
+                onOpenDocuments && {
+                  id: 'documentos', icon: 'documentos', onClick: onOpenDocuments,
+                  title: 'Documentos timbrados',
+                  description: 'Envie um Word (.docx) e receba o documento no papel timbrado da instituição.',
+                },
+              ]}
+            />
           </>
         )}
       </main>

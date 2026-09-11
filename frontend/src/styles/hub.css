@@ -264,15 +264,6 @@
 
 /* ---------- atalhos da instituição ---------- */
 
-/* Eram botões largos empilhados, um por linha, que empurravam a página
-   e deixavam faixa vazia à direita. Em grade eles ocupam a mesma faixa
-   dos cards de área e a tela fecha sem sobra. */
-.hub-tools {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
-  gap: 12px;
-}
-
 .hub-tools-title {
   margin: 0 0 9px;
   font-size: 11px;
@@ -282,41 +273,124 @@
   color: var(--r1-text-muted);
 }
 
-.hub-secondary {
+/* Hierarquia por uso real, não os 5 no mesmo peso (redesenho 2026-09-11,
+   referência "Proposta B"): Agenda e Evolução pendente resolvem uma
+   tarefa do dia a dia e viram cartão maior; Gestão/Pacientes/Documentos
+   são consultados bem mais raro e viram uma linha compacta. */
+.hub-tools-primary {
   display: grid;
-  gap: 3px;
-  width: 100%;
-  padding: 13px 15px;
-  border: 1px solid var(--r1-border-subtle);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hub-tool-primary {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: none;
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-accent);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--r1-shadow-sm);
+  transition: transform var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.hub-tool-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.hub-tool-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.hub-tool-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
   border-radius: var(--r1-radius-md);
+}
+
+.hub-tool-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hub-tool-primary .hub-tool-icon {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.hub-tool-primary-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hub-tool-primary-text b {
+  font-family: var(--r1-font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hub-tool-primary-text span {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.hub-tools-secondary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.hub-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
   background: var(--r1-surface);
   color: var(--r1-text);
   font: inherit;
-  text-align: left;
   cursor: pointer;
   transition: border-color var(--r1-dur-fast) var(--r1-ease),
     background var(--r1-dur-fast) var(--r1-ease);
 }
 
-.hub-secondary:hover {
+.hub-tool-row:hover {
   border-color: var(--r1-accent);
   background: var(--r1-accent-wash);
 }
 
-.hub-secondary:focus-visible {
+.hub-tool-row:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
-.hub-secondary b {
-  font-size: 13.5px;
-  font-weight: 700;
+.hub-tool-row svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--r1-text-subtle);
 }
 
-.hub-secondary span {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--r1-text-muted);
+.hub-tool-row span {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 720px) {

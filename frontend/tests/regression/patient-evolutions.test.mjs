@@ -16,8 +16,13 @@ import { createServer } from 'vite';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ORIGINAL_MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260903_patient_evolutions.sql');
 const ADMIN_ACCESS_MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260911_patient_evolutions_clinic_admin_access.sql');
+const HARDENING_MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260911_patient_evolutions_hardening.sql');
 const CLINIC_PATIENT_PROFILE_PATH = path.resolve(root, 'src/components/ClinicPatientProfile.jsx');
 const TIMELINE_PATH = path.resolve(root, 'src/components/PatientEvolutionTimeline.jsx');
+const EVOLUCAO_PATH = path.resolve(root, 'src/components/panels/Evolucao.jsx');
+const DISCIPLINE_EVOLUCAO_PATH = path.resolve(root, 'src/components/anamnese/DisciplineEvolucao.jsx');
+const PSYCHOLOGY_EVOLUCAO_PATH = path.resolve(root, 'src/components/psychology/PsychologyEvolucao.jsx');
+const PATIENT_EVOLUTION_SERVICE_PATH = path.resolve(root, 'src/services/patientEvolutionService.js');
 
 let server;
 let patientEvolutionService;
@@ -25,8 +30,13 @@ let evolutionHistory;
 let appointmentService;
 let originalSql;
 let adminAccessSql;
+let hardeningSql;
 let profileSource;
 let timelineSource;
+let evolucaoSource;
+let disciplineEvolucaoSource;
+let psychologyEvolucaoSource;
+let serviceSource;
 
 before(async () => {
   server = await createServer({
@@ -38,11 +48,19 @@ before(async () => {
   patientEvolutionService = await server.ssrLoadModule('/src/services/patientEvolutionService.js');
   evolutionHistory = await server.ssrLoadModule('/src/utils/evolutionHistory.js');
   appointmentService = await server.ssrLoadModule('/src/services/appointmentService.js');
-  [originalSql, adminAccessSql, profileSource, timelineSource] = await Promise.all([
+  [
+    originalSql, adminAccessSql, hardeningSql, profileSource, timelineSource,
+    evolucaoSource, disciplineEvolucaoSource, psychologyEvolucaoSource, serviceSource,
+  ] = await Promise.all([
     readFile(ORIGINAL_MIGRATION_PATH, 'utf8'),
     readFile(ADMIN_ACCESS_MIGRATION_PATH, 'utf8'),
+    readFile(HARDENING_MIGRATION_PATH, 'utf8'),
     readFile(CLINIC_PATIENT_PROFILE_PATH, 'utf8'),
     readFile(TIMELINE_PATH, 'utf8'),
+    readFile(EVOLUCAO_PATH, 'utf8'),
+    readFile(DISCIPLINE_EVOLUCAO_PATH, 'utf8'),
+    readFile(PSYCHOLOGY_EVOLUCAO_PATH, 'utf8'),
+    readFile(PATIENT_EVOLUTION_SERVICE_PATH, 'utf8'),
   ]);
 });
 
@@ -209,4 +227,68 @@ test('linha do tempo da evolução: só o registro do paciente, sem navegar pra 
   // biblioteca de PDF nova.
   assert.match(timelineSource, /from '\.\/report\/reportPrint'/);
   assert.match(timelineSource, /from '\.\/report\/reportPagination'/);
+});
+
+// ---------- endurecimento: concorrência, idempotência, CASCADE, compartilhamento ----------
+// 4 lacunas do dossiê de due diligence atacadas juntas em 20260911_patient_
+// evolutions_hardening.sql + patientEvolutionService.js + Evolucao/Discipline
+// Evolucao/PsychologyEvolucao (idempotência no salvar) + PatientEvolutionTimeline
+// (revisão na correção).
+
+test('migração de endurecimento: colunas de revisão/idempotência e índice único', () => {
+  assert.match(hardeningSql, /ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 1/);
+  assert.match(hardeningSql, /ADD COLUMN IF NOT EXISTS idempotency_key UUID/);
+  assert.match(hardeningSql, /CREATE UNIQUE INDEX IF NOT EXISTS idx_patient_evolutions_idempotency/);
+  assert.match(hardeningSql, /ON public\.patient_evolutions\(therapist_id, idempotency_key\)/);
+});
+
+test('migração de endurecimento: FK de paciente deixa de cascatear', () => {
+  assert.match(hardeningSql, /DROP CONSTRAINT patient_evolutions_patient_id_fkey/);
+  assert.match(hardeningSql, /FOREIGN KEY \(patient_id\) REFERENCES public\.patients\(id\) ON DELETE RESTRICT/);
+});
+
+test('migração de endurecimento: insert_patient_evolution reconhece retry pela idempotency_key', () => {
+  assert.match(hardeningSql, /p_idempotency_key UUID DEFAULT NULL/);
+  assert.match(hardeningSql, /pg_advisory_xact_lock/);
+  assert.match(hardeningSql, /patient-evolution-idempotency:/);
+  // Encontrou a chave: devolve o registro existente, não insere de novo.
+  assert.match(hardeningSql, /WHERE pe\.therapist_id = v_uid\s+AND pe\.idempotency_key = p_idempotency_key/);
+});
+
+test('migração de endurecimento: update_patient_evolution exige revisão e derruba o overload de 2 argumentos', () => {
+  assert.match(hardeningSql, /DROP FUNCTION IF EXISTS public\.update_patient_evolution\(UUID, TEXT\);/);
+  assert.match(hardeningSql, /p_expected_revision BIGINT/);
+  assert.match(hardeningSql, /FOR UPDATE/);
+  assert.match(hardeningSql, /Conflito de revisão/);
+  assert.match(hardeningSql, /ERRCODE = '40001'/);
+});
+
+test('migração de endurecimento: list_patient_evolutions ganha leitura por compartilhamento, filtrada por disciplina de origem', () => {
+  assert.match(hardeningSql, /DROP FUNCTION IF EXISTS public\.list_patient_evolutions\(UUID, TEXT\);/);
+  assert.match(hardeningSql, /'evolucao' = ANY\(s\.shared_scopes\)/);
+  assert.match(hardeningSql, /s\.from_discipline = pe\.discipline/);
+  // Dono/admin continua vendo tudo — o filtro por disciplina é só pra
+  // quem entrou via compartilhamento.
+  assert.match(hardeningSql, /v_full_access\s*\n\s*OR EXISTS/);
+});
+
+test('patientEvolutionService: insertPatientEvolution manda idempotency_key, updatePatientEvolution exige revisão', () => {
+  assert.match(serviceSource, /p_idempotency_key: idempotencyKey/);
+  assert.match(serviceSource, /p_expected_revision: expectedRevision/);
+  assert.match(serviceSource, /Revisão esperada é obrigatória para corrigir a evolução/);
+  // Modo local replica as duas regras — não pode mentir sobre o comportamento real.
+  assert.match(serviceSource, /item\.idempotency_key === idempotencyKey/);
+  assert.match(serviceSource, /Conflito de revisão/);
+});
+
+test('formulários de evolução (Acupuntura/genérico/Psicologia) geram idempotency key e só trocam após sucesso', () => {
+  for (const source of [evolucaoSource, disciplineEvolucaoSource, psychologyEvolucaoSource]) {
+    assert.match(source, /createIdempotencyKey/);
+    assert.match(source, /idempotencyKey: idempotencyKeyRef\.current/);
+    assert.match(source, /idempotencyKeyRef\.current = createIdempotencyKey\(\)/);
+  }
+});
+
+test('linha do tempo: corrigir texto manda a revisão lida (compare-and-swap)', () => {
+  assert.match(timelineSource, /updatePatientEvolution\(entry\.id, payload, entry\.revision\)/);
 });

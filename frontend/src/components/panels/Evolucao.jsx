@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { summarizeEvolution, REPORT_AI_DISCLAIMER } from '../../services/reportAiService';
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { summarizeRehabilitation, formatOptionalMetric } from '../../services/rehabilitationService';
 import { insertPatientEvolution } from '../../services/patientEvolutionService';
+import { createIdempotencyKey } from '../../services/clinicalSaveQueue';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toNum(v) {
@@ -127,6 +128,10 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiSummary, setAiSummary] = useState(null);
+  // Mesma chave em toda tentativa de salvar esta sessão — se "Adicionar
+  // sessão" falhar por rede e a profissional clicar de novo, o servidor
+  // reconhece o retry em vez de duplicar. Só troca depois de um sucesso.
+  const idempotencyKeyRef = useRef(createIdempotencyKey());
 
   async function handleSummarize() {
     setAiError(null);
@@ -239,7 +244,9 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
         data: conteudo,
         appointmentId: activeAppointment?.id || null,
         atendimentoEm,
+        idempotencyKey: idempotencyKeyRef.current,
       });
+      idempotencyKeyRef.current = createIdempotencyKey();
       setForm(createEmptyForm());
       setFaltaObs('');
       setAvulsoDateTime(nowForDateTimeLocal());

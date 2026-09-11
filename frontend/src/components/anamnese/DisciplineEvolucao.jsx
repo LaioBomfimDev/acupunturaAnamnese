@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { hasRiskSelected } from '../../data/anamneseKit';
 import { insertPatientEvolution } from '../../services/patientEvolutionService';
+import { createIdempotencyKey } from '../../services/clinicalSaveQueue';
 
 // ============================================================
 // Evolução genérica de disciplina. Mesma mecânica da Psicologia e da
@@ -63,6 +64,9 @@ export function DisciplineEvolucao({
   const [avulsoDateTime, setAvulsoDateTime] = useState(() => nowForDateTimeLocal());
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  // Mesma chave em toda tentativa de salvar esta sessão — retry de rede
+  // depois de "Adicionar sessão" não duplica; só troca após um sucesso.
+  const idempotencyKeyRef = useRef(createIdempotencyKey());
 
   const isLinked = Boolean(activeAppointment);
   const isFalta = isLinked && activeAppointment.attendanceStatus !== 'attended';
@@ -122,7 +126,9 @@ export function DisciplineEvolucao({
         data: conteudo,
         appointmentId: activeAppointment?.id || null,
         atendimentoEm,
+        idempotencyKey: idempotencyKeyRef.current,
       });
+      idempotencyKeyRef.current = createIdempotencyKey();
       setForm(createEmptyForm(config));
       setFaltaObs('');
       setAvulsoDateTime(nowForDateTimeLocal());

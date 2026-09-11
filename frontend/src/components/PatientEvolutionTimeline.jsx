@@ -184,14 +184,16 @@ export function PatientEvolutionTimeline({ patient, therapistProfile, onBack }) 
     setSaveError(null);
     try {
       const payload = { ...entry.conteudo, ...editForm };
-      await updatePatientEvolution(entry.id, payload);
+      const result = await updatePatientEvolution(entry.id, payload, entry.revision);
       setRows(prev => prev.map(row => (row.id === entry.id
-        ? { ...row, conteudo: JSON.stringify(payload) }
+        ? { ...row, conteudo: JSON.stringify(payload), revision: result?.revision ?? row.revision }
         : row)));
       setEditedIds(prev => new Set(prev).add(entry.id));
       setEditingId(null);
       setEditForm(null);
     } catch (err) {
+      // ERRCODE 40001 (conflito de revisão) já vem com mensagem clara da
+      // RPC — "alguém corrigiu antes de você, recarregue e tente de novo".
       setSaveError(err.message || 'Não foi possível corrigir a evolução. Só quem escreveu o registro pode corrigi-lo.');
     } finally {
       setSaving(false);

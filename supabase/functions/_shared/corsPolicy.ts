@@ -1,8 +1,15 @@
+// Portas fixas em .claude/launch.json — várias sessões de dev rodam em
+// paralelo neste projeto, então cada uma pode cair numa porta diferente
+// quando a padrão (5173) já está ocupada por outra sessão.
 export const DEFAULT_LOCAL_CORS_ORIGINS = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:4173',
   'http://127.0.0.1:4173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5182',
+  'http://127.0.0.1:5182',
 ] as const;
 
 export type CorsDecision = {

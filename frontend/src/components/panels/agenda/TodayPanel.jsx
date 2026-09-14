@@ -24,15 +24,17 @@ function QueueCard({
   item,
   tone,
   patientName,
+  patientPending,
   professionalName,
   showProfessional,
   onOpen,
   actions,
 }) {
   const { appointment } = item;
+  const pending = Boolean(patientPending?.(appointment.patient_id));
 
   return (
-    <li className={`agh-card agh-card--${tone}`}>
+    <li className={`agh-card agh-card--${tone}${pending ? ' agh-card--pending' : ''}`}>
       <button type="button" className="agh-open" onClick={() => onOpen(appointment)}>
         <span className="agh-top">
           <span className="agh-hour">{hora(appointment.starts_at)}</span>
@@ -103,6 +105,7 @@ export function TodayPanel({
   isToday,
   dateLabel,
   patientName,
+  patientPending,
   professionalName,
   showProfessional = false,
   saving,
@@ -165,6 +168,7 @@ export function TodayPanel({
                 item={item}
                 tone="waiting"
                 patientName={patientName}
+                patientPending={patientPending}
                 professionalName={professionalName}
                 showProfessional={showProfessional}
                 onOpen={onOpen}
@@ -185,11 +189,17 @@ export function TodayPanel({
                 item={item}
                 tone="late"
                 patientName={patientName}
+                patientPending={patientPending}
                 professionalName={professionalName}
                 showProfessional={showProfessional}
                 onOpen={onOpen}
                 actions={[
-                  { label: 'Chegou', primary: true, disabled: saving, onClick: () => onCheckIn(item.appointment) },
+                  // "Chegou" registra presença FÍSICA na clínica — só faz
+                  // sentido pra quem vai comparecer no endereço. Atendimento
+                  // online não tem sala de espera pra chegar.
+                  ...(item.appointment.modality === 'presencial'
+                    ? [{ label: 'Chegou', primary: true, disabled: saving, onClick: () => onCheckIn(item.appointment) }]
+                    : []),
                   { label: 'Não veio', disabled: saving, onClick: () => onStatus(item.appointment, 'no_show') },
                 ]}
               />
@@ -203,11 +213,14 @@ export function TodayPanel({
                 item={item}
                 tone="next"
                 patientName={patientName}
+                patientPending={patientPending}
                 professionalName={professionalName}
                 showProfessional={showProfessional}
                 onOpen={onOpen}
                 actions={[
-                  { label: 'Chegou', primary: true, disabled: saving, onClick: () => onCheckIn(item.appointment) },
+                  ...(item.appointment.modality === 'presencial'
+                    ? [{ label: 'Chegou', primary: true, disabled: saving, onClick: () => onCheckIn(item.appointment) }]
+                    : []),
                   item.confirmed
                     ? { label: 'Desfazer confirmação', disabled: saving, onClick: () => onConfirm(item.appointment, true) }
                     : { label: 'Confirmou', disabled: saving, onClick: () => onConfirm(item.appointment, false) },

@@ -24,6 +24,7 @@ export function AgendaWeekMobileView({
   onPickSlot,
   onSelectAppointment,
   patientName,
+  patientPending,
   professionalName,
   showProfessional = false,
   movingId = null,
@@ -62,6 +63,7 @@ export function AgendaWeekMobileView({
               onPickSlot={row => onPickSlot(row, day.key)}
               onSelectAppointment={onSelectAppointment}
               patientName={patientName}
+              patientPending={patientPending}
               professionalName={professionalName}
               showProfessional={showProfessional}
               now={now}

@@ -107,6 +107,7 @@ function QuickActions({ appointment, onQuickStatus, onQuickConfirm, onQuickMove 
 function AppointmentCard({
   appointment,
   patientName,
+  isPending,
   professionalName,
   showProfessional,
   isMoving,
@@ -135,9 +136,11 @@ function AppointmentCard({
           isMoving ? 'agd-card--moving' : '',
           isPastItem ? 'agd-card--past' : '',
           isSelected ? 'agd-card--selected' : '',
+          !isBlock && isPending ? 'agd-card--pending' : '',
         ].filter(Boolean).join(' ')}
         style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
         onClick={() => onSelect?.(appointment)}
+        title={!isBlock && isPending ? 'Paciente com pendência marcada na ficha' : undefined}
       >
         {!isBlock && confirmed && (
           <span className="agd-card-confirmed" title="Confirmado">
@@ -202,6 +205,7 @@ export function AgendaDayRows({
   onPickSlot,
   onSelectAppointment,
   patientName,
+  patientPending,
   professionalName,
   showProfessional = false,
   now = null,
@@ -242,6 +246,7 @@ export function AgendaDayRows({
                         key={appointment.id}
                         appointment={appointment}
                         patientName={patientName}
+                        isPending={appointment.kind !== 'block' && patientPending?.(appointment.patient_id)}
                         professionalName={professionalName}
                         showProfessional={showProfessional}
                         isMoving={movingId === appointment.id}

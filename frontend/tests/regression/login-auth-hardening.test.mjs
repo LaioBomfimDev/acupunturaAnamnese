@@ -164,7 +164,7 @@ test('configuração versionada libera JWT só para as functions deliberadamente
   const publicFunctionOverrides = config.match(/verify_jwt\s*=\s*false/g) || [];
 
   // Lista fechada de propósito: cada function aqui é uma superfície sem
-  // autenticação, revisada individualmente. Uma quarta aparecer sem
+  // autenticação, revisada individualmente. Uma quinta aparecer sem
   // passar por este teste é o sinal de alarme que ele existe para dar.
   assert.match(
     config,
@@ -178,7 +178,13 @@ test('configuração versionada libera JWT só para as functions deliberadamente
     config,
     /\[functions\.confirm-appointment\][\s\S]*?verify_jwt\s*=\s*false/,
   );
-  assert.equal(publicFunctionOverrides.length, 3);
+  // Agenda pública (item 10): link somente leitura, sem login — mesmo
+  // desenho de confirm-appointment/satisfaction-survey, revisado aqui.
+  assert.match(
+    config,
+    /\[functions\.public-agenda\][\s\S]*?verify_jwt\s*=\s*false/,
+  );
+  assert.equal(publicFunctionOverrides.length, 4);
 });
 
 test('fonte visual registra somente eventos operacionais sanitizados', async () => {

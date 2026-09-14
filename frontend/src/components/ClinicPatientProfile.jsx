@@ -239,6 +239,25 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     }
   }
 
+  /**
+   * Pendência é um toggle manual — cobrança em aberto, documento
+   * faltante etc. Não é calculada de nenhuma outra tabela, então liga/
+   * desliga direto daqui, sem passar pelo formulário de edição do
+   * cadastro. Reflete na lista de pacientes (selo) e na agenda (barra
+   * lateral amarela no card do atendimento).
+   */
+  async function handleTogglePending() {
+    const next = !full?.has_pending;
+    setNotice(null);
+    try {
+      const updated = await updatePatient(full.id, { hasPending: next });
+      setFull(updated);
+      onPatientUpdated?.(updated);
+    } catch (err) {
+      setNotice({ type: 'error', text: err.message || 'Não foi possível salvar a pendência.' });
+    }
+  }
+
   async function handleUpload(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -426,11 +445,20 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     {full?.birth_date && <span className="pf-meta-chip">Nasc. {formatBirthDate(full.birth_date)}</span>}
                     {full?.phone && <span className="pf-meta-chip">{full.phone}</span>}
                     {full?.cpf && <span className="pf-meta-chip">CPF {formatCpf(full.cpf)}</span>}
+                    {full?.has_pending && <span className="pf-meta-chip pf-meta-chip--pending">Pendência</span>}
                   </div>
                 </div>
               </div>
               {!editing && (
                 <div className="pf-identity-actions">
+                  <button
+                    type="button"
+                    className={`cp-btn cp-btn--sm${full?.has_pending ? ' cp-btn--pending-on' : ''}`}
+                    onClick={handleTogglePending}
+                    title="Cobrança em aberto, documento faltante etc. — marcação manual, some quando você desmarcar"
+                  >
+                    {full?.has_pending ? '✓ Pendência marcada' : 'Marcar pendência'}
+                  </button>
                   <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir</button>
                   <button type="button" className="cp-btn cp-btn--sm" onClick={() => { setActiveTab('cadastro'); startEdit(); }}>Editar cadastro</button>
                 </div>

@@ -30,15 +30,22 @@ import {
  * tem `professionalName()`/`shortName()` — mantém a agregação em
  * utils/gestaoDashboard.js livre de import de service (ver comentário
  * lá sobre `import.meta.env` fora do Vite).
+ *
+ * `discipline` filtra DEPOIS da busca (não é `.eq()` no banco): o
+ * período já traz tudo pro profissional escolhido, e recortar por
+ * disciplina em memória evita uma segunda ida ao Supabase — mesmo
+ * raciocínio de listMissedAppointments/listPatientsAwaitingReturn no
+ * appointmentService.
  */
 export async function loadDashboardMetrics({
   from,
   to,
   professionalId = null,
+  discipline = null,
   patients = [],
   runtime,
 } = {}) {
-  const [appointments, schedules, holidays] = await Promise.all([
+  const [rawAppointments, schedules, holidays] = await Promise.all([
     listAppointments({
       from: new Date(`${from}T00:00:00`).toISOString(),
       to: new Date(`${to}T23:59:59`).toISOString(),
@@ -48,6 +55,10 @@ export async function loadDashboardMetrics({
     listProfessionalSchedules({ professionalId, runtime }),
     listHolidays({ from, to, runtime }),
   ]);
+
+  const appointments = discipline
+    ? rawAppointments.filter(item => item.kind === 'block' || item.discipline === discipline)
+    : rawAppointments;
 
   const countable = appointments.filter(isCountableAppointment);
 

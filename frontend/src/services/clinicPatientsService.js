@@ -41,6 +41,16 @@ function isMissingCpfColumnError(error) {
   return /\bcpf\b/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
 }
 
+// Pendência manual (20260914_patient_pending_flag.sql): mesmo espírito
+// do CPF — sem a migração, a lista continua funcionando, só sem o selo
+// "pendência" e sem a barra amarela na agenda.
+function isMissingPendingColumnError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /has_pending/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
+}
+
 export function assertValidDiscipline(disciplineId) {
   if (!DISCIPLINE_IDS.includes(disciplineId)) {
     throw new Error(`Disciplina inválida: ${disciplineId || '(vazia)'}.`);
@@ -102,10 +112,19 @@ export async function listClinicPatients() {
 
   let { data, error } = await supabase
     .from('patients')
-    .select('id,name,phone,age,birth_date,cpf,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+    .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(2000);
+
+  if (error && isMissingPendingColumnError(error)) {
+    ({ data, error } = await supabase
+      .from('patients')
+      .select('id,name,phone,age,birth_date,cpf,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(2000));
+  }
 
   if (error && isMissingCpfColumnError(error)) {
     ({ data, error } = await supabase

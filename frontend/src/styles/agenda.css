@@ -102,6 +102,27 @@
   background: var(--r1-navy-700);
 }
 
+.ag-btn--danger {
+  border-color: var(--r1-danger-border);
+  color: var(--r1-danger);
+  background: var(--r1-surface);
+}
+
+.ag-btn--danger:hover:not(:disabled) {
+  background: var(--r1-danger-bg);
+  border-color: var(--r1-danger);
+}
+
+/* Ícone dos 3 botões de ação do topo da Agenda (Compartilhar/Horários/
+   Feriados) — classe própria por cima de .ag-btn, nunca .ag-btn direto:
+   ele é usado em dezenas de outros botões do app que não devem mudar. */
+.ag-tool-btn svg {
+  width: 15px;
+  height: 15px;
+  color: var(--r1-accent);
+  flex: 0 0 auto;
+}
+
 /* ---------- grade do mês ---------- */
 
 .ag-cal {
@@ -555,6 +576,27 @@
   font-size: 12px;
 }
 
+/* Avatar de iniciais nos chips da equipe (.ag-team) — escopado porque
+   .ag-chip-btn/.ag-chip-btn--lg também servem outros toggles (ex.: dias
+   da semana da recorrência) que não devem ganhar espaço de avatar. */
+.ag-team .ag-chip-btn--lg {
+  gap: 6px;
+  padding: 3px 12px 3px 3px;
+}
+
+.ag-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--r1-text-on-inverse);
+}
+
 .ag-pill--block {
   background: var(--r1-surface-sunken);
   border: 1px solid var(--r1-border);
@@ -584,6 +626,11 @@
   border-left-color: var(--r1-text-subtle);
   border-style: dashed;
   background: var(--r1-surface-sunken);
+}
+
+/* Mesma faixa âmbar da visão Dia/Semana — ver .agd-card--pending. */
+.ag-item--pending {
+  box-shadow: inset 3px 0 0 0 var(--r1-warning);
 }
 
 .ag-item-exception {
@@ -674,8 +721,67 @@
   min-width: 150px;
 }
 
+/* Ícone à esquerda do select — a borda/fundo migra pro wrapper, o select
+   por dentro fica "nu" (sem repetir borda). Escopado a .ag-filters: os
+   outros <select class="ag-select"> do formulário continuam intocados. */
+.ag-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-field-bg);
+}
+
+.ag-filter-wrap svg {
+  width: 14px;
+  height: 14px;
+  color: var(--r1-text-subtle);
+  flex: 0 0 auto;
+}
+
+.ag-filter-wrap .ag-select {
+  min-width: 130px;
+  border: 0;
+  padding: 8px 0;
+  background: transparent;
+}
+
+.ag-filter-wrap .ag-select:focus-visible {
+  box-shadow: none;
+}
+
+.ag-filter-wrap:focus-within {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
 .ag-seg--views {
   grid-template-columns: repeat(3, minmax(64px, 1fr));
+}
+
+/* Ícone por aba + pílula sólida na cor de destaque quando ativa — canal
+   próprio, não mexe em .ag-seg-btn[aria-pressed] genérico (o mesmo
+   componente serve o toggle Atendimento/Bloqueio e outros, que devem
+   continuar com a pílula branca de hoje). */
+.ag-seg--views .ag-seg-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ag-seg--views .ag-seg-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.ag-seg--views .ag-seg-btn[aria-pressed='true'] {
+  background: var(--r1-accent);
+  color: var(--r1-text-on-inverse);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
 /* ============================================================
@@ -976,6 +1082,12 @@
   text-decoration: line-through;
   text-decoration-color: currentColor;
   text-decoration-thickness: 1px;
+}
+
+/* Pendência manual (item 9): faixa âmbar por DENTRO do border-left de
+   disciplina/status — canal visual separado, não disputa a mesma borda. */
+.agd-card--pending {
+  box-shadow: inset 3px 0 0 0 var(--r1-warning);
 }
 
 /* Horário já passou e ninguém atualizou o status: o esmaecido é o
@@ -1356,6 +1468,11 @@
   box-shadow: 0 0 0 2px var(--r1-warning);
 }
 
+/* Mesma faixa âmbar da visão Dia — ver .agd-card--pending. */
+.agw-item--pending {
+  box-shadow: inset 3px 0 0 0 var(--r1-warning);
+}
+
 /* ============================================================
    Visão Semana — celular (AgendaWeekMobileView.jsx)
 
@@ -1661,6 +1778,11 @@
   border-left-color: var(--r1-text-subtle);
   background: var(--r1-surface-sunken);
   opacity: 0.82;
+}
+
+/* Mesma faixa âmbar da agenda — ver .agd-card--pending. */
+.agh-card--pending {
+  box-shadow: inset 3px 0 0 0 var(--r1-warning);
 }
 
 .agh-open {
@@ -2220,4 +2342,10 @@
   line-height: 1.5;
   white-space: pre-wrap;
   resize: vertical;
+}
+
+.agsh-link-input {
+  font-size: 12.5px;
+  font-family: var(--r1-font-mono, monospace);
+  background: var(--r1-surface-sunken);
 }

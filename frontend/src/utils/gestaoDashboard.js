@@ -177,6 +177,9 @@ export function computeOccupancy({ appointments, schedules, holidays, from, to }
 
 /** Presets do filtro de período do painel de Indicadores. */
 export const DASHBOARD_PERIOD_PRESETS = [
+  { id: 'week', label: 'Esta semana' },
+  { id: 'lastweek', label: 'Semana passada' },
+  { id: 'last4weeks', label: 'Últimas 4 semanas' },
   { id: 'month', label: 'Este mês' },
   { id: 'last30', label: 'Últimos 30 dias' },
   { id: 'last90', label: 'Últimos 90 dias' },
@@ -189,6 +192,23 @@ export function presetToRange(presetId, today = new Date()) {
   let from;
 
   switch (presetId) {
+    // Domingo-a-hoje, mesmo início de semana que o resto da agenda
+    // (WEEKDAY_LABELS, buildWeekStrip) usa em todo o módulo.
+    case 'week': {
+      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+      return { from: toDayKey(start), to };
+    }
+    case 'lastweek': {
+      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() - 7);
+      const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+      return { from: toDayKey(start), to: toDayKey(end) };
+    }
+    case 'last4weeks': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 27);
+      from = toDayKey(start);
+      break;
+    }
     case 'last30': {
       const start = new Date(today);
       start.setDate(start.getDate() - 30);

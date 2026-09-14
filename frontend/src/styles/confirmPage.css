@@ -128,3 +128,56 @@
   font-weight: 700;
   text-align: center;
 }
+
+/* ---------- Agenda pública (PublicAgendaPage.jsx) ---------- */
+
+.pa-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pa-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.pa-item-time {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.pa-item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--r1-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pa-status {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pa-status--neutral { color: var(--r1-text-muted); background: var(--r1-surface); }
+.pa-status--info { color: var(--r1-accent-strong); background: var(--r1-accent-wash); }
+.pa-status--success { color: var(--r1-success); background: color-mix(in srgb, var(--r1-success) 16%, transparent); }
+.pa-status--muted { color: var(--r1-text-subtle); background: var(--r1-surface); }
+.pa-status--danger { color: var(--r1-danger); background: var(--r1-danger-bg); }
+.pa-status--warning { color: var(--r1-warning); background: var(--r1-warning-bg); }

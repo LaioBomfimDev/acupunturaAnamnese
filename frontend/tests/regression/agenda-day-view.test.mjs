@@ -367,6 +367,7 @@ test('a fila mostra atraso e falta sem oferecer ação clínica', async () => {
     kind: 'appointment',
     status: 'scheduled',
     discipline: 'acupuntura',
+    modality: 'presencial',
     patient_id: 'p2',
     professional_id: 'prof-1',
     starts_at: new Date(2026, 7, 12, 9, 30).toISOString(),
@@ -396,4 +397,44 @@ test('a fila mostra atraso e falta sem oferecer ação clínica', async () => {
   assert.match(html, /Não veio/);
   assert.doesNotMatch(html, /Iniciar atendimento/,
     'quem não chegou não tem atendimento para iniciar');
+});
+
+test('"Chegou" só aparece para atendimento presencial — online não tem sala de espera', async () => {
+  const { TodayPanel } = await server.ssrLoadModule('/src/components/panels/agenda/TodayPanel.jsx');
+  const queueUtils = await server.ssrLoadModule('/src/utils/agendaToday.js');
+
+  const agora = new Date(2026, 7, 12, 10, 0);
+  const atrasadoOnline = {
+    id: 'a3',
+    kind: 'appointment',
+    status: 'scheduled',
+    discipline: 'acupuntura',
+    modality: 'online',
+    patient_id: 'p3',
+    professional_id: 'prof-1',
+    starts_at: new Date(2026, 7, 12, 9, 30).toISOString(),
+    ends_at: new Date(2026, 7, 12, 10, 30).toISOString(),
+    checked_in_at: null,
+    confirmed_at: null,
+  };
+
+  const html = renderToStaticMarkup(React.createElement(TodayPanel, {
+    queue: queueUtils.buildTodayQueue({ appointments: [atrasadoOnline], now: agora }),
+    isToday: true,
+    dateLabel: '12 de agosto',
+    patientName: () => 'Carla Dias',
+    professionalName: () => 'você',
+    saving: false,
+    onOpen: () => {},
+    onCheckIn: () => {},
+    onUndoCheckIn: () => {},
+    onConfirm: () => {},
+    onStatus: () => {},
+    onStart: () => {},
+    canStart: () => true,
+  }));
+
+  assert.doesNotMatch(html, /Chegou/,
+    'atendimento online não tem sala de espera pra registrar chegada');
+  assert.match(html, /Não veio/, 'a ação de falta continua disponível independente da modalidade');
 });

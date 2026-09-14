@@ -10,6 +10,7 @@ import './styles/clinicPatients.css'
 import App from './App.jsx'
 import { SurveyPage } from './SurveyPage.jsx'
 import { ConfirmAppointmentPage } from './ConfirmAppointmentPage.jsx'
+import { PublicAgendaPage } from './PublicAgendaPage.jsx'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { AuthProvider } from './hooks/AuthContext'
 import { PatientProvider } from './hooks/PatientContext'
@@ -17,13 +18,14 @@ import { installGlobalErrorTelemetry } from './services/telemetry'
 
 installGlobalErrorTelemetry()
 
-// Pesquisa de satisfação e confirmação de agendamento: links públicos,
-// sem login. Curto-circuita ANTES de montar AuthProvider/PatientProvider
-// — quem abre esses links não tem conta nenhuma no sistema, e não
-// deveria precisar de uma.
+// Pesquisa de satisfação, confirmação de agendamento e agenda pública:
+// links públicos, sem login. Curto-circuita ANTES de montar
+// AuthProvider/PatientProvider — quem abre esses links não tem conta
+// nenhuma no sistema, e não deveria precisar de uma.
 const path = window.location.pathname
 const isPublicSurveyRoute = path === '/pesquisa-satisfacao'
 const isPublicConfirmRoute = path === '/confirmar-agendamento'
+const isPublicAgendaRoute = path === '/agenda-publica'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -31,6 +33,8 @@ createRoot(document.getElementById('root')).render(
       <SurveyPage />
     ) : isPublicConfirmRoute ? (
       <ConfirmAppointmentPage />
+    ) : isPublicAgendaRoute ? (
+      <PublicAgendaPage />
     ) : (
       <AuthProvider>
         <PatientProvider>

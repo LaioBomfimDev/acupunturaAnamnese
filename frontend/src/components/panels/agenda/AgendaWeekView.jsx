@@ -43,6 +43,7 @@ export function AgendaWeekView({
   onPickCell,
   onSelectAppointment,
   patientName,
+  patientPending,
   movingId = null,
   now = null,
 }) {
@@ -121,6 +122,7 @@ export function AgendaWeekView({
                   {row.items.map(appointment => {
                     const isBlock = appointment.kind === 'block';
                     const confirmed = !isBlock && Boolean(appointment.confirmed_at);
+                    const pending = !isBlock && Boolean(patientPending?.(appointment.patient_id));
                     const blockLabel = BLOCK_TYPE_LABEL[appointment.block_type] || BLOCK_TYPE_LABEL.outro;
                     const BlockIcon = BLOCK_TYPE_ICONS[appointment.block_type] || BLOCK_TYPE_ICONS.outro;
                     const disciplineColor = !isBlock ? getDiscipline(appointment.discipline)?.color : null;
@@ -136,12 +138,13 @@ export function AgendaWeekView({
                           movingId === appointment.id ? 'agw-item--moving' : '',
                           isPast(appointment, now) ? 'agw-item--past' : '',
                           confirmed ? 'agw-item--confirmed' : '',
+                          pending ? 'agw-item--pending' : '',
                         ].filter(Boolean).join(' ')}
                         style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
                         onClick={() => onSelectAppointment?.(appointment)}
                         title={isBlock
                           ? `${blockLabel}${appointment.note ? `: ${appointment.note}` : ''}`
-                          : `${patientName(appointment.patient_id)}${appointment.appointment_type === 'intro_interview' ? ' — Entrevista inicial (grátis)' : ''}${appointment.status === 'ready' ? ' — Chegou' : ''}`}
+                          : `${patientName(appointment.patient_id)}${pending ? ' — Pendência marcada' : ''}${appointment.status === 'ready' ? ' — Chegou' : ''}`}
                       >
                         {isBlock
                           ? <BlockIcon className="agw-item-icon" />

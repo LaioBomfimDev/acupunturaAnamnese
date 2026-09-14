@@ -13,3 +13,8 @@ verify_jwt = false
 # pessoal que o paciente abre sem conta nenhuma.
 [functions.confirm-appointment]
 verify_jwt = false
+
+# Agenda pública: link somente leitura gerado pelo botão Compartilhar,
+# aberto sem conta pelo destinatário (WhatsApp, e-mail etc.).
+[functions.public-agenda]
+verify_jwt = false

@@ -36,6 +36,11 @@ import { listHolidays, listProfessionalSchedules } from '../../services/agendaSc
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { getInitials } from '../../utils/patientUi';
+import {
+  IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
+  IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
+} from './agenda/AgendaIcons';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
 import AgendaWeekMobileView from './agenda/AgendaWeekMobileView';
@@ -64,6 +69,23 @@ const VIEWS = [
   { id: 'pendentes', label: 'Pendentes' },
   { id: 'evolucoes-pendentes', label: 'Evolução pendente' },
 ];
+
+// Ícone por visão — separado de VIEWS porque VIEWS também governa lógica
+// (ordem, id) e um componente React ali dentro tornaria isso mais difícil
+// de ler. Mesmo mapeamento de significado usado no preview aprovado.
+const VIEW_ICONS = {
+  hoje: IconToday,
+  dia: IconCalendarDay,
+  semana: IconCalendarWeek,
+  mes: IconCalendarMonth,
+  pendentes: IconHourglass,
+  'evolucoes-pendentes': IconPencilNote,
+};
+
+// Paleta de avatar da equipe: cicla por posição, não por hash do id — só
+// precisa ser estável dentro de uma sessão (a ordem de teamOptions já é
+// estável via sortWithSelfFirst), não sobreviver a reordenação.
+const TEAM_AVATAR_COLORS = ['#33403f', '#2e5578', '#5c3d63', '#7a5a2e', '#46426b', '#7d9291'];
 
 // Pendentes/Evolução pendente têm escopo e filtro próprios (fila de
 // trabalho, não navegação de calendário) — o filtro por disciplina/
@@ -346,6 +368,13 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
 
   function patientPhone(id) {
     return patients.find(item => item.id === id)?.phone || '';
+  }
+
+  // Pendência (item 9): toggle manual na ficha do paciente
+  // (cobrança/documento em aberto). A agenda só lê e destaca — quem
+  // liga/desliga é a ficha (ClinicPatientProfile).
+  function patientPending(id) {
+    return patients.find(item => item.id === id)?.has_pending === true;
   }
 
   function professionalName(id) {
@@ -908,66 +937,82 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
 
         <div className="ag-toolbar">
           <div className="ag-seg ag-seg--views" role="group" aria-label="Visão da agenda">
-            {VIEWS.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                className="ag-seg-btn"
-                data-view={item.id}
-                aria-pressed={view === item.id}
-                onClick={() => { setView(item.id); resetTransient(); }}
-              >
-                {item.label}
-              </button>
-            ))}
+            {VIEWS.map(item => {
+              const ViewIcon = VIEW_ICONS[item.id];
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="ag-seg-btn"
+                  data-view={item.id}
+                  aria-pressed={view === item.id}
+                  onClick={() => { setView(item.id); resetTransient(); }}
+                >
+                  {ViewIcon && <ViewIcon />}
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
 
-          <button type="button" className="ag-btn" onClick={() => setShowShare(true)}>
+          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowShare(true)}>
+            <IconShare />
             Compartilhar
           </button>
-          <button type="button" className="ag-btn" onClick={() => setShowSchedule(true)}>
+          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowSchedule(true)}>
+            <IconClockCalendar />
             Horários de atendimento
           </button>
-          <button type="button" className="ag-btn" onClick={() => setShowHolidays(true)}>
+          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowHolidays(true)}>
+            <IconFlagCalendar />
             Feriados
           </button>
         </div>
 
         {CALENDAR_VIEWS.has(view) && (
           <div className="ag-filters" role="group" aria-label="Filtrar a agenda">
-            <select
-              className="ag-select"
-              value={disciplineFilter}
-              onChange={e => setDisciplineFilter(e.target.value)}
-              aria-label="Filtrar por disciplina"
-            >
-              <option value="">Toda disciplina</option>
-              {DISCIPLINES.map(item => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-            <select
-              className="ag-select"
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              aria-label="Filtrar por status"
-            >
-              <option value="">Todo status</option>
-              {APPOINTMENT_STATUSES.map(item => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-            <select
-              className="ag-select"
-              value={modalityFilter}
-              onChange={e => setModalityFilter(e.target.value)}
-              aria-label="Filtrar por modalidade"
-            >
-              <option value="">Toda modalidade</option>
-              {APPOINTMENT_MODALITIES.map(item => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
+            <label className="ag-filter-wrap">
+              <IconFilterTag />
+              <select
+                className="ag-select"
+                value={disciplineFilter}
+                onChange={e => setDisciplineFilter(e.target.value)}
+                aria-label="Filtrar por disciplina"
+              >
+                <option value="">Toda disciplina</option>
+                {DISCIPLINES.map(item => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="ag-filter-wrap">
+              <IconCheckCircle />
+              <select
+                className="ag-select"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                aria-label="Filtrar por status"
+              >
+                <option value="">Todo status</option>
+                {APPOINTMENT_STATUSES.map(item => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="ag-filter-wrap">
+              <IconToggle />
+              <select
+                className="ag-select"
+                value={modalityFilter}
+                onChange={e => setModalityFilter(e.target.value)}
+                aria-label="Filtrar por modalidade"
+              >
+                <option value="">Toda modalidade</option>
+                {APPOINTMENT_MODALITIES.map(item => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
           </div>
         )}
 
@@ -979,9 +1024,10 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
               aria-pressed={agendaOf === ALL_PROFESSIONALS}
               onClick={() => { setAgendaOf(ALL_PROFESSIONALS); resetTransient(); }}
             >
+              <span className="ag-avatar" style={{ background: 'var(--r1-accent)' }}>EQ</span>
               Toda a equipe
             </button>
-            {teamOptions.map(member => (
+            {teamOptions.map((member, index) => (
               <button
                 key={member.id}
                 type="button"
@@ -989,6 +1035,12 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                 aria-pressed={agendaOf === member.id}
                 onClick={() => { setAgendaOf(member.id); resetTransient(); }}
               >
+                <span
+                  className="ag-avatar"
+                  style={{ background: TEAM_AVATAR_COLORS[index % TEAM_AVATAR_COLORS.length] }}
+                >
+                  {getInitials(member.full_name)}
+                </span>
                 {member.id === profile?.id ? 'Minha agenda' : shortName(member.full_name)}
               </button>
             ))}
@@ -1023,6 +1075,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             isToday={selectedKey === toDayKey(today)}
             dateLabel={selectedDate?.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }) || ''}
             patientName={patientName}
+            patientPending={patientPending}
             professionalName={professionalName}
             showProfessional={showProfessional}
             saving={saving}
@@ -1069,6 +1122,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             onPickSlot={row => pickSlot(row)}
             onSelectAppointment={openAppointment}
             patientName={patientName}
+            patientPending={patientPending}
             professionalName={professionalName}
             showProfessional={showProfessional}
             movingId={moving?.id || null}
@@ -1091,6 +1145,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             onPickSlot={pickSlot}
             onSelectAppointment={openAppointment}
             patientName={patientName}
+            patientPending={patientPending}
             professionalName={professionalName}
             showProfessional={showProfessional}
             movingId={moving?.id || null}
@@ -1109,6 +1164,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             selectedKey={selectedKey}
             onPickCell={pickCell}
             onSelectAppointment={openAppointment}
+            patientPending={patientPending}
             patientName={patientName}
             movingId={moving?.id || null}
             now={now}
@@ -1354,6 +1410,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                           'ag-item',
                           isBlock ? 'ag-item--block' : 'ag-item--filled',
                           isBlock ? '' : `ag-item--${item.status}`,
+                          !isBlock && patientPending(item.patient_id) ? 'ag-item--pending' : '',
                         ].filter(Boolean).join(' ')}
                         style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
                       >
@@ -1802,6 +1859,8 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
         open={showShare}
         onClose={() => setShowShare(false)}
         dateLabel={selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) || ''}
+        dayKey={selectedKey}
+        clinicId={profile?.clinic_id}
         appointments={shareAppointments}
         teamOptions={teamOptions}
         patientName={patientName}

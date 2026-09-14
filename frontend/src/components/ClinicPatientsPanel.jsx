@@ -633,6 +633,11 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
                 </button>
 
                 <div className="cp-card-chips">
+                  {patient.has_pending && (
+                    <span className="cp-badge cp-badge-pending" title="Marcado manualmente na ficha do paciente">
+                      pendência
+                    </span>
+                  )}
                   {(patient.enrollments || []).length === 0 && (
                     <span className="cp-badge cp-badge-warn">sem matrícula</span>
                   )}

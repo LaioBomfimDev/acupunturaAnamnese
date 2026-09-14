@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getStatusLabel } from '../../utils/agenda';
 import { DASHBOARD_PERIOD_PRESETS, presetToRange } from '../../utils/gestaoDashboard';
+import { DISCIPLINES } from '../../data/disciplines';
 import { listMissedAppointments, listPatientsAwaitingReturn } from '../../services/appointmentService';
 import { listClinicMembers, shortName } from '../../services/clinicMembersService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
@@ -240,6 +241,7 @@ export function RelatoriosGestao({ profile }) {
 
   const [dashboardPreset, setDashboardPreset] = useState('month');
   const [dashboardProfessionalId, setDashboardProfessionalId] = useState('');
+  const [dashboardDiscipline, setDashboardDiscipline] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState('');
@@ -262,6 +264,7 @@ export function RelatoriosGestao({ profile }) {
           from,
           to,
           professionalId: dashboardProfessionalId || null,
+          discipline: dashboardDiscipline || null,
           patients: clinicPatients,
         });
         if (cancelled) return;
@@ -278,7 +281,7 @@ export function RelatoriosGestao({ profile }) {
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, dashboardPreset, dashboardProfessionalId]);
+  }, [section, dashboardPreset, dashboardProfessionalId, dashboardDiscipline]);
 
   async function handleGenerateSurvey(e) {
     e.preventDefault();
@@ -664,6 +667,20 @@ export function RelatoriosGestao({ profile }) {
                 </select>
               </div>
             )}
+            <div className="gt-field">
+              <label htmlFor="gt-dash-discipline">Disciplina</label>
+              <select
+                id="gt-dash-discipline"
+                className="gt-select"
+                value={dashboardDiscipline}
+                onChange={e => setDashboardDiscipline(e.target.value)}
+              >
+                <option value="">Toda disciplina</option>
+                {DISCIPLINES.map(item => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {dashboardError && <div className="gt-notice gt-notice-error" role="alert">{dashboardError}</div>}

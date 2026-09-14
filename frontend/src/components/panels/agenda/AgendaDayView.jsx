@@ -29,6 +29,7 @@ export function AgendaDayView({
   onPickSlot,
   onSelectAppointment,
   patientName,
+  patientPending,
   professionalName,
   showProfessional = false,
   movingId = null,
@@ -89,6 +90,7 @@ export function AgendaDayView({
         onPickSlot={onPickSlot}
         onSelectAppointment={onSelectAppointment}
         patientName={patientName}
+        patientPending={patientPending}
         professionalName={professionalName}
         showProfessional={showProfessional}
         now={now}

@@ -696,6 +696,15 @@
   border-color: var(--r1-danger-border);
 }
 
+/* Pendência manual (cobrança, documento etc.) — cor própria (âmbar),
+   separada do vermelho de cp-badge-warn: uma coisa é falta grave de
+   matrícula, outra é um lembrete administrativo. */
+.cp-badge-pending {
+  color: var(--r1-warning);
+  background: var(--r1-warning-bg);
+  border-color: var(--r1-warning-border);
+}
+
 /* ---------- compartilhamentos ativos ---------- */
 
 .cp-card-shares {
@@ -1270,6 +1279,19 @@
   font-size: 12.5px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+.pf-meta-chip--pending {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+  font-weight: 700;
+}
+
+.cp-btn--pending-on {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
 }
 
 .pf-identity-actions {

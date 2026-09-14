@@ -10,6 +10,7 @@ import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 const LOCAL_PATIENTS_KEY = 'acup_local_patients';
 const PATIENT_SELECT_COLUMNS =
   'id,therapist_id,name,phone,birth_date,age,archived_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
+  'has_pending,' +
   'nome_social,nome_mae,nome_pai,nome_conjuge,sexo_biologico,genero,' +
   'responsavel_nome,responsavel_telefone,responsavel_cpf,' +
   'convenio_nome,convenio_carteirinha,' +
@@ -260,6 +261,19 @@ export function assertCanFallbackWithoutCpf(error, normalizedCpf) {
 }
 
 /**
+ * Mesma lógica de assertCanFallbackWithoutCpf: quem tocou o toggle de
+ * pendência precisa saber que não gravou, não descobrir isso porque a
+ * barra amarela nunca aparece na agenda.
+ */
+export function assertCanFallbackWithoutPendingFlag(error, hasPending) {
+  if (!isMissingColumnError(error) || hasPending === undefined) return;
+  throw new Error(
+    'Não foi possível salvar a pendência porque a coluna has_pending não está disponível no banco. ' +
+    'Execute a migration supabase/migrations/20260914_patient_pending_flag.sql antes de marcar pendências.'
+  );
+}
+
+/**
  * Mesmo raciocínio: nome social, filiação, responsável, convênio e
  * endereço preenchidos que somem silenciosamente por falta da migração
  * são piores do que a tela quebrar na hora.
@@ -397,6 +411,7 @@ export async function updatePatient(patientId, updates) {
     if (updates.age !== undefined) patients[idx].age = normalizeAge(updates.age);
     if (updates.archivedAt !== undefined) patients[idx].archived_at = updates.archivedAt;
     if (updates.cpf !== undefined) patients[idx].cpf = normalizedCpf;
+    if (updates.hasPending !== undefined) patients[idx].has_pending = updates.hasPending === true;
     if (updates.imageConsent !== undefined) {
       const consentGiven = updates.imageConsent === true;
       patients[idx].image_consent = consentGiven;
@@ -414,6 +429,7 @@ export async function updatePatient(patientId, updates) {
   if (updates.age !== undefined) payload.age = normalizeAge(updates.age);
   if (updates.archivedAt !== undefined) payload.archived_at = updates.archivedAt;
   if (updates.cpf !== undefined) payload.cpf = normalizedCpf;
+  if (updates.hasPending !== undefined) payload.has_pending = updates.hasPending === true;
   if (updates.imageConsent !== undefined) {
     const consentGiven = updates.imageConsent === true;
     payload.image_consent = consentGiven;
@@ -434,6 +450,7 @@ export async function updatePatient(patientId, updates) {
     assertCanFallbackWithoutPatientAge(error, updates.age);
     assertCanFallbackWithoutImageConsent(error, updates.imageConsent);
     assertCanFallbackWithoutCpf(error, normalizedCpf);
+    assertCanFallbackWithoutPendingFlag(error, updates.hasPending);
     assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const fallbackPayload = { ...payload };
     delete fallbackPayload.age;
@@ -441,6 +458,7 @@ export async function updatePatient(patientId, updates) {
     delete fallbackPayload.image_consent;
     delete fallbackPayload.image_consent_at;
     delete fallbackPayload.cpf;
+    delete fallbackPayload.has_pending;
     for (const column of Object.values(REGISTRATION_FIELD_TO_COLUMN)) delete fallbackPayload[column];
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')

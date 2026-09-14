@@ -197,8 +197,10 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   async function handleSaveEdit(event) {
     event.preventDefault();
     if (!editForm.name.trim()) return;
-    if (!isValidCpf(editForm.cpf)) {
-      setNotice({ type: 'error', text: 'Informe um CPF válido.' });
+    // CPF é opcional — só recusa quando algo foi digitado e está errado
+    // (mesma regra do cadastro; ver ClinicPatientsPanel.handleCreate).
+    if (editForm.cpf.trim() && !isValidCpf(editForm.cpf)) {
+      setNotice({ type: 'error', text: 'CPF inválido. Confira os números digitados ou deixe o campo em branco.' });
       return;
     }
     setSaving(true);
@@ -545,7 +547,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                           <input className="cp-input" value={editForm.genero} onChange={e => setEditField('genero', e.target.value)} />
                         </label>
                         <label className="cp-field">CPF
-                          <input className="cp-input" value={editForm.cpf} onChange={e => setEditField('cpf', e.target.value)} inputMode="numeric" required />
+                          <input className="cp-input" value={editForm.cpf} onChange={e => setEditField('cpf', e.target.value)} inputMode="numeric" />
                         </label>
                         <label className="cp-field">Telefone
                           <input className="cp-input" value={editForm.phone} onChange={e => setEditField('phone', e.target.value)} />

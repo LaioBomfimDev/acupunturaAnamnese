@@ -230,8 +230,11 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
   async function handleCreate(event) {
     event.preventDefault();
     if (!form.name.trim()) return;
-    if (!isValidCpf(form.cpf)) {
-      setNotice({ type: 'error', text: 'Informe um CPF válido para cadastrar o paciente da instituição.' });
+    // CPF é opcional no cadastro — documento nem sempre está em mãos na
+    // hora de marcar. Só recusa quando ALGO foi digitado e está errado;
+    // silenciar um dígito errado seria pior do que não ter CPF nenhum.
+    if (form.cpf.trim() && !isValidCpf(form.cpf)) {
+      setNotice({ type: 'error', text: 'CPF inválido. Confira os números digitados ou deixe o campo em branco.' });
       return;
     }
 
@@ -414,14 +417,13 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
                 <input className="cp-input" value={form.genero} onChange={e => setField('genero', e.target.value)} />
               </label>
               <label className="cp-field">
-                CPF <span className="cp-required-mark">*</span>
+                CPF
                 <input
                   className="cp-input"
                   value={form.cpf}
                   onChange={e => setField('cpf', e.target.value)}
                   placeholder="000.000.000-00"
                   inputMode="numeric"
-                  required
                 />
               </label>
               <label className="cp-field">

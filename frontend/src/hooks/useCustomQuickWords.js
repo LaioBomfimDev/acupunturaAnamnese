@@ -30,16 +30,29 @@ export function useCustomQuickWords(discipline) {
     return [...staticWords, ...custom.filter(word => !staticWords.includes(word))];
   }, [byField]);
 
+  // Só entra na lista (e portanto só vira chip visível) depois que o
+  // Supabase confirma a gravação — antes disso o texto parecia salvo
+  // (atualização otimista) mas sumia no primeiro recarregamento sempre
+  // que o insert falhava (ex.: sessão sem clínica), sem nenhum aviso,
+  // porque o erro só ia pro console. Retorna a promise pro chamador
+  // (QuickWordChips) poder mostrar o erro na hora.
   const addWord = useCallback((fieldId, word) => {
     const trimmed = String(word || '').trim();
-    if (!trimmed) return;
-    setByField(prev => {
-      const list = prev[fieldId] || [];
-      return list.includes(trimmed) ? prev : { ...prev, [fieldId]: [...list, trimmed] };
-    });
-    addCustomQuickWord(discipline, fieldId, trimmed)
-      .catch(err => console.error('Erro ao salvar atalho de texto:', err));
-  }, [discipline]);
+    if (!trimmed) return Promise.resolve();
+    if ((byField[fieldId] || []).includes(trimmed)) return Promise.resolve();
+
+    return addCustomQuickWord(discipline, fieldId, trimmed)
+      .then(() => {
+        setByField(prev => {
+          const list = prev[fieldId] || [];
+          return list.includes(trimmed) ? prev : { ...prev, [fieldId]: [...list, trimmed] };
+        });
+      })
+      .catch(err => {
+        console.error('Erro ao salvar atalho de texto:', err);
+        throw err;
+      });
+  }, [discipline, byField]);
 
   return { mergeWords, addWord };
 }

@@ -8801,6 +8801,13 @@ textarea { min-height: 95px; resize: vertical; }
   width: 120px;
 }
 
+.quick-word-chip-error {
+  display: block;
+  font-size: 11px;
+  color: #b3261e;
+  margin: -8px 0 12px;
+}
+
 .psi-field {
   margin-bottom: 4px;
 }

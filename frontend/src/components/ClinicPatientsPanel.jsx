@@ -14,7 +14,7 @@ import {
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { formatAge, formatPatientCount } from '../utils/patientUi';
+import { formatAge, formatPatientCount, getInitials } from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
@@ -65,6 +65,56 @@ function CpPeopleIcon() {
       <path d="M16 9.5a3 3 0 1 0 0-6" />
       <path d="M15 14.5c2.8.4 4.8 1.9 5.5 4" />
     </svg>
+  );
+}
+
+function CpBackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 5 8 12l7 7" />
+    </svg>
+  );
+}
+
+function CpSearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
+
+// Um glifo por seção do formulário — mesma ideia visual do
+// hub-card-icon, só que em miniatura, pra guiar o olho pelas 6
+// seções sem precisar ler cada título por extenso.
+const CP_SECTION_GLYPHS = {
+  id: <><circle cx="12" cy="8" r="3.3" /><path d="M5 20.5a7 7 0 0 1 14 0" /></>,
+  family: <><circle cx="8" cy="9" r="2.8" /><circle cx="16" cy="9" r="2.8" /><path d="M2.6 19.5a5.4 5.4 0 0 1 10.8 0M10.6 19.5a5.4 5.4 0 0 1 10.8 0" /></>,
+  guardian: <><path d="M12 3.2 19 6v5.2c0 4.7-3 8.2-7 9.6-4-1.4-7-4.9-7-9.6V6Z" /><path d="m9 12.2 2 2 4.2-4.2" /></>,
+  insurance: <><rect x="3" y="6" width="18" height="13" rx="2.2" /><path d="M3 10.2h18" /><path d="M6.8 15h4" /></>,
+  address: <><path d="M12 21s7-6.4 7-11.6A7 7 0 0 0 5 9.4C5 14.6 12 21 12 21Z" /><circle cx="12" cy="9.4" r="2.3" /></>,
+  care: <><rect x="3" y="5" width="18" height="16" rx="2.2" /><path d="M3 10h18M8 3v4M16 3v4" /><path d="m8.3 15.3 2 2 4.7-4.7" /></>,
+};
+
+function CpSectionIcon({ type }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {CP_SECTION_GLYPHS[type]}
+    </svg>
+  );
+}
+
+function CpFormSection({ icon, title, hint, children }) {
+  return (
+    <div className="cp-section">
+      <div className="cp-section-head">
+        <span className="cp-section-icon"><CpSectionIcon type={icon} /></span>
+        <p className="cp-form-group-title">{title}</p>
+        {hint}
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -138,6 +188,13 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
     if (!term) return patients;
     return patients.filter(patient => (patient.name || '').toLowerCase().includes(term));
   }, [patients, query]);
+
+  // Só pra sinalizar no card "Ver lista" — cadastro sem matrícula fica
+  // sem área nenhuma até alguém entrar e matricular pela ficha.
+  const pendingEnrollCount = useMemo(
+    () => patients.filter(patient => (patient.enrollments || []).length === 0).length,
+    [patients],
+  );
 
   function setField(field, value) {
     setForm(f => ({ ...f, [field]: value }));
@@ -272,6 +329,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
     <div className="hub-screen">
       <header className="hub-topbar">
         <div className="hub-brand">
+          <span className="hub-wordmark">Vitalis</span>
           <h1>{clinicName}</h1>
           <p>Pacientes da instituição</p>
         </div>
@@ -279,10 +337,11 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
       </header>
 
       <main className="hub-body clinic-patients">
+        <p className="hub-greeting">Cadastro central</p>
         <h2>Pacientes da instituição</h2>
         <p className="hub-note">
-          Cadastro central: o paciente é um só e entra em cada área por matrícula. Enviar para outro
-          profissional compartilha só o que você escolher, com confirmação de senha, e pode ser revogado.
+          O paciente é um só e entra em cada área por matrícula. Enviar para outro profissional
+          compartilha só o que você escolher, com confirmação de senha, e pode ser revogado.
         </p>
 
         {notice && (
@@ -290,199 +349,211 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
         )}
 
         {mode === null && (
-          <div className="hub-grid cp-mode-grid">
-            <button type="button" className="hub-card hub-card-enabled" onClick={() => setMode('create')}>
-              <span className="hub-card-icon"><CpPersonAddIcon /></span>
-              <span className="hub-card-text">
-                <b>Cadastrar paciente</b>
-                <small>Novo na instituição</small>
-                <span className="hub-card-desc">
-                  Ficha completa: identificação, filiação, responsável, convênio, endereço e matrícula inicial.
-                </span>
+          <div className="hub-grid cp-choice-grid">
+            <button type="button" className="hub-card hub-card-enabled cp-choice-card" onClick={() => setMode('create')}>
+              <span className="cp-choice-icon"><CpPersonAddIcon /></span>
+              <span className="cp-choice-label">Novo na instituição</span>
+              <b className="cp-choice-title">Cadastrar paciente</b>
+              <span className="hub-card-desc">
+                Ficha completa: identificação, filiação, responsável, convênio, endereço e matrícula inicial.
               </span>
-              <span className="hub-card-cta">Cadastrar →</span>
+              <span className="cp-choice-cta">Cadastrar<CpBackIcon /></span>
             </button>
 
-            <button type="button" className="hub-card hub-card-enabled" onClick={() => setMode('list')}>
-              <span className="hub-card-icon"><CpPeopleIcon /></span>
-              <span className="hub-card-text">
-                <b>Ver pacientes cadastrados</b>
-                <small>{loading ? 'Carregando…' : formatPatientCount(patients.length)}</small>
-                <span className="hub-card-desc">
-                  Buscar pelo nome, abrir a ficha, compartilhar com outro profissional ou solicitar exclusão.
-                </span>
+            <button type="button" className="hub-card hub-card-enabled cp-choice-card" onClick={() => setMode('list')}>
+              {!loading && pendingEnrollCount > 0 && (
+                <span className="hub-card-badge cp-choice-badge">{pendingEnrollCount} sem matrícula</span>
+              )}
+              <span className="cp-choice-icon"><CpPeopleIcon /></span>
+              <span className="cp-choice-label">{loading ? 'Carregando…' : formatPatientCount(patients.length)}</span>
+              <b className="cp-choice-title">Ver pacientes cadastrados</b>
+              <span className="hub-card-desc">
+                Buscar pelo nome, abrir a ficha, compartilhar com outro profissional ou solicitar exclusão.
               </span>
-              <span className="hub-card-cta">Ver lista →</span>
+              <span className="cp-choice-cta">Ver lista<CpBackIcon /></span>
             </button>
           </div>
         )}
 
         {mode === 'create' && (
         <form className="cp-form" onSubmit={handleCreate}>
-          <div className="cp-form-back">
-            <button type="button" className="cp-btn cp-btn--sm" onClick={() => setMode(null)}>← Voltar</button>
-          </div>
-          <b className="cp-form-title">Novo paciente</b>
-
-          <p className="cp-form-group-title">Identificação</p>
-          <div className="cp-form-grid">
-            <label className="cp-field">
-              Nome completo (civil)
-              <input className="cp-input" value={form.name} onChange={e => setField('name', e.target.value)} required />
-            </label>
-            <label className="cp-field">
-              Nome social
-              <input className="cp-input" value={form.nomeSocial} onChange={e => setField('nomeSocial', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Data de nascimento
-              <input className="cp-input" type="date" value={form.birthDate} onChange={e => setField('birthDate', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Sexo biológico
-              <select className="cp-select" value={form.sexoBiologico} onChange={e => setField('sexoBiologico', e.target.value)}>
-                <option value="">Selecione</option>
-                <option value="masculino">Masculino</option>
-                <option value="feminino">Feminino</option>
-              </select>
-            </label>
-            <label className="cp-field">
-              Gênero
-              <input className="cp-input" value={form.genero} onChange={e => setField('genero', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              CPF
-              <input
-                className="cp-input"
-                value={form.cpf}
-                onChange={e => setField('cpf', e.target.value)}
-                placeholder="000.000.000-00"
-                inputMode="numeric"
-                required
-              />
-            </label>
-            <label className="cp-field">
-              Telefone
-              <input className="cp-input" value={form.phone} onChange={e => setField('phone', e.target.value)} />
-            </label>
+          <div className="cp-form-header">
+            <button type="button" className="cp-icon-btn" onClick={() => setMode(null)} aria-label="Voltar">
+              <CpBackIcon />
+            </button>
+            <div>
+              <b className="cp-form-title">Novo paciente</b>
+              <p className="cp-form-subtitle">Ficha completa da instituição — campos com <span className="cp-required-mark">*</span> são obrigatórios.</p>
+            </div>
           </div>
 
-          <p className="cp-form-group-title">Filiação</p>
-          <div className="cp-form-grid">
-            <label className="cp-field">
-              Mãe
-              <input className="cp-input" value={form.nomeMae} onChange={e => setField('nomeMae', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Pai
-              <input className="cp-input" value={form.nomePai} onChange={e => setField('nomePai', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Cônjuge
-              <input className="cp-input" value={form.nomeConjuge} onChange={e => setField('nomeConjuge', e.target.value)} />
-            </label>
-          </div>
+          <CpFormSection icon="id" title="Identificação">
+            <div className="cp-form-grid">
+              <label className="cp-field">
+                Nome completo (civil) <span className="cp-required-mark">*</span>
+                <input className="cp-input" value={form.name} onChange={e => setField('name', e.target.value)} required />
+              </label>
+              <label className="cp-field">
+                Nome social
+                <input className="cp-input" value={form.nomeSocial} onChange={e => setField('nomeSocial', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Data de nascimento
+                <input className="cp-input" type="date" value={form.birthDate} onChange={e => setField('birthDate', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Sexo biológico
+                <select className="cp-select" value={form.sexoBiologico} onChange={e => setField('sexoBiologico', e.target.value)}>
+                  <option value="">Selecione</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="feminino">Feminino</option>
+                </select>
+              </label>
+              <label className="cp-field">
+                Gênero
+                <input className="cp-input" value={form.genero} onChange={e => setField('genero', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                CPF <span className="cp-required-mark">*</span>
+                <input
+                  className="cp-input"
+                  value={form.cpf}
+                  onChange={e => setField('cpf', e.target.value)}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  required
+                />
+              </label>
+              <label className="cp-field">
+                Telefone
+                <input className="cp-input" value={form.phone} onChange={e => setField('phone', e.target.value)} />
+              </label>
+            </div>
+          </CpFormSection>
 
-          <p className="cp-form-group-title">
-            Responsável {responsavelRequired && <span className="cp-form-required-hint">(obrigatório — paciente menor de idade)</span>}
-          </p>
-          <div className="cp-form-grid">
-            <label className="cp-field">
-              Nome do responsável
-              <input
-                className="cp-input"
-                value={form.responsavelNome}
-                onChange={e => setField('responsavelNome', e.target.value)}
-                required={responsavelRequired}
-              />
-            </label>
-            <label className="cp-field">
-              Telefone do responsável
-              <input
-                className="cp-input"
-                value={form.responsavelTelefone}
-                onChange={e => setField('responsavelTelefone', e.target.value)}
-                required={responsavelRequired}
-              />
-            </label>
-            <label className="cp-field">
-              CPF do responsável
-              <input
-                className="cp-input"
-                value={form.responsavelCpf}
-                onChange={e => setField('responsavelCpf', e.target.value)}
-                inputMode="numeric"
-                required={responsavelRequired}
-              />
-            </label>
-          </div>
+          <CpFormSection icon="family" title="Filiação">
+            <div className="cp-form-grid">
+              <label className="cp-field">
+                Mãe
+                <input className="cp-input" value={form.nomeMae} onChange={e => setField('nomeMae', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Pai
+                <input className="cp-input" value={form.nomePai} onChange={e => setField('nomePai', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Cônjuge
+                <input className="cp-input" value={form.nomeConjuge} onChange={e => setField('nomeConjuge', e.target.value)} />
+              </label>
+            </div>
+          </CpFormSection>
 
-          <p className="cp-form-group-title">Convênio (se tiver)</p>
-          <div className="cp-form-grid">
-            <label className="cp-field">
-              Nome do convênio
-              <input className="cp-input" value={form.convenioNome} onChange={e => setField('convenioNome', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Número da carteirinha
-              <input className="cp-input" value={form.convenioCarteirinha} onChange={e => setField('convenioCarteirinha', e.target.value)} />
-            </label>
-          </div>
+          <CpFormSection
+            icon="guardian"
+            title="Responsável"
+            hint={responsavelRequired && <span className="cp-form-required-hint">obrigatório — paciente menor de idade</span>}
+          >
+            <div className="cp-form-grid">
+              <label className="cp-field">
+                Nome do responsável {responsavelRequired && <span className="cp-required-mark">*</span>}
+                <input
+                  className="cp-input"
+                  value={form.responsavelNome}
+                  onChange={e => setField('responsavelNome', e.target.value)}
+                  required={responsavelRequired}
+                />
+              </label>
+              <label className="cp-field">
+                Telefone do responsável {responsavelRequired && <span className="cp-required-mark">*</span>}
+                <input
+                  className="cp-input"
+                  value={form.responsavelTelefone}
+                  onChange={e => setField('responsavelTelefone', e.target.value)}
+                  required={responsavelRequired}
+                />
+              </label>
+              <label className="cp-field">
+                CPF do responsável {responsavelRequired && <span className="cp-required-mark">*</span>}
+                <input
+                  className="cp-input"
+                  value={form.responsavelCpf}
+                  onChange={e => setField('responsavelCpf', e.target.value)}
+                  inputMode="numeric"
+                  required={responsavelRequired}
+                />
+              </label>
+            </div>
+          </CpFormSection>
 
-          <p className="cp-form-group-title">Endereço</p>
-          <div className="cp-form-grid">
-            <label className="cp-field">
-              CEP
-              <input
-                className="cp-input"
-                value={form.enderecoCep}
-                onChange={e => setField('enderecoCep', formatCep(e.target.value))}
-                onBlur={handleCepBlur}
-                placeholder="00000-000"
-                inputMode="numeric"
-              />
-            </label>
-            <label className="cp-field">
-              Logradouro
-              <input className="cp-input" value={form.enderecoLogradouro} onChange={e => setField('enderecoLogradouro', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Número
-              <input className="cp-input" value={form.enderecoNumero} onChange={e => setField('enderecoNumero', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Complemento
-              <input className="cp-input" value={form.enderecoComplemento} onChange={e => setField('enderecoComplemento', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Bairro
-              <input className="cp-input" value={form.enderecoBairro} onChange={e => setField('enderecoBairro', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              Cidade
-              <input className="cp-input" value={form.enderecoCidade} onChange={e => setField('enderecoCidade', e.target.value)} />
-            </label>
-            <label className="cp-field">
-              UF
-              <select className="cp-select" value={form.enderecoUf} onChange={e => setField('enderecoUf', e.target.value)}>
-                <option value="">Selecione</option>
-                {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
-              </select>
-            </label>
-          </div>
-          {cepLoading && <p className="cp-cep-hint">Consultando CEP…</p>}
-          {cepNotice && <p className="cp-cep-hint">{cepNotice}</p>}
+          <CpFormSection icon="insurance" title="Convênio (se tiver)">
+            <div className="cp-form-grid">
+              <label className="cp-field">
+                Nome do convênio
+                <input className="cp-input" value={form.convenioNome} onChange={e => setField('convenioNome', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Número da carteirinha
+                <input className="cp-input" value={form.convenioCarteirinha} onChange={e => setField('convenioCarteirinha', e.target.value)} />
+              </label>
+            </div>
+          </CpFormSection>
 
-          <p className="cp-form-group-title">Atendimento</p>
-          <div className="cp-form-grid">
-            <label className="cp-field">
-              Área inicial
-              <select className="cp-select" value={form.discipline} onChange={e => setField('discipline', e.target.value)}>
-                {DISCIPLINES.map(d => (
-                  <option key={d.id} value={d.id}>{d.label}</option>
-                ))}
-              </select>
-            </label>
+          <CpFormSection icon="address" title="Endereço">
+            <div className="cp-form-grid">
+              <label className="cp-field">
+                CEP
+                <input
+                  className="cp-input"
+                  value={form.enderecoCep}
+                  onChange={e => setField('enderecoCep', formatCep(e.target.value))}
+                  onBlur={handleCepBlur}
+                  placeholder="00000-000"
+                  inputMode="numeric"
+                />
+              </label>
+              <label className="cp-field">
+                Logradouro
+                <input className="cp-input" value={form.enderecoLogradouro} onChange={e => setField('enderecoLogradouro', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Número
+                <input className="cp-input" value={form.enderecoNumero} onChange={e => setField('enderecoNumero', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Complemento
+                <input className="cp-input" value={form.enderecoComplemento} onChange={e => setField('enderecoComplemento', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Bairro
+                <input className="cp-input" value={form.enderecoBairro} onChange={e => setField('enderecoBairro', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                Cidade
+                <input className="cp-input" value={form.enderecoCidade} onChange={e => setField('enderecoCidade', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                UF
+                <select className="cp-select" value={form.enderecoUf} onChange={e => setField('enderecoUf', e.target.value)}>
+                  <option value="">Selecione</option>
+                  {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                </select>
+              </label>
+            </div>
+            {cepLoading && <p className="cp-cep-hint">Consultando CEP…</p>}
+            {cepNotice && <p className="cp-cep-hint">{cepNotice}</p>}
+          </CpFormSection>
+
+          <CpFormSection icon="care" title="Atendimento">
+            <div className="cp-form-grid">
+              <label className="cp-field">
+                Área inicial
+                <select className="cp-select" value={form.discipline} onChange={e => setField('discipline', e.target.value)}>
+                  {DISCIPLINES.map(d => (
+                    <option key={d.id} value={d.id}>{d.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <label className="cp-consent">
               <input
                 type="checkbox"
@@ -491,9 +562,18 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
               />
               <span>Autorizo o uso de imagem do paciente para fins clínicos/educacionais.</span>
             </label>
-            <button className="cp-btn cp-btn--primary" type="submit" disabled={saving}>
-              {saving ? 'Cadastrando…' : 'Cadastrar paciente'}
-            </button>
+          </CpFormSection>
+
+          <div className="cp-form-footer">
+            <span className="cp-form-footer-hint">
+              {responsavelRequired ? 'Paciente menor de idade — responsável obrigatório.' : 'Revise os dados antes de cadastrar.'}
+            </span>
+            <div className="cp-form-footer-actions">
+              <button type="button" className="cp-btn" onClick={() => setMode(null)} disabled={saving}>Cancelar</button>
+              <button className="cp-btn cp-btn--primary" type="submit" disabled={saving}>
+                {saving ? 'Cadastrando…' : 'Cadastrar paciente'}
+              </button>
+            </div>
           </div>
         </form>
         )}
@@ -501,15 +581,20 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
         {mode === 'list' && (
         <div className="cp-list-mode">
           <div className="cp-toolbar">
-            <button type="button" className="cp-btn cp-btn--sm" onClick={() => setMode(null)}>← Voltar</button>
-            <input
-              className="cp-search"
-              placeholder="Buscar paciente pelo nome…"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
+            <button type="button" className="cp-icon-btn" onClick={() => setMode(null)} aria-label="Voltar">
+              <CpBackIcon />
+            </button>
+            <div className="cp-search-wrap">
+              <CpSearchIcon />
+              <input
+                className="cp-search"
+                placeholder="Buscar paciente pelo nome…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+              />
+            </div>
             <span className="cp-count">
-              {loading ? 'Carregando…' : `${filtered.length} paciente${filtered.length === 1 ? '' : 's'}`}
+              {loading ? 'Carregando…' : formatPatientCount(filtered.length)}
             </span>
             <button type="button" className="cp-btn cp-btn--sm cp-btn--primary" onClick={() => setMode('create')}>
               + Novo paciente
@@ -519,7 +604,10 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
           {error && <div className="cp-notice cp-notice-error">{error}</div>}
 
           {!loading && !error && filtered.length === 0 && (
-            <p className="cp-empty">Nenhum paciente encontrado.</p>
+            <div className="cp-empty">
+              <span className="cp-empty-icon"><CpPeopleIcon /></span>
+              <p>{query ? 'Nenhum paciente encontrado para esta busca.' : 'Nenhum paciente cadastrado ainda.'}</p>
+            </div>
           )}
 
           <div className="cp-list">
@@ -533,11 +621,14 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
                   onClick={() => setProfileTarget(patient)}
                   aria-label={`Abrir ficha de ${patient.name}`}
                 >
-                  <span className="cp-card-name">{patient.name}</span>
-                  <span className="cp-card-meta">
-                    {formatAge(patient)}
-                    {patient.phone ? ` • ${patient.phone}` : ''}
-                    {patient.cpf ? ` • CPF ${formatCpf(patient.cpf)}` : ''}
+                  <span className="cp-avatar" aria-hidden="true">{getInitials(patient.name)}</span>
+                  <span className="cp-card-info-text">
+                    <span className="cp-card-name">{patient.name}</span>
+                    <span className="cp-card-meta">
+                      {formatAge(patient)}
+                      {patient.phone ? ` • ${patient.phone}` : ''}
+                      {patient.cpf ? ` • CPF ${formatCpf(patient.cpf)}` : ''}
+                    </span>
                   </span>
                 </button>
 

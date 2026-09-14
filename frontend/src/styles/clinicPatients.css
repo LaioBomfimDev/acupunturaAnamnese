@@ -46,21 +46,115 @@
 
 /* ---------- escolha: cadastrar ou ver a lista ---------- */
 
-/* Reaproveita .hub-grid/.hub-card (hub.css) — mesma linguagem visual dos
-   cards de disciplina do Hub, só com 2 opções em vez de N. */
-.cp-mode-grid {
-  max-width: 720px;
-  margin-bottom: 26px;
+/* Reaproveita .hub-grid/.hub-card (hub.css) para a moldura (borda, sombra,
+   hover, foco) — só o miolo de cada card é próprio desta tela (redesenho
+   2026-09-11): ícone maior num bloco colorido, selo de contagem real
+   (nunca inventada) e um CTA em pílula em vez de link de texto solto. */
+.cp-choice-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 860px;
+  margin: 0 0 30px;
+}
+
+@media (max-width: 640px) {
+  .cp-choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cp-choice-card {
+  position: relative;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 26px 24px 24px;
+  overflow: hidden;
+}
+
+/* Glow decorativo no canto — mesma ideia do fundo radial do .hub-screen,
+   só que preso ao card pra não ficar tudo plano num fundo já claro. */
+.cp-choice-card::before {
+  content: '';
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--r1-accent-wash), transparent 70%);
+  pointer-events: none;
+}
+
+.cp-choice-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.cp-choice-icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.cp-choice-label {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.cp-choice-title {
+  margin: 2px 0 0;
+  font-family: var(--r1-font-display);
+  font-size: 19px;
+  font-weight: 400;
+  color: var(--r1-text);
+}
+
+.cp-choice-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.cp-choice-cta svg {
+  width: 13px;
+  height: 13px;
+  transform: rotate(180deg);
+}
+
+.cp-choice-card:hover .cp-choice-cta {
+  background: var(--r1-accent);
+  color: #fff;
+}
+
+.cp-choice-badge {
+  color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+  border: 1px solid var(--r1-danger-border);
 }
 
 /* ---------- cadastro de paciente ---------- */
 
-.cp-form-back {
-  margin-bottom: 12px;
-}
-
 .cp-form {
-  padding: 18px;
+  padding: 22px 24px;
   margin-bottom: 22px;
   border: 1px solid var(--r1-border-subtle);
   border-radius: var(--r1-radius-lg);
@@ -68,13 +162,107 @@
   box-shadow: var(--r1-shadow-sm);
 }
 
+.cp-form-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
 .cp-form-title {
   display: block;
-  margin: 0 0 12px;
+  margin: 3px 0 3px;
   font-family: var(--r1-font-display);
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 400;
   color: var(--r1-text);
+}
+
+.cp-form-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.cp-required-mark {
+  color: var(--r1-danger);
+  font-weight: 700;
+}
+
+/* Círculo neutro pra ação de voltar — usado tanto no topo do cadastro
+   quanto na barra de busca da lista, em vez do link de texto "← Voltar"
+   que competia visualmente com o título logo ao lado. */
+.cp-icon-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-text-muted);
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease),
+    color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.cp-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cp-icon-btn:hover {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.cp-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.cp-section {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.cp-section:last-of-type {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.cp-section-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.cp-section-head .cp-form-group-title {
+  margin: 0;
+}
+
+.cp-section-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.cp-section-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .cp-form-grid {
@@ -82,7 +270,10 @@
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
   align-items: end;
-  margin-bottom: 16px;
+}
+
+.cp-section .cp-form-grid {
+  margin-bottom: 0;
 }
 
 @media (max-width: 860px) {
@@ -108,16 +299,45 @@
 }
 
 .cp-cep-hint {
-  margin: -8px 0 16px;
+  margin: 10px 0 0;
   font-size: 12px;
   color: var(--r1-text-muted);
 }
 
-.cp-card-info--link {
+/* ---------- rodapé de ações do cadastro ---------- */
+
+/* position:sticky sem ancestral com overflow entre o form e o viewport
+   (nenhum aqui tem) gruda no pé da tela enquanto o formulário — 6 seções
+   compridas — ainda está em vista, sem exigir scroll até o fim pra achar
+   o botão de salvar. */
+.cp-form-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px -24px -22px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--r1-border-subtle);
+  border-radius: 0 0 var(--r1-radius-lg) var(--r1-radius-lg);
+  background: var(--r1-surface);
+}
+
+.cp-form-footer-hint {
+  font-size: 12px;
+  color: var(--r1-text-muted);
+}
+
+.cp-form-footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cp-card-info--link {
+  width: 100%;
   border: none;
   background: none;
   padding: 0;
@@ -170,6 +390,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  margin-top: 16px;
   font-size: 12.5px;
   line-height: 1.45;
   font-weight: 400;
@@ -286,18 +507,36 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin: 0 0 12px;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
 }
 
-.cp-toolbar .cp-search {
+.cp-search-wrap {
+  position: relative;
+  flex: 1;
   min-width: 200px;
 }
 
+.cp-search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 15px;
+  height: 15px;
+  transform: translateY(-50%);
+  color: var(--r1-text-subtle);
+  pointer-events: none;
+}
+
 .cp-search {
-  flex: 1;
+  width: 100%;
   box-sizing: border-box;
-  padding: 11px 14px;
+  padding: 11px 14px 11px 36px;
   border: 1px solid var(--r1-border);
   border-radius: var(--r1-radius-md);
   background: var(--r1-field-bg);
@@ -313,51 +552,112 @@
 
 .cp-count {
   flex-shrink: 0;
-  font-size: 12.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  font-size: 12px;
+  font-weight: 600;
   color: var(--r1-text-muted);
 }
 
 .cp-empty {
-  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 16px;
   border: 1px dashed var(--r1-border);
-  border-radius: var(--r1-radius-sm);
+  border-radius: var(--r1-radius-lg);
   text-align: center;
-  font-size: 12.5px;
   color: var(--r1-text-muted);
 }
 
+.cp-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.cp-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+}
+
+.cp-empty-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
 .cp-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
 }
 
 .cp-card {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
-  padding: 14px 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid var(--r1-border-subtle);
   border-radius: var(--r1-radius-lg);
   background: var(--r1-surface);
   box-shadow: var(--r1-shadow-sm);
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.cp-card:hover {
+  border-color: var(--r1-accent);
+  box-shadow: var(--r1-shadow-md);
 }
 
 .cp-card-info {
-  min-width: 200px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cp-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-family: var(--r1-font-display);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.cp-card-info-text {
   flex: 1;
+  min-width: 0;
   display: grid;
   gap: 2px;
 }
 
 .cp-card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14.5px;
   font-weight: 700;
   color: var(--r1-text);
 }
 
 .cp-card-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12.5px;
   color: var(--r1-text-muted);
 }
@@ -403,7 +703,6 @@
   gap: 6px;
   flex-wrap: wrap;
   width: 100%;
-  order: 3;
 }
 
 .cp-share-chip {
@@ -902,6 +1201,282 @@
 
 .cp-notice-error .pf-pulse-dot {
   margin-right: 2px;
+}
+
+/* ---------- identidade do paciente: avatar, nome e chips (visível em
+   todas as abas — a única identificação, antes, era o título pequeno do
+   hub-topbar; sem idade/telefone/CPF à vista era preciso abrir Cadastro
+   pra saber quem é o paciente) ---------- */
+
+.pf-identity {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.pf-identity-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pf-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: #fff;
+  font-family: var(--r1-font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pf-identity-text h2 {
+  margin: 0;
+  font-family: var(--r1-font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--r1-text);
+}
+
+.pf-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+
+.pf-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-identity-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .pf-identity {
+    flex-direction: column;
+  }
+
+  .pf-identity-actions {
+    width: 100%;
+  }
+
+  .pf-identity-actions .cp-btn {
+    flex: 1;
+  }
+}
+
+/* ---------- cartão de conteúdo genérico das abas ---------- */
+
+.pf-card {
+  padding: 22px 24px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.pf-card + .pf-card {
+  margin-top: 16px;
+}
+
+.pf-card > h4 {
+  margin: 0 0 16px;
+  font-family: var(--r1-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+/* ---------- cadastro: campos em grade de 2 colunas, rótulo em cima
+   do valor — troca a lista de parágrafos "Rótulo: valor" empilhados,
+   que ficava sem hierarquia visual nenhuma numa ficha longa. ---------- */
+
+.pf-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 28px;
+  margin: 0;
+}
+
+.pf-field--wide {
+  grid-column: 1 / -1;
+}
+
+.pf-field dt {
+  margin: 0 0 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.pf-field dd {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--r1-text);
+}
+
+.pf-section-label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 -2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--r1-accent-strong);
+}
+
+.pf-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--r1-border-subtle);
+}
+
+.pf-section-label:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .pf-field-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- agendamentos: uma linha por atendimento, disciplina em
+   pílula colorida (mesmo token das outras telas) ---------- */
+
+.pf-appt-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-appt-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.pf-appt-row:last-child {
+  border-bottom: none;
+}
+
+.pf-appt-date {
+  flex-shrink: 0;
+  width: 132px;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.pf-appt-date span {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--r1-text-muted);
+}
+
+.pf-disc-chip {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pf-appt-status {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.pf-appt-status--attended {
+  color: var(--r1-success);
+}
+
+.pf-appt-status--no_show {
+  color: var(--r1-danger);
+}
+
+/* ---------- anexos: ícone + nome + metadados numa linha ---------- */
+
+.pf-file-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.pf-file-row:last-child {
+  border-bottom: none;
+}
+
+.pf-file-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+  font-size: 15px;
+}
+
+.pf-file-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.pf-file-meta {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--r1-text-muted);
 }
 
 /* ---------- matrículas: todas as disciplinas, não só as ativas ---------- */

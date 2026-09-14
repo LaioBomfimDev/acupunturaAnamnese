@@ -91,6 +91,7 @@ Ferramenta obrigatória ausente: não ignore em silêncio. Informe o impedimento
 - Preserve mudanças que não foram suas; sem refatoração ampla sem necessidade clara.
 - Prefira APIs, helpers e padrões já usados no projeto.
 - Mantenha a mudança pequena, revisável e ligada ao pedido.
+- A entrada de atendimento deve ter uma única ação de saída: quando a área já oferece “Sair” no cabeçalho, não repasse `onSignOut` ao `PatientStart`. Sem esse cabeçalho, preserve a saída do seletor.
 - Use nomes claros; evite duplicação só quando a abstração melhora a leitura ou reduz risco real.
 - Use parsers, validadores e APIs estruturadas; evite manipulação frágil de strings.
 - Sem secrets, service role keys, tokens ou dados sensíveis no frontend, logs, commits ou docs públicos.

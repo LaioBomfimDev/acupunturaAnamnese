@@ -389,7 +389,6 @@ export function DisciplineWorkspace({
           initialDiscipline={disciplineId}
           therapistName={therapistName}
           onSelectPatient={() => setActiveTab(TABS.PAINEL)}
-          onSignOut={handleSignOut}
         />
       );
     }

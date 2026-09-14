@@ -252,7 +252,6 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
           initialDiscipline="neuropsicologia"
           therapistName={therapistName}
           onSelectPatient={() => setActiveTab(TABS.PAINEL)}
-          onSignOut={handleSignOut}
         />
       );
     }

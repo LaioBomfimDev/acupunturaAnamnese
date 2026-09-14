@@ -485,7 +485,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
           initialDiscipline="psicologia"
           therapistName={therapistName}
           onSelectPatient={() => setActiveTab(PSYCHOLOGY_TABS.PAINEL)}
-          onSignOut={handleSignOut}
         />
       );
     }
@@ -604,7 +603,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         <div className="app-topbar no-print">
           <div>
             <p className="app-eyebrow">{clinicName} · Psicologia</p>
-            <h1>{selectedPatient ? 'Paciente em atendimento' : 'Workspace de Psicologia'}</h1>
+            <h1>{selectedPatient ? 'Paciente em atendimento' : 'Área de Psicologia'}</h1>
           </div>
           <div className="app-topbar-actions">
             <div className="mini-clock" aria-label="Relógio">

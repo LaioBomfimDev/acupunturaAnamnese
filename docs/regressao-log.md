@@ -19,6 +19,13 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-09-11 - Saída duplicada na entrada de atendimento
+
+- Sintoma: Psicologia exibia dois botões “Sair”; a duplicação também existia nas áreas que reutilizam o seletor com cabeçalho próprio.
+- Causa: `PatientStart` renderizava saída incondicional e recebia o mesmo callback já usado no cabeçalho da área.
+- Regra nova: uma saída por tela, fornecida pelo cabeçalho ou, na sua ausência, pelo seletor (AGENTS.md §7).
+- Teste obrigatório: `patient-start-ui.test.mjs` verifica a ausência de saída no seletor embutido, a permanência no cabeçalho e a saída opcional da entrada de Acupuntura. Também cobre título único de seleção, busca rotulada e troca de especialidade sem duplicação.
+
 ### 2026-09-03 - Cartão de login deslocado para a direita no desktop
 
 - Sintoma: em telas desktop largas, o cartão de login aparecia encostado à direita em vez de centralizado sobre o fundo clínico.

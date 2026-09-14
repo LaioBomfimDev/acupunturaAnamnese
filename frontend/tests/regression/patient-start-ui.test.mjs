@@ -5,12 +5,14 @@ import { fileURLToPath } from 'node:url';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
+import { readFile } from 'node:fs/promises';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 let server;
 let patientStart;
 let patientUi;
+let PatientProvider;
 
 before(async () => {
   server = await createServer({
@@ -21,10 +23,43 @@ before(async () => {
   });
   patientStart = await server.ssrLoadModule('/src/components/PatientStart.jsx');
   patientUi = await server.ssrLoadModule('/src/utils/patientUi.js');
+  ({ PatientProvider } = await server.ssrLoadModule('/src/hooks/PatientContext.jsx'));
 });
 
 after(async () => {
   await server?.close();
+});
+
+function renderStart(props = {}) {
+  return renderToStaticMarkup(React.createElement(PatientProvider, null,
+    React.createElement(patientStart.PatientStart, { therapistName: 'Profissional de teste', ...props })));
+}
+
+test('seletor não duplica saída quando a área já fornece o cabeçalho', async () => {
+  assert.doesNotMatch(renderStart(), />Sair<\/button>/);
+  for (const file of ['PsychologyWorkspace.jsx', 'NeuropsychologyWorkspace.jsx', 'DisciplineWorkspace.jsx']) {
+    const source = await readFile(path.join(root, 'src/components', file), 'utf8');
+    const selector = source.match(/<PatientStart\b[\s\S]*?\/>/);
+    assert.ok(selector, `${file} mantém o seletor`);
+    assert.doesNotMatch(selector[0], /onSignOut=/, `${file} não duplica a saída`);
+    assert.equal((source.match(/>Sair<\/button>/g) || []).length, 1, `${file} mantém uma saída no cabeçalho`);
+  }
+});
+
+test('entrada sem cabeçalho mantém uma saída e uma troca de especialidade', () => {
+  const html = renderStart({ onSignOut: () => {}, hasMultipleDisciplines: true, onSwitchDiscipline: () => {} });
+  assert.equal((html.match(/>Sair<\/button>/g) || []).length, 1);
+  assert.equal((html.match(/Mudar Especialidade/g) || []).length, 1);
+  assert.doesNotMatch(html, /Trocar Especialidade/);
+});
+
+test('entrada concentra seleção e contagem na lista e identifica a busca', () => {
+  const html = renderStart();
+  assert.equal((html.match(/<h2>Selecionar paciente<\/h2>/g) || []).length, 1);
+  assert.match(html, /<p class="patient-start-greeting">/);
+  assert.match(html, /<label class="patient-start-search"><span>Buscar paciente<\/span><input[^>]*type="search"/);
+  assert.match(html, /role="status">0 pacientes</);
+  assert.match(html, /Cadastre o primeiro em Pacientes da instituição/);
 });
 
 test('cartão abre a ficha e expõe solicitação de exclusão por ícone', () => {

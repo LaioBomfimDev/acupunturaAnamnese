@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
 import { enrollPatientInitial } from '../services/clinicPatientsService';
 import { formatPatientCount, isPatientDeletionConfirmationValid, formatAge, getInitials } from '../utils/patientUi';
+import '../styles/patientStart.css';
 
 function TrashIcon() {
   return (
@@ -85,10 +86,10 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
   }
 
   return (
-    <section className="home-screen">
+    <section className="home-screen patient-start">
       <header className="home-hero">
         <div>
-          <h2 className="home-greeting-title">Oi, {therapistName || 'profissional'}</h2>
+          <p className="patient-start-greeting">Olá, {therapistName || 'profissional'}</p>
           {hasMultipleDisciplines && (
             <div className="home-specialty-switcher-banner">
               Você está na área de <b>Acupuntura</b>
@@ -97,53 +98,45 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
               </button>
             </div>
           )}
-          <h2>Começar atendimento</h2>
-          <span>Selecione um paciente já cadastrado para retomar ou iniciar o atendimento.</span>
+          <h2>Iniciar atendimento</h2>
+          <p className="patient-start-description">Selecione um paciente para iniciar ou retomar o atendimento.</p>
         </div>
         <div className="home-meta">
-          <span>{formatPatientCount(patients.length)}</span>
-          {hasMultipleDisciplines && (
-            <button className="quiet-button" onClick={onSwitchDiscipline} style={{ color: 'var(--gold-2)', fontWeight: 'bold' }}>Trocar Especialidade</button>
-          )}
-          <button className="quiet-button" onClick={onSignOut}>Sair</button>
+          {onSignOut && <button type="button" className="quiet-button" onClick={onSignOut}>Sair</button>}
         </div>
       </header>
 
       <div className="home-grid">
         <section className="start-workspace">
-          <div className="start-workspace-head">
-            <div>
-              <p className="start-kicker">Fluxo de entrada</p>
-              <h2>Selecionar paciente</h2>
-            </div>
-            {selectedPatient && (
-              <button className="quiet-button" onClick={() => onSelectPatient?.(selectedPatient)}>
-                Ir para painel
-              </button>
-            )}
-          </div>
-
           {selectedPatient && (
             <div className="home-active-patient">
-              <b>Atendimento ativo:</b> {selectedPatient.name}
+              <span><b>Paciente selecionado:</b> {selectedPatient.name}</span>
+              <button type="button" className="quiet-button" onClick={() => onSelectPatient?.(selectedPatient)}>
+                Retomar atendimento
+              </button>
             </div>
           )}
 
           <section className="start-panel">
             <div className="start-panel-head">
               <div>
-                <p className="small">Pacientes</p>
                 <h2>Selecionar paciente</h2>
-                <span className="patient-list-count">
-                  {formatPatientCount(filteredPatients.length)} na lista
+                <span className="patient-list-count" role="status">
+                  {loading ? 'Carregando pacientes...' : query.trim()
+                    ? `${formatPatientCount(filteredPatients.length)} de ${patients.length} na lista`
+                    : formatPatientCount(patients.length)}
                 </span>
               </div>
-              <input
-                className="patient-search"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Buscar por nome"
-              />
+              <label className="patient-start-search">
+                <span>Buscar paciente</span>
+                <input
+                  className="patient-search"
+                  type="search"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Buscar por nome"
+                />
+              </label>
             </div>
 
             {listNotice && (
@@ -184,7 +177,9 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
             {loading ? (
               <div className="empty-state">Carregando pacientes...</div>
             ) : filteredPatients.length === 0 ? (
-              <div className="empty-state">Nenhum paciente encontrado.</div>
+              <div className="empty-state">
+                {query.trim() ? 'Nenhum paciente encontrado. Tente outro nome.' : 'Nenhum paciente cadastrado. Cadastre o primeiro em Pacientes da instituição.'}
+              </div>
             ) : (
               <div className="patient-list">
                 {filteredPatients.map(patient => (

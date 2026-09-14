@@ -134,7 +134,7 @@ export async function upsertVersionedClinicalRecord(patientId, recordType, data,
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
   if (!idempotencyKey) throw new Error('Chave de idempotência obrigatória.');
-  if (!['full_session', 'psi_anamnese', 'psi_neuro_avaliacao'].includes(recordType)) {
+  if (!['full_session', 'psi_anamnese', 'psi_neuro_avaliacao', 'fisio_anamnese', 'nutri_anamnese'].includes(recordType)) {
     throw new Error('Tipo de registro não habilitado para persistência versionada.');
   }
 

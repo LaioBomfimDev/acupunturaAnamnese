@@ -5,7 +5,7 @@ import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
   getPatient, updatePatient, formatCpf, isValidCpf, isMinor,
 } from '../services/patientService';
-import { formatAge, formatBirthDate } from '../utils/patientUi';
+import { formatAge, formatBirthDate, getInitials } from '../utils/patientUi';
 import { listAppointments, listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
@@ -38,9 +38,19 @@ import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
 // serve de prova pra fiscalização) com opção de corrigir/imprimir.
 // ============================================================
 
-function Field({ label, value }) {
+function Field({ label, value, wide = false }) {
   if (value === undefined || value === null || value === '') return null;
-  return <p className="shv-field"><b>{label}:</b> {value}</p>;
+  return (
+    <div className={`pf-field${wide ? ' pf-field--wide' : ''}`}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function SectionLabel({ show, children }) {
+  if (!show) return null;
+  return <div className="pf-section-label">{children}</div>;
 }
 
 function statusLabel(status) {
@@ -300,6 +310,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   };
 
   const patientMinor = isMinor(full?.birth_date);
+  const hasAgeInfo = Boolean(full?.birth_date) || (full?.age !== undefined && full?.age !== null && full?.age !== '');
   const hasFiliacao = Boolean(full?.nome_mae || full?.nome_pai || full?.nome_conjuge);
   const hasConvenio = Boolean(full?.convenio_nome || full?.convenio_carteirinha);
   const hasEndereco = Boolean(enderecoLinha || full?.endereco_complemento || enderecoComplementoLinha || full?.endereco_cep);
@@ -405,6 +416,27 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
 
         {!loading && !error && (
           <>
+            <div className="pf-identity">
+              <div className="pf-identity-main">
+                <span className="pf-avatar">{getInitials(full?.name || patient.name)}</span>
+                <div className="pf-identity-text">
+                  <h2>{full?.name || patient.name}</h2>
+                  <div className="pf-meta-row">
+                    {hasAgeInfo && <span className="pf-meta-chip">{formatAge(full)}</span>}
+                    {full?.birth_date && <span className="pf-meta-chip">Nasc. {formatBirthDate(full.birth_date)}</span>}
+                    {full?.phone && <span className="pf-meta-chip">{full.phone}</span>}
+                    {full?.cpf && <span className="pf-meta-chip">CPF {formatCpf(full.cpf)}</span>}
+                  </div>
+                </div>
+              </div>
+              {!editing && (
+                <div className="pf-identity-actions">
+                  <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir</button>
+                  <button type="button" className="cp-btn cp-btn--sm" onClick={() => { setActiveTab('cadastro'); startEdit(); }}>Editar cadastro</button>
+                </div>
+              )}
+            </div>
+
             <div className="pf-tabs" role="tablist">
               {TABS.map(tab => (
                 <button
@@ -427,45 +459,42 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
 
             {/* ================= CADASTRO ================= */}
             <section className="pf-panel" hidden={activeTab !== 'cadastro'}>
-              <div className="shv-sections">
-                <section className="shv-section">
-                  <div className="pf-section-head">
-                    <h4>Dados cadastrais</h4>
-                    {!editing && (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir cadastro</button>
-                        <button type="button" className="cp-btn cp-btn--sm" onClick={startEdit}>Editar</button>
-                      </div>
-                    )}
-                  </div>
+              <section className="pf-card">
+                <h4>Dados cadastrais</h4>
 
-                  {!editing ? (
-                    <>
-                      <Field label="Nome completo (civil)" value={full?.name} />
-                      <Field label="Nome social" value={full?.nome_social} />
-                      <Field label="Data de nascimento" value={formatBirthDate(full?.birth_date)} />
-                      <Field label="Idade" value={formatAge(full)} />
-                      <Field label="Sexo biológico" value={full?.sexo_biologico === 'masculino' ? 'Masculino' : full?.sexo_biologico === 'feminino' ? 'Feminino' : null} />
-                      <Field label="Gênero" value={full?.genero} />
-                      <Field label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
-                      <Field label="Telefone" value={full?.phone} />
-                      <Field label="Mãe" value={full?.nome_mae} />
-                      <Field label="Pai" value={full?.nome_pai} />
-                      <Field label="Cônjuge" value={full?.nome_conjuge} />
-                      {isMinor(full?.birth_date) && (
-                        <>
-                          <Field label="Responsável" value={full?.responsavel_nome} />
-                          <Field label="Telefone do responsável" value={full?.responsavel_telefone} />
-                          <Field label="CPF do responsável" value={full?.responsavel_cpf ? formatCpf(full.responsavel_cpf) : null} />
-                        </>
-                      )}
-                      <Field label="Convênio" value={full?.convenio_nome} />
-                      <Field label="Carteirinha" value={full?.convenio_carteirinha} />
-                      <Field label="Endereço" value={enderecoLinha} />
-                      <Field label="Complemento/bairro/cidade" value={[full?.endereco_complemento, enderecoComplementoLinha].filter(Boolean).join(' — ')} />
-                      <Field label="CEP" value={full?.endereco_cep ? formatCep(full.endereco_cep) : null} />
-                    </>
-                  ) : (
+                {!editing ? (
+                  <dl className="pf-field-grid">
+                    <Field label="Nome completo (civil)" value={full?.name} />
+                    <Field label="Nome social" value={full?.nome_social} />
+                    <Field label="Data de nascimento" value={formatBirthDate(full?.birth_date)} />
+                    <Field label="Idade" value={formatAge(full)} />
+                    <Field label="Sexo biológico" value={full?.sexo_biologico === 'masculino' ? 'Masculino' : full?.sexo_biologico === 'feminino' ? 'Feminino' : null} />
+                    <Field label="Gênero" value={full?.genero} />
+                    <Field label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
+                    <Field label="Telefone" value={full?.phone} />
+                    <Field label="Convênio" value={full?.convenio_nome} />
+                    <Field label="Carteirinha" value={full?.convenio_carteirinha} />
+
+                    <SectionLabel show={hasFiliacao}>Filiação</SectionLabel>
+                    <Field label="Mãe" value={full?.nome_mae} />
+                    <Field label="Pai" value={full?.nome_pai} />
+                    <Field label="Cônjuge" value={full?.nome_conjuge} />
+
+                    <SectionLabel show={patientMinor}>Responsável</SectionLabel>
+                    {patientMinor && (
+                      <>
+                        <Field label="Responsável" value={full?.responsavel_nome} />
+                        <Field label="Telefone do responsável" value={full?.responsavel_telefone} />
+                        <Field label="CPF do responsável" value={full?.responsavel_cpf ? formatCpf(full.responsavel_cpf) : null} />
+                      </>
+                    )}
+
+                    <SectionLabel show={hasEndereco}>Endereço</SectionLabel>
+                    <Field wide label="Endereço" value={enderecoLinha} />
+                    <Field wide label="Complemento/bairro/cidade" value={[full?.endereco_complemento, enderecoComplementoLinha].filter(Boolean).join(' — ')} />
+                    <Field label="CEP" value={full?.endereco_cep ? formatCep(full.endereco_cep) : null} />
+                  </dl>
+                ) : (
                     <form className="cp-form" onSubmit={handleSaveEdit} style={{ boxShadow: 'none', border: 'none', padding: 0 }}>
                       <div className="cp-form-grid">
                         <label className="cp-field">Nome completo (civil)
@@ -569,15 +598,13 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                         <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar cadastro'}</button>
                       </div>
                     </form>
-                  )}
-                </section>
-              </div>
+                )}
+              </section>
             </section>
 
             {/* ================= MATRÍCULAS & COMPARTILHAMENTO ================= */}
             <section className="pf-panel" hidden={activeTab !== 'matriculas'}>
-              <div className="shv-sections">
-                <section className="shv-section">
+              <section className="pf-card">
                   <h4>Quem enxerga este paciente</h4>
                   <p className="small" style={{ marginTop: -4, marginBottom: 12 }}>
                     Todas as disciplinas da clínica — não só as matriculadas — para o entendimento ficar completo.
@@ -602,9 +629,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                       );
                     })}
                   </div>
-                </section>
+              </section>
 
-                <section className="shv-section">
+              <section className="pf-card">
                   <h4>Compartilhamentos ativos</h4>
                   {shares.length === 0 && <p className="small">Nenhum compartilhamento clínico ativo com outro profissional.</p>}
                   <div className="cp-card-chips">
@@ -614,33 +641,36 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                       </span>
                     ))}
                   </div>
-                </section>
-              </div>
+              </section>
             </section>
 
             {/* ================= AGENDAMENTOS ================= */}
             <section className="pf-panel" hidden={activeTab !== 'agenda'}>
-              <div className="shv-sections">
-                <section className="shv-section">
+              <section className="pf-card">
                   <h4>Agendamentos</h4>
                   {appointments.length === 0 && <p className="small">Nenhum agendamento registrado.</p>}
                   {appointments.length > 0 && (
-                    <ul className="shv-evolucao-list">
+                    <div className="pf-appt-list">
                       {appointments.map(appt => (
-                        <li key={appt.id}>
-                          <b>{formatDateTime(appt.starts_at)}</b> — {getDiscipline(appt.discipline)?.label || appt.discipline || 'bloqueio'} — {statusLabel(appt.status)}
-                        </li>
+                        <div className="pf-appt-row" key={appt.id}>
+                          <div className="pf-appt-date">
+                            {new Date(appt.starts_at).toLocaleDateString('pt-BR')}
+                            <span>{new Date(appt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          {appt.discipline
+                            ? <span className="pf-disc-chip" style={{ background: getDiscipline(appt.discipline)?.color }}>{getDiscipline(appt.discipline)?.label || appt.discipline}</span>
+                            : <span className="pf-disc-chip" style={{ background: 'var(--r1-text-muted)' }}>Bloqueio</span>}
+                          <span className={`pf-appt-status pf-appt-status--${appt.status}`}>{statusLabel(appt.status)}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
-                </section>
-              </div>
+              </section>
             </section>
 
             {/* ================= EVOLUÇÃO ================= */}
             <section className="pf-panel" hidden={activeTab !== 'evolucao'}>
-              <div className="shv-sections">
-                <section className="shv-section">
+              <section className="pf-card">
                   {hasPending && (
                     <div className="cp-notice cp-notice-error" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span className="pf-pulse-dot" />
@@ -668,14 +698,12 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   </div>
 
                   <p className="pf-cycle-note">Reavaliação de ciclo sugerida a cada 10 sessões (língua, pulso, hipótese energética e protocolo).</p>
-                </section>
-              </div>
+              </section>
             </section>
 
             {/* ================= ANEXOS ================= */}
             <section className="pf-panel" hidden={activeTab !== 'anexos'}>
-              <div className="shv-sections">
-                <section className="shv-section">
+              <section className="pf-card">
                   <div className="pf-section-head">
                     <h4>Anexos</h4>
                     {isClinicAdmin && (
@@ -687,22 +715,22 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   </div>
                   {attachments.length === 0 && <p className="small">Nenhum anexo enviado ainda.</p>}
                   {attachments.length > 0 && (
-                    <ul className="shv-evolucao-list">
+                    <div className="pf-file-list">
                       {attachments.map(att => (
-                        <li key={att.id}>
-                          <button type="button" className="pf-attachment-link" onClick={() => handleOpenAttachment(att)}>
+                        <div className="pf-file-row" key={att.id}>
+                          <span className="pf-file-icon">{att.mime_type?.startsWith('image/') ? '🖼️' : '📄'}</span>
+                          <button type="button" className="pf-attachment-link pf-file-name" onClick={() => handleOpenAttachment(att)}>
                             {att.file_name}
                           </button>
-                          <span className="small"> — {formatFileSize(att.size_bytes)} — {formatDateTime(att.created_at)}</span>
+                          <span className="pf-file-meta">{formatFileSize(att.size_bytes)} · {formatDateTime(att.created_at)}</span>
                           {isClinicAdmin && (
                             <button type="button" className="pf-attachment-remove" onClick={() => handleDeleteAttachment(att)} aria-label={`Remover ${att.file_name}`}>×</button>
                           )}
-                        </li>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
-                </section>
-              </div>
+              </section>
             </section>
           </>
         )}

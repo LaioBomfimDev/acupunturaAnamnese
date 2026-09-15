@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
-  getPatient, updatePatient, deletePatient, formatCpf, isValidCpf, isMinor,
+  getPatient, updatePatient, deletePatient, formatCpf, isValidCpf, isValidEmail, isMinor,
 } from '../services/patientService';
 import { formatAge, formatBirthDate, getInitials, isPatientDeletionConfirmationValid } from '../utils/patientUi';
 import { listAppointments, listAppointmentsAwaitingEvolution } from '../services/appointmentService';
@@ -86,7 +86,7 @@ function buildEditForm(p) {
   return {
     name: p?.name || '', nomeSocial: p?.nome_social || '', birthDate: p?.birth_date || '',
     sexoBiologico: p?.sexo_biologico || '', genero: p?.genero || '', cpf: p?.cpf || '',
-    phone: p?.phone || '', nomeMae: p?.nome_mae || '', nomePai: p?.nome_pai || '', nomeConjuge: p?.nome_conjuge || '',
+    phone: p?.phone || '', email: p?.email || '', nomeMae: p?.nome_mae || '', nomePai: p?.nome_pai || '', nomeConjuge: p?.nome_conjuge || '',
     responsavelNome: p?.responsavel_nome || '', responsavelTelefone: p?.responsavel_telefone || '', responsavelCpf: p?.responsavel_cpf || '',
     convenioNome: p?.convenio_nome || '', convenioCarteirinha: p?.convenio_carteirinha || '',
     enderecoCep: p?.endereco_cep || '', enderecoLogradouro: p?.endereco_logradouro || '', enderecoNumero: p?.endereco_numero || '',
@@ -213,6 +213,10 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       setNotice({ type: 'error', text: 'CPF inválido. Confira os números digitados ou deixe o campo em branco.' });
       return;
     }
+    if (editForm.email.trim() && !isValidEmail(editForm.email)) {
+      setNotice({ type: 'error', text: 'E-mail inválido. Confira o endereço digitado ou deixe o campo em branco.' });
+      return;
+    }
     setSaving(true);
     setNotice(null);
     try {
@@ -224,6 +228,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
         genero: editForm.genero.trim() || null,
         cpf: editForm.cpf,
         phone: editForm.phone.trim() || null,
+        email: editForm.email.trim() || null,
         nomeMae: editForm.nomeMae.trim() || null,
         nomePai: editForm.nomePai.trim() || null,
         nomeConjuge: editForm.nomeConjuge.trim() || null,
@@ -473,6 +478,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       <PrintRow label="Gênero" value={full?.genero} />
       <PrintRow label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
       <PrintRow label="Telefone" value={full?.phone} />
+      <PrintRow label="E-mail" value={full?.email} />
 
       {hasFiliacao && (
         <>
@@ -654,6 +660,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     <Field label="Gênero" value={full?.genero} />
                     <Field label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
                     <Field label="Telefone" value={full?.phone} />
+                    <Field label="E-mail" value={full?.email} />
                     <Field label="Convênio" value={full?.convenio_nome} />
                     <Field label="Carteirinha" value={full?.convenio_carteirinha} />
 
@@ -703,6 +710,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                         </label>
                         <label className="cp-field">Telefone
                           <input className="cp-input" value={editForm.phone} onChange={e => setEditField('phone', e.target.value)} />
+                        </label>
+                        <label className="cp-field">E-mail
+                          <input className="cp-input" type="email" value={editForm.email} onChange={e => setEditField('email', e.target.value)} placeholder="paciente@exemplo.com" />
                         </label>
                         <label className="cp-field">Mãe
                           <input className="cp-input" value={editForm.nomeMae} onChange={e => setEditField('nomeMae', e.target.value)} />

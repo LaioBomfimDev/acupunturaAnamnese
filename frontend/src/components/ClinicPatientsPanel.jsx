@@ -4,7 +4,7 @@ import { usePatient } from '../hooks/PatientContext';
 import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import { shareScopeLabels } from '../data/shareScopes';
 import {
-  createPatient, formatCpf, isValidCpf, isMinor,
+  createPatient, formatCpf, isValidCpf, isValidEmail, isMinor,
 } from '../services/patientService';
 import { buscarEnderecoPorCep, formatCep, isValidCepFormat } from '../services/cepService';
 import {
@@ -42,7 +42,7 @@ const UF_OPTIONS = [
 
 const EMPTY_FORM = {
   name: '', nomeSocial: '', birthDate: '', sexoBiologico: '', genero: '', cpf: '',
-  phone: '', nomeMae: '', nomePai: '', nomeConjuge: '',
+  phone: '', email: '', nomeMae: '', nomePai: '', nomeConjuge: '',
   responsavelNome: '', responsavelTelefone: '', responsavelCpf: '',
   convenioNome: '', convenioCarteirinha: '',
   enderecoCep: '', enderecoLogradouro: '', enderecoNumero: '', enderecoComplemento: '', enderecoBairro: '', enderecoCidade: '', enderecoUf: '',
@@ -302,6 +302,10 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
       setNotice({ type: 'error', text: 'CPF inválido. Confira os números digitados ou deixe o campo em branco.' });
       return;
     }
+    if (form.email.trim() && !isValidEmail(form.email)) {
+      setNotice({ type: 'error', text: 'E-mail inválido. Confira o endereço digitado ou deixe o campo em branco.' });
+      return;
+    }
 
     setSaving(true);
     setNotice(null);
@@ -310,6 +314,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
         name: form.name.trim(),
         nomeSocial: form.nomeSocial.trim() || null,
         phone: form.phone,
+        email: form.email.trim() || null,
         birthDate: form.birthDate || null,
         sexoBiologico: form.sexoBiologico || null,
         genero: form.genero.trim() || null,
@@ -507,6 +512,10 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
               <label className="cp-field">
                 Telefone
                 <input className="cp-input" value={form.phone} onChange={e => setField('phone', e.target.value)} />
+              </label>
+              <label className="cp-field">
+                E-mail
+                <input className="cp-input" type="email" value={form.email} onChange={e => setField('email', e.target.value)} placeholder="paciente@exemplo.com" />
               </label>
             </div>
           </CpFormSection>

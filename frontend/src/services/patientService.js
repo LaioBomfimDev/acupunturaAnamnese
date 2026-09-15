@@ -9,7 +9,7 @@ import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 
 const LOCAL_PATIENTS_KEY = 'acup_local_patients';
 const PATIENT_SELECT_COLUMNS =
-  'id,therapist_id,name,phone,birth_date,age,archived_at,suspended_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
+  'id,therapist_id,name,phone,email,birth_date,age,archived_at,suspended_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
   'has_pending,' +
   'nome_social,nome_mae,nome_pai,nome_conjuge,sexo_biologico,genero,' +
   'responsavel_nome,responsavel_telefone,responsavel_cpf,' +
@@ -225,6 +225,11 @@ export function isValidCpf(value) {
   return digits === `${base}${d1}${d2}`;
 }
 
+/** Checagem simples de formato — não existe validação de e-mail 100% correta. */
+export function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
 export function assertCanFallbackWithoutPatientAge(error, age) {
   if (!isMissingColumnError(error) || !hasSubmittedAge(age)) return;
   throw new Error(
@@ -244,6 +249,19 @@ export function assertCanFallbackWithoutImageConsent(error, imageConsent) {
     'Não foi possível salvar o consentimento de uso de imagem porque as colunas image_consent/' +
     'image_consent_at não estão disponíveis no banco. Execute a migration ' +
     'supabase/migrations/20260901_patient_image_consent.sql antes de marcar o consentimento.'
+  );
+}
+
+/**
+ * Mesma lógica de assertCanFallbackWithoutImageConsent: e-mail digitado
+ * que some silenciosamente é pior do que quebrar na hora, já que o
+ * objetivo de guardar o e-mail é poder mandar relatório/PDF pro paciente.
+ */
+export function assertCanFallbackWithoutEmail(error, email) {
+  if (!isMissingColumnError(error) || !email) return;
+  throw new Error(
+    'Não foi possível salvar o e-mail porque a coluna email não está disponível no banco. ' +
+    'Execute a migration supabase/migrations/20260915d_patient_email.sql antes de cadastrar o e-mail.'
   );
 }
 
@@ -301,8 +319,19 @@ function assertValidCpfIfProvided(cpf) {
   return normalized;
 }
 
+/**
+ * E-mail vazio é válido (nem todo paciente informa); preenchido e mal
+ * formatado não é — mesmo raciocínio de assertValidCpfIfProvided.
+ */
+function assertValidEmailIfProvided(email) {
+  if (email === undefined || email === null || String(email).trim() === '') return null;
+  const trimmed = String(email).trim();
+  if (!isValidEmail(trimmed)) throw new Error('E-mail inválido. Confira o endereço digitado.');
+  return trimmed;
+}
+
 export async function createPatient({
-  name, phone, birthDate, age, imageConsent, cpf,
+  name, phone, email, birthDate, age, imageConsent, cpf,
   nomeSocial, nomeMae, nomePai, nomeConjuge, sexoBiologico, genero,
   responsavelNome, responsavelTelefone, responsavelCpf,
   convenioNome, convenioCarteirinha,
@@ -312,6 +341,7 @@ export async function createPatient({
   if (!user) throw new Error('Usuário não autenticado.');
   const normalizedAge = normalizeAge(age !== undefined ? age : calculateAgeFromBirthDate(birthDate));
   const normalizedCpf = assertValidCpfIfProvided(cpf);
+  const normalizedEmail = assertValidEmailIfProvided(email);
   const consentGiven = imageConsent === true;
   const consentAt = consentGiven ? new Date().toISOString() : null;
   assertResponsavelRequiredIfMinor(birthDate, { nome: responsavelNome, telefone: responsavelTelefone, cpf: responsavelCpf });
@@ -328,6 +358,7 @@ export async function createPatient({
       therapist_id: user.id,
       name,
       phone: phone || null,
+      email: normalizedEmail,
       birth_date: birthDate || null,
       age: normalizedAge,
       archived_at: null,
@@ -347,6 +378,7 @@ export async function createPatient({
     therapist_id: user.id,
     name,
     phone: phone || null,
+    email: normalizedEmail,
     birth_date: birthDate || null,
     image_consent: consentGiven,
     image_consent_at: consentAt,
@@ -365,6 +397,7 @@ export async function createPatient({
     assertCanFallbackWithoutPatientAge(error, age);
     assertCanFallbackWithoutImageConsent(error, imageConsent);
     assertCanFallbackWithoutCpf(error, normalizedCpf);
+    assertCanFallbackWithoutEmail(error, normalizedEmail);
     assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')
@@ -391,6 +424,7 @@ export async function updatePatient(patientId, updates) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
   const normalizedCpf = updates.cpf !== undefined ? assertValidCpfIfProvided(updates.cpf) : undefined;
+  const normalizedEmail = updates.email !== undefined ? assertValidEmailIfProvided(updates.email) : undefined;
   if (updates.birthDate !== undefined || updates.responsavelNome !== undefined
     || updates.responsavelTelefone !== undefined || updates.responsavelCpf !== undefined) {
     assertResponsavelRequiredIfMinor(updates.birthDate, {
@@ -407,6 +441,7 @@ export async function updatePatient(patientId, updates) {
     if (idx === -1) throw new Error('Paciente não encontrado.');
     if (updates.name !== undefined) patients[idx].name = updates.name;
     if (updates.phone !== undefined) patients[idx].phone = updates.phone;
+    if (updates.email !== undefined) patients[idx].email = normalizedEmail;
     if (updates.birthDate !== undefined) patients[idx].birth_date = updates.birthDate;
     if (updates.age !== undefined) patients[idx].age = normalizeAge(updates.age);
     if (updates.archivedAt !== undefined) patients[idx].archived_at = updates.archivedAt;
@@ -425,6 +460,7 @@ export async function updatePatient(patientId, updates) {
   const payload = { ...registrationFields };
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.phone !== undefined) payload.phone = updates.phone;
+  if (updates.email !== undefined) payload.email = normalizedEmail;
   if (updates.birthDate !== undefined) payload.birth_date = updates.birthDate;
   if (updates.age !== undefined) payload.age = normalizeAge(updates.age);
   if (updates.archivedAt !== undefined) payload.archived_at = updates.archivedAt;
@@ -450,6 +486,7 @@ export async function updatePatient(patientId, updates) {
     assertCanFallbackWithoutPatientAge(error, updates.age);
     assertCanFallbackWithoutImageConsent(error, updates.imageConsent);
     assertCanFallbackWithoutCpf(error, normalizedCpf);
+    assertCanFallbackWithoutEmail(error, normalizedEmail);
     assertCanFallbackWithoutPendingFlag(error, updates.hasPending);
     assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const fallbackPayload = { ...payload };
@@ -458,6 +495,7 @@ export async function updatePatient(patientId, updates) {
     delete fallbackPayload.image_consent;
     delete fallbackPayload.image_consent_at;
     delete fallbackPayload.cpf;
+    delete fallbackPayload.email;
     delete fallbackPayload.has_pending;
     for (const column of Object.values(REGISTRATION_FIELD_TO_COLUMN)) delete fallbackPayload[column];
     const { data: fallbackData, error: fallbackError } = await supabase

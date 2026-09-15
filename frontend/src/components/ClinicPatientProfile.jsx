@@ -10,7 +10,10 @@ import { listAppointments, listAppointmentsAwaitingEvolution } from '../services
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { enrollPatient, enrollmentStatusLabel, setPatientSuspended } from '../services/clinicPatientsService';
+import {
+  enrollPatient, enrollmentStatusLabel, setPatientSuspended, listPatientEnrollments,
+} from '../services/clinicPatientsService';
+import { SharePatientDialog } from './SharePatientDialog';
 import {
   listPatientAttachments, uploadPatientAttachment, getPatientAttachmentUrl, deletePatientAttachment,
 } from '../services/patientAttachmentsService';
@@ -125,6 +128,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [members, setMembers] = useState([]);
   const [enrollments, setEnrollments] = useState(patient.enrollments || []);
   const [enrollingDiscipline, setEnrollingDiscipline] = useState(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -348,9 +352,20 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
    * Matricular direto pela ficha ("enviar para outra área") — a lacuna
    * apontada no comentário de ClinicPatientsPanel ("até alguém entrar e
    * matricular pela ficha"). Só cria o vínculo; nunca duplica o paciente.
+   *
+   * Isso só vale pra MATRÍCULA INICIAL (paciente ainda sem nenhuma área):
+   * a migração 20260723 travou a escrita direta em patient_enrollments
+   * pra essa única matrícula — qualquer disciplina além da primeira exige
+   * o fluxo de "Enviar" (reautenticação + profissional de destino
+   * específico, mesmo diálogo da lista de pacientes), senão o banco
+   * rejeita com "matrícula inicial já criada".
    */
   async function handleEnroll(disciplineId) {
     if (enrollingDiscipline || enrollmentByDiscipline.has(disciplineId)) return;
+    if (enrollments.length > 0) {
+      setShareDialogOpen(true);
+      return;
+    }
     setEnrollingDiscipline(disciplineId);
     setNotice(null);
     try {
@@ -363,6 +378,23 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       setNotice({ type: 'error', text: err.message || 'Não foi possível matricular o paciente nessa área.' });
     } finally {
       setEnrollingDiscipline(null);
+    }
+  }
+
+  async function handleShareDone({ toLabel } = {}) {
+    setShareDialogOpen(false);
+    setNotice({ type: 'success', text: toLabel ? `Paciente enviado para ${toLabel}.` : 'Paciente enviado.' });
+    try {
+      const [nextEnrollments, sharesByPatient] = await Promise.all([
+        listPatientEnrollments(full.id),
+        listActiveSharesForPatients([full.id]),
+      ]);
+      setEnrollments(nextEnrollments);
+      setShares(sharesByPatient?.[full.id] || []);
+      onPatientUpdated?.({ ...full, enrollments: nextEnrollments });
+    } catch {
+      // A matrícula/compartilhamento já foi criado no servidor; só a tela
+      // fica desatualizada até reabrir a ficha — não interrompe o fluxo.
     }
   }
 
@@ -925,6 +957,14 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
           </>
         )}
       </main>
+
+      {shareDialogOpen && (
+        <SharePatientDialog
+          patient={{ ...full, enrollments }}
+          onClose={() => setShareDialogOpen(false)}
+          onDone={handleShareDone}
+        />
+      )}
 
       {/* Folhas de impressão do cadastro: papel timbrado da clínica logada,
           mesma infra de paginação dos relatórios (ver reportPagination.js).

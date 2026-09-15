@@ -193,6 +193,31 @@ export async function enrollPatient(patientId, disciplineId, { note } = {}) {
 }
 
 /**
+ * Matrículas atuais de um paciente — usado pra atualizar a ficha depois de
+ * um envio/compartilhamento (que cria a matrícula no destino pelo lado do
+ * servidor, então o estado local da tela precisa ser recarregado).
+ */
+export async function listPatientEnrollments(patientId) {
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
+    return getLocalEnrollments().filter(item => item.patient_id === patientId);
+  }
+
+  const { data, error } = await supabase
+    .from('patient_enrollments')
+    .select('id,discipline,status,note,created_at')
+    .eq('patient_id', patientId);
+
+  if (error) {
+    if (isMissingEnrollmentSchemaError(error)) throw new Error(ENROLLMENT_MIGRATION_HINT);
+    throw error;
+  }
+  return data || [];
+}
+
+/**
  * Matrícula inicial ao cadastrar paciente (workspace ou tela da clínica).
  * Best-effort tolerante a migração pendente: o cadastro do paciente não
  * pode falhar por causa da matrícula — a pendência fica VISÍVEL na tela

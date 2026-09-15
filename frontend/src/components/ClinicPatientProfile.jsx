@@ -22,6 +22,7 @@ import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems } from '../utils/reportUtils';
 import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
+import { getStatusLabel } from '../utils/agenda';
 
 // ============================================================
 // Ficha do paciente (Fase 5) — página própria, aberta ao clicar num
@@ -54,10 +55,6 @@ function Field({ label, value, wide = false }) {
 function SectionLabel({ show, children }) {
   if (!show) return null;
   return <div className="pf-section-label">{children}</div>;
-}
-
-function statusLabel(status) {
-  return { scheduled: 'agendado', attended: 'atendido', no_show: 'faltou', excused: 'falta justificada', cancelled: 'cancelado' }[status] || status;
 }
 
 function formatDateTime(value) {
@@ -882,7 +879,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                           {appt.discipline
                             ? <span className="pf-disc-chip" style={{ background: getDiscipline(appt.discipline)?.color }}>{getDiscipline(appt.discipline)?.label || appt.discipline}</span>
                             : <span className="pf-disc-chip" style={{ background: 'var(--r1-text-muted)' }}>Bloqueio</span>}
-                          <span className={`pf-appt-status pf-appt-status--${appt.status}`}>{statusLabel(appt.status)}</span>
+                          <span className={`pf-appt-status pf-appt-status--${appt.status}`}>{getStatusLabel(appt.status)}</span>
                         </div>
                       ))}
                     </div>

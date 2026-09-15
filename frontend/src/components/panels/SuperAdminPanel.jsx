@@ -6,6 +6,7 @@ import {
   resetProfessionalMfa,
   resetTemporaryPassword,
   setProfessionalActive,
+  setProfessionalRole,
   updateProfessionalProfile,
 } from '../../services/adminService';
 import { listClinics, setProfileClinic } from '../../services/clinicService';
@@ -17,6 +18,7 @@ import {
   SpecialtyTags,
 } from './professionalFormParts';
 import {
+  CREATABLE_ROLES,
   generatePassword,
   getFullName,
   getTemporaryPasswordValidationError,
@@ -142,6 +144,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
   const [loading, setLoading] = useState(true);
   const [auditLoading, setAuditLoading] = useState(true);
   const [statusChangingId, setStatusChangingId] = useState('');
+  const [roleChangingId, setRoleChangingId] = useState('');
   const [resettingId, setResettingId] = useState('');
   const [resetTarget, setResetTarget] = useState(null);
   const [resetForm, setResetForm] = useState({ password: '', confirmPassword: '' });
@@ -319,6 +322,28 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       setError(err.message || 'Não foi possível alterar o status.');
     } finally {
       setStatusChangingId('');
+    }
+  }
+
+  async function handleRoleChange(profile, nextRole) {
+    if (nextRole === profile.role) return;
+    setRoleChangingId(profile.id);
+    setError('');
+    setSuccess('');
+    try {
+      await setProfessionalRole(profile.id, nextRole);
+      setSuccess('Tipo de acesso atualizado.');
+      const nextProfiles = await load();
+      const updatedSelected = nextProfiles.find(item => item.id === profile.id);
+      if (updatedSelected) {
+        setSelectedProfile(updatedSelected);
+        setEditForm(profileToEditForm(updatedSelected));
+      }
+      await loadAudit();
+    } catch (err) {
+      setError(err.message || 'Não foi possível alterar o tipo de acesso.');
+    } finally {
+      setRoleChangingId('');
     }
   }
 
@@ -716,6 +741,20 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                 <span>
                   {[getProfession(selectedLiveProfile.profession).label, selectedLiveProfile.specialty].filter(Boolean).join(' · ') || 'Cadastro profissional pendente'} • {getStatus(selectedLiveProfile)}
                 </span>
+                {selectedLiveProfile.id !== currentUserId && selectedLiveProfile.role !== 'super_admin' && (
+                  <label className="admin-role-select">
+                    Tipo de acesso
+                    <select
+                      value={selectedLiveProfile.role}
+                      onChange={event => handleRoleChange(selectedLiveProfile, event.target.value)}
+                      disabled={roleChangingId === selectedLiveProfile.id}
+                    >
+                      {CREATABLE_ROLES.map(item => (
+                        <option key={item.value} value={item.value}>{item.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
               <button className="quiet-button" type="button" onClick={closeProfilePanel}>
                 Fechar

@@ -1584,20 +1584,6 @@ textarea { min-height: 95px; resize: vertical; }
   font-size: 24px;
 }
 
-.home-active-patient {
-  border: 1px solid var(--line);
-  border-radius: var(--r1-radius-sm);
-  background: var(--soft);
-  padding: 10px 12px;
-  margin: 0 0 14px;
-  color: #53657a;
-  font-size: 13px;
-}
-
-.home-active-patient b {
-  color: var(--navy);
-}
-
 .home-screen .start-workspace-head h2,
 .home-screen .start-panel-head h2 {
   color: var(--navy);
@@ -6601,6 +6587,22 @@ textarea { min-height: 95px; resize: vertical; }
 .admin-profile-head span {
   color: #64748b;
   font-size: 13px;
+}
+
+.admin-role-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.admin-role-select select {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 8px;
 }
 
 .admin-profile-metrics {

@@ -78,6 +78,15 @@ export async function setProfessionalActive(profileId, isActive) {
   if (error) throw error;
 }
 
+export async function setProfessionalRole(profileId, role) {
+  const { error } = await supabase.rpc('admin_set_profile_role', {
+    p_profile_id: profileId,
+    p_role: role,
+  });
+
+  if (error) throw error;
+}
+
 export async function updateProfessionalProfile(profileId, payload) {
   const { error } = await supabase.rpc('admin_update_profile', {
     p_profile_id: profileId,

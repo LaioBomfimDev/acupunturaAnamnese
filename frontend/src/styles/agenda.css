@@ -431,21 +431,17 @@
   cursor: pointer;
 }
 
+/* Só a borda muda no hover — a cor da fonte fica como está (cinza
+   quando solto, branca quando selecionado). Trocar a fonte pra
+   `--r1-text` no hover deixava o texto escuro demais pra ler, tanto no
+   chip solto (cinza -> quase preto) quanto no selecionado (fundo
+   escuro + texto ficando escuro também). */
 .ag-chip-btn:hover:not(:disabled) {
   border-color: var(--r1-accent);
-  color: var(--r1-text);
 }
 
 .ag-chip-btn[aria-pressed='true'] {
   background: var(--r1-surface-inverse);
-  border-color: transparent;
-  color: var(--r1-text-on-inverse);
-}
-
-/* Precisa vencer o `.ag-chip-btn:hover` acima em especificidade — senão o
-   hover num chip já selecionado troca o texto claro por `--r1-text`
-   (escuro) em cima do fundo escuro do próprio chip selecionado. */
-.ag-chip-btn[aria-pressed='true']:hover:not(:disabled) {
   border-color: transparent;
   color: var(--r1-text-on-inverse);
 }

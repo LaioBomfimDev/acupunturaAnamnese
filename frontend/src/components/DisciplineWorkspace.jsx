@@ -116,6 +116,21 @@ export function DisciplineWorkspace({
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [activeTab, setActiveTab] = useState(TABS.HOME);
+  // Chegando aqui a partir de "Escrever evolução" (Agenda/pendências): o
+  // paciente e o atendimento já foram selecionados ANTES do workspace
+  // montar (Agenda.startAppointment). Sem isso, o profissional caía
+  // sempre na tela de escolha de paciente (TABS.HOME), mesmo já tendo o
+  // atendimento certo em mãos.
+  useEffect(() => {
+    if (
+      activeAppointment
+      && activeAppointment.patientId === selectedPatient?.id
+      && activeAppointment.discipline === disciplineId
+    ) {
+      setActiveTab(TABS.EVOLUCAO);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPatient?.id]);
   const [session, setSession] = useState(() => createEmptySession(config));
   const [saveStatus, setSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);

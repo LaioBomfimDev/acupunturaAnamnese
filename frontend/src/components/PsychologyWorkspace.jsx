@@ -76,6 +76,21 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [activeTab, setActiveTab] = useState(PSYCHOLOGY_TABS.HOME);
+  // Chegando aqui a partir de "Escrever evolução" (Agenda/pendências): o
+  // paciente e o atendimento já foram selecionados ANTES do workspace
+  // montar (Agenda.startAppointment). Sem isso, o profissional caía
+  // sempre na tela de escolha de paciente (PSYCHOLOGY_TABS.HOME), mesmo
+  // já tendo o atendimento certo em mãos.
+  useEffect(() => {
+    if (
+      activeAppointment
+      && activeAppointment.patientId === selectedPatient?.id
+      && activeAppointment.discipline === 'psicologia'
+    ) {
+      setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPatient?.id]);
   const [session, setSession] = useState(createEmptyPsychologySession);
   // Evolução vinculada ao atendimento (patient_evolutions) vive fora do
   // registro clínico deste workspace — ver supabase/migrations/20260903.

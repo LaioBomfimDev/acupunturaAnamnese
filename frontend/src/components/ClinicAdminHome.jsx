@@ -15,6 +15,7 @@ import { InstitutionShortcuts } from './ui/InstitutionShortcuts';
 export function ClinicAdminHome({
   profile, therapistName, onSignOut,
   onOpenAgenda, onOpenPendingEvolutions, onOpenGestao, onOpenClinicPatients, onOpenDocuments,
+  pendingEvolutionsCount = 0,
 }) {
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Vitalis';
 
@@ -48,6 +49,7 @@ export function ClinicAdminHome({
               id: 'evolucao', icon: 'evolucao', primary: true, onClick: onOpenPendingEvolutions,
               title: 'Atendimentos aguardando evolução',
               description: 'Pendências de toda a equipe, não só as suas — atendido, faltou ou falta justificada.',
+              badge: pendingEvolutionsCount,
             },
             onOpenClinicPatients && {
               id: 'pacientes', icon: 'pacientes', onClick: onOpenClinicPatients,

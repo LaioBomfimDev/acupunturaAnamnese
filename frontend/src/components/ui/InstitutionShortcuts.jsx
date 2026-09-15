@@ -5,7 +5,9 @@
 // Evolução pendente resolvem uma tarefa do dia a dia; Gestão, Pacientes
 // e Documentos timbrados são consultados bem mais raro. `primary: true`
 // vira um cartão maior com ícone e descrição; o resto vira uma linha
-// compacta (ícone + rótulo, descrição só no title).
+// compacta (ícone + rótulo, descrição só no title). `badge` (número) num
+// item primário acende um sinal vermelho no canto — hoje só "Atendimentos
+// aguardando evolução" manda um, com a contagem real da clínica.
 const TOOL_ICONS = {
   agenda: (
     <>
@@ -66,6 +68,11 @@ export function InstitutionShortcuts({ tools }) {
         <div className="hub-tools-primary">
           {primary.map(tool => (
             <button key={tool.id} type="button" className="hub-tool-primary" onClick={tool.onClick}>
+              {tool.badge > 0 && (
+                <span className="hub-tool-badge" aria-label={`${tool.badge} pendente${tool.badge > 1 ? 's' : ''}`}>
+                  {tool.badge > 99 ? '99+' : tool.badge}
+                </span>
+              )}
               <span className="hub-tool-icon"><ToolIcon id={tool.icon} /></span>
               <span className="hub-tool-primary-text">
                 <b>{tool.title}</b>

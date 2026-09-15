@@ -66,7 +66,7 @@ const STATE_BADGES = {
   locked: 'Não habilitada',
 };
 
-export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments, onOpenAgenda, onOpenGestao, onOpenPendingEvolutions }) {
+export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onOpenClinicPatients, onOpenDocuments, onOpenAgenda, onOpenGestao, onOpenPendingEvolutions, pendingEvolutionsCount = 0 }) {
   const cards = buildHubCards(profile);
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Vitalis';
 
@@ -134,6 +134,7 @@ export function DisciplineHub({ profile, therapistName, onSelect, onSignOut, onO
                   id: 'evolucao', icon: 'evolucao', primary: true, onClick: onOpenPendingEvolutions,
                   title: 'Atendimentos aguardando evolução',
                   description: 'Atendido, faltou ou falta justificada: escreva a evolução sem procurar na agenda.',
+                  badge: pendingEvolutionsCount,
                 },
                 onOpenGestao && {
                   id: 'gestao', icon: 'gestao', onClick: onOpenGestao,

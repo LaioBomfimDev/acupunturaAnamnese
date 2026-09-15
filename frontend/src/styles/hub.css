@@ -285,6 +285,7 @@
 }
 
 .hub-tool-primary {
+  position: relative;
   display: flex;
   gap: 14px;
   align-items: center;
@@ -298,6 +299,40 @@
   box-shadow: var(--r1-shadow-sm);
   transition: transform var(--r1-dur-fast) var(--r1-ease),
     box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+/* Sinal vermelho: pendência real (contagem de atendimentos aguardando
+   evolução), não decoração — por isso cor semântica de perigo, nunca o
+   accent da clínica, que já pinta o cartão inteiro. */
+.hub-tool-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid var(--r1-bg);
+  background: var(--r1-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  animation: hub-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-tool-badge {
+    animation: none;
+  }
+}
+
+@keyframes hub-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--r1-danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--r1-danger) 0%, transparent); }
 }
 
 .hub-tool-primary:hover {

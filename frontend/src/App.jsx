@@ -6,6 +6,7 @@ import { useSessionPersistence } from './hooks/useSessionPersistence';
 import { analyze, assistantSynthesis } from './utils/analyzer';
 import { mergeEvolutionHistory } from './utils/evolutionHistory';
 import { listPatientEvolutions } from './services/patientEvolutionService';
+import { listAppointmentsAwaitingEvolution } from './services/appointmentService';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { DisciplineHub } from './components/DisciplineHub';
@@ -90,6 +91,7 @@ export default function App() {
   const [showHubDocuments, setShowHubDocuments] = useState(false);
   const [showHubAgenda, setShowHubAgenda] = useState(false);
   const [showHubGestao, setShowHubGestao] = useState(false);
+  const [pendingEvolutionsCount, setPendingEvolutionsCount] = useState(0);
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
   const { state, selectedMap, updateField, toggle, setSelection, getSelected, getPulseSelected, setState, setSelectedMap, resetSession, tongueAi, setTongueAi, hydrateTongueAi } = useClinicState();
@@ -110,6 +112,21 @@ export default function App() {
     const clinicName = profile?.clinic?.name || profile?.clinic_name;
     document.title = clinicName || 'Vitalis';
   }, [profile?.clinic?.name, profile?.clinic_name]);
+
+  // Contagem pro sinal vermelho do atalho "Atendimentos aguardando
+  // evolução" no Hub/ClinicAdminHome — clínica inteira (sem patientId),
+  // mesma RPC que a Agenda usa. Refaz ao voltar pro hub (activeDiscipline
+  // zera) ou ao sair da Agenda (onde a pendência é resolvida).
+  useEffect(() => {
+    if (!profile || isSuperAdmin || activeDiscipline) return undefined;
+    let cancelled = false;
+
+    listAppointmentsAwaitingEvolution()
+      .then(list => { if (!cancelled) setPendingEvolutionsCount(list.length); })
+      .catch(() => { if (!cancelled) setPendingEvolutionsCount(0); });
+
+    return () => { cancelled = true; };
+  }, [profile?.id, isSuperAdmin, activeDiscipline, showHubAgenda]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Metadados persistíveis da análise de língua (sem imagens/object URLs)
   const tongueAiMeta = useMemo(() => serializeTongueAi(tongueAi), [tongueAi]);
@@ -290,6 +307,7 @@ export default function App() {
             onOpenGestao={() => setShowHubGestao(true)}
             onOpenAgenda={() => setShowHubAgenda(true)}
             onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
+            pendingEvolutionsCount={pendingEvolutionsCount}
           />
         </Suspense>
       );
@@ -403,6 +421,7 @@ export default function App() {
         onOpenAgenda={() => setShowHubAgenda(true)}
         onOpenGestao={() => setShowHubGestao(true)}
         onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
+        pendingEvolutionsCount={pendingEvolutionsCount}
       />
     );
   }

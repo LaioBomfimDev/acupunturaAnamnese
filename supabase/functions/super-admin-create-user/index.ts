@@ -36,7 +36,7 @@ const ALLOWED_ROLES = new Set(['therapist', 'clinic_admin']);
 // Disciplinas válidas para a coluna profiles.disciplines. Quando o SuperAdm
 // escolhe explicitamente uma disciplina específica, a coluna vence o
 // fallback por profissão de resolveUserDisciplines (que sempre injeta acupuntura).
-const DISCIPLINE_IDS = new Set(['acupuntura', 'fisioterapia', 'psicologia', 'nutricao']);
+const DISCIPLINE_IDS = new Set(['acupuntura', 'fisioterapia', 'psicologia', 'nutricao', 'neuropsicologia']);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

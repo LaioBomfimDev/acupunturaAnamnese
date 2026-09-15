@@ -18,6 +18,25 @@ import { normalizeSharedScopes } from '../data/shareScopes';
 
 const LOCAL_SHARES_KEY = 'acup_local_record_shares';
 
+// supabase-js zera `data` numa resposta não-2xx de functions.invoke — o
+// motivo real (validação, gate do ator, RPC rejeitada) só existe no corpo
+// de error.context, nunca em `data.error`. Mesmo padrão de adminService.js
+// e AuthContext.jsx.
+async function throwFunctionError(error, fallbackMessage) {
+  if (!error) return;
+  if (typeof error.context?.json === 'function') {
+    try {
+      const body = await error.context.json();
+      throw new Error(body?.error || body?.message || error.message || fallbackMessage);
+    } catch (bodyError) {
+      if (bodyError instanceof Error && bodyError.message) {
+        throw bodyError;
+      }
+    }
+  }
+  throw new Error(error.message || fallbackMessage);
+}
+
 export const SHARE_MIGRATION_HINT =
   'Estrutura de compartilhamento ausente no banco. Aplique a migração ' +
   'supabase/migrations/20260709_record_shares.sql no Supabase.';
@@ -110,7 +129,7 @@ export async function createRecordShare(patientId, {
 
   if (error) {
     if (isMissingShareSchemaError(error)) throw new Error(SHARE_MIGRATION_HINT);
-    throw new Error(data?.error || 'Não foi possível confirmar e criar o compartilhamento.');
+    await throwFunctionError(error, 'Não foi possível confirmar e criar o compartilhamento.');
   }
   if (data?.error) throw new Error(data.error);
   if (!data?.share?.id) {

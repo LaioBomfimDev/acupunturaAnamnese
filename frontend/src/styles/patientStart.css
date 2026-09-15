@@ -65,13 +65,89 @@
   min-height: 44px;
 }
 
-.patient-start .home-active-patient {
+/* Paciente ativo: precisa saltar aos olhos — é o que diz "retomar" ou
+   "trocar de paciente" numa tela que também lista os outros 51. Antes
+   era uma linha de texto cinza de 13px, fácil de não ver. */
+.active-patient-banner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
+  width: 100%;
   margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid color-mix(in srgb, var(--r1-accent) 35%, transparent);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.active-patient-banner:hover {
+  border-color: var(--r1-accent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--r1-accent) 22%, transparent);
+}
+
+.active-patient-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.active-patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.active-patient-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--r1-accent-strong);
+}
+
+.active-patient-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-patient-cta {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .active-patient-banner {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .active-patient-cta {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 @media (max-width: 640px) {

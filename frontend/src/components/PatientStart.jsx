@@ -109,12 +109,18 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
       <div className="home-grid">
         <section className="start-workspace">
           {selectedPatient && (
-            <div className="home-active-patient">
-              <span><b>Paciente selecionado:</b> {selectedPatient.name}</span>
-              <button type="button" className="quiet-button" onClick={() => onSelectPatient?.(selectedPatient)}>
-                Retomar atendimento
-              </button>
-            </div>
+            <button
+              type="button"
+              className="active-patient-banner"
+              onClick={() => onSelectPatient?.(selectedPatient)}
+            >
+              <span className="active-patient-avatar">{getInitials(selectedPatient.name)}</span>
+              <span className="active-patient-info">
+                <span className="active-patient-label">Paciente selecionado</span>
+                <b className="active-patient-name">{selectedPatient.name}</b>
+              </span>
+              <span className="active-patient-cta">Retomar atendimento →</span>
+            </button>
           )}
 
           <section className="start-panel">

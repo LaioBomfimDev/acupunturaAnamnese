@@ -11,6 +11,8 @@ import {
   enrollPatientInitial,
   enrollmentStatusLabel,
   listClinicPatients,
+  listPendingPatientDeletions,
+  decidePatientDeletion,
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
@@ -146,6 +148,24 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
   const [revokingId, setRevokingId] = useState(null);
   const responsavelRequired = isMinor(form.birthDate);
 
+  // Fila de solicitações de exclusão (só administração da clínica vê e
+  // decide — a solicitação em si qualquer profissional pode abrir, na
+  // tela de seleção de paciente de cada disciplina).
+  const [pendingDeletions, setPendingDeletions] = useState([]);
+  const [deletionReview, setDeletionReview] = useState(null); // { requestId, patientName, reason } | null
+  const [deletionConfirmText, setDeletionConfirmText] = useState('');
+  const [deletionAckBackup, setDeletionAckBackup] = useState(false);
+  const [decidingId, setDecidingId] = useState(null);
+
+  const loadPendingDeletions = useCallback(async () => {
+    if (!isClinicAdmin) return;
+    try {
+      setPendingDeletions(await listPendingPatientDeletions());
+    } catch (err) {
+      console.warn('Solicitações de exclusão não carregadas:', err?.message || err);
+    }
+  }, [isClinicAdmin]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -174,7 +194,52 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
     // compartilhamento — se a busca falhar, os chips caem para o nome
     // da disciplina (mesmo comportamento de antes desta tela existir).
     listClinicMembers().then(setMembers).catch(() => setMembers([]));
-  }, [load]);
+    loadPendingDeletions();
+  }, [load, loadPendingDeletions]);
+
+  function openDeletionReview(request) {
+    setDeletionReview(request);
+    setDeletionConfirmText('');
+    setDeletionAckBackup(false);
+  }
+
+  function closeDeletionReview() {
+    setDeletionReview(null);
+    setDeletionConfirmText('');
+    setDeletionAckBackup(false);
+  }
+
+  async function handleRejectDeletion(request) {
+    setDecidingId(request.request_id);
+    setNotice(null);
+    try {
+      await decidePatientDeletion(request.request_id, 'rejected');
+      setNotice({ type: 'success', text: `Exclusão de ${request.patient_name} rejeitada — paciente volta a aparecer normalmente.` });
+      closeDeletionReview();
+      await loadPendingDeletions();
+      await load();
+    } catch (err) {
+      setNotice({ type: 'error', text: err.message || 'Não foi possível rejeitar a solicitação.' });
+    } finally {
+      setDecidingId(null);
+    }
+  }
+
+  async function handleApproveDeletion(request) {
+    setDecidingId(request.request_id);
+    setNotice(null);
+    try {
+      await decidePatientDeletion(request.request_id, 'approved');
+      setNotice({ type: 'success', text: `${request.patient_name} foi removido definitivamente (dados pessoais e prontuário apagados).` });
+      closeDeletionReview();
+      await loadPendingDeletions();
+      await load();
+    } catch (err) {
+      setNotice({ type: 'error', text: err.message || 'Não foi possível concluir a exclusão.' });
+    } finally {
+      setDecidingId(null);
+    }
+  }
 
   const membersById = useMemo(() => new Map(members.map(m => [m.id, m])), [members]);
 
@@ -349,6 +414,19 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
 
         {notice && (
           <div className={`cp-notice cp-notice-${notice.type}`}>{notice.text}</div>
+        )}
+
+        {isClinicAdmin && pendingDeletions.length > 0 && (
+          <div className="cp-notice cp-notice-warn cp-deletion-banner">
+            <span>
+              {pendingDeletions.length === 1
+                ? '1 solicitação de exclusão de paciente aguardando decisão.'
+                : `${pendingDeletions.length} solicitações de exclusão de paciente aguardando decisão.`}
+            </span>
+            <button type="button" className="cp-btn cp-btn--sm" onClick={() => openDeletionReview(pendingDeletions[0])}>
+              Revisar
+            </button>
+          </div>
         )}
 
         {mode === null && (
@@ -640,6 +718,11 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
                       pendência
                     </span>
                   )}
+                  {patient.suspended_at && (
+                    <span className="cp-badge cp-badge-off" title="Suspenso — pausa reversível marcada na ficha do paciente">
+                      inativo
+                    </span>
+                  )}
                   {(patient.enrollments || []).length === 0 && (
                     <span className="cp-badge cp-badge-warn">sem matrícula</span>
                   )}
@@ -714,6 +797,70 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
           fromDiscipline={viewTarget.fromDiscipline}
           onClose={() => setViewTarget(null)}
         />
+      )}
+
+      {deletionReview && (
+        <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Excluir ${deletionReview.patient_name}`}>
+          <div className="cp-modal-panel">
+            <div className="cp-modal-head">
+              <h3 className="cp-modal-title">
+                Excluir {deletionReview.patient_name}?
+                {pendingDeletions.length > 1 && <span className="small"> (1 de {pendingDeletions.length})</span>}
+              </h3>
+              <button type="button" className="cp-modal-close" onClick={closeDeletionReview} aria-label="Fechar">×</button>
+            </div>
+            <div className="cp-modal-body">
+              <p className="cp-modal-intro">
+                Motivo informado: <b>{deletionReview.reason}</b>
+              </p>
+              <p className="cp-deletion-warning">
+                Aprovar apaga prontuário, evoluções, agenda e matrículas deste paciente e
+                limpa todo dado pessoal do cadastro — não tem como desfazer pela tela. Um
+                snapshot fica guardado no banco antes de apagar, mas isso não substitui um
+                backup externo (o sistema ainda não tem um).
+              </p>
+              <label className="cps-field">
+                Digite o nome do paciente pra confirmar
+                <input
+                  value={deletionConfirmText}
+                  onChange={e => setDeletionConfirmText(e.target.value)}
+                  placeholder={deletionReview.patient_name}
+                  autoFocus
+                />
+              </label>
+              <label className="cp-deletion-ack">
+                <input
+                  type="checkbox"
+                  checked={deletionAckBackup}
+                  onChange={e => setDeletionAckBackup(e.target.checked)}
+                />
+                Entendo que essa exclusão é definitiva e não existe backup externo.
+              </label>
+              <div className="cp-deletion-actions">
+                <button
+                  type="button"
+                  className="cp-btn"
+                  onClick={() => handleRejectDeletion(deletionReview)}
+                  disabled={decidingId === deletionReview.request_id}
+                >
+                  Rejeitar solicitação
+                </button>
+                <button
+                  type="button"
+                  className="cp-btn cp-btn--danger"
+                  onClick={() => handleApproveDeletion(deletionReview)}
+                  disabled={
+                    decidingId === deletionReview.request_id
+                    || !deletionAckBackup
+                    || deletionConfirmText.trim().toLowerCase() !== deletionReview.patient_name.trim().toLowerCase()
+                  }
+                >
+                  {decidingId === deletionReview.request_id ? 'Excluindo…' : 'Aprovar e excluir definitivamente'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

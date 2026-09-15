@@ -112,7 +112,7 @@ export async function listClinicPatients() {
 
   let { data, error } = await supabase
     .from('patients')
-    .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+    .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(2000);
@@ -120,7 +120,7 @@ export async function listClinicPatients() {
   if (error && isMissingPendingColumnError(error)) {
     ({ data, error } = await supabase
       .from('patients')
-      .select('id,name,phone,age,birth_date,cpf,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+      .select('id,name,phone,age,birth_date,cpf,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(2000));
@@ -129,7 +129,7 @@ export async function listClinicPatients() {
   if (error && isMissingCpfColumnError(error)) {
     ({ data, error } = await supabase
       .from('patients')
-      .select('id,name,phone,age,birth_date,archived_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+      .select('id,name,phone,age,birth_date,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(2000));
@@ -205,4 +205,41 @@ export async function enrollPatientInitial(patientId, disciplineId) {
     console.warn('Matrícula inicial não criada:', error?.message || error);
     return null;
   }
+}
+
+/**
+ * Suspende/reativa um paciente: pausa reversível e sem revisão — o
+ * paciente continua na lista da clínica, só marcado como inativo.
+ * Diferente de "solicitar exclusão" (arquiva + fila de revisão).
+ */
+export async function setPatientSuspended(patientId, suspended) {
+  const { error } = await supabase.rpc('set_patient_suspended', {
+    p_patient_id: patientId,
+    p_suspended: suspended,
+  });
+  if (error) throw error;
+}
+
+/** Fila de solicitações de exclusão pendentes, pra administração decidir. */
+export async function listPendingPatientDeletions() {
+  const { data, error } = await supabase.rpc('admin_list_pending_patient_deletions');
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Decide uma solicitação de exclusão. Aprovar já executa: apaga o
+ * conteúdo clínico (prontuários, evoluções, agenda, matrículas,
+ * anexos) e anonimiza o cadastro — a linha do paciente nunca é
+ * removida de fato (patient_deletion_requests é append-only e tem FK
+ * pra ela), mas some das listas pra sempre. Um snapshot de tudo fica
+ * guardado antes de apagar/limpar qualquer coisa.
+ */
+export async function decidePatientDeletion(requestId, decision, reason) {
+  const { error } = await supabase.rpc('admin_decide_patient_deletion', {
+    p_request_id: requestId,
+    p_decision: decision,
+    p_reason: reason || null,
+  });
+  if (error) throw error;
 }

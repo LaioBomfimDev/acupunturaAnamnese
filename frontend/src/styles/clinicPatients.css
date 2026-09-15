@@ -38,6 +38,44 @@
   border-color: var(--r1-warning-border);
 }
 
+.cp-deletion-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cp-deletion-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-danger-bg);
+  border: 1px solid var(--r1-danger-border);
+  color: var(--r1-danger);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.cp-deletion-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.cp-deletion-ack input {
+  margin-top: 2px;
+}
+
+.cp-deletion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .cp-notice-error {
   color: var(--r1-danger);
   background: var(--r1-danger-bg);
@@ -1292,6 +1330,13 @@
   border-color: var(--r1-warning-border);
   background: var(--r1-warning-bg);
   color: var(--r1-warning);
+}
+
+.pf-meta-chip--suspended {
+  border-color: var(--r1-border);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+  font-weight: 700;
 }
 
 .pf-identity-actions {

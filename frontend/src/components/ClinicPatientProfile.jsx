@@ -3,14 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
-  getPatient, updatePatient, formatCpf, isValidCpf, isMinor,
+  getPatient, updatePatient, deletePatient, formatCpf, isValidCpf, isMinor,
 } from '../services/patientService';
-import { formatAge, formatBirthDate, getInitials } from '../utils/patientUi';
+import { formatAge, formatBirthDate, getInitials, isPatientDeletionConfirmationValid } from '../utils/patientUi';
 import { listAppointments, listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { enrollPatient, enrollmentStatusLabel } from '../services/clinicPatientsService';
+import { enrollPatient, enrollmentStatusLabel, setPatientSuspended } from '../services/clinicPatientsService';
 import {
   listPatientAttachments, uploadPatientAttachment, getPatientAttachmentUrl, deletePatientAttachment,
 } from '../services/patientAttachmentsService';
@@ -133,6 +133,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
   const [activeTab, setActiveTab] = useState('cadastro');
   const [showTimeline, setShowTimeline] = useState(false);
+  const [deleteRequestOpen, setDeleteRequestOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [requestingDeletion, setRequestingDeletion] = useState(false);
   const printSourceRef = useRef(null);
   const printMeasureRef = useRef(null);
   const printHeaderMeasureRef = useRef(null);
@@ -263,6 +266,48 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       onPatientUpdated?.(updated);
     } catch (err) {
       setNotice({ type: 'error', text: err.message || 'Não foi possível salvar a pendência.' });
+    }
+  }
+
+  /**
+   * Suspender é uma pausa reversível e sem revisão: o paciente continua
+   * na lista da clínica, só marcado inativo. Diferente de "solicitar
+   * exclusão" (arquiva e entra numa fila que a administração decide).
+   */
+  async function handleToggleSuspended() {
+    const next = !full?.suspended_at;
+    setNotice(null);
+    try {
+      await setPatientSuspended(full.id, next);
+      const updated = { ...full, suspended_at: next ? new Date().toISOString() : null };
+      setFull(updated);
+      onPatientUpdated?.(updated);
+    } catch (err) {
+      setNotice({ type: 'error', text: err.message || 'Não foi possível alterar o status do paciente.' });
+    }
+  }
+
+  /**
+   * "Solicitar exclusão" arquiva o paciente e entra numa fila que só a
+   * administração da clínica decide (aprovar apaga de vez, com
+   * confirmação separada lá — ver ClinicPatientsPanel). Diferente de
+   * suspender: essa é a exclusão real, só que em duas etapas.
+   */
+  async function handleRequestDeletion() {
+    if (!isPatientDeletionConfirmationValid(deleteConfirmText)) return;
+    setRequestingDeletion(true);
+    setNotice(null);
+    try {
+      await deletePatient(full.id);
+      setNotice({ type: 'success', text: `${full.name} foi arquivado e a exclusão ficou pendente para decisão da administração.` });
+      setDeleteRequestOpen(false);
+      setDeleteConfirmText('');
+      onPatientUpdated?.({ ...full, archived_at: new Date().toISOString() });
+      onBack?.();
+    } catch (err) {
+      setNotice({ type: 'error', text: err.message || 'Não foi possível solicitar a exclusão.' });
+    } finally {
+      setRequestingDeletion(false);
     }
   }
 
@@ -475,6 +520,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     {full?.phone && <span className="pf-meta-chip">{full.phone}</span>}
                     {full?.cpf && <span className="pf-meta-chip">CPF {formatCpf(full.cpf)}</span>}
                     {full?.has_pending && <span className="pf-meta-chip pf-meta-chip--pending">Pendência</span>}
+                    {full?.suspended_at && <span className="pf-meta-chip pf-meta-chip--suspended">Inativo</span>}
                   </div>
                 </div>
               </div>
@@ -488,11 +534,61 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   >
                     {full?.has_pending ? '✓ Pendência marcada' : 'Marcar pendência'}
                   </button>
+                  <button
+                    type="button"
+                    className={`cp-btn cp-btn--sm${full?.suspended_at ? ' cp-btn--pending-on' : ''}`}
+                    onClick={handleToggleSuspended}
+                    title="Pausa reversível: some da agenda de atendimento ativo, mas continua na lista da clínica, marcado como inativo"
+                  >
+                    {full?.suspended_at ? '✓ Suspenso — reativar' : 'Suspender paciente'}
+                  </button>
                   <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir</button>
                   <button type="button" className="cp-btn cp-btn--sm" onClick={() => { setActiveTab('cadastro'); startEdit(); }}>Editar cadastro</button>
+                  <button
+                    type="button"
+                    className="cp-btn cp-btn--sm cp-btn--danger"
+                    onClick={() => { setDeleteRequestOpen(true); setDeleteConfirmText(''); }}
+                  >
+                    Solicitar exclusão
+                  </button>
                 </div>
               )}
             </div>
+
+            {deleteRequestOpen && (
+              <form
+                className="patient-delete-panel"
+                onSubmit={e => { e.preventDefault(); handleRequestDeletion(); }}
+                role="alertdialog"
+                aria-labelledby="patient-profile-delete-title"
+              >
+                <div>
+                  <p className="small">Solicitação administrativa</p>
+                  <h3 id="patient-profile-delete-title">Solicitar exclusão de {full?.name || patient.name}?</h3>
+                  <p>
+                    O paciente será arquivado agora. A administração da clínica decide depois: se aprovar,
+                    prontuário, evoluções e cadastro são apagados de vez. Confirme digitando <b>excluir</b>.
+                  </p>
+                </div>
+                <label>
+                  Confirmação
+                  <input
+                    value={deleteConfirmText}
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    placeholder="Digite excluir"
+                    autoFocus
+                  />
+                </label>
+                <div className="patient-delete-confirm-actions">
+                  <button className="tag" type="button" onClick={() => setDeleteRequestOpen(false)} disabled={requestingDeletion}>
+                    Cancelar
+                  </button>
+                  <button className="danger-button" type="submit" disabled={!isPatientDeletionConfirmationValid(deleteConfirmText) || requestingDeletion}>
+                    {requestingDeletion ? 'Solicitando…' : 'Arquivar e solicitar exclusão'}
+                  </button>
+                </div>
+              </form>
+            )}
 
             <div className="pf-tabs" role="tablist">
               {TABS.map(tab => (

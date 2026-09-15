@@ -9,7 +9,7 @@ import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 
 const LOCAL_PATIENTS_KEY = 'acup_local_patients';
 const PATIENT_SELECT_COLUMNS =
-  'id,therapist_id,name,phone,birth_date,age,archived_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
+  'id,therapist_id,name,phone,birth_date,age,archived_at,suspended_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
   'has_pending,' +
   'nome_social,nome_mae,nome_pai,nome_conjuge,sexo_biologico,genero,' +
   'responsavel_nome,responsavel_telefone,responsavel_cpf,' +

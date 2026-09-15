@@ -7,6 +7,10 @@
     {
       "source": "/confirmar-agendamento",
       "destination": "/index.html"
+    },
+    {
+      "source": "/agenda-publica",
+      "destination": "/index.html"
     }
   ],
   "headers": [

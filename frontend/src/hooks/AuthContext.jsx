@@ -10,6 +10,7 @@ import {
 import { getClinicForProfile } from '../services/clinicService';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { buildReportAccentPalette } from '../utils/reportUtils';
+import { recordAuthEvent, recordAuthError } from '../lib/authDiagnostics';
 
 const AuthContext = createContext({});
 const LOCAL_FALLBACK_ENABLED =
@@ -166,15 +167,21 @@ export const AuthProvider = ({ children }) => {
 
     // 1. Busca a sessão atual do Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
+      recordAuthEvent('getSession', null, session);
       setUser(session?.user ?? null);
       setSessionLoading(false);
     }).catch(error => {
       console.error('Erro ao carregar sessão:', error);
+      recordAuthError('getSession', error);
       setSessionLoading(false);
     });
 
     // 2. Escuta mudanças no estado de autenticação (ex: login, logout, refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Diagnóstico temporário: relato de deslogamento sem explicação
+      // aparente (ver frontend/src/lib/authDiagnostics.js).
+      recordAuthEvent('onAuthStateChange', _event, session);
+
       // Só atualiza se não houver usuário local ativo
       if (!LOCAL_FALLBACK_ENABLED || !localStorage.getItem(LOCAL_USER_KEY)) {
         setUser(session?.user ?? null);
@@ -329,6 +336,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
+    recordAuthEvent('signOut_called', 'USER_INITIATED', null);
+
     // Precisa ser chamado ANTES de auth.signOut(): depois disso não há
     // mais token para o servidor identificar quem saiu. Best-effort —
     // nunca deve atrasar ou bloquear o logout no cliente.

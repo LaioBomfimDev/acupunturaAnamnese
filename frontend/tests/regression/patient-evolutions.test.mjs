@@ -205,7 +205,11 @@ test('ficha do paciente: navegação por abas substitui as seções empilhadas',
 test('ficha do paciente: matrículas listam TODAS as disciplinas, com check pra quem enxerga', () => {
   assert.match(profileSource, /DISCIPLINES\.map\(discipline/);
   assert.match(profileSource, /enrollmentByDiscipline\.get\(discipline\.id\)/);
-  assert.match(profileSource, /Não matriculado/);
+  // 15/09/2026 (557f901): a linha sem matrícula deixou de ser um rótulo
+  // passivo ("Não matriculado") e virou botão que chama handleEnroll —
+  // atualizado junto com o texto novo.
+  assert.match(profileSource, /Sem matrícula — clique pra compartilhar com essa área/);
+  assert.match(profileSource, /onClick=\{\(\) => handleEnroll\(discipline\.id\)\}/);
 });
 
 test('ficha do paciente: evolução é resumo + atalho, com aviso pulsante quando há pendência', () => {

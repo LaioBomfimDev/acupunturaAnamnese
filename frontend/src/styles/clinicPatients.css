@@ -1523,6 +1523,24 @@
   background: var(--r1-accent-wash);
 }
 
+button.pf-discipline-row {
+  width: 100%;
+  background: var(--r1-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+button.pf-discipline-row:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--r1-accent) 45%, transparent);
+}
+
+button.pf-discipline-row:disabled {
+  cursor: default;
+  opacity: .65;
+}
+
 .pf-discipline-check {
   flex-shrink: 0;
   width: 22px;

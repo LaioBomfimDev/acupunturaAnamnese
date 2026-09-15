@@ -10,7 +10,7 @@ import { listAppointments, listAppointmentsAwaitingEvolution } from '../services
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { enrollmentStatusLabel } from '../services/clinicPatientsService';
+import { enrollPatient, enrollmentStatusLabel } from '../services/clinicPatientsService';
 import {
   listPatientAttachments, uploadPatientAttachment, getPatientAttachmentUrl, deletePatientAttachment,
 } from '../services/patientAttachmentsService';
@@ -123,6 +123,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [attachments, setAttachments] = useState([]);
   const [shares, setShares] = useState([]);
   const [members, setMembers] = useState([]);
+  const [enrollments, setEnrollments] = useState(patient.enrollments || []);
+  const [enrollingDiscipline, setEnrollingDiscipline] = useState(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -140,6 +142,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setEnrollments(patient.enrollments || []);
     Promise.all([
       getPatient(patient.id),
       listAppointments({ patientId: patient.id }).catch(() => []),
@@ -160,6 +163,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     }).catch(err => { if (!cancelled) setError(err.message || 'Não foi possível carregar a ficha.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
+    // Só reseta ao trocar de paciente — enrollments locais (handleEnroll)
+    // não podem ser sobrescritos por uma nova referência do mesmo prop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patient.id]);
 
   function shareLabel(share) {
@@ -293,6 +299,28 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     }
   }
 
+  /**
+   * Matricular direto pela ficha ("enviar para outra área") — a lacuna
+   * apontada no comentário de ClinicPatientsPanel ("até alguém entrar e
+   * matricular pela ficha"). Só cria o vínculo; nunca duplica o paciente.
+   */
+  async function handleEnroll(disciplineId) {
+    if (enrollingDiscipline || enrollmentByDiscipline.has(disciplineId)) return;
+    setEnrollingDiscipline(disciplineId);
+    setNotice(null);
+    try {
+      const enrollment = await enrollPatient(full.id, disciplineId);
+      const nextEnrollments = [...enrollments, enrollment];
+      setEnrollments(nextEnrollments);
+      onPatientUpdated?.({ ...full, enrollments: nextEnrollments });
+      setNotice({ type: 'success', text: `Paciente enviado para ${getDiscipline(disciplineId)?.label || disciplineId}.` });
+    } catch (err) {
+      setNotice({ type: 'error', text: err.message || 'Não foi possível matricular o paciente nessa área.' });
+    } finally {
+      setEnrollingDiscipline(null);
+    }
+  }
+
   if (showTimeline) {
     return (
       <PatientEvolutionTimeline
@@ -335,7 +363,6 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const hasFiliacao = Boolean(full?.nome_mae || full?.nome_pai || full?.nome_conjuge);
   const hasConvenio = Boolean(full?.convenio_nome || full?.convenio_carteirinha);
   const hasEndereco = Boolean(enderecoLinha || full?.endereco_complemento || enderecoComplementoLinha || full?.endereco_cep);
-  const enrollments = patient.enrollments || [];
   const enrollmentByDiscipline = new Map(enrollments.map(e => [e.discipline, e]));
 
   const lastEvolutionAt = evolutions.reduce((latest, evo) => {
@@ -638,24 +665,43 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   <h4>Quem enxerga este paciente</h4>
                   <p className="small" style={{ marginTop: -4, marginBottom: 12 }}>
                     Todas as disciplinas da clínica — não só as matriculadas — para o entendimento ficar completo.
+                    Clique numa área sem matrícula pra compartilhar o paciente com quem atende lá.
                   </p>
                   <div className="pf-discipline-list">
                     {DISCIPLINES.map(discipline => {
                       const enrollment = enrollmentByDiscipline.get(discipline.id);
-                      return (
-                        <div key={discipline.id} className={`pf-discipline-row${enrollment ? ' is-active' : ''}`}>
-                          <span className="pf-discipline-check">{enrollment ? '✓' : ''}</span>
+                      const isEnrolling = enrollingDiscipline === discipline.id;
+                      const rowContent = (
+                        <>
+                          <span className="pf-discipline-check">{isEnrolling ? '…' : (enrollment ? '✓' : '')}</span>
                           <span className="pf-discipline-dot" style={{ background: discipline.color }} />
                           <span className="pf-discipline-name">{discipline.label}</span>
                           <span className="pf-discipline-sub">
-                            {enrollment
-                              ? `Matriculado em ${new Date(enrollment.created_at).toLocaleDateString('pt-BR')}`
-                              : 'Sem matrícula — não é atendido nesta área'}
+                            {isEnrolling
+                              ? 'Matriculando…'
+                              : enrollment
+                                ? `Matriculado em ${new Date(enrollment.created_at).toLocaleDateString('pt-BR')}`
+                                : 'Sem matrícula — clique pra compartilhar com essa área'}
                           </span>
                           <span className={`cp-badge${enrollment ? (enrollment.status === 'active' ? '' : ` cp-badge-${enrollment.status}`) : ' cp-badge-off'}`}>
-                            {enrollment ? enrollmentStatusLabel(enrollment.status) : 'Não matriculado'}
+                            {enrollment ? enrollmentStatusLabel(enrollment.status) : 'Matricular'}
                           </span>
+                        </>
+                      );
+                      return enrollment ? (
+                        <div key={discipline.id} className="pf-discipline-row is-active">
+                          {rowContent}
                         </div>
+                      ) : (
+                        <button
+                          key={discipline.id}
+                          type="button"
+                          className="pf-discipline-row"
+                          onClick={() => handleEnroll(discipline.id)}
+                          disabled={Boolean(enrollingDiscipline)}
+                        >
+                          {rowContent}
+                        </button>
                       );
                     })}
                   </div>

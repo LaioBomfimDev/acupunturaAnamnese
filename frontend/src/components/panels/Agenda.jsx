@@ -1097,19 +1097,18 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             professionalName={professionalName}
             showProfessional={showProfessional}
             clinicName={profile?.clinic?.name || profile?.clinic_name}
-            initialProfessionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
+            professionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
           />
         )}
 
         {view === 'evolucoes-pendentes' && (
           <PendingEvolutionsView
-            members={members}
             patientName={patientName}
             professionalName={professionalName}
             showProfessional={showProfessional}
             onWrite={startAppointment}
             canWrite={canStart}
-            initialProfessionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
+            professionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
           />
         )}
 

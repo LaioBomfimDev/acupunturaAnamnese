@@ -419,6 +419,8 @@
 }
 
 .ag-chip-btn {
+  display: inline-flex;
+  align-items: center;
   padding: 3px 9px;
   border: 1px solid var(--r1-border);
   border-radius: 999px;
@@ -436,6 +438,14 @@
 
 .ag-chip-btn[aria-pressed='true'] {
   background: var(--r1-surface-inverse);
+  border-color: transparent;
+  color: var(--r1-text-on-inverse);
+}
+
+/* Precisa vencer o `.ag-chip-btn:hover` acima em especificidade — senão o
+   hover num chip já selecionado troca o texto claro por `--r1-text`
+   (escuro) em cima do fundo escuro do próprio chip selecionado. */
+.ag-chip-btn[aria-pressed='true']:hover:not(:disabled) {
   border-color: transparent;
   color: var(--r1-text-on-inverse);
 }

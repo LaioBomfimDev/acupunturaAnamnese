@@ -53,15 +53,13 @@ function toAppointmentShape(item) {
 }
 
 export function PendingEvolutionsView({
-  members,
   patientName,
   professionalName,
   showProfessional = false,
   onWrite,
   canWrite,
-  initialProfessionalId = '',
+  professionalId = '',
 }) {
-  const [professionalId, setProfessionalId] = useState(initialProfessionalId);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -111,22 +109,6 @@ export function PendingEvolutionsView({
 
   return (
     <div className="agp">
-      <div className="agp-filters">
-        {members.length > 1 && (
-          <select
-            className="ag-select"
-            value={professionalId}
-            onChange={e => setProfessionalId(e.target.value)}
-            aria-label="Filtrar por profissional"
-          >
-            <option value="">Toda a equipe</option>
-            {members.map(member => (
-              <option key={member.id} value={member.id}>{member.full_name}</option>
-            ))}
-          </select>
-        )}
-      </div>
-
       {error && <div className="ag-alert" role="alert">{error}</div>}
 
       {loading ? (

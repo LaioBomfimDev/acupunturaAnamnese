@@ -49,10 +49,9 @@ export function PendingConfirmationView({
   professionalName,
   showProfessional = false,
   clinicName = '',
-  initialProfessionalId = '',
+  professionalId = '',
 }) {
   const [days, setDays] = useState(7);
-  const [professionalId, setProfessionalId] = useState(initialProfessionalId);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState(null);
@@ -162,20 +161,6 @@ export function PendingConfirmationView({
             </button>
           ))}
         </div>
-
-        {members.length > 1 && (
-          <select
-            className="ag-select"
-            value={professionalId}
-            onChange={e => setProfessionalId(e.target.value)}
-            aria-label="Filtrar por profissional"
-          >
-            <option value="">Toda a equipe</option>
-            {members.map(member => (
-              <option key={member.id} value={member.id}>{member.full_name}</option>
-            ))}
-          </select>
-        )}
       </div>
 
       {error && <div className="ag-alert" role="alert">{error}</div>}

@@ -6706,6 +6706,61 @@ textarea { min-height: 95px; resize: vertical; }
   color: #991b1b;
 }
 
+.admin-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-role-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 76, 73, .28);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.admin-profile-head h2 .admin-role-badge {
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.admin-role-badge.role-therapist {
+  border-color: rgba(30, 64, 175, .2);
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.admin-role-badge.role-clinic-admin {
+  border-color: rgba(146, 64, 14, .25);
+  background: #fff7e6;
+  color: #92400e;
+}
+
+.admin-role-badge.role-knowledge-reviewer {
+  border-color: rgba(107, 33, 168, .22);
+  background: #f5eefe;
+  color: #6b21a8;
+}
+
+.admin-role-badge.role-super-admin {
+  border-color: rgba(15, 76, 73, .3);
+  background: #eafaf6;
+  color: #0f4c49;
+}
+
+.admin-role-badge.role-unknown {
+  border-color: rgba(100, 116, 139, .25);
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .deploy-health-panel {
   display: grid;
   gap: 18px;
@@ -9705,6 +9760,44 @@ textarea { min-height: 95px; resize: vertical; }
 
 .super-admin-app .admin-status.blocked::before {
   background: #a92b2b;
+}
+
+.super-admin-app .admin-role-badge,
+.super-admin-app .admin-role-badge.role-therapist,
+.super-admin-app .admin-role-badge.role-clinic-admin,
+.super-admin-app .admin-role-badge.role-knowledge-reviewer,
+.super-admin-app .admin-role-badge.role-super-admin,
+.super-admin-app .admin-role-badge.role-unknown {
+  border-color: #cfd1cd;
+  background: #ffffff;
+  color: #111315;
+}
+
+.super-admin-app .admin-role-badge::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: #74787a;
+  vertical-align: 1px;
+}
+
+.super-admin-app .admin-role-badge.role-therapist::before {
+  background: #1e40af;
+}
+
+.super-admin-app .admin-role-badge.role-clinic-admin::before {
+  background: #b45309;
+}
+
+.super-admin-app .admin-role-badge.role-knowledge-reviewer::before {
+  background: #6b21a8;
+}
+
+.super-admin-app .admin-role-badge.role-super-admin::before {
+  background: #0f4c49;
 }
 
 .super-admin-app .council-pill,

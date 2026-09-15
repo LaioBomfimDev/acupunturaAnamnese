@@ -28,7 +28,6 @@ import { ClinicAdminPanel } from './ClinicAdminPanel';
 import { DeployHealthPanel } from './DeployHealthPanel';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
 import { CurationSections, CURATION_SECTIONS } from './CurationSections';
-import { CurationProposalsQueue } from './CurationProposalsQueue';
 import { filterManagedProfessionals } from './superAdminFilters';
 
 // Seções de curadoria roteadas pelo CurationSections (maps tem bloco próprio
@@ -90,6 +89,19 @@ function profileToEditForm(profile) {
     clinicId: profile?.clinic_id || '',
     notes: profile?.notes || '',
   };
+}
+
+// Rótulo + cor da função do profissional na clínica — visual rápido pra
+// não repetir o caso de admin criada sem marcar "Admin de clínica" no
+// cadastro (o combo de acesso volta pro padrão "Profissional" se ninguém
+// trocar, então precisa saltar aos olhos na lista quem é o quê).
+function getRoleInfo(profile) {
+  return {
+    therapist: { label: 'Profissional', className: 'role-therapist' },
+    clinic_admin: { label: 'Admin de clínica', className: 'role-clinic-admin' },
+    knowledge_reviewer: { label: 'Revisora de curadoria', className: 'role-knowledge-reviewer' },
+    super_admin: { label: 'SuperAdm', className: 'role-super-admin' },
+  }[profile.role] || { label: profile.role || 'Sem função', className: 'role-unknown' };
 }
 
 function getStatus(profile) {
@@ -449,8 +461,6 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
         <ClinicAdminPanel />
       ) : activeSection === 'deploy-health' ? (
         <DeployHealthPanel />
-      ) : activeSection === 'proposals' ? (
-        <CurationProposalsQueue />
       ) : CURATION_SECTION_IDS.has(activeSection) ? (
         <CurationSections activeSection={activeSection} actor={SUPER_ADMIN_ACTOR} />
       ) : activeSection === 'maps' ? (
@@ -615,7 +625,12 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                   onClick={() => openProfilePanel(profile)}
                 >
                   <div className="admin-user-main">
-                    <b>{profile.full_name || profile.email}</b>
+                    <div className="admin-user-name-row">
+                      <b>{profile.full_name || profile.email}</b>
+                      <span className={`admin-role-badge ${getRoleInfo(profile).className}`}>
+                        {getRoleInfo(profile).label}
+                      </span>
+                    </div>
                     <small>
                       {profile.username || 'sem login'} • {profile.email}
                     </small>
@@ -692,7 +707,12 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
             <div className="admin-profile-head">
               <div>
                 <p className="small">Painel do profissional</p>
-                <h2>{selectedLiveProfile.full_name || selectedLiveProfile.email}</h2>
+                <h2>
+                  {selectedLiveProfile.full_name || selectedLiveProfile.email}
+                  <span className={`admin-role-badge ${getRoleInfo(selectedLiveProfile).className}`}>
+                    {getRoleInfo(selectedLiveProfile).label}
+                  </span>
+                </h2>
                 <span>
                   {[getProfession(selectedLiveProfile.profession).label, selectedLiveProfile.specialty].filter(Boolean).join(' · ') || 'Cadastro profissional pendente'} • {getStatus(selectedLiveProfile)}
                 </span>

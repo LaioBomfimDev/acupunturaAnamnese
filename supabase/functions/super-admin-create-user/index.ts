@@ -31,10 +31,10 @@ const ALLOWED_PROFESSIONS = new Set([
   'outro',
 ]);
 
-const ALLOWED_ROLES = new Set(['therapist', 'knowledge_reviewer', 'clinic_admin']);
+const ALLOWED_ROLES = new Set(['therapist', 'clinic_admin']);
 
 // Disciplinas válidas para a coluna profiles.disciplines. Quando o SuperAdm
-// escolhe explicitamente (ex.: revisora só de psicologia), a coluna vence o
+// escolhe explicitamente uma disciplina específica, a coluna vence o
 // fallback por profissão de resolveUserDisciplines (que sempre injeta acupuntura).
 const DISCIPLINE_IDS = new Set(['acupuntura', 'fisioterapia', 'psicologia', 'nutricao']);
 

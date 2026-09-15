@@ -9,7 +9,7 @@ import { listPatientEvolutions } from './services/patientEvolutionService';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { DisciplineHub } from './components/DisciplineHub';
-import { canEnterDiscipline, getDiscipline, resolveUserDisciplines, resolveReviewerDiscipline } from './data/disciplines';
+import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
 import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
@@ -39,8 +39,6 @@ const ClinicAdminHome = lazyPanel(() => import('./components/ClinicAdminHome'), 
 const PsychologyWorkspace = lazyPanel(() => import('./components/PsychologyWorkspace'), 'PsychologyWorkspace');
 const NeuropsychologyWorkspace = lazyPanel(() => import('./components/NeuropsychologyWorkspace'), 'NeuropsychologyWorkspace');
 const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorkspace'), 'DisciplineWorkspace');
-const ReviewerHome = lazyPanel(() => import('./components/ReviewerHome'), 'ReviewerHome');
-const CurationWorkspace = lazyPanel(() => import('./components/CurationWorkspace'), 'CurationWorkspace');
 const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
 const AssistantFoodLinks = lazyPanel(() => import('./components/panels/AssistantFoodLinks'), 'AssistantFoodLinks');
 const RelatoriosGestao = lazyPanel(() => import('./components/panels/RelatoriosGestao'), 'RelatoriosGestao');
@@ -75,7 +73,6 @@ export default function App() {
     loading,
     isSuperAdmin,
     isClinicAdmin,
-    isKnowledgeReviewer,
     mustChangePassword,
     needsMfa,
     mfaFactors,
@@ -93,8 +90,6 @@ export default function App() {
   const [showHubDocuments, setShowHubDocuments] = useState(false);
   const [showHubAgenda, setShowHubAgenda] = useState(false);
   const [showHubGestao, setShowHubGestao] = useState(false);
-  const [reviewMode, setReviewMode] = useState(false);
-  const [reviewSection, setReviewSection] = useState('points');
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
   const { state, selectedMap, updateField, toggle, setSelection, getSelected, getPulseSelected, setState, setSelectedMap, resetSession, tongueAi, setTongueAi, hydrateTongueAi } = useClinicState();
@@ -269,23 +264,6 @@ export default function App() {
     );
   }
 
-  // Superfície de curadoria da revisora (modo "propor"), independente de
-  // disciplina/paciente. Acessível pela ReviewerHome e pelo atalho na sidebar.
-  if (isKnowledgeReviewer && reviewMode) {
-    return (
-      <Suspense fallback={<PanelLoading />}>
-        <CurationWorkspace
-          section={reviewSection}
-          onSectionChange={setReviewSection}
-          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
-          discipline={resolveReviewerDiscipline(profile)}
-          onExit={() => setReviewMode(false)}
-          onSignOut={handleHubSignOut}
-        />
-      </Suspense>
-    );
-  }
-
   // Hub de disciplinas: profissional escolhe a área de atendimento antes do
   // workspace (docs/plano-clinica-multidisciplinar.md, Fase 1). SuperAdm
   // mantém o painel próprio. A validação cobre também valor antigo/ inválido
@@ -412,20 +390,6 @@ export default function App() {
             </Suspense>
           </main>
         </div>
-      );
-    }
-    // Revisora: tela inicial própria (bem-vindo + card de curadoria).
-    if (isKnowledgeReviewer) {
-      return (
-        <Suspense fallback={<PanelLoading />}>
-          <ReviewerHome
-            therapistName={profile?.full_name || user.user_metadata?.full_name || getFirstName(user.email)}
-            discipline={resolveReviewerDiscipline(profile)}
-            onEnterDiscipline={disciplineId => handleSelectDiscipline(disciplineId)}
-            onOpenCuration={section => { setReviewSection(section); setReviewMode(true); }}
-            onSignOut={handleHubSignOut}
-          />
-        </Suspense>
       );
     }
     return (
@@ -671,7 +635,6 @@ export default function App() {
         sessionCount={evolucoes.length}
         lastVisit={lastVisit}
         hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
-        onOpenCuration={isKnowledgeReviewer ? () => setReviewMode(true) : undefined}
       />
 
       <main className="main">

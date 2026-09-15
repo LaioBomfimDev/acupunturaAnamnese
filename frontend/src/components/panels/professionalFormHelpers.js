@@ -29,7 +29,6 @@ export const EMPTY_PROFESSIONAL_FORM = {
 // edge function super-admin-create-user).
 export const CREATABLE_ROLES = [
   { value: 'therapist', label: 'Profissional (atendimento)' },
-  { value: 'knowledge_reviewer', label: 'Revisora de curadoria (atendimento + curadoria)' },
   { value: 'clinic_admin', label: 'Admin de clínica (administração, com ou sem atendimento)' },
 ];
 

@@ -13,7 +13,6 @@ const SUPER_ADMIN_SECTIONS = [
   { id: 'clinics', label: 'Instituições', description: 'Cadastro e identidade visual' },
   { id: 'create', label: 'Criar profissional', description: 'Cadastro e senha' },
   { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
-  { id: 'proposals', label: 'Propostas de curadoria', description: 'Enviadas pela revisora' },
   { id: 'deploy-health', label: 'Saúde do deploy', description: 'Supabase e migrations' },
   { id: 'points', label: 'Pontos comuns/ocultos', description: 'Base completa e promoção' },
   { id: 'knowledge', label: 'Alimentação', description: 'Biblioteca Viva' },
@@ -232,12 +231,6 @@ const NAV_ICONS = {
       <circle cx="12" cy="10" r="2.5" />
     </>
   ),
-  'proposals': (
-    <>
-      <path d="M4 4h16v12H8l-4 4z" />
-      <path d="M9 9h8M9 12h5" />
-    </>
-  ),
   'points': (
     <>
       <circle cx="7" cy="7" r="2.5" />
@@ -314,15 +307,14 @@ export function Sidebar({
   sessionCount,
   lastVisit,
   hasMultipleDisciplines,
-  onOpenCuration,
   navGroups = NAV_GROUPS,
   patientTab = 'Painel',
   tabsWithoutPatient = ['Tela inicial', 'Biblioteca', 'Documentos'],
 }) {
-  // A gaveta mora aqui, e não no App, porque quatro shells diferentes
-  // (MTC, Psicologia, disciplina genérica e curadoria) montam esta mesma
-  // sidebar. Colocar o botão em um deles deixaria os outros três sem
-  // navegação no telefone.
+  // A gaveta mora aqui, e não no App, porque três shells diferentes
+  // (MTC, Psicologia, disciplina genérica) montam esta mesma sidebar.
+  // Colocar o botão em um deles deixaria os outros dois sem navegação
+  // no telefone.
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Enquanto a gaveta está aberta, a página atrás não rola: rolar o
@@ -403,16 +395,6 @@ export function Sidebar({
           <small>{profileRole === 'super_admin' ? 'SuperAdm • Segurança' : (disciplineLabel || 'Acupuntura • MTC')}</small>
         </div>
       </div>
-
-      {!isSuperAdmin && onOpenCuration && (
-        <button type="button" className="sidebar-switch-area" onClick={() => { setDrawerOpen(false); onOpenCuration(); }}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 4h16v12H8l-4 4z" />
-            <path d="M9 9h8M9 12h5" />
-          </svg>
-          Abrir Curadoria
-        </button>
-      )}
 
       {!isSuperAdmin && onSwitchDiscipline && (
         <button type="button" className="sidebar-switch-area" onClick={() => { setDrawerOpen(false); onSwitchDiscipline(); }}>

@@ -746,9 +746,27 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                         </label>
                       </div>
 
-                      <div className="cps-actions">
-                        <button type="button" className="cp-btn" onClick={() => setEditing(false)} disabled={saving}>Cancelar</button>
-                        <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar cadastro'}</button>
+                      <div className="cps-actions cps-actions--split">
+                        <div className="cps-actions-danger">
+                          <button
+                            type="button"
+                            className={`cp-btn cp-btn--sm${full?.suspended_at ? ' cp-btn--pending-on' : ''}`}
+                            onClick={handleToggleSuspended}
+                          >
+                            {full?.suspended_at ? '✓ Suspenso — reativar' : 'Suspender paciente'}
+                          </button>
+                          <button
+                            type="button"
+                            className="cp-btn cp-btn--sm cp-btn--danger"
+                            onClick={() => { setDeleteRequestOpen(true); setDeleteConfirmText(''); }}
+                          >
+                            Solicitar exclusão
+                          </button>
+                        </div>
+                        <div className="cps-actions-save">
+                          <button type="button" className="cp-btn" onClick={() => setEditing(false)} disabled={saving}>Cancelar</button>
+                          <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar cadastro'}</button>
+                        </div>
                       </div>
                     </form>
                 )}

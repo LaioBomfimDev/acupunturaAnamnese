@@ -1048,6 +1048,18 @@
   padding-top: 4px;
 }
 
+.cps-actions--split {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.cps-actions-danger,
+.cps-actions-save {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* ---------- visualizador de sessão compartilhada ---------- */
 
 .shv-sections {

@@ -7,6 +7,7 @@ import './App.css'
 // tokens e a cascata decide. Inverter esta ordem devolve o visual antigo.
 import './styles/hub.css'
 import './styles/clinicPatients.css'
+import './styles/appLoading.css'
 import App from './App.jsx'
 import { SurveyPage } from './SurveyPage.jsx'
 import { ConfirmAppointmentPage } from './ConfirmAppointmentPage.jsx'

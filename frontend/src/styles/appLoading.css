@@ -1,0 +1,99 @@
+/* ============================================================
+   VITALIS — loading splash (bate-pulso da marca)
+   ============================================================
+   Substitui o antigo PanelLoading (título "Carregando" em barra preta +
+   texto solto), que parecia uma caixa de diálogo de sistema. O marco é o
+   mesmo desenho do favicon (círculo + traço de ECG) — aqui ele "bate":
+   o traço desenha e apaga em loop (stroke-dashoffset) no mesmo tempo em
+   que a marca dá um leve "thump" de escala, como um monitor de sinais
+   vitais. Cor do traço segue --r1-accent-strong (cor da clínica logada),
+   nunca fixa — ver tokens.css. */
+
+.app-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 45vh;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.app-loading-mark {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-loading-mark svg {
+  width: 72px;
+  height: 72px;
+  animation: app-loading-thump 1.8s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+.app-loading-ring {
+  stroke: var(--r1-border-subtle);
+  stroke-width: 2.6;
+}
+
+.app-loading-trace {
+  stroke: var(--r1-accent-strong);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 45;
+  animation: app-loading-trace 1.8s ease-in-out infinite;
+}
+
+.app-loading-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--r1-accent-strong);
+  animation: app-loading-ping 1.8s ease-out infinite;
+}
+
+.app-loading-text {
+  margin: 0;
+  color: var(--r1-text-subtle);
+  font-size: 14px;
+}
+
+@keyframes app-loading-thump {
+  0%, 100% { transform: scale(1); }
+  45%, 55% { transform: scale(1.07); }
+}
+
+@keyframes app-loading-trace {
+  0% { stroke-dashoffset: 45; opacity: .3; }
+  45% { stroke-dashoffset: 0; opacity: 1; }
+  60% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -45; opacity: .3; }
+}
+
+@keyframes app-loading-ping {
+  0% { transform: scale(.75); opacity: .45; }
+  75%, 100% { transform: scale(1.55); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-mark svg,
+  .app-loading-trace,
+  .app-loading-ping {
+    animation: none;
+  }
+
+  .app-loading-trace {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+
+  .app-loading-ping {
+    display: none;
+  }
+}

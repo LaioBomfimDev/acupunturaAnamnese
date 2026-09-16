@@ -139,7 +139,13 @@
   --r1-surface-inverse: var(--r1-navy-800);
 
   --r1-text: var(--r1-ink);
-  --r1-text-muted: var(--r1-slate-500);
+  /* Pedido explícito: rótulo/legenda cinza tinha contraste baixo pra
+     leitura prolongada — vira preto igual ao texto principal em todo o
+     sistema (era var(--r1-slate-500), #55696a). Continua um token à
+     parte (não simplesmente um alias de --r1-text) para não perder o
+     ponto de reversão caso a hierarquia de texto secundário precise
+     voltar no futuro. */
+  --r1-text-muted: var(--r1-ink);
   --r1-text-subtle: #5a7170;
   --r1-text-on-inverse: #ffffff;
   --r1-text-on-inverse-muted: rgba(255, 255, 255, 0.72);

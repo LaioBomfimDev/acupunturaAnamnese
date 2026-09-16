@@ -270,6 +270,21 @@
   border-bottom: 1px solid var(--r1-border-subtle);
 }
 
+/* Atalho de salvar/cancelar repetido no topo do formulário de edição —
+   evita descer todo o scroll até o rodapé só pra salvar uma ficha longa
+   (6 seções). Mesmas ações do rodapé (cps-actions), só reposicionadas. */
+.cp-edit-topbar {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.cp-edit-topbar .cp-form-footer-hint {
+  margin: 0;
+  font-weight: 600;
+  color: var(--r1-text);
+}
+
 .cp-section:last-of-type {
   padding-bottom: 0;
   margin-bottom: 0;

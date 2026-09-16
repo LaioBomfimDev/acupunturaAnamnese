@@ -685,104 +685,127 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   </dl>
                 ) : (
                     <form className="cp-form" onSubmit={handleSaveEdit} style={{ boxShadow: 'none', border: 'none', padding: 0 }}>
-                      <div className="cp-form-grid">
-                        <label className="cp-field">Nome completo (civil)
-                          <input className="cp-input" value={editForm.name} onChange={e => setEditField('name', e.target.value)} required />
-                        </label>
-                        <label className="cp-field">Nome social
-                          <input className="cp-input" value={editForm.nomeSocial} onChange={e => setEditField('nomeSocial', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Data de nascimento
-                          <input className="cp-input" type="date" value={editForm.birthDate} onChange={e => setEditField('birthDate', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Sexo biológico
-                          <select className="cp-select" value={editForm.sexoBiologico} onChange={e => setEditField('sexoBiologico', e.target.value)}>
-                            <option value="">Selecione</option>
-                            <option value="masculino">Masculino</option>
-                            <option value="feminino">Feminino</option>
-                          </select>
-                        </label>
-                        <label className="cp-field">Gênero
-                          <input className="cp-input" value={editForm.genero} onChange={e => setEditField('genero', e.target.value)} />
-                        </label>
-                        <label className="cp-field">CPF
-                          <input className="cp-input" value={editForm.cpf} onChange={e => setEditField('cpf', e.target.value)} inputMode="numeric" />
-                        </label>
-                        <label className="cp-field">Telefone
-                          <input className="cp-input" value={editForm.phone} onChange={e => setEditField('phone', e.target.value)} />
-                        </label>
-                        <label className="cp-field">E-mail
-                          <input className="cp-input" type="email" value={editForm.email} onChange={e => setEditField('email', e.target.value)} placeholder="paciente@exemplo.com" />
-                        </label>
-                        <label className="cp-field">Mãe
-                          <input className="cp-input" value={editForm.nomeMae} onChange={e => setEditField('nomeMae', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Pai
-                          <input className="cp-input" value={editForm.nomePai} onChange={e => setEditField('nomePai', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Cônjuge
-                          <input className="cp-input" value={editForm.nomeConjuge} onChange={e => setEditField('nomeConjuge', e.target.value)} />
-                        </label>
+                      <div className="cps-actions cps-actions--split cp-edit-topbar">
+                        <p className="cp-form-footer-hint">Alterar dados cadastrais</p>
+                        <div className="cps-actions-save">
+                          <button type="button" className="cp-btn" onClick={() => setEditing(false)} disabled={saving}>Cancelar</button>
+                          <button type="submit" className="cp-btn cp-btn--primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar cadastro'}</button>
+                        </div>
                       </div>
 
-                      <p className="cp-form-group-title">
-                        Responsável {isMinor(editForm.birthDate) && <span className="cp-form-required-hint">(obrigatório — paciente menor de idade)</span>}
-                      </p>
-                      <div className="cp-form-grid">
-                        <label className="cp-field">Nome do responsável
-                          <input className="cp-input" value={editForm.responsavelNome} onChange={e => setEditField('responsavelNome', e.target.value)} required={isMinor(editForm.birthDate)} />
-                        </label>
-                        <label className="cp-field">Telefone do responsável
-                          <input className="cp-input" value={editForm.responsavelTelefone} onChange={e => setEditField('responsavelTelefone', e.target.value)} required={isMinor(editForm.birthDate)} />
-                        </label>
-                        <label className="cp-field">CPF do responsável
-                          <input className="cp-input" value={editForm.responsavelCpf} onChange={e => setEditField('responsavelCpf', e.target.value)} inputMode="numeric" required={isMinor(editForm.birthDate)} />
-                        </label>
+                      <div className="cp-section">
+                        <p className="cp-form-group-title">Identificação</p>
+                        <div className="cp-form-grid">
+                          <label className="cp-field">Nome completo (civil)
+                            <input className="cp-input" value={editForm.name} onChange={e => setEditField('name', e.target.value)} required />
+                          </label>
+                          <label className="cp-field">Nome social
+                            <input className="cp-input" value={editForm.nomeSocial} onChange={e => setEditField('nomeSocial', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Data de nascimento
+                            <input className="cp-input" type="date" value={editForm.birthDate} onChange={e => setEditField('birthDate', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Sexo biológico
+                            <select className="cp-select" value={editForm.sexoBiologico} onChange={e => setEditField('sexoBiologico', e.target.value)}>
+                              <option value="">Selecione</option>
+                              <option value="masculino">Masculino</option>
+                              <option value="feminino">Feminino</option>
+                            </select>
+                          </label>
+                          <label className="cp-field">Gênero
+                            <input className="cp-input" value={editForm.genero} onChange={e => setEditField('genero', e.target.value)} />
+                          </label>
+                          <label className="cp-field">CPF
+                            <input className="cp-input" value={editForm.cpf} onChange={e => setEditField('cpf', e.target.value)} inputMode="numeric" />
+                          </label>
+                          <label className="cp-field">Telefone
+                            <input className="cp-input" value={editForm.phone} onChange={e => setEditField('phone', e.target.value)} />
+                          </label>
+                          <label className="cp-field">E-mail
+                            <input className="cp-input" type="email" value={editForm.email} onChange={e => setEditField('email', e.target.value)} placeholder="paciente@exemplo.com" />
+                          </label>
+                        </div>
                       </div>
 
-                      <p className="cp-form-group-title">Convênio</p>
-                      <div className="cp-form-grid">
-                        <label className="cp-field">Nome do convênio
-                          <input className="cp-input" value={editForm.convenioNome} onChange={e => setEditField('convenioNome', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Número da carteirinha
-                          <input className="cp-input" value={editForm.convenioCarteirinha} onChange={e => setEditField('convenioCarteirinha', e.target.value)} />
-                        </label>
+                      <div className="cp-section">
+                        <p className="cp-form-group-title">Filiação</p>
+                        <div className="cp-form-grid">
+                          <label className="cp-field">Mãe
+                            <input className="cp-input" value={editForm.nomeMae} onChange={e => setEditField('nomeMae', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Pai
+                            <input className="cp-input" value={editForm.nomePai} onChange={e => setEditField('nomePai', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Cônjuge
+                            <input className="cp-input" value={editForm.nomeConjuge} onChange={e => setEditField('nomeConjuge', e.target.value)} />
+                          </label>
+                        </div>
                       </div>
 
-                      <p className="cp-form-group-title">Endereço</p>
-                      <div className="cp-form-grid">
-                        <label className="cp-field">CEP
-                          <input
-                            className="cp-input"
-                            value={editForm.enderecoCep}
-                            onChange={e => setEditField('enderecoCep', formatCep(e.target.value))}
-                            onBlur={handleEditCepBlur}
-                            placeholder="00000-000"
-                            inputMode="numeric"
-                          />
-                        </label>
-                        <label className="cp-field">Logradouro
-                          <input className="cp-input" value={editForm.enderecoLogradouro} onChange={e => setEditField('enderecoLogradouro', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Número
-                          <input className="cp-input" value={editForm.enderecoNumero} onChange={e => setEditField('enderecoNumero', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Complemento
-                          <input className="cp-input" value={editForm.enderecoComplemento} onChange={e => setEditField('enderecoComplemento', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Bairro
-                          <input className="cp-input" value={editForm.enderecoBairro} onChange={e => setEditField('enderecoBairro', e.target.value)} />
-                        </label>
-                        <label className="cp-field">Cidade
-                          <input className="cp-input" value={editForm.enderecoCidade} onChange={e => setEditField('enderecoCidade', e.target.value)} />
-                        </label>
-                        <label className="cp-field">UF
-                          <select className="cp-select" value={editForm.enderecoUf} onChange={e => setEditField('enderecoUf', e.target.value)}>
-                            <option value="">Selecione</option>
-                            {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
-                          </select>
-                        </label>
+                      <div className="cp-section">
+                        <p className="cp-form-group-title">
+                          Responsável {isMinor(editForm.birthDate) && <span className="cp-form-required-hint">(obrigatório — paciente menor de idade)</span>}
+                        </p>
+                        <div className="cp-form-grid">
+                          <label className="cp-field">Nome do responsável
+                            <input className="cp-input" value={editForm.responsavelNome} onChange={e => setEditField('responsavelNome', e.target.value)} required={isMinor(editForm.birthDate)} />
+                          </label>
+                          <label className="cp-field">Telefone do responsável
+                            <input className="cp-input" value={editForm.responsavelTelefone} onChange={e => setEditField('responsavelTelefone', e.target.value)} required={isMinor(editForm.birthDate)} />
+                          </label>
+                          <label className="cp-field">CPF do responsável
+                            <input className="cp-input" value={editForm.responsavelCpf} onChange={e => setEditField('responsavelCpf', e.target.value)} inputMode="numeric" required={isMinor(editForm.birthDate)} />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="cp-section">
+                        <p className="cp-form-group-title">Convênio</p>
+                        <div className="cp-form-grid">
+                          <label className="cp-field">Nome do convênio
+                            <input className="cp-input" value={editForm.convenioNome} onChange={e => setEditField('convenioNome', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Número da carteirinha
+                            <input className="cp-input" value={editForm.convenioCarteirinha} onChange={e => setEditField('convenioCarteirinha', e.target.value)} />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="cp-section">
+                        <p className="cp-form-group-title">Endereço</p>
+                        <div className="cp-form-grid">
+                          <label className="cp-field">CEP
+                            <input
+                              className="cp-input"
+                              value={editForm.enderecoCep}
+                              onChange={e => setEditField('enderecoCep', formatCep(e.target.value))}
+                              onBlur={handleEditCepBlur}
+                              placeholder="00000-000"
+                              inputMode="numeric"
+                            />
+                          </label>
+                          <label className="cp-field">Logradouro
+                            <input className="cp-input" value={editForm.enderecoLogradouro} onChange={e => setEditField('enderecoLogradouro', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Número
+                            <input className="cp-input" value={editForm.enderecoNumero} onChange={e => setEditField('enderecoNumero', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Complemento
+                            <input className="cp-input" value={editForm.enderecoComplemento} onChange={e => setEditField('enderecoComplemento', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Bairro
+                            <input className="cp-input" value={editForm.enderecoBairro} onChange={e => setEditField('enderecoBairro', e.target.value)} />
+                          </label>
+                          <label className="cp-field">Cidade
+                            <input className="cp-input" value={editForm.enderecoCidade} onChange={e => setEditField('enderecoCidade', e.target.value)} />
+                          </label>
+                          <label className="cp-field">UF
+                            <select className="cp-select" value={editForm.enderecoUf} onChange={e => setEditField('enderecoUf', e.target.value)}>
+                              <option value="">Selecione</option>
+                              {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                            </select>
+                          </label>
+                        </div>
                       </div>
 
                       <div className="cps-actions cps-actions--split">

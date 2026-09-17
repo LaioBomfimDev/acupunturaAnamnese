@@ -142,7 +142,7 @@ function addMinutes(date, minutes) {
 // toque, porque o formulário fica no painel lateral em qualquer visão.
 const DEFAULT_VIEW = 'hoje';
 
-export function Agenda({ profile, onStartAppointment = null, initialView = null, initialAgendaOf = null }) {
+export function Agenda({ profile, onStartAppointment = null, initialView = null, initialAgendaOf = null, initialShowBirthdays = false }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => ({
     year: today.getFullYear(),
@@ -155,7 +155,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
   const [showSchedule, setShowSchedule] = useState(false);
   const [showHolidays, setShowHolidays] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [showBirthdays, setShowBirthdays] = useState(false);
+  const [showBirthdays, setShowBirthdays] = useState(initialShowBirthdays);
   const [showEdit, setShowEdit] = useState(false);
 
   const [appointments, setAppointments] = useState([]);
@@ -1104,6 +1104,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             professionalName={professionalName}
             showProfessional={showProfessional}
             clinicName={profile?.clinic?.name || profile?.clinic_name}
+            clinicAddress={profile?.clinic?.address}
             professionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
           />
         )}

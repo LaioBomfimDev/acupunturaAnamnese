@@ -110,13 +110,15 @@ export const AuthProvider = ({ children }) => {
 
     let { data, error } = await supabase
       .from('profiles')
-      .select(`${baseColumns},clinic_id,profession,disciplines,mfa_required`)
+      .select(`${baseColumns},clinic_id,profession,disciplines,mfa_required,attends_patients`)
       .eq('id', nextUser.id)
       .maybeSingle();
 
-    // Banco ainda sem a migração de disciplinas (20260707): refaz sem ela
-    // (o frontend cai no fallback de resolveUserDisciplines).
-    if (error && /disciplines|profession|mfa_required/i.test(error.message || '')) {
+    // Banco ainda sem a migração de disciplinas (20260707) ou de
+    // attends_patients (20260917): refaz sem elas (o frontend cai no
+    // fallback de resolveUserDisciplines e trata attends_patients como
+    // true, mesmo comportamento de antes dessas colunas existirem).
+    if (error && /disciplines|profession|mfa_required|attends_patients/i.test(error.message || '')) {
       ({ data, error } = await supabase
         .from('profiles')
         .select(`${baseColumns},clinic_id`)
@@ -415,6 +417,10 @@ export const AuthProvider = ({ children }) => {
 
   const isSuperAdmin = profile?.role === 'super_admin' && profile?.is_active === true && profile?.must_change_password !== true;
   const isClinicAdmin = profile?.role === 'clinic_admin' && profile?.is_active === true && profile?.must_change_password !== true;
+  // Default true: perfil sem a coluna (banco não migrado) ou sem o
+  // valor gravado continua atendendo, igual ao comportamento de antes
+  // da 20260917_profile_attends_patients existir.
+  const attendsPatients = profile?.attends_patients !== false;
   const mustChangePassword = profile?.is_active === true && profile?.must_change_password === true;
   const needsMfa = profile?.mfa_required === true && mfaLevel.currentLevel !== 'aal2';
   const profileLoading = Boolean(
@@ -430,6 +436,7 @@ export const AuthProvider = ({ children }) => {
       profileError,
       isSuperAdmin,
       isClinicAdmin,
+      attendsPatients,
       mustChangePassword,
       needsMfa,
       mfaFactors,

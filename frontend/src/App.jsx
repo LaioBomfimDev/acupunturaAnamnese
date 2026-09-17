@@ -9,7 +9,7 @@ import { listPatientEvolutions } from './services/patientEvolutionService';
 import { listAppointmentsAwaitingEvolution } from './services/appointmentService';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
-import { DisciplineHub } from './components/DisciplineHub';
+import { HomeConsole } from './components/HomeConsole';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
 import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
@@ -36,7 +36,6 @@ const Agenda = lazyPanel(() => import('./components/panels/Agenda'), 'Agenda');
 const Login = lazyPanel(() => import('./components/panels/Login'), 'Login');
 const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPanel'), 'SuperAdminPanel');
 const ClinicPatientsPanel = lazyPanel(() => import('./components/ClinicPatientsPanel'), 'ClinicPatientsPanel');
-const ClinicAdminHome = lazyPanel(() => import('./components/ClinicAdminHome'), 'ClinicAdminHome');
 const PsychologyWorkspace = lazyPanel(() => import('./components/PsychologyWorkspace'), 'PsychologyWorkspace');
 const NeuropsychologyWorkspace = lazyPanel(() => import('./components/NeuropsychologyWorkspace'), 'NeuropsychologyWorkspace');
 const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorkspace'), 'DisciplineWorkspace');
@@ -78,6 +77,7 @@ export default function App() {
     loading,
     isSuperAdmin,
     isClinicAdmin,
+    attendsPatients,
     mustChangePassword,
     needsMfa,
     mfaFactors,
@@ -89,6 +89,8 @@ export default function App() {
   const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
   const [hubAgendaInitialView, setHubAgendaInitialView] = useState(null);
+  const [hubAgendaShowBirthdays, setHubAgendaShowBirthdays] = useState(false);
+  const [hubGestaoInitialSection, setHubGestaoInitialSection] = useState(null);
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
@@ -118,9 +120,10 @@ export default function App() {
   }, [profile?.clinic?.name, profile?.clinic_name]);
 
   // Contagem pro sinal vermelho do atalho "Atendimentos aguardando
-  // evolução" no Hub/ClinicAdminHome — clínica inteira (sem patientId),
-  // mesma RPC que a Agenda usa. Refaz ao voltar pro hub (activeDiscipline
-  // zera) ou ao sair da Agenda (onde a pendência é resolvida).
+  // evolução" no HomeConsole — clínica inteira pra admin, só os do
+  // próprio profissional pra quem não é (mesma RPC, RLS decide o
+  // escopo). Refaz ao voltar pro hub (activeDiscipline zera) ou ao sair
+  // da Agenda (onde a pendência é resolvida).
   useEffect(() => {
     if (!profile || isSuperAdmin || activeDiscipline) return undefined;
     let cancelled = false;
@@ -290,27 +293,28 @@ export default function App() {
   // mantém o painel próprio. A validação cobre também valor antigo/ inválido
   // no sessionStorage (ex.: disciplina que o perfil não libera).
   if (!isSuperAdmin && !canEnterDiscipline(profile, activeDiscipline)) {
-    // Admin de clínica SEM disciplina própria (ex.: administração pura,
-    // sem atender): cai direto numa home administrativa dedicada — não
-    // faz sentido oferecer o Hub de disciplinas pra quem não tem
-    // nenhuma liberada. Checagem direta em profile.disciplines (não via
-    // resolveUserDisciplines, que sempre injeta acupuntura em array
-    // vazio/nulo pra quem É profissional — comportamento que continua
-    // valendo pra quem não é admin).
-    const clinicAdminWithoutDiscipline = isClinicAdmin
-      && (!Array.isArray(profile?.disciplines) || profile.disciplines.length === 0);
-    if (clinicAdminWithoutDiscipline && !showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao) {
+    // Três leituras da mesma tela (Fase 7): admin sem atendimento próprio
+    // vê a administração primeiro e as áreas só para consulta; admin que
+    // também atende vê as duas coisas lado a lado; profissional comum
+    // vê só o essencial (agenda + evolução pendente). Ver HomeConsole.jsx.
+    const homeVariant = isClinicAdmin
+      ? (attendsPatients ? 'admin-professional' : 'admin')
+      : 'professional';
+    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao) {
       return (
         <Suspense fallback={<PanelLoading />}>
-          <ClinicAdminHome
+          <HomeConsole
             profile={profile}
+            variant={homeVariant}
             therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+            onSelect={handleSelectDiscipline}
             onSignOut={handleHubSignOut}
             onOpenClinicPatients={() => setShowClinicPatients(true)}
             onOpenDocuments={() => setShowHubDocuments(true)}
-            onOpenGestao={() => setShowHubGestao(true)}
             onOpenAgenda={() => setShowHubAgenda(true)}
+            onOpenGestao={isClinicAdmin ? (section) => { setHubGestaoInitialSection(section || null); setShowHubGestao(true); } : undefined}
             onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
+            onOpenBirthdays={isClinicAdmin ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
           />
         </Suspense>
@@ -340,7 +344,7 @@ export default function App() {
             <button
               type="button"
               className="topbar-button"
-              onClick={() => { setShowHubAgenda(false); setHubAgendaInitialView(null); }}
+              onClick={() => { setShowHubAgenda(false); setHubAgendaInitialView(null); setHubAgendaShowBirthdays(false); }}
             >
               ← Voltar às áreas
             </button>
@@ -357,7 +361,8 @@ export default function App() {
               <Agenda
                 profile={profile}
                 initialView={hubAgendaInitialView}
-                initialAgendaOf={clinicAdminWithoutDiscipline ? 'all' : null}
+                initialAgendaOf={isClinicAdmin ? 'all' : null}
+                initialShowBirthdays={hubAgendaShowBirthdays}
                 onStartAppointment={({ discipline }) => {
                   setShowHubAgenda(false);
                   setHubAgendaInitialView(null);
@@ -402,32 +407,18 @@ export default function App() {
               <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Gestão</p>
             </div>
-            <button type="button" className="topbar-button" onClick={() => setShowHubGestao(false)}>
+            <button type="button" className="topbar-button" onClick={() => { setShowHubGestao(false); setHubGestaoInitialSection(null); }}>
               ← Voltar às áreas
             </button>
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
-              <RelatoriosGestao profile={profile} />
+              <RelatoriosGestao profile={profile} initialSection={hubGestaoInitialSection} />
             </Suspense>
           </main>
         </div>
       );
     }
-    return (
-      <DisciplineHub
-        profile={profile}
-        therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
-        onSelect={handleSelectDiscipline}
-        onSignOut={handleHubSignOut}
-        onOpenClinicPatients={() => setShowClinicPatients(true)}
-        onOpenDocuments={() => setShowHubDocuments(true)}
-        onOpenAgenda={() => setShowHubAgenda(true)}
-        onOpenGestao={() => setShowHubGestao(true)}
-        onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
-        pendingEvolutionsCount={pendingEvolutionsCount}
-      />
-    );
   }
 
   // Workspace por disciplina (Fase 5): Psicologia tem workspace próprio,

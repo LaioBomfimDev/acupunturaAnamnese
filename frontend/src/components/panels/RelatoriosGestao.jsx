@@ -127,9 +127,11 @@ function formatWhen(iso) {
   return `${dia} às ${hora}`;
 }
 
-export function RelatoriosGestao({ profile }) {
+export function RelatoriosGestao({ profile, initialSection = null }) {
   const clinicId = profile?.clinic_id || null;
-  const [section, setSection] = useState('faltosos');
+  const [section, setSection] = useState(() => (
+    SECTIONS.some(item => item.id === initialSection) ? initialSection : 'faltosos'
+  ));
   const [range, setRange] = useState(defaultRange);
   const [professionalId, setProfessionalId] = useState('');
   const [patientQuery, setPatientQuery] = useState('');

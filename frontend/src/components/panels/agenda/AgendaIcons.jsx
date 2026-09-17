@@ -176,6 +176,18 @@ export function IconFlagCalendar(props) {
   );
 }
 
+export function IconCake(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M4 20h16" />
+      <path d="M4 20v-6.5c0-1 .8-1.5 2-1.5h12c1.2 0 2 .5 2 1.5V20" />
+      <path d="M4 16.5c1.4 1 2.6-1 4 0s2.6 1 4 0 2.6-1 4 0 2.6-1 4 0" />
+      <path d="M12 12V8" />
+      <circle cx="12" cy="6" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconFilterTag(props) {
   return (
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
@@ -207,4 +219,5 @@ export default {
   IconVideo, IconPin, IconCheck, IconUsers, IconMic, IconTag,
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
+  IconCake,
 };

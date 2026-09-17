@@ -131,6 +131,60 @@ export function birthdaysByDay(patients, year, month) {
   return result;
 }
 
+/**
+ * Aniversariantes ordenados pela PRÓXIMA ocorrência a partir de `from`,
+ * ignorando o mês em exibição no calendário — vira dezembro e quem faz
+ * aniversário em janeiro deve continuar no topo da lista, não sumir.
+ * Base da lista "Aniversários" (uso de marketing/relacionamento da
+ * clínica), separada de birthdaysByDay (que serve a grade do mês).
+ *
+ * @returns [{ id, name, phone, birthDate, age, nextDate, daysUntil }]
+ *          ordenado por daysUntil crescente (hoje = 0), empate por nome.
+ */
+export function upcomingBirthdays(patients, from) {
+  const result = [];
+  if (!Array.isArray(patients) || !(from instanceof Date) || Number.isNaN(from.getTime())) {
+    return result;
+  }
+
+  const todayStart = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+
+  for (const patient of patients) {
+    const parts = parseDateOnly(patient?.birth_date);
+    if (!parts) continue;
+
+    // Tenta a ocorrência deste ano; se já passou, cai pra do ano que
+    // vem. 29/02 cai em 28/02 em ano comum, mesma regra de birthdaysByDay.
+    let year = todayStart.getFullYear();
+    let next = nextOccurrence(parts, year);
+    if (next < todayStart) {
+      year += 1;
+      next = nextOccurrence(parts, year);
+    }
+
+    const daysUntil = Math.round((next - todayStart) / 86400000);
+    result.push({
+      id: patient.id,
+      name: patient.name,
+      phone: patient.phone || null,
+      birthDate: patient.birth_date,
+      age: year - parts.year,
+      nextDate: toDayKey(next),
+      daysUntil,
+    });
+  }
+
+  result.sort((a, b) => a.daysUntil - b.daysUntil || (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+
+  return result;
+}
+
+function nextOccurrence(parts, year) {
+  const lastDay = new Date(year, parts.month, 0).getDate();
+  const day = Math.min(parts.day, lastDay);
+  return new Date(year, parts.month - 1, day);
+}
+
 /** Agrupa agendamentos por dia local de início. */
 export function appointmentsByDay(appointments) {
   const result = new Map();

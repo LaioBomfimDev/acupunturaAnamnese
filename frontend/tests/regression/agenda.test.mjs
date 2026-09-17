@@ -142,6 +142,49 @@ test('nascido em 29/02 aparece em 28/02 nos anos comuns', () => {
     '2028 é bissexto: mantém 29/02');
 });
 
+// ---------- aniversários (lista "próximos") ----------
+
+test('upcomingBirthdays ordena pela próxima ocorrência, atravessando o fim do ano', () => {
+  const today = new Date(2026, 7, 9); // 09/08/2026
+  const patients = [
+    { id: 'p1', name: 'Ana', phone: '71999990001', birth_date: '1990-08-20' }, // daqui 11 dias
+    { id: 'p2', name: 'Bruno', birth_date: '1985-01-05' }, // ano que vem, mais longe
+    { id: 'p3', name: 'Caio', birth_date: '1992-08-09' }, // hoje
+    { id: 'p4', name: 'Sem data', birth_date: null },
+  ];
+
+  const list = agenda.upcomingBirthdays(patients, today);
+
+  assert.equal(list.length, 3, 'ignora quem não tem data de nascimento');
+  assert.deepEqual(list.map(item => item.id), ['p3', 'p1', 'p2'],
+    'hoje primeiro, depois em ordem crescente de dias restantes');
+  assert.equal(list[0].daysUntil, 0);
+  assert.equal(list[0].age, 34, 'idade é a que a pessoa completa na próxima ocorrência');
+  assert.equal(list[1].daysUntil, 11);
+  assert.equal(list[1].phone, '71999990001');
+  assert.equal(list[2].nextDate, '2027-01-05', 'já passou este ano: aniversário cai no ano seguinte');
+});
+
+test('upcomingBirthdays empata por nome quando o dia é o mesmo', () => {
+  const today = new Date(2026, 7, 9);
+  const patients = [
+    { id: 'p1', name: 'Zeca', birth_date: '1990-08-20' },
+    { id: 'p2', name: 'Ana', birth_date: '1991-08-20' },
+  ];
+
+  const list = agenda.upcomingBirthdays(patients, today);
+
+  assert.deepEqual(list.map(item => item.name), ['Ana', 'Zeca']);
+});
+
+test('upcomingBirthdays também respeita 29/02 em ano comum', () => {
+  const today = new Date(2027, 0, 1); // 2027 não é bissexto
+  const patients = [{ id: 'p1', name: 'Bissexto', birth_date: '2000-02-29' }];
+
+  const [item] = agenda.upcomingBirthdays(patients, today);
+  assert.equal(item.nextDate, '2027-02-28');
+});
+
 // ---------- sobreposição ----------
 
 test('encostar não é sobrepor', () => {

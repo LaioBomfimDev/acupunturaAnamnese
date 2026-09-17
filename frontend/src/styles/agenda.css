@@ -603,6 +603,14 @@
   color: var(--r1-text-on-inverse);
 }
 
+/* Cartão de contato (lista de Aniversários) pede um avatar maior que o
+   chip de equipe — mesma cor por posição, só o tamanho muda. */
+.ag-avatar--lg {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
 .ag-pill--block {
   background: var(--r1-surface-sunken);
   border: 1px solid var(--r1-border);
@@ -1949,6 +1957,47 @@
   color: var(--r1-text-subtle);
 }
 
+/* ============================================================
+   Aniversários — agrupado por urgência (Hoje/Esta semana/Este mês/
+   Mais adiante). Cabeçalho de grupo reaproveita .agh-block-title (fila
+   "Hoje"); linha reaproveita .agp-row (fila de confirmação), só troca
+   o selo por avatar.
+   ============================================================ */
+
+.agb-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 13px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+}
+
+.agb-stat b {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
+}
+
+.agb-stat span {
+  font-size: 12.5px;
+  color: var(--r1-text);
+}
+
+.agb-group {
+  display: grid;
+  gap: 7px;
+}
+
+.agb-group-title--today {
+  color: var(--r1-accent-strong);
+}
+
+.agb-row--today {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
 /* Selo de status em "Evolução pendente" — mesma convenção de cor por
    status já usada nos cartões de agendamento (attended/no_show/excused),
    não inventa paleta nova. */
@@ -2354,4 +2403,125 @@
   font-size: 12.5px;
   font-family: var(--r1-font-mono, monospace);
   background: var(--r1-surface-sunken);
+}
+
+/* ============================================================
+   Desktop largo (≥1280px) — mais espaço pro painel lateral (sem
+   precisar rolar) e mais hierarquia visual no calendário. Entre
+   1081px e 1280px, e em todo o recorte mobile abaixo disso
+   (≤1080/900/768/480px, com suas próprias regras já existentes),
+   nada muda. Fica no fim do arquivo de propósito: mesma convenção
+   das faixas mobile acima, e evita empate de especificidade com
+   regras da própria agenda.css declaradas depois de .ag-day,
+   .ag-pill etc. mais acima no arquivo.
+   ============================================================ */
+
+@media (min-width: 1280px) {
+  .ag {
+    grid-template-columns: minmax(0, 1.15fr) minmax(400px, 0.85fr);
+  }
+
+  /* O painel acompanha a altura real da janela em vez de travar em
+     62vh fixos — hoje isso cria rolagem interna mesmo quando a tela
+     tem espaço de sobra. */
+  .ag-side {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ag-side-head {
+    border-bottom: none;
+    background: linear-gradient(135deg, var(--r1-accent), var(--r1-accent-strong));
+  }
+
+  .ag-side-title {
+    color: var(--r1-text-on-inverse);
+  }
+
+  .ag-side-sub {
+    color: var(--r1-text-on-inverse-muted);
+  }
+
+  .ag-side-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* Qualificado com .ag-head (em vez de só .ag-month) de propósito:
+     .hub-body h2 (hub.css) tem mais especificidade que uma classe
+     sozinha e vinha ganhando o empate. */
+  .ag-head .ag-month {
+    font-size: 27px;
+  }
+
+  .ag-nav .ag-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14.5px;
+  }
+
+  .ag-toolbar .ag-tool-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .ag-toolbar .ag-tool-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .ag-seg--views .ag-seg-btn {
+    min-height: 42px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+  }
+
+  .ag-seg--views .ag-seg-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .ag-filter-wrap {
+    min-height: 42px;
+    padding: 0 13px;
+  }
+
+  .ag-filter-wrap .ag-select {
+    font-size: 14px;
+  }
+
+  .ag-team .ag-chip-btn--lg {
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .ag-team .ag-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 10.5px;
+  }
+
+  .ag-day {
+    min-height: 128px;
+    padding: 10px 12px 12px;
+  }
+
+  .ag-day-num {
+    font-size: 15px;
+  }
+
+  .ag-day--today .ag-day-num {
+    width: 27px;
+    height: 27px;
+  }
+
+  .ag-pill {
+    font-size: 11px;
+    padding: 3px 9px;
+  }
 }

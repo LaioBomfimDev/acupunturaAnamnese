@@ -40,10 +40,12 @@ import { getInitials } from '../../utils/patientUi';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
+  IconCake,
 } from './agenda/AgendaIcons';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
 import AgendaWeekMobileView from './agenda/AgendaWeekMobileView';
+import BirthdaysPanel from './agenda/BirthdaysPanel';
 import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
@@ -153,6 +155,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
   const [showSchedule, setShowSchedule] = useState(false);
   const [showHolidays, setShowHolidays] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showBirthdays, setShowBirthdays] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
   const [appointments, setAppointments] = useState([]);
@@ -958,6 +961,10 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
           <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowShare(true)}>
             <IconShare />
             Compartilhar
+          </button>
+          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowBirthdays(true)}>
+            <IconCake />
+            Aniversários
           </button>
           <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowSchedule(true)}>
             <IconClockCalendar />
@@ -1864,6 +1871,14 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
         teamOptions={teamOptions}
         patientName={patientName}
         professionalName={professionalName}
+        clinicName={profile?.clinic?.name || profile?.clinic_name}
+      />
+
+      <BirthdaysPanel
+        open={showBirthdays}
+        onClose={() => setShowBirthdays(false)}
+        patients={patients}
+        today={today}
         clinicName={profile?.clinic?.name || profile?.clinic_name}
       />
 

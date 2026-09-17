@@ -1,17 +1,20 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
 import { enrollPatientInitial } from '../services/clinicPatientsService';
-import { formatPatientCount, isPatientDeletionConfirmationValid, formatAge, getInitials } from '../utils/patientUi';
+import { formatPatientCount, formatAge, getInitials } from '../utils/patientUi';
 import '../styles/patientStart.css';
 
-function TrashIcon() {
+const ClinicPatientProfile = lazy(() => import('./ClinicPatientProfile').then(m => ({ default: m.ClinicPatientProfile })));
+
+function ProfileLoading() {
+  return <div className="empty-state">Carregando ficha do paciente...</div>;
+}
+
+function PencilIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v5" />
-      <path d="M14 11v5" />
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }
@@ -26,14 +29,10 @@ function TrashIcon() {
 // nesta disciplina (pode nunca ter passado por aqui — o cadastro é da
 // clínica inteira), a matrícula é criada aqui, best-effort, antes de
 // abrir a anamnese.
-export function PatientStart({ onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline }) {
-  const { patients, selectedPatient, loading, error, selectPatient, deletePatient } = usePatient();
+export function PatientStart({ onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline, profile, isClinicAdmin = false }) {
+  const { patients, selectedPatient, loading, error, selectPatient, refreshPatients } = usePatient();
   const [query, setQuery] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteText, setDeleteText] = useState('');
-  const [deletingPatientId, setDeletingPatientId] = useState(null);
-  const [listNotice, setListNotice] = useState(null);
-  const canConfirmDelete = isPatientDeletionConfirmationValid(deleteText);
+  const [editTarget, setEditTarget] = useState(null);
 
   const filteredPatients = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -53,36 +52,27 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
     onSelectPatient?.(patient);
   }
 
-  function handleDeleteRequest(patient) {
-    setDeleteTarget(patient);
-    setDeleteText('');
-    setListNotice(null);
+  function handleEditRequest(patient) {
+    setEditTarget(patient);
   }
 
-  function handleCancelDelete() {
-    setDeleteTarget(null);
-    setDeleteText('');
+  async function handlePatientUpdated(updated) {
+    setEditTarget(prev => ({ ...updated, enrollments: prev?.enrollments || [] }));
+    await refreshPatients?.();
   }
 
-  async function handleDeleteConfirm(e) {
-    e.preventDefault();
-    if (!deleteTarget || !canConfirmDelete) return;
-
-    const patientName = deleteTarget.name || 'Paciente';
-    setDeletingPatientId(deleteTarget.id);
-    setListNotice(null);
-    try {
-      await deletePatient(deleteTarget.id);
-      setListNotice({ type: 'success', text: `${patientName} foi arquivado e a solicitação de exclusão ficou pendente para análise.` });
-      handleCancelDelete();
-    } catch (err) {
-      setListNotice({
-        type: 'error',
-        text: err?.message || 'Não foi possível solicitar a exclusão do paciente.',
-      });
-    } finally {
-      setDeletingPatientId(null);
-    }
+  if (editTarget) {
+    return (
+      <Suspense fallback={<ProfileLoading />}>
+        <ClinicPatientProfile
+          patient={editTarget}
+          therapistProfile={profile}
+          isClinicAdmin={isClinicAdmin}
+          onBack={() => setEditTarget(null)}
+          onPatientUpdated={handlePatientUpdated}
+        />
+      </Suspense>
+    );
   }
 
   return (
@@ -145,41 +135,6 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
               </label>
             </div>
 
-            {listNotice && (
-              <div className={`inline-notice ${listNotice.type === 'error' ? 'inline-error' : 'inline-success'}`}>
-                {listNotice.text}
-              </div>
-            )}
-
-            {deleteTarget && (
-              <form className="patient-delete-panel" onSubmit={handleDeleteConfirm} role="alertdialog" aria-labelledby="patient-delete-title">
-                <div>
-                  <p className="small">Solicitação administrativa</p>
-                  <h3 id="patient-delete-title">Solicitar exclusão de {deleteTarget.name || 'paciente'}?</h3>
-                  <p>
-                    O paciente será arquivado agora. Os registros não serão apagados até revisão da política de retenção. Confirme digitando <b>excluir</b>.
-                  </p>
-                </div>
-                <label>
-                  Confirmação
-                  <input
-                    value={deleteText}
-                    onChange={e => setDeleteText(e.target.value)}
-                    placeholder="Digite excluir"
-                    autoFocus
-                  />
-                </label>
-                <div className="patient-delete-confirm-actions">
-                  <button className="tag" type="button" onClick={handleCancelDelete} disabled={deletingPatientId === deleteTarget.id}>
-                    Cancelar
-                  </button>
-                  <button className="danger-button" type="submit" disabled={!canConfirmDelete || deletingPatientId === deleteTarget.id}>
-                    {deletingPatientId === deleteTarget.id ? 'Solicitando...' : 'Arquivar e solicitar exclusão'}
-                  </button>
-                </div>
-              </form>
-            )}
-
             {loading ? (
               <div className="empty-state">Carregando pacientes...</div>
             ) : filteredPatients.length === 0 ? (
@@ -193,9 +148,8 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
                     key={patient.id}
                     patient={patient}
                     isActive={selectedPatient?.id === patient.id}
-                    isDeleting={deletingPatientId === patient.id}
                     onSelect={handleSelect}
-                    onRequestDelete={handleDeleteRequest}
+                    onEdit={handleEditRequest}
                   />
                 ))}
               </div>
@@ -208,7 +162,7 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
   );
 }
 
-export function PatientListCard({ patient, isActive = false, isDeleting = false, onSelect, onRequestDelete }) {
+export function PatientListCard({ patient, isActive = false, onSelect, onEdit }) {
   const name = patient.name || 'Paciente sem nome';
 
   return (
@@ -217,7 +171,7 @@ export function PatientListCard({ patient, isActive = false, isDeleting = false,
         className="patient-row-card"
         type="button"
         onClick={() => onSelect?.(patient)}
-        aria-label={`Abrir ficha de ${name}`}
+        aria-label={`Iniciar atendimento de ${name}`}
       >
         <span className="patient-row-identity">
           <span className="patient-avatar">{getInitials(patient.name)}</span>
@@ -229,14 +183,13 @@ export function PatientListCard({ patient, isActive = false, isDeleting = false,
         {isActive && <span className="patient-row-status">Ativo</span>}
       </button>
       <button
-        className="patient-delete-icon-button"
+        className="patient-edit-icon-button"
         type="button"
-        onClick={() => onRequestDelete?.(patient)}
-        disabled={isDeleting}
-        aria-label={`Solicitar exclusão do paciente ${name}`}
-        title={`Solicitar exclusão de ${name}`}
+        onClick={() => onEdit?.(patient)}
+        aria-label={`Editar cadastro de ${name}`}
+        title={`Editar cadastro de ${name}`}
       >
-        <TrashIcon />
+        <PencilIcon />
       </button>
     </article>
   );

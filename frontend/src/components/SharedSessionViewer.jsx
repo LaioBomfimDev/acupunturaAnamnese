@@ -272,8 +272,10 @@ function formatAge(patient) {
   return 'Idade não informada';
 }
 
-// Um bloco por disciplina compartilhada.
-function DisciplineBlock({ record, scopes }) {
+// Um bloco por disciplina compartilhada. Exportado para reaproveitar a
+// mesma leitura read-only na aba Anamnese da ficha do paciente
+// (ClinicPatientProfile/PatientAnamneseTab) sem duplicar os renderizadores.
+export function DisciplineBlock({ record, scopes }) {
   const disciplineLabel = getDiscipline(record.discipline)?.label || record.discipline;
 
   if (record.discipline === 'acupuntura') {

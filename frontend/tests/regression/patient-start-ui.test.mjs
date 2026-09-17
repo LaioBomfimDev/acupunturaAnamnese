@@ -62,7 +62,10 @@ test('entrada concentra seleção e contagem na lista e identifica a busca', () 
   assert.match(html, /Cadastre o primeiro em Pacientes da instituição/);
 });
 
-test('cartão abre a ficha e expõe solicitação de exclusão por ícone', () => {
+test('cartão inicia atendimento e expõe edição de cadastro por ícone', () => {
+  // Ícone de exclusão rápida saiu da lista (commit 81c0295): o lápis
+  // agora abre ClinicPatientProfile para edição direta, e é lá que mora
+  // "Solicitar exclusão" (ver clinical-privacy-hardening.test.mjs).
   const { PatientListCard } = patientStart;
   const patient = {
     id: 'patient-1',
@@ -74,15 +77,14 @@ test('cartão abre a ficha e expõe solicitação de exclusão por ícone', () =
   const html = renderToStaticMarkup(React.createElement(PatientListCard, {
     patient,
     onSelect: () => {},
-    onRequestDelete: () => {},
+    onEdit: () => {},
   }));
 
   assert.match(html, /class="patient-row-card"/);
-  assert.match(html, /aria-label="Abrir ficha de Denise Neves"/);
-  assert.doesNotMatch(html, />Abrir ficha</);
-  assert.match(html, /class="patient-delete-icon-button"/);
-  assert.match(html, /aria-label="Solicitar exclusão do paciente Denise Neves"/);
-  assert.doesNotMatch(html, />Excluir</);
+  assert.match(html, /aria-label="Iniciar atendimento de Denise Neves"/);
+  assert.match(html, /class="patient-edit-icon-button"/);
+  assert.match(html, /aria-label="Editar cadastro de Denise Neves"/);
+  assert.doesNotMatch(html, /patient-delete-icon-button|Solicitar exclus[ãa]o|>Excluir</);
 });
 
 test('confirmação de exclusão aceita somente termos explícitos', () => {

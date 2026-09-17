@@ -7,15 +7,18 @@ import { access, readFile } from 'node:fs/promises';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 test('exclusão de paciente vira pedido auditável e nunca DELETE direto', async () => {
-  const [service, start, dashboard] = await Promise.all([
+  const [service, profile, dashboard] = await Promise.all([
     readFile(path.join(root, 'src/services/patientService.js'), 'utf8'),
-    readFile(path.join(root, 'src/components/PatientStart.jsx'), 'utf8'),
+    // Solicitar exclusão saiu da lista rápida (PatientStart.jsx) e mora em
+    // ClinicPatientProfile.jsx desde a refatoração que trocou o ícone de
+    // exclusão da lista por edição direta (commit 81c0295).
+    readFile(path.join(root, 'src/components/ClinicPatientProfile.jsx'), 'utf8'),
     readFile(path.join(root, 'src/components/panels/PainelInicial.jsx'), 'utf8'),
   ]);
 
   assert.match(service, /rpc\('request_patient_deletion'/);
   assert.doesNotMatch(service, /\.from\('patients'\)[\s\S]{0,120}\.delete\(\)/);
-  assert.match(start, /arquivado e a solicitação de exclusão ficou pendente/i);
+  assert.match(profile, /arquivado e a exclusão ficou pendente/i);
   assert.match(dashboard, /sem apagar prontuários automaticamente/i);
 });
 

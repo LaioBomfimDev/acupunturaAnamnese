@@ -38,7 +38,7 @@ export function shortName(fullName) {
 /**
  * Equipe ativa da instituição de quem está logado.
  *
- * @returns [{ id, full_name, profession, role, disciplines, is_active }]
+ * @returns [{ id, full_name, profession, role, disciplines, is_active, has_agenda }]
  */
 export async function listClinicMembers({ clinicId = null, runtime } = {}) {
   const client = {
@@ -58,6 +58,7 @@ export async function listClinicMembers({ clinicId = null, runtime } = {}) {
       role: user.role || 'therapist',
       disciplines: Array.isArray(user.disciplines) ? user.disciplines : [],
       is_active: true,
+      has_agenda: user.has_agenda !== false,
     }];
   }
 
@@ -69,6 +70,42 @@ export async function listClinicMembers({ clinicId = null, runtime } = {}) {
   }
 
   return data || [];
+}
+
+/**
+ * Liga/desliga se a pessoa aparece como profissional selecionável na
+ * agenda (chip de agenda pessoal + seletor do formulário). Quem só
+ * administra (ex.: clinic_admin que não atende) fica de fora sem deixar
+ * de existir como membro ativo da equipe.
+ *
+ * Só clinic_admin da própria instituição (ou SuperAdm) pode chamar —
+ * `profiles` não tem policy de UPDATE cruzado, a RPC
+ * `set_member_has_agenda` é o único caminho.
+ */
+export async function setMemberHasAgenda(profileId, hasAgenda, { runtime } = {}) {
+  if (!profileId) throw new Error('Profissional não informado.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    rpc: runtime?.rpc || ((fn, args) => supabase.rpc(fn, args)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    return { id: profileId, has_agenda: hasAgenda === true };
+  }
+
+  const { error } = await client.rpc('set_member_has_agenda', {
+    p_profile_id: profileId,
+    p_has_agenda: hasAgenda === true,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Não foi possível atualizar quem atende.');
+  }
+
+  return { id: profileId, has_agenda: hasAgenda === true };
 }
 
 /**

@@ -160,6 +160,23 @@
   text-transform: capitalize;
 }
 
+.gt-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--r1-text);
+  cursor: pointer;
+}
+
+.gt-checkbox-field input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--r1-accent);
+  cursor: pointer;
+}
+
 .gt-badge {
   flex-shrink: 0;
   padding: 4px 10px;

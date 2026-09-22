@@ -246,9 +246,6 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
   const [pendingException, setPendingException] = useState(null);
 
   const disciplineValue = form.discipline || availableDisciplines[0]?.id || '';
-  const formProfessionalId = form.professionalId
-    || (agendaOf !== ALL_PROFESSIONALS ? agendaOf : profile?.id)
-    || '';
 
   // O flag de cancelamento evita que a resposta de um mês antigo
   // sobrescreva a do mês atual quando se troca de mês rápido.
@@ -340,7 +337,32 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
     () => sortWithSelfFirst(members, profile?.id),
     [members, profile?.id],
   );
+  // Quem realmente atende paciente — administrativo puro (has_agenda
+  // false, ex.: um clinic_admin que só gerencia) não entra como opção de
+  // profissional em lugar nenhum: nem chip de agenda pessoal, nem
+  // seletor do formulário de agendamento.
+  const agendaProfessionals = useMemo(
+    () => teamOptions.filter(member => member.has_agenda !== false),
+    [teamOptions],
+  );
   const showProfessional = agendaOf === ALL_PROFESSIONALS && teamOptions.length > 1;
+
+  // Profissional efetivo do formulário. Cai pro próprio usuário (ou
+  // pra quem a tela está filtrando) como qualquer campo com valor
+  // padrão — mas se essa pessoa não atende (has_agenda false, ex.: um
+  // admin puro), esse padrão nunca serve pra agendar: cai pro primeiro
+  // profissional que realmente atende. Só um cálculo de leitura — quem
+  // troca no seletor grava a escolha real em form.professionalId, que
+  // sempre vem de agendaProfessionals e por isso nunca cai aqui.
+  const formProfessionalId = (() => {
+    const raw = form.professionalId
+      || (agendaOf !== ALL_PROFESSIONALS ? agendaOf : profile?.id)
+      || '';
+    if (raw && teamOptions.length && !agendaProfessionals.some(member => member.id === raw)) {
+      return agendaProfessionals[0]?.id || '';
+    }
+    return raw;
+  })();
 
   const selectedDate = useMemo(() => combineLocal(selectedKey, '12:00'), [selectedKey]);
 
@@ -1105,7 +1127,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
               <span className="ag-avatar" style={{ background: 'var(--r1-accent)' }}>EQ</span>
               Toda a equipe
             </button>
-            {teamOptions.map((member, index) => (
+            {agendaProfessionals.map((member, index) => (
               <button
                 key={member.id}
                 type="button"
@@ -1285,7 +1307,11 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                       type="button"
                       key={cell.key}
                       className={classes}
-                      onClick={() => selectDay(cell.key)}
+                      // Clicar num dia na visão Mês precisa levar pro dia —
+                      // só selecionar a célula (sem trocar de visão) parece
+                      // não ter feito nada, porque a grade do mês inteiro
+                      // continua na tela.
+                      onClick={() => { selectDay(cell.key); setView('dia'); }}
                       aria-pressed={cell.key === selectedKey}
                       title={holiday ? holiday.name : undefined}
                     >
@@ -1565,7 +1591,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                   </div>
                 )}
 
-                {teamOptions.length > 1 && (
+                {agendaProfessionals.length > 1 && (
                   <div className="ag-field">
                     <label htmlFor="ag-professional">Profissional</label>
                     <select
@@ -1576,7 +1602,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                       disabled={saving}
                       required
                     >
-                      {teamOptions.map(member => (
+                      {agendaProfessionals.map(member => (
                         <option key={member.id} value={member.id}>
                           {member.id === profile?.id ? `${member.full_name || 'Você'} (você)` : member.full_name}
                         </option>

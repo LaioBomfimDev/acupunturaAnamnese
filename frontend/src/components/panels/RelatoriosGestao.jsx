@@ -3,7 +3,7 @@ import { getStatusLabel } from '../../utils/agenda';
 import { DASHBOARD_PERIOD_PRESETS, presetToRange } from '../../utils/gestaoDashboard';
 import { DISCIPLINES } from '../../data/disciplines';
 import { listMissedAppointments, listPatientsAwaitingReturn } from '../../services/appointmentService';
-import { listClinicMembers, shortName } from '../../services/clinicMembersService';
+import { listClinicMembers, setMemberHasAgenda, shortName } from '../../services/clinicMembersService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { listClinicAccessLogs } from '../../services/clinicAccessLogService';
 import { loadDashboardMetrics } from '../../services/gestaoDashboardService';
@@ -24,6 +24,7 @@ import '../../styles/gestao.css';
 const SECTIONS = [
   { id: 'faltosos', label: 'Faltosos' },
   { id: 'retornos', label: 'Retornos' },
+  { id: 'profissionais', label: 'Profissionais' },
   { id: 'acessos', label: 'Acessos' },
   { id: 'pesquisa', label: 'Pesquisa de satisfação' },
   { id: 'indicadores', label: 'Indicadores' },
@@ -176,6 +177,50 @@ export function RelatoriosGestao({ profile, initialSection = null }) {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, returnThreshold]);
+
+  const [professionalsLoading, setProfessionalsLoading] = useState(true);
+  const [professionalsError, setProfessionalsError] = useState('');
+  const [savingAgendaFlagId, setSavingAgendaFlagId] = useState('');
+
+  useEffect(() => {
+    if (section !== 'profissionais') return undefined;
+    let cancelled = false;
+
+    (async () => {
+      setProfessionalsLoading(true);
+      try {
+        const team = members.length ? members : await listClinicMembers();
+        if (cancelled) return;
+        if (!members.length) setMembers(team);
+        setProfessionalsError('');
+      } catch (err) {
+        if (cancelled) return;
+        setProfessionalsError(err.message || 'Não foi possível carregar a equipe.');
+      } finally {
+        if (!cancelled) setProfessionalsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, members.length]);
+
+  // Otimista: o checkbox muda na hora, e volta pro estado anterior se a
+  // RPC recusar (ex.: quem está logado não é clinic_admin desta casa).
+  async function toggleMemberAgenda(member) {
+    const next = member.has_agenda === false;
+    setSavingAgendaFlagId(member.id);
+    setMembers(prev => prev.map(item => (item.id === member.id ? { ...item, has_agenda: next } : item)));
+    setProfessionalsError('');
+    try {
+      await setMemberHasAgenda(member.id, next);
+    } catch (err) {
+      setMembers(prev => prev.map(item => (item.id === member.id ? { ...item, has_agenda: !next } : item)));
+      setProfessionalsError(err.message || 'Não foi possível atualizar quem atende.');
+    } finally {
+      setSavingAgendaFlagId('');
+    }
+  }
 
   const [accessItems, setAccessItems] = useState([]);
   const [accessLoading, setAccessLoading] = useState(true);
@@ -519,6 +564,49 @@ export function RelatoriosGestao({ profile, initialSection = null }) {
                     </span>
                   </div>
                   <span className="gt-badge gt-badge-excused">{item.days_since} dias</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {section === 'profissionais' && (
+        <section>
+          <p className="gt-note">
+            Quem atende paciente aparece como profissional na Agenda (chip de agenda
+            pessoal e seletor de novo agendamento). Desmarque quem é só administrativo
+            — não deixa de ser membro da equipe, só sai da lista de quem pode ser
+            escolhido pra atender. Só administrador da clínica pode alterar.
+          </p>
+
+          {professionalsError && <div className="gt-notice gt-notice-error" role="alert">{professionalsError}</div>}
+
+          {professionalsLoading ? (
+            <p className="gt-empty">Carregando…</p>
+          ) : members.length === 0 ? (
+            <p className="gt-empty">Nenhum profissional ativo nesta instituição.</p>
+          ) : (
+            <ul className="gt-list">
+              {members.map(member => (
+                <li key={member.id} className="gt-card">
+                  <div className="gt-card-info">
+                    <span className="gt-card-name">{member.full_name}</span>
+                    <span className="gt-card-meta">
+                      {[member.profession, member.role === 'clinic_admin' ? 'administrador' : null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </div>
+                  <label className="gt-checkbox-field">
+                    <input
+                      type="checkbox"
+                      checked={member.has_agenda !== false}
+                      disabled={savingAgendaFlagId === member.id}
+                      onChange={() => toggleMemberAgenda(member)}
+                    />
+                    Atende (aparece na agenda)
+                  </label>
                 </li>
               ))}
             </ul>

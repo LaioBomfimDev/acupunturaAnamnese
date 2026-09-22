@@ -578,11 +578,25 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
       setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false }));
 
       // Falha parcial precisa aparecer nomeada: "criei 8 de 10" sem
-      // dizer quais duas faltaram obriga a conferir a agenda inteira.
+      // dizer quais duas faltaram (e por quê) obriga a conferir a agenda
+      // inteira. Agrupado por motivo porque, quando todas as datas caem
+      // pelo mesmo motivo (ex.: paciente de outra instituição, conflito
+      // de horário), repetir a mesma frase dez vezes só esconde a causa.
       if (failed.length) {
+        const porMotivo = new Map();
+        for (const item of failed) {
+          const motivo = item.message || 'motivo não informado';
+          const lista = porMotivo.get(motivo) || [];
+          lista.push(item.start.toLocaleDateString('pt-BR'));
+          porMotivo.set(motivo, lista);
+        }
+        const detalhes = Array.from(porMotivo.entries())
+          .map(([motivo, datas]) => `${datas.join(', ')} (${motivo})`)
+          .join('; ');
+
         setError(
           `${created.length} sessão(ões) criada(s). Não deu para criar em: `
-          + failed.map(item => item.start.toLocaleDateString('pt-BR')).join(', ')
+          + detalhes
           + '. Marque essas manualmente em outro horário.',
         );
       } else {
@@ -598,6 +612,23 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
   function handleSubmit(event) {
     event.preventDefault();
     setError('');
+
+    // Sem isto, faltar o paciente só aparece DEPOIS de conferir o pacote
+    // inteiro (dez datas) e tentar gravar — e a mensagem de erro, hoje,
+    // não some sozinha: ela é a mesma para as dez, então "0 sessões
+    // criadas" sem dizer o motivo. Barrar aqui, antes da conferência,
+    // evita a viagem inteira por nada. `quickPatient.open` sem conclusão
+    // deixa form.patientId vazio (o select fica desabilitado e sem
+    // `required` enquanto o cadastro rápido está aberto), então conta
+    // como "sem paciente" também.
+    if (form.kind === 'appointment' && (!form.patientId || quickPatient.open)) {
+      setError(
+        quickPatient.open
+          ? 'Finalize o cadastro rápido do paciente (ou cancele) antes de continuar.'
+          : 'Selecione o paciente.',
+      );
+      return;
+    }
 
     // Pacote: a conferência substitui a confirmação dupla. Ver dez datas
     // antes de gravar vale mais do que um "tem certeza?".

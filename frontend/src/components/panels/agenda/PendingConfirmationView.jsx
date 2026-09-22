@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toDayKey } from '../../../utils/agenda';
+import { toDayKey, relativeDayLabel } from '../../../utils/agenda';
 import {
   confirmAppointment,
   listPendingConfirmations,
@@ -35,11 +35,8 @@ function diaLabel(iso) {
   return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'long' });
 }
 
-function diaHoraCompleto(iso) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  const dia = date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
-  return `${dia} às ${hora(iso)}`;
+function diaHoraRelativo(iso) {
+  return `${relativeDayLabel(iso, new Date())} às ${hora(iso)}`;
 }
 
 export function PendingConfirmationView({
@@ -49,6 +46,7 @@ export function PendingConfirmationView({
   professionalName,
   showProfessional = false,
   clinicName = '',
+  clinicAddress = '',
   professionalId = '',
 }) {
   const [days, setDays] = useState(7);
@@ -124,12 +122,21 @@ export function PendingConfirmationView({
     if (!isLikelyValidWhatsAppPhone(phone)) return { href: null, reason: 'no-phone' };
 
     const link = `${window.location.origin}/confirmar-agendamento?token=${appointment.confirmation_token}`;
-    const message = `Olá ${patientName(appointment.patient_id)}! `
-      + (clinicName ? `Aqui é da ${clinicName}. ` : '')
-      + `Confirma sua consulta com ${professionalRealName(appointment.professional_id)} `
-      + `${diaHoraCompleto(appointment.starts_at)}? Confirme aqui: ${link}`;
 
-    return { href: buildWhatsAppLink({ phone, message }), reason: 'ok' };
+    // Parágrafos em vez de frase única — no WhatsApp um bloco só de texto
+    // vira parede ilegível; separado, o paciente lê "quando" e "o que fazer"
+    // como duas coisas distintas.
+    const saudacao = `Olá, ${patientName(appointment.patient_id)}!`
+      + (clinicName ? ` Aqui é da ${clinicName}.` : '')
+      + ` Você tem uma consulta com ${professionalRealName(appointment.professional_id)} `
+      + `agendada para ${diaHoraRelativo(appointment.starts_at)}.`;
+    const confirmacao = `Por favor, confirme sua presença aqui: ${link}`;
+
+    const paragrafos = [saudacao, confirmacao];
+    if (clinicAddress) paragrafos.push(`Nosso endereço: ${clinicAddress}.`);
+    paragrafos.push('Obrigado(a)!');
+
+    return { href: buildWhatsAppLink({ phone, message: paragrafos.join('\n\n') }), reason: 'ok' };
   }
 
   async function handleConfirm(appointment) {

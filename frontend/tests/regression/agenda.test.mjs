@@ -262,6 +262,24 @@ test('períodos do dia alimentam o gráfico manhã/tarde/noite', () => {
   assert.equal(agenda.periodOfDay(new Date(2026, 7, 9, 11, 59)), 'manha');
 });
 
+test('relativeDayLabel usa hoje/amanhã/depois de amanhã perto da data, extenso quando está longe', () => {
+  const today = new Date(2026, 8, 17); // 17 de setembro de 2026
+
+  assert.equal(agenda.relativeDayLabel(new Date(2026, 8, 17, 15, 30), today), 'hoje (17 de setembro)');
+  assert.equal(agenda.relativeDayLabel(new Date(2026, 8, 18, 9, 0), today), 'amanhã (18 de setembro)');
+  assert.equal(agenda.relativeDayLabel(new Date(2026, 8, 19, 9, 0), today), 'depois de amanhã (19 de setembro)');
+  assert.equal(
+    agenda.relativeDayLabel(new Date(2026, 8, 22, 9, 0), today),
+    'terça-feira, 22 de setembro',
+  );
+});
+
+test('relativeDayLabel não inventa data para entrada inválida', () => {
+  const today = new Date(2026, 8, 17);
+  assert.equal(agenda.relativeDayLabel('não é data', today), '');
+  assert.equal(agenda.relativeDayLabel(new Date(2026, 8, 18), new Date('inválida')), '');
+});
+
 // ---------- service: validação antes de tocar no banco ----------
 
 test('createAppointment recusa entrada inválida sem chamar o banco', async () => {

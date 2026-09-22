@@ -233,6 +233,31 @@ export function findOverlap(appointments, candidate) {
   }) || null;
 }
 
+/**
+ * "amanhã (18 de setembro)" perto da consulta, dia da semana por extenso
+ * quando está longe — mesma régua usada na mensagem de WhatsApp
+ * (PendingConfirmationView) e na página pública de confirmação
+ * (ConfirmAppointmentPage), pro paciente ver a mesma coisa nos dois
+ * lugares. `today` explícito, não Date.now() escondido — mesma regra do
+ * resto do arquivo.
+ */
+export function relativeDayLabel(iso, today) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime()) || !(today instanceof Date) || Number.isNaN(today.getTime())) {
+    return '';
+  }
+
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((target - todayStart) / 86400000);
+
+  const diaMes = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
+  if (diffDays === 0) return `hoje (${diaMes})`;
+  if (diffDays === 1) return `amanhã (${diaMes})`;
+  if (diffDays === 2) return `depois de amanhã (${diaMes})`;
+  return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+}
+
 /** Manhã / tarde / noite — o gráfico de períodos do dashboard sai daqui. */
 export function periodOfDay(date) {
   const hour = date instanceof Date ? date.getHours() : new Date(date).getHours();

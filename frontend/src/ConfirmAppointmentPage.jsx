@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
+import { relativeDayLabel } from './utils/agenda';
 import './styles/tokens.css';
 import './styles/confirmPage.css';
 
@@ -31,9 +32,8 @@ async function callConfirmFunction(body) {
 function formatWhen(iso) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  const dia = date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
   const hora = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  return `${dia}, às ${hora}`;
+  return `${relativeDayLabel(iso, new Date())}, às ${hora}`;
 }
 
 export function ConfirmAppointmentPage() {

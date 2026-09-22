@@ -1591,7 +1591,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                   </div>
                 )}
 
-                {agendaProfessionals.length > 1 && (
+                {agendaProfessionals.length > 0 && (
                   <div className="ag-field">
                     <label htmlFor="ag-professional">Profissional</label>
                     <select

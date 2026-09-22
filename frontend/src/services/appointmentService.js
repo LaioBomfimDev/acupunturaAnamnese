@@ -82,6 +82,29 @@ export function isOverlapError(error) {
   return /appointments_no_overlap/.test(text) || error?.code === '23P01';
 }
 
+/**
+ * RLS barrou a gravação. O Postgres devolve só "new row violates row-level
+ * security policy", sem dizer qual das três condições falhou — a tela
+ * precisa listar as causas possíveis, não repetir o texto cru.
+ */
+export function isRlsPolicyError(error) {
+  const text = [error?.message, error?.details].filter(Boolean).join(' ');
+  return error?.code === '42501' || /row-level security policy/i.test(text);
+}
+
+function rlsInsertMessage(error) {
+  return 'Não foi possível gravar: paciente e profissional precisam pertencer a esta clínica '
+    + 'e você precisa estar ativo nela. Motivos mais comuns — paciente sem clínica definida '
+    + '(cadastro antigo), paciente arquivado/removido, ou sua conta perdeu acesso à agenda. '
+    + `Confira o cadastro do paciente e, se persistir, avise o suporte. (erro original: ${error.message})`;
+}
+
+function rlsUpdateMessage(error) {
+  return 'Não foi possível gravar: sua conta não tem mais permissão de agenda nesta clínica '
+    + '(inativada ou clínica trocada). Faça login de novo; se persistir, avise o suporte. '
+    + `(erro original: ${error.message})`;
+}
+
 function assertValid(input) {
   const kind = input?.kind || 'appointment';
   if (!APPOINTMENT_KINDS.includes(kind)) {
@@ -273,6 +296,7 @@ export async function createAppointment(input, { knownAppointments = null, runti
     if (isOverlapError(error)) {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
     }
+    if (isRlsPolicyError(error)) throw new Error(rlsInsertMessage(error));
     throw new Error(error.message || 'Não foi possível criar o agendamento.');
   }
 
@@ -315,6 +339,7 @@ export async function updateAppointmentStatus(id, status, { reason = null, runti
 
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível atualizar o agendamento.');
   }
 
@@ -362,6 +387,7 @@ export async function checkInAppointment(id, { undo = false, at = null, runtime 
 
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível registrar a chegada.');
   }
 
@@ -403,6 +429,7 @@ export async function confirmAppointment(id, { undo = false, at = null, runtime 
 
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível registrar a confirmação.');
   }
 
@@ -731,6 +758,7 @@ export async function cancelSeriesFrom(groupId, {
 
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível cancelar as sessões.');
   }
 
@@ -797,6 +825,7 @@ export async function rescheduleAppointment(id, {
     if (isOverlapError(error)) {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
     }
+    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível remarcar.');
   }
 
@@ -896,6 +925,7 @@ export async function updateAppointmentDetails(id, {
     if (isOverlapError(error)) {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
     }
+    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível salvar as alterações.');
   }
 

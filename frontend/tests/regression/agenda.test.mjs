@@ -360,6 +360,49 @@ test('violação da constraint de exclusão vira mensagem de recepção', () => 
   assert.equal(service.isOverlapError({ message: 'outro erro' }), false);
 });
 
+test('violação de RLS é reconhecida por código e por texto', () => {
+  assert.equal(service.isRlsPolicyError({ code: '42501' }), true);
+  assert.equal(
+    service.isRlsPolicyError({ message: 'new row violates row-level security policy for table "appointments"' }),
+    true,
+  );
+  assert.equal(service.isRlsPolicyError({ message: 'outro erro' }), false);
+});
+
+test('createAppointment traduz erro de RLS listando as causas, sem esconder o erro original', async () => {
+  const runtime = {
+    getAuthenticatedUser: async () => ({ id: 'karen' }),
+    from: () => ({
+      insert: () => ({
+        select: () => ({
+          single: async () => ({
+            data: null,
+            error: { code: '42501', message: 'new row violates row-level security policy for table "appointments"' },
+          }),
+        }),
+      }),
+    }),
+  };
+
+  await assert.rejects(
+    () => service.createAppointment(
+      {
+        patientId: 'p1',
+        professionalId: 'prof-1',
+        discipline: 'acupuntura',
+        startsAt: '2026-08-09T09:00:00Z',
+        endsAt: '2026-08-09T10:00:00Z',
+      },
+      { runtime },
+    ),
+    (err) => {
+      assert.match(err.message, /paciente e profissional precisam pertencer a esta clínica/);
+      assert.match(err.message, /erro original: new row violates row-level security policy/);
+      return true;
+    },
+  );
+});
+
 test('updateAppointmentStatus recusa status fora da lista', async () => {
   const runtime = {
     getAuthenticatedUser: async () => { throw new Error('não deveria autenticar'); },

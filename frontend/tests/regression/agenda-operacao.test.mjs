@@ -20,6 +20,10 @@ import { createServer } from 'vite';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const operacaoSql = path.resolve(root, '../supabase/migrations/20260810_agenda_operacao.sql');
 const membersSql = path.resolve(root, '../supabase/migrations/20260810_clinic_members.sql');
+const professionalCheckFixSql = path.resolve(
+  root,
+  '../supabase/migrations/20260922b_appointments_professional_check_fix.sql',
+);
 
 const exceptions = await import(
   new URL('../../src/utils/agendaExceptions.js', import.meta.url).href
@@ -84,6 +88,37 @@ test('a policy de INSERT aceita bloqueio sem paciente', async () => {
   assert.ok(policy);
   assert.match(policy[0], /patient_id IS NULL\s*\n\s*OR EXISTS/,
     'sem o ramo IS NULL o EXISTS derruba todo bloqueio');
+});
+
+// ---------- 20260922b: EXISTS cru contra profiles herdava "só vê a si mesmo" ----------
+//
+// Reproduzido com INSERT real (rollback) simulando um clinic_admin
+// agendando pra um COLEGA da mesma clínica: falhava com RLS sempre,
+// pra qualquer paciente/data/horário — porque o EXISTS contra profiles
+// não é SECURITY DEFINER e herda a policy "Profiles select self or
+// super admin" (auth.uid() = id OR is_super_admin()). Só passava
+// quando professional_id == quem estava logado, o que mascarou o bug
+// enquanto a tela defaultava o profissional pro próprio usuário.
+
+test('profile_in_clinic existe e é SECURITY DEFINER — sem isso o EXISTS herda a RLS de profiles e barra agendar pra colega', async () => {
+  const sql = await readFile(professionalCheckFixSql, 'utf8');
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.profile_in_clinic/);
+  assert.match(sql, /SECURITY DEFINER/);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.profile_in_clinic\(UUID, UUID\) FROM PUBLIC, anon/);
+});
+
+test('appointments_insert troca o EXISTS cru contra profiles por profile_in_clinic, mantendo o ramo de bloqueio sem paciente', async () => {
+  const sql = await readFile(professionalCheckFixSql, 'utf8');
+  const policy = sql.match(/CREATE POLICY appointments_insert[\s\S]*?\);/);
+  assert.ok(policy);
+  assert.match(policy[0], /patient_id IS NULL\s*\n\s*OR EXISTS/,
+    'sem o ramo IS NULL o EXISTS derruba todo bloqueio');
+  assert.match(policy[0], /profile_in_clinic\(professional_id, clinic_id\)/);
+  assert.doesNotMatch(
+    policy[0],
+    /EXISTS\s*\(\s*SELECT 1 FROM public\.profiles pr/,
+    'EXISTS cru contra profiles herda "cada perfil só vê a si mesmo" e barra agendar pra qualquer colega',
+  );
 });
 
 test('jornada e feriados nascem com RLS por instituição', async () => {

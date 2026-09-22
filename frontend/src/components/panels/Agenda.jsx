@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   APPOINTMENT_STATUSES,
   MONTH_LABELS,
@@ -233,6 +233,13 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
     open: false, name: '', phone: '', birthDate: '',
   });
 
+  // Campo de paciente digitável: a lista de pacientes cresceu demais para
+  // um <select> simples, então o campo funciona como busca — texto livre
+  // que filtra as opções, e só form.patientId conta de verdade.
+  const [patientSearch, setPatientSearch] = useState('');
+  const [patientMenuOpen, setPatientMenuOpen] = useState(false);
+  const patientFieldRef = useRef(null);
+
   // Confirmação dupla de horário atípico: enquanto isto tiver conteúdo,
   // nada é gravado — a tela mostra o que foge do normal e espera um
   // segundo "sim" explícito.
@@ -380,6 +387,36 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
     return patients.find(item => item.id === id)?.has_pending === true;
   }
 
+  // Sem acento e minúsculo, pra "joao" achar "João".
+  function normalizeSearchText(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase();
+  }
+
+  const filteredPatients = useMemo(() => {
+    const query = normalizeSearchText(patientSearch).trim();
+    const selectedName = patients.find(item => item.id === form.patientId)?.name;
+    // Campo mostrando o nome já escolhido (acabou de selecionar, só
+    // reabriu o menu): não filtra pelo próprio nome, mostra a lista toda.
+    const matches = !query || query === normalizeSearchText(selectedName)
+      ? patients
+      : patients.filter(item => normalizeSearchText(item.name).includes(query));
+    return matches.slice(0, 8);
+  }, [patients, patientSearch, form.patientId]);
+
+  useEffect(() => {
+    if (!patientMenuOpen) return undefined;
+    function handleClickOutside(event) {
+      if (patientFieldRef.current && !patientFieldRef.current.contains(event.target)) {
+        setPatientMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [patientMenuOpen]);
+
   function professionalName(id) {
     if (id === profile?.id) return 'você';
     const found = members.find(item => item.id === id);
@@ -507,6 +544,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
       );
       setAppointments(prev => [...prev, created]);
       setForm(prev => ({ ...prev, patientId: '', note: '' }));
+      setPatientSearch('');
       setPendingException(null);
       setError('');
     } catch (err) {
@@ -576,6 +614,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
       setAppointments(prev => [...prev, ...created]);
       setSeriesPreview(null);
       setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false }));
+      setPatientSearch('');
 
       // Falha parcial precisa aparecer nomeada: "criei 8 de 10" sem
       // dizer quais duas faltaram (e por quê) obriga a conferir a agenda
@@ -885,6 +924,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
       );
       setPatients(prev => [{ ...created, enrollments: [] }, ...prev]);
       setForm(prev => ({ ...prev, patientId: created.id }));
+      setPatientSearch(created.name || nome);
       setQuickPatient({ open: false, name: '', phone: '', birthDate: '' });
     } catch (err) {
       setError(err.message || 'Não foi possível cadastrar o paciente.');
@@ -1500,7 +1540,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                     type="button"
                     className="ag-seg-btn"
                     aria-pressed={isBlock}
-                    onClick={() => { setForm(prev => ({ ...prev, kind: 'block', patientId: '' })); setPendingException(null); }}
+                    onClick={() => { setForm(prev => ({ ...prev, kind: 'block', patientId: '' })); setPatientSearch(''); setPatientMenuOpen(false); setPendingException(null); }}
                   >
                     Bloquear horário
                   </button>
@@ -1549,19 +1589,60 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                   <>
                     <div className="ag-field">
                       <label htmlFor="ag-patient">Paciente</label>
-                      <select
-                        id="ag-patient"
-                        className="ag-select"
-                        value={form.patientId}
-                        onChange={e => setForm(prev => ({ ...prev, patientId: e.target.value }))}
-                        disabled={saving || loading || quickPatient.open}
-                        required={!quickPatient.open}
-                      >
-                        <option value="">Selecione…</option>
-                        {patients.map(patient => (
-                          <option key={patient.id} value={patient.id}>{patient.name}</option>
-                        ))}
-                      </select>
+                      <div className="ag-combo" ref={patientFieldRef}>
+                        <input
+                          id="ag-patient"
+                          className="ag-input"
+                          type="text"
+                          autoComplete="off"
+                          placeholder="Digite o nome…"
+                          value={patientSearch}
+                          onChange={e => {
+                            setPatientSearch(e.target.value);
+                            setPatientMenuOpen(true);
+                            setForm(prev => (prev.patientId ? { ...prev, patientId: '' } : prev));
+                          }}
+                          onFocus={() => setPatientMenuOpen(true)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && patientMenuOpen && filteredPatients.length > 0) {
+                              e.preventDefault();
+                              const first = filteredPatients[0];
+                              setForm(prev => ({ ...prev, patientId: first.id }));
+                              setPatientSearch(first.name);
+                              setPatientMenuOpen(false);
+                            } else if (e.key === 'Escape') {
+                              setPatientMenuOpen(false);
+                            }
+                          }}
+                          disabled={saving || loading || quickPatient.open}
+                          required={!quickPatient.open}
+                        />
+
+                        {patientMenuOpen && !quickPatient.open && (
+                          filteredPatients.length > 0 ? (
+                            <ul className="ag-combo-list">
+                              {filteredPatients.map(patient => (
+                                <li key={patient.id}>
+                                  <button
+                                    type="button"
+                                    className="ag-combo-option"
+                                    aria-pressed={patient.id === form.patientId}
+                                    onClick={() => {
+                                      setForm(prev => ({ ...prev, patientId: patient.id }));
+                                      setPatientSearch(patient.name);
+                                      setPatientMenuOpen(false);
+                                    }}
+                                  >
+                                    {patient.name}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : patientSearch.trim() && (
+                            <p className="ag-combo-empty">Nenhum paciente encontrado.</p>
+                          )
+                        )}
+                      </div>
 
                       {!quickPatient.open && (
                         <button

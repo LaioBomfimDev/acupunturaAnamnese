@@ -505,6 +505,72 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
+/* Campo de paciente digitável: lista de opções flutua sob o input,
+   sem empurrar o resto do formulário. */
+.ag-combo {
+  position: relative;
+}
+
+.ag-combo-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.ag-combo-option {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: var(--r1-radius-sm);
+  background: none;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ag-combo-option:hover,
+.ag-combo-option:focus-visible {
+  background: var(--r1-surface-sunken);
+  outline: none;
+}
+
+.ag-combo-option[aria-pressed="true"] {
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-weight: 600;
+}
+
+.ag-combo-empty {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
 .ag-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

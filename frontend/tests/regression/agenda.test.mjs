@@ -414,3 +414,101 @@ test('updateAppointmentStatus recusa status fora da lista', async () => {
     /Status de agendamento inválido/,
   );
 });
+
+// ---------- deleteAppointment: apagar de vez (erro de marcação), não cancelar ----------
+
+test('deleteAppointment exige id antes de tocar no banco', async () => {
+  const runtime = {
+    getAuthenticatedUser: async () => { throw new Error('não deveria autenticar'); },
+    from: () => { throw new Error('não deveria consultar o banco'); },
+  };
+
+  await assert.rejects(
+    () => service.deleteAppointment(null, { runtime }),
+    /Agendamento não informado/,
+  );
+});
+
+test('deleteAppointment apaga a linha e devolve o registro removido', async () => {
+  const runtime = {
+    getAuthenticatedUser: async () => ({ id: 'admin-1' }),
+    from: () => ({
+      delete: () => ({
+        eq: (col, value) => {
+          assert.equal(col, 'id');
+          assert.equal(value, 'a1');
+          return {
+            select: () => ({
+              maybeSingle: async () => ({
+                data: { id: 'a1', status: 'cancelled' },
+                error: null,
+              }),
+            }),
+          };
+        },
+      }),
+    }),
+  };
+
+  const deleted = await service.deleteAppointment('a1', { runtime });
+  assert.equal(deleted.id, 'a1');
+});
+
+test('deleteAppointment traduz RLS em "só Admin da clínica" em vez do erro cru do Postgres', async () => {
+  const runtime = {
+    getAuthenticatedUser: async () => ({ id: 'recepcao-1' }),
+    from: () => ({
+      delete: () => ({
+        eq: () => ({
+          select: () => ({
+            maybeSingle: async () => ({
+              data: null,
+              error: { code: '42501', message: 'new row violates row-level security policy for table "appointments"' },
+            }),
+          }),
+        }),
+      }),
+    }),
+  };
+
+  await assert.rejects(
+    () => service.deleteAppointment('a1', { runtime }),
+    (err) => {
+      assert.match(err.message, /só quem é Admin da clínica/);
+      assert.match(err.message, /use "Cancelar"/);
+      return true;
+    },
+  );
+});
+
+test('deleteAppointment não finge sucesso quando a RLS barra em silêncio (0 linhas afetadas)', async () => {
+  // A policy de DELETE (appointments_delete) filtra pela cláusula USING:
+  // uma linha fora do escopo não vira erro pro Postgres, o DELETE só não
+  // afeta nada. Sem essa checagem a tela diria "excluído" com a linha
+  // intacta no banco.
+  const runtime = {
+    getAuthenticatedUser: async () => ({ id: 'recepcao-1' }),
+    from: () => ({
+      delete: () => ({
+        eq: () => ({
+          select: () => ({
+            maybeSingle: async () => ({ data: null, error: null }),
+          }),
+        }),
+      }),
+    }),
+  };
+
+  await assert.rejects(
+    () => service.deleteAppointment('a1', { runtime }),
+    /só quem é Admin da clínica/,
+  );
+});
+
+test('appointments_delete continua restrito a Admin da clínica ou SuperAdm', async () => {
+  const sql = await readFile(migrationPath, 'utf8');
+  const policy = sql.match(/CREATE POLICY appointments_delete[\s\S]*?;/);
+  assert.ok(policy, 'a policy de DELETE precisa existir na migration');
+  assert.match(policy[0], /is_clinic_admin\(\)/);
+  assert.match(policy[0], /is_super_admin\(\)/);
+});

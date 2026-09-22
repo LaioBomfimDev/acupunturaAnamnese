@@ -88,14 +88,14 @@ test('cartão inicia atendimento e expõe edição de cadastro por ícone', () =
 });
 
 test('confirmação de exclusão aceita somente termos explícitos', () => {
-  const { isPatientDeletionConfirmationValid } = patientUi;
+  const { isDeleteConfirmationValid } = patientUi;
 
-  assert.equal(isPatientDeletionConfirmationValid('excluir'), true);
-  assert.equal(isPatientDeletionConfirmationValid('  excluir  '), true);
-  assert.equal(isPatientDeletionConfirmationValid('DELETE'), true);
-  assert.equal(isPatientDeletionConfirmationValid('delete'), false);
-  assert.equal(isPatientDeletionConfirmationValid('remover'), false);
-  assert.equal(isPatientDeletionConfirmationValid(''), false);
+  assert.equal(isDeleteConfirmationValid('excluir'), true);
+  assert.equal(isDeleteConfirmationValid('  excluir  '), true);
+  assert.equal(isDeleteConfirmationValid('DELETE'), true);
+  assert.equal(isDeleteConfirmationValid('delete'), false);
+  assert.equal(isDeleteConfirmationValid('remover'), false);
+  assert.equal(isDeleteConfirmationValid(''), false);
 });
 
 test('contagem de pacientes usa pluralização em pt-BR', () => {

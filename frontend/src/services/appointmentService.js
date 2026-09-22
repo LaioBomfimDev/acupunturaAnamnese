@@ -105,6 +105,12 @@ function rlsUpdateMessage(error) {
     + `(erro original: ${error.message})`;
 }
 
+function rlsDeleteMessage(error) {
+  return 'Não foi possível excluir: só quem é Admin da clínica (ou SuperAdm) pode apagar um '
+    + 'agendamento. Se o paciente cancelou ou faltou, use "Cancelar" em vez de excluir — isso '
+    + `mantém o histórico. (erro original: ${error.message})`;
+}
+
 function assertValid(input) {
   const kind = input?.kind || 'appointment';
   if (!APPOINTMENT_KINDS.includes(kind)) {
@@ -928,6 +934,56 @@ export async function updateAppointmentDetails(id, {
     if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível salvar as alterações.');
   }
+
+  return data;
+}
+
+/**
+ * Apaga de vez — some da agenda E do histórico/relatórios. Diferente de
+ * `updateAppointmentStatus('cancelled', ...)`: cancelar é para quando o
+ * ATENDIMENTO não aconteceu (paciente desmarcou, faltou) e o BI precisa
+ * contar isso; excluir é para quando o registro nunca deveria ter
+ * existido daquele jeito (profissional errado, paciente errado, dado de
+ * teste) — não é uma métrica, é lixo.
+ *
+ * A política de RLS (20260809_appointments.sql, appointments_delete) já
+ * restringe isso a Admin da clínica ou SuperAdm; esta função só chama e
+ * traduz o erro quando a permissão falta.
+ */
+export async function deleteAppointment(id, { runtime } = {}) {
+  if (!id) throw new Error('Agendamento não informado.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const list = getLocalAppointments();
+    const found = list.find(item => item.id === id);
+    if (!found) throw new Error('Agendamento não encontrado.');
+    saveLocalAppointments(list.filter(item => item.id !== id));
+    return found;
+  }
+
+  const { data, error } = await client.from('appointments')
+    .delete()
+    .eq('id', id)
+    .select(APPOINTMENT_COLUMNS)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    if (isRlsPolicyError(error)) throw new Error(rlsDeleteMessage(error));
+    throw new Error(error.message || 'Não foi possível excluir o agendamento.');
+  }
+
+  // RLS que barra silenciosamente (linha fora do escopo da política) não
+  // é erro pro Postgres — o DELETE roda, só não afeta nada. Sem essa
+  // checagem a tela diria "excluído" e a linha continuaria lá.
+  if (!data) throw new Error(rlsDeleteMessage({ message: 'nenhuma linha afetada' }));
 
   return data;
 }

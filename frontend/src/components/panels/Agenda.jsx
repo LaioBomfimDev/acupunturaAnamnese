@@ -26,6 +26,7 @@ import {
   confirmAppointment,
   createAppointment,
   createSeries,
+  deleteAppointment,
   listAppointments,
   rescheduleAppointment,
   updateAppointmentDetails,
@@ -36,7 +37,7 @@ import { listHolidays, listProfessionalSchedules } from '../../services/agendaSc
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { getInitials } from '../../utils/patientUi';
+import { getInitials, isDeleteConfirmationValid } from '../../utils/patientUi';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
@@ -201,6 +202,12 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
     const list = DISCIPLINES.filter(item => item.available && allowed.includes(item.id));
     return list.length ? list : DISCIPLINES.filter(item => item.available);
   }, [profile]);
+
+  // Espelha appointments_delete (20260809_appointments.sql): só Admin da
+  // clínica ou SuperAdm apaga de vez. Cancelar (mudar status) continua
+  // liberado pra qualquer um com acesso à agenda — a diferença é que
+  // excluir some do histórico/BI, então o corte é mais estrito.
+  const canDeleteAppointment = profile?.role === 'clinic_admin' || profile?.role === 'super_admin';
 
   const [form, setForm] = useState(() => ({
     kind: 'appointment',
@@ -825,6 +832,11 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
 
   // ---------- ações no agendamento ----------
 
+  // Cancelar é só status, sem pedir justificativa: quem está na agenda
+  // não precisa se explicar pra marcar que o paciente faltou/desmarcou.
+  // "Marquei errado" não passa por aqui — isso é Excluir (handleDelete),
+  // que some de tudo. A diferença entre os dois fica inteira em QUAL
+  // botão a pessoa aperta, não num campo de motivo.
   async function handleStatus(appointment, status) {
     setError('');
     try {
@@ -833,6 +845,43 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
       setSelectedAppointment(prev => (prev?.id === updated.id ? updated : prev));
     } catch (err) {
       setError(err.message || 'Não foi possível atualizar o agendamento.');
+    }
+  }
+
+  /**
+   * Apaga de vez — some da agenda e do histórico/relatórios. Só pra
+   * consertar erro de marcação (profissional/paciente errado); se o
+   * atendimento foi marcado certo e o paciente que cancelou/faltou, o
+   * caminho é "Cancelar" (handleStatus), que preserva o registro pro BI.
+   *
+   * Confirmação é por digitação (`isDeleteConfirmationValid`, mesma regra
+   * de "Excluir paciente"), não window.confirm: uma única pessoa decide
+   * e confirma — não existe segundo Admin aprovando depois — mas digitar
+   * a palavra é mais difícil de disparar sem querer do que um clique.
+   */
+  async function handleDelete(appointment) {
+    const confirmText = window.prompt(
+      'Isso apaga o agendamento PRA SEMPRE — some da agenda e do histórico/relatórios, sem volta.\n\n'
+      + 'Use só quando foi marcado errado (profissional ou paciente errado). Se o paciente cancelou '
+      + 'ou faltou, feche esta janela e use "Cancelar" em vez de excluir.\n\n'
+      + 'Para confirmar, digite excluir:',
+    );
+    if (confirmText === null) return;
+    if (!isDeleteConfirmationValid(confirmText)) {
+      setError('Exclusão não confirmada: digite exatamente "excluir" para apagar.');
+      return;
+    }
+
+    setError('');
+    setSaving(true);
+    try {
+      await deleteAppointment(appointment.id);
+      setAppointments(prev => prev.filter(item => item.id !== appointment.id));
+      setSelectedAppointment(prev => (prev?.id === appointment.id ? null : prev));
+    } catch (err) {
+      setError(err.message || 'Não foi possível excluir o agendamento.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -1491,6 +1540,18 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
                   disabled={saving}
                 >
                   Cancelar esta e as próximas do pacote
+                </button>
+              )}
+
+              {canDeleteAppointment && (
+                <button
+                  type="button"
+                  className="ag-btn ag-btn--danger"
+                  onClick={() => handleDelete(selectedAppointment)}
+                  disabled={saving}
+                  title="Some da agenda e do histórico pra sempre — use só se foi marcado errado"
+                >
+                  Excluir agendamento
                 </button>
               )}
             </div>

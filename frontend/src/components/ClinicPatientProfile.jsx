@@ -5,13 +5,13 @@ import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
   getPatient, updatePatient, deletePatient, formatCpf, isValidCpf, isValidEmail, isMinor,
 } from '../services/patientService';
-import { formatAge, formatBirthDate, getInitials, isPatientDeletionConfirmationValid } from '../utils/patientUi';
+import { formatAge, formatBirthDate, getInitials, isDeleteConfirmationValid } from '../utils/patientUi';
 import { listAppointments, listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
 import {
-  enrollPatient, enrollmentStatusLabel, setPatientSuspended, listPatientEnrollments,
+  enrollPatient, enrollmentStatusLabel, setPatientSuspended, listPatientEnrollments, decidePatientDeletion,
 } from '../services/clinicPatientsService';
 import { SharePatientDialog } from './SharePatientDialog';
 import {
@@ -294,24 +294,57 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   }
 
   /**
-   * "Solicitar exclusão" arquiva o paciente e entra numa fila que só a
-   * administração da clínica decide (aprovar apaga de vez, com
-   * confirmação separada lá — ver ClinicPatientsPanel). Diferente de
-   * suspender: essa é a exclusão real, só que em duas etapas.
+   * Quem NÃO é admin só "solicita": arquiva e entra na fila que a
+   * administração decide depois (ver ClinicPatientsPanel) — trava
+   * necessária pra um profissional comum não apagar prontuário de
+   * ninguém sozinho.
+   *
+   * Quem É clinic_admin/super_admin executa na hora: a confirmação por
+   * digitação ("excluir") JÁ É a decisão — pedir pra essa mesma pessoa
+   * "aprovar" a própria solicitação numa tela separada depois não
+   * adiciona segurança nenhuma, só duplica trabalho. `request_patient_
+   * deletion` + `admin_decide_patient_deletion('approved')` em sequência
+   * preserva o mesmo rastro de auditoria (linha "requested_by" seguida
+   * de "decided_by"/"executed") e o snapshot antes de apagar — só deixa
+   * de existir a ida e volta manual.
    */
   async function handleRequestDeletion() {
-    if (!isPatientDeletionConfirmationValid(deleteConfirmText)) return;
+    if (!isDeleteConfirmationValid(deleteConfirmText)) return;
     setRequestingDeletion(true);
     setNotice(null);
     try {
-      await deletePatient(full.id);
-      setNotice({ type: 'success', text: `${full.name} foi arquivado e a exclusão ficou pendente para decisão da administração.` });
+      const request = await deletePatient(full.id);
+
+      if (isClinicAdmin) {
+        try {
+          await decidePatientDeletion(request.request_id, 'approved');
+          setNotice({ type: 'success', text: `${full.name} foi excluído: prontuário, evoluções e cadastro foram apagados de vez.` });
+        } catch (decideErr) {
+          // O arquivamento (passo 1) já aconteceu; só a execução final
+          // falhou. Em vez de mentir "excluído" ou perder o rastro, cai
+          // pra fila de pendentes — a administração completa depois em
+          // Clínicas → solicitações de exclusão.
+          setNotice({
+            type: 'error',
+            text: `${full.name} foi arquivado, mas a exclusão definitiva falhou (${decideErr.message || 'erro desconhecido'}). `
+              + 'A solicitação ficou pendente na fila de exclusões para tentar de novo.',
+          });
+          setDeleteRequestOpen(false);
+          setDeleteConfirmText('');
+          onPatientUpdated?.({ ...full, archived_at: new Date().toISOString() });
+          onBack?.();
+          return;
+        }
+      } else {
+        setNotice({ type: 'success', text: `${full.name} foi arquivado e a exclusão ficou pendente para decisão da administração.` });
+      }
+
       setDeleteRequestOpen(false);
       setDeleteConfirmText('');
       onPatientUpdated?.({ ...full, archived_at: new Date().toISOString() });
       onBack?.();
     } catch (err) {
-      setNotice({ type: 'error', text: err.message || 'Não foi possível solicitar a exclusão.' });
+      setNotice({ type: 'error', text: err.message || 'Não foi possível excluir o paciente.' });
     } finally {
       setRequestingDeletion(false);
     }
@@ -584,7 +617,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     className="cp-btn cp-btn--sm cp-btn--danger"
                     onClick={() => { setDeleteRequestOpen(true); setDeleteConfirmText(''); }}
                   >
-                    Solicitar exclusão
+                    {isClinicAdmin ? 'Excluir paciente' : 'Solicitar exclusão'}
                   </button>
                 </div>
               )}
@@ -598,11 +631,18 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                 aria-labelledby="patient-profile-delete-title"
               >
                 <div>
-                  <p className="small">Solicitação administrativa</p>
-                  <h3 id="patient-profile-delete-title">Solicitar exclusão de {full?.name || patient.name}?</h3>
+                  <p className="small">{isClinicAdmin ? 'Exclusão definitiva' : 'Solicitação administrativa'}</p>
+                  <h3 id="patient-profile-delete-title">
+                    {isClinicAdmin ? 'Excluir' : 'Solicitar exclusão de'} {full?.name || patient.name}?
+                  </h3>
                   <p>
-                    O paciente será arquivado agora. A administração da clínica decide depois: se aprovar,
-                    prontuário, evoluções e cadastro são apagados de vez. Confirme digitando <b>excluir</b>.
+                    {isClinicAdmin ? (
+                      <>Prontuário, evoluções, agendamentos e cadastro são apagados de vez, sem revisão
+                      posterior — a confirmação abaixo já é a decisão. Confirme digitando <b>excluir</b>.</>
+                    ) : (
+                      <>O paciente será arquivado agora. A administração da clínica decide depois: se aprovar,
+                      prontuário, evoluções e cadastro são apagados de vez. Confirme digitando <b>excluir</b>.</>
+                    )}
                   </p>
                 </div>
                 <label>
@@ -618,8 +658,10 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   <button className="tag" type="button" onClick={() => setDeleteRequestOpen(false)} disabled={requestingDeletion}>
                     Cancelar
                   </button>
-                  <button className="danger-button" type="submit" disabled={!isPatientDeletionConfirmationValid(deleteConfirmText) || requestingDeletion}>
-                    {requestingDeletion ? 'Solicitando…' : 'Arquivar e solicitar exclusão'}
+                  <button className="danger-button" type="submit" disabled={!isDeleteConfirmationValid(deleteConfirmText) || requestingDeletion}>
+                    {requestingDeletion
+                      ? (isClinicAdmin ? 'Excluindo…' : 'Solicitando…')
+                      : (isClinicAdmin ? 'Excluir definitivamente' : 'Arquivar e solicitar exclusão')}
                   </button>
                 </div>
               </form>
@@ -822,7 +864,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                             className="cp-btn cp-btn--sm cp-btn--danger"
                             onClick={() => { setDeleteRequestOpen(true); setDeleteConfirmText(''); }}
                           >
-                            Solicitar exclusão
+                            {isClinicAdmin ? 'Excluir paciente' : 'Solicitar exclusão'}
                           </button>
                         </div>
                         <div className="cps-actions-save">

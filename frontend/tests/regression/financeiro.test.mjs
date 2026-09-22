@@ -16,6 +16,10 @@ import test from 'node:test';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const migrationPath = path.resolve(root, '../supabase/migrations/20260908_financeiro_backend.sql');
+const profileJoinFixPath = path.resolve(
+  root,
+  '../supabase/migrations/20260922c_clinic_financial_summary_profile_join_fix.sql',
+);
 
 const sql = await readFile(migrationPath, 'utf8');
 
@@ -86,4 +90,37 @@ test('nenhuma tabela nova concede acesso a anon', () => {
 
 test('migração não cita nome de concorrente', () => {
   assert.doesNotMatch(sql, /somar|edutec/i);
+});
+
+// ---------- 20260922c: JOIN cru contra profiles escondia pagamento de colega ----------
+//
+// Reproduzido com INSERT real (rollback) simulando um clinic_admin chamando
+// clinic_financial_summary logo após um pagamento de um COLEGA da mesma
+// clínica: o resumo voltava vazio, sem erro — o `JOIN public.profiles pr`
+// dentro da function (LANGUAGE sql, sem SECURITY DEFINER, de propósito, pra
+// deixar a RLS de appointment_payments/procedure_prices isolar a clínica)
+// também herdava "Profiles select self or super admin" e só batia quando
+// professional_id == quem chamou.
+
+test('profile_full_name existe e é SECURITY DEFINER — sem isso o JOIN em profiles herda a RLS "só vê a si mesmo" e esconde pagamento de colega', async () => {
+  const fixSql = await readFile(profileJoinFixPath, 'utf8');
+  assert.match(fixSql, /CREATE OR REPLACE FUNCTION public\.profile_full_name/);
+  assert.match(fixSql, /SECURITY DEFINER/);
+  assert.match(fixSql, /REVOKE ALL ON FUNCTION public\.profile_full_name\(UUID\) FROM PUBLIC, anon/);
+});
+
+test('clinic_financial_summary troca o JOIN cru em profiles por profile_full_name, mantendo o isolamento por clínica via RLS', async () => {
+  const fixSql = await readFile(profileJoinFixPath, 'utf8');
+  const fn = fixSql.match(/CREATE OR REPLACE FUNCTION public\.clinic_financial_summary[\s\S]*?\$\$;/);
+  assert.ok(fn);
+  assert.doesNotMatch(
+    fn[0],
+    /JOIN public\.profiles/,
+    'JOIN cru contra profiles herda "cada perfil só vê a si mesmo" e some com pagamento de qualquer colega',
+  );
+  assert.match(fn[0], /public\.profile_full_name\(a\.professional_id\)/);
+  // Continua rodando como quem chama: reimplementar isolamento de clínica
+  // manualmente aqui seria abrir um BOLA novo (a RLS de appointment_payments/
+  // procedure_prices já faz esse trabalho).
+  assert.doesNotMatch(fn[0], /\bSECURITY DEFINER\b/);
 });

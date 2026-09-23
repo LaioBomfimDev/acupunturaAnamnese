@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Panel } from '../ui/Panel';
-import { buildReportAccentPalette, buildReportContactItems } from '../../utils/reportUtils';
+import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
 import { PrintFooter, PrintLetterhead, ReportContactFooter } from '../report/reportPrint';
 import { paginateReportBody } from '../report/reportPagination';
 import { convertDocxToStandardHtml, describeUnsupportedFile, exportStandardDocx, isDocxFile } from './documentosDocx';
@@ -35,7 +35,7 @@ export function DocumentosTimbrados({ therapistProfile }) {
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentPalette = buildReportAccentPalette(clinic?.brand_color || DEFAULT_ACCENT, DEFAULT_ACCENT);
+  const accentPalette = buildReportAccentPalette(getClinicLetterheadColor(clinic) || DEFAULT_ACCENT, DEFAULT_ACCENT);
   const clinicDetails = [
     clinic?.legal_name,
     clinic?.cnpj ? `CNPJ ${clinic.cnpj}` : null,

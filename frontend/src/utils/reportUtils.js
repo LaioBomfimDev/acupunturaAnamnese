@@ -57,6 +57,13 @@ function blendHexColor(hexColor, targetHexColor, ratio) {
   return `#${channels.map(channel => channel.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 }
 
+// Cor usada nos documentos (relatório, evolução, timbrado). A clínica
+// pode separar a cor do papel timbrado da cor do sistema; sem essa
+// escolha (letterhead_color vazio) o documento segue a brand_color.
+export function getClinicLetterheadColor(clinic) {
+  return clinic?.letterhead_color || clinic?.brand_color || '';
+}
+
 export function buildReportAccentPalette(brandColor, fallback = '#0E2A4A') {
   const accent = normalizeHexColor(brandColor, fallback);
 

@@ -5,7 +5,7 @@ import { getDiscipline } from '../data/disciplines';
 import { getAnamneseConfig } from '../data/anamneseRegistry';
 import { listPatientEvolutions, updatePatientEvolution } from '../services/patientEvolutionService';
 import { listAppointmentsAwaitingEvolution } from '../services/appointmentService';
-import { formatRegisteredSessionCount } from '../utils/reportUtils';
+import { formatRegisteredSessionCount, getClinicLetterheadColor } from '../utils/reportUtils';
 import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems } from '../utils/reportUtils';
@@ -205,7 +205,7 @@ export function PatientEvolutionTimeline({ patient, therapistProfile, onBack }) 
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentPalette = buildReportAccentPalette(clinic?.brand_color || DEFAULT_ACCENT, DEFAULT_ACCENT);
+  const accentPalette = buildReportAccentPalette(getClinicLetterheadColor(clinic) || DEFAULT_ACCENT, DEFAULT_ACCENT);
   const clinicDetails = [clinic?.legal_name, clinic?.cnpj ? `CNPJ ${clinic.cnpj}` : null].filter(Boolean).join(' • ');
   const contactItems = buildReportContactItems({ clinic, therapistProfile });
   const watermarkEnabled = Boolean(clinicLogo) && clinic?.logo_watermark !== false;

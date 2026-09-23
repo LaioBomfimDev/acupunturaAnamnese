@@ -17,14 +17,27 @@ const LOCAL_AUTH_FALLBACK_ENABLED =
 export const DEFAULT_BRAND_COLOR = '#0E2A4A';
 
 // Paleta curada da cor da clínica: em vez de um seletor livre (qualquer
-// hex), a instituição escolhe entre estas 5 opções — evita cor de baixo
-// contraste ou fora do tom institucional indo parar no papel timbrado.
+// hex), a instituição escolhe entre estas opções — todas escuras o
+// bastante pra texto branco em botão e pra régua do papel timbrado, sem
+// cor de baixo contraste indo parar no sistema ou no documento.
 export const CLINIC_BRAND_COLORS = [
+  { value: '#0E2A4A', label: 'Petróleo (padrão)' },
   { value: '#2E5A7D', label: 'Azul' },
+  { value: '#1F6F8B', label: 'Turquesa' },
   { value: '#3F7D5C', label: 'Verde' },
-  { value: '#B3413C', label: 'Vermelho' },
+  { value: '#5B6B2E', label: 'Oliva' },
+  { value: '#6A4C93', label: 'Roxo' },
   { value: '#8C4460', label: 'Rosa' },
+  { value: '#B3413C', label: 'Vermelho' },
+  { value: '#9A5B3C', label: 'Terracota' },
   { value: '#A3691F', label: 'Dourado escuro' },
+];
+
+// O papel timbrado aceita as mesmas cores + grafite (documento sóbrio,
+// quase preto e branco).
+export const CLINIC_LETTERHEAD_COLORS = [
+  ...CLINIC_BRAND_COLORS,
+  { value: '#3A3F45', label: 'Grafite' },
 ];
 
 async function loadLocalProfiles() {
@@ -243,6 +256,38 @@ export async function setProfileClinic(profileId, clinicId) {
   writeLocal(LOCAL_CLINIC_ASSIGNMENTS_KEY, assignments);
 }
 
+// Personalização feita pelo clinic_admin (Gestão → Personalizar): só as
+// duas cores da própria instituição, via RPC — a policy de UPDATE da
+// tabela clinics continua exclusiva do SuperAdm.
+// letterheadColor null = o timbrado segue a cor do sistema.
+export async function updateClinicAppearance({ brandColor, letterheadColor = null }) {
+  const { error } = await supabase.rpc('clinic_admin_update_appearance', {
+    p_brand_color: brandColor,
+    p_letterhead_color: letterheadColor || null,
+  });
+  if (error) {
+    if (isMissingClinicSchemaError(error) || /clinic_admin_update_appearance/i.test(error.message || '')) {
+      throw new Error('A personalização ainda não está disponível no banco (migração 20260923 pendente).');
+    }
+    throw new Error(error.message || 'Não foi possível salvar as cores.');
+  }
+}
+
+// Logo da própria instituição pelo clinic_admin (mesma aba). Só bitmap
+// em data URL — ver readLogoFile({ keepSvg: false }). logoUrl vazio remove.
+export async function updateClinicLogo({ logoUrl, watermark = true }) {
+  const { error } = await supabase.rpc('clinic_admin_update_logo', {
+    p_logo_url: logoUrl || null,
+    p_logo_watermark: watermark !== false,
+  });
+  if (error) {
+    if (isMissingClinicSchemaError(error) || /clinic_admin_update_logo/i.test(error.message || '')) {
+      throw new Error('A troca de logo ainda não está disponível no banco (migração 20260923b pendente).');
+    }
+    throw new Error(error.message || 'Não foi possível salvar o logo.');
+  }
+}
+
 // Resolve a clínica de um perfil (usada no relatório). Aceita tanto
 // perfis do Supabase (clinic_id) quanto locais (mapa em localStorage).
 export async function getClinicForProfile(profile) {
@@ -253,9 +298,18 @@ export async function getClinicForProfile(profile) {
       const BASE_COLUMNS = 'id,name,legal_name,cnpj,address,phone,email,brand_color,created_at,updated_at';
       let { data, error } = await supabase
         .from('clinics')
-        .select(`${BASE_COLUMNS},logo_url,logo_watermark`)
+        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color`)
         .eq('id', profile.clinic_id)
         .maybeSingle();
+      // Banco ainda sem a migração da cor do timbrado (20260923): refaz sem
+      // ela — o timbrado cai na brand_color, igual antes.
+      if (error && /letterhead_color/i.test(error.message || '')) {
+        ({ data, error } = await supabase
+          .from('clinics')
+          .select(`${BASE_COLUMNS},logo_url,logo_watermark`)
+          .eq('id', profile.clinic_id)
+          .maybeSingle());
+      }
       // Banco ainda sem a migração da marca d'água (coluna nova): refaz só sem ela,
       // mantendo logo_url (migração mais antiga, já deve existir).
       if (error && /logo_watermark/i.test(error.message || '')) {

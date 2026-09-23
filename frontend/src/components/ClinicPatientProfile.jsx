@@ -20,7 +20,7 @@ import {
 import { buscarEnderecoPorCep, formatCep, isValidCepFormat } from '../services/cepService';
 import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
-import { buildReportAccentPalette, buildReportContactItems } from '../utils/reportUtils';
+import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../utils/reportUtils';
 import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
 import { getStatusLabel } from '../utils/agenda';
 
@@ -457,7 +457,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentPalette = buildReportAccentPalette(clinic?.brand_color || DEFAULT_ACCENT, DEFAULT_ACCENT);
+  const accentPalette = buildReportAccentPalette(getClinicLetterheadColor(clinic) || DEFAULT_ACCENT, DEFAULT_ACCENT);
   const clinicDetails = [
     clinic?.legal_name,
     clinic?.cnpj ? `CNPJ ${clinic.cnpj}` : null,

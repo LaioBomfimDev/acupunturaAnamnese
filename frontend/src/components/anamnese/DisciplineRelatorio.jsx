@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Panel } from '../ui/Panel';
 import { getActiveTextFields, getProfile, getSelected } from '../../data/anamneseKit';
-import { buildReportAccentPalette, buildReportContactItems } from '../../utils/reportUtils';
+import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
 import {
   PrintFooter,
   PrintLetterhead,
@@ -104,7 +104,7 @@ export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp,
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentColor = clinic?.brand_color || DEFAULT_ACCENT;
+  const accentColor = getClinicLetterheadColor(clinic) || DEFAULT_ACCENT;
   const accentPalette = buildReportAccentPalette(accentColor, DEFAULT_ACCENT);
   const clinicDetails = [
     clinic?.legal_name,

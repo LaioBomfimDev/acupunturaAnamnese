@@ -768,3 +768,163 @@
     grid-template-columns: minmax(72px, 120px) 1fr auto;
   }
 }
+
+/* ---------- Personalizar (cores do sistema e do papel timbrado) ---------- */
+
+.gt-custom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.gt-custom-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md, 12px);
+  background: var(--r1-surface);
+}
+
+.gt-custom-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gt-custom-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.gt-custom-card header span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.gt-custom-help {
+  margin: -6px 0 0;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.gt-custom-preview {
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm, 8px);
+  background: #fff;
+  overflow: hidden;
+}
+
+.gt-custom-preview-app {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.gt-custom-app-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.gt-custom-app-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.gt-custom-app-tabs {
+  display: flex;
+  gap: 14px;
+  font-size: 12.5px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.gt-custom-app-tabs span {
+  padding-bottom: 6px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.gt-custom-app-tabs span:first-child {
+  font-weight: 700;
+}
+
+.gt-custom-app-button {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Miniatura do papel timbrado: preto/cinza/branco + só a cor escolhida */
+.gt-custom-sheet {
+  padding: 14px 16px 16px;
+}
+
+.gt-custom-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gt-custom-sheet-head img,
+.gt-custom-sheet-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.gt-custom-sheet-head div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.gt-custom-sheet-head b {
+  font-size: 13px;
+}
+
+.gt-custom-sheet-head small {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.gt-custom-sheet-rule {
+  display: grid;
+  grid-template-columns: 3fr 2fr 1fr;
+  height: 4px;
+  margin: 10px 0 12px;
+}
+
+.gt-custom-sheet-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gt-custom-sheet-lines i {
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+}
+
+.gt-custom-sheet-lines i:nth-child(2) { width: 85%; }
+.gt-custom-sheet-lines i:nth-child(4) { width: 60%; }
+
+.gt-custom-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}

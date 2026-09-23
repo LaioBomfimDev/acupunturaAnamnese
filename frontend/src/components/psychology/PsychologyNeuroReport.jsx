@@ -4,7 +4,7 @@ import { Panel } from '../ui/Panel';
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { generateNeuropsychologyReport } from '../../services/psychologyAiService';
-import { buildReportAccentPalette, buildReportContactItems } from '../../utils/reportUtils';
+import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
 import {
   PrintFooter,
   PrintLetterhead,
@@ -80,7 +80,7 @@ export function PsychologyNeuroReport({ evaluation, selectedPatient, therapistPr
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentColor = clinic?.brand_color || DEFAULT_ACCENT;
+  const accentColor = getClinicLetterheadColor(clinic) || DEFAULT_ACCENT;
   const accentPalette = buildReportAccentPalette(accentColor, DEFAULT_ACCENT);
   const clinicDetails = [
     clinic?.legal_name,

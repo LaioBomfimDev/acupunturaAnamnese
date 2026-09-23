@@ -11,6 +11,7 @@ import {
 } from '../../services/clinicService';
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { filterClinicDirectory, filterClinics } from './superAdminFilters';
+import { readLogoFile } from '../../utils/clinicLogo';
 
 const EMPTY_CLINIC = {
   id: null,
@@ -25,59 +26,6 @@ const EMPTY_CLINIC = {
   logo_watermark: true,
   notes: '',
 };
-
-// Limite generoso para o data URL guardado na linha da clínica (~250 KB).
-const MAX_LOGO_DATA_URL = 250 * 1024;
-
-// Lê o arquivo enviado pelo adm e devolve um data URL pronto para o
-// papel timbrado. Bitmaps são redimensionados (lado maior ≤ 480px) e
-// recomprimidos em PNG para manter transparência; SVG é mantido como vetor.
-function readLogoFile(file, maxSize = 480) {
-  return new Promise((resolve, reject) => {
-    if (!file) return resolve('');
-    if (!/^image\//.test(file.type)) {
-      return reject(new Error('Selecione um arquivo de imagem (PNG, JPG, WEBP ou SVG).'));
-    }
-
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
-    reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-
-      if (file.type === 'image/svg+xml') {
-        if (dataUrl.length > MAX_LOGO_DATA_URL) {
-          return reject(new Error('SVG muito grande. Use um arquivo de até ~250 KB.'));
-        }
-        return resolve(dataUrl);
-      }
-
-      const img = new Image();
-      img.onerror = () => reject(new Error('Não foi possível processar a imagem.'));
-      img.onload = () => {
-        const longest = Math.max(img.width, img.height) || 1;
-        const scale = Math.min(1, maxSize / longest);
-        const width = Math.max(1, Math.round(img.width * scale));
-        const height = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        // PNG preserva transparência; cai para JPEG se ficar grande demais.
-        let out = canvas.toDataURL('image/png');
-        if (out.length > MAX_LOGO_DATA_URL) {
-          out = canvas.toDataURL('image/jpeg', 0.85);
-        }
-        if (out.length > MAX_LOGO_DATA_URL) {
-          return reject(new Error('Logo muito pesada após o ajuste. Tente uma imagem menor.'));
-        }
-        resolve(out);
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 function maskCnpj(value) {
   const digits = String(value || '').replace(/\D/g, '').slice(0, 14);

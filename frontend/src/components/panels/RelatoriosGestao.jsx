@@ -16,6 +16,7 @@ import {
 } from '../../services/satisfactionSurveyService';
 import { SearchSelect } from '../ui/SearchSelect';
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
+import { PersonalizarClinica } from './PersonalizarClinica';
 import '../../styles/gestao.css';
 
 // ============================================================
@@ -34,6 +35,7 @@ const SECTIONS = [
   { id: 'acessos', label: 'Acessos' },
   { id: 'pesquisa', label: 'Pesquisa de satisfação' },
   { id: 'indicadores', label: 'Indicadores' },
+  { id: 'personalizar', label: 'Personalizar' },
 ];
 
 const TAB_ICONS = {
@@ -54,6 +56,9 @@ const TAB_ICONS = {
   ),
   indicadores: (
     <><path d="M4 19h16" /><rect x="6" y="11" width="3" height="8" /><rect x="11" y="6" width="3" height="13" /><rect x="16" y="14" width="3" height="5" /></>
+  ),
+  personalizar: (
+    <><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.9-.3-.9.3-1.8 1.3-1.8H17a4 4 0 0 0 4-4c0-5.1-4-10.3-9-10.3Z" /><circle cx="7.5" cy="11" r="1" /><circle cx="10" cy="7" r="1" /><circle cx="14.5" cy="7" r="1" /></>
   ),
 };
 
@@ -1171,6 +1176,8 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
           )}
         </section>
       )}
+
+      {section === 'personalizar' && <PersonalizarClinica profile={profile} />}
     </div>
   );
 }

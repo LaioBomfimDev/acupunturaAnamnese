@@ -12,6 +12,7 @@ import {
   buildReportContactItems,
   formatRegisteredSessionCount,
   getReportSessionInfo,
+  getClinicLetterheadColor,
 } from '../../utils/reportUtils';
 import { isAiDraftPendingReview } from '../../utils/reportAiReview';
 import {
@@ -130,7 +131,7 @@ export function Relatorio({ state, evolucoes: evolucoesProp, analysis, selectedP
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentColor = clinic?.brand_color || DEFAULT_ACCENT;
+  const accentColor = getClinicLetterheadColor(clinic) || DEFAULT_ACCENT;
   const accentPalette = buildReportAccentPalette(accentColor, DEFAULT_ACCENT);
   const clinicDetails = [
     clinic?.legal_name,

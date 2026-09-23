@@ -13,7 +13,7 @@ import {
   getPsychologySelected,
   getPsychologyTextFields,
 } from '../../data/psychologyAnamnese';
-import { buildReportAccentPalette, buildReportContactItems } from '../../utils/reportUtils';
+import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
 import { isAiDraftPendingReview } from '../../utils/reportAiReview';
 import {
   PrintFooter,
@@ -126,7 +126,7 @@ export function PsychologyRelatorio({ session, evolucoes: evolucoesProp, selecte
   const clinicName = clinic?.name || therapistProfile?.clinic_name || 'Reability';
   const clinicLogo = clinic?.logo_url || '';
   const clinicMonogram = clinicName.trim().charAt(0).toUpperCase() || 'R';
-  const accentColor = clinic?.brand_color || DEFAULT_ACCENT;
+  const accentColor = getClinicLetterheadColor(clinic) || DEFAULT_ACCENT;
   const accentPalette = buildReportAccentPalette(accentColor, DEFAULT_ACCENT);
   const clinicDetails = [
     clinic?.legal_name,

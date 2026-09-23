@@ -20,9 +20,15 @@ export const EMPTY_PROFESSIONAL_FORM = {
   temporaryPassword: '',
   confirmTemporaryPassword: '',
   // Só usado quando role === 'clinic_admin': disciplinas que a admin
-  // TAMBÉM atende, além de administrar. Vazio = admin pura, sem área
-  // própria (cai na home administrativa em vez do Hub — ver App.jsx).
+  // TAMBÉM atende, além de administrar. Ignorado quando attendsPatients
+  // é false (a Edge Function força a lista cheia nesse caso — ver
+  // HomeConsole.jsx e a migração 20260917_profile_attends_patients).
   disciplines: [],
+  // Só usado quando role === 'clinic_admin'. true = atende + administra
+  // (Hub normal com atalhos de admin); false = administração pura, cai
+  // direto no console administrativo, com visão de consulta de todas as
+  // disciplinas.
+  attendsPatients: true,
 };
 
 // Tipos de acesso que o SuperAdm pode criar (allowlist espelha a da
@@ -30,6 +36,7 @@ export const EMPTY_PROFESSIONAL_FORM = {
 export const CREATABLE_ROLES = [
   { value: 'therapist', label: 'Profissional (atendimento)' },
   { value: 'clinic_admin', label: 'Admin de clínica (administração, com ou sem atendimento)' },
+  { value: 'receptionist', label: 'Recepção (agenda e cadastro de pacientes)' },
 ];
 
 export function normalizeUsername(value) {
@@ -138,6 +145,8 @@ export function buildProfessionalCreatePayload(form, clinics = []) {
   const role = CREATABLE_ROLES.some(item => item.value === form?.role) ? form.role : 'therapist';
   const profession = String(form?.profession || '').trim();
 
+  const attendsPatients = role !== 'clinic_admin' || form?.attendsPatients !== false;
+
   return {
     ...form,
     firstName: String(form?.firstName || '').trim(),
@@ -150,7 +159,11 @@ export function buildProfessionalCreatePayload(form, clinics = []) {
     professionalRegistration: String(form?.professionalRegistration || '').trim(),
     specialty: String(form?.specialty || '').trim(),
     role,
-    disciplines: resolveCreateDisciplines(role, profession, form?.disciplines),
+    attendsPatients,
+    // A Edge Function é quem decide de fato (força a lista cheia quando
+    // attendsPatients é false, ignorando o que vier daqui) — isto só
+    // evita mandar disciplinas que a tela nem mostrou pro usuário.
+    disciplines: attendsPatients ? resolveCreateDisciplines(role, profession, form?.disciplines) : [],
     clinicId,
     clinicName: selectedClinic?.name || '',
     notes: String(form?.notes || '').trim(),

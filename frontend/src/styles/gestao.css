@@ -1,35 +1,40 @@
 /* ============================================================
-   Gestão da instituição — relatórios operacionais (faltosos,
-   acessos, retornos). Mesmo vocabulário visual de clinicPatients.css
-   e agenda.css, prefixo próprio (.gt-) porque é um painel novo.
+   Gestão da instituição — relatórios operacionais (Fase 8)
+   Mesmo vocabulário visual do resto do app (--r1-*). Todo número de
+   resumo (.gt-stat) é também um botão de filtro — ver gt-stat-active.
    ============================================================ */
 
 .gt-tabs {
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
-  margin-bottom: 16px;
-  border: 1px solid var(--r1-border-subtle);
-  border-radius: var(--r1-radius-sm);
-  background: var(--r1-surface-sunken);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
 }
 
 .gt-tab {
-  min-height: 34px;
-  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 16px;
   border: 0;
-  border-radius: calc(var(--r1-radius-sm) - 3px);
+  border-radius: 999px;
   background: transparent;
   color: var(--r1-text-muted);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
 }
 
+.gt-tab svg {
+  width: 17px;
+  height: 17px;
+}
+
 .gt-tab[aria-pressed='true'] {
-  background: var(--r1-surface);
-  color: var(--r1-text);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
   box-shadow: var(--r1-shadow-sm);
 }
 
@@ -39,12 +44,93 @@
 }
 
 .gt-note {
-  margin: 0 0 14px;
-  max-width: 62ch;
+  margin: 0 0 20px;
+  max-width: 70ch;
   font-size: 12.5px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--r1-text-muted);
 }
+
+.gt-note .lock {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin-right: 4px;
+}
+
+/* ---------- números-resumo clicáveis ---------- */
+
+.gt-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.gt-stat {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 15px 17px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--r1-dur-fast) var(--r1-ease), box-shadow var(--r1-dur-fast) var(--r1-ease), border-color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.gt-stat:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.gt-stat:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-stat-active {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.gt-stat-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.gt-stat-danger .gt-stat-icon { background: var(--r1-danger-bg); color: var(--r1-danger); }
+.gt-stat-warning .gt-stat-icon { background: var(--r1-warning-bg); color: var(--r1-warning); }
+
+.gt-stat-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gt-stat-body b {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-stat-body span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+/* ---------- filtros ---------- */
 
 .gt-filters {
   display: flex;
@@ -61,6 +147,10 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--r1-text-muted);
+}
+
+.gt-field--grow {
+  flex: 1 1 220px;
 }
 
 .gt-input,
@@ -94,6 +184,16 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
+.gt-filter-note {
+  margin: -6px 0 16px;
+  font-size: 12px;
+  color: var(--r1-text-muted);
+}
+
+.gt-filter-note b {
+  color: var(--r1-text);
+}
+
 .gt-notice {
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -120,11 +220,39 @@
   color: var(--r1-text-muted);
 }
 
+/* ---------- agrupamento (Faltosos) ---------- */
+
+.gt-group {
+  margin-bottom: 22px;
+}
+
+.gt-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.gt-group-count {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+  font-size: 10.5px;
+}
+
+/* ---------- lista de cards ---------- */
+
 .gt-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 0;
+  margin: 0 0 22px;
   padding: 0;
   list-style: none;
 }
@@ -134,21 +262,75 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 13px 16px 13px 12px;
   border: 1px solid var(--r1-border-subtle);
+  border-left: 4px solid var(--r1-border-subtle);
   border-radius: var(--r1-radius-lg);
   background: var(--r1-surface);
   box-shadow: var(--r1-shadow-sm);
+}
+
+.gt-card-danger { border-left-color: var(--r1-danger); }
+.gt-card-warning { border-left-color: var(--r1-warning); }
+.gt-card-gold { border-left-color: #c8922a; }
+
+.gt-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gt-date-chip {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+}
+
+.gt-date-chip-day {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--r1-text);
+}
+
+.gt-date-chip-month {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+}
+
+.gt-date-chip-empty {
+  color: var(--r1-text-subtle);
+  font-size: 12px;
 }
 
 .gt-card-info {
   min-width: 200px;
   flex: 1;
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .gt-card-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14.5px;
   font-weight: 700;
   color: var(--r1-text);
@@ -157,25 +339,77 @@
 .gt-card-meta {
   font-size: 12.5px;
   color: var(--r1-text-muted);
-  text-transform: capitalize;
 }
 
-.gt-checkbox-field {
+.gt-card-comment {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--r1-text-muted);
+}
+
+.gt-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ---------- switch (Profissionais) ---------- */
+
+.gt-switch-field {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
-  font-size: 13px;
-  color: var(--r1-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
   cursor: pointer;
 }
 
-.gt-checkbox-field input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--r1-accent);
+.gt-switch {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--r1-border-subtle);
+  flex: none;
+}
+
+.gt-switch-on {
+  background: var(--r1-accent);
+}
+
+.gt-switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
   cursor: pointer;
 }
+
+.gt-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--r1-shadow-sm);
+  transition: left var(--r1-dur-fast) var(--r1-ease);
+  pointer-events: none;
+}
+
+.gt-switch-on .gt-switch-thumb {
+  left: 18px;
+}
+
+/* ---------- badges ---------- */
 
 .gt-badge {
   flex-shrink: 0;
@@ -186,31 +420,74 @@
   font-weight: 700;
 }
 
-.gt-badge-no_show {
+.gt-badge-no_show,
+.gt-badge-warning {
   color: var(--r1-danger);
   background: var(--r1-danger-bg);
   border-color: var(--r1-danger-border);
 }
 
-.gt-badge-excused {
+.gt-badge-excused,
+.gt-badge-pending {
   color: var(--r1-warning);
   background: var(--r1-warning-bg);
   border-color: var(--r1-warning-border);
 }
 
-.gt-badge-login {
+.gt-badge-login,
+.gt-badge-success {
   color: var(--r1-success);
   background: color-mix(in srgb, var(--r1-success) 12%, var(--r1-surface));
   border-color: color-mix(in srgb, var(--r1-success) 35%, transparent);
 }
 
-.gt-badge-logout {
+.gt-badge-logout,
+.gt-badge-neutral {
   color: var(--r1-text-muted);
   background: var(--r1-surface-sunken);
 }
 
-.gt-field--grow {
-  flex: 1 1 260px;
+/* ---------- WhatsApp (Retornos) ---------- */
+
+.gt-wa-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 10%, var(--r1-surface));
+  color: var(--r1-success);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gt-wa-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------- estrelas (Pesquisa) ---------- */
+
+.gt-stars {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.gt-stars svg {
+  width: 13px;
+  height: 13px;
+}
+
+.gt-star-on { fill: #c8922a; stroke: #c8922a; }
+.gt-star-off { fill: none; stroke: var(--r1-border); }
+
+/* ---------- criar profissional (Profissionais) ---------- */
+
+.gt-create-professional {
+  margin-bottom: 20px;
 }
 
 .gt-btn {
@@ -228,8 +505,7 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color var(--r1-dur-fast) var(--r1-ease),
-    background var(--r1-dur-fast) var(--r1-ease);
+  transition: border-color var(--r1-dur-fast) var(--r1-ease), background var(--r1-dur-fast) var(--r1-ease);
 }
 
 .gt-btn:hover:not(:disabled) {
@@ -244,8 +520,8 @@
 
 .gt-btn--primary {
   border-color: transparent;
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
 }
 
 .gt-btn--sm {
@@ -267,23 +543,63 @@
 }
 
 /* ── Indicadores (Fase 5 — Dashboard/BI) ──────────────────────
-   Primeiro gráfico do sistema: sem lib, só --r1-* e barra de largura em
-   % — mesma filosofia leve do resto do app. */
+   Sem lib, só --r1-* e barra de largura em % — mesma filosofia leve
+   do resto do app. */
 .gt-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
 }
 
 .gt-kpi {
-  padding: 14px 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
   border: 1px solid var(--r1-border-subtle);
   border-radius: var(--r1-radius-lg);
   background: var(--r1-surface);
   box-shadow: var(--r1-shadow-sm);
+  font: inherit;
+  text-align: left;
+}
+
+.gt-kpi-clickable {
+  cursor: pointer;
+  transition: transform var(--r1-dur-fast) var(--r1-ease), box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.gt-kpi-clickable:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.gt-kpi-clickable:disabled {
+  cursor: default;
+}
+
+.gt-kpi-icon {
+  flex: none;
   display: grid;
-  gap: 6px;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.gt-kpi-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gt-kpi-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
 }
 
 .gt-kpi-label {
@@ -293,26 +609,20 @@
 }
 
 .gt-kpi-value {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--r1-text);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .gt-kpi-sub {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--r1-text-muted);
 }
 
-.gt-meter {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .gt-meter-track {
-  flex: 1;
-  height: 10px;
+  height: 8px;
   border-radius: 999px;
   background: var(--r1-surface-sunken);
   border: 1px solid var(--r1-border-subtle);
@@ -320,14 +630,33 @@
 }
 
 .gt-meter-fill {
+  display: block;
   height: 100%;
   border-radius: 999px;
   background: var(--r1-accent);
   transition: width var(--r1-dur) var(--r1-ease);
 }
 
-.gt-chart-title {
-  margin: 0 0 10px;
+.gt-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.gt-chart-card {
+  padding: 18px 20px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.gt-chart-card--wide {
+  grid-column: 1 / -1;
+}
+
+.gt-chart-card h4 {
+  margin: 0 0 12px;
   font-size: 13px;
   font-weight: 700;
   color: var(--r1-text);
@@ -336,8 +665,8 @@
 .gt-bars {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0 0 22px;
+  gap: 9px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -377,8 +706,6 @@
   transition: width var(--r1-dur) var(--r1-ease);
 }
 
-/* Barra empilhada (novos vs. retorno): segunda faixa some da borda
-   arredondada do lado esquerdo, só a ponta direita arredonda. */
 .gt-bar-fill--stacked-end {
   border-radius: 0 999px 999px 0;
 }
@@ -419,6 +746,16 @@
 
 .gt-bar-legend-swatch--muted {
   background: var(--r1-text-muted);
+}
+
+@media (max-width: 900px) {
+  .gt-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gt-chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

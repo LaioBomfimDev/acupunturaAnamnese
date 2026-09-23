@@ -7,7 +7,7 @@ import { currentMonthBirthdays, isCountableAppointment } from '../utils/gestaoDa
 import '../styles/console.css';
 
 // ============================================================
-// Home console (Fase 7) — tela inicial única com três leituras,
+// Home console (Fase 7) — tela inicial única com quatro leituras,
 // decididas por `variant`:
 //
 //   'admin'              administração pura, não atende (ex.: Karen).
@@ -19,6 +19,10 @@ import '../styles/console.css';
 //   'professional'       profissional comum: só agenda + evolução
 //                        pendente na navegação, área própria em
 //                        destaque no conteúdo.
+//   'reception'          recepção (2026-09-22): agenda completa,
+//                        cadastro de pacientes, aniversários e
+//                        documentos timbrados — sem NENHUM dado clínico
+//                        (nem em modo consulta) e sem gestão/financeiro.
 //
 // Substitui ClinicAdminHome.jsx e DisciplineHub.jsx, que tratavam isso
 // como duas telas fixas (só existia "admin sem disciplina" vs. "todo
@@ -207,6 +211,12 @@ const VARIANT_COPY = {
     heading: 'Em qual área você vai atender agora?',
     navLabel: 'Atalhos',
   },
+  reception: {
+    role: 'Recepção',
+    heading: 'Visão geral de hoje',
+    lead: 'Sua conta cuida da agenda e do cadastro de pacientes da clínica — sem acesso a prontuário, evolução ou financeiro.',
+    navLabel: 'Recepção',
+  },
 };
 
 export function HomeConsole({
@@ -221,13 +231,19 @@ export function HomeConsole({
 
   // Admin puro enxerga TODAS as áreas para consulta, mesmo que o dado
   // de disciplines um dia venha incompleto — o objetivo de quem não
-  // atende é visão total, não licenciamento por área.
+  // atende é visão total, não licenciamento por área. Recepção é o
+  // oposto: NENHUMA área clínica, nem pra consulta — buildHubCards já
+  // devolve tudo 'locked' pra ela (resolveUserDisciplines corta cedo),
+  // e aqui a lista nem aparece na tela.
   const attendable = variant === 'admin'
     ? cards
-    : cards.filter(card => card.state !== 'locked');
-  const locked = variant === 'admin' ? [] : cards.filter(card => card.state === 'locked');
+    : variant === 'reception'
+      ? []
+      : cards.filter(card => card.state !== 'locked');
+  const locked = (variant === 'admin' || variant === 'reception') ? [] : cards.filter(card => card.state === 'locked');
 
   const [stats, setStats] = useState(null);
+  const isFrontDeskView = variant === 'admin' || variant === 'reception';
 
   useEffect(() => {
     if (variant === 'professional') return undefined;
@@ -240,7 +256,7 @@ export function HomeConsole({
 
     async function load() {
       try {
-        if (variant === 'admin') {
+        if (isFrontDeskView) {
           const [clinicAppointments, members, patients] = await Promise.all([
             listAppointments(range),
             listClinicMembers(),
@@ -272,7 +288,7 @@ export function HomeConsole({
 
     load();
     return () => { cancelled = true; };
-  }, [variant, profile?.id]);
+  }, [variant, profile?.id, isFrontDeskView]);
 
   const areasNote = variant === 'professional'
     ? `Você enxerga todas as áreas da instituição; ${attendable.length === 1 ? 'a colorida é a liberada' : 'as coloridas são as liberadas'} para o seu perfil.`
@@ -360,37 +376,51 @@ export function HomeConsole({
 
         {variant !== 'professional' && (
           <div className="hc-stat-row">
-            {variant === 'admin' ? (
+            {isFrontDeskView ? (
               <>
                 <Stat icon="agenda" value={stats?.today ?? null} label="Atendimentos hoje" onClick={onOpenAgenda} />
-                <Stat icon="pacientes" value={stats?.activeProfessionals ?? null} label="Profissionais ativos" onClick={() => onOpenGestao?.('indicadores')} />
+                <Stat
+                  icon="pacientes"
+                  value={stats?.activeProfessionals ?? null}
+                  label="Profissionais ativos"
+                  onClick={onOpenGestao ? () => onOpenGestao('indicadores') : undefined}
+                />
                 <Stat icon="cake" value={stats?.birthdaysThisMonth ?? null} label="Aniversariantes do mês" onClick={onOpenBirthdays} />
               </>
             ) : (
               <>
                 <Stat icon="agenda" value={stats?.ownToday ?? null} label="Seus atendimentos hoje" personal onClick={onOpenAgenda} />
                 <Stat icon="agenda" value={stats?.today ?? null} label="Atendimentos da clínica" onClick={onOpenAgenda} />
-                <Stat icon="returns" value={stats?.awaitingReturn ?? null} label="Retornos pendentes" onClick={() => onOpenGestao?.('retornos')} />
+                <Stat
+                  icon="returns"
+                  value={stats?.awaitingReturn ?? null}
+                  label="Retornos pendentes"
+                  onClick={onOpenGestao ? () => onOpenGestao('retornos') : undefined}
+                />
               </>
             )}
           </div>
         )}
 
-        <p className="hc-section-label">
-          {areasLabel}
-          {copy.areasPill && <span className="hc-pill">{copy.areasPill}</span>}
-        </p>
-        <div className="hc-row-list">
-          {attendable.map(card => (
-            <DisciplineRow
-              key={card.id}
-              card={card}
-              ctaLabel={variant === 'admin' ? 'Ver →' : 'Atender →'}
-              tagLabel={variant === 'admin' ? 'Consulta' : null}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
+        {variant !== 'reception' && (
+          <>
+            <p className="hc-section-label">
+              {areasLabel}
+              {copy.areasPill && <span className="hc-pill">{copy.areasPill}</span>}
+            </p>
+            <div className="hc-row-list">
+              {attendable.map(card => (
+                <DisciplineRow
+                  key={card.id}
+                  card={card}
+                  ctaLabel={variant === 'admin' ? 'Ver →' : 'Atender →'}
+                  tagLabel={variant === 'admin' ? 'Consulta' : null}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {locked.length > 0 && (
           <>

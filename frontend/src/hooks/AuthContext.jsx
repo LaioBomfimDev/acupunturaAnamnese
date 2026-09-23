@@ -417,6 +417,7 @@ export const AuthProvider = ({ children }) => {
 
   const isSuperAdmin = profile?.role === 'super_admin' && profile?.is_active === true && profile?.must_change_password !== true;
   const isClinicAdmin = profile?.role === 'clinic_admin' && profile?.is_active === true && profile?.must_change_password !== true;
+  const isReceptionist = profile?.role === 'receptionist' && profile?.is_active === true && profile?.must_change_password !== true;
   // Default true: perfil sem a coluna (banco não migrado) ou sem o
   // valor gravado continua atendendo, igual ao comportamento de antes
   // da 20260917_profile_attends_patients existir.
@@ -436,6 +437,7 @@ export const AuthProvider = ({ children }) => {
       profileError,
       isSuperAdmin,
       isClinicAdmin,
+      isReceptionist,
       attendsPatients,
       mustChangePassword,
       needsMfa,

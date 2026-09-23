@@ -77,6 +77,7 @@ export default function App() {
     loading,
     isSuperAdmin,
     isClinicAdmin,
+    isReceptionist,
     attendsPatients,
     mustChangePassword,
     needsMfa,
@@ -293,13 +294,17 @@ export default function App() {
   // mantém o painel próprio. A validação cobre também valor antigo/ inválido
   // no sessionStorage (ex.: disciplina que o perfil não libera).
   if (!isSuperAdmin && !canEnterDiscipline(profile, activeDiscipline)) {
-    // Três leituras da mesma tela (Fase 7): admin sem atendimento próprio
+    // Quatro leituras da mesma tela (Fase 7): admin sem atendimento próprio
     // vê a administração primeiro e as áreas só para consulta; admin que
     // também atende vê as duas coisas lado a lado; profissional comum
-    // vê só o essencial (agenda + evolução pendente). Ver HomeConsole.jsx.
-    const homeVariant = isClinicAdmin
-      ? (attendsPatients ? 'admin-professional' : 'admin')
-      : 'professional';
+    // vê só o essencial (agenda + evolução pendente). Recepção (2026-09-22)
+    // é uma quarta leitura: agenda + cadastro + documentos, sem NENHUM
+    // dado clínico e sem gestão/financeiro. Ver HomeConsole.jsx.
+    const homeVariant = isReceptionist
+      ? 'reception'
+      : isClinicAdmin
+        ? (attendsPatients ? 'admin-professional' : 'admin')
+        : 'professional';
     if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao) {
       return (
         <Suspense fallback={<PanelLoading />}>
@@ -313,8 +318,10 @@ export default function App() {
             onOpenDocuments={() => setShowHubDocuments(true)}
             onOpenAgenda={() => setShowHubAgenda(true)}
             onOpenGestao={isClinicAdmin ? (section) => { setHubGestaoInitialSection(section || null); setShowHubGestao(true); } : undefined}
-            onOpenPendingEvolutions={() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); }}
-            onOpenBirthdays={isClinicAdmin ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
+            // Evolução pendente é lembrete de trabalho CLÍNICO (escrever
+            // evolução) — não é tarefa de recepção.
+            onOpenPendingEvolutions={isReceptionist ? undefined : (() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); })}
+            onOpenBirthdays={(isClinicAdmin || isReceptionist) ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
           />
         </Suspense>
@@ -361,7 +368,7 @@ export default function App() {
               <Agenda
                 profile={profile}
                 initialView={hubAgendaInitialView}
-                initialAgendaOf={isClinicAdmin ? 'all' : null}
+                initialAgendaOf={(isClinicAdmin || isReceptionist) ? 'all' : null}
                 initialShowBirthdays={hubAgendaShowBirthdays}
                 onStartAppointment={({ discipline }) => {
                   setShowHubAgenda(false);
@@ -413,7 +420,16 @@ export default function App() {
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
-              <RelatoriosGestao profile={profile} initialSection={hubGestaoInitialSection} />
+              <RelatoriosGestao
+                profile={profile}
+                initialSection={hubGestaoInitialSection}
+                onOpenBirthdays={() => {
+                  setShowHubGestao(false);
+                  setHubGestaoInitialSection(null);
+                  setHubAgendaShowBirthdays(true);
+                  setShowHubAgenda(true);
+                }}
+              />
             </Suspense>
           </main>
         </div>

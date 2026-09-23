@@ -6750,6 +6750,12 @@ textarea { min-height: 95px; resize: vertical; }
   color: #6b21a8;
 }
 
+.admin-role-badge.role-receptionist {
+  border-color: rgba(15, 118, 110, .25);
+  background: #ecfdf9;
+  color: #0f766e;
+}
+
 .admin-role-badge.role-super-admin {
   border-color: rgba(15, 76, 73, .3);
   background: #eafaf6;
@@ -9766,6 +9772,7 @@ textarea { min-height: 95px; resize: vertical; }
 .super-admin-app .admin-role-badge,
 .super-admin-app .admin-role-badge.role-therapist,
 .super-admin-app .admin-role-badge.role-clinic-admin,
+.super-admin-app .admin-role-badge.role-receptionist,
 .super-admin-app .admin-role-badge.role-knowledge-reviewer,
 .super-admin-app .admin-role-badge.role-super-admin,
 .super-admin-app .admin-role-badge.role-unknown {
@@ -9795,6 +9802,10 @@ textarea { min-height: 95px; resize: vertical; }
 
 .super-admin-app .admin-role-badge.role-knowledge-reviewer::before {
   background: #6b21a8;
+}
+
+.super-admin-app .admin-role-badge.role-receptionist::before {
+  background: #0f766e;
 }
 
 .super-admin-app .admin-role-badge.role-super-admin::before {

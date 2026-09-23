@@ -34,3 +34,18 @@ export function getInitials(name) {
     .map(part => part.charAt(0).toUpperCase())
     .join('');
 }
+
+// Mesma paleta de TEAM_AVATAR_COLORS (Agenda.jsx) e AVATAR_COLORS
+// (BirthdaysPanel.jsx) — centralizada aqui pra qualquer lista de
+// pessoas (paciente ou profissional) usar a mesma cor pro mesmo nome,
+// sem depender de ordem/posição na lista.
+const AVATAR_PALETTE = ['#33403f', '#2e5578', '#5c3d63', '#7a5a2e', '#46426b', '#7d9291'];
+
+export function getAvatarColor(name) {
+  const text = String(name || '');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+}

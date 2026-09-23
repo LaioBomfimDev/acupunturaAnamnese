@@ -13,6 +13,14 @@ import { supabase, getAuthenticatedUser } from '../lib/supabase';
 const SURVEY_COLUMNS =
   'id,patient_id,appointment_id,token,created_at,expires_at,responded_at,rating,comment';
 
+// Com o profissional/disciplina embutidos (via appointment_id), dá pra
+// filtrar quem está sendo comentado — sem isso a pesquisa só sabia o
+// paciente, nunca por qual atendimento. RLS de appointments já libera
+// leitura pra qualquer membro ativo da clínica (agenda compartilhada),
+// então o embed não abre nada que a tela de Agenda já não mostrasse.
+const SURVEY_COLUMNS_WITH_APPOINTMENT =
+  `${SURVEY_COLUMNS},appointments(professional_id,discipline,starts_at)`;
+
 function isMissingSurveyTableError(error) {
   const text = [error?.message, error?.details, error?.hint, error?.code]
     .filter(Boolean)
@@ -38,7 +46,7 @@ export async function createSatisfactionSurvey({ patientId, appointmentId = null
       appointment_id: appointmentId,
       created_by: user.id,
     })
-    .select(SURVEY_COLUMNS)
+    .select(SURVEY_COLUMNS_WITH_APPOINTMENT)
     .single();
 
   if (error) {
@@ -49,12 +57,30 @@ export async function createSatisfactionSurvey({ patientId, appointmentId = null
   return data;
 }
 
+function isMissingAppointmentEmbedError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /appointments/.test(text) && /schema cache|relationship|Could not find/i.test(text);
+}
+
 export async function listSatisfactionSurveys({ limit = 100 } = {}) {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('satisfaction_surveys')
-    .select(SURVEY_COLUMNS)
+    .select(SURVEY_COLUMNS_WITH_APPOINTMENT)
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  // Ambiente sem o vínculo appointment_id ainda populado/detectável
+  // (banco mais antigo): cai pra lista sem profissional/disciplina em
+  // vez de quebrar a aba inteira.
+  if (error && isMissingAppointmentEmbedError(error)) {
+    ({ data, error } = await supabase
+      .from('satisfaction_surveys')
+      .select(SURVEY_COLUMNS)
+      .order('created_at', { ascending: false })
+      .limit(limit));
+  }
 
   if (error) {
     if (isMissingSurveyTableError(error)) throw new Error(MIGRATION_HINT);

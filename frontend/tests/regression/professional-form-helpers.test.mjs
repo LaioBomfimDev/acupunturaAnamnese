@@ -138,7 +138,7 @@ test('Edge Function cria profissional já com clinic_id validado', async () => {
     'utf8',
   );
 
-  assert.match(source, /const clinicId = cleanText\(body\.clinicId\)/);
+  assert.match(source, /const requestedClinicId = cleanText\(body\.clinicId\)/);
   assert.match(source, /\.from\('clinics'\)[\s\S]*\.eq\('id', clinicId\)[\s\S]*\.maybeSingle\(\)/);
   assert.match(source, /clinic_id: clinic\?\.id \|\| null/);
   assert.match(source, /clinic_id: profilePayload\.clinic_id/);
@@ -146,6 +146,60 @@ test('Edge Function cria profissional já com clinic_id validado', async () => {
   assert.match(source, /const \{ error: cleanupError \} =[\s\S]*?auth\.admin\.deleteUser/);
   assert.match(source, /auth_orphan_cleanup_failed/);
   assert.doesNotMatch(source, /profileError\.message|createError\?\.message/);
+});
+
+test('admin de clínica cria profissional só na própria clínica, nunca na do body', async () => {
+  const source = await fs.readFile(
+    path.join(projectRoot, 'supabase/functions/super-admin-create-user/index.ts'),
+    'utf8',
+  );
+
+  // A checagem de acesso aceita SuperAdm OU admin de clínica...
+  assert.match(source, /const isSuperAdmin = assertSuperAdmin\(caller\.profile\)/);
+  assert.match(source, /const isClinicAdmin = !isSuperAdmin && assertClinicAdmin\(caller\.profile\)/);
+  assert.match(source, /if \(!isSuperAdmin && !isClinicAdmin\)/);
+
+  // ...mas o clinicId usado na criação vem da PRÓPRIA clínica da
+  // chamadora quando é admin de clínica — nunca do que o corpo mandou.
+  assert.match(
+    source,
+    /const clinicId = isClinicAdmin \? cleanText\(caller\.profile\.clinic_id \|\| ''\) : requestedClinicId/,
+  );
+  assert.match(source, /if \(isClinicAdmin && !clinicId\)/);
+
+  // Nenhuma outra leitura de body.clinicId depois da trava (só a
+  // declaração de requestedClinicId pode ler o corpo diretamente).
+  const bodyClinicIdMatches = source.match(/body\.clinicId/g) || [];
+  assert.equal(bodyClinicIdMatches.length, 1, 'body.clinicId só pode ser lido uma vez, para requestedClinicId');
+});
+
+test('admin sem atendimento próprio sempre recebe todas as disciplinas, mesmo que o corpo mande outra coisa', async () => {
+  const source = await fs.readFile(
+    path.join(projectRoot, 'supabase/functions/super-admin-create-user/index.ts'),
+    'utf8',
+  );
+
+  assert.match(
+    source,
+    /const attendsPatients = !\(role === 'clinic_admin' && body\.attendsPatients === false\)/,
+  );
+  // Formatação exata do ternário pode mudar (ex.: ramo extra pra
+  // recepção); o que importa é a condição e o resultado ficarem juntos.
+  assert.match(source, /role === 'clinic_admin' && !attendsPatients\)\s*\n\s*\? \[\.\.\.DISCIPLINE_IDS\]/);
+  assert.match(source, /attends_patients: attendsPatients,/);
+});
+
+test('assertClinicAdmin espelha assertSuperAdmin (role + ativo + sem troca de senha pendente)', async () => {
+  const source = await fs.readFile(
+    path.join(projectRoot, 'supabase/functions/_shared/security.ts'),
+    'utf8',
+  );
+
+  assert.match(source, /clinic_id/, 'getCallerProfile precisa trazer clinic_id pro caller.profile');
+  assert.match(
+    source,
+    /export function assertClinicAdmin\(profile: \{ role\?: string; is_active\?: boolean; must_change_password\?: boolean \}\) \{\s*\n\s*return profile\.role === 'clinic_admin'\s*\n\s*&& profile\.is_active === true\s*\n\s*&& profile\.must_change_password !== true;\s*\n\}/,
+  );
 });
 
 test('migration multiprofissional expõe profession e clinic_id no painel SuperAdm', async () => {

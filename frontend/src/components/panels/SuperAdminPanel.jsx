@@ -101,6 +101,7 @@ function getRoleInfo(profile) {
   return {
     therapist: { label: 'Profissional', className: 'role-therapist' },
     clinic_admin: { label: 'Admin de clínica', className: 'role-clinic-admin' },
+    receptionist: { label: 'Recepção', className: 'role-receptionist' },
     knowledge_reviewer: { label: 'Revisora de curadoria', className: 'role-knowledge-reviewer' },
     super_admin: { label: 'SuperAdm', className: 'role-super-admin' },
   }[profile.role] || { label: profile.role || 'Sem função', className: 'role-unknown' };

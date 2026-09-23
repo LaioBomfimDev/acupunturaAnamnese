@@ -95,6 +95,15 @@ export const PROFESSIONS = [
     verifyUrl: 'https://website.cfo.org.br/',
   },
   {
+    value: 'recepcionista',
+    label: 'Recepcionista',
+    council: '',
+    registrationLabel: 'Registro (opcional)',
+    registrationPlaceholder: 'Sem registro em conselho profissional',
+    verifyUrl: '',
+    note: 'Função administrativa: não exige registro em conselho profissional.',
+  },
+  {
     value: 'outro',
     label: 'Outro',
     council: '',

@@ -28,11 +28,17 @@ export function ProfessionalCreateForm({
   clinics,
   onCreated,
   defaultClinicId = '',
+  // Presente = quem está criando é admin de UMA clínica só (nunca
+  // SuperAdm): o seletor de clínica some da tela e o profissional
+  // nasce sempre nessa clínica, sem chance de escolher outra.
+  lockedClinicId = '',
+  lockedClinicName = '',
   kicker = 'Novo cadastro',
   heading = 'Novo profissional',
   onCancel,
 }) {
-  const [form, setForm] = useState(() => ({ ...EMPTY_PROFESSIONAL_FORM, clinicId: defaultClinicId || '' }));
+  const effectiveClinicId = lockedClinicId || defaultClinicId || '';
+  const [form, setForm] = useState(() => ({ ...EMPTY_PROFESSIONAL_FORM, clinicId: effectiveClinicId }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -76,7 +82,7 @@ export function ProfessionalCreateForm({
     try {
       const created = await createTherapist(payload);
       setSuccess(`Usuário ${created?.username || payload.username} criado com troca de senha obrigatória.`);
-      setForm({ ...EMPTY_PROFESSIONAL_FORM, clinicId: defaultClinicId || '' });
+      setForm({ ...EMPTY_PROFESSIONAL_FORM, clinicId: effectiveClinicId });
       await onCreated?.(created);
     } catch (err) {
       setError(err.message || 'Não foi possível criar o usuário.');
@@ -171,50 +177,101 @@ export function ProfessionalCreateForm({
           Tipo de acesso *
           <select
             value={form.role}
-            onChange={event => setField('role', event.target.value)}
+            onChange={event => {
+              const role = event.target.value;
+              // Recepção não escolhe profissão/conselho: os campos nem
+              // aparecem pra ela (ver bloco abaixo), então o valor precisa
+              // vir preenchido daqui pra validação passar.
+              setForm(prev => ({
+                ...prev,
+                role,
+                profession: role === 'receptionist' ? 'recepcionista' : prev.profession,
+              }));
+            }}
           >
             {CREATABLE_ROLES.map(item => (
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}
           </select>
         </label>
-        <ProfessionRegistration
-          profession={form.profession}
-          onProfession={value => setField('profession', value)}
-          registration={form.professionalRegistration}
-          onRegistration={value => setField('professionalRegistration', value)}
-          required
-        />
+        {form.role !== 'receptionist' && (
+          <ProfessionRegistration
+            profession={form.profession}
+            onProfession={value => setField('profession', value)}
+            registration={form.professionalRegistration}
+            onRegistration={value => setField('professionalRegistration', value)}
+            required
+          />
+        )}
         {form.role === 'clinic_admin' && (
-          <label className="admin-notes">
-            Também atende nestas áreas (opcional)
-            <div className="professional-form-disciplines">
-              {DISCIPLINES.map(discipline => (
-                <label key={discipline.id} className="professional-form-discipline-option">
+          <>
+            <label className="admin-notes">
+              Também atende pacientes?
+              <div className="professional-form-disciplines">
+                <label className="professional-form-discipline-option">
                   <input
-                    type="checkbox"
-                    checked={form.disciplines.includes(discipline.id)}
-                    onChange={() => toggleDiscipline(discipline.id)}
+                    type="radio"
+                    name="attends-patients"
+                    checked={form.attendsPatients}
+                    onChange={() => setField('attendsPatients', true)}
                   />
-                  {discipline.label}
+                  Sim, administra e atende
                 </label>
-              ))}
-            </div>
-            <small>Deixe tudo desmarcado para uma admin sem atendimento — ela cai direto na home administrativa.</small>
+                <label className="professional-form-discipline-option">
+                  <input
+                    type="radio"
+                    name="attends-patients"
+                    checked={!form.attendsPatients}
+                    onChange={() => setField('attendsPatients', false)}
+                  />
+                  Não, só administra
+                </label>
+              </div>
+            </label>
+            {form.attendsPatients ? (
+              <label className="admin-notes">
+                Em quais áreas
+                <div className="professional-form-disciplines">
+                  {DISCIPLINES.map(discipline => (
+                    <label key={discipline.id} className="professional-form-discipline-option">
+                      <input
+                        type="checkbox"
+                        checked={form.disciplines.includes(discipline.id)}
+                        onChange={() => toggleDiscipline(discipline.id)}
+                      />
+                      {discipline.label}
+                    </label>
+                  ))}
+                </div>
+              </label>
+            ) : (
+              <p className="field-hint">
+                Cai direto no console de administração; enxerga e pode abrir todas as áreas da clínica, só para consulta.
+              </p>
+            )}
+          </>
+        )}
+        {lockedClinicId ? (
+          <label>
+            Clínica
+            <input value={lockedClinicName || 'Sua clínica'} disabled />
+          </label>
+        ) : (
+          <ClinicSelect
+            value={form.clinicId}
+            onChange={value => setField('clinicId', value)}
+            clinics={clinics}
+          />
+        )}
+        {form.role !== 'receptionist' && (
+          <label className="admin-notes">
+            Especialidades
+            <SpecialtyTags
+              value={form.specialty}
+              onChange={value => setField('specialty', value)}
+            />
           </label>
         )}
-        <ClinicSelect
-          value={form.clinicId}
-          onChange={value => setField('clinicId', value)}
-          clinics={clinics}
-        />
-        <label className="admin-notes">
-          Especialidades
-          <SpecialtyTags
-            value={form.specialty}
-            onChange={value => setField('specialty', value)}
-          />
-        </label>
         <PasswordField
           label="Senha temporária *"
           value={form.temporaryPassword}

@@ -91,6 +91,13 @@ const PROFESSION_TO_DISCIPLINE = {
  * da profissão, quando houver.
  */
 export function resolveUserDisciplines(profile) {
+  // Recepção não atende: nunca cai no fallback de acupuntura, mesmo sem
+  // disciplines preenchido. Ela nunca deveria chegar a chamar isto (o
+  // gate real é canEnterDiscipline, abaixo), mas o fallback genérico
+  // desta função assumiria 'acupuntura' por padrão se não cortássemos
+  // aqui também.
+  if (profile?.role === 'receptionist') return [];
+
   const fromColumn = Array.isArray(profile?.disciplines)
     ? profile.disciplines.filter(id => DISCIPLINE_IDS.includes(id))
     : [];
@@ -118,7 +125,11 @@ export function buildHubCards(profile) {
 }
 
 // Disciplina válida para ABRIR workspace (liberada no perfil + construída).
+// Recepção é bloqueada explicitamente aqui (não só via resolveUserDisciplines
+// acima) porque este é o gate que o App.jsx de fato usa pra decidir se
+// mostra um workspace clínico — não pode depender só do dado no perfil.
 export function canEnterDiscipline(profile, disciplineId) {
+  if (profile?.role === 'receptionist') return false;
   const discipline = getDiscipline(disciplineId);
   return Boolean(discipline?.available && resolveUserDisciplines(profile).includes(disciplineId));
 }

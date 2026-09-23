@@ -1,4 +1,5 @@
 import {
+  assertClinicAdmin,
   assertEdgeAccess,
   assertSuperAdmin,
   createCorsContext,
@@ -28,10 +29,11 @@ const ALLOWED_PROFESSIONS = new Set([
   'enfermeiro',
   'fonoaudiologo',
   'dentista',
+  'recepcionista',
   'outro',
 ]);
 
-const ALLOWED_ROLES = new Set(['therapist', 'clinic_admin']);
+const ALLOWED_ROLES = new Set(['therapist', 'clinic_admin', 'receptionist']);
 
 // Disciplinas válidas para a coluna profiles.disciplines. Quando o SuperAdm
 // escolhe explicitamente uma disciplina específica, a coluna vence o
@@ -70,8 +72,16 @@ Deno.serve(async (req) => {
 
     const access = assertEdgeAccess(caller.profile, caller.claims);
     if (!access.allowed) return jsonResponse({ error: access.error }, access.status);
-    if (!assertSuperAdmin(caller.profile)) {
-      return jsonResponse({ error: 'Apenas SuperAdm ativo pode criar usuários.' }, 403);
+
+    // Fase 8: admin de clínica passa a poder criar profissional também —
+    // antes só o SuperAdm conseguia, e toda contratação virava um pedido
+    // pra fora do sistema. Continua igual pro SuperAdm; pro admin de
+    // clínica, tudo abaixo trava a criação na PRÓPRIA clínica (nunca
+    // aceita o clinicId que o cliente mandar — ver bloco de clinicId).
+    const isSuperAdmin = assertSuperAdmin(caller.profile);
+    const isClinicAdmin = !isSuperAdmin && assertClinicAdmin(caller.profile);
+    if (!isSuperAdmin && !isClinicAdmin) {
+      return jsonResponse({ error: 'Apenas SuperAdm ou administrador de clínica ativo pode criar usuários.' }, 403);
     }
 
     const rateLimitResponse = await enforceEdgeRateLimit({
@@ -88,10 +98,36 @@ Deno.serve(async (req) => {
     const fullName = cleanText(body.fullName);
     const profession = cleanText(body.profession);
     const role = ALLOWED_ROLES.has(cleanText(body.role)) ? cleanText(body.role) : 'therapist';
-    const clinicId = cleanText(body.clinicId);
-    const disciplines = Array.isArray(body.disciplines)
+
+    // Admin de clínica nunca escolhe a clínica pelo body — a linha abaixo
+    // troca qualquer clinicId que o cliente tenha mandado pela própria
+    // clínica da chamadora. É o que impede uma admin de criar usuário em
+    // outra instituição (só o SuperAdm usa o clinicId do corpo mesmo).
+    const requestedClinicId = cleanText(body.clinicId);
+    const clinicId = isClinicAdmin ? cleanText(caller.profile.clinic_id || '') : requestedClinicId;
+    if (isClinicAdmin && !clinicId) {
+      return jsonResponse({ error: 'Sua conta não está vinculada a uma clínica.' }, 403);
+    }
+
+    const rawDisciplines = Array.isArray(body.disciplines)
       ? [...new Set(body.disciplines.map((d: unknown) => cleanText(d)).filter((d: string) => DISCIPLINE_IDS.has(d)))]
       : [];
+
+    // Admin sem atendimento próprio (attendsPatients=false) enxerga TODAS
+    // as áreas da clínica só para consulta — ver HomeConsole.jsx e
+    // migração 20260917_profile_attends_patients.sql. Vale a coluna
+    // vencer o que o cliente mandou: mesmo que ele tenha marcado
+    // disciplinas específicas, quem não atende sempre recebe a lista
+    // cheia.
+    const attendsPatients = !(role === 'clinic_admin' && body.attendsPatients === false);
+    // Recepção nunca atende: sem disciplina nenhuma, mesmo que o cliente
+    // tenha mandado algo em disciplines. O trigger normalize_profile_
+    // disciplines_not_null (20260922d) reforça isso no banco também.
+    const disciplines = role === 'receptionist'
+      ? []
+      : (role === 'clinic_admin' && !attendsPatients)
+        ? [...DISCIPLINE_IDS]
+        : rawDisciplines;
     const temporaryPassword = String(body.temporaryPassword || '');
     const confirmTemporaryPassword = String(body.confirmTemporaryPassword || '');
 
@@ -198,6 +234,8 @@ Deno.serve(async (req) => {
       specialty: cleanText(body.specialty) || null,
       profession,
       disciplines: disciplines.length ? disciplines : null,
+      attends_patients: attendsPatients,
+      has_agenda: role !== 'receptionist',
       clinic_name: clinic?.name || cleanText(body.clinicName) || null,
       clinic_id: clinic?.id || null,
       notes: cleanText(body.notes) || null,
@@ -211,7 +249,7 @@ Deno.serve(async (req) => {
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert(profilePayload, { onConflict: 'id' })
-      .select('id,email,username,full_name,role,profession,professional_registration,specialty,clinic_name,clinic_id,is_active,must_change_password,created_at')
+      .select('id,email,username,full_name,role,profession,professional_registration,specialty,clinic_name,clinic_id,attends_patients,is_active,must_change_password,created_at')
       .single();
 
     if (profileError) {
@@ -248,6 +286,8 @@ Deno.serve(async (req) => {
         specialty: profilePayload.specialty,
         clinic_name: profilePayload.clinic_name,
         clinic_id: profilePayload.clinic_id,
+        attends_patients: attendsPatients,
+        created_by_role: isClinicAdmin ? 'clinic_admin' : 'super_admin',
       },
     });
 

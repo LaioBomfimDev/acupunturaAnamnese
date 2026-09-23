@@ -118,7 +118,7 @@ export async function getCallerProfile(req: Request, supabaseAdmin: ReturnType<t
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id,email,username,full_name,role,is_active,must_change_password,mfa_required')
+    .select('id,email,username,full_name,role,clinic_id,is_active,must_change_password,mfa_required')
     .eq('id', userData.user.id)
     .maybeSingle();
 
@@ -134,6 +134,12 @@ export async function getCallerProfile(req: Request, supabaseAdmin: ReturnType<t
 
 export function assertSuperAdmin(profile: { role?: string; is_active?: boolean; must_change_password?: boolean }) {
   return profile.role === 'super_admin'
+    && profile.is_active === true
+    && profile.must_change_password !== true;
+}
+
+export function assertClinicAdmin(profile: { role?: string; is_active?: boolean; must_change_password?: boolean }) {
+  return profile.role === 'clinic_admin'
     && profile.is_active === true
     && profile.must_change_password !== true;
 }

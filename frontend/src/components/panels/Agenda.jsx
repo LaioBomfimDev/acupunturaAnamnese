@@ -38,6 +38,7 @@ import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { getInitials, isDeleteConfirmationValid } from '../../utils/patientUi';
+import { SearchSelect } from '../ui/SearchSelect';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
@@ -370,6 +371,14 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     }
     return raw;
   })();
+
+  const professionalOptions = useMemo(
+    () => agendaProfessionals.map(member => ({
+      id: member.id,
+      label: member.id === profile?.id ? `${member.full_name || 'Você'} (você)` : member.full_name,
+    })),
+    [agendaProfessionals, profile?.id],
+  );
 
   const selectedDate = useMemo(() => combineLocal(selectedKey, '12:00'), [selectedKey]);
 
@@ -1653,20 +1662,15 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 {agendaProfessionals.length > 0 && (
                   <div className="ag-field">
                     <label htmlFor="ag-professional">Profissional</label>
-                    <select
+                    <SearchSelect
                       id="ag-professional"
-                      className="ag-select"
                       value={formProfessionalId}
-                      onChange={e => { setForm(prev => ({ ...prev, professionalId: e.target.value })); setPendingException(null); }}
+                      onChange={id => { setForm(prev => ({ ...prev, professionalId: id })); setPendingException(null); }}
+                      options={professionalOptions}
+                      placeholder="Digite o nome…"
+                      allowEmpty={false}
                       disabled={saving}
-                      required
-                    >
-                      {agendaProfessionals.map(member => (
-                        <option key={member.id} value={member.id}>
-                          {member.id === profile?.id ? `${member.full_name || 'Você'} (você)` : member.full_name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 )}
 

@@ -131,6 +131,14 @@ Deno.serve(async (req) => {
     const temporaryPassword = String(body.temporaryPassword || '');
     const confirmTemporaryPassword = String(body.confirmTemporaryPassword || '');
 
+    const enderecoCep = cleanText(body.enderecoCep) || null;
+    const enderecoLogradouro = cleanText(body.enderecoLogradouro) || null;
+    const enderecoNumero = cleanText(body.enderecoNumero) || null;
+    const enderecoComplemento = cleanText(body.enderecoComplemento) || null;
+    const enderecoBairro = cleanText(body.enderecoBairro) || null;
+    const enderecoCidade = cleanText(body.enderecoCidade) || null;
+    const enderecoUf = cleanText(body.enderecoUf) || null;
+
     if (!fullName || fullName.length < 3) {
       return jsonResponse({ error: 'Informe o nome completo do profissional.' }, 400);
     }
@@ -239,6 +247,13 @@ Deno.serve(async (req) => {
       clinic_name: clinic?.name || cleanText(body.clinicName) || null,
       clinic_id: clinic?.id || null,
       notes: cleanText(body.notes) || null,
+      endereco_cep: enderecoCep,
+      endereco_logradouro: enderecoLogradouro,
+      endereco_numero: enderecoNumero,
+      endereco_complemento: enderecoComplemento,
+      endereco_bairro: enderecoBairro,
+      endereco_cidade: enderecoCidade,
+      endereco_uf: enderecoUf,
       is_active: true,
       must_change_password: true,
       password_changed_at: null,

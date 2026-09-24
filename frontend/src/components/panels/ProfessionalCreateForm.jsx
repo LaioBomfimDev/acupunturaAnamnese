@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { createTherapist } from '../../services/adminService';
+import { buscarEnderecoPorCep, formatCep, isValidCepFormat } from '../../services/cepService';
 import { DISCIPLINES } from '../../data/disciplines';
 import {
   ClinicSelect,
@@ -23,6 +24,11 @@ import {
   maskCpfCnpj,
   normalizeUsername,
 } from './professionalFormHelpers';
+
+const UF_OPTIONS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+];
 
 export function ProfessionalCreateForm({
   clinics,
@@ -43,6 +49,8 @@ export function ProfessionalCreateForm({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [passwordVisibility, setPasswordVisibility] = useState({ temporary: false, temporaryConfirm: false });
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepNotice, setCepNotice] = useState(null);
 
   function setField(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -64,6 +72,30 @@ export function ProfessionalCreateForm({
   function fillGeneratedPassword() {
     const password = generatePassword();
     setForm(prev => ({ ...prev, temporaryPassword: password, confirmTemporaryPassword: password }));
+  }
+
+  async function handleCepBlur() {
+    if (!form.enderecoCep || !isValidCepFormat(form.enderecoCep)) return;
+    setCepLoading(true);
+    setCepNotice(null);
+    try {
+      const endereco = await buscarEnderecoPorCep(form.enderecoCep);
+      if (!endereco) {
+        setCepNotice('CEP não encontrado — preencha o endereço manualmente.');
+        return;
+      }
+      setForm(prev => ({
+        ...prev,
+        enderecoLogradouro: endereco.logradouro || prev.enderecoLogradouro,
+        enderecoBairro: endereco.bairro || prev.enderecoBairro,
+        enderecoCidade: endereco.localidade || prev.enderecoCidade,
+        enderecoUf: endereco.uf || prev.enderecoUf,
+      }));
+    } catch (err) {
+      setCepNotice(err.message || 'Não foi possível consultar o CEP agora.');
+    } finally {
+      setCepLoading(false);
+    }
   }
 
   async function handleSubmit(event) {
@@ -173,6 +205,61 @@ export function ProfessionalCreateForm({
             inputMode="numeric"
           />
         </label>
+        <label>
+          CEP
+          <input
+            value={form.enderecoCep}
+            onChange={event => setField('enderecoCep', formatCep(event.target.value))}
+            onBlur={handleCepBlur}
+            placeholder="00000-000"
+            inputMode="numeric"
+          />
+        </label>
+        <label>
+          Logradouro
+          <input
+            value={form.enderecoLogradouro}
+            onChange={event => setField('enderecoLogradouro', event.target.value)}
+          />
+        </label>
+        <label>
+          Número
+          <input
+            value={form.enderecoNumero}
+            onChange={event => setField('enderecoNumero', event.target.value)}
+          />
+        </label>
+        <label>
+          Complemento
+          <input
+            value={form.enderecoComplemento}
+            onChange={event => setField('enderecoComplemento', event.target.value)}
+          />
+        </label>
+        <label>
+          Bairro
+          <input
+            value={form.enderecoBairro}
+            onChange={event => setField('enderecoBairro', event.target.value)}
+          />
+        </label>
+        <label>
+          Cidade
+          <input
+            value={form.enderecoCidade}
+            onChange={event => setField('enderecoCidade', event.target.value)}
+          />
+        </label>
+        <label>
+          UF
+          <select value={form.enderecoUf} onChange={event => setField('enderecoUf', event.target.value)}>
+            <option value="">Selecione</option>
+            {UF_OPTIONS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+          </select>
+        </label>
+        {(cepLoading || cepNotice) && (
+          <p className="field-hint">{cepLoading ? 'Consultando CEP…' : cepNotice}</p>
+        )}
         <label>
           Tipo de acesso *
           <select

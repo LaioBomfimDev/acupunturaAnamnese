@@ -42,7 +42,7 @@ import { SearchSelect } from '../ui/SearchSelect';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
-  IconCake, IconCheck,
+  IconCake, IconCheck, IconCalendarCheck,
 } from './agenda/AgendaIcons';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
@@ -51,11 +51,14 @@ import BirthdaysPanel from './agenda/BirthdaysPanel';
 import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
+import RegisterCompletedDialog from './agenda/RegisterCompletedDialog';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
 import ShareAgendaPanel from './agenda/ShareAgendaPanel';
 import TodayPanel from './agenda/TodayPanel';
 import { usePatient } from '../../hooks/PatientContext';
+import { COMPLETED_APPOINTMENT_LABEL, lateEntryLabel } from '../../utils/completedAppointment';
+import { EVOLUTION_DISCIPLINES } from '../../utils/evolutionQueue';
 import '../../styles/agenda.css';
 
 // Resultado do atendimento no card aberto: Atendido, Não compareceu e
@@ -161,6 +164,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   const [showShare, setShowShare] = useState(false);
   const [showBirthdays, setShowBirthdays] = useState(initialShowBirthdays);
   const [showEdit, setShowEdit] = useState(false);
+  // "Registrar atendimento realizado": a recepção não entra em
+  // Evoluções, então o mesmo formulário também abre daqui.
+  const [showRegisterCompleted, setShowRegisterCompleted] = useState(false);
+  // Recado de sucesso próprio: `notice` é zerado a cada recarga do mês.
+  const [completedNote, setCompletedNote] = useState('');
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -510,6 +518,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     setPendingException(null);
     setSelectedAppointment(null);
     setSeriesPreview(null);
+    setCompletedNote('');
   }
 
   function shiftMonth(delta) {
@@ -1010,6 +1019,25 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     }
   }
 
+  /**
+   * Atendimento realizado registrado: a agenda vai para o dia dele e
+   * abre o card, para quem registrou conferir o que entrou. Ele já está
+   * na fila de Evoluções de quem atendeu.
+   */
+  function handleCompletedRegistered(created) {
+    setShowRegisterCompleted(false);
+    goToDate(toDayKey(new Date(created.starts_at)));
+    setAppointments(prev => [...prev.filter(item => item.id !== created.id), created]);
+    setSelectedAppointment(created);
+    setError('');
+    const fila = !EVOLUTION_DISCIPLINES.includes(created.discipline)
+      ? 'Esta área não tem evolução: o atendimento fica só na Agenda.'
+      : `Ele já está na fila de Evoluções${
+        created.professional_id === profile?.id ? '' : ` de ${professionalName(created.professional_id)}`
+      }.`;
+    setCompletedNote(`Atendimento de ${patientName(created.patient_id)} registrado como Atendido. ${fila}`);
+  }
+
   const isBlock = form.kind === 'block';
 
   // ---------- jornada ----------
@@ -1115,6 +1143,15 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             })}
           </div>
 
+          <button
+            type="button"
+            className="ag-btn ag-tool-btn ag-tool-btn--wide"
+            onClick={() => setShowRegisterCompleted(true)}
+            title="Paciente atendido sem estar na Agenda: entra como Atendido e vai para a fila de Evoluções"
+          >
+            <IconCalendarCheck />
+            {COMPLETED_APPOINTMENT_LABEL}
+          </button>
           <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowShare(true)}>
             <IconShare />
             Compartilhar
@@ -1237,6 +1274,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
         {error && <div className="ag-alert" role="alert">{error}</div>}
         {notice && <div className="ag-notice">{notice}</div>}
+        {completedNote && <div className="ag-notice" role="status">{completedNote}</div>}
 
         {moving && (
           <div className="ag-warn ag-warn--confirm">
@@ -1516,6 +1554,10 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 <p className="ag-item-exception">
                   Fora do padrão: {selectedAppointment.exception_reason}
                 </p>
+              )}
+
+              {lateEntryLabel(selectedAppointment) && (
+                <p className="ag-item-late">{lateEntryLabel(selectedAppointment)}</p>
               )}
 
               {selectedAppointment.kind !== 'block' && (
@@ -2115,6 +2157,20 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         today={today}
         clinicName={profile?.clinic?.name || profile?.clinic_name}
       />
+
+      {showRegisterCompleted && (
+        <RegisterCompletedDialog
+          profile={profile}
+          patients={patients}
+          members={teamOptions}
+          disciplines={availableDisciplines}
+          knownAppointments={appointments}
+          afterNote="Nas áreas com evolução, ele vai direto para a fila de quem atendeu."
+          onClose={() => setShowRegisterCompleted(false)}
+          onPatientCreated={created => setPatients(prev => [{ ...created, enrollments: [] }, ...prev])}
+          onCreated={handleCompletedRegistered}
+        />
+      )}
 
       <EditAppointmentPanel
         key={selectedAppointment?.id || 'none'}

@@ -18,6 +18,7 @@ import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { APPOINTMENT_STATUS_IDS, FREEING_STATUSES, findOverlap } from '../utils/agenda';
+import { validateCompletedStart } from '../utils/completedAppointment';
 
 const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 
@@ -265,6 +266,9 @@ export async function createAppointment(input, { knownAppointments = null, runti
       ? String(input.exceptionReason || '').trim()
       : null,
   };
+  // Só "Registrar atendimento realizado" nasce confirmado; o agendamento
+  // comum confirma depois (botão ou link do WhatsApp).
+  if (input.confirmedAt) payload.confirmed_at = new Date(input.confirmedAt).toISOString();
   assertStatus(payload.status);
 
   // Só atendimento disputa horário. Bloqueio convive com tudo de
@@ -312,6 +316,33 @@ export async function createAppointment(input, { knownAppointments = null, runti
   }
 
   return data;
+}
+
+/**
+ * "Registrar atendimento realizado": o paciente foi atendido sem ter
+ * sido marcado. Grava já como Atendido e confirmado (confirmado no
+ * horário em que esteve lá), para cair direto na fila de Evoluções. A
+ * janela (passado, até 30 dias) é conferida aqui também, não só na tela.
+ * Sem aviso de jornada: o atendimento já aconteceu.
+ */
+export async function registerCompletedAppointment(input, { now = new Date(), knownAppointments = null, runtime } = {}) {
+  if (input?.kind && input.kind !== 'appointment') {
+    throw new Error('Só atendimento com paciente pode ser registrado como realizado.');
+  }
+  const problem = validateCompletedStart(new Date(input?.startsAt), now);
+  if (problem) throw new Error(problem);
+
+  return createAppointment(
+    {
+      ...input,
+      kind: 'appointment',
+      status: 'attended',
+      confirmedAt: input.startsAt,
+      isException: false,
+      exceptionReason: null,
+    },
+    { knownAppointments, runtime },
+  );
 }
 
 /**

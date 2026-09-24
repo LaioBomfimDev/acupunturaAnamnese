@@ -92,6 +92,7 @@ Ferramenta obrigatória ausente: não ignore em silêncio. Informe o impedimento
 - Prefira APIs, helpers e padrões já usados no projeto.
 - Mantenha a mudança pequena, revisável e ligada ao pedido.
 - Evolução mora só na tela Evoluções (`components/evolutions/`), fora das disciplinas: nenhum workspace volta a ter aba/formulário de evolução, a Agenda só encaminha pra lá, e falta exige observação. Teste: `tests/regression/evolutions-screen.test.mjs`.
+- Atendimento que não foi agendado entra por "Registrar atendimento realizado" (Evoluções e Agenda): cria o agendamento já Atendido e confirmado, só no passado e até 30 dias; "lançado depois" sai de `created_at`. Nunca reabrir evolução avulsa para esse caso. Teste: `tests/regression/completed-appointment.test.mjs`.
 - A entrada de atendimento deve ter uma única ação de saída: quando a área já oferece “Sair” no cabeçalho, não repasse `onSignOut` ao `PatientStart`. Sem esse cabeçalho, preserve a saída do seletor.
 - Use nomes claros; evite duplicação só quando a abstração melhora a leitura ou reduz risco real.
 - Use parsers, validadores e APIs estruturadas; evite manipulação frágil de strings.

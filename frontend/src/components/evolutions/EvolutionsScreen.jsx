@@ -5,6 +5,7 @@ import { listClinicMembers, shortName } from '../../services/clinicMembersServic
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import {
   ATTENDANCE_LABELS,
+  EVOLUTION_DISCIPLINES,
   QUEUE_PERIODS,
   canWriteEvolution,
   filterQueue,
@@ -14,7 +15,9 @@ import {
   sortQueue,
   toActiveAppointment,
 } from '../../utils/evolutionQueue';
+import { COMPLETED_APPOINTMENT_LABEL, canChooseProfessional, toEvolutionQueueItem } from '../../utils/completedAppointment';
 import { EvolutionRecordPanel } from './EvolutionRecordPanel';
+import { RegisterCompletedDialog } from '../panels/agenda/RegisterCompletedDialog';
 import { PanelLoading } from '../ui/PanelLoading';
 import { SearchSelect } from '../ui/SearchSelect';
 import '../../styles/evolutions.css';
@@ -28,8 +31,24 @@ import '../../styles/evolutions.css';
 // pendente abre sozinho. Vermelho = falta evoluir.
 //
 // Só existe evolução a partir de agendamento concluído — não há registro
-// avulso (o banco recusa desde 20260924b). Encaixe se marca na Agenda.
+// avulso (o banco recusa desde 20260924b). Quem atendeu sem agendar usa
+// "Registrar atendimento realizado": cria o agendamento já como Atendido
+// e ele abre aqui para evoluir.
 // ============================================================
+
+// Só áreas com formulário de evolução: registrar Neuropsicologia aqui
+// criaria um atendimento que a fila não mostra.
+const REGISTER_DISCIPLINES = DISCIPLINES.filter(
+  discipline => discipline.available && EVOLUTION_DISCIPLINES.includes(discipline.id),
+);
+
+function IconPlus() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
 
 const SITUACOES = [
   { id: 'todos', label: 'Todos' },
@@ -133,6 +152,7 @@ export function EvolutionsScreen({ profile }) {
   const [area, setArea] = useState('');
   const [atendimento, setAtendimento] = useState('todos');
   const [periodo, setPeriodo] = useState('tudo');
+  const [registering, setRegistering] = useState(false);
 
   const patientsById = useMemo(
     () => new Map((patients || []).map(patient => [patient.id, patient])),
@@ -221,6 +241,34 @@ export function EvolutionsScreen({ profile }) {
     window.scrollTo({ top: 0 });
   }
 
+  function handlePatientCreated(created) {
+    setPatients(prev => [created, ...(prev || [])]);
+  }
+
+  // O atendimento registrado entra na fila na hora. Se for da própria
+  // pessoa, já abre para evoluir; se o admin registrou para um colega,
+  // fica na fila dele (com cadeado aqui).
+  function handleRegistered(created) {
+    const name = patientsById.get(created.patient_id)?.name || 'Paciente';
+    const item = toEvolutionQueueItem(created, name);
+    setItems(prev => [item, ...prev.filter(entry => entry.appointment_id !== item.appointment_id)]);
+    setRegistering(false);
+    setSituacao('todos');
+    setArea('');
+    setAtendimento('todos');
+    setPeriodo('tudo');
+
+    if (canWriteEvolution(item, profile, visiblePatientIds)) {
+      setCurrentId(item.appointment_id);
+      setToast(`Atendimento de ${name} registrado. Escreva a evolução abaixo.`);
+    } else {
+      setToast(`Atendimento de ${name} registrado. ${
+        item.professional_id === profile?.id ? 'Ele está na sua fila.' : `Ele está na fila de ${professionalName(item.professional_id)}.`
+      }`);
+    }
+    window.scrollTo({ top: 0 });
+  }
+
   if (loading) return <PanelLoading />;
 
   function renderMain() {
@@ -289,7 +337,8 @@ export function EvolutionsScreen({ profile }) {
         <h2>Evoluções</h2>
         <p className="hub-note">
           Escolha o atendimento na fila, escreva e salve: o paciente fica verde e o próximo abre sozinho.
-          Só entram atendimentos marcados na Agenda. Não compareceu e cancelado pelo paciente pedem uma observação.
+          Só entram atendimentos marcados na Agenda; atendeu sem agendar, use “{COMPLETED_APPOINTMENT_LABEL}”.
+          Não compareceu e cancelado pelo paciente pedem uma observação.
           {hasTeamItems && ' Você vê a fila da equipe, mas só escreve as suas (as outras aparecem com cadeado).'}
         </p>
       </header>
@@ -303,6 +352,11 @@ export function EvolutionsScreen({ profile }) {
         </section>
 
         <aside className="evs-queue" aria-label="Fila de evoluções">
+          <button type="button" className="evs-register" onClick={() => setRegistering(true)}>
+            <IconPlus />
+            {COMPLETED_APPOINTMENT_LABEL}
+          </button>
+
           <div className="evs-queue-head">
             <b>Fila de evoluções</b>
             <span>{items.length - pendingCount} de {items.length} evoluídos</span>
@@ -396,6 +450,21 @@ export function EvolutionsScreen({ profile }) {
           </p>
         </aside>
       </div>
+
+      {registering && (
+        <RegisterCompletedDialog
+          profile={profile}
+          patients={patients || []}
+          members={members}
+          disciplines={REGISTER_DISCIPLINES}
+          afterNote="Depois de registrar, a evolução abre aqui."
+          // Quem registra para a equipe pode estar lançando para um colega.
+          submitLabel={canChooseProfessional(profile) ? undefined : 'Registrar e evoluir'}
+          onClose={() => setRegistering(false)}
+          onPatientCreated={handlePatientCreated}
+          onCreated={handleRegistered}
+        />
+      )}
     </div>
   );
 }

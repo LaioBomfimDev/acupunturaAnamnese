@@ -148,6 +148,38 @@
 
 /* ---------- fila (direita) ---------- */
 
+/* Atendeu sem agendar: o registro começa aqui, acima da fila. */
+.evs-register {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px dashed var(--r1-accent);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evs-register:hover {
+  background: color-mix(in srgb, var(--r1-accent) 14%, transparent);
+}
+
+.evs-register:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.evs-register svg {
+  width: 15px;
+  height: 15px;
+}
+
 .evs-queue {
   position: sticky;
   top: 16px;
@@ -220,7 +252,7 @@
 }
 
 .evs-queue-list {
-  max-height: calc(100svh - 390px);
+  max-height: calc(100svh - 440px);
   min-height: 120px;
   margin: 0 -4px;
   padding: 0 4px;

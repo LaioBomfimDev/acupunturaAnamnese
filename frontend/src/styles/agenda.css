@@ -762,6 +762,16 @@
   color: var(--r1-warning);
 }
 
+/* Registrado depois de acontecer ("Registrar atendimento realizado").
+   Neutro de propósito: não é erro nem exceção, só honestidade sobre
+   quando o registro foi feito. */
+.ag-item-late {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--r1-text-muted);
+}
+
 /* ---------- horário fora do padrão ----------
    Âmbar, não vermelho: isto é permitido. Vermelho aqui ensinaria a
    ignorar vermelho no resto do sistema. */
@@ -2434,6 +2444,11 @@
     display: none;
   }
 
+  /* Rótulo longo que não encolhe: ocupa a linha inteira. */
+  .ag-toolbar .ag-tool-btn--wide {
+    grid-column: 1 / -1;
+  }
+
   .ag-filters-toggle {
     display: flex;
     align-items: center;
@@ -2614,6 +2629,25 @@
 .ag-dialog-actions .ag-btn {
   flex: 1 1 0;
   justify-content: center;
+}
+
+/* Registrar atendimento realizado: o diálogo abre tanto na Agenda
+   quanto em Evoluções, então não pode herdar o tamanho de letra de
+   quem o abriu. */
+.agc-body {
+  font-size: 13px;
+}
+
+.agc-body .agd-linkbtn {
+  justify-self: start;
+  font-size: 12.5px;
+}
+
+.agc-fixed {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--r1-text);
 }
 
 @media (min-width: 640px) {

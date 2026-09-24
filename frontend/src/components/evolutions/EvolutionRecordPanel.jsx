@@ -78,8 +78,10 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
   const [clinical, setClinical] = useState(null);
   const [records, setRecords] = useState([]);
   const [loadWarning, setLoadWarning] = useState('');
+  const hasForm = discipline === 'acupuntura' || discipline === 'psicologia' || Boolean(getAnamneseConfig(discipline));
 
   useEffect(() => {
+    if (!hasForm) return undefined;
     let cancelled = false;
     setLoading(true);
     setLoadWarning('');
@@ -106,7 +108,7 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
     // Recarrega por paciente, não pela identidade do objeto: a fila monta
     // um objeto novo a cada render quando o paciente não está na lista.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patient.id, discipline]);
+  }, [patient.id, discipline, hasForm]);
 
   const legacy = discipline === 'acupuntura' ? clinical?.state?.evolucoes : clinical?.session?.evolucoes;
   const evolucoes = useMemo(
@@ -117,6 +119,10 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
     () => (discipline === 'acupuntura' && clinical?.state ? analyze(clinical.state, clinical.selectedMap) : null),
     [discipline, clinical],
   );
+
+  if (!hasForm) {
+    return <div className="alert" role="alert">Esta área não tem formulário de evolução.</div>;
+  }
 
   if (loading || !clinical) return <PanelLoading />;
 

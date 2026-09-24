@@ -1,11 +1,11 @@
 // ============================================================
-// Agenda — fila do dia (recepção, Fase 3)
+// Agenda — lista do dia (painel "Hoje")
 //
-// O que estes testes protegem:
-//  * o paciente entra em UM balde só, e a ordem dos baldes é a ordem
-//    da atenção;
-//  * check-in grava o instante E o status (o instante alimenta o BI, o
-//    status alimenta a fila) — guardar só um dos dois quebra um lado;
+// O que estes testes protegem (regra de 2026-09-24):
+//  * três grupos só — a atender, atendidos, não compareceram ou
+//    cancelaram — e cada paciente em UM grupo;
+//  * a agenda não sinaliza chegada nem atraso: o status legado 'ready'
+//    (chegou) é tratado como "a atender";
 //  * confirmar NÃO mexe no status: confirmado pode faltar.
 // ============================================================
 
@@ -58,66 +58,35 @@ function at(hour, minute, extra = {}) {
   };
 }
 
-test('cada paciente entra em um balde só', () => {
+test('cada paciente entra em um grupo só, na ordem do horário', () => {
   const lista = [
-    at(9, 0, { checked_in_at: new Date(2026, 7, 12, 8, 50).toISOString(), status: 'ready' }),
-    at(9, 30),                                   // horário passou, não chegou
-    at(11, 0),                                   // ainda vem
-    at(8, 0, { status: 'attended' }),            // encerrado
+    at(11, 0),                                    // ainda vem
+    at(9, 30),                                    // horário passou: continua "a atender"
+    at(9, 0, { status: 'ready', checked_in_at: new Date(2026, 7, 12, 8, 50).toISOString() }), // legado
+    at(8, 0, { status: 'attended' }),
+    at(7, 0, { status: 'no_show' }),
+    at(13, 0, { status: 'excused' }),             // cancelado pelo paciente
+    at(15, 0, { status: 'cancelled' }),           // pacote encerrado pela clínica
   ];
 
   const fila = today.buildTodayQueue({ appointments: lista, now: AGORA });
 
-  assert.deepEqual(fila.aguardando.map(i => i.appointment.id), ['a90']);
-  assert.deepEqual(fila.atrasados.map(i => i.appointment.id), ['a930']);
-  assert.deepEqual(fila.proximos.map(i => i.appointment.id), ['a110']);
-  assert.deepEqual(fila.concluidos.map(i => i.appointment.id), ['a80']);
+  assert.deepEqual(fila.aAtender.map(i => i.appointment.id), ['a90', 'a930', 'a110']);
+  assert.deepEqual(fila.atendidos.map(i => i.appointment.id), ['a80']);
+  assert.deepEqual(fila.ausentes.map(i => i.appointment.id), ['a70', 'a130', 'a150']);
 
-  const total = fila.aguardando.length + fila.atrasados.length
-    + fila.proximos.length + fila.concluidos.length;
-  assert.equal(total, 4, 'ninguém pode aparecer em dois baldes');
+  const total = fila.aAtender.length + fila.atendidos.length + fila.ausentes.length;
+  assert.equal(total, lista.length, 'ninguém pode aparecer em dois grupos');
 });
 
-test('quem chegou continua "aguardando" mesmo com o horário vencido', () => {
-  const lista = [at(9, 0, {
-    checked_in_at: new Date(2026, 7, 12, 8, 50).toISOString(),
-    status: 'ready',
-  })];
-
-  const fila = today.buildTodayQueue({ appointments: lista, now: AGORA });
-
-  assert.equal(fila.atrasados.length, 0,
-    'quem está sentado na sala não é "atrasado" — está esperando');
-  assert.equal(fila.aguardando[0].waitingMinutes, 70);
+test('sem sala de espera nem atraso: a lista não calcula tempo', () => {
+  const fila = today.buildTodayQueue({ appointments: [at(9, 0)], now: AGORA });
+  assert.equal('lateMinutes' in fila.aAtender[0], false);
+  assert.equal('waitingMinutes' in fila.aAtender[0], false);
+  assert.equal(typeof today.humanMinutes, 'undefined', 'o relógio de espera saiu junto com a sala');
 });
 
-test('a tolerância de um minuto evita o cartão pular para atrasado no relógio', () => {
-  const emCima = today.buildTodayQueue({
-    appointments: [at(10, 0)],
-    now: AGORA,
-  });
-  assert.equal(emCima.proximos.length, 1, 'às 10:00 em ponto ainda não é atraso');
-
-  const doisMinutos = today.buildTodayQueue({
-    appointments: [at(9, 58)],
-    now: AGORA,
-  });
-  assert.equal(doisMinutos.atrasados[0].lateMinutes, 2);
-});
-
-test('a sala de espera é ordenada por horário marcado, não por ordem de chegada', () => {
-  const lista = [
-    at(11, 0, { id: 'tarde', checked_in_at: new Date(2026, 7, 12, 9, 0).toISOString(), status: 'ready' }),
-    at(9, 0, { id: 'cedo', checked_in_at: new Date(2026, 7, 12, 9, 40).toISOString(), status: 'ready' }),
-  ];
-
-  const fila = today.buildTodayQueue({ appointments: lista, now: AGORA });
-
-  assert.deepEqual(fila.aguardando.map(i => i.appointment.id), ['cedo', 'tarde'],
-    'chegar cedo não passa na frente de quem tem hora antes');
-});
-
-test('bloqueio não entra na fila — vira contagem', () => {
+test('bloqueio não entra na lista — vira contagem', () => {
   const lista = [
     at(9, 0),
     at(12, 0, { kind: 'block', patient_id: null, discipline: null, note: 'Almoço' }),
@@ -127,11 +96,11 @@ test('bloqueio não entra na fila — vira contagem', () => {
 
   assert.equal(fila.bloqueios, 1);
   assert.equal(fila.resumo.total, 1, 'bloqueio não conta como atendimento');
-  const todos = [...fila.aguardando, ...fila.atrasados, ...fila.proximos, ...fila.concluidos];
+  const todos = [...fila.aAtender, ...fila.atendidos, ...fila.ausentes];
   assert.equal(todos.some(i => i.appointment.kind === 'block'), false);
 });
 
-test('agendamento de outro dia não entra na fila de hoje', () => {
+test('agendamento de outro dia não entra na lista de hoje', () => {
   const outroDia = {
     ...at(9, 0),
     starts_at: new Date(2026, 7, 13, 9, 0).toISOString(),
@@ -142,45 +111,22 @@ test('agendamento de outro dia não entra na fila de hoje', () => {
   assert.equal(fila.resumo.total, 0);
 });
 
-test('o resumo conta o que a recepção olha de relance', () => {
+test('o resumo conta o que se olha de relance, incluindo quem confirmou', () => {
   const lista = [
-    at(9, 0, { checked_in_at: new Date(2026, 7, 12, 8, 30).toISOString(), status: 'ready' }),
-    at(9, 15, { checked_in_at: new Date(2026, 7, 12, 9, 50).toISOString(), status: 'ready' }),
     at(9, 30),
     at(11, 0, { confirmed_at: new Date(2026, 7, 11, 18, 0).toISOString() }),
     at(8, 0, { status: 'attended' }),
     at(7, 0, { status: 'no_show' }),
+    at(13, 0, { status: 'excused', confirmed_at: new Date(2026, 7, 11, 18, 0).toISOString() }),
   ];
 
   const { resumo } = today.buildTodayQueue({ appointments: lista, now: AGORA });
 
-  assert.equal(resumo.total, 6);
-  assert.equal(resumo.aguardando, 2);
-  assert.equal(resumo.atrasados, 1);
-  assert.equal(resumo.proximos, 1);
+  assert.equal(resumo.total, 5);
+  assert.equal(resumo.aAtender, 2);
   assert.equal(resumo.atendidos, 1);
-  assert.equal(resumo.faltas, 1);
-  assert.equal(resumo.confirmados, 1);
-  assert.equal(resumo.esperaMaxima, 90);
-  assert.equal(resumo.esperaMedia, 50, '90 e 10 minutos de espera');
-});
-
-test('espera nunca é negativa, mesmo com relógio adiantado', () => {
-  const lista = [at(9, 0, {
-    checked_in_at: new Date(2026, 7, 12, 10, 30).toISOString(),
-    status: 'ready',
-  })];
-
-  const fila = today.buildTodayQueue({ appointments: lista, now: AGORA });
-  assert.equal(fila.aguardando[0].waitingMinutes, 0);
-});
-
-test('tempo humano vira hora quando passa de 60 minutos', () => {
-  assert.equal(today.humanMinutes(0), '0 min');
-  assert.equal(today.humanMinutes(45), '45 min');
-  assert.equal(today.humanMinutes(60), '1 h');
-  assert.equal(today.humanMinutes(95), '1 h 35 min');
-  assert.equal(today.humanMinutes(-10), '0 min');
+  assert.equal(resumo.ausentes, 2);
+  assert.equal(resumo.confirmados, 1, 'confirmado que cancelou não conta como confirmado a atender');
 });
 
 // ---------- service ----------
@@ -201,27 +147,6 @@ function runtimeCapturando(store) {
   };
 }
 
-test('check-in grava o instante E o status — os dois lados dependem disso', async () => {
-  const store = {};
-  await service.checkInAppointment('a1', {
-    at: '2026-08-12T13:00:00.000Z',
-    runtime: runtimeCapturando(store),
-  });
-
-  assert.equal(store.patch.status, 'ready', 'a fila lê o status');
-  assert.equal(store.patch.checked_in_at, '2026-08-12T13:00:00.000Z', 'o BI lê o instante');
-  assert.equal(store.id, 'a1');
-});
-
-test('desfazer chegada limpa o carimbo, não só o status', async () => {
-  const store = {};
-  await service.checkInAppointment('a1', { undo: true, runtime: runtimeCapturando(store) });
-
-  assert.equal(store.patch.checked_in_at, null,
-    'deixar o carimbo com o status revertido faria o tempo de espera mentir');
-  assert.equal(store.patch.status, 'scheduled');
-});
-
 test('confirmar NÃO mexe no status: confirmado pode faltar', async () => {
   const store = {};
   await service.confirmAppointment('a1', {
@@ -234,12 +159,11 @@ test('confirmar NÃO mexe no status: confirmado pode faltar', async () => {
     'misturar confirmação com estado do atendimento estragaria as duas informações');
 });
 
-test('check-in e confirmação exigem agendamento', async () => {
+test('confirmação exige agendamento', async () => {
   const runtime = {
     getAuthenticatedUser: async () => { throw new Error('não deveria autenticar'); },
     from: () => { throw new Error('não deveria consultar o banco'); },
   };
 
-  await assert.rejects(() => service.checkInAppointment(null, { runtime }), /não informado/i);
   await assert.rejects(() => service.confirmAppointment('', { runtime }), /não informado/i);
 });

@@ -5,10 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
 import {
   FALTA_OBSERVATION_REQUIRED,
+  ATTENDANCE_LABELS,
+  EVOLUTION_DISCIPLINES,
   canWriteEvolution,
-  evolutionDisciplinesFor,
+  filterQueue,
   groupQueueByDay,
   nextQueueItem,
+  onlyEvolutionDisciplines,
   toActiveAppointment,
   validateFaltaObservation,
 } from '../../src/utils/evolutionQueue.js';
@@ -21,6 +24,7 @@ import {
 // disciplina volta a ter formulário de evolução próprio.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260924b_evolution_requires_appointment.sql');
 const read = relative => readFile(path.resolve(root, relative), 'utf8');
 
 let sources;
@@ -39,6 +43,7 @@ before(async () => {
     disciplineEvolucao: 'src/components/anamnese/DisciplineEvolucao.jsx',
   }).map(async ([key, file]) => [key, await read(file)]));
   sources = Object.fromEntries(entries);
+  sources.migration = await readFile(MIGRATION_PATH, 'utf8');
 });
 
 const item = (id, startsAt, extra = {}) => ({
@@ -112,10 +117,53 @@ test('agendamento vira o vínculo que os formulários já esperam', () => {
   });
 });
 
-test('evolução avulsa só nas áreas liberadas que têm formulário (Neuropsicologia não tem)', () => {
-  const supported = ['acupuntura', 'psicologia', 'fisioterapia', 'nutricao'];
-  assert.deepEqual(evolutionDisciplinesFor(['neuropsicologia', 'psicologia'], supported), ['psicologia']);
-  assert.deepEqual(evolutionDisciplinesFor(undefined, supported), []);
+test('filtros da fila: situação, área, atendido ou ausência e período', () => {
+  const agora = new Date('2026-09-23T20:00:00');
+  const fila = [
+    item('hoje', '2026-09-23T10:00:00'),
+    item('ontem-falta', '2026-09-22T09:00:00', { attendance_status: 'no_show', discipline: 'psicologia' }),
+    item('antigo', '2026-09-10T09:00:00', { attendance_status: 'excused' }),
+  ];
+  const ids = options => filterQueue(fila, { now: agora, ...options }).map(entry => entry.appointment_id);
+
+  assert.deepEqual(ids({}), ['hoje', 'ontem-falta', 'antigo']);
+  assert.deepEqual(ids({ periodo: 'hoje' }), ['hoje']);
+  assert.deepEqual(ids({ periodo: 'semana' }), ['hoje', 'ontem-falta']);
+  assert.deepEqual(ids({ area: 'psicologia' }), ['ontem-falta']);
+  assert.deepEqual(ids({ atendimento: 'atendido' }), ['hoje']);
+  assert.deepEqual(ids({ atendimento: 'ausencia' }), ['ontem-falta', 'antigo']);
+
+  // Evoluído não some: fica na lista (verde) e o filtro separa.
+  const done = new Set(['hoje']);
+  assert.deepEqual(ids({ done }), ['hoje', 'ontem-falta', 'antigo']);
+  assert.deepEqual(ids({ done, situacao: 'pendentes' }), ['ontem-falta', 'antigo']);
+  assert.deepEqual(ids({ done, situacao: 'evoluidos' }), ['hoje']);
+});
+
+test('cancelado pelo paciente aparece com o mesmo nome da Agenda', () => {
+  assert.equal(ATTENDANCE_LABELS.excused, 'Cancelado pelo paciente');
+  assert.equal(ATTENDANCE_LABELS.no_show, 'Não compareceu');
+});
+
+test('sem evolução avulsa: a tela não busca "Todos os pacientes"', () => {
+  assert.ok(!sources.screen.includes('Todos os pacientes'));
+  assert.ok(!sources.screen.includes('openAvulso'));
+  assert.match(sources.screen, /<SearchSelect/, 'busca da fila é o combobox de digitar-e-escolher');
+});
+
+test('banco: evolução só com agendamento do próprio profissional, na área do agendamento', () => {
+  const sql = sources.migration;
+  assert.match(sql, /IF p_appointment_id IS NULL THEN\s+RAISE EXCEPTION\s+'Evolução só pode ser registrada a partir de um atendimento marcado na Agenda\.'/);
+  assert.match(sql, /v_appointment\.professional_id IS DISTINCT FROM v_uid/);
+  assert.match(sql, /v_appointment\.discipline IS DISTINCT FROM p_discipline/);
+  assert.match(sql, /v_appointment\.status NOT IN \('attended', 'no_show', 'excused'\)/);
+  // A trava antiga por quem CADASTROU o paciente travava todo paciente
+  // cadastrado pela recepção ou por colega.
+  assert.doesNotMatch(sql, /p\.therapist_id = v_uid/);
+  // Mantém o que já era garantido.
+  assert.match(sql, /pg_advisory_xact_lock/);
+  assert.match(sql, /pgp_sym_encrypt\(p_data, public\.get_clinical_encryption_key\(\)\)/);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.insert_patient_evolution\(UUID, TEXT, TEXT, UUID, TIMESTAMPTZ, UUID\) TO authenticated;/);
 });
 
 test('nenhuma disciplina volta a ter formulário de evolução próprio', () => {
@@ -138,4 +186,22 @@ test('tela Evoluções não regrava o prontuário da disciplina (só lê)', () =
   assert.ok(!sources.recordPanel.includes('upsertVersionedClinicalRecord'));
   assert.match(sources.recordPanel, /editable: false/);
   assert.match(sources.recordPanel, /<PanelLoading \/>/);
+});
+
+test('Neuropsicologia não entra na fila: não tem formulário e o banco recusa', () => {
+  // Achado na verificação de 2026-09-24: 27 atendimentos de neuro
+  // apareciam na fila e abrir um deles quebraria a tela.
+  const fila = [
+    item('acup', '2026-09-23T10:00:00'),
+    item('neuro', '2026-09-23T11:00:00', { discipline: 'neuropsicologia' }),
+  ];
+  assert.deepEqual(onlyEvolutionDisciplines(fila).map(entry => entry.appointment_id), ['acup']);
+
+  // Mesma lista que insert_patient_evolution aceita.
+  const fromSql = sources.migration.match(/ARRAY\[([^\]]+)\]::TEXT\[\]/)[1]
+    .split(',').map(part => part.trim().replace(/'/g, '')).sort();
+  assert.deepEqual([...EVOLUTION_DISCIPLINES].sort(), fromSql);
+  assert.match(sources.screen, /onlyEvolutionDisciplines\(/);
+  assert.match(sources.app, /onlyEvolutionDisciplines\(list\)\.length/, 'o número do card inicial conta só o que dá para evoluir');
+  assert.match(sources.recordPanel, /Esta área não tem formulário de evolução/);
 });

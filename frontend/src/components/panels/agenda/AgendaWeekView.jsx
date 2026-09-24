@@ -3,7 +3,7 @@ import { ROW_STATES, buildDayTimeline } from '../../../utils/agendaTimeline';
 import { minutesToLabel } from '../../../utils/agendaExceptions';
 import { getDiscipline } from '../../../data/disciplines';
 import { BLOCK_TYPE_ICONS, BLOCK_TYPE_LABEL, isPast } from './AgendaDayRows';
-import { IconPin, IconVideo } from './AgendaIcons';
+import { IconCheck, IconPin, IconVideo } from './AgendaIcons';
 
 // ============================================================
 // Visão Semana — para o desktop
@@ -144,7 +144,7 @@ export function AgendaWeekView({
                         onClick={() => onSelectAppointment?.(appointment)}
                         title={isBlock
                           ? `${blockLabel}${appointment.note ? `: ${appointment.note}` : ''}`
-                          : `${patientName(appointment.patient_id)}${pending ? ' — Pendência marcada' : ''}${appointment.status === 'ready' ? ' — Chegou' : ''}`}
+                          : `${patientName(appointment.patient_id)}${pending ? ' — Pendência marcada' : ''}${confirmed ? ' — Confirmado' : ''}`}
                       >
                         {isBlock
                           ? <BlockIcon className="agw-item-icon" />
@@ -154,6 +154,11 @@ export function AgendaWeekView({
                         {isBlock
                           ? (appointment.note?.trim() || blockLabel)
                           : patientName(appointment.patient_id)}
+                        {confirmed && (
+                          <span className="agw-confirmed" aria-label="Confirmado">
+                            <IconCheck />
+                          </span>
+                        )}
                       </button>
                     );
                   })}

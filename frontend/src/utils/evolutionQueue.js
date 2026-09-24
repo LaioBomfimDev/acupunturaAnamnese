@@ -3,16 +3,29 @@
 // a tela e os testes lerem a mesma coisa.
 //
 // A fila vem da view appointments_awaiting_evolution: atendimento
-// concluído (atendido, faltou ou falta justificada) sem evolução escrita.
+// concluído (atendido, não compareceu ou cancelado pelo paciente) sem
+// evolução escrita. Só existe evolução a partir de agendamento — não há
+// mais registro avulso (decisão de 2026-09-24, travada também no banco
+// em 20260924b_evolution_requires_appointment.sql).
 // Mais recente primeiro — é o que ainda está fresco na memória de quem
 // vai escrever. "Salvar e ir para o próximo" segue essa mesma ordem.
 // ============================================================
 
 export const ATTENDANCE_LABELS = {
   attended: 'Atendido',
-  no_show: 'Faltou',
-  excused: 'Falta justificada',
+  no_show: 'Não compareceu',
+  excused: 'Cancelado pelo paciente',
 };
+
+// Áreas com formulário de evolução — as mesmas que o banco aceita em
+// insert_patient_evolution. Neuropsicologia fica de fora de propósito
+// (é avaliação + relatório): o agendamento dela aparece na view de
+// pendências, mas não tem evolução para escrever.
+export const EVOLUTION_DISCIPLINES = ['acupuntura', 'fisioterapia', 'psicologia', 'nutricao'];
+
+export function onlyEvolutionDisciplines(items) {
+  return (Array.isArray(items) ? items : []).filter(item => EVOLUTION_DISCIPLINES.includes(item?.discipline));
+}
 
 export const FALTA_OBSERVATION_REQUIRED =
   'Escreva uma observação sobre a falta antes de registrar.';
@@ -93,12 +106,51 @@ export function nextQueueItem(items, currentId, doneIds, isWritable = () => true
   return after || ordered.find(open) || null;
 }
 
+export const QUEUE_PERIODS = [
+  { id: 'hoje', label: 'Hoje' },
+  { id: 'semana', label: 'Últimos 7 dias' },
+  { id: 'tudo', label: 'Tudo que está na fila' },
+];
+
+function startOfLocalDay(date) {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
 /**
- * Disciplinas em que a pessoa pode registrar evolução avulsa: as
- * liberadas no perfil que têm formulário de evolução (Neuropsicologia não
- * tem — é avaliação + relatório).
+ * Filtros do painel da fila. Todos opcionais; o que vier vazio não
+ * filtra. `done` é o conjunto de atendimentos evoluídos NESTA tela (ficam
+ * verdes na lista até sair da tela — a view do banco já não os devolve
+ * num recarregamento).
+ *
+ * - situacao: 'todos' | 'pendentes' | 'evoluidos'
+ * - area: id da disciplina
+ * - atendimento: 'todos' | 'atendido' | 'ausencia' (não compareceu ou
+ *   cancelado pelo paciente)
+ * - periodo: 'hoje' | 'semana' | 'tudo', contado a partir de `now`
  */
-export function evolutionDisciplinesFor(profileDisciplines, supported) {
-  const liberadas = Array.isArray(profileDisciplines) ? profileDisciplines : [];
-  return supported.filter(id => liberadas.includes(id));
+export function filterQueue(items, {
+  done = new Set(),
+  situacao = 'todos',
+  area = '',
+  atendimento = 'todos',
+  periodo = 'tudo',
+  now = new Date(),
+} = {}) {
+  const hoje = startOfLocalDay(now);
+  const seteDias = new Date(hoje);
+  seteDias.setDate(seteDias.getDate() - 6);
+  const limite = periodo === 'hoje' ? hoje : periodo === 'semana' ? seteDias : null;
+
+  return sortQueue(items).filter(item => {
+    const isDone = done.has(item.appointment_id);
+    if (situacao === 'pendentes' && isDone) return false;
+    if (situacao === 'evoluidos' && !isDone) return false;
+    if (area && item.discipline !== area) return false;
+    if (atendimento === 'atendido' && item.attendance_status !== 'attended') return false;
+    if (atendimento === 'ausencia' && item.attendance_status === 'attended') return false;
+    if (limite && new Date(item.starts_at) < limite) return false;
+    return true;
+  });
 }

@@ -15,16 +15,34 @@ export const MONTH_LABELS = [
 
 // Os seis estados espelham o CHECK da tabela appointments. Se um lado
 // mudar sem o outro, o teste de simetria quebra de propósito.
+//
+// Rótulos revistos com a administradora (2026-09-24):
+// - 'excused' é "Cancelado pelo paciente": o paciente avisou que não
+//   vem. Conta como falta justificada e vai para a fila de Evoluções.
+//   Antes havia "Cancelou" e "Faltou com aviso" separados, com o mesmo
+//   sentido na prática.
+// - 'cancelled' fica para o que a clínica encerra (pacote cancelado
+//   daqui em diante) e para registros antigos. Não vira evolução.
+// - 'ready' ("chegou", sala de espera) saiu da tela: a agenda não
+//   sinaliza chegada, só o resultado. Continua no CHECK do banco por
+//   causa dos registros antigos e aparece como "Agendado".
 export const APPOINTMENT_STATUSES = [
   { id: 'scheduled', label: 'Agendado', tone: 'neutral' },
-  { id: 'ready', label: 'Pronto para atender', tone: 'info' },
-  { id: 'attended', label: 'Atendeu', tone: 'success' },
-  { id: 'cancelled', label: 'Cancelou', tone: 'muted' },
+  { id: 'ready', label: 'Agendado', tone: 'neutral', legacy: true },
+  { id: 'attended', label: 'Atendido', tone: 'success' },
+  { id: 'cancelled', label: 'Cancelado', tone: 'muted' },
   { id: 'no_show', label: 'Não compareceu', tone: 'danger' },
-  { id: 'excused', label: 'Faltou com aviso', tone: 'warning' },
+  { id: 'excused', label: 'Cancelado pelo paciente', tone: 'warning' },
 ];
 
 export const APPOINTMENT_STATUS_IDS = APPOINTMENT_STATUSES.map(item => item.id);
+
+// Estados que a tela oferece (filtros, legenda): sem os legados.
+export const SELECTABLE_STATUSES = APPOINTMENT_STATUSES.filter(item => !item.legacy);
+
+// Resultado do atendimento, na ordem dos botões do card.
+export const OUTCOME_STATUSES = ['attended', 'no_show', 'excused']
+  .map(id => APPOINTMENT_STATUSES.find(item => item.id === id));
 
 // Estados que liberam o horário do profissional. Espelha o WHERE da
 // constraint appointments_no_overlap.

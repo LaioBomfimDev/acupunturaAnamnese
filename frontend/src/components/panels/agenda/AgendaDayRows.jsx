@@ -30,10 +30,16 @@ const DISCIPLINE_SHORT = {
   nutricao: 'Nutri',
 };
 
+// Espelha APPOINTMENT_TYPES (services/appointmentService.js) sem
+// importar o service — este arquivo é renderizado isolado nos testes.
 const APPOINTMENT_TYPE_LABEL = {
+  anamnesis: 'Anamnese',
+  evaluation: 'Avaliação',
+  feedback: 'Devolutiva',
+  interview: 'Entrevista',
   first_visit: 'Primeira vez',
   return: 'Retorno',
-  evaluation: 'Avaliação',
+  session: 'Sessão',
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -153,9 +159,6 @@ function AppointmentCard({
         </span>
 
         <span className="agd-card-meta">
-          {!isBlock && appointment.status === 'ready' && (
-            <span className="agd-chip agd-chip--ready">Chegou</span>
-          )}
           {isBlock && (
             <span className="agd-chip">
               <BlockIcon />

@@ -47,8 +47,8 @@ function formatDateTimeBR(iso) {
 }
 
 const ATTENDANCE_LABELS = {
-  no_show: 'Paciente faltou',
-  excused: 'Falta justificada',
+  no_show: 'Não compareceu',
+  excused: 'Cancelado pelo paciente (falta justificada)',
 };
 
 export function PsychologyEvolucao({ session, evolucoes, patientId, activeAppointment, onEvolucoesChange, onEvolutionSaved, submitLabel = 'Adicionar sessão' }) {

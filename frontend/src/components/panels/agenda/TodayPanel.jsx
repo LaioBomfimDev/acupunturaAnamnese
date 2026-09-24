@@ -1,17 +1,17 @@
 import { getStatusLabel } from '../../../utils/agenda';
-import { humanMinutes } from '../../../utils/agendaToday';
 import { getDiscipline } from '../../../data/disciplines';
+import { IconCheck } from './AgendaIcons';
 
 // ============================================================
-// Painel "Hoje" — a fila da recepção
+// Painel "Hoje" — a lista do dia
 //
-// A tela que fica aberta no balcão. Ela responde três perguntas, nessa
-// ordem de urgência: quem está esperando, quem está atrasado, quem vem
-// agora. Já atendido desce para o fim e fica sem ação.
+// Três grupos, na ordem: a atender, atendidos, e quem não compareceu ou
+// cancelou. Sem sala de espera e sem atraso: a agenda registra só o
+// resultado do atendimento. Quem já confirmou presença ganha o V verde.
 //
-// Cada cartão tem NO MÁXIMO duas ações. Uma recepção com fila não lê
-// menu: ela toca no botão grande. O resto das ações mora no detalhe do
-// agendamento, a um toque de distância.
+// Cada cartão tem NO MÁXIMO duas ações — quem está com fila não lê
+// menu. O resto (Cancelado pelo paciente, Confirmado, editar, mover)
+// mora no detalhe do agendamento, a um toque de distância.
 // ============================================================
 
 function hora(iso) {
@@ -38,16 +38,12 @@ function QueueCard({
       <button type="button" className="agh-open" onClick={() => onOpen(appointment)}>
         <span className="agh-top">
           <span className="agh-hour">{hora(appointment.starts_at)}</span>
-          {item.waitingMinutes !== null && (
-            <span className="agh-wait">esperando há {humanMinutes(item.waitingMinutes)}</span>
+          {item.confirmed && tone === 'next' && (
+            <span className="agh-confirmed">
+              <IconCheck /> Confirmado
+            </span>
           )}
-          {item.lateMinutes !== null && (
-            <span className="agh-late">{humanMinutes(item.lateMinutes)} de atraso</span>
-          )}
-          {item.confirmed && item.lateMinutes === null && item.waitingMinutes === null && (
-            <span className="agh-confirmed">confirmado</span>
-          )}
-          {tone === 'done' && (
+          {tone !== 'next' && (
             <span className="agh-done">{getStatusLabel(appointment.status)}</span>
           )}
         </span>
@@ -102,22 +98,18 @@ function Bloco({ titulo, itens, vazio, children }) {
 
 export function TodayPanel({
   queue,
-  isToday,
-  dateLabel,
   patientName,
   patientPending,
   professionalName,
   showProfessional = false,
   saving,
   onOpen,
-  onCheckIn,
-  onUndoCheckIn,
-  onConfirm,
   onStatus,
   onStart,
   canStart,
 }) {
-  const { aguardando, atrasados, proximos, concluidos, resumo, bloqueios } = queue;
+  const { aAtender, atendidos, ausentes, resumo, bloqueios } = queue;
+  const cardProps = { patientName, patientPending, professionalName, showProfessional, onOpen };
 
   return (
     <div className="agh">
@@ -125,130 +117,60 @@ export function TodayPanel({
         <span className="agh-stat">
           <b>{resumo.total}</b> {resumo.total === 1 ? 'atendimento' : 'atendimentos'}
         </span>
-        {resumo.aguardando > 0 && (
-          <span className="agh-stat agh-stat--wait">
-            <b>{resumo.aguardando}</b> na sala
-          </span>
-        )}
-        {resumo.atrasados > 0 && (
-          <span className="agh-stat agh-stat--late">
-            <b>{resumo.atrasados}</b> atrasado(s)
+        {resumo.confirmados > 0 && (
+          <span className="agh-stat agh-stat--confirmed">
+            <b>{resumo.confirmados}</b> {resumo.confirmados === 1 ? 'confirmado' : 'confirmados'}
           </span>
         )}
         {resumo.atendidos > 0 && (
-          <span className="agh-stat"><b>{resumo.atendidos}</b> atendido(s)</span>
+          <span className="agh-stat"><b>{resumo.atendidos}</b> {resumo.atendidos === 1 ? 'atendido' : 'atendidos'}</span>
         )}
-        {resumo.faltas > 0 && (
-          <span className="agh-stat"><b>{resumo.faltas}</b> falta(s)</span>
-        )}
-        {resumo.esperaMaxima > 0 && (
-          <span className="agh-stat">espera máxima {humanMinutes(resumo.esperaMaxima)}</span>
+        {resumo.ausentes > 0 && (
+          <span className="agh-stat">
+            <b>{resumo.ausentes}</b> {resumo.ausentes === 1 ? 'ausência' : 'ausências'}
+          </span>
         )}
         {bloqueios > 0 && (
-          <span className="agh-stat">{bloqueios} bloqueio(s)</span>
+          <span className="agh-stat">{bloqueios} {bloqueios === 1 ? 'bloqueio' : 'bloqueios'}</span>
         )}
       </div>
-
-      {!isToday && (
-        <p className="agd-banner">
-          Esta fila é de <b>{dateLabel}</b>, não de hoje. Os tempos de espera
-          e atraso são calculados a partir de agora, então só fazem sentido
-          no dia corrente.
-        </p>
-      )}
 
       {resumo.total === 0 ? (
         <p className="ag-empty">Nenhum atendimento marcado neste dia.</p>
       ) : (
         <>
-          <Bloco titulo="Na sala de espera" itens={aguardando} vazio="Ninguém aguardando.">
-            {aguardando.map(item => (
-              <QueueCard
-                key={item.appointment.id}
-                item={item}
-                tone="waiting"
-                patientName={patientName}
-                patientPending={patientPending}
-                professionalName={professionalName}
-                showProfessional={showProfessional}
-                onOpen={onOpen}
-                actions={[
-                  ...(canStart(item.appointment)
-                    ? [{ label: 'Iniciar atendimento', primary: true, disabled: saving, onClick: () => onStart(item.appointment) }]
-                    : []),
-                  { label: 'Atendeu', disabled: saving, onClick: () => onStatus(item.appointment, 'attended') },
-                ]}
-              />
-            ))}
-          </Bloco>
-
-          <Bloco titulo="Atrasados" itens={atrasados} vazio="Ninguém atrasado.">
-            {atrasados.map(item => (
-              <QueueCard
-                key={item.appointment.id}
-                item={item}
-                tone="late"
-                patientName={patientName}
-                patientPending={patientPending}
-                professionalName={professionalName}
-                showProfessional={showProfessional}
-                onOpen={onOpen}
-                actions={[
-                  // "Chegou" registra presença FÍSICA na clínica — só faz
-                  // sentido pra quem vai comparecer no endereço. Atendimento
-                  // online não tem sala de espera pra chegar.
-                  ...(item.appointment.modality === 'presencial'
-                    ? [{ label: 'Chegou', primary: true, disabled: saving, onClick: () => onCheckIn(item.appointment) }]
-                    : []),
-                  { label: 'Não veio', disabled: saving, onClick: () => onStatus(item.appointment, 'no_show') },
-                ]}
-              />
-            ))}
-          </Bloco>
-
-          <Bloco titulo="A seguir" itens={proximos} vazio="Nada mais marcado para hoje.">
-            {proximos.map(item => (
+          <Bloco titulo="A atender" itens={aAtender} vazio="Nada mais a atender neste dia.">
+            {aAtender.map(item => (
               <QueueCard
                 key={item.appointment.id}
                 item={item}
                 tone="next"
-                patientName={patientName}
-                patientPending={patientPending}
-                professionalName={professionalName}
-                showProfessional={showProfessional}
-                onOpen={onOpen}
-                actions={[
-                  ...(item.appointment.modality === 'presencial'
-                    ? [{ label: 'Chegou', primary: true, disabled: saving, onClick: () => onCheckIn(item.appointment) }]
-                    : []),
-                  item.confirmed
-                    ? { label: 'Desfazer confirmação', disabled: saving, onClick: () => onConfirm(item.appointment, true) }
-                    : { label: 'Confirmou', disabled: saving, onClick: () => onConfirm(item.appointment, false) },
-                ]}
+                {...cardProps}
+                actions={canStart(item.appointment)
+                  ? [
+                    { label: 'Iniciar atendimento', primary: true, disabled: saving, onClick: () => onStart(item.appointment) },
+                    { label: 'Atendido', disabled: saving, onClick: () => onStatus(item.appointment, 'attended') },
+                  ]
+                  : [
+                    { label: 'Atendido', primary: true, disabled: saving, onClick: () => onStatus(item.appointment, 'attended') },
+                    { label: 'Não compareceu', disabled: saving, onClick: () => onStatus(item.appointment, 'no_show') },
+                  ]}
               />
             ))}
           </Bloco>
 
-          {concluidos.length > 0 && (
-            <Bloco titulo="Encerrados" itens={concluidos} vazio="">
-              {concluidos.map(item => (
-                <QueueCard
-                  key={item.appointment.id}
-                  item={item}
-                  tone="done"
-                  patientName={patientName}
-                  professionalName={professionalName}
-                  showProfessional={showProfessional}
-                  onOpen={onOpen}
-                  actions={
-                    // Desfazer chegada existe porque a recepção erra de
-                    // linha; sem isso a correção seria mexer no status na
-                    // mão e deixar o carimbo de chegada mentindo.
-                    item.checkedIn && item.appointment.status !== 'attended'
-                      ? [{ label: 'Desfazer chegada', disabled: saving, onClick: () => onUndoCheckIn(item.appointment) }]
-                      : []
-                  }
-                />
+          {atendidos.length > 0 && (
+            <Bloco titulo="Atendidos" itens={atendidos} vazio="">
+              {atendidos.map(item => (
+                <QueueCard key={item.appointment.id} item={item} tone="done" {...cardProps} actions={[]} />
+              ))}
+            </Bloco>
+          )}
+
+          {ausentes.length > 0 && (
+            <Bloco titulo="Não compareceram ou cancelaram" itens={ausentes} vazio="">
+              {ausentes.map(item => (
+                <QueueCard key={item.appointment.id} item={item} tone="absent" {...cardProps} actions={[]} />
               ))}
             </Bloco>
           )}

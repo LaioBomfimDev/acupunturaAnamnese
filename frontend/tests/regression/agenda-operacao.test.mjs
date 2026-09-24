@@ -425,7 +425,10 @@ test('tipo de atendimento inválido não passa', async () => {
 });
 
 test('os tipos do JS espelham o CHECK da migração', async () => {
-  const sql = await readFile(operacaoSql, 'utf8');
+  // A lista vive na migração mais recente que redefine a constraint
+  // (20260924c ampliou os tipos; 20260810 criou).
+  const tiposSql = path.resolve(root, '../supabase/migrations/20260924c_appointment_types_expand.sql');
+  const sql = await readFile(tiposSql, 'utf8');
   const check = sql.match(/appointment_type IN \(([^)]+)\)/);
   assert.ok(check);
 

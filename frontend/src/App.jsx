@@ -7,6 +7,7 @@ import { analyze, assistantSynthesis } from './utils/analyzer';
 import { mergeEvolutionHistory } from './utils/evolutionHistory';
 import { listPatientEvolutions } from './services/patientEvolutionService';
 import { listAppointmentsAwaitingEvolution } from './services/appointmentService';
+import { onlyEvolutionDisciplines } from './utils/evolutionQueue';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { HomeConsole } from './components/HomeConsole';
@@ -116,7 +117,7 @@ export default function App() {
     let cancelled = false;
 
     listAppointmentsAwaitingEvolution()
-      .then(list => { if (!cancelled) setPendingEvolutionsCount(list.length); })
+      .then(list => { if (!cancelled) setPendingEvolutionsCount(onlyEvolutionDisciplines(list).length); })
       .catch(() => { if (!cancelled) setPendingEvolutionsCount(0); });
 
     return () => { cancelled = true; };

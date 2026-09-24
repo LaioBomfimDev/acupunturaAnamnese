@@ -358,7 +358,7 @@ export function PainelInicial({
             ultimaEvolucaoFoiFalta ? (
               <>
                 <p><b>Sessão {ultimaEvolucao.sessao}</b> • {ultimaEvolucao.data}</p>
-                <p><b>{ultimaEvolucao.attendanceStatus === 'no_show' ? 'Faltou' : 'Falta justificada'}</b></p>
+                <p><b>{ultimaEvolucao.attendanceStatus === 'no_show' ? 'Não compareceu' : 'Cancelado pelo paciente'}</b></p>
                 <p>{ultimaEvolucao.observacao || 'Sem observações adicionais.'}</p>
               </>
             ) : (

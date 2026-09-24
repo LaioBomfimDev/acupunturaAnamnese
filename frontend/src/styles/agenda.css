@@ -446,6 +446,44 @@
   color: var(--r1-text-on-inverse);
 }
 
+/* Confirmação de presença (confirmed_at) — verde e com V, para quem lê
+   a agenda enxergar de relance quem já confirmou. Não é status. */
+.ag-chip-btn--confirm {
+  gap: 4px;
+}
+
+.ag-chip-btn--confirm svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ag-chip-btn--confirm.is-on,
+.ag-chip-btn--confirm[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--r1-success) 14%, transparent);
+  border-color: var(--r1-success);
+  color: var(--r1-success);
+  font-weight: 600;
+}
+
+.ag-confirmed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--r1-success) 14%, transparent);
+  color: var(--r1-success);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.ag-confirmed-badge svg {
+  width: 11px;
+  height: 11px;
+}
+
 .ag-empty {
   margin: 0 0 14px;
   padding: 16px 12px;
@@ -1123,17 +1161,6 @@
   color: var(--r1-text-on-inverse-muted);
 }
 
-/* "Chegou" (status ready) precisa se destacar dos outros chips (que são
-   metadado discreto, translúcidos de propósito) — fundo sólido branco +
-   texto na cor de destaque, mesmo contraste garantido de um botão
-   primário, não a mistura ~16% que os chips comuns usam. */
-.agd-card--filled .agd-chip--ready {
-  background: var(--r1-accent-contrast);
-  border-color: var(--r1-accent-contrast);
-  color: var(--r1-accent);
-  font-weight: 800;
-}
-
 .agd-card--filled .agd-card-exception {
   color: var(--r1-text-on-inverse);
 }
@@ -1519,29 +1546,30 @@
   opacity: 0.55;
 }
 
-.agw-item--confirmed::after {
-  content: '';
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--r1-success);
+.agw-item--confirmed {
+  padding-right: 22px;
 }
 
-/* "Chegou" (status ready) — canto oposto ao confirmado; só um sinal
-   visual (célula é apertada demais pra texto), o `title` do botão já
-   carrega "— Chegou" por extenso pra quem passa o mouse/usa leitor. */
-.agw-item--ready::before {
-  content: '';
+/* Confirmação de presença: V verde em círculo branco, legível sobre
+   qualquer cor de disciplina (a bolinha de 6px sumia no fundo). */
+.agw-confirmed {
   position: absolute;
-  top: 5px;
-  left: 5px;
-  width: 6px;
-  height: 6px;
+  top: 50%;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-  background: var(--r1-accent);
+  background: var(--r1-surface);
+  color: var(--r1-success);
+  transform: translateY(-50%);
+}
+
+.agw-confirmed svg {
+  width: 10px;
+  height: 10px;
 }
 
 .agw-item--moving {
@@ -1781,16 +1809,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.agh-stat--wait {
-  border-color: var(--r1-accent);
-  background: var(--r1-accent-wash);
-  color: var(--r1-text);
-}
-
-.agh-stat--late {
-  border-color: var(--r1-warning-border);
-  background: var(--r1-warning-bg);
-  color: var(--r1-warning);
+.agh-stat--confirmed {
+  border-color: var(--r1-success);
+  color: var(--r1-success);
 }
 
 .agh-block-title {
@@ -1843,18 +1864,8 @@
   background: var(--r1-surface);
 }
 
-/* Quem já está na sala é o que a recepção precisa ver primeiro: é o
-   único cartão com a cor de destaque. */
-.agh-card--waiting {
-  border-left-color: var(--r1-accent);
-  background: var(--r1-accent-wash);
-}
-
-.agh-card--late {
-  border-left-color: var(--r1-warning);
-}
-
-.agh-card--done {
+.agh-card--done,
+.agh-card--absent {
   border-left-color: var(--r1-text-subtle);
   background: var(--r1-surface-sunken);
   opacity: 0.82;
@@ -1896,17 +1907,24 @@
   font-variant-numeric: tabular-nums;
 }
 
-.agh-wait,
-.agh-late,
 .agh-confirmed,
 .agh-done {
   font-size: 11px;
   font-weight: 600;
 }
 
-.agh-wait { color: var(--r1-accent-strong); }
-.agh-late { color: var(--r1-warning); }
-.agh-confirmed { color: var(--r1-success); }
+.agh-confirmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--r1-success);
+}
+
+.agh-confirmed svg {
+  width: 12px;
+  height: 12px;
+}
+
 .agh-done { color: var(--r1-text-muted); }
 
 .agh-name {

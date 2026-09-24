@@ -33,8 +33,8 @@ const DEFAULT_ACCENT = '#0E2A4A';
 
 const ATTENDANCE_LABELS = {
   attended: 'Atendido',
-  no_show: 'Faltou',
-  excused: 'Falta justificada',
+  no_show: 'Não compareceu',
+  excused: 'Cancelado pelo paciente',
 };
 
 const ACUPUNTURA_METRICS = [

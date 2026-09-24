@@ -2,36 +2,46 @@ import { useEffect, useMemo, useState } from 'react';
 import { listAppointmentsAwaitingEvolution } from '../../services/appointmentService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { listClinicMembers, shortName } from '../../services/clinicMembersService';
-import { getDiscipline, resolveUserDisciplines } from '../../data/disciplines';
-import { GENERIC_ANAMNESE_DISCIPLINES } from '../../data/anamneseRegistry';
+import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import {
   ATTENDANCE_LABELS,
+  QUEUE_PERIODS,
   canWriteEvolution,
-  evolutionDisciplinesFor,
+  filterQueue,
   groupQueueByDay,
   nextQueueItem,
+  onlyEvolutionDisciplines,
+  sortQueue,
   toActiveAppointment,
 } from '../../utils/evolutionQueue';
 import { EvolutionRecordPanel } from './EvolutionRecordPanel';
 import { PanelLoading } from '../ui/PanelLoading';
+import { SearchSelect } from '../ui/SearchSelect';
 import '../../styles/evolutions.css';
 
 // ============================================================
 // Evoluções — tela própria, fora das disciplinas.
 //
-// Antes a evolução morava dentro de cada workspace (Acupuntura,
-// Psicologia...): Agenda → "Evolução pendente" → abria o paciente na
-// disciplina → escrevia → voltava pra Agenda → reabria a lista. Aqui a
-// fila fica na mesma tela: clicou, o registro toma a tela; salvou, o
-// próximo pendente já abre.
+// Uma tela só: o formulário do atendimento aberto à esquerda e a fila à
+// direita, que também é o filtro (busca + situação, área, atendimento e
+// período). Salvou, o paciente fica VERDE na fila (não some) e o próximo
+// pendente abre sozinho. Vermelho = falta evoluir.
 //
-// "Todos os pacientes" cobre a evolução avulsa (encaixe sem agendamento),
-// com data e hora informadas à mão — como já era nos formulários.
+// Só existe evolução a partir de agendamento concluído — não há registro
+// avulso (o banco recusa desde 20260924b). Encaixe se marca na Agenda.
 // ============================================================
 
-// Disciplinas que têm formulário de evolução. Neuropsicologia fica de
-// fora de propósito: é avaliação + relatório.
-const EVOLUTION_DISCIPLINES = ['acupuntura', 'psicologia', ...GENERIC_ANAMNESE_DISCIPLINES];
+const SITUACOES = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'pendentes', label: 'Falta evoluir' },
+  { id: 'evoluidos', label: 'Evoluídos' },
+];
+
+const ATENDIMENTOS = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'atendido', label: 'Atendido' },
+  { id: 'ausencia', label: 'Não compareceu ou cancelou' },
+];
 
 function hora(iso) {
   const date = new Date(iso);
@@ -45,8 +55,31 @@ function diaLabel(iso) {
   return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'long' });
 }
 
-function normalizeText(value) {
-  return String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function IconPending() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconDone() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12.5 2.7 2.7L16 9.8" />
+    </svg>
+  );
+}
+
+function IconLock() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
 }
 
 function DisciplineTag({ id }) {
@@ -57,9 +90,33 @@ function DisciplineTag({ id }) {
   );
 }
 
-function pendingCountLabel(count) {
-  if (count === 0) return 'Nenhum atendimento aguardando evolução.';
-  return count === 1 ? 'Falta 1 atendimento.' : `Faltam ${count} atendimentos.`;
+function StatusTag({ status }) {
+  return (
+    <span className={`evs-status evs-status--${status}`}>
+      {ATTENDANCE_LABELS[status] || status}
+    </span>
+  );
+}
+
+function Chips({ label, options, value, onChange }) {
+  return (
+    <div className="evs-filter">
+      <p className="evs-filter-label">{label}</p>
+      <div className="evs-chips" role="group" aria-label={label}>
+        {options.map(option => (
+          <button
+            key={option.id}
+            type="button"
+            className="evs-chip"
+            aria-pressed={value === option.id}
+            onClick={() => onChange(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function EvolutionsScreen({ profile }) {
@@ -68,12 +125,24 @@ export function EvolutionsScreen({ profile }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState('fila');
-  const [onlyMine, setOnlyMine] = useState(false);
-  const [term, setTerm] = useState('');
-  const [doneIds, setDoneIds] = useState(() => new Set());
-  const [current, setCurrent] = useState(null);
+  // appointment_id → instante em que foi evoluído NESTA tela.
+  const [done, setDone] = useState(() => new Map());
+  const [currentId, setCurrentId] = useState(null);
   const [toast, setToast] = useState('');
+  const [situacao, setSituacao] = useState('todos');
+  const [area, setArea] = useState('');
+  const [atendimento, setAtendimento] = useState('todos');
+  const [periodo, setPeriodo] = useState('tudo');
+
+  const patientsById = useMemo(
+    () => new Map((patients || []).map(patient => [patient.id, patient])),
+    [patients],
+  );
+  const visiblePatientIds = useMemo(
+    () => (patients ? new Set(patientsById.keys()) : null),
+    [patients, patientsById],
+  );
+  const isWritable = item => canWriteEvolution(item, profile, visiblePatientIds);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,28 +152,32 @@ export function EvolutionsScreen({ profile }) {
       listClinicMembers(),
     ]).then(([queueResult, patientsResult, membersResult]) => {
       if (cancelled) return;
-      if (queueResult.status === 'fulfilled') setItems(queueResult.value);
-      else setError(queueResult.reason?.message || 'Não foi possível carregar os atendimentos aguardando evolução.');
+      const queue = onlyEvolutionDisciplines(queueResult.status === 'fulfilled' ? queueResult.value : []);
+      if (queueResult.status !== 'fulfilled') {
+        setError(queueResult.reason?.message || 'Não foi possível carregar os atendimentos aguardando evolução.');
+      }
       // Sem a lista de pacientes a fila ainda funciona (a RLS decide no
-      // servidor); só a busca de "Todos os pacientes" fica vazia.
-      setPatients(patientsResult.status === 'fulfilled' ? patientsResult.value : null);
+      // servidor); só os nomes caem no que a própria view devolve.
+      const patientList = patientsResult.status === 'fulfilled' ? patientsResult.value : null;
+      setItems(queue);
+      setPatients(patientList);
       setMembers(membersResult.status === 'fulfilled' ? membersResult.value : []);
+      const visible = patientList ? new Set(patientList.map(patient => patient.id)) : null;
+      const first = sortQueue(queue).find(item => canWriteEvolution(item, profile, visible));
+      setCurrentId(first?.appointment_id || null);
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, []);
+    // Carrega uma vez por pessoa logada; o objeto profile pode trocar de
+    // identidade sem mudar de dono.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
-  const patientsById = useMemo(
-    () => new Map((patients || []).map(patient => [patient.id, patient])),
-    [patients],
-  );
-  const visiblePatientIds = patients ? new Set(patientsById.keys()) : null;
-  const userDisciplines = evolutionDisciplinesFor(resolveUserDisciplines(profile), EVOLUTION_DISCIPLINES);
-
-  const isWritable = item => canWriteEvolution(item, profile, visiblePatientIds);
-  const pending = items.filter(item => !doneIds.has(item.appointment_id));
-  const hasTeamItems = pending.some(item => item.professional_id !== profile?.id);
-  const search = normalizeText(term.trim());
+  const doneIds = useMemo(() => new Set(done.keys()), [done]);
+  const current = items.find(item => item.appointment_id === currentId) || null;
+  const hasTeamItems = items.some(item => item.professional_id !== profile?.id);
+  const pendingCount = items.filter(item => !done.has(item.appointment_id)).length;
+  const areasNaFila = DISCIPLINES.filter(discipline => items.some(item => item.discipline === discipline.id));
 
   function patientOf(item) {
     return patientsById.get(item.patient_id) || { id: item.patient_id, name: item.patient_name || 'Paciente' };
@@ -116,234 +189,213 @@ export function EvolutionsScreen({ profile }) {
     return found ? shortName(found.full_name) : 'profissional';
   }
 
-  const visibleQueue = pending.filter(item => (
-    (!onlyMine || item.professional_id === profile?.id)
-    && (!search || normalizeText(patientOf(item).name).includes(search))
-  ));
+  const visibleQueue = filterQueue(items, { done: doneIds, situacao, area, atendimento, periodo });
+  const searchOptions = sortQueue(items).map(item => ({
+    id: item.appointment_id,
+    label: patientOf(item).name,
+    sublabel: `${hora(item.starts_at)} · ${getDiscipline(item.discipline)?.label || item.discipline}${done.has(item.appointment_id) ? ' · evoluído' : ''}`,
+    avatar: true,
+  }));
 
-  function openItem(item) {
+  function openItem(id) {
     setToast('');
-    setCurrent({ type: 'fila', item });
+    setCurrentId(id);
     window.scrollTo({ top: 0 });
-  }
-
-  function openAvulso(patient, discipline) {
-    setToast('');
-    setCurrent({ type: 'avulso', patient, discipline });
-    window.scrollTo({ top: 0 });
-  }
-
-  function closeRecord() {
-    setCurrent(null);
   }
 
   function handleSaved() {
-    if (current?.type !== 'fila') {
-      setToast(`Evolução de ${current.patient.name} salva.`);
-      setCurrent(null);
-      return;
-    }
-    const savedId = current.item.appointment_id;
-    const nextDone = new Set(doneIds);
-    nextDone.add(savedId);
-    setDoneIds(nextDone);
+    if (!current) return;
+    const savedId = current.appointment_id;
+    const nextDone = new Map(done);
+    nextDone.set(savedId, new Date());
+    setDone(nextDone);
 
-    const remaining = items.filter(item => !nextDone.has(item.appointment_id) && isWritable(item)).length;
-    setToast(`Evolução de ${patientOf(current.item).name} salva. ${pendingCountLabel(remaining)}`);
+    const nextDoneIds = new Set(nextDone.keys());
+    const remaining = items.filter(item => !nextDoneIds.has(item.appointment_id) && isWritable(item)).length;
+    setToast(`Evolução de ${patientOf(current).name} salva. ${
+      remaining === 0 ? 'Nenhuma pendência sua na fila.' : remaining === 1 ? 'Falta 1.' : `Faltam ${remaining}.`
+    }`);
 
-    const next = nextQueueItem(items, savedId, nextDone, isWritable);
-    if (next) {
-      setCurrent({ type: 'fila', item: next });
-      window.scrollTo({ top: 0 });
-    } else {
-      setCurrent(null);
-    }
+    const next = nextQueueItem(items, savedId, nextDoneIds, isWritable);
+    if (next) setCurrentId(next.appointment_id);
+    window.scrollTo({ top: 0 });
   }
 
   if (loading) return <PanelLoading />;
 
-  if (current) {
-    const isQueue = current.type === 'fila';
-    const patient = isQueue ? patientOf(current.item) : current.patient;
-    const discipline = isQueue ? current.item.discipline : current.discipline;
-    const hasNext = isQueue && Boolean(nextQueueItem(items, current.item.appointment_id, doneIds, isWritable));
-    const ownQueue = pending.filter(isWritable);
+  function renderMain() {
+    if (!current) {
+      return (
+        <div className="evs-empty-state">
+          <span className="evs-icon evs-icon--done"><IconDone /></span>
+          <p>
+            {items.length === 0
+              ? 'Nenhum atendimento aguardando evolução. Tudo em dia.'
+              : 'Nenhuma evolução sua pendente. Escolha um paciente na fila para ver.'}
+          </p>
+        </div>
+      );
+    }
+
+    const patient = patientOf(current);
+    const savedAt = done.get(current.appointment_id);
+    const writable = isWritable(current);
+    const hasNext = Boolean(nextQueueItem(items, current.appointment_id, doneIds, isWritable));
 
     return (
-      <div className="evs-take">
-        <aside className="evs-take-queue" aria-label="Fila de evoluções">
-          <button type="button" className="evs-btn evs-back" onClick={closeRecord}>← Voltar à fila</button>
-          {isQueue && ownQueue.length > 0 && (
-            <>
-              <p className="evs-take-queue-title">Na fila ({ownQueue.length})</p>
-              <ul>
-                {ownQueue.map(item => (
-                  <li key={item.appointment_id}>
-                    <button
-                      type="button"
-                      className="evs-take-queue-item"
-                      aria-current={item.appointment_id === current.item.appointment_id ? 'true' : undefined}
-                      onClick={() => openItem(item)}
-                    >
-                      <b>{hora(item.starts_at)}</b> {patientOf(item).name}
-                      <small>{diaLabel(item.starts_at)}</small>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </aside>
-
-        <section className="evs-take-main">
-          {toast && <div className="evs-toast" role="status">{toast}</div>}
-          <header className="evs-take-head">
-            <div>
-              <h2>{patient.name}</h2>
-              <div className="evs-tags">
-                <DisciplineTag id={discipline} />
-                {isQueue && (
-                  <span className={`evs-status evs-status--${current.item.attendance_status}`}>
-                    {ATTENDANCE_LABELS[current.item.attendance_status] || current.item.attendance_status}
-                  </span>
-                )}
-                {!isQueue && <span className="evs-status">Avulso, sem agendamento</span>}
-              </div>
+      <>
+        <header className="evs-take-head">
+          <div>
+            <h2>{patient.name}</h2>
+            <div className="evs-tags">
+              <DisciplineTag id={current.discipline} />
+              <StatusTag status={current.attendance_status} />
+              {hasTeamItems && <span className="evs-meta">{professionalName(current.professional_id)}</span>}
             </div>
-          </header>
+          </div>
+          {savedAt && (
+            <span className="evs-saved-badge">
+              <IconDone /> Evoluído às {hora(savedAt)}
+            </span>
+          )}
+        </header>
 
+        {savedAt ? (
+          <p className="evs-note">
+            Evolução registrada. Para corrigir o texto, use a linha do tempo na ficha do paciente.
+          </p>
+        ) : !writable ? (
+          <p className="evs-note">
+            Este atendimento é de {professionalName(current.professional_id)}. Só o profissional do
+            atendimento escreve a evolução.
+          </p>
+        ) : (
           <EvolutionRecordPanel
-            key={isQueue ? current.item.appointment_id : `${patient.id}:${discipline}`}
+            key={current.appointment_id}
             patient={patient}
-            discipline={discipline}
-            activeAppointment={isQueue ? toActiveAppointment(current.item) : null}
+            discipline={current.discipline}
+            activeAppointment={toActiveAppointment(current)}
             submitLabel={hasNext ? 'Salvar e ir para o próximo →' : 'Salvar evolução'}
             onSaved={handleSaved}
           />
-        </section>
-      </div>
+        )}
+      </>
     );
   }
-
-  const avulsoPatients = (patients || [])
-    .map(patient => ({
-      patient,
-      disciplines: userDisciplines.filter(id => (patient.enrollments || []).some(enrollment => enrollment.discipline === id)),
-    }))
-    .filter(entry => entry.disciplines.length > 0 && (!search || normalizeText(entry.patient.name).includes(search)))
-    .sort((a, b) => a.patient.name.localeCompare(b.patient.name, 'pt-BR'));
 
   return (
     <div className="evs">
       <header className="evs-hero">
         <h2>Evoluções</h2>
         <p className="hub-note">
-          Escolha o atendimento, escreva a evolução e salve: o próximo pendente abre sozinho.
-          Falta e falta justificada também entram aqui e pedem uma observação.
-          {hasTeamItems && ' Você vê as pendências da equipe, mas só escreve as suas.'}
+          Escolha o atendimento na fila, escreva e salve: o paciente fica verde e o próximo abre sozinho.
+          Só entram atendimentos marcados na Agenda. Não compareceu e cancelado pelo paciente pedem uma observação.
+          {hasTeamItems && ' Você vê a fila da equipe, mas só escreve as suas (as outras aparecem com cadeado).'}
         </p>
       </header>
 
-      {toast && <div className="evs-toast" role="status">{toast}</div>}
       {error && <div className="evs-error" role="alert">{error}</div>}
 
-      <div className="evs-controls">
-        <div className="evs-seg" role="group" aria-label="O que mostrar">
-          <button type="button" aria-pressed={mode === 'fila'} onClick={() => setMode('fila')}>
-            Aguardando evolução <span className="evs-count">{pending.length}</span>
-          </button>
-          {userDisciplines.length > 0 && (
-            <button type="button" aria-pressed={mode === 'todos'} onClick={() => setMode('todos')}>
-              Todos os pacientes
-            </button>
-          )}
-        </div>
-        {mode === 'fila' && hasTeamItems && (
-          <label className="evs-check">
-            <input type="checkbox" checked={onlyMine} onChange={event => setOnlyMine(event.target.checked)} />
-            Só os meus
-          </label>
-        )}
-        <input
-          type="search"
-          className="evs-search"
-          placeholder="Buscar paciente pelo nome"
-          aria-label="Buscar paciente pelo nome"
-          value={term}
-          onChange={event => setTerm(event.target.value)}
-        />
-      </div>
+      <div className="evs-layout">
+        <section className="evs-main">
+          {toast && <div className="evs-toast" role="status">{toast}</div>}
+          {renderMain()}
+        </section>
 
-      {mode === 'fila' ? (
-        visibleQueue.length === 0 ? (
-          <p className="evs-empty">
-            {search ? 'Nenhum paciente com esse nome na fila.' : 'Nenhum atendimento aguardando evolução. Tudo em dia.'}
-          </p>
-        ) : (
-          groupQueueByDay(visibleQueue).map(([dayKey, dayItems]) => (
-            <section key={dayKey} className="evs-day">
-              <h3 className="evs-day-title">{diaLabel(dayItems[0].starts_at)}</h3>
-              <ul className="evs-list">
-                {dayItems.map(item => {
-                  const writable = isWritable(item);
-                  const isFalta = item.attendance_status !== 'attended';
-                  return (
-                    <li key={item.appointment_id} className="evs-row">
-                      <span className="evs-hour">{hora(item.starts_at)}</span>
-                      <span className="evs-row-main">
-                        <b>{patientOf(item).name}</b>
-                        <span className="evs-tags">
-                          <DisciplineTag id={item.discipline} />
-                          <span className={`evs-status evs-status--${item.attendance_status}`}>
-                            {ATTENDANCE_LABELS[item.attendance_status] || item.attendance_status}
-                          </span>
-                          {hasTeamItems && <span className="evs-meta">{professionalName(item.professional_id)}</span>}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        className="evs-btn evs-btn--primary"
-                        disabled={!writable}
-                        title={writable ? undefined : 'Só o profissional do atendimento pode escrever esta evolução.'}
-                        onClick={() => openItem(item)}
-                      >
-                        {isFalta ? 'Registrar falta →' : 'Escrever evolução →'}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))
-        )
-      ) : (
-        <>
-          <p className="evs-hint">
-            Evolução avulsa, para encaixe sem agendamento: a data e a hora você informa no formulário.
-            Aparecem os pacientes matriculados nas suas áreas.
-          </p>
-          {patients === null ? (
-            <p className="evs-empty">Não foi possível carregar a lista de pacientes.</p>
-          ) : avulsoPatients.length === 0 ? (
-            <p className="evs-empty">{search ? 'Nenhum paciente com esse nome.' : 'Nenhum paciente matriculado nas suas áreas.'}</p>
-          ) : (
-            <ul className="evs-list">
-              {avulsoPatients.map(({ patient, disciplines }) => (
-                <li key={patient.id} className="evs-row evs-row--patient">
-                  <span className="evs-row-main"><b>{patient.name}</b></span>
-                  <span className="evs-row-actions">
-                    {disciplines.map(id => (
-                      <button key={id} type="button" className="evs-btn" onClick={() => openAvulso(patient, id)}>
-                        {disciplines.length > 1 ? `Nova evolução · ${getDiscipline(id)?.label || id}` : 'Nova evolução'}
-                      </button>
-                    ))}
-                  </span>
-                </li>
-              ))}
-            </ul>
+        <aside className="evs-queue" aria-label="Fila de evoluções">
+          <div className="evs-queue-head">
+            <b>Fila de evoluções</b>
+            <span>{items.length - pendingCount} de {items.length} evoluídos</span>
+          </div>
+
+          <SearchSelect
+            id="evs-busca"
+            value={currentId || ''}
+            onChange={id => { if (id) openItem(id); }}
+            options={searchOptions}
+            allowEmpty={false}
+            placeholder="Buscar paciente na fila"
+            emptyLabel="Ninguém na fila com esse nome."
+          />
+
+          <Chips
+            label="Situação"
+            options={SITUACOES.map(option => ({
+              ...option,
+              label: option.id === 'pendentes' ? `${option.label} (${pendingCount})`
+                : option.id === 'evoluidos' ? `${option.label} (${items.length - pendingCount})`
+                  : option.label,
+            }))}
+            value={situacao}
+            onChange={setSituacao}
+          />
+          {areasNaFila.length > 1 && (
+            <Chips
+              label="Área"
+              options={[{ id: '', label: 'Todas' }, ...areasNaFila.map(item => ({ id: item.id, label: item.label }))]}
+              value={area}
+              onChange={setArea}
+            />
           )}
-        </>
-      )}
+          <Chips label="Atendimento" options={ATENDIMENTOS} value={atendimento} onChange={setAtendimento} />
+          <div className="evs-filter">
+            <label className="evs-filter-label" htmlFor="evs-periodo">Período</label>
+            <select id="evs-periodo" className="evs-select" value={periodo} onChange={event => setPeriodo(event.target.value)}>
+              {QUEUE_PERIODS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </div>
+
+          <div className="evs-queue-list">
+            {visibleQueue.length === 0 ? (
+              <p className="evs-queue-empty">Nenhum atendimento com esses filtros.</p>
+            ) : groupQueueByDay(visibleQueue).map(([dayKey, dayItems]) => (
+              <div key={dayKey}>
+                <p className="evs-queue-day">{diaLabel(dayItems[0].starts_at)}</p>
+                <ul>
+                  {dayItems.map(item => {
+                    const savedAt = done.get(item.appointment_id);
+                    const writable = isWritable(item);
+                    const icon = savedAt ? 'done' : writable ? 'pending' : 'locked';
+                    return (
+                      <li key={item.appointment_id}>
+                        <button
+                          type="button"
+                          className={`evs-queue-item${savedAt ? ' is-done' : ''}`}
+                          aria-current={item.appointment_id === currentId ? 'true' : undefined}
+                          onClick={() => openItem(item.appointment_id)}
+                          title={writable ? undefined : 'Atendimento de outro profissional: só ele escreve a evolução.'}
+                        >
+                          <span className={`evs-icon evs-icon--${icon}`}>
+                            {icon === 'done' ? <IconDone /> : icon === 'pending' ? <IconPending /> : <IconLock />}
+                          </span>
+                          <span className="evs-queue-text">
+                            <b>{patientOf(item).name}</b>
+                            <small>
+                              {hora(item.starts_at)} · {getDiscipline(item.discipline)?.label || item.discipline}
+                              {savedAt
+                                ? <> · <span className="evs-ok">evoluído às {hora(savedAt)}</span></>
+                                : item.attendance_status !== 'attended'
+                                  ? ` · ${(ATTENDANCE_LABELS[item.attendance_status] || '').toLowerCase()}`
+                                  : ''}
+                              {hasTeamItems && item.professional_id !== profile?.id ? ` · ${professionalName(item.professional_id)}` : ''}
+                            </small>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <p className="evs-legend">
+            <span><span className="evs-icon evs-icon--pending"><IconPending /></span> falta evoluir</span>
+            <span><span className="evs-icon evs-icon--done"><IconDone /></span> evoluído agora</span>
+            {hasTeamItems && <span><span className="evs-icon evs-icon--locked"><IconLock /></span> de outro profissional</span>}
+          </p>
+        </aside>
+      </div>
     </div>
   );
 }

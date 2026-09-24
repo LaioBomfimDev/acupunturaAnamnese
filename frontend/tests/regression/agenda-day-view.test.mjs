@@ -128,7 +128,7 @@ test('cor do card vem da disciplina (--card-color), não do status', () => {
   assert.match(html, /--card-color:var\(--r1-discipline-psicologia\)/);
 });
 
-test('status "ready" (chegou) ganha selo próprio; "scheduled" não tem selo nenhum', () => {
+test('agenda não sinaliza chegada: "ready" legado não mostra "Chegou"; confirmado ganha o V verde', () => {
   const base = {
     id: 'a1',
     kind: 'appointment',
@@ -139,12 +139,16 @@ test('status "ready" (chegou) ganha selo próprio; "scheduled" não tem selo nen
     ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
   };
 
-  const chegou = render({ appointments: [{ ...base, status: 'ready' }] });
-  assert.match(chegou, /class="agd-chip agd-chip--ready">Chegou/);
+  // Decisão de 2026-09-24: a agenda registra só o resultado do
+  // atendimento. Registro antigo com status 'ready' aparece como agendado.
+  const legado = render({ appointments: [{ ...base, status: 'ready' }] });
+  assert.doesNotMatch(legado, /Chegou/);
 
-  const agendado = render({ appointments: [{ ...base, status: 'scheduled' }] });
-  assert.doesNotMatch(agendado, /agd-chip--ready/,
-    '"Agendado" e "Pronto para atender" não podem ficar visualmente idênticos');
+  const confirmado = render({ appointments: [{ ...base, status: 'scheduled', confirmed_at: new Date(2026, 7, 11, 18, 0).toISOString() }] });
+  assert.match(confirmado, /agd-card-confirmed/, 'quem confirmou presença precisa do V verde no card');
+
+  const semConfirmar = render({ appointments: [{ ...base, status: 'scheduled', confirmed_at: null }] });
+  assert.doesNotMatch(semConfirmar, /agd-card-confirmed/);
 });
 
 test('cancelado/não-compareceu viram cinza por cima de QUALQUER disciplina', () => {
@@ -309,36 +313,30 @@ test('a conferência do pacote distingue "não vai ser criada" de "vai, marcada"
 
 // ---------- painel Hoje (recepção) ----------
 
-test('a fila da recepção só oferece "Iniciar atendimento" a quem pode abrir o prontuário', async () => {
+test('lista do dia só oferece "Iniciar atendimento" a quem pode abrir o prontuário', async () => {
   const { TodayPanel } = await server.ssrLoadModule('/src/components/panels/agenda/TodayPanel.jsx');
   const queueUtils = await server.ssrLoadModule('/src/utils/agendaToday.js');
 
   const agora = new Date(2026, 7, 12, 10, 0);
-  const naSala = {
+  const marcado = {
     id: 'a1',
     kind: 'appointment',
-    status: 'ready',
+    status: 'scheduled',
     discipline: 'acupuntura',
     patient_id: 'p1',
     professional_id: 'prof-1',
     starts_at: new Date(2026, 7, 12, 9, 0).toISOString(),
     ends_at: new Date(2026, 7, 12, 10, 0).toISOString(),
-    checked_in_at: new Date(2026, 7, 12, 8, 45).toISOString(),
     confirmed_at: null,
   };
 
   function render(canStart) {
     return renderToStaticMarkup(React.createElement(TodayPanel, {
-      queue: queueUtils.buildTodayQueue({ appointments: [naSala], now: agora }),
-      isToday: true,
-      dateLabel: '12 de agosto',
+      queue: queueUtils.buildTodayQueue({ appointments: [marcado], now: agora }),
       patientName: id => (id === 'p1' ? 'Ana Souza' : 'Paciente'),
       professionalName: () => 'você',
       saving: false,
       onOpen: () => {},
-      onCheckIn: () => {},
-      onUndoCheckIn: () => {},
-      onConfirm: () => {},
       onStatus: () => {},
       onStart: () => {},
       canStart,
@@ -347,94 +345,45 @@ test('a fila da recepção só oferece "Iniciar atendimento" a quem pode abrir o
 
   const comAcesso = render(() => true);
   assert.match(comAcesso, /Iniciar atendimento/);
-  assert.match(comAcesso, /esperando há 1 h 15 min/);
   assert.match(comAcesso, /Ana Souza/);
 
   const semAcesso = render(() => false);
   assert.doesNotMatch(semAcesso, /Iniciar atendimento/,
     'a recepção marca para todo mundo, mas não abre o prontuário de ninguém');
-  // A ação clínica some; a operacional continua.
-  assert.match(semAcesso, /Atendeu/);
+  // A ação clínica some; as de resultado continuam.
+  assert.match(semAcesso, /Atendido/);
+  assert.match(semAcesso, /Não compareceu/);
 });
 
-test('a fila mostra atraso e falta sem oferecer ação clínica', async () => {
+test('painel Hoje não tem sala de espera, "Chegou" nem atraso — só o resultado', async () => {
   const { TodayPanel } = await server.ssrLoadModule('/src/components/panels/agenda/TodayPanel.jsx');
   const queueUtils = await server.ssrLoadModule('/src/utils/agendaToday.js');
 
   const agora = new Date(2026, 7, 12, 10, 0);
-  const atrasado = {
-    id: 'a2',
+  const base = {
     kind: 'appointment',
-    status: 'scheduled',
     discipline: 'acupuntura',
     modality: 'presencial',
-    patient_id: 'p2',
     professional_id: 'prof-1',
-    starts_at: new Date(2026, 7, 12, 9, 30).toISOString(),
-    ends_at: new Date(2026, 7, 12, 10, 30).toISOString(),
-    checked_in_at: null,
     confirmed_at: null,
   };
+  const atrasado = { ...base, id: 'a2', status: 'scheduled', patient_id: 'p2', starts_at: new Date(2026, 7, 12, 9, 30).toISOString(), ends_at: new Date(2026, 7, 12, 10, 30).toISOString() };
+  const legadoChegou = { ...base, id: 'a3', status: 'ready', patient_id: 'p3', starts_at: new Date(2026, 7, 12, 8, 0).toISOString(), ends_at: new Date(2026, 7, 12, 9, 0).toISOString(), checked_in_at: new Date(2026, 7, 12, 7, 50).toISOString() };
+  const confirmado = { ...base, id: 'a4', status: 'scheduled', patient_id: 'p4', starts_at: new Date(2026, 7, 12, 14, 0).toISOString(), ends_at: new Date(2026, 7, 12, 15, 0).toISOString(), confirmed_at: new Date(2026, 7, 11, 18, 0).toISOString() };
 
   const html = renderToStaticMarkup(React.createElement(TodayPanel, {
-    queue: queueUtils.buildTodayQueue({ appointments: [atrasado], now: agora }),
-    isToday: true,
-    dateLabel: '12 de agosto',
-    patientName: () => 'Bruno Lima',
+    queue: queueUtils.buildTodayQueue({ appointments: [atrasado, legadoChegou, confirmado], now: agora }),
+    patientName: id => ({ p2: 'Bruno Lima', p3: 'Carla Dias', p4: 'Davi Reis' }[id]),
     professionalName: () => 'você',
     saving: false,
     onOpen: () => {},
-    onCheckIn: () => {},
-    onUndoCheckIn: () => {},
-    onConfirm: () => {},
     onStatus: () => {},
     onStart: () => {},
-    canStart: () => true,
+    canStart: () => false,
   }));
 
-  assert.match(html, /30 min de atraso/);
-  assert.match(html, /Chegou/);
-  assert.match(html, /Não veio/);
-  assert.doesNotMatch(html, /Iniciar atendimento/,
-    'quem não chegou não tem atendimento para iniciar');
-});
-
-test('"Chegou" só aparece para atendimento presencial — online não tem sala de espera', async () => {
-  const { TodayPanel } = await server.ssrLoadModule('/src/components/panels/agenda/TodayPanel.jsx');
-  const queueUtils = await server.ssrLoadModule('/src/utils/agendaToday.js');
-
-  const agora = new Date(2026, 7, 12, 10, 0);
-  const atrasadoOnline = {
-    id: 'a3',
-    kind: 'appointment',
-    status: 'scheduled',
-    discipline: 'acupuntura',
-    modality: 'online',
-    patient_id: 'p3',
-    professional_id: 'prof-1',
-    starts_at: new Date(2026, 7, 12, 9, 30).toISOString(),
-    ends_at: new Date(2026, 7, 12, 10, 30).toISOString(),
-    checked_in_at: null,
-    confirmed_at: null,
-  };
-
-  const html = renderToStaticMarkup(React.createElement(TodayPanel, {
-    queue: queueUtils.buildTodayQueue({ appointments: [atrasadoOnline], now: agora }),
-    isToday: true,
-    dateLabel: '12 de agosto',
-    patientName: () => 'Carla Dias',
-    professionalName: () => 'você',
-    saving: false,
-    onOpen: () => {},
-    onCheckIn: () => {},
-    onUndoCheckIn: () => {},
-    onConfirm: () => {},
-    onStatus: () => {},
-    onStart: () => {},
-    canStart: () => true,
-  }));
-
-  assert.doesNotMatch(html, /Chegou/,
-    'atendimento online não tem sala de espera pra registrar chegada');
-  assert.match(html, /Não veio/, 'a ação de falta continua disponível independente da modalidade');
+  assert.doesNotMatch(html, /Chegou|sala de espera|atraso|esperando/i);
+  assert.match(html, /A atender/);
+  assert.match(html, /Carla Dias/, 'registro antigo com status "ready" continua na lista, como a atender');
+  assert.match(html, /agh-confirmed/, 'quem confirmou presença ganha o V verde');
 });

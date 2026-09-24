@@ -38,12 +38,17 @@ export const APPOINTMENT_MODALITIES = [
 
 export const APPOINTMENT_MODALITY_IDS = APPOINTMENT_MODALITIES.map(item => item.id);
 
-// Espelha appointments_type_check. Nulo é válido: nem toda clínica
-// classifica o atendimento.
+// Espelha appointments_type_check (20260924c). Nulo é válido: nem toda
+// clínica classifica o atendimento. Em ordem alfabética do rótulo — é
+// assim que aparece no campo "Tipo".
 export const APPOINTMENT_TYPES = [
+  { id: 'anamnesis', label: 'Anamnese' },
+  { id: 'evaluation', label: 'Avaliação' },
+  { id: 'feedback', label: 'Devolutiva' },
+  { id: 'interview', label: 'Entrevista' },
   { id: 'first_visit', label: 'Primeira vez' },
   { id: 'return', label: 'Retorno' },
-  { id: 'evaluation', label: 'Avaliação' },
+  { id: 'session', label: 'Sessão' },
 ];
 
 export const APPOINTMENT_TYPE_IDS = APPOINTMENT_TYPES.map(item => item.id);
@@ -347,54 +352,6 @@ export async function updateAppointmentStatus(id, status, { reason = null, runti
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível atualizar o agendamento.');
-  }
-
-  return data;
-}
-
-/**
- * Marca presença: paciente chegou na clínica.
- *
- * Grava o instante E move o status para 'ready'. O instante é o que o
- * BI usa para medir espera; o status é o que a fila lê. Guardar só um
- * dos dois deixaria a recepção sem o tempo ou o dashboard sem o dado.
- *
- * `undo` desfaz — recepção erra de linha, e sem desfazer a correção
- * seria mudar o status na mão, deixando o carimbo de chegada mentindo.
- */
-export async function checkInAppointment(id, { undo = false, at = null, runtime } = {}) {
-  if (!id) throw new Error('Agendamento não informado.');
-
-  const client = {
-    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
-    from: runtime?.from || ((table) => supabase.from(table)),
-  };
-
-  const patch = undo
-    ? { checked_in_at: null, status: 'scheduled' }
-    : { checked_in_at: (at ? new Date(at) : new Date()).toISOString(), status: 'ready' };
-
-  const user = await client.getAuthenticatedUser();
-
-  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
-    const list = getLocalAppointments();
-    const found = list.find(item => item.id === id);
-    if (!found) throw new Error('Agendamento não encontrado.');
-    Object.assign(found, patch, { updated_at: new Date().toISOString() });
-    saveLocalAppointments(list);
-    return found;
-  }
-
-  const { data, error } = await client.from('appointments')
-    .update(patch)
-    .eq('id', id)
-    .select(APPOINTMENT_COLUMNS)
-    .single();
-
-  if (error) {
-    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
-    if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
-    throw new Error(error.message || 'Não foi possível registrar a chegada.');
   }
 
   return data;

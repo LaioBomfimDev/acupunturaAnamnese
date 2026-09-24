@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  APPOINTMENT_STATUSES,
   MONTH_LABELS,
+  OUTCOME_STATUSES,
+  SELECTABLE_STATUSES,
   WEEKDAY_LABELS,
   appointmentsByDay,
   birthdaysByDay,
@@ -22,7 +23,6 @@ import {
   APPOINTMENT_MODALITIES,
   APPOINTMENT_TYPES,
   cancelSeriesFrom,
-  checkInAppointment,
   confirmAppointment,
   createAppointment,
   createSeries,
@@ -42,7 +42,7 @@ import { SearchSelect } from '../ui/SearchSelect';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
-  IconCake,
+  IconCake, IconCheck,
 } from './agenda/AgendaIcons';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaWeekView from './agenda/AgendaWeekView';
@@ -58,9 +58,11 @@ import TodayPanel from './agenda/TodayPanel';
 import { usePatient } from '../../hooks/PatientContext';
 import '../../styles/agenda.css';
 
-// Estados oferecidos como ação rápida. 'scheduled' fica de fora porque é
-// o estado inicial — voltar para ele é remarcar, não marcar.
-const QUICK_STATUSES = APPOINTMENT_STATUSES.filter(item => item.id !== 'scheduled');
+// Resultado do atendimento no card aberto: Atendido, Não compareceu e
+// Cancelado pelo paciente. "Confirmado" mora ao lado, mas não é status
+// — é a confirmação de presença (confirmed_at), a mesma do link do
+// WhatsApp. A agenda não sinaliza chegada (ver utils/agenda.js).
+const QUICK_STATUSES = OUTCOME_STATUSES;
 
 const ALL_PROFESSIONALS = 'all';
 
@@ -329,7 +331,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     return byProfessional.filter(item => {
       if (item.kind === 'block') return true;
       if (disciplineFilter && item.discipline !== disciplineFilter) return false;
-      if (statusFilter && item.status !== statusFilter) return false;
+      // 'ready' (chegou) é legado e aparece como Agendado.
+      if (statusFilter && (item.status === 'ready' ? 'scheduled' : item.status) !== statusFilter) return false;
       if (modalityFilter && item.modality !== modalityFilter) return false;
       return true;
     });
@@ -861,7 +864,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
    * Apaga de vez — some da agenda e do histórico/relatórios. Só pra
    * consertar erro de marcação (profissional/paciente errado); se o
    * atendimento foi marcado certo e o paciente que cancelou/faltou, o
-   * caminho é "Cancelar" (handleStatus), que preserva o registro pro BI.
+   * caminho é "Cancelado pelo paciente" ou "Não compareceu" (handleStatus),
+   * que preserva o registro pro BI.
    *
    * Confirmação é por digitação (`isDeleteConfirmationValid`, mesma regra
    * de "Excluir paciente"), não window.confirm: uma única pessoa decide
@@ -872,7 +876,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     const confirmText = window.prompt(
       'Isso apaga o agendamento PRA SEMPRE — some da agenda e do histórico/relatórios, sem volta.\n\n'
       + 'Use só quando foi marcado errado (profissional ou paciente errado). Se o paciente cancelou '
-      + 'ou faltou, feche esta janela e use "Cancelar" em vez de excluir.\n\n'
+      + 'ou faltou, feche esta janela e use "Cancelado pelo paciente" ou "Não compareceu" em vez de excluir.\n\n'
       + 'Para confirmar, digite excluir:',
     );
     if (confirmText === null) return;
@@ -915,18 +919,6 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setShowEdit(false);
     } catch (err) {
       setError(err.message || 'Não foi possível salvar as alterações.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleCheckIn(appointment, undo = false) {
-    setError('');
-    setSaving(true);
-    try {
-      applyUpdate(await checkInAppointment(appointment.id, { undo }));
-    } catch (err) {
-      setError(err.message || 'Não foi possível registrar a chegada.');
     } finally {
       setSaving(false);
     }
@@ -1161,7 +1153,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 aria-label="Filtrar por status"
               >
                 <option value="">Todo status</option>
-                {APPOINTMENT_STATUSES.map(item => (
+                {SELECTABLE_STATUSES.map(item => (
                   <option key={item.id} value={item.id}>{item.label}</option>
                 ))}
               </select>
@@ -1239,17 +1231,12 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         {view === 'hoje' && (
           <TodayPanel
             queue={todayQueue}
-            isToday={selectedKey === toDayKey(today)}
-            dateLabel={selectedDate?.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }) || ''}
             patientName={patientName}
             patientPending={patientPending}
             professionalName={professionalName}
             showProfessional={showProfessional}
             saving={saving}
             onOpen={openAppointment}
-            onCheckIn={appointment => handleCheckIn(appointment, false)}
-            onUndoCheckIn={appointment => handleCheckIn(appointment, true)}
-            onConfirm={handleConfirm}
             onStatus={handleStatus}
             onStart={startAppointment}
             canStart={canStart}
@@ -1463,6 +1450,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
               <div className="ag-item-top">
                 <span className="ag-item-time">
                   {formatTime(selectedAppointment.starts_at)}–{formatTime(selectedAppointment.ends_at)}
+                  {selectedAppointment.kind !== 'block' && selectedAppointment.confirmed_at && (
+                    <span className="ag-confirmed-badge" title="Paciente confirmou presença">
+                      <IconCheck /> Confirmado
+                    </span>
+                  )}
                 </span>
                 <button
                   type="button"
@@ -1510,6 +1502,17 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                       {status.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    className={`ag-chip-btn ag-chip-btn--confirm${selectedAppointment.confirmed_at ? ' is-on' : ''}`}
+                    aria-pressed={Boolean(selectedAppointment.confirmed_at)}
+                    disabled={saving}
+                    title={selectedAppointment.confirmed_at ? 'Toque para desfazer a confirmação' : 'Marcar que o paciente confirmou'}
+                    onClick={() => handleConfirm(selectedAppointment, Boolean(selectedAppointment.confirmed_at))}
+                  >
+                    {selectedAppointment.confirmed_at && <IconCheck />}
+                    Confirmado
+                  </button>
                 </div>
               )}
 

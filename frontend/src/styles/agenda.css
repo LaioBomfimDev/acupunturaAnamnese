@@ -45,7 +45,13 @@
   font-size: 22px;
   font-weight: 400;
   letter-spacing: -0.2px;
-  text-transform: capitalize;
+}
+
+/* Só a primeira letra: "Quinta-feira, 24 de setembro", não
+   "Quinta-Feira, 24 De Setembro" (capitalize subia cada palavra). */
+.ag-month::first-letter,
+.ag-side-title::first-letter {
+  text-transform: uppercase;
 }
 
 .ag-nav {
@@ -291,7 +297,6 @@
   font-family: var(--r1-font-display);
   font-size: 17px;
   font-weight: 400;
-  text-transform: capitalize;
 }
 
 .ag-side-sub {
@@ -832,6 +837,11 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+/* Botão "Filtros" só existe no celular (ver faixa ≤768px). */
+.ag-filters-toggle {
+  display: none;
 }
 
 .ag-filters .ag-select {
@@ -2350,6 +2360,162 @@
      esconderijo.) */
   .ag-seg--views {
     grid-template-columns: repeat(2, minmax(64px, 1fr));
+  }
+}
+
+/* ============================================================
+   Topo da agenda no celular (≤768px)
+
+   Antes: o seletor de visões era uma grade de 2 colunas que não ocupava
+   a largura (sobrava um vão à direita), os quatro botões de ferramenta
+   tinham larguras diferentes e os três filtros empilhavam em fonte
+   grande e negrito antes do calendário. Agora:
+   - navegação de data numa linha só, com o campo de data esticado;
+   - visões em 3 colunas, largura cheia, ícone sobre o rótulo;
+   - ferramentas em grade 2×2 de largura igual ("Horários" encurta);
+   - filtros recolhidos atrás do botão "Filtros" (com contagem);
+   - equipe numa faixa rolável em vez de quebrar linha.
+   Vem depois da faixa ≤900px de propósito, para vencer o empate.
+   ============================================================ */
+@media (max-width: 768px) {
+  .ag-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .ag-nav {
+    display: grid;
+    grid-template-columns: var(--r1-tap) auto var(--r1-tap) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .ag-nav .ag-date-jump {
+    width: 100%;
+  }
+
+  .ag-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ag-seg--views {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ag-seg--views .ag-seg-btn {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: 6px 4px;
+    font-size: 12px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .ag-seg--views .ag-seg-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .ag-toolbar .ag-tool-btn {
+    justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .ag-tool-long {
+    display: none;
+  }
+
+  .ag-filters-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--r1-tap);
+    margin-bottom: 8px;
+    padding: 0 12px;
+    border: 1px solid var(--r1-border);
+    border-radius: var(--r1-radius-sm);
+    background: var(--r1-surface);
+    color: var(--r1-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .ag-filters-toggle svg {
+    width: 15px;
+    height: 15px;
+    color: var(--r1-accent);
+  }
+
+  .ag-filters-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--r1-focus-ring);
+  }
+
+  .ag-filters-count {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--r1-accent-wash);
+    color: var(--r1-accent-strong);
+    font-size: 11px;
+  }
+
+  .ag-filters-chevron {
+    margin-left: auto;
+    color: var(--r1-text-subtle);
+    transition: transform var(--r1-dur-fast) var(--r1-ease);
+  }
+
+  .ag-filters-toggle[aria-expanded='true'] .ag-filters-chevron {
+    transform: rotate(180deg);
+  }
+
+  .ag-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .ag-filters:not(.is-open) {
+    display: none;
+  }
+
+  /* .ag-filter-wrap é <label>: herdava o negrito global de label. */
+  .ag-filter-wrap {
+    font-weight: 400;
+  }
+
+  .ag-filters .ag-select,
+  .ag-filter-wrap .ag-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ag-team {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ag-team::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ag-team .ag-chip-btn--lg {
+    flex: 0 0 auto;
   }
 }
 

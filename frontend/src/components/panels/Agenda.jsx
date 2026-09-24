@@ -73,7 +73,7 @@ const VIEWS = [
   { id: 'mes', label: 'Mês' },
   { id: 'pendentes', label: 'Pendentes' },
   // Não é uma visão da Agenda: o botão só encaminha pra tela Evoluções.
-  { id: 'evolucoes-pendentes', label: 'Evolução pendente' },
+  { id: 'evolucoes-pendentes', label: 'Evoluções' },
 ];
 
 // Ícone por visão — separado de VIEWS porque VIEWS também governa lógica
@@ -93,7 +93,7 @@ const VIEW_ICONS = {
 // estável via sortWithSelfFirst), não sobreviver a reordenação.
 const TEAM_AVATAR_COLORS = ['#33403f', '#2e5578', '#5c3d63', '#7a5a2e', '#46426b', '#7d9291'];
 
-// Pendentes/Evolução pendente têm escopo e filtro próprios (fila de
+// Pendentes/Evoluções têm escopo e filtro próprios (fila de
 // trabalho, não navegação de calendário) — o filtro por disciplina/
 // status/modalidade e o campo "pular pra data" só fazem sentido aqui.
 const CALENDAR_VIEWS = new Set(['hoje', 'dia', 'semana', 'mes']);
@@ -177,10 +177,15 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   const [agendaOf, setAgendaOf] = useState(() => initialAgendaOf || profile?.id || ALL_PROFESSIONALS);
 
   // Filtros do calendário (Hoje/Dia/Semana/Mês) — '' é "todos". Pendentes
-  // e Evolução pendente ficam de fora: já têm escopo/filtro próprio.
+  // e Evoluções ficam de fora: já têm escopo/filtro próprio.
   const [disciplineFilter, setDisciplineFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [modalityFilter, setModalityFilter] = useState('');
+  // No celular os três filtros ficam recolhidos atrás de um botão — abertos
+  // eles ocupavam meia tela antes do calendário. No desktop ficam sempre à
+  // mostra (o botão some via CSS).
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilters = [disciplineFilter, statusFilter, modalityFilter].filter(Boolean).length;
 
   // Agendamento aberto no painel lateral (detalhe/ações).
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -1120,7 +1125,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
           </button>
           <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowSchedule(true)}>
             <IconClockCalendar />
-            Horários de atendimento
+            Horários<span className="ag-tool-long"> de atendimento</span>
           </button>
           <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowHolidays(true)}>
             <IconFlagCalendar />
@@ -1129,7 +1134,31 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         </div>
 
         {CALENDAR_VIEWS.has(view) && (
-          <div className="ag-filters" role="group" aria-label="Filtrar a agenda">
+          <button
+            type="button"
+            className="ag-filters-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="ag-filters"
+            onClick={() => setFiltersOpen(open => !open)}
+          >
+            <IconFilterTag />
+            Filtros
+            {activeFilters > 0 && (
+              <span className="ag-filters-count">
+                {activeFilters === 1 ? '1 ativo' : `${activeFilters} ativos`}
+              </span>
+            )}
+            <span className="ag-filters-chevron" aria-hidden="true">▾</span>
+          </button>
+        )}
+
+        {CALENDAR_VIEWS.has(view) && (
+          <div
+            id="ag-filters"
+            className={`ag-filters${filtersOpen ? ' is-open' : ''}`}
+            role="group"
+            aria-label="Filtrar a agenda"
+          >
             <label className="ag-filter-wrap">
               <IconFilterTag />
               <select

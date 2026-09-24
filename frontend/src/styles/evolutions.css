@@ -1,0 +1,395 @@
+/* ============================================================
+   Evoluções — fila de pendências + registro que toma a tela
+   Consome os tokens de tokens.css (nenhuma cor literal aqui).
+   Selos de status e botões seguem o mesmo desenho da Agenda.
+   ============================================================ */
+
+.evs,
+.evs-take {
+  font-family: var(--r1-font-sans);
+  color: var(--r1-text);
+}
+
+.evs-hero .hub-note {
+  margin-bottom: 14px;
+}
+
+/* ---------- controles ---------- */
+
+.evs-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.evs-seg {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+}
+
+.evs-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: calc(var(--r1-radius-sm) - 2px);
+  background: transparent;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.evs-seg button[aria-pressed='true'] {
+  background: var(--r1-surface-inverse);
+  color: var(--r1-text-on-inverse);
+  font-weight: 600;
+}
+
+.evs-seg button:focus-visible,
+.evs-btn:focus-visible,
+.evs-take-queue-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.evs-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--r1-amber-500);
+  color: var(--r1-ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.evs-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--r1-text-muted);
+}
+
+.evs-search {
+  flex: 1 1 240px;
+  min-height: 38px;
+  max-width: 380px;
+}
+
+/* ---------- lista ---------- */
+
+.evs-day {
+  margin-bottom: 14px;
+}
+
+.evs-day-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: capitalize;
+  color: var(--r1-text-muted);
+}
+
+.evs-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evs-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.evs-row--patient {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.evs-hour {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.evs-row-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.evs-row-main b {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evs-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.evs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.evs-tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--evs-disc) 12%, transparent);
+  color: var(--evs-disc);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.evs-status {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.evs-status--attended {
+  color: var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 16%, transparent);
+}
+
+.evs-status--no_show {
+  color: var(--r1-danger);
+  background: color-mix(in srgb, var(--r1-danger) 16%, transparent);
+}
+
+.evs-status--excused {
+  color: var(--r1-amber-600);
+  background: var(--r1-amber-100);
+}
+
+.evs-meta {
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+.evs-empty,
+.evs-hint {
+  margin: 8px 0 14px;
+  font-size: 13px;
+  color: var(--r1-text-muted);
+}
+
+.evs-empty {
+  padding: 28px 16px;
+  border: 1px dashed var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  text-align: center;
+}
+
+.evs-toast,
+.evs-error {
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  border-radius: var(--r1-radius-sm);
+  font-size: 13px;
+}
+
+.evs-toast {
+  color: var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 12%, transparent);
+}
+
+.evs-error {
+  color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+}
+
+/* ---------- botões ---------- */
+
+.evs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.evs-btn:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+}
+
+.evs-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.evs-btn--primary {
+  background: var(--r1-surface-inverse);
+  border-color: transparent;
+  color: var(--r1-text-on-inverse);
+  font-weight: 600;
+}
+
+.evs-btn--primary:hover:not(:disabled) {
+  background: var(--r1-navy-700);
+}
+
+/* ---------- registro (toma a tela) ---------- */
+
+.evs-take {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.evs-take-queue {
+  position: sticky;
+  top: 16px;
+}
+
+.evs-back {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.evs-take-queue-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.evs-take-queue ul {
+  display: grid;
+  gap: 3px;
+  max-height: calc(100svh - 160px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.evs-take-queue-item {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--r1-radius-sm);
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.evs-take-queue-item:hover {
+  background: var(--r1-surface);
+}
+
+.evs-take-queue-item[aria-current='true'] {
+  border-color: var(--r1-accent);
+  background: var(--r1-surface);
+}
+
+.evs-take-queue-item b {
+  font-variant-numeric: tabular-nums;
+}
+
+.evs-take-queue-item small {
+  display: block;
+  font-size: 11px;
+  text-transform: capitalize;
+  color: var(--r1-text-subtle);
+}
+
+.evs-take-main {
+  min-width: 0;
+}
+
+.evs-take-head {
+  margin-bottom: 12px;
+}
+
+.evs-take-head h2 {
+  margin: 0 0 6px;
+}
+
+@media (max-width: 900px) {
+  .evs-take {
+    grid-template-columns: 1fr;
+  }
+
+  .evs-take-queue {
+    position: static;
+  }
+
+  /* No telefone a fila vira uma faixa rolável acima do formulário. */
+  .evs-take-queue ul {
+    display: flex;
+    gap: 6px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .evs-take-queue-item {
+    min-width: 150px;
+    border-color: var(--r1-border-subtle);
+    background: var(--r1-surface);
+  }
+}
+
+@media (max-width: 600px) {
+  .evs-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .evs-row .evs-btn,
+  .evs-row-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .evs-row--patient {
+    grid-template-columns: 1fr;
+  }
+
+  .evs-search {
+    max-width: none;
+  }
+}

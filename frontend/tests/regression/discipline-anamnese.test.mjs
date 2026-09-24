@@ -303,17 +303,23 @@ test('a evolução não grava sessão vazia e confirma antes de excluir', async 
   assert.match(source, /window\.confirm\('Excluir este registro de sessão\?/);
 });
 
-test('evolução e relatório deixaram de ser placeholder no workspace genérico', async () => {
+test('relatório segue no workspace genérico; evolução mora na tela Evoluções', async () => {
   const source = await readFile(
     path.resolve(root, 'src/components/DisciplineWorkspace.jsx'),
     'utf8',
   );
-  assert.match(source, /<DisciplineEvolucao/);
+  const recordPanel = await readFile(
+    path.resolve(root, 'src/components/evolutions/EvolutionRecordPanel.jsx'),
+    'utf8',
+  );
   assert.match(source, /<DisciplineRelatorio/);
   assert.doesNotMatch(source, /PLACEHOLDER_TABS/);
-  // Ambos gravam na mesma sessão que o auto-save já cobre.
-  assert.match(source, /handleEvolucoesChange/);
+  // Relatório grava na mesma sessão que o auto-save já cobre.
   assert.match(source, /handleRelatorioChange/);
+  // Evolução saiu das disciplinas (2026-09-23): o mesmo formulário
+  // genérico agora é aberto pela tela Evoluções.
+  assert.doesNotMatch(source, /<DisciplineEvolucao/);
+  assert.match(recordPanel, /<DisciplineEvolucao/);
 });
 
 test('o workspace genérico bloqueia escrita quando a leitura do prontuário falha', async () => {

@@ -22,7 +22,6 @@ import {
   normalizeSession,
 } from '../data/anamneseKit';
 import { DisciplineAnamnese } from './anamnese/DisciplineAnamnese';
-import { DisciplineEvolucao } from './anamnese/DisciplineEvolucao';
 import { DisciplineRelatorio } from './anamnese/DisciplineRelatorio';
 
 const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
@@ -44,7 +43,6 @@ const TABS = {
   HOME: 'Tela inicial',
   PAINEL: 'Painel',
   ANAMNESE: 'Anamnese',
-  EVOLUCAO: 'Evolução',
   RELATORIO: 'Relatório',
   DOCUMENTOS: 'Documentos',
 };
@@ -59,7 +57,7 @@ const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.DOCUMENTOS];
 
 // Escolha do percurso: define o roteiro específico e pré-abre os
 // módulos de contexto pertinentes.
-function PathChooser({ config, session, selectedPatient, onSelectProfile, onFillTestAnswers, onOpenEvolution }) {
+function PathChooser({ config, session, selectedPatient, onSelectProfile, onFillTestAnswers }) {
   const current = config.profiles.find(profile => profile.id === session.intakeProfile);
   return (
     <Panel title={`Boas-vindas — ${config.label}`}>
@@ -94,10 +92,6 @@ function PathChooser({ config, session, selectedPatient, onSelectProfile, onFill
           <p className="small">Percurso selecionado</p>
           <h3>{current?.shortLabel || 'Ainda não definido'}</h3>
         </div>
-        <button type="button" className="card psi-path-evolution-card" onClick={onOpenEvolution}>
-          <p className="small">Acompanhamento</p>
-          <h3>Registrar evolução</h3>
-        </button>
       </div>
     </Panel>
   );
@@ -111,23 +105,23 @@ export function DisciplineWorkspace({
   onSignOut,
 }) {
   const config = getAnamneseConfig(disciplineId);
-  const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
+  const { selectedPatient, activeAppointment } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [activeTab, setActiveTab] = useState(TABS.HOME);
-  // Chegando aqui a partir de "Escrever evolução" (Agenda/pendências): o
-  // paciente e o atendimento já foram selecionados ANTES do workspace
-  // montar (Agenda.startAppointment). Sem isso, o profissional caía
-  // sempre na tela de escolha de paciente (TABS.HOME), mesmo já tendo o
-  // atendimento certo em mãos.
+  // Chegando aqui a partir de "Iniciar atendimento" (Agenda): o paciente
+  // e o atendimento já foram selecionados ANTES do workspace montar
+  // (Agenda.startAppointment). Sem isso, o profissional caía sempre na
+  // tela de escolha de paciente (TABS.HOME), mesmo já tendo o paciente
+  // certo em mãos. A evolução não mora mais aqui — tela Evoluções.
   useEffect(() => {
     if (
       activeAppointment
       && activeAppointment.patientId === selectedPatient?.id
       && activeAppointment.discipline === disciplineId
     ) {
-      setActiveTab(TABS.EVOLUCAO);
+      setActiveTab(TABS.PAINEL);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatient?.id]);
@@ -338,25 +332,6 @@ export function DisciplineWorkspace({
     setSession(prev => ({ ...prev, riskNotes: value }));
   }
 
-  function handleEvolucoesChange(evolucoes) {
-    setSession(prev => ({ ...prev, evolucoes }));
-  }
-
-  // Depois de gravar uma evolução vinculada a um agendamento, o vínculo
-  // se encerra — a próxima "Escrever evolução" passa de novo pela lista
-  // de pendências, sem deixar uma data antiga grudada na tela.
-  async function handleEvolutionSaved() {
-    if (scopedActiveAppointment) clearActiveAppointment();
-    const patientId = patientIdRef.current;
-    if (!patientId) return;
-    try {
-      const records = await listPatientEvolutions(patientId, disciplineId);
-      setPatientEvolutionRecords(records);
-    } catch {
-      // A tela de Evolução já mostra o próprio erro de salvar, se houver.
-    }
-  }
-
   function handleRelatorioChange(relatorio) {
     setSession(prev => ({ ...prev, relatorio }));
   }
@@ -383,14 +358,6 @@ export function DisciplineWorkspace({
   // Mescla o legado (session.evolucoes) com os registros novos vindos de
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
-  // Só vale para ESTA disciplina/paciente: o mesmo contexto de agendamento
-  // é compartilhado entre workspaces (Fisio, Nutrição...), então sem essa
-  // checagem um agendamento de outra área "vazaria" pra cá.
-  const scopedActiveAppointment = (
-    activeAppointment
-    && activeAppointment.patientId === selectedPatient?.id
-    && activeAppointment.discipline === disciplineId
-  ) ? activeAppointment : null;
   const now = new Date();
   const dateLabel = now.toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
@@ -413,21 +380,6 @@ export function DisciplineWorkspace({
         <Suspense fallback={<div className="empty-state">Carregando documentos...</div>}>
           <DocumentosTimbrados therapistProfile={profile} />
         </Suspense>
-      );
-    }
-
-    if (effectiveTab === TABS.EVOLUCAO) {
-      return (
-        <DisciplineEvolucao
-          config={config}
-          session={session}
-          evolucoes={evolucoes}
-          patientId={selectedPatient?.id || null}
-          discipline={disciplineId}
-          activeAppointment={scopedActiveAppointment}
-          onEvolucoesChange={handleEvolucoesChange}
-          onEvolutionSaved={handleEvolutionSaved}
-        />
       );
     }
 
@@ -466,7 +418,6 @@ export function DisciplineWorkspace({
         session={session}
         selectedPatient={selectedPatient}
         onSelectProfile={selectProfile}
-        onOpenEvolution={() => setActiveTab(TABS.EVOLUCAO)}
       />
     );
   }

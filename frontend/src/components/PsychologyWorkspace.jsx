@@ -27,7 +27,6 @@ import { getSuggestedContextModules } from '../data/psychologyContextModules';
 import { resolveUserDisciplines } from '../data/disciplines';
 import { PsychologyAnamnese } from './psychology/PsychologyAnamnese';
 import { PsychologyAssistantRail } from './psychology/PsychologyAssistantRail';
-import { PsychologyEvolucao } from './psychology/PsychologyEvolucao';
 import { PsychologyRelatorio } from './psychology/PsychologyRelatorio';
 import { PsychologyPlaceholder } from './psychology/PsychologyPlaceholder';
 import { PsychologyPathChooser } from './psychology/PsychologyPathChooser';
@@ -71,23 +70,23 @@ const PSYCHOLOGY_NAV_GROUPS = [
 const TABS_WITHOUT_PATIENT = [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.BIBLIOTECA, PSYCHOLOGY_TABS.DOCUMENTOS];
 
 export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
-  const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
+  const { selectedPatient, activeAppointment } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
   const [activeTab, setActiveTab] = useState(PSYCHOLOGY_TABS.HOME);
-  // Chegando aqui a partir de "Escrever evolução" (Agenda/pendências): o
-  // paciente e o atendimento já foram selecionados ANTES do workspace
-  // montar (Agenda.startAppointment). Sem isso, o profissional caía
-  // sempre na tela de escolha de paciente (PSYCHOLOGY_TABS.HOME), mesmo
-  // já tendo o atendimento certo em mãos.
+  // Chegando aqui a partir de "Iniciar atendimento" (Agenda): o paciente
+  // e o atendimento já foram selecionados ANTES do workspace montar
+  // (Agenda.startAppointment). Sem isso, o profissional caía sempre na
+  // tela de escolha de paciente (PSYCHOLOGY_TABS.HOME), mesmo já tendo o
+  // paciente certo em mãos. A evolução não mora mais aqui — tela Evoluções.
   useEffect(() => {
     if (
       activeAppointment
       && activeAppointment.patientId === selectedPatient?.id
       && activeAppointment.discipline === 'psicologia'
     ) {
-      setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO);
+      setActiveTab(PSYCHOLOGY_TABS.PAINEL);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatient?.id]);
@@ -442,25 +441,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     setSession(prev => ({ ...prev, complementaryQuestions }));
   }
 
-  function handleEvolucoesChange(evolucoes) {
-    setSession(prev => ({ ...prev, evolucoes }));
-  }
-
-  // Depois de gravar uma evolução vinculada a um agendamento, o vínculo
-  // se encerra — a próxima "Escrever evolução" passa de novo pela lista
-  // de pendências, sem deixar uma data antiga grudada na tela.
-  async function handleEvolutionSaved() {
-    if (scopedActiveAppointment) clearActiveAppointment();
-    const patientId = patientIdRef.current;
-    if (!patientId) return;
-    try {
-      const records = await listPatientEvolutions(patientId, 'psicologia');
-      setPatientEvolutionRecords(records);
-    } catch {
-      // A tela de Evolução já mostra o próprio erro de salvar, se houver.
-    }
-  }
-
   function handleRelatorioChange(relatorio) {
     setSession(prev => ({ ...prev, relatorio }));
   }
@@ -480,11 +460,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
   // Mescla o legado (session.evolucoes) com os registros novos vindos de
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
-  const scopedActiveAppointment = (
-    activeAppointment
-    && activeAppointment.patientId === selectedPatient?.id
-    && activeAppointment.discipline === 'psicologia'
-  ) ? activeAppointment : null;
   const showAssistantRail = effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && Boolean(selectedPatient);
   const now = new Date();
   const dateLabel = now.toLocaleDateString('pt-BR', {
@@ -524,7 +499,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
-            onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );
@@ -560,17 +534,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
           />
         );
-      case PSYCHOLOGY_TABS.EVOLUCAO:
-        return (
-          <PsychologyEvolucao
-            session={session}
-            evolucoes={evolucoes}
-            patientId={selectedPatient?.id || null}
-            activeAppointment={scopedActiveAppointment}
-            onEvolucoesChange={handleEvolucoesChange}
-            onEvolutionSaved={handleEvolutionSaved}
-          />
-        );
       case PSYCHOLOGY_TABS.RELATORIO:
         return (
           <PsychologyRelatorio
@@ -588,7 +551,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
-            onOpenEvolution={() => setActiveTab(PSYCHOLOGY_TABS.EVOLUCAO)}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );

@@ -6,6 +6,7 @@ import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { summarizeRehabilitation, formatOptionalMetric } from '../../services/rehabilitationService';
 import { insertPatientEvolution } from '../../services/patientEvolutionService';
 import { createIdempotencyKey } from '../../services/clinicalSaveQueue';
+import { validateFaltaObservation } from '../../utils/evolutionQueue';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toNum(v) {
@@ -110,7 +111,7 @@ function TrendCard({ label, arr, inverse = false }) {
 }
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
-export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointment, onEvolutionSaved, analysis }) {
+export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointment, onEvolutionSaved, analysis, submitLabel = 'Adicionar sessão' }) {
   const sessions = Array.isArray(evolucoes) ? evolucoes : (Array.isArray(state.evolucoes) ? state.evolucoes : []);
   const rehab = summarizeRehabilitation(state.reabilitacao);
   const rehabSingle = rehab?.total === 1;
@@ -202,6 +203,15 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
     if (!patientId) {
       setSaveError('Selecione um paciente antes de registrar a evolução.');
       return;
+    }
+
+    // Falta não se registra só no botão: sem observação, não grava.
+    if (isFalta) {
+      const faltaError = validateFaltaObservation(faltaObs);
+      if (faltaError) {
+        setSaveError(faltaError);
+        return;
+      }
     }
 
     let atendimentoEm = null;
@@ -326,7 +336,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
 
           {isFalta ? (
             <label style={{ marginTop:10, display:'block' }}>
-              Observação (opcional)
+              Observação sobre a falta (obrigatória)
               <textarea
                 value={faltaObs}
                 onChange={e => setFaltaObs(e.target.value)}
@@ -414,7 +424,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
 
           {saveError && <div className="alert" style={{ marginTop:10 }}>{saveError}</div>}
           <button className="tag active" onClick={addSession} disabled={saving} style={{ marginTop:10 }}>
-            {saving ? 'Salvando…' : 'Adicionar sessão'}
+            {saving ? 'Salvando…' : submitLabel}
           </button>
         </div>
 

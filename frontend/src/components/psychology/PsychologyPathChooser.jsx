@@ -12,7 +12,6 @@ export function PsychologyPathChooser({
   selectedPatient,
   patientAge,
   onSelectIntakeProfile,
-  onOpenEvolution,
   onFillTestAnswers,
 }) {
   const [intakePath, setIntakePath] = useState(null);
@@ -100,10 +99,6 @@ export function PsychologyPathChooser({
           <p className="small">Anamnese selecionada</p>
           <h3>{currentProfile?.shortLabel || 'Ainda não definida'}</h3>
         </div>
-        <button type="button" className="card psi-path-evolution-card" onClick={onOpenEvolution}>
-          <p className="small">Acompanhamento</p>
-          <h3>Registrar evolução</h3>
-        </button>
       </div>
     </Panel>
   );

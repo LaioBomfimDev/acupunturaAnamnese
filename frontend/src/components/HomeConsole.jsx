@@ -332,10 +332,10 @@ export function HomeConsole({
             {onOpenPendingEvolutions && (
               <NavItem
                 icon="evolucao"
-                title={variant === 'professional' ? 'Atendimentos aguardando evolução' : 'Evolução pendente'}
+                title="Evoluções"
                 description={variant === 'professional'
-                  ? 'Atendido, faltou ou falta justificada: escreva sem procurar na agenda.'
-                  : 'Pendências de toda a equipe, não só as suas.'}
+                  ? 'Fila do que falta evoluir: salvou um, o próximo já abre. Também registra evolução avulsa.'
+                  : 'Pendências de toda a equipe; você escreve as suas na mesma tela.'}
                 badge={pendingEvolutionsCount}
                 onClick={onOpenPendingEvolutions}
               />

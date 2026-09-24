@@ -91,6 +91,7 @@ Ferramenta obrigatória ausente: não ignore em silêncio. Informe o impedimento
 - Preserve mudanças que não foram suas; sem refatoração ampla sem necessidade clara.
 - Prefira APIs, helpers e padrões já usados no projeto.
 - Mantenha a mudança pequena, revisável e ligada ao pedido.
+- Evolução mora só na tela Evoluções (`components/evolutions/`), fora das disciplinas: nenhum workspace volta a ter aba/formulário de evolução, a Agenda só encaminha pra lá, e falta exige observação. Teste: `tests/regression/evolutions-screen.test.mjs`.
 - A entrada de atendimento deve ter uma única ação de saída: quando a área já oferece “Sair” no cabeçalho, não repasse `onSignOut` ao `PatientStart`. Sem esse cabeçalho, preserve a saída do seletor.
 - Use nomes claros; evite duplicação só quando a abstração melhora a leitura ou reduz risco real.
 - Use parsers, validadores e APIs estruturadas; evite manipulação frágil de strings.

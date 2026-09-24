@@ -16,6 +16,7 @@ import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
 import { AccessBlocked } from './components/AccessBlocked';
 import { MfaGate } from './components/MfaGate';
+import { PanelLoading } from './components/ui/PanelLoading';
 import './App.css';
 
 const lazyPanel = (loader, exportName) => lazy(() => loader().then(module => ({ default: module[exportName] })));
@@ -28,7 +29,6 @@ const Reabilitacao = lazyPanel(() => import('./components/panels/Reabilitacao'),
 const RaciocinioClinical = lazyPanel(() => import('./components/panels/RaciocinioClinical'), 'RaciocinioClinical');
 const Diagnostico = lazyPanel(() => import('./components/panels/Diagnostico'), 'Diagnostico');
 const Protocolo = lazyPanel(() => import('./components/panels/Protocolo'), 'Protocolo');
-const Evolucao = lazyPanel(() => import('./components/panels/Evolucao'), 'Evolucao');
 const Biblioteca = lazyPanel(() => import('./components/panels/Biblioteca'), 'Biblioteca');
 const Relatorio = lazyPanel(() => import('./components/panels/Relatorio'), 'Relatorio');
 const DocumentosTimbrados = lazyPanel(() => import('./components/panels/DocumentosTimbrados'), 'DocumentosTimbrados');
@@ -42,6 +42,7 @@ const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorks
 const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
 const AssistantFoodLinks = lazyPanel(() => import('./components/panels/AssistantFoodLinks'), 'AssistantFoodLinks');
 const RelatoriosGestao = lazyPanel(() => import('./components/panels/RelatoriosGestao'), 'RelatoriosGestao');
+const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
 // entre logins — sair limpa a chave.
@@ -52,21 +53,6 @@ function getFirstName(value) {
   if (!text) return 'Profissional';
   if (text.includes('@')) return text.split('@')[0];
   return text.split(/\s+/)[0] || 'Profissional';
-}
-
-function PanelLoading() {
-  return (
-    <div className="app-loading" role="status" aria-live="polite" aria-label="Carregando">
-      <div className="app-loading-mark">
-        <span className="app-loading-ping" aria-hidden="true" />
-        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-          <circle cx="20" cy="20" r="17" className="app-loading-ring" />
-          <path d="M9 20h6l2.5-7 4 14 2.5-7h7" className="app-loading-trace" />
-        </svg>
-      </div>
-      <p className="app-loading-text">Preparando esta área...</p>
-    </div>
-  );
 }
 
 export default function App() {
@@ -87,9 +73,8 @@ export default function App() {
     signOut,
     changeTemporaryPassword,
   } = useAuth();
-  const { selectedPatient, activeAppointment, clearActiveAppointment } = usePatient();
+  const { selectedPatient } = usePatient();
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
-  const [hubAgendaInitialView, setHubAgendaInitialView] = useState(null);
   const [hubAgendaShowBirthdays, setHubAgendaShowBirthdays] = useState(false);
   const [hubGestaoInitialSection, setHubGestaoInitialSection] = useState(null);
   const [activeTab, setActiveTab] = useState('Tela inicial');
@@ -98,6 +83,7 @@ export default function App() {
   const [showHubDocuments, setShowHubDocuments] = useState(false);
   const [showHubAgenda, setShowHubAgenda] = useState(false);
   const [showHubGestao, setShowHubGestao] = useState(false);
+  const [showHubEvolutions, setShowHubEvolutions] = useState(false);
   const [pendingEvolutionsCount, setPendingEvolutionsCount] = useState(0);
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
@@ -120,11 +106,11 @@ export default function App() {
     document.title = clinicName || 'Vitalis';
   }, [profile?.clinic?.name, profile?.clinic_name]);
 
-  // Contagem pro sinal vermelho do atalho "Atendimentos aguardando
-  // evolução" no HomeConsole — clínica inteira pra admin, só os do
-  // próprio profissional pra quem não é (mesma RPC, RLS decide o
-  // escopo). Refaz ao voltar pro hub (activeDiscipline zera) ou ao sair
-  // da Agenda (onde a pendência é resolvida).
+  // Contagem pro sinal do atalho "Evoluções" no HomeConsole — clínica
+  // inteira pra admin, só os do próprio profissional pra quem não é
+  // (mesma RPC, RLS decide o escopo). Refaz ao voltar pro hub
+  // (activeDiscipline zera) ou ao sair da Agenda/Evoluções (onde a
+  // pendência é resolvida).
   useEffect(() => {
     if (!profile || isSuperAdmin || activeDiscipline) return undefined;
     let cancelled = false;
@@ -134,7 +120,7 @@ export default function App() {
       .catch(() => { if (!cancelled) setPendingEvolutionsCount(0); });
 
     return () => { cancelled = true; };
-  }, [profile?.id, isSuperAdmin, activeDiscipline, showHubAgenda]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile?.id, isSuperAdmin, activeDiscipline, showHubAgenda, showHubEvolutions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Metadados persistíveis da análise de língua (sem imagens/object URLs)
   const tongueAiMeta = useMemo(() => serializeTongueAi(tongueAi), [tongueAi]);
@@ -305,7 +291,7 @@ export default function App() {
       : isClinicAdmin
         ? (attendsPatients ? 'admin-professional' : 'admin')
         : 'professional';
-    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao) {
+    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions) {
       return (
         <Suspense fallback={<PanelLoading />}>
           <HomeConsole
@@ -318,9 +304,9 @@ export default function App() {
             onOpenDocuments={() => setShowHubDocuments(true)}
             onOpenAgenda={() => setShowHubAgenda(true)}
             onOpenGestao={isClinicAdmin ? (section) => { setHubGestaoInitialSection(section || null); setShowHubGestao(true); } : undefined}
-            // Evolução pendente é lembrete de trabalho CLÍNICO (escrever
-            // evolução) — não é tarefa de recepção.
-            onOpenPendingEvolutions={isReceptionist ? undefined : (() => { setHubAgendaInitialView('evolucoes-pendentes'); setShowHubAgenda(true); })}
+            // Evolução é trabalho CLÍNICO (escrever evolução) — não é
+            // tarefa de recepção.
+            onOpenPendingEvolutions={isReceptionist ? undefined : () => setShowHubEvolutions(true)}
             onOpenBirthdays={(isClinicAdmin || isReceptionist) ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
           />
@@ -351,7 +337,7 @@ export default function App() {
             <button
               type="button"
               className="topbar-button"
-              onClick={() => { setShowHubAgenda(false); setHubAgendaInitialView(null); setHubAgendaShowBirthdays(false); }}
+              onClick={() => { setShowHubAgenda(false); setHubAgendaShowBirthdays(false); }}
             >
               ← Voltar às áreas
             </button>
@@ -367,15 +353,48 @@ export default function App() {
                   atendimento. */}
               <Agenda
                 profile={profile}
-                initialView={hubAgendaInitialView}
                 initialAgendaOf={(isClinicAdmin || isReceptionist) ? 'all' : null}
                 initialShowBirthdays={hubAgendaShowBirthdays}
                 onStartAppointment={({ discipline }) => {
                   setShowHubAgenda(false);
-                  setHubAgendaInitialView(null);
                   handleSelectDiscipline(discipline);
                 }}
+                // Evolução mora na tela própria (fora das disciplinas): a
+                // Agenda só encaminha pra lá.
+                onOpenEvolutions={isReceptionist ? undefined : () => {
+                  setShowHubAgenda(false);
+                  setHubAgendaShowBirthdays(false);
+                  setShowHubEvolutions(true);
+                }}
               />
+            </Suspense>
+          </main>
+        </div>
+      );
+    }
+    // Evoluções direto do hub: tela própria, fora das disciplinas. A
+    // fila junta as pendências de todas as áreas; o registro de cada
+    // paciente abre na mesma tela (ver EvolutionsScreen).
+    if (showHubEvolutions) {
+      return (
+        <div className="hub-screen">
+          <header className="hub-topbar">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
+              <p>Evoluções</p>
+            </div>
+            <div className="app-topbar-actions">
+              <button type="button" className="topbar-button" onClick={() => { setShowHubEvolutions(false); setShowHubAgenda(true); }}>
+                Abrir agenda
+              </button>
+              <button type="button" className="topbar-button" onClick={() => setShowHubEvolutions(false)}>
+                ← Voltar às áreas
+              </button>
+            </div>
+          </header>
+          <main className="hub-body">
+            <Suspense fallback={<PanelLoading />}>
+              <EvolutionsScreen profile={profile} />
             </Suspense>
           </main>
         </div>
@@ -537,21 +556,6 @@ export default function App() {
       case 'Raciocínio Clínico':return <RaciocinioClinical {...commonProps} />;
       case 'Diagnóstico':       return <Diagnostico {...commonProps} />;
       case 'Protocolo':         return <Protocolo {...commonProps} />;
-      case 'Evolução':
-        return (
-          <Evolucao
-            key={selectedPatient?.id || 'sem-paciente'}
-            {...commonProps}
-            evolucoes={evolucoes}
-            patientId={selectedPatient?.id || null}
-            activeAppointment={
-              activeAppointment && activeAppointment.patientId === selectedPatient?.id
-                ? activeAppointment
-                : null
-            }
-            onEvolutionSaved={handleEvolutionSaved}
-          />
-        );
       case 'Biblioteca':        return <Biblioteca />;
       case 'Documentos':        return <DocumentosTimbrados therapistProfile={profile} />;
       case 'Relatório':         return <Relatorio state={state} evolucoes={evolucoes} analysis={analysis} selectedPatient={selectedPatient} therapistProfile={profile} onUpdate={updateField} />;
@@ -591,21 +595,6 @@ export default function App() {
 
   function confirmPendingChanges(message = 'Existem alterações ainda não salvas. Deseja continuar mesmo assim?') {
     return !hasPendingChanges || window.confirm(message);
-  }
-
-  // Depois de gravar uma evolução vinculada a um agendamento
-  // (patient_evolutions), o vínculo se encerra — a próxima "Escrever
-  // evolução" precisa passar de novo pela lista de pendências, para não
-  // deixar uma data de atendimento antiga grudada na tela por engano.
-  async function handleEvolutionSaved() {
-    clearActiveAppointment();
-    if (!selectedPatient?.id) return;
-    try {
-      const records = await listPatientEvolutions(selectedPatient.id, 'acupuntura');
-      setPatientEvolutionRecords(records);
-    } catch {
-      // A tela de Evolução já mostra o próprio erro de salvar, se houver.
-    }
   }
 
   async function fillTestAnswers() {

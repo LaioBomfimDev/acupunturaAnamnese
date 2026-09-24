@@ -65,10 +65,6 @@ export function PsychologyPainel({ session, selectedPatient, patientAge, onNavig
             <span>Continuar anamnese</span>
             <small>Ficha clínica</small>
           </button>
-          <button className="summary-action" type="button" onClick={() => onNavigate?.(PSYCHOLOGY_TABS.EVOLUCAO)}>
-            <span>Registrar evolução</span>
-            <small>Nova sessão</small>
-          </button>
           <button className="summary-action" type="button" onClick={() => onNavigate?.(PSYCHOLOGY_TABS.RELATORIO)}>
             <span>Ver relatório</span>
             <small>Documentos</small>

@@ -3,6 +3,7 @@ import { Panel } from '../ui/Panel';
 import { hasRiskSelected } from '../../data/anamneseKit';
 import { insertPatientEvolution } from '../../services/patientEvolutionService';
 import { createIdempotencyKey } from '../../services/clinicalSaveQueue';
+import { validateFaltaObservation } from '../../utils/evolutionQueue';
 
 // ============================================================
 // Evolução genérica de disciplina. Mesma mecânica da Psicologia e da
@@ -56,6 +57,7 @@ export function DisciplineEvolucao({
   activeAppointment,
   onEvolucoesChange,
   onEvolutionSaved,
+  submitLabel = 'Adicionar sessão',
 }) {
   const sessions = Array.isArray(evolucoes) ? evolucoes : (Array.isArray(session.evolucoes) ? session.evolucoes : []);
   const riskInAnamnese = hasRiskSelected(config, session.selectedMap);
@@ -81,6 +83,15 @@ export function DisciplineEvolucao({
     if (!patientId) {
       setSaveError('Selecione um paciente antes de registrar a evolução.');
       return;
+    }
+
+    // Falta não se registra só no botão: sem observação, não grava.
+    if (isFalta) {
+      const faltaError = validateFaltaObservation(faltaObs);
+      if (faltaError) {
+        setSaveError(faltaError);
+        return;
+      }
     }
 
     if (!isFalta) {
@@ -200,7 +211,7 @@ export function DisciplineEvolucao({
 
         {isFalta ? (
           <label style={{ display: 'block', marginTop: 8 }}>
-            Observação (opcional)
+            Observação sobre a falta (obrigatória)
             <textarea
               value={faltaObs}
               onChange={e => setFaltaObs(e.target.value)}
@@ -239,7 +250,7 @@ export function DisciplineEvolucao({
 
         {saveError && <div className="alert" style={{ marginTop: 10 }}>{saveError}</div>}
         <button className="tag active" onClick={addSession} disabled={saving} style={{ marginTop: 10 }}>
-          {saving ? 'Salvando…' : 'Adicionar sessão'}
+          {saving ? 'Salvando…' : submitLabel}
         </button>
       </div>
 

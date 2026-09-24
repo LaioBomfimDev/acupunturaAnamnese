@@ -152,7 +152,7 @@ test('shell: sidebar clínica reusada, disciplina no registro e roteamento por a
   // Quick-word chips: digitação mínima (o append vive no shell).
   assert.ok(source.includes('appendQuickWord'));
   // Roteia para os painéis próprios de cada aba.
-  for (const panel of ['PsychologyPathChooser', 'PsychologyAnamnese', 'PsychologyHypotheses', 'PsychologyEvolucao', 'PsychologyRelatorio', 'PsychologyPlaceholder']) {
+  for (const panel of ['PsychologyPathChooser', 'PsychologyAnamnese', 'PsychologyHypotheses', 'PsychologyRelatorio', 'PsychologyPlaceholder']) {
     assert.ok(source.includes(panel), `shell deve rotear para ${panel}`);
   }
   // Avaliação neuropsicológica migrou para a disciplina própria
@@ -166,9 +166,12 @@ test('sidebar do Plano C: grupos completos e SEM vocabulário de MTC (isolamento
     'utf8',
   );
   // Abas do Plano C presentes.
-  for (const tab of ['PAINEL', 'ANAMNESE', 'SINTESE', 'HIPOTESES', 'OBJETIVOS', 'PLANO', 'EVOLUCAO', 'RELATORIO', 'BIBLIOTECA']) {
+  for (const tab of ['PAINEL', 'ANAMNESE', 'SINTESE', 'HIPOTESES', 'OBJETIVOS', 'PLANO', 'RELATORIO', 'BIBLIOTECA']) {
     assert.ok(source.includes(`PSYCHOLOGY_TABS.${tab}`), `sidebar sem a aba ${tab}`);
   }
+  // Evolução saiu das disciplinas (2026-09-23): mora na tela Evoluções.
+  assert.ok(!source.includes('PSYCHOLOGY_TABS.EVOLUCAO') && !source.includes('<PsychologyEvolucao'),
+    'Psi não deve mais ter aba/formulário de Evolução próprio');
   // Nomes teóricos corretos (Formulação/Plano de cuidado), não "Diagnóstico" solto.
   assert.ok(source.includes('Formulação clínica') && source.includes('Plano de cuidado'));
   // Nenhum conceito de MTC vaza para a navegação de Psi.
@@ -210,7 +213,7 @@ test('placeholders ficam apenas nas abas ainda não construídas', async () => {
   const placeholder = await readPsi('PsychologyPlaceholder.jsx');
   assert.ok(placeholder.includes('Em construção'), 'placeholder deve avisar que está em construção');
   // As abas placeholder não incluem as já funcionais (anamnese/evolução/relatório/painel).
-  for (const funcional of [PSYCHOLOGY_TABS.PAINEL, PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES, PSYCHOLOGY_TABS.HIPOTESES, PSYCHOLOGY_TABS.EVOLUCAO, PSYCHOLOGY_TABS.RELATORIO]) {
+  for (const funcional of [PSYCHOLOGY_TABS.PAINEL, PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES, PSYCHOLOGY_TABS.HIPOTESES, PSYCHOLOGY_TABS.RELATORIO]) {
     assert.ok(!PSYCHOLOGY_PLACEHOLDER_TABS.includes(funcional), `${funcional} não deveria ser placeholder`);
   }
   for (const futura of [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.OBJETIVOS, PSYCHOLOGY_TABS.PLANO, PSYCHOLOGY_TABS.BIBLIOTECA]) {

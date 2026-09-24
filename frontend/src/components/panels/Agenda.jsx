@@ -50,7 +50,6 @@ import BirthdaysPanel from './agenda/BirthdaysPanel';
 import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
-import PendingEvolutionsView from './agenda/PendingEvolutionsView';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
 import ShareAgendaPanel from './agenda/ShareAgendaPanel';
@@ -70,6 +69,7 @@ const VIEWS = [
   { id: 'semana', label: 'Semana' },
   { id: 'mes', label: 'Mês' },
   { id: 'pendentes', label: 'Pendentes' },
+  // Não é uma visão da Agenda: o botão só encaminha pra tela Evoluções.
   { id: 'evolucoes-pendentes', label: 'Evolução pendente' },
 ];
 
@@ -143,7 +143,7 @@ function addMinutes(date, minutes) {
 // toque, porque o formulário fica no painel lateral em qualquer visão.
 const DEFAULT_VIEW = 'hoje';
 
-export function Agenda({ profile, onStartAppointment = null, initialView = null, initialAgendaOf = null, initialShowBirthdays = false }) {
+export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = null, initialView = null, initialAgendaOf = null, initialShowBirthdays = false }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => ({
     year: today.getFullYear(),
@@ -151,7 +151,7 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
   }));
   const [selectedKey, setSelectedKey] = useState(() => toDayKey(today));
   const [view, setView] = useState(() => (
-    VIEWS.some(item => item.id === initialView) ? initialView : DEFAULT_VIEW
+    VIEWS.some(item => item.id === initialView && item.id !== 'evolucoes-pendentes') ? initialView : DEFAULT_VIEW
   ));
   const [showSchedule, setShowSchedule] = useState(false);
   const [showHolidays, setShowHolidays] = useState(false);
@@ -1084,14 +1084,23 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
           <div className="ag-seg ag-seg--views" role="group" aria-label="Visão da agenda">
             {VIEWS.map(item => {
               const ViewIcon = VIEW_ICONS[item.id];
+              const isEvolutionsLink = item.id === 'evolucoes-pendentes';
+              if (isEvolutionsLink && !onOpenEvolutions) return null;
               return (
                 <button
                   key={item.id}
                   type="button"
                   className="ag-seg-btn"
                   data-view={item.id}
-                  aria-pressed={view === item.id}
-                  onClick={() => { setView(item.id); resetTransient(); }}
+                  aria-pressed={isEvolutionsLink ? undefined : view === item.id}
+                  onClick={() => {
+                    if (isEvolutionsLink) {
+                      onOpenEvolutions();
+                      return;
+                    }
+                    setView(item.id);
+                    resetTransient();
+                  }}
                 >
                   {ViewIcon && <ViewIcon />}
                   {item.label}
@@ -1247,17 +1256,6 @@ export function Agenda({ profile, onStartAppointment = null, initialView = null,
             showProfessional={showProfessional}
             clinicName={profile?.clinic?.name || profile?.clinic_name}
             clinicAddress={profile?.clinic?.address}
-            professionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
-          />
-        )}
-
-        {view === 'evolucoes-pendentes' && (
-          <PendingEvolutionsView
-            patientName={patientName}
-            professionalName={professionalName}
-            showProfessional={showProfessional}
-            onWrite={startAppointment}
-            canWrite={canStart}
             professionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
           />
         )}

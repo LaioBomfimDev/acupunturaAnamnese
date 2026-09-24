@@ -234,10 +234,6 @@ export function PainelInicial({
             <span>Continuar anamnese</span>
             <small>Ficha clínica</small>
           </button>
-          <button className="summary-action" type="button" onClick={() => onNavigate?.('Evolução')}>
-            <span>Registrar evolução</span>
-            <small>Nova sessão</small>
-          </button>
           <button className="summary-action" type="button" onClick={() => onNavigate?.('Relatório')}>
             <span>Ver relatório</span>
             <small>Prévia atual</small>

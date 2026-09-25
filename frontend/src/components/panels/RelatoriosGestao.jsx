@@ -1073,8 +1073,8 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
       {section === 'indicadores' && (
         <section>
           <p className="gt-note">
-            Panorama do período: ocupação da jornada, faltas e cancelamentos,
-            horários mais procurados e novos pacientes vs. retorno.
+            Panorama do período: faltas e cancelamentos, horários mais
+            procurados e novos pacientes vs. retorno.
           </p>
 
           <div className="gt-filters">
@@ -1105,22 +1105,6 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
           ) : !dashboardData ? null : (
             <>
               <div className="gt-kpis">
-                <div className="gt-kpi">
-                  <span className="gt-kpi-icon"><Icon id="agenda" glyphs={STAT_ICONS} /></span>
-                  <span className="gt-kpi-body">
-                    <span className="gt-kpi-label">Taxa de ocupação</span>
-                    <span className="gt-kpi-value">{formatPercent(dashboardData.occupancy.rate)}</span>
-                    {dashboardData.occupancy.rate === null ? (
-                      <span className="gt-kpi-sub">Sem jornada cadastrada no período</span>
-                    ) : (
-                      <div className="gt-meter">
-                        <span className="gt-meter-track">
-                          <span className="gt-meter-fill" style={{ width: `${Math.min(100, dashboardData.occupancy.rate * 100)}%` }} />
-                        </span>
-                      </div>
-                    )}
-                  </span>
-                </div>
                 <button type="button" className="gt-kpi gt-kpi-clickable" onClick={() => absencesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                   <span className="gt-kpi-icon"><Icon id="alert" glyphs={STAT_ICONS} /></span>
                   <span className="gt-kpi-body">

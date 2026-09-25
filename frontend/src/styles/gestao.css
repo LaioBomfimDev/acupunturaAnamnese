@@ -621,22 +621,6 @@
   color: var(--r1-text-muted);
 }
 
-.gt-meter-track {
-  height: 8px;
-  border-radius: 999px;
-  background: var(--r1-surface-sunken);
-  border: 1px solid var(--r1-border-subtle);
-  overflow: hidden;
-}
-
-.gt-meter-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--r1-accent);
-  transition: width var(--r1-dur) var(--r1-ease);
-}
-
 .gt-chart-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -302,7 +302,9 @@ export default function App() {
             onSelect={handleSelectDiscipline}
             onSignOut={handleHubSignOut}
             onOpenClinicPatients={() => setShowClinicPatients(true)}
-            onOpenDocuments={() => setShowHubDocuments(true)}
+            // Admin abre Documentos timbrados pela aba própria da Gestão;
+            // quem não tem Gestão (profissional, recepção) segue pelo menu.
+            onOpenDocuments={isClinicAdmin ? undefined : () => setShowHubDocuments(true)}
             onOpenAgenda={() => setShowHubAgenda(true)}
             onOpenGestao={isClinicAdmin ? (section) => { setHubGestaoInitialSection(section || null); setShowHubGestao(true); } : undefined}
             // Evolução é trabalho CLÍNICO (escrever evolução) — não é
@@ -402,7 +404,8 @@ export default function App() {
       );
     }
     // Documentos timbrados direto do hub: utilitário da instituição inteira,
-    // não exige escolher área nem ter paciente selecionado.
+    // não exige escolher área nem ter paciente selecionado. Só profissional
+    // e recepção chegam aqui — o admin usa a aba Documentos da Gestão.
     if (showHubDocuments) {
       return (
         <div className="hub-screen">

@@ -11,6 +11,7 @@ const read = rel => readFileSync(new URL(rel, import.meta.url), 'utf8');
 const appSource = read('../../src/App.jsx');
 const sidebarSource = read('../../src/components/Sidebar.jsx');
 const psychSource = read('../../src/components/PsychologyWorkspace.jsx');
+const gestaoSource = read('../../src/components/panels/RelatoriosGestao.jsx');
 const docxHelpers = read('../../src/components/panels/documentosDocx.js');
 const pagination = read('../../src/components/report/reportPagination.js');
 
@@ -26,6 +27,19 @@ test('Documentos timbrados só pelo Hub (10/09/2026: saiu da lateral e do Patien
   assert.match(psychSource, /<DocumentosTimbrados therapistProfile=\{profile\}/);
   assert.doesNotMatch(psychSource, /tabs: \[PSYCHOLOGY_TABS\.RELATORIO, PSYCHOLOGY_TABS\.DOCUMENTOS\]/,
     'Documentos não deve mais aparecer nos grupos da lateral de Psicologia');
+});
+
+test('admin usa Documentos pela aba da Gestão; profissional e recepção pelo menu do hub (2026-09-25)', () => {
+  // Aba própria dentro da Gestão, com o mesmo componente do hub.
+  assert.match(gestaoSource, /\{ id: 'documentos', label: 'Documentos timbrados' \}/);
+  assert.match(gestaoSource, /section === 'documentos' && \(\s*<Suspense[^\n]*\n\s*<DocumentosTimbrados therapistProfile=\{profile\} \/>/);
+  // A folha timbrada é impressa de dentro da Gestão: as abas não podem ir pro papel.
+  assert.match(gestaoSource, /className="gt-tabs no-print"/);
+
+  // Menu solto do hub some só para o admin (que tem Gestão); os demais
+  // perfis não têm Gestão e não podem perder o acesso.
+  assert.match(appSource, /onOpenDocuments=\{isClinicAdmin \? undefined : \(\) => setShowHubDocuments\(true\)\}/);
+  assert.match(appSource, /onOpenGestao=\{isClinicAdmin \?/);
 });
 
 test('conversão é local e só aceita .docx (com orientação para .doc e PDF)', () => {

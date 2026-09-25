@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { getStatusLabel } from '../../utils/agenda';
 import { DASHBOARD_PERIOD_PRESETS, presetToRange } from '../../utils/gestaoDashboard';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
@@ -19,13 +19,22 @@ import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { PersonalizarClinica } from './PersonalizarClinica';
 import '../../styles/gestao.css';
 
+// Mesmo componente que profissional e recepção abrem pelo menu do hub;
+// lazy para o conversor de Word não pesar nas outras abas da Gestão.
+const DocumentosTimbrados = lazy(() => import('./DocumentosTimbrados')
+  .then(module => ({ default: module.DocumentosTimbrados })));
+
 // ============================================================
 // Gestão da instituição — relatórios operacionais (Fase 8)
 //
-// Ferramenta da clínica inteira, igual Agenda e Documentos timbrados:
-// não depende de disciplina nem de paciente selecionado. Todo número
-// de resumo é também um atalho — clicar filtra a lista logo abaixo ou
-// abre o recurso relacionado (ver STAT_ROLE em cada seção).
+// Ferramenta da clínica inteira, igual a Agenda: não depende de
+// disciplina nem de paciente selecionado. Todo número de resumo é
+// também um atalho — clicar filtra a lista logo abaixo ou abre o
+// recurso relacionado (ver STAT_ROLE em cada seção).
+//
+// Documentos timbrados (2026-09-25): para o admin, mora aqui como aba
+// própria e sai do menu solto do hub; quem não tem Gestão (profissional,
+// recepção) continua abrindo pelo menu. Ver App.jsx (onOpenDocuments).
 // ============================================================
 
 const SECTIONS = [
@@ -35,6 +44,7 @@ const SECTIONS = [
   { id: 'acessos', label: 'Acessos' },
   { id: 'pesquisa', label: 'Pesquisa de satisfação' },
   { id: 'indicadores', label: 'Indicadores' },
+  { id: 'documentos', label: 'Documentos timbrados' },
   { id: 'personalizar', label: 'Personalizar' },
 ];
 
@@ -56,6 +66,9 @@ const TAB_ICONS = {
   ),
   indicadores: (
     <><path d="M4 19h16" /><rect x="6" y="11" width="3" height="8" /><rect x="11" y="6" width="3" height="13" /><rect x="16" y="14" width="3" height="5" /></>
+  ),
+  documentos: (
+    <><path d="M12 3v10" /><path d="m8 9 4 4 4-4" /><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" /></>
   ),
   personalizar: (
     <><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.9-.3-.9.3-1.8 1.3-1.8H17a4 4 0 0 0 4-4c0-5.1-4-10.3-9-10.3Z" /><circle cx="7.5" cy="11" r="1" /><circle cx="10" cy="7" r="1" /><circle cx="14.5" cy="7" r="1" /></>
@@ -649,7 +662,8 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
   return (
     <div className="gt">
-      <div className="gt-tabs" role="tablist" aria-label="Relatórios de gestão">
+      {/* no-print: a aba Documentos imprime a folha timbrada daqui de dentro. */}
+      <div className="gt-tabs no-print" role="tablist" aria-label="Relatórios de gestão">
         {SECTIONS.map(item => (
           <button
             key={item.id}
@@ -1159,6 +1173,12 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
             </>
           )}
         </section>
+      )}
+
+      {section === 'documentos' && (
+        <Suspense fallback={<p className="gt-note">Carregando documentos…</p>}>
+          <DocumentosTimbrados therapistProfile={profile} />
+        </Suspense>
       )}
 
       {section === 'personalizar' && <PersonalizarClinica profile={profile} />}

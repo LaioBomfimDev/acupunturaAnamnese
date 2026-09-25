@@ -344,7 +344,7 @@ export function HomeConsole({
               <NavItem
                 icon="gestao"
                 title="Gestão"
-                description="Faltosos, retornos, indicadores e pesquisa de satisfação."
+                description="Faltosos, retornos, indicadores, pesquisa de satisfação e documentos timbrados."
                 onClick={() => onOpenGestao()}
               />
             )}

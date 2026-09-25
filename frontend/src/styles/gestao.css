@@ -912,3 +912,163 @@
   gap: 10px;
   margin-top: 16px;
 }
+
+/* ---------- Cor da tela: fixa ou por profissional (2026-09-25) ---------- */
+
+.gt-accent-policy {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gt-accent-policy legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.gt-accent-policy-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm, 8px);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.gt-accent-policy-option.selected {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+/* width: auto desfaz o `input { width: 100% }` global do App.css. */
+.gt-accent-policy-option input {
+  flex: none;
+  width: auto;
+  margin: 3px 0 0;
+  accent-color: var(--r1-accent);
+}
+
+.gt-accent-policy-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.gt-accent-policy-option small {
+  font-size: 12px;
+  color: var(--r1-text-muted);
+}
+
+.gt-accent-card {
+  max-width: 620px;
+}
+
+.gt-accent-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.gt-accent-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px 0 6px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm, 8px);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gt-accent-follow.selected {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 1px var(--r1-accent);
+}
+
+.gt-accent-follow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-accent-follow-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.gt-accent-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.gt-accent-locked svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.gt-accent-own {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.gt-accent-own h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+/* ---------- Meu cadastro ---------- */
+
+.gt-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+}
+
+.gt-profile .gt-note {
+  margin-bottom: 0;
+}
+
+.gt-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.gt-profile-wide {
+  grid-column: 1 / -1;
+}
+
+.gt-readonly span {
+  font-size: 12px;
+}
+
+.gt-readonly p {
+  margin: 0;
+  padding: 9px 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--r1-text);
+  overflow-wrap: anywhere;
+}
+
+.gt-profile .gt-custom-actions {
+  margin-top: 0;
+}

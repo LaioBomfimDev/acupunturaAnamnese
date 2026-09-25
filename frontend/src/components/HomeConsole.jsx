@@ -16,13 +16,16 @@ import '../styles/console.css';
 //   'admin-professional' administra e também atende (ex.: Denise).
 //                        Sidebar prioriza as áreas dela; navegação
 //                        institucional continua sempre visível abaixo.
-//   'professional'       profissional comum: só agenda + evolução
-//                        pendente na navegação, área própria em
-//                        destaque no conteúdo.
+//   'professional'       profissional comum: agenda, evolução pendente
+//                        e a Gestão pessoal (cor da tela e cadastro)
+//                        na navegação, área própria em destaque no
+//                        conteúdo.
 //   'reception'          recepção (2026-09-22): agenda completa,
 //                        cadastro de pacientes, aniversários e
 //                        documentos timbrados — sem NENHUM dado clínico
-//                        (nem em modo consulta) e sem gestão/financeiro.
+//                        (nem em modo consulta) e sem gestão/financeiro
+//                        da instituição (só a Gestão pessoal: cor da
+//                        tela e cadastro, igual ao profissional).
 //
 // Substitui ClinicAdminHome.jsx e DisciplineHub.jsx, que tratavam isso
 // como duas telas fixas (só existia "admin sem disciplina" vs. "todo
@@ -244,6 +247,11 @@ export function HomeConsole({
 
   const [stats, setStats] = useState(null);
   const isFrontDeskView = variant === 'admin' || variant === 'reception';
+  // Gestão da instituição só para admin; profissional e recepção abrem a
+  // Gestão pessoal (cor da tela + cadastro) — atalhos de número não levam
+  // pra lá.
+  const hasInstitutionalGestao = variant === 'admin' || variant === 'admin-professional';
+  const openInstitutionalGestao = hasInstitutionalGestao ? onOpenGestao : null;
 
   useEffect(() => {
     if (variant === 'professional') return undefined;
@@ -344,7 +352,9 @@ export function HomeConsole({
               <NavItem
                 icon="gestao"
                 title="Gestão"
-                description="Faltosos, retornos, indicadores, pesquisa de satisfação e documentos timbrados."
+                description={hasInstitutionalGestao
+                  ? 'Faltosos, retornos, indicadores, pesquisa de satisfação, documentos timbrados e personalização.'
+                  : 'Cor da sua tela e os seus dados de cadastro.'}
                 onClick={() => onOpenGestao()}
               />
             )}
@@ -383,7 +393,7 @@ export function HomeConsole({
                   icon="pacientes"
                   value={stats?.activeProfessionals ?? null}
                   label="Profissionais ativos"
-                  onClick={onOpenGestao ? () => onOpenGestao('indicadores') : undefined}
+                  onClick={openInstitutionalGestao ? () => openInstitutionalGestao('indicadores') : undefined}
                 />
                 <Stat icon="cake" value={stats?.birthdaysThisMonth ?? null} label="Aniversariantes do mês" onClick={onOpenBirthdays} />
               </>
@@ -395,7 +405,7 @@ export function HomeConsole({
                   icon="returns"
                   value={stats?.awaitingReturn ?? null}
                   label="Retornos pendentes"
-                  onClick={onOpenGestao ? () => onOpenGestao('retornos') : undefined}
+                  onClick={openInstitutionalGestao ? () => openInstitutionalGestao('retornos') : undefined}
                 />
               </>
             )}

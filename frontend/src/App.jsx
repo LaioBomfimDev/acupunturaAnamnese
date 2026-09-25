@@ -43,6 +43,7 @@ const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorks
 const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
 const AssistantFoodLinks = lazyPanel(() => import('./components/panels/AssistantFoodLinks'), 'AssistantFoodLinks');
 const RelatoriosGestao = lazyPanel(() => import('./components/panels/RelatoriosGestao'), 'RelatoriosGestao');
+const GestaoProfissional = lazyPanel(() => import('./components/panels/GestaoProfissional'), 'GestaoProfissional');
 const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
@@ -306,7 +307,10 @@ export default function App() {
             // quem não tem Gestão (profissional, recepção) segue pelo menu.
             onOpenDocuments={isClinicAdmin ? undefined : () => setShowHubDocuments(true)}
             onOpenAgenda={() => setShowHubAgenda(true)}
-            onOpenGestao={isClinicAdmin ? (section) => { setHubGestaoInitialSection(section || null); setShowHubGestao(true); } : undefined}
+            // Todo mundo tem Gestão (2026-09-25): o admin vê a da instituição;
+            // profissional e recepção veem só a própria (cor da tela e
+            // cadastro) — ver GestaoProfissional.
+            onOpenGestao={(section) => { setHubGestaoInitialSection(section || null); setShowHubGestao(true); }}
             // Evolução é trabalho CLÍNICO (escrever evolução) — não é
             // tarefa de recepção.
             onOpenPendingEvolutions={isReceptionist ? undefined : () => setShowHubEvolutions(true)}
@@ -443,16 +447,20 @@ export default function App() {
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
-              <RelatoriosGestao
-                profile={profile}
-                initialSection={hubGestaoInitialSection}
-                onOpenBirthdays={() => {
-                  setShowHubGestao(false);
-                  setHubGestaoInitialSection(null);
-                  setHubAgendaShowBirthdays(true);
-                  setShowHubAgenda(true);
-                }}
-              />
+              {isClinicAdmin ? (
+                <RelatoriosGestao
+                  profile={profile}
+                  initialSection={hubGestaoInitialSection}
+                  onOpenBirthdays={() => {
+                    setShowHubGestao(false);
+                    setHubGestaoInitialSection(null);
+                    setHubAgendaShowBirthdays(true);
+                    setShowHubAgenda(true);
+                  }}
+                />
+              ) : (
+                <GestaoProfissional profile={profile} initialSection={hubGestaoInitialSection} />
+              )}
             </Suspense>
           </main>
         </div>

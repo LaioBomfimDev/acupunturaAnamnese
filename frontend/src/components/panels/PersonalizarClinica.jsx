@@ -6,9 +6,13 @@ import {
   DEFAULT_BRAND_COLOR,
   updateClinicAppearance,
   updateClinicLogo,
+  updateClinicPersonalAccent,
 } from '../../services/clinicService';
 import { readLogoFile } from '../../utils/clinicLogo';
+import { colorLabel, sameColor } from '../../utils/colorOptions';
 import { buildReportAccentPalette } from '../../utils/reportUtils';
+import { AppColorPreview, ColorPresets } from './ColorPresets';
+import { PersonalAccentPicker } from './PersonalAccentPicker';
 
 // ============================================================
 // Gestão → Personalizar: o clinic_admin escolhe a cor do sistema, se
@@ -16,44 +20,11 @@ import { buildReportAccentPalette } from '../../utils/reportUtils';
 // nos documentos) e o logo da instituição. Só cores da paleta curada —
 // ver CLINIC_BRAND_COLORS. Grava via RPCs clinic_admin_update_appearance
 // e clinic_admin_update_logo (cada uma só mexe nos próprios campos).
+//
+// Cor fixa ou livre (2026-09-25): o admin decide se a cor do sistema
+// vale para toda a equipe ou se cada profissional escolhe a da própria
+// tela (clinic_admin_set_personal_accent). Documentos não mudam.
 // ============================================================
-
-function sameColor(a, b) {
-  return String(a || '').toUpperCase() === String(b || '').toUpperCase();
-}
-
-function ColorPresets({ options, value, onChange, label }) {
-  return (
-    <div className="clinic-color-presets" role="radiogroup" aria-label={label}>
-      {options.map(option => {
-        const selected = sameColor(value, option.value);
-        return (
-          <button
-            key={option.value}
-            type="button"
-            className={`clinic-color-preset${selected ? ' selected' : ''}`}
-            style={{ background: option.value }}
-            role="radio"
-            aria-checked={selected}
-            aria-label={option.label}
-            title={option.label}
-            onClick={() => onChange(option.value)}
-          >
-            {selected && (
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4 12l5 5L20 6" />
-              </svg>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function colorLabel(options, value) {
-  return options.find(option => sameColor(option.value, value))?.label || value;
-}
 
 export function PersonalizarClinica({ profile }) {
   const { refreshProfile } = useAuth();
@@ -62,8 +33,10 @@ export function PersonalizarClinica({ profile }) {
   const initialLetterhead = clinic?.letterhead_color || '';
   const initialLogo = clinic?.logo_url || '';
   const initialWatermark = clinic?.logo_watermark !== false;
+  const initialPersonalAllowed = clinic?.personal_accent_allowed === true;
 
   const [brandColor, setBrandColor] = useState(initialBrand);
+  const [personalAllowed, setPersonalAllowed] = useState(initialPersonalAllowed);
   const [separateLetterhead, setSeparateLetterhead] = useState(Boolean(initialLetterhead));
   const [letterheadColor, setLetterheadColor] = useState(initialLetterhead || initialBrand);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
@@ -80,7 +53,8 @@ export function PersonalizarClinica({ profile }) {
   const colorsDirty = !sameColor(brandColor, initialBrand)
     || !sameColor(separateLetterhead ? letterheadColor : '', initialLetterhead);
   const logoDirty = logoUrl !== initialLogo || (Boolean(logoUrl) && watermark !== initialWatermark);
-  const dirty = colorsDirty || logoDirty;
+  const policyDirty = personalAllowed !== initialPersonalAllowed;
+  const dirty = colorsDirty || logoDirty || policyDirty;
 
   if (!clinic?.id) {
     return (
@@ -104,6 +78,9 @@ export function PersonalizarClinica({ profile }) {
       if (logoDirty) {
         await updateClinicLogo({ logoUrl, watermark });
       }
+      if (policyDirty) {
+        await updateClinicPersonalAccent(personalAllowed);
+      }
       await refreshProfile();
       setSuccess('Personalização salva. O sistema e os próximos documentos já usam a nova escolha.');
     } catch (err) {
@@ -119,6 +96,7 @@ export function PersonalizarClinica({ profile }) {
     setLetterheadColor(initialLetterhead || initialBrand);
     setLogoUrl(initialLogo);
     setWatermark(initialWatermark);
+    setPersonalAllowed(initialPersonalAllowed);
     setError('');
     setSuccess('');
   }
@@ -144,7 +122,8 @@ export function PersonalizarClinica({ profile }) {
       <p className="gt-note">
         Escolha a cor que a equipe vê no sistema, a cor que sai nos documentos (relatórios,
         evoluções e papel timbrado) e o logo da instituição. As cores podem ser iguais ou
-        diferentes. A mudança vale para toda a instituição.
+        diferentes. Você também decide se a cor da tela é fixa para toda a equipe ou se cada
+        profissional escolhe a sua. Documentos saem sempre com a cor da instituição.
       </p>
 
       {(error || success) && (
@@ -166,20 +145,34 @@ export function PersonalizarClinica({ profile }) {
             onChange={setBrandColor}
             label="Cor do sistema"
           />
-          <div className="gt-custom-preview gt-custom-preview-app" aria-hidden="true">
-            <div className="gt-custom-app-bar">
-              <span className="gt-custom-app-dot" style={{ background: brandPalette.accent }} />
-              <b>{clinic.name}</b>
-            </div>
-            <div className="gt-custom-app-tabs">
-              <span style={{ color: brandPalette.shade, borderColor: brandPalette.accent }}>Agenda</span>
-              <span>Pacientes</span>
-              <span>Gestão</span>
-            </div>
-            <span className="gt-custom-app-button" style={{ background: brandPalette.shade }}>
-              Novo agendamento
-            </span>
-          </div>
+          <fieldset className="gt-accent-policy">
+            <legend>Quem escolhe a cor da tela</legend>
+            <label className={`gt-accent-policy-option${personalAllowed ? '' : ' selected'}`}>
+              <input
+                type="radio"
+                name="personal-accent-policy"
+                checked={!personalAllowed}
+                onChange={() => setPersonalAllowed(false)}
+              />
+              <span>
+                <b>Cor fixa para toda a equipe</b>
+                <small>Ninguém troca; todos veem esta cor.</small>
+              </span>
+            </label>
+            <label className={`gt-accent-policy-option${personalAllowed ? ' selected' : ''}`}>
+              <input
+                type="radio"
+                name="personal-accent-policy"
+                checked={personalAllowed}
+                onChange={() => setPersonalAllowed(true)}
+              />
+              <span>
+                <b>Cada profissional escolhe a sua</b>
+                <small>Esta cor vira o padrão de quem não escolher.</small>
+              </span>
+            </label>
+          </fieldset>
+          <AppColorPreview palette={brandPalette} title={clinic.name} />
         </article>
 
         <article className="gt-custom-card">
@@ -294,6 +287,15 @@ export function PersonalizarClinica({ profile }) {
           {saving ? 'Salvando…' : 'Salvar personalização'}
         </button>
       </div>
+
+      {/* Com a escolha liberada (já salva), o admin também escolhe a cor da
+          própria tela, igual a qualquer profissional. */}
+      {initialPersonalAllowed && (
+        <div className="gt-accent-own">
+          <h3>Sua tela</h3>
+          <PersonalAccentPicker profile={profile} />
+        </div>
+      )}
     </section>
   );
 }

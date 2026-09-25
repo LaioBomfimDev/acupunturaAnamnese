@@ -20,6 +20,8 @@ export const DEFAULT_BRAND_COLOR = '#0E2A4A';
 // hex), a instituição escolhe entre estas opções — todas escuras o
 // bastante pra texto branco em botão e pra régua do papel timbrado, sem
 // cor de baixo contraste indo parar no sistema ou no documento.
+// Sem vermelho (2026-09-25): vermelho é reservado para risco (--r1-danger)
+// e o "Vermelho" da paleta era exatamente essa cor.
 export const CLINIC_BRAND_COLORS = [
   { value: '#0E2A4A', label: 'Petróleo (padrão)' },
   { value: '#2E5A7D', label: 'Azul' },
@@ -27,10 +29,14 @@ export const CLINIC_BRAND_COLORS = [
   { value: '#3F7D5C', label: 'Verde' },
   { value: '#5B6B2E', label: 'Oliva' },
   { value: '#6A4C93', label: 'Roxo' },
-  { value: '#8C4460', label: 'Rosa' },
-  { value: '#B3413C', label: 'Vermelho' },
+  { value: '#8C4460', label: 'Rosa vinho' },
+  { value: '#A62D63', label: 'Rosa framboesa' },
+  { value: '#A1506A', label: 'Rosa antigo' },
+  { value: '#8B4F7E', label: 'Rosa malva' },
   { value: '#9A5B3C', label: 'Terracota' },
-  { value: '#A3691F', label: 'Dourado escuro' },
+  { value: '#A3691F', label: 'Dourado âmbar' },
+  { value: '#8C6D12', label: 'Dourado' },
+  { value: '#75602A', label: 'Ouro velho' },
 ];
 
 // O papel timbrado aceita as mesmas cores + grafite (documento sóbrio,
@@ -273,6 +279,21 @@ export async function updateClinicAppearance({ brandColor, letterheadColor = nul
   }
 }
 
+// Trava da cor da tela pelo clinic_admin (mesma aba): false = cor fixa
+// para toda a equipe; true = cada profissional escolhe a própria e a cor
+// da instituição vira só o padrão. Documentos não mudam em nenhum caso.
+export async function updateClinicPersonalAccent(allowed) {
+  const { error } = await supabase.rpc('clinic_admin_set_personal_accent', {
+    p_allowed: allowed === true,
+  });
+  if (error) {
+    if (isMissingClinicSchemaError(error) || /clinic_admin_set_personal_accent/i.test(error.message || '')) {
+      throw new Error('A escolha de cor por profissional ainda não está disponível no banco (migração 20260925b pendente).');
+    }
+    throw new Error(error.message || 'Não foi possível salvar a regra da cor.');
+  }
+}
+
 // Logo da própria instituição pelo clinic_admin (mesma aba). Só bitmap
 // em data URL — ver readLogoFile({ keepSvg: false }). logoUrl vazio remove.
 export async function updateClinicLogo({ logoUrl, watermark = true }) {
@@ -298,9 +319,18 @@ export async function getClinicForProfile(profile) {
       const BASE_COLUMNS = 'id,name,legal_name,cnpj,address,phone,email,brand_color,created_at,updated_at';
       let { data, error } = await supabase
         .from('clinics')
-        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color`)
+        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed`)
         .eq('id', profile.clinic_id)
         .maybeSingle();
+      // Banco ainda sem a trava da cor pessoal (20260925b): refaz sem ela —
+      // sem a coluna, a cor da clínica vale para todos (cor fixa).
+      if (error && /personal_accent_allowed/i.test(error.message || '')) {
+        ({ data, error } = await supabase
+          .from('clinics')
+          .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color`)
+          .eq('id', profile.clinic_id)
+          .maybeSingle());
+      }
       // Banco ainda sem a migração da cor do timbrado (20260923): refaz sem
       // ela — o timbrado cai na brand_color, igual antes.
       if (error && /letterhead_color/i.test(error.message || '')) {

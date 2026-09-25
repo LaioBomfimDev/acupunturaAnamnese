@@ -10,6 +10,7 @@ import {
 import { getClinicForProfile } from '../services/clinicService';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { buildReportAccentPalette } from '../utils/reportUtils';
+import { resolveScreenAccentColor } from '../utils/screenAccent';
 import { recordAuthEvent, recordAuthError } from '../lib/authDiagnostics';
 
 const AuthContext = createContext({});
@@ -108,11 +109,23 @@ export const AuthProvider = ({ children }) => {
 
     const baseColumns = 'id,email,username,full_name,role,phone,document,professional_registration,specialty,clinic_name,is_active,must_change_password,password_changed_at';
 
+    const fullColumns = `${baseColumns},clinic_id,profession,disciplines,mfa_required,attends_patients`;
+
     let { data, error } = await supabase
       .from('profiles')
-      .select(`${baseColumns},clinic_id,profession,disciplines,mfa_required,attends_patients`)
+      .select(`${fullColumns},accent_color`)
       .eq('id', nextUser.id)
       .maybeSingle();
+
+    // Banco ainda sem a cor pessoal (20260925b): refaz sem ela — a tela
+    // segue a cor da clínica, igual antes.
+    if (error && /accent_color/i.test(error.message || '')) {
+      ({ data, error } = await supabase
+        .from('profiles')
+        .select(fullColumns)
+        .eq('id', nextUser.id)
+        .maybeSingle());
+    }
 
     // Banco ainda sem a migração de disciplinas (20260707) ou de
     // attends_patients (20260917): refaz sem elas (o frontend cai no
@@ -270,22 +283,24 @@ export const AuthProvider = ({ children }) => {
   // Elementos principais do app (botão primário, aba ativa, marca) seguem a
   // cor que a clínica escolheu no cadastro (mesma paleta usada no papel
   // timbrado — buildReportAccentPalette) em vez do petróleo fixo do Vitalis.
-  // Sem clínica carregada (login, SuperAdmin, erro), volta pro padrão do
-  // tokens.css removendo o override.
+  // Se a instituição liberou a escolha individual, vale a cor da própria
+  // pessoa (resolveScreenAccentColor). Sem cor nenhuma (login, SuperAdmin,
+  // erro), volta pro padrão do tokens.css removendo o override.
+  const screenAccentColor = resolveScreenAccentColor(profile);
+
   useEffect(() => {
     const root = document.documentElement.style;
-    const brandColor = profile?.clinic?.brand_color;
 
-    if (!brandColor) {
+    if (!screenAccentColor) {
       root.removeProperty('--r1-accent');
       root.removeProperty('--r1-accent-strong');
       return;
     }
 
-    const { accent, shade } = buildReportAccentPalette(brandColor);
+    const { accent, shade } = buildReportAccentPalette(screenAccentColor);
     root.setProperty('--r1-accent', accent);
     root.setProperty('--r1-accent-strong', shade);
-  }, [profile?.clinic?.brand_color]);
+  }, [screenAccentColor]);
 
   const signInWithPassword = async (emailOrUsername, password) => {
     const identifier = emailOrUsername.trim();

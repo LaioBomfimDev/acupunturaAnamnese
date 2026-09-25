@@ -38,6 +38,11 @@ export const EMPTY_PROFESSIONAL_FORM = {
   attendsPatients: true,
 };
 
+export const UF_OPTIONS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+];
+
 // Tipos de acesso que o SuperAdm pode criar (allowlist espelha a da
 // edge function super-admin-create-user).
 export const CREATABLE_ROLES = [

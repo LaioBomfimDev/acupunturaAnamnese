@@ -17,6 +17,7 @@ import {
 import {
   CREATABLE_ROLES,
   EMPTY_PROFESSIONAL_FORM,
+  UF_OPTIONS,
   buildProfessionalCreatePayload,
   generatePassword,
   getEmailLogin,
@@ -24,11 +25,6 @@ import {
   maskCpfCnpj,
   normalizeUsername,
 } from './professionalFormHelpers';
-
-const UF_OPTIONS = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
-  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
-];
 
 export function ProfessionalCreateForm({
   clinics,

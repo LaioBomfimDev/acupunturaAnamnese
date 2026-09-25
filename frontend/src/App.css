@@ -3940,7 +3940,10 @@ textarea { min-height: 95px; resize: vertical; }
   cursor: pointer;
 }
 
+/* width: auto desfaz o `input { width: 100% }` global: sem isso a caixa
+   ocupava a linha toda e empurrava o texto para fora do cartão. */
 .clinic-watermark-toggle input {
+  width: auto;
   margin-top: 2px;
   flex: 0 0 auto;
   cursor: pointer;

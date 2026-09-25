@@ -292,7 +292,9 @@ pós-parto.
 
 Arquivo: `data/nutricaoAnamnese.js` · registro `nutri_anamnese`.
 
-**Percursos por objetivo:** clínica/ambulatorial (4 seções), materno-infantil (5) e esportiva (4).
+**Percursos por objetivo:** clínica/ambulatorial (4 seções), materno-infantil (5), esportiva (4) e
+neurodesenvolvimento (6, desde 25/09/2026: TEA, TDAH, síndromes — seletividade, sensorial, rotina da
+refeição, deglutição; dieta de exclusão e suplemento só como registro do que a família já faz).
 
 **Eixos:** consumo, antropometria, bioquímico/clínico, comportamento e relação com a comida,
 contexto e acesso, diagnóstico nutricional em hipótese e metas pactuadas.
@@ -306,8 +308,9 @@ Duas escolhas de conteúdo que merecem registro:
   emagrecimento sobre quadro não reconhecido agrava o quadro; o lembrete manda não prescrever
   restrição e conduzir em equipe.
 
-Completam o bloco: perda de peso não intencional, risco nutricional/desnutrição e condição
-clínica descompensada ou interação fármaco-nutriente.
+Completam o bloco: perda de peso não intencional, risco nutricional/desnutrição, condição
+clínica descompensada ou interação fármaco-nutriente e, desde 25/09/2026, seletividade grave
+(ARFID), engasgo/disfagia e pica — valem para todos os percursos.
 
 **Módulos de contexto:** acesso, orçamento e estrutura; relação com a comida e imagem corporal;
 condições clínicas e interação medicamentosa; cultura, crenças e escolhas; suplementação por

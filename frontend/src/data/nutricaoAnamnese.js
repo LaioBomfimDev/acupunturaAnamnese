@@ -300,6 +300,104 @@ const esportiva = [
   },
 ].map(toSection);
 
+// Neurodesenvolvimento (25/09/2026): criança ou adolescente com TEA,
+// TDAH, síndromes ou atraso do desenvolvimento. O centro é seletividade,
+// sensorial, rotina da refeição e deglutição — quem responde costuma ser
+// o cuidador. Dieta de exclusão e suplemento entram só como REGISTRO do
+// que a família já faz, nunca como sugestão.
+const neurodesenvolvimento = [
+  {
+    id: 'nd-perfil',
+    title: 'Diagnóstico, rede de cuidado e comunicação',
+    fields: [
+      ['ndDiagnosticoAcompanhamento', 'Diagnóstico ou hipótese e quem acompanha',
+        ['TEA', 'TDAH', 'síndrome de Down', 'paralisia cerebral', 'atraso global do desenvolvimento', 'deficiência intelectual', 'em investigação', 'sem diagnóstico fechado'],
+        ['Existe diagnóstico ou está em investigação? Desde quando?', 'Quem acompanha hoje (neuropediatra, pediatra, psiquiatra)?', 'Que orientações de alimentação a família já recebeu?']],
+      ['ndTerapiasRede', 'Terapias em andamento e articulação com a equipe',
+        ['terapia ocupacional', 'integração sensorial', 'fonoaudiologia', 'psicologia', 'fisioterapia', 'acompanhante terapêutico', 'apoio escolar', 'sem terapias'],
+        ['Que terapias faz e com que frequência?', 'Alguma delas já trabalha a alimentação?', 'Podemos alinhar as orientações com essas profissionais?']],
+      ['ndComunicacaoInformante', 'Como a criança comunica fome e desconforto, e quem informa',
+        ['verbal', 'pouco verbal', 'não verbal', 'comunicação alternativa', 'aponta o que quer', 'responsável informa', 'a criança participa'],
+        ['Como ela(e) mostra que está com fome, satisfeita(o) ou incomodada(o)?', 'Quem está respondendo hoje e convive nas refeições?', 'A criança pode participar de parte da conversa?']],
+    ],
+  },
+  {
+    id: 'nd-repertorio',
+    title: 'Repertório alimentar e seletividade',
+    fields: [
+      ['ndRepertorioAceito', 'Alimentos aceitos hoje e alimentos "seguros"',
+        ['menos de 10 alimentos', '10 a 20 alimentos', 'mais de 20 alimentos', 'falta um grupo inteiro', 'só uma marca', 'só um preparo', 'repertório diminuindo', 'repertório aumentando'],
+        ['Quais alimentos ela(e) come bem hoje? Vale listar um por um.', 'Há algum grupo que não entra de jeito nenhum (frutas, verduras, carnes)?', 'O repertório está aumentando, estável ou diminuindo?']],
+      ['ndSensorial', 'Características sensoriais que guiam a aceitação',
+        ['textura', 'cor', 'cheiro', 'temperatura', 'alimentos misturados', 'só crocante', 'só pastoso', 'marca ou embalagem'],
+        ['O que faz ela(e) recusar: textura, cor, cheiro ou temperatura?', 'Aceita alimentos misturados ou precisa deles separados no prato?', 'Se a marca ou a embalagem muda, ainda come?']],
+      ['ndReacaoAlimentoNovo', 'Reação a alimento novo e exposições já tentadas',
+        ['olha e toca', 'cheira', 'lambe ou prova', 'recusa sem tocar', 'ânsia ou vômito', 'choro ou crise', 'sai da mesa', 'aceita vendo alguém comer'],
+        ['O que acontece quando aparece um alimento novo no prato?', 'Já teve ânsia ou vômito diante de algum alimento?', 'O que a família já tentou e como foi?']],
+    ],
+  },
+  {
+    id: 'nd-refeicao',
+    title: 'Rotina, comportamento e ambiente da refeição',
+    fields: [
+      ['ndRotinaRigidez', 'Rotina da refeição, rituais e rigidez',
+        ['horários fixos', 'mesmo lugar ou prato', 'mesmo copo ou talher', 'come em pé ou andando', 'refeições muito longas', 'refeições muito rápidas', 'belisca o dia todo', 'come só em casa'],
+        ['Como é uma refeição, do começo ao fim?', 'Existe algum ritual que precisa acontecer para ela(e) comer?', 'Quanto tempo dura uma refeição?']],
+      ['ndEstrategiasFamilia', 'O que a família faz para ela(e) comer',
+        ['tela durante a refeição', 'distração com brinquedo', 'recompensa', 'insistência ou pressão', 'oferece só o que aceita', 'prato separado', 'alimenta na boca', 'sem estratégia'],
+        ['O que vocês fazem quando ela(e) não quer comer?', 'Usam tela, recompensa ou insistência?', 'O que já funcionou e o que piorou?']],
+      ['ndEscolaOutrosAmbientes', 'Alimentação na escola e em outros ambientes',
+        ['come na escola', 'não come na escola', 'leva lanche de casa', 'come melhor com outras pessoas', 'come pior fora de casa', 'escola informada', 'mediador ajuda na refeição'],
+        ['Como ela(e) come na escola?', 'Come diferente com outras pessoas ou em outros lugares?', 'A escola sabe das particularidades da alimentação?']],
+    ],
+  },
+  {
+    id: 'nd-motor-oral',
+    title: 'Mastigação, deglutição e autonomia',
+    fields: [
+      ['ndMastigacaoDegluticao', 'Mastigação, deglutição e engasgos',
+        ['mastiga bem', 'engole sem mastigar', 'guarda comida na boca', 'engasga com frequência', 'tosse ao beber', 'baba muito', 'só aceita pastoso', 'já teve pneumonia'],
+        ['Mastiga bem ou engole pedaços inteiros?', 'Engasga ou tosse ao comer ou beber?', 'Já teve pneumonia ou internação ligada à alimentação?']],
+      ['ndAutonomiaUtensilios', 'Autonomia, postura e utensílios',
+        ['come sozinha(o)', 'precisa de ajuda', 'usa talher', 'come com as mãos', 'copo com tampa', 'ainda usa mamadeira', 'postura instável', 'cadeira adaptada'],
+        ['Come sozinha(o) ou precisa de ajuda?', 'Que utensílio usa para comer e para beber?', 'Consegue ficar sentada(o), com ou sem apoio, durante a refeição?']],
+      ['ndViaAlimentacao', 'Via de alimentação e suporte nutricional',
+        ['via oral exclusiva', 'suplemento oral', 'fórmula', 'sonda', 'gastrostomia', 'consistência modificada', 'espessante'],
+        ['Toda a alimentação é pela boca?', 'Usa fórmula, sonda ou gastrostomia? Quem acompanha?', 'Há orientação de consistência dada pela fonoaudiologia?']],
+    ],
+  },
+  {
+    id: 'nd-clinico',
+    title: 'Desconforto, medicações e crescimento',
+    fields: [
+      ['ndDesconfortoComportamento', 'Desconforto gastrointestinal expresso pelo comportamento',
+        ['constipação', 'dor ao evacuar', 'retém as fezes', 'diarreia', 'refluxo', 'irritada(o) após comer', 'aperta a barriga', 'piora sem causa aparente'],
+        ['Como ela(e) mostra que algo dói ou incomoda?', 'O comportamento piora em algum horário ligado às refeições ou ao intestino?', 'Já houve investigação de constipação ou refluxo?']],
+      ['ndMedicacoesApetite', 'Medicações e efeito no apetite e no peso',
+        ['sem medicação', 'risperidona', 'aripiprazol', 'metilfenidato', 'anticonvulsivante', 'melatonina', 'apetite aumentou', 'apetite diminuiu'],
+        ['Que medicações usa e desde quando?', 'O apetite ou o peso mudaram depois que começou?', 'Quem prescreve sabe dessa mudança?']],
+      ['ndCrescimentoExames', 'Curvas de crescimento e exames',
+        ['curva adequada', 'curva descendente', 'curva ascendente', 'baixo peso', 'excesso de peso', 'baixa estatura', 'exames recentes', 'sem exames'],
+        ['O que mostram as curvas de peso e altura para a idade?', 'Houve mudança de canal de crescimento?', 'Há exames recentes (hemograma, ferritina, vitamina D)?']],
+    ],
+  },
+  {
+    id: 'nd-familia',
+    title: 'Família, restrições já feitas e objetivos',
+    fields: [
+      ['ndDietasExclusao', 'Dietas de exclusão e suplementos que a família já usa',
+        ['nenhuma', 'sem glúten', 'sem leite ou caseína', 'sem açúcar', 'sem corantes', 'suplemento por conta própria', 'orientação de outro profissional', 'protocolo visto na internet'],
+        ['A família já retirou algum alimento? Qual, desde quando e por orientação de quem?', 'Perceberam alguma mudança depois disso?', 'Essa restrição diminuiu ainda mais o que ela(e) come?']],
+      ['ndSobrecargaCuidador', 'Rotina e sobrecarga de quem cuida',
+        ['tem rede de apoio', 'cuida sozinha(o)', 'muito cansaço', 'hora da refeição é briga', 'culpa', 'irmãos com rotina diferente', 'trabalha fora'],
+        ['Como está você com essa rotina de alimentação?', 'Quem divide o cuidado?', 'A hora da refeição virou momento de conflito?']],
+      ['ndObjetivosFamilia', 'O que a família espera e topa agora',
+        ['aumentar a variedade', 'ganhar peso', 'controlar o peso', 'menos crise na refeição', 'comer na escola', 'tirar a mamadeira', 'comer com a família', 'passos pequenos'],
+        ['O que seria uma vitória para vocês nos próximos meses?', 'O que não dá para mudar agora?', 'Quantas mudanças por vez são realistas para a família?']],
+    ],
+  },
+].map(toSection);
+
 // ---- Checklists (vocabulário fechado) -----------------------------
 export const nutriChecklists = {
   nutriHabitos: [
@@ -455,6 +553,72 @@ export const NUTRI_RISK_ITEMS = [
     reminder:
       'Alinhar com o profissional que acompanha antes de mudar a dieta. Registrar a interação identificada.',
   },
+  {
+    id: 'nutri-risk-seletividade-grave',
+    label: 'Seletividade grave ou restrição alimentar evitativa (ARFID)',
+    priority: 'alta',
+    summary:
+      'Repertório muito pequeno, grupo inteiro recusado ou alimentos aceitos sumindo levam a carência e a queda '
+      + 'de crescimento. Não é birra — e pressão para comer costuma piorar.',
+    screening: [
+      'Quantos alimentos diferentes são aceitos hoje?',
+      'O repertório diminuiu nos últimos meses?',
+      'Há grupo inteiro de alimentos que nunca entra (frutas, verduras, carnes)?',
+      'A alimentação está atrapalhando o crescimento, a escola ou a vida da família?',
+    ],
+    observe: [
+      'Repertório em torno de 20 alimentos ou menos, ou perda de alimentos antes aceitos',
+      'Ânsia, vômito ou crise diante de alimento novo',
+      'Dependência de uma marca, um preparo ou um suplemento para se alimentar',
+      'Queda de canal de crescimento ou sinais de carência (palidez, cansaço, gengiva que sangra)',
+    ],
+    reminder:
+      'Não usar pressão, castigo ou restrição. Considerar avaliação conjunta com fonoaudiologia, terapia '
+      + 'ocupacional e médico, e investigar carências.',
+  },
+  {
+    id: 'nutri-risk-disfagia',
+    label: 'Engasgo, disfagia ou risco de aspiração',
+    priority: 'critica',
+    summary:
+      'Engasgo frequente, tosse ao beber ou pneumonia de repetição sugerem deglutição insegura. Mudar textura '
+      + 'ou volume sem avaliação pode levar a aspiração.',
+    screening: [
+      'Engasga ou tosse durante as refeições ou ao beber?',
+      'Já teve pneumonia, falta de ar ou febre sem causa depois de comer?',
+      'A refeição demora muito ou a comida fica parada na boca?',
+    ],
+    observe: [
+      'Tosse, engasgo ou voz molhada durante ou logo após comer',
+      'Pneumonias de repetição',
+      'Refeições muito longas, cansaço ao comer, perda de peso',
+      'Comida guardada na boca ou engolida sem mastigar',
+    ],
+    reminder:
+      'Encaminhar para avaliação de deglutição (fonoaudiologia) antes de mudar consistência ou avançar '
+      + 'textura. Registrar a orientação recebida.',
+  },
+  {
+    id: 'nutri-risk-pica',
+    label: 'Ingestão de itens não alimentares (pica)',
+    priority: 'alta',
+    summary:
+      'Comer terra, papel, gelo, tinta ou outros itens pode causar intoxicação e obstrução, e costuma andar '
+      + 'junto com deficiência de ferro. Aparece na infância, na gestação e no neurodesenvolvimento.',
+    screening: [
+      'Come ou coloca na boca coisas que não são comida (terra, papel, gelo, tinta, parede)?',
+      'Com que frequência e há quanto tempo?',
+      'Já houve dor de barriga, vômito ou intoxicação ligada a isso?',
+    ],
+    observe: [
+      'Ingestão repetida de terra, papel, tecido, gelo ou tinta',
+      'Palidez, cansaço ou anemia já diagnosticada',
+      'Dor abdominal, constipação ou vômitos sem outra causa',
+    ],
+    reminder:
+      'Encaminhar para avaliação médica (ferro e outros exames conforme o caso) e alinhar o manejo com a '
+      + 'equipe e a família.',
+  },
 ].map(toRiskItem);
 
 export const NUTRI_RISK_REMINDER =
@@ -547,7 +711,7 @@ const contextModules = [
     summary:
       'Abrir sempre que houver dúvida sobre a viabilidade do plano. Plano que não cabe no orçamento nem na '
       + 'estrutura da casa não é adesão baixa — é prescrição inadequada.',
-    suggestedFor: ['nutri_clinica', 'nutri_materno_infantil'],
+    suggestedFor: ['nutri_clinica', 'nutri_materno_infantil', 'nutri_neurodesenvolvimento'],
     fields: [
       ['ctxOrcamentoAlimentar', 'Orçamento disponível para alimentação',
         ['sem restrição', 'orçamento apertado', 'compra por prioridade', 'recebe auxílio', 'renda variável', 'divide despesas', 'prefere não informar'],
@@ -635,7 +799,7 @@ const contextModules = [
     summary:
       'Abrir quando houver uso de suplemento, fitoterápico ou recurso sem prescrição. Muitos chegam por '
       + 'indicação de loja ou rede social e interagem com medicação.',
-    suggestedFor: [],
+    suggestedFor: ['nutri_neurodesenvolvimento'],
     fields: [
       ['ctxSuplementosAtuais', 'Suplementos e fitoterápicos em uso',
         ['não usa', 'polivitamínico', 'vitamina D', 'ferro', 'ômega 3', 'proteína', 'creatina', 'fitoterápico'],
@@ -688,12 +852,20 @@ export const NUTRICAO_ANAMNESE = {
       description: 'Desempenho, composição corporal para treino, suplementação e competição.',
       sectionSet: 'esportiva',
     },
+    {
+      id: 'nutri_neurodesenvolvimento',
+      label: 'Neurodesenvolvimento',
+      shortLabel: 'Neurodesenvolvimento',
+      description: 'Criança ou adolescente com TEA, TDAH, síndromes ou atraso do desenvolvimento: seletividade, sensorial e rotina da refeição.',
+      sectionSet: 'neurodesenvolvimento',
+    },
   ],
 
   sectionSets: {
     clinica,
     maternoInfantil,
     esportiva,
+    neurodesenvolvimento,
   },
 
   textFields,

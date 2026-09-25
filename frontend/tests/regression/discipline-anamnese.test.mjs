@@ -334,3 +334,36 @@ test('o workspace genérico bloqueia escrita quando a leitura do prontuário fal
   assert.match(source, /saveQueue\.enqueue\(/);
   assert.match(source, /changeVersion/);
 });
+
+test('Nutrição tem anamnese própria de neurodesenvolvimento, ao lado das outras três', () => {
+  const config = registry.getAnamneseConfig('nutricao');
+  // Pedido de 25/09/2026: mais uma anamnese, sem mexer nas existentes.
+  assert.deepEqual(
+    config.profiles.map(profile => profile.id),
+    ['nutri_clinica', 'nutri_materno_infantil', 'nutri_esportiva', 'nutri_neurodesenvolvimento'],
+  );
+
+  const sections = kit.getProfileSections(config, 'nutri_neurodesenvolvimento');
+  assert.deepEqual(
+    sections.map(section => section.id),
+    ['nd-perfil', 'nd-repertorio', 'nd-refeicao', 'nd-motor-oral', 'nd-clinico', 'nd-familia'],
+  );
+  // Roteiro próprio: nenhum campo emprestado dos outros percursos.
+  const ids = sections.flatMap(section => section.fields.map(field => field.id));
+  assert.ok(ids.every(id => id.startsWith('nd')), 'campo de outro percurso vazou para o neurodesenvolvimento');
+
+  // Riscos que o neurodesenvolvimento mais precisa ver — no bloco comum.
+  const riskIds = config.riskItems.map(item => item.id);
+  for (const id of ['nutri-risk-seletividade-grave', 'nutri-risk-disfagia', 'nutri-risk-pica']) {
+    assert.ok(riskIds.includes(id), `falta o risco ${id}`);
+  }
+
+  // Dieta de exclusão e suplemento entram como registro do que a família
+  // já faz: o campo pergunta, não recomenda.
+  const exclusao = sections.flatMap(section => section.fields).find(field => field.id === 'ndDietasExclusao');
+  assert.ok(exclusao.questionGuide.every(question => question.trim().endsWith('?')));
+  assert.deepEqual(
+    Object.keys(kit.getSuggestedContextModules(config, 'nutri_neurodesenvolvimento')).sort(),
+    ['acesso-orcamento-alimentar', 'suplementacao-recursos'],
+  );
+});

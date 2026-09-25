@@ -134,8 +134,10 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
     submitLabel,
   };
 
+  // forms-scope: as fichas de evolução de cada disciplina vestem o kit
+  // visual das fichas (styles/forms.css), igual dentro das áreas.
   return (
-    <>
+    <div className="forms-scope">
       {loadWarning && <div className="alert" role="alert">{loadWarning}</div>}
       {discipline === 'acupuntura' && (
         <Evolucao {...common} state={clinical.state} onUpdate={noop} analysis={analysis} />
@@ -152,6 +154,6 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
           onEvolucoesChange={noop}
         />
       )}
-    </>
+    </div>
   );
 }

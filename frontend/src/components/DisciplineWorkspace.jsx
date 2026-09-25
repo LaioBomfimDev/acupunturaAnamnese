@@ -13,7 +13,7 @@ import {
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { mergeEvolutionHistory } from '../utils/evolutionHistory';
-import { resolveUserDisciplines } from '../data/disciplines';
+import { getDiscipline, resolveUserDisciplines } from '../data/disciplines';
 import { getAnamneseConfig } from '../data/anamneseRegistry';
 import {
   buildWorkspaceSummary,
@@ -430,6 +430,7 @@ export function DisciplineWorkspace({
         therapist={therapistName}
         profileRole={profile?.role}
         disciplineLabel={config.label}
+        clinicName={profile?.clinic?.name || profile?.clinic_name}
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
@@ -441,10 +442,13 @@ export function DisciplineWorkspace({
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
       />
 
-      <main className="main psi-main">
+      <main className="main psi-main forms-scope">
         <div className="app-topbar no-print">
           <div>
-            <p className="app-eyebrow">{clinicName} · {config.label}</p>
+            <p className="app-eyebrow">
+              <span className="app-eyebrow-dot" style={{ background: getDiscipline(disciplineId)?.color }} aria-hidden="true" />
+              {clinicName} · {config.label}
+            </p>
             <h1>{selectedPatient ? 'Paciente em atendimento' : `Workspace de ${config.label}`}</h1>
           </div>
           <div className="app-topbar-actions">

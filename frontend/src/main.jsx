@@ -6,6 +6,9 @@ import './App.css'
 // Depois do App.css de propósito: reestiliza as classes .hub-* com
 // tokens e a cascata decide. Inverter esta ordem devolve o visual antigo.
 import './styles/hub.css'
+// Kit visual das fichas das disciplinas (.forms-scope). Também depois do
+// App.css: reveste .panel/.tag/.box/.alert/.psi-* só com tokens.
+import './styles/forms.css'
 import './styles/clinicPatients.css'
 import './styles/appLoading.css'
 import App from './App.jsx'

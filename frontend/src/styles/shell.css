@@ -5,9 +5,10 @@
    Por que este arquivo é separado do App.css: o App.css tem ~10 mil
    linhas e assume desktop em toda parte (.sidebar fixa de 268px,
    .main em calc(100% - 268px)). Reescrever aquilo agora seria um diff
-   grande e arriscado sem entregar nada novo. Aqui ficam apenas as
-   regras que transformam a moldura em algo usável no telefone, e elas
-   entram DEPOIS na cascata — o desktop continua byte a byte igual.
+   grande e arriscado sem entregar nada novo. Aqui ficam as regras que
+   transformam a moldura em algo usável no telefone e, desde 24/09/2026,
+   a lateral clara das áreas de atendimento (.sidebar--clinical). Tudo
+   entra DEPOIS do App.css na cascata.
 
    Os breakpoints são os canônicos declarados em tokens.css:
    1024px (a sidebar vira gaveta) e 768px (barra inferior aparece).
@@ -29,6 +30,195 @@
   .app {
     min-height: 100dvh;
   }
+}
+
+/* ============================================================
+   Lateral clara das áreas de atendimento (.sidebar--clinical)
+
+   A lateral escura do App.css pintava o nome da marca e a aba ativa com
+   --gold-2, que é a cor ESCURA da clínica (accent-strong): sobre o fundo
+   escuro isso dava contraste de 1,0:1 a 2,0:1 nas 10 cores da paleta.
+   Clara, a aba ativa (accent-strong sobre accent-wash) fica entre 7:1 e
+   14:1 — medido em forms-visual-standard.test.mjs. Cor da clínica só na
+   aba ativa, na marca e nos avatares; o resto é texto preto.
+
+   O SuperAdm não recebe a classe e mantém a lateral própria
+   (.super-admin-app .sidebar no App.css). Estas regras vêm ANTES das
+   faixas de telefone/tablet abaixo, que continuam valendo por cima.
+   ============================================================ */
+.sidebar--clinical {
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  border-right: 1px solid var(--r1-border-subtle);
+  box-shadow: none;
+  padding: 18px 14px 20px;
+  scrollbar-color: color-mix(in srgb, var(--r1-ink) 18%, transparent) transparent;
+}
+
+.sidebar--clinical:hover {
+  scrollbar-color: color-mix(in srgb, var(--r1-ink) 32%, transparent) transparent;
+}
+
+.sidebar--clinical::-webkit-scrollbar-thumb,
+.sidebar--clinical:hover::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--r1-ink) 22%, transparent);
+}
+
+.sidebar--clinical .logo {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 2px 6px 14px;
+  border-bottom-color: var(--r1-border-subtle);
+}
+
+.sidebar--clinical .logo h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.1px;
+  color: var(--r1-text);
+}
+
+.sidebar--clinical .logo p {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  font-style: normal;
+  color: var(--r1-text-subtle);
+}
+
+/* "Vitalis" como assinatura, abaixo do nome da clínica. */
+.sidebar--clinical .sidebar-brand p {
+  font-size: 10px;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+}
+
+.sidebar-brand-mark {
+  flex: none;
+  color: var(--r1-accent);
+}
+
+.sidebar--clinical .sidebar-profile {
+  margin: 14px 0 12px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+}
+
+.sidebar--clinical .sidebar-profile > span,
+.sidebar--clinical .sidebar-patient-avatar {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sidebar--clinical .sidebar-profile b {
+  color: var(--r1-text);
+  font-weight: 600;
+}
+
+.sidebar--clinical .sidebar-profile small {
+  color: var(--r1-text-subtle);
+  font-size: 11.5px;
+}
+
+.sidebar--clinical .sidebar-switch-area {
+  margin: 0 0 12px;
+  padding: 7px 12px;
+  border: 1px solid var(--r1-slate-300);
+  background: var(--r1-surface);
+  box-shadow: none;
+  color: var(--r1-text);
+  font-weight: 600;
+}
+
+.sidebar--clinical .sidebar-switch-area:hover {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+  box-shadow: none;
+  color: var(--r1-text);
+  transform: none;
+}
+
+.sidebar--clinical .sidebar-patient {
+  border-color: var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+}
+
+.sidebar--clinical .sidebar-patient:hover {
+  border-color: var(--r1-accent);
+  background: var(--r1-surface-sunken);
+}
+
+.sidebar--clinical .sidebar-patient-empty:hover {
+  border-color: var(--r1-border-subtle);
+}
+
+.sidebar--clinical .sidebar-patient-main small,
+.sidebar--clinical .sidebar-patient-main em {
+  color: var(--r1-text-subtle);
+}
+
+.sidebar--clinical .nav-group-title {
+  margin: 14px 0 4px;
+  padding: 0 10px;
+  letter-spacing: .08em;
+  color: var(--r1-text-subtle);
+}
+
+.sidebar--clinical .nav button {
+  padding: 8px 10px 8px 11px;
+  border-radius: 0 var(--r1-radius-sm) var(--r1-radius-sm) 0;
+  color: var(--r1-text);
+  font-size: 13px;
+}
+
+.sidebar--clinical .nav button .nav-icon {
+  opacity: 1;
+  color: var(--r1-text-subtle);
+}
+
+.sidebar--clinical .nav button:hover {
+  background: var(--r1-bg);
+  color: var(--r1-text);
+}
+
+.sidebar--clinical .nav button.active {
+  border-left-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-weight: 600;
+}
+
+.sidebar--clinical .nav button.active .nav-icon {
+  color: var(--r1-accent-strong);
+}
+
+.sidebar--clinical .nav button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--r1-focus-ring);
+}
+
+.sidebar--clinical .nav button.disabled,
+.sidebar--clinical .nav button:disabled,
+.sidebar--clinical .nav button.disabled:hover,
+.sidebar--clinical .nav button:disabled:hover {
+  background: transparent;
+  color: var(--r1-slate-400);
+}
+
+/* O ✕ da gaveta era branco para a lateral escura. */
+.sidebar--clinical .shell-drawer-close {
+  border-color: var(--r1-border-subtle);
+  color: var(--r1-text);
 }
 
 /* ============================================================

@@ -298,6 +298,7 @@ export function Sidebar({
   therapist,
   profileRole,
   disciplineLabel,
+  clinicName,
   onSwitchDiscipline,
   isSuperAdmin,
   superAdminSection = 'manage',
@@ -306,7 +307,6 @@ export function Sidebar({
   patientAge,
   sessionCount,
   lastVisit,
-  hasMultipleDisciplines,
   navGroups = NAV_GROUPS,
   patientTab = 'Painel',
   tabsWithoutPatient = ['Tela inicial', 'Biblioteca', 'Documentos'],
@@ -372,7 +372,10 @@ export function Sidebar({
         />
       )}
 
-      <aside className={`sidebar${drawerOpen ? ' sidebar--open' : ''}`}>
+      {/* sidebar--clinical: lateral clara das áreas de atendimento (cor da
+          clínica só na aba ativa e na marca). O SuperAdm mantém a própria
+          lateral escura (.super-admin-app .sidebar no App.css). */}
+      <aside className={`sidebar${isSuperAdmin ? '' : ' sidebar--clinical'}${drawerOpen ? ' sidebar--open' : ''}`}>
         <button
           type="button"
           className="shell-drawer-close no-print"
@@ -381,12 +384,27 @@ export function Sidebar({
         >
           ✕
         </button>
-      <div className="logo">
-        <div>
-          <h1>Vitalis</h1>
-          <p>Transformando limites em possibilidades</p>
+      {!isSuperAdmin && clinicName ? (
+        // Casa do cliente primeiro, plataforma como assinatura (mesmo
+        // princípio do topo do hub, .hub-wordmark).
+        <div className="logo sidebar-brand">
+          <svg className="sidebar-brand-mark" viewBox="0 0 40 40" width="28" height="28" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="17" stroke="currentColor" strokeWidth="2" />
+            <path d="M9 20h6l2.5-7 4 14 2.5-7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div>
+            <h1>{clinicName}</h1>
+            <p>Vitalis</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="logo">
+          <div>
+            <h1>Vitalis</h1>
+            <p>Transformando limites em possibilidades</p>
+          </div>
+        </div>
+      )}
 
       <div className="sidebar-profile">
         <span>{String(therapist || 'Profissional').slice(0, 2).toUpperCase()}</span>
@@ -404,7 +422,9 @@ export function Sidebar({
             <path d="m16 21 4-4-4-4" />
             <path d="M20 17H4" />
           </svg>
-          {hasMultipleDisciplines ? 'Mudar Especialidade (Acupuntura / Psicologia)' : 'Trocar de área'}
+          {/* Decisão de 25/09/2026: a ação é sempre voltar à tela principal
+              (escolha de área) — sem citar áreas, que variam por perfil. */}
+          Voltar à tela principal
         </button>
       )}
 

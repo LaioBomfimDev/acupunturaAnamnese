@@ -19,6 +19,14 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-09-24 - Lateral das áreas ilegível com a cor da clínica
+
+- Sintoma: na lateral escura das áreas de atendimento, o nome da marca, as iniciais e a aba ativa ficavam em cor escura sobre fundo escuro — contraste entre 1,0:1 e 2,0:1 nas 10 cores da paleta da clínica (medido a partir do CSS; não observado com login).
+- Causa: o rebrand fez `--gold-2` apontar para `--r1-accent-strong` (cor da clínica escurecida 34%), mas `.logo h1`, `.nav button.active` e os avatares da lateral escura continuaram usando `--gold-2` como cor de texto — antes era um dourado claro.
+- Regra nova: cor da clínica nunca como texto sobre superfície escura; texto na cor da clínica só sobre fundo claro, com contraste medido para a paleta inteira (AGENTS.md §7). A lateral das áreas passou a ser clara (`.sidebar--clinical`); o SuperAdm mantém a própria.
+- Junto: campos de texto das fichas caíam na fonte monoespaçada do navegador (o App.css nunca herdou a fonte em `textarea`); o kit agora declara `font-family: inherit`.
+- Teste obrigatório: `frontend/tests/regression/forms-visual-standard.test.mjs` mede aba ativa ≥ 4,5:1 e texto branco sobre a cor ≥ 4,5:1 para todas as cores de `CLINIC_BRAND_COLORS`, e exige a herança de fonte nos campos do kit.
+
 ### 2026-09-11 - Saída duplicada na entrada de atendimento
 
 - Sintoma: Psicologia exibia dois botões “Sair”; a duplicação também existia nas áreas que reutilizam o seletor com cabeçalho próprio.

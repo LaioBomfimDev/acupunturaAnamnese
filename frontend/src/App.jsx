@@ -648,6 +648,7 @@ export default function App() {
         therapist={therapistFirstName}
         profileRole={profile?.role}
         disciplineLabel={getDiscipline(activeDiscipline)?.label}
+        clinicName={profile?.clinic?.name || profile?.clinic_name}
         onSwitchDiscipline={handleSwitchDiscipline}
         isSuperAdmin={isSuperAdmin}
         superAdminSection={superAdminSection}
@@ -659,16 +660,24 @@ export default function App() {
         hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
       />
 
-      <main className="main">
+      {/* forms-scope: kit visual das fichas (styles/forms.css). O SuperAdm
+          fica fora — tem casca e painéis próprios. */}
+      <main className={`main${isSuperAdmin ? '' : ' forms-scope'}`}>
         {!isHome && (
         <div className="app-topbar no-print">
           <div>
+            {!isSuperAdminTab && (
+              <p className="app-eyebrow">
+                <span className="app-eyebrow-dot" style={{ background: getDiscipline('acupuntura')?.color }} aria-hidden="true" />
+                {profile?.clinic?.name || profile?.clinic_name || 'Clínica'} · Acupuntura
+              </p>
+            )}
             <h1>{isSuperAdminTab ? 'SuperAdm' : 'Paciente em atendimento'}</h1>
             {!isSuperAdmin && resolveUserDisciplines(profile).length > 1 && (
               <div className="active-specialty-badge">
                 Especialidade: <b>Acupuntura</b>
-                <button type="button" className="btn-switch-specialty-top" onClick={handleSwitchDiscipline} title="Mudar Especialidade">
-                  Alterar
+                <button type="button" className="btn-switch-specialty-top" onClick={handleSwitchDiscipline} title="Voltar à tela principal">
+                  Voltar à tela principal
                 </button>
               </div>
             )}

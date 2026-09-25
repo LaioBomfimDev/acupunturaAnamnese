@@ -3,6 +3,8 @@ import { CheckGrid } from '../ui/CheckGrid';
 import { FieldInput } from '../ui/FieldInput';
 import { QuickWordChips } from '../ui/QuickWordChips';
 import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
+import { FormLayout, FormRoute, FormSectionTitle } from '../ui/FormRoute';
+import { buildAnamneseRoute, findRouteItem } from '../../utils/formRoute';
 import {
   PSYCHOLOGY_AXES,
   PSYCHOLOGY_AXES_INTRO,
@@ -33,7 +35,7 @@ import {
 // ============================================================
 
 // Perguntas concretas do roteiro extraído, mostradas como guia de
-// escuta sob o rótulo do campo (o profissional lê e pergunta).
+// escuta entre o rótulo e a caixa (o profissional lê e pergunta).
 export function QuestionGuide({ questions }) {
   if (!Array.isArray(questions) || questions.length === 0) return null;
   return (
@@ -110,8 +112,8 @@ function PsychologyFieldBlock({
         value={session.fields?.[field.id]}
         onChange={onUpdateField}
         textarea={field.textarea}
+        guide={<QuestionGuide questions={field.questionGuide} />}
       />
-      <QuestionGuide questions={field.questionGuide} />
       <QuickWordChips
         words={mergeWords ? mergeWords(field.id, field.quickWords) : field.quickWords}
         onPick={word => onQuickWord(field.id, word)}
@@ -204,9 +206,10 @@ function PsychologyRiskCard({ item, active, onToggle }) {
         <button
           type="button"
           className={`tag${active ? ' active' : ''}`}
+          aria-pressed={active}
           onClick={() => onToggle(PSYCHOLOGY_RISK_GROUP, item.label)}
         >
-          {active ? '✓ ' : ''}{item.label}
+          {item.label}
         </button>
         {(item.screening.length > 0 || item.observe.length > 0) && (
           <button type="button" className="psi-risk-toggle" onClick={() => setOpen(v => !v)}>
@@ -271,6 +274,20 @@ function PsychologyAxes({ axes, notes, onNoteChange }) {
   );
 }
 
+// Vocabulário da Psicologia no formato do roteiro (mesmos títulos da tela).
+const PSYCHOLOGY_ROUTE_SPEC = {
+  textFields: PSYCHOLOGY_TEXT_FIELDS,
+  contextTitle: 'Contexto específico (abrir conforme o caso)',
+  contextModules: PSYCHOLOGY_CONTEXT_MODULES,
+  checklistsTitle: 'Sinais organizados (proposta a validar)',
+  checklistSections: PSYCHOLOGY_CHECKLIST_SECTIONS,
+  riskTitle: 'Sinais de risco (sempre conferir)',
+  riskGroup: PSYCHOLOGY_RISK_GROUP,
+  riskItems: PSYCHOLOGY_RISK_ITEMS,
+  axesTitle: 'Eixos de avaliação e formulação',
+  axes: PSYCHOLOGY_AXES,
+};
+
 export function PsychologyAnamnese({
   session,
   onUpdateField,
@@ -289,9 +306,12 @@ export function PsychologyAnamnese({
   const profileSections = getPsychologyProfileSections(session.intakeProfile);
   const showInformant = profile?.ageGroup === 'infantojuvenil';
   const { mergeWords, addWord } = useCustomQuickWords('psicologia');
+  const route = profile
+    ? buildAnamneseRoute({ ...PSYCHOLOGY_ROUTE_SPEC, sections: profileSections }, session)
+    : [];
+  const entry = id => findRouteItem(route, id);
 
-  return (
-    <section className="psi-anamnese">
+  const panel = (
       <div className="panel">
         <div className="panel-title">{profile?.label || 'Anamnese clínica — escolha o perfil'}</div>
         <div className="panel-body">
@@ -311,8 +331,8 @@ export function PsychologyAnamnese({
           ) : (
             <div className="box psi-profile-summary">
               <div>
+                {/* O nome do percurso já é o título do painel. */}
                 <p className="app-eyebrow">Percurso ativo</p>
-                <h3>{profile.label}</h3>
                 {showInformant && (
                   <p className="small">
                     Cada resposta identifica quem informou. Use “Guardar esta versão” antes de repetir
@@ -333,7 +353,7 @@ export function PsychologyAnamnese({
 
           {profile && (
             <>
-          <h3 className="psi-section-title">1. Escuta livre</h3>
+          <FormSectionTitle entry={entry('escuta')} />
           <p className="small">
             Registre com as suas palavras — os botões abaixo de cada campo escrevem por você.
             A revisão assistida (no painel lateral) sugere e redige em rascunho; você decide o que entra e pode corrigi-la.
@@ -353,9 +373,9 @@ export function PsychologyAnamnese({
             />
           ))}
 
-          {profileSections.map((section, sectionIndex) => (
+          {profileSections.map(section => (
             <div key={section.id} className="psi-profile-section">
-              <h3 className="psi-section-title">{sectionIndex + 2}. {section.title}</h3>
+              <FormSectionTitle entry={entry(`percurso-${section.id}`)} />
               {section.fields.map(field => (
                 <PsychologyFieldBlock
                   key={field.id}
@@ -373,9 +393,7 @@ export function PsychologyAnamnese({
             </div>
           ))}
 
-          <h3 className="psi-section-title">
-            {profileSections.length + 2}. Contexto específico (abrir conforme o caso)
-          </h3>
+          <FormSectionTitle entry={entry('contexto')} />
           <PsychologyContextModules
             session={session}
             showInformant={showInformant}
@@ -388,7 +406,7 @@ export function PsychologyAnamnese({
             onAddWord={addWord}
           />
 
-          <h3 className="psi-section-title">Sinais organizados (proposta a validar)</h3>
+          <FormSectionTitle entry={entry('sinais')} />
           <QuestionGuide questions={PSYCHOLOGY_FUNCTIONING_GUIDE} />
           {PSYCHOLOGY_CHECKLIST_SECTIONS.map(section => (
             <div key={section.group}>
@@ -402,7 +420,7 @@ export function PsychologyAnamnese({
             </div>
           ))}
 
-          <h3 className="psi-section-title psi-risk-title">Sinais de risco (sempre conferir)</h3>
+          <FormSectionTitle entry={entry('risco')} risk />
           <div className={`box psi-risk-box${riskSelected ? ' psi-risk-active' : ''}`}>
             <div className="psi-risk-cards">
               {PSYCHOLOGY_RISK_ITEMS.map(item => (
@@ -428,7 +446,7 @@ export function PsychologyAnamnese({
             />
           </div>
 
-          <h3 className="psi-section-title">Eixos de avaliação e formulação</h3>
+          <FormSectionTitle entry={entry('eixos')} />
           <PsychologyAxes
             axes={PSYCHOLOGY_AXES}
             notes={session.axisNotes || {}}
@@ -438,6 +456,11 @@ export function PsychologyAnamnese({
           )}
         </div>
       </div>
+  );
+
+  return (
+    <section className="psi-anamnese">
+      {profile ? <FormLayout route={<FormRoute items={route} />}>{panel}</FormLayout> : panel}
     </section>
   );
 }

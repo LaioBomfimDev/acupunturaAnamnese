@@ -49,8 +49,9 @@ test('seletor não duplica saída quando a área já fornece o cabeçalho', asyn
 test('entrada sem cabeçalho mantém uma saída e uma troca de especialidade', () => {
   const html = renderStart({ onSignOut: () => {}, hasMultipleDisciplines: true, onSwitchDiscipline: () => {} });
   assert.equal((html.match(/>Sair<\/button>/g) || []).length, 1);
-  assert.equal((html.match(/Mudar Especialidade/g) || []).length, 1);
-  assert.doesNotMatch(html, /Trocar Especialidade/);
+  // 25/09/2026: a troca virou "Voltar à tela principal" (sem citar áreas).
+  assert.equal((html.match(/>\s*Voltar à tela principal\s*</g) || []).length, 1);
+  assert.doesNotMatch(html, /Mudar Especialidade|Trocar Especialidade|Alternar para Psicologia/);
 });
 
 test('entrada concentra seleção e contagem na lista e identifica a busca', () => {

@@ -1,5 +1,7 @@
 import { Panel } from '../ui/Panel';
 import { FieldInput } from '../ui/FieldInput';
+import { FormLayout, FormRoute, FormSectionTitle } from '../ui/FormRoute';
+import { buildNeuroAssessmentRoute, findRouteItem } from '../../utils/formRoute';
 import {
   NEUROPSYCHOLOGY_DRAFT_NOTICE,
   NEUROPSYCHOLOGY_INSTRUMENT_TEMPLATES,
@@ -38,6 +40,8 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
   const summary = buildNeuropsychologySummary(evaluation);
   const sessions = Array.isArray(evaluation.sessions) ? evaluation.sessions : [];
   const instruments = Array.isArray(evaluation.instruments) ? evaluation.instruments : [];
+  const route = buildNeuroAssessmentRoute(evaluation);
+  const entry = id => findRouteItem(route, id);
 
   function updateReferral(field, value) {
     onChange({ ...evaluation, referral: { ...evaluation.referral, [field]: value } });
@@ -96,6 +100,7 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
   }
 
   return (
+    <FormLayout route={<FormRoute items={route} />}>
     <Panel title="Avaliação neuropsicológica">
       <div className="alert psi-draft-banner">
         <b>Rascunho para validação da neuropsicóloga.</b> {NEUROPSYCHOLOGY_DRAFT_NOTICE}
@@ -121,7 +126,7 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
       </div>
 
       <section className="psi-neuro-section">
-        <h3>1. Encaminhamento e perguntas da avaliação</h3>
+        <FormSectionTitle entry={entry('encaminhamento')} />
         <FieldInput label="Solicitante / encaminhamento" field="requester" value={evaluation.referral.requester} onChange={updateReferral} textarea />
         <FieldInput label="Motivo da avaliação" field="reason" value={evaluation.referral.reason} onChange={updateReferral} textarea />
         <FieldInput label="Perguntas que a avaliação precisa responder" field="questions" value={evaluation.referral.questions} onChange={updateReferral} textarea />
@@ -130,7 +135,7 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
       </section>
 
       <section className="psi-neuro-section">
-        <h3>2. Instrumentos e procedimentos</h3>
+        <FormSectionTitle entry={entry('instrumentos')} />
         <p className="small">
           Os atalhos são categorias iniciais baseadas no material enviado. A neuropsicóloga deve confirmar
           indicação, instrumento exato, condições de uso, correção e interpretação.
@@ -174,11 +179,9 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
       </section>
 
       <section className="psi-neuro-section">
+        <FormSectionTitle entry={entry('sessoes')} />
         <div className="psi-neuro-row-head">
-          <div>
-            <h3>3. Sessões e evoluções da avaliação</h3>
-            <p className="small">Dez sessões são o roteiro inicial; a profissional pode adicionar ou remover conforme o caso.</p>
-          </div>
+          <p className="small">Dez sessões são o roteiro inicial; a profissional pode adicionar ou remover conforme o caso.</p>
           <div className="psi-neuro-row-actions">
             <button type="button" className="tag" onClick={addSession}>Adicionar sessão</button>
             <button type="button" className="tag" onClick={removeLastSession} disabled={sessions.length <= 1}>Remover última</button>
@@ -218,7 +221,7 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
       </section>
 
       <section className="psi-neuro-section">
-        <h3>4. Integração profissional</h3>
+        <FormSectionTitle entry={entry('integracao')} />
         <p className="small">
           Campos interpretativos permanecem em rascunho até revisão explícita da neuropsicóloga.
           O sistema não transforma resultado de instrumento em diagnóstico automaticamente.
@@ -235,5 +238,6 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
         ))}
       </section>
     </Panel>
+    </FormLayout>
   );
 }

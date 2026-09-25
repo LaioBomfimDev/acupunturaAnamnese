@@ -185,7 +185,7 @@ export function DisciplineEvolucao({
       )}
 
       <div className="box">
-        <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia,serif' }}>Novo registro de sessão</h3>
+        <h3 className="form-subtitle">Novo registro de sessão</h3>
 
         {isLinked ? (
           <div className={`evo-appointment-banner${isFalta ? ' evo-appointment-banner--falta' : ''}`}>
@@ -254,7 +254,7 @@ export function DisciplineEvolucao({
         </button>
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia,serif' }}>Histórico das sessões</h3>
+      <h3 className="form-subtitle">Histórico das sessões</h3>
       <div style={{ overflowX: 'auto' }}>
         <table className="evo-table">
           <thead>

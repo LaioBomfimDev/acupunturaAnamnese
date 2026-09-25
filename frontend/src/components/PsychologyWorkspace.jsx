@@ -24,7 +24,7 @@ import {
 } from '../data/psychologyAnamnese';
 import { PSYCHOLOGY_INFORMANT_OPTIONS } from '../data/psychologyIntakeProfiles';
 import { getSuggestedContextModules } from '../data/psychologyContextModules';
-import { resolveUserDisciplines } from '../data/disciplines';
+import { getDiscipline, resolveUserDisciplines } from '../data/disciplines';
 import { PsychologyAnamnese } from './psychology/PsychologyAnamnese';
 import { PsychologyAssistantRail } from './psychology/PsychologyAssistantRail';
 import { PsychologyRelatorio } from './psychology/PsychologyRelatorio';
@@ -565,6 +565,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         therapist={therapistName}
         profileRole={profile?.role}
         disciplineLabel="Psicologia"
+        clinicName={profile?.clinic?.name || profile?.clinic_name}
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
@@ -576,10 +577,13 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
       />
 
-      <main className="main psi-main">
+      <main className="main psi-main forms-scope">
         <div className="app-topbar no-print">
           <div>
-            <p className="app-eyebrow">{clinicName} · Psicologia</p>
+            <p className="app-eyebrow">
+              <span className="app-eyebrow-dot" style={{ background: getDiscipline('psicologia')?.color }} aria-hidden="true" />
+              {clinicName} · Psicologia
+            </p>
             <h1>{selectedPatient ? 'Paciente em atendimento' : 'Área de Psicologia'}</h1>
           </div>
           <div className="app-topbar-actions">

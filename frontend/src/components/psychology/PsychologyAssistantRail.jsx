@@ -79,7 +79,7 @@ function PsychologyReviewAssist({ session, onSetSelection, patientName }) {
   const isMock = result?.modelVersion?.startsWith('mock');
 
   return (
-    <div className="box" style={{ borderColor: 'var(--gold)' }}>
+    <div className="box box--accent">
       <div>
         <b>Revisão assistida da anamnese (IA)</b>
         <p className="small" style={{ margin: '4px 0 8px' }}>{PSYCHOLOGY_AI_DISCLAIMER}</p>

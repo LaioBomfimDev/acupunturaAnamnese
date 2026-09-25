@@ -10,6 +10,7 @@ import {
 } from '../../src/data/neuropsychologyEvaluation.js';
 import { PSI_NEURO_RECORD_TYPE } from '../../src/data/psychologyAnamnese.js';
 import { DISCIPLINES } from '../../src/data/disciplines.js';
+import { buildNeuroAssessmentRoute } from '../../src/utils/formRoute.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -39,8 +40,16 @@ test('avaliação nasce com instrumentos, 10 sessões/evoluções, integração 
   const summary = buildNeuropsychologySummary(evaluation);
   assert.equal(summary.plannedSessions, 10);
   const assessment = await readPsi('PsychologyNeuroAssessment.jsx');
-  for (const text of ['Instrumentos e procedimentos', 'Sessões e evoluções da avaliação', 'Integração profissional']) {
-    assert.ok(assessment.includes(text));
+  // Desde 24/09/2026 os títulos das seções moram no roteiro da ficha
+  // (utils/formRoute.js) e a tela renderiza cada seção por FormSectionTitle.
+  const titles = buildNeuroAssessmentRoute(evaluation).map(item => item.title);
+  for (const [id, text] of [
+    ['instrumentos', 'Instrumentos e procedimentos'],
+    ['sessoes', 'Sessões e evoluções da avaliação'],
+    ['integracao', 'Integração profissional'],
+  ]) {
+    assert.ok(titles.includes(text), `roteiro sem a seção "${text}"`);
+    assert.ok(assessment.includes(`<FormSectionTitle entry={entry('${id}')} />`), `tela não renderiza a seção "${text}"`);
   }
   const report = await readPsi('PsychologyNeuroReport.jsx');
   assert.ok(report.includes('generateNeuropsychologyReport'));

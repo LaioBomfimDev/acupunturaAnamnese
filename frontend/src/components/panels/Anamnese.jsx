@@ -9,6 +9,12 @@ import { usePatient } from '../../hooks/PatientContext';
 import { getPatientAge } from '../../hooks/useClinicState';
 import { getClinicalSexContext } from '../../utils/analyzer';
 import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
+import { FormLayout, FormRoute, FormSectionTitle } from '../ui/FormRoute';
+import {
+  buildAcupunturaAnamneseRoute,
+  findRouteItem,
+  getAcupunturaReproductiveModule,
+} from '../../utils/formRoute';
 
 // Mesmo comportamento de appendQuickWord das demais disciplinas
 // (Fisio/Nutrição/Psicologia): pontuação e maiúscula na primeira
@@ -72,25 +78,26 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
   });
   const { mergeWords, addWord } = useCustomQuickWords('acupuntura');
   const sexContext = getClinicalSexContext(state.sexo);
-  const reproductiveModule = sexContext === 'feminino'
+  // Título, grupo e itens vêm do mesmo lugar que o roteiro usa
+  // (utils/formRoute.js), para trilho e seção nunca divergirem.
+  const reproductiveBase = getAcupunturaReproductiveModule(sexContext);
+  const reproductiveModule = reproductiveBase
     ? {
-        title: '7. Saúde menstrual, ginecológica e hormonal',
-        showLabel: 'Exibir módulo ginecológico',
+        ...reproductiveBase,
         hideLabel: 'Ocultar módulo',
-        helper: 'Registre ciclo, sintomas ginecológicos ou contexto hormonal apenas quando pertinentes ao atendimento.',
-        group: 'gineco',
-        items: checklists.gineco,
+        ...(sexContext === 'feminino'
+          ? {
+              showLabel: 'Exibir módulo ginecológico',
+              helper: 'Registre ciclo, sintomas ginecológicos ou contexto hormonal apenas quando pertinentes ao atendimento.',
+            }
+          : {
+              showLabel: 'Exibir módulo urogenital',
+              helper: 'Registre sintomas urinários, sexuais ou contexto hormonal apenas quando pertinentes ao atendimento.',
+            }),
       }
-    : sexContext === 'masculino'
-      ? {
-          title: '7. Saúde urogenital, sexual e hormonal',
-          showLabel: 'Exibir módulo urogenital',
-          hideLabel: 'Ocultar módulo',
-          helper: 'Registre sintomas urinários, sexuais ou contexto hormonal apenas quando pertinentes ao atendimento.',
-          group: 'urogenital',
-          items: checklists.urogenital,
-        }
-      : null;
+    : null;
+  const route = buildAcupunturaAnamneseRoute(state, selectedMap, sexContext);
+  const entry = id => findRouteItem(route, id);
 
   function openPatientEdit() {
     setPatientForm({
@@ -120,6 +127,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
   }
 
   return (
+    <FormLayout route={<FormRoute items={route} />}>
     <Panel title="Anamnese clínica avançada">
       <div className="box">
         <div className="anamnese-intro">
@@ -135,7 +143,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
         </div>
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>1. Identificação</h3>
+      <FormSectionTitle entry={entry('identificacao')} />
       <div className="identity-panel">
         <div className="identity-grid">
           <div>
@@ -215,7 +223,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
         <FieldInput label="Data do atendimento" field="data" value={state.data} onChange={onUpdate} />
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>2. Queixa principal</h3>
+      <FormSectionTitle entry={entry('queixa')} />
       <FieldInput label="Queixa principal" field="queixa" value={state.queixa} onChange={onUpdate} textarea />
       <AnamneseQuickWords fieldId="queixa" value={state.queixa} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
       <FieldInput label="História da queixa / evolução / fatores de piora e melhora" field="historia" value={state.historia} onChange={onUpdate} textarea />
@@ -223,8 +231,8 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <h4>Características da queixa</h4>
       <CheckGrid group="queixaEstruturada" items={checklists.queixaEstruturada} selectedMap={selectedMap} onToggle={onToggle} />
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>3. Sono e emoções</h3>
-      <div className="alert" style={{ background: '#f8fbff', borderColor: '#c9d8ef', color: '#061F3A' }}>
+      <FormSectionTitle entry={entry('sono')} />
+      <div className="alert alert-info">
         Registro único: sono e emoções serão usados pela IA para Shen, Fígado, Coração, Baço, Rim e relação Yin/Yang.
       </div>
       <h4>Sono</h4>
@@ -234,7 +242,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <FieldInput label="Observações sobre sono, sonhos, rotina e estado emocional" field="obsSonoEmocoes" value={state.obsSonoEmocoes} onChange={onUpdate} textarea />
       <AnamneseQuickWords fieldId="obsSonoEmocoes" value={state.obsSonoEmocoes} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>4. Digestão, eliminação e hidratação</h3>
+      <FormSectionTitle entry={entry('digestao')} />
       <div className="form-grid">
         <FieldInput label="Consumo de água" field="agua" value={state.agua} onChange={onUpdate} />
       </div>
@@ -246,7 +254,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <BristolScale />
       <CheckGrid group="fezes" items={checklists.fezes} selectedMap={selectedMap} onToggle={onToggle} />
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>5. Dor e sinais físicos</h3>
+      <FormSectionTitle entry={entry('dor')} />
       <div className="form-grid">
         <FieldInput label="Localização principal da dor" field="dorLocal" value={state.dorLocal} onChange={onUpdate} />
         <FieldInput label="Período de referência da dor" field="dorPeriodoReferencia" value={state.dorPeriodoReferencia} onChange={onUpdate} />
@@ -263,7 +271,7 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <FieldInput label="Observações sobre dor, postura, irradiação, exames ou limitações funcionais" field="obsDor" value={state.obsDor} onChange={onUpdate} textarea />
       <AnamneseQuickWords fieldId="obsDor" value={state.obsDor} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>6. Histórico clínico integrado</h3>
+      <FormSectionTitle entry={entry('historico')} />
       <CheckGrid group="historico" items={checklists.historico} selectedMap={selectedMap} onToggle={onToggle} />
       <FieldInput label="Medicamentos, exames, diagnósticos prévios e observações médicas" field="medicacoes" value={state.medicacoes} onChange={onUpdate} textarea />
       <AnamneseQuickWords fieldId="medicacoes" value={state.medicacoes} onUpdate={onUpdate} mergeWords={mergeWords} onAddWord={addWord} />
@@ -272,14 +280,18 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
       <h4>Medicamentos, substâncias e estimulantes</h4>
       <CheckGrid group="substanciasUso" items={checklists.substanciasUso} selectedMap={selectedMap} onToggle={onToggle} />
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {reproductiveModule?.title || '7. Saúde reprodutiva e hormonal'}
+      <FormSectionTitle entry={entry('reprodutiva')}>
         {reproductiveModule && (
-          <button type="button" className="tag" onClick={() => setShowReproductiveHealth(!showReproductiveHealth)} style={{ fontSize: 13, margin: 0 }}>
+          <button
+            type="button"
+            className="tag form-section-action"
+            aria-expanded={showReproductiveHealth}
+            onClick={() => setShowReproductiveHealth(!showReproductiveHealth)}
+          >
             {showReproductiveHealth ? reproductiveModule.hideLabel : reproductiveModule.showLabel}
           </button>
         )}
-      </h3>
+      </FormSectionTitle>
       {!reproductiveModule && (
         <p className="small">Informe o sexo clínico apenas se isso for pertinente ao caso. Sem essa informação, o sistema não presume ciclo menstrual, anatomia ou queixas urogenitais.</p>
       )}
@@ -290,9 +302,10 @@ export function Anamnese({ state, selectedMap, onToggle, onUpdate, onFillTestAns
         <CheckGrid group={reproductiveModule.group} items={reproductiveModule.items} selectedMap={selectedMap} onToggle={onToggle} />
       )}
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>8. Segurança clínica</h3>
+      <FormSectionTitle entry={entry('seguranca')} risk />
       <div className="alert">Marque sinais que exigem cautela, adaptação técnica ou encaminhamento.</div>
-      <CheckGrid group="seguranca" items={checklists.seguranca} cols={2} selectedMap={selectedMap} onToggle={onToggle} />
+      <CheckGrid group="seguranca" items={checklists.seguranca} cols={2} selectedMap={selectedMap} onToggle={onToggle} tone="risk" />
     </Panel>
+    </FormLayout>
   );
 }

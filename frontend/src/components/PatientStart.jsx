@@ -83,8 +83,8 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
           {hasMultipleDisciplines && (
             <div className="home-specialty-switcher-banner">
               Você está na área de <b>Acupuntura</b>
-              <button type="button" className="btn-switch-specialty-top" onClick={onSwitchDiscipline} title="Alternar para Psicologia">
-                Mudar Especialidade
+              <button type="button" className="btn-switch-specialty-top" onClick={onSwitchDiscipline} title="Voltar à tela principal">
+                Voltar à tela principal
               </button>
             </div>
           )}

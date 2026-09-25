@@ -4,6 +4,8 @@ import { FieldInput } from '../ui/FieldInput';
 import { QuickWordChips } from '../ui/QuickWordChips';
 import { BristolScale } from '../ui/BristolScale';
 import { useCustomQuickWords } from '../../hooks/useCustomQuickWords';
+import { FormLayout, FormRoute, FormSectionTitle } from '../ui/FormRoute';
+import { buildAnamneseRoute, findRouteItem } from '../../utils/formRoute';
 import {
   getProfile,
   getProfileSections,
@@ -23,7 +25,7 @@ import {
 // conduta nem fecha diagnóstico — isso é da profissional.
 // ============================================================
 
-// Perguntas de escuta mostradas sob o rótulo do campo: o profissional
+// Perguntas de escuta mostradas entre o rótulo e a caixa: o profissional
 // lê e pergunta. Não é texto a inserir na ficha.
 export function QuestionGuide({ questions }) {
   if (!Array.isArray(questions) || questions.length === 0) return null;
@@ -43,8 +45,8 @@ export function AnamneseFieldBlock({ field, session, onUpdateField, onQuickWord,
         value={session.fields?.[field.id]}
         onChange={onUpdateField}
         textarea={field.textarea}
+        guide={<QuestionGuide questions={field.questionGuide} />}
       />
-      <QuestionGuide questions={field.questionGuide} />
       {field.showBristolScale && <BristolScale />}
       <QuickWordChips
         words={mergeWords ? mergeWords(field.id, field.quickWords) : field.quickWords}
@@ -118,9 +120,10 @@ function RiskCard({ item, group, active, onToggle }) {
         <button
           type="button"
           className={`tag${active ? ' active' : ''}`}
+          aria-pressed={active}
           onClick={() => onToggle(group, item.label)}
         >
-          {active ? '✓ ' : ''}{item.label}
+          {item.label}
         </button>
         {(item.screening.length > 0 || item.observe.length > 0) && (
           <button type="button" className="psi-risk-toggle" onClick={() => setOpen(v => !v)}>
@@ -200,9 +203,12 @@ export function DisciplineAnamnese({
   const profile = getProfile(config, session.intakeProfile);
   const profileSections = getProfileSections(config, session.intakeProfile);
   const { mergeWords, addWord } = useCustomQuickWords(config.discipline);
+  const route = profile
+    ? buildAnamneseRoute({ ...config, sections: profileSections }, session)
+    : [];
+  const entry = id => findRouteItem(route, id);
 
-  return (
-    <section className="psi-anamnese">
+  const panel = (
       <div className="panel">
         <div className="panel-title">
           {profile?.label || `Anamnese de ${config.label} — escolha o percurso`}
@@ -224,8 +230,8 @@ export function DisciplineAnamnese({
           ) : (
             <div className="box psi-profile-summary">
               <div>
+                {/* O nome do percurso já é o título do painel. */}
                 <p className="app-eyebrow">Percurso ativo</p>
-                <h3>{profile.label}</h3>
                 <p className="small">{profile.description}</p>
               </div>
               <div className="psi-profile-summary-actions">
@@ -241,7 +247,7 @@ export function DisciplineAnamnese({
 
           {profile && (
             <>
-              <h3 className="psi-section-title">1. Escuta livre</h3>
+              <FormSectionTitle entry={entry('escuta')} />
               <p className="small">
                 Registre com as suas palavras — os botões abaixo de cada campo escrevem por você,
                 e as perguntas em cinza são guia de escuta, não texto a inserir.
@@ -258,9 +264,9 @@ export function DisciplineAnamnese({
                 />
               ))}
 
-              {profileSections.map((section, index) => (
+              {profileSections.map(section => (
                 <div key={section.id} className="psi-profile-section">
-                  <h3 className="psi-section-title">{index + 2}. {section.title}</h3>
+                  <FormSectionTitle entry={entry(`percurso-${section.id}`)} />
                   {section.fields.map(field => (
                     <AnamneseFieldBlock
                       key={field.id}
@@ -275,9 +281,7 @@ export function DisciplineAnamnese({
                 </div>
               ))}
 
-              <h3 className="psi-section-title">
-                {profileSections.length + 2}. {config.contextTitle}
-              </h3>
+              <FormSectionTitle entry={entry('contexto')} />
               <ContextModules
                 config={config}
                 session={session}
@@ -288,7 +292,7 @@ export function DisciplineAnamnese({
                 onAddWord={addWord}
               />
 
-              <h3 className="psi-section-title">{config.checklistsTitle}</h3>
+              <FormSectionTitle entry={entry('sinais')} />
               {config.checklistSections.map(section => (
                 <div key={section.group}>
                   <h4>{section.title}</h4>
@@ -301,7 +305,7 @@ export function DisciplineAnamnese({
                 </div>
               ))}
 
-              <h3 className="psi-section-title psi-risk-title">{config.riskTitle}</h3>
+              <FormSectionTitle entry={entry('risco')} risk />
               <div className={`box psi-risk-box${riskSelected ? ' psi-risk-active' : ''}`}>
                 <div className="psi-risk-cards">
                   {config.riskItems.map(item => (
@@ -328,7 +332,7 @@ export function DisciplineAnamnese({
                 />
               </div>
 
-              <h3 className="psi-section-title">{config.axesTitle}</h3>
+              <FormSectionTitle entry={entry('eixos')} />
               <Axes
                 config={config}
                 notes={session.axisNotes || {}}
@@ -338,6 +342,11 @@ export function DisciplineAnamnese({
           )}
         </div>
       </div>
+  );
+
+  return (
+    <section className="psi-anamnese">
+      {profile ? <FormLayout route={<FormRoute items={route} />}>{panel}</FormLayout> : panel}
     </section>
   );
 }

@@ -11,7 +11,7 @@ import {
   upsertVersionedClinicalRecord,
 } from '../services/clinicalRecordService';
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
-import { resolveUserDisciplines } from '../data/disciplines';
+import { getDiscipline, resolveUserDisciplines } from '../data/disciplines';
 import {
   NEUROPSYCHOLOGY_CONTENT_STATUS,
   NEUROPSYCHOLOGY_DRAFT_NOTICE,
@@ -301,6 +301,7 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
         therapist={therapistName}
         profileRole={profile?.role}
         disciplineLabel="Neuropsicologia"
+        clinicName={profile?.clinic?.name || profile?.clinic_name}
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
@@ -314,10 +315,13 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
       />
 
-      <main className="main psi-main">
+      <main className="main psi-main forms-scope">
         <div className="app-topbar no-print">
           <div>
-            <p className="app-eyebrow">{clinicName} · Neuropsicologia</p>
+            <p className="app-eyebrow">
+              <span className="app-eyebrow-dot" style={{ background: getDiscipline('neuropsicologia')?.color }} aria-hidden="true" />
+              {clinicName} · Neuropsicologia
+            </p>
             <h1>{selectedPatient ? 'Paciente em atendimento' : 'Workspace de Neuropsicologia'}</h1>
           </div>
           <div className="app-topbar-actions">

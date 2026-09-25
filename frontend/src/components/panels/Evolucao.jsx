@@ -310,7 +310,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
       <div className="evo-layout">
         {/* Formulário novo registro */}
         <div className="box">
-          <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif' }}>Novo registro de sessão</h3>
+          <h3 className="form-subtitle">Novo registro de sessão</h3>
 
           {isLinked ? (
             <div className={`evo-appointment-banner${isFalta ? ' evo-appointment-banner--falta' : ''}`}>
@@ -430,7 +430,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
 
         {/* Radar integrativo */}
         <div className="box">
-          <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif' }}>Radar integrativo atual</h3>
+          <h3 className="form-subtitle">Radar integrativo atual</h3>
           {METRICS.map(m => (
             <RadarLine
               key={m.key}
@@ -442,7 +442,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
       </div>
 
       {/* ── Comparação estatística ── */}
-      <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif' }}>Comparação estatística simples</h3>
+      <h3 className="form-subtitle">Comparação estatística simples</h3>
       <div className="metric-grid">
         {METRICS.map(m => (
           <TrendCard key={m.key} label={m.label} arr={getArr(m.key)} inverse={m.inverse} />
@@ -451,8 +451,8 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
 
       {/* ── Reavaliação funcional (somente leitura; edita-se no painel Reabilitação) ── */}
       {rehab && (
-        <div className="box" style={{ borderColor: 'var(--gold)' }}>
-          <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif', marginTop: 0 }}>Reabilitação funcional (reavaliação)</h3>
+        <div className="box box--accent">
+          <h3 className="form-subtitle" style={{ marginTop: 0 }}>Reabilitação funcional (reavaliação)</h3>
           <p className="small">
             {rehab.total} avaliação(ões) {rehabSingle ? 'registrada' : `entre ${rehab.primeira.data} e ${rehab.ultima.data}`}.{' '}
             Registre ou edite no painel <b>Reabilitação</b>. O sistema apenas exibe as medidas — sem interpretação.
@@ -479,7 +479,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
       )}
 
       {/* ── Resumo da evolução por IA ── */}
-      <div className="box" style={{ borderColor: 'var(--gold)' }}>
+      <div className="box box--accent">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <b>Resumo da evolução (IA)</b>
@@ -534,7 +534,7 @@ export function Evolucao({ state, onUpdate, evolucoes, patientId, activeAppointm
       </div>
 
       {/* ── Histórico das sessões ── */}
-      <h3 style={{ color:'var(--gold)', fontFamily:'Georgia,serif' }}>Histórico das sessões</h3>
+      <h3 className="form-subtitle">Histórico das sessões</h3>
       <div style={{ overflowX:'auto' }}>
         <table className="evo-table">
           <thead>

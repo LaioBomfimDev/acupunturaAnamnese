@@ -31,7 +31,7 @@ export function RaciocinioClinical({ state, selectedMap, analysis }) {
         anamnese em uma hipótese clínica única.
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>
+      <h3 className="form-subtitle">
         1. Predominância energética pelos 5 Movimentos
       </h3>
       <div className="cards">
@@ -51,7 +51,7 @@ export function RaciocinioClinical({ state, selectedMap, analysis }) {
         ))}
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>
+      <h3 className="form-subtitle">
         2. Dinâmica de geração, dominância e contradominância
       </h3>
       <div className="cycle-box">
@@ -63,7 +63,7 @@ export function RaciocinioClinical({ state, selectedMap, analysis }) {
       </div>
       {cycle.map((c, i) => <div key={i} className="warning">{c}</div>)}
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>
+      <h3 className="form-subtitle">
         3. Oito Princípios integrados
       </h3>
       <div className="box">
@@ -72,7 +72,7 @@ export function RaciocinioClinical({ state, selectedMap, analysis }) {
         ))}
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>
+      <h3 className="form-subtitle">
         4. Hipótese integrativa
       </h3>
       <div className="box">
@@ -83,7 +83,7 @@ export function RaciocinioClinical({ state, selectedMap, analysis }) {
         <p><b>Próxima pergunta inteligente:</b> {analysis.detail?.question || "Completar anamnese, língua e pulso."}</p>
       </div>
 
-      <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>
+      <h3 className="form-subtitle">
         5. Perguntas estratégicas sugeridas
       </h3>
       <div className="checkgrid two">

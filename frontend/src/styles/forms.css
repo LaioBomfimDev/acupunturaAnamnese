@@ -1,0 +1,1382 @@
+/* ============================================================
+   VITALIS — kit visual das fichas das disciplinas
+   ============================================================
+
+   Por que este arquivo existe: as fichas (Acupuntura, Fisioterapia,
+   Nutrição, Psicologia, Neuropsicologia e as fichas de evolução) ainda
+   vestiam o App.css antigo — faixa escura no topo de cada painel,
+   títulos em Georgia, checklist em grade de 3 colunas, todo aviso em
+   vermelho e borda de campo com contraste ~1,5:1. Todas montam a ficha
+   com as MESMAS peças (Panel, FieldInput, CheckGrid, QuickWordChips,
+   .box/.tag/.alert/.psi-*), então este arquivo reveste as cinco de uma
+   vez, sem mexer em pergunta, rota ou gravação.
+
+   Regras:
+   * Só tokens de tokens.css. Nenhuma cor literal aqui (o teste
+     forms-visual-standard.test.mjs reprova hex neste arquivo).
+   * Cor da CLÍNICA (--r1-accent) só em elementos principais: número de
+     seção, sinal marcado, botão primário, foco, aba ativa. Texto é preto.
+   * Vermelho é só risco; âmbar é só "em validação/rascunho".
+   * Tudo escopado em .forms-scope (main das áreas e a ficha dentro de
+     Evoluções). SuperAdm, hub, agenda e papel timbrado ficam de fora.
+   * Importado DEPOIS do App.css (main.jsx): mesma cascata do hub.css.
+   ============================================================ */
+
+.forms-scope {
+  font-family: var(--r1-font-sans);
+  color: var(--r1-text);
+}
+
+.forms-scope.psi-main {
+  background: var(--r1-bg);
+}
+
+/* ---------- topo da área ---------- */
+
+.forms-scope .app-topbar {
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.forms-scope .app-topbar h1 {
+  margin-top: 3px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--r1-text);
+}
+
+.forms-scope .app-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--r1-text-subtle) !important;
+}
+
+.app-eyebrow-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.forms-scope .mini-clock {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 0;
+  padding: 0 6px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1.15;
+}
+
+/* O App.css capitalizava cada palavra ("24 De Setembro De"); em pt-BR
+   só a primeira letra sobe. */
+.forms-scope .mini-clock span {
+  display: block;
+  font-size: 11.5px;
+  text-transform: none;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .mini-clock span::first-letter {
+  text-transform: uppercase;
+}
+
+.forms-scope .mini-clock b {
+  font-size: 19px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.forms-scope .topbar-button,
+.forms-scope .save-button {
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid var(--r1-slate-300);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  box-shadow: none;
+  color: var(--r1-text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.forms-scope .topbar-button:hover,
+.forms-scope .save-button:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .topbar-button:focus-visible,
+.forms-scope .save-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.forms-scope .save-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--r1-accent);
+  box-shadow: none;
+}
+
+.forms-scope .save-button-dirty {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+}
+
+.forms-scope .save-button-dirty .save-dot,
+.forms-scope .save-button-saving .save-dot {
+  background: var(--r1-amber-500);
+  box-shadow: none;
+}
+
+.forms-scope .save-button-saved {
+  border-color: var(--r1-slate-300);
+  color: var(--r1-success);
+}
+
+.forms-scope .save-button-saved .save-dot {
+  background: var(--r1-success);
+  box-shadow: none;
+}
+
+.forms-scope .save-button-error {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+}
+
+.forms-scope .save-button-error .save-dot {
+  background: var(--r1-danger);
+  box-shadow: none;
+}
+
+.forms-scope .save-time {
+  font-weight: 500;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .active-specialty-badge {
+  border-color: var(--r1-border-subtle);
+  background: var(--r1-surface);
+  border-radius: 999px;
+}
+
+.forms-scope .btn-switch-specialty-top {
+  border-color: var(--r1-slate-300);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.forms-scope .btn-switch-specialty-top:hover {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+  color: var(--r1-text);
+  box-shadow: none;
+}
+
+/* Avisos de validação/risco no topo da área (DisciplineWorkspace,
+   PsychologyWorkspace). */
+.forms-scope > .alert {
+  margin-bottom: 12px;
+}
+
+/* ---------- painel: folha clara, sem faixa escura ---------- */
+
+.forms-scope .panel {
+  background: var(--r1-surface);
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  box-shadow: none;
+}
+
+.forms-scope .panel-title {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  background: transparent;
+  color: var(--r1-text);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.forms-scope .panel-body {
+  padding: 18px 22px 24px;
+}
+
+.forms-scope .panel .small {
+  line-height: 1.5;
+}
+
+/* ---------- controles de formulário ----------
+   :where() mantém a especificidade baixa (0,2,0): classes próprias de
+   uma tela (.mini-input, .psi-axis-note…) continuam valendo quando
+   declaradas depois. Nada disso entra no papel do relatório (.report). */
+
+.forms-scope .panel :where(label):where(:not(.report *)) {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--r1-text);
+}
+
+.forms-scope .panel :where(
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):not([type='color']),
+  textarea,
+  select
+):where(:not(.report *)) {
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  padding: 9px 11px;
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  /* O App.css nunca herdou a fonte nos campos: textarea caía na
+     monoespaçada padrão do navegador. */
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.forms-scope .panel :where(textarea):where(:not(.report *)) {
+  min-height: 80px;
+}
+
+.forms-scope .panel :where(input:not([type='checkbox']):not([type='radio']), select):where(:not(.report *)) {
+  min-height: 40px;
+}
+
+.forms-scope .panel :where(input, textarea, select):where(:not(.report *)):focus {
+  outline: none;
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.forms-scope .panel :where(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--r1-accent);
+}
+
+.forms-scope .panel .mini-input {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+/* Campo com perguntas de escuta: rótulo → perguntas → caixa. */
+.forms-scope .field-block {
+  display: grid;
+  gap: 6px;
+}
+
+.forms-scope .field-block > :where(input, textarea) {
+  margin-top: 0;
+}
+
+.forms-scope .psi-field {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+
+.forms-scope .psi-question-guide {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 2px;
+  padding: 0;
+}
+
+.forms-scope .psi-question-guide li {
+  margin: 0;
+  padding-left: 14px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-question-guide li::before {
+  left: 1px;
+  top: -1px;
+  color: var(--r1-accent-strong);
+}
+
+/* Grade de campos curtos (Identificação, dor 0–10, instrumentos). */
+.forms-scope .form-grid {
+  gap: 12px 14px;
+  margin-bottom: 16px;
+}
+
+/* ---------- atalhos de texto: tracejados (escrevem, não marcam) ---------- */
+
+.forms-scope .quick-words {
+  gap: 5px;
+  margin: 0;
+}
+
+.forms-scope .quick-word-chip {
+  min-height: 26px;
+  padding: 3px 10px;
+  border: 1px dashed color-mix(in srgb, var(--r1-accent) 50%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-accent-strong);
+  font-size: 12px;
+}
+
+.forms-scope .quick-word-chip:hover {
+  border-style: solid;
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .quick-word-chip-add {
+  padding-inline: 11px;
+  font-weight: 700;
+}
+
+.forms-scope .panel .quick-word-chip-input {
+  width: 140px;
+  min-height: 26px;
+  padding: 3px 10px;
+  border: 1px solid var(--r1-accent);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.forms-scope .quick-word-chip-error {
+  margin: 4px 0 0;
+  color: var(--r1-danger);
+}
+
+/* ---------- sinais (checklist): pílulas ---------- */
+
+.forms-scope .checkgrid,
+.forms-scope .checkgrid.two {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 18px;
+}
+
+.forms-scope .panel h4:not(.report *) {
+  margin: 16px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--r1-text);
+}
+
+/* Botão genérico .tag (Editar cadastro, Trocar percurso, Remover…). */
+.forms-scope .panel .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 13px;
+  border: 1px solid var(--r1-slate-300);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.forms-scope .panel .tag:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .panel .tag.active {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.forms-scope .panel .tag:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.forms-scope .panel .tag:focus-visible,
+.forms-scope .panel .quick-word-chip:focus-visible,
+.forms-scope .psi-risk-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* Dentro da lista de sinais o .tag vira pílula. */
+.forms-scope .panel .checkgrid .tag {
+  min-height: 32px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-weight: 400;
+}
+
+.forms-scope .panel .checkgrid .tag:hover:not(:disabled) {
+  background: var(--r1-surface);
+}
+
+.forms-scope .panel .checkgrid .tag.active {
+  font-weight: 600;
+}
+
+.forms-scope .panel .checkgrid .tag.active:hover {
+  background: var(--r1-accent-strong);
+}
+
+/* Sinal de segurança/risco marca em vermelho, nunca na cor da clínica. */
+.forms-scope .panel .checkgrid--risk .tag:hover:not(:disabled) {
+  border-color: var(--r1-danger);
+}
+
+.forms-scope .panel .checkgrid--risk .tag.active,
+.forms-scope .panel .checkgrid--risk .tag.active:hover {
+  border-color: var(--r1-danger);
+  background: var(--r1-danger);
+  color: var(--r1-text-on-inverse);
+}
+
+/* ---------- botões de ação ---------- */
+
+.forms-scope .primary-button {
+  border: 1px solid var(--r1-accent);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-weight: 600;
+}
+
+.forms-scope .primary-button:hover:not(:disabled) {
+  border-color: var(--r1-accent-strong);
+  background: var(--r1-accent-strong);
+}
+
+.forms-scope .ai-analyze-btn {
+  padding: 9px 12px;
+  border: 1px solid var(--r1-accent);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.forms-scope .ai-analyze-btn:hover:not(:disabled) {
+  filter: none;
+  background: var(--r1-accent-strong);
+}
+
+.forms-scope .btn-mini {
+  border-color: var(--r1-slate-300);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
+.forms-scope .btn-mini:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .btn-mini.accept {
+  border-color: var(--r1-success);
+  background: var(--r1-surface);
+  color: var(--r1-success);
+}
+
+.forms-scope .btn-mini.danger {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+}
+
+/* ---------- caixas, cartões e avisos ---------- */
+
+.forms-scope .panel .box {
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+  padding: 14px 16px;
+}
+
+.forms-scope .panel .card {
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.forms-scope .panel .card h3 {
+  font-family: var(--r1-font-sans);
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.forms-scope .summary-cards {
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.forms-scope .summary-cards .card {
+  min-height: 0;
+  padding: 11px 14px;
+}
+
+.forms-scope .summary-cards .card .small {
+  margin: 0;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .summary-cards .card h3 {
+  margin: 3px 0 0;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Três tons, cada um com um só significado. .alert sem modificador
+   continua sendo risco/erro (é assim que o resto do app já usa). */
+.forms-scope .alert {
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-danger-bg);
+  color: var(--r1-text);
+  padding: 10px 13px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.forms-scope .alert-info {
+  border-color: var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+}
+
+.forms-scope .alert-warning,
+.forms-scope .psi-draft-banner {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-text);
+}
+
+.forms-scope .psi-risk-reminder {
+  border-color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+  color: var(--r1-text);
+}
+
+.forms-scope .psi-draft-badge,
+.forms-scope .psi-placeholder-badge {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+/* ---------- títulos de seção e roteiro da ficha ---------- */
+
+/* Subtítulo simples das telas que não têm roteiro (Reabilitação,
+   Raciocínio, fichas de evolução). Substitui o h3 em Georgia na cor da
+   clínica que estava escrito direto no JSX. */
+.form-subtitle {
+  margin: 24px 0 12px;
+  font-family: var(--r1-font-sans);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+  color: var(--r1-text);
+}
+
+.forms-scope .panel .box.box--accent {
+  border-color: var(--r1-accent);
+  background: var(--r1-surface);
+}
+
+.form-section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 28px 0 14px;
+  padding-top: 22px;
+  border-top: 1px solid var(--r1-border-subtle);
+  font-family: var(--r1-font-sans);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+  color: var(--r1-text);
+  scroll-margin-top: 16px;
+}
+
+.form-section-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1.5px solid var(--r1-accent);
+  border-radius: 7px;
+  color: var(--r1-accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-section-num--bare {
+  border-style: dashed;
+  border-color: var(--r1-slate-300);
+  color: var(--r1-text-subtle);
+}
+
+.form-section-num--risk {
+  border-color: var(--r1-danger);
+  color: var(--r1-danger);
+}
+
+.form-section-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.form-section-meta {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .panel .form-section-action {
+  min-height: 30px;
+  padding: 4px 11px;
+  font-size: 12px;
+}
+
+.form-shell {
+  container-type: inline-size;
+  margin-bottom: 22px;
+}
+
+.form-shell .panel {
+  margin-bottom: 0;
+}
+
+.form-layout {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.form-sheet {
+  min-width: 0;
+}
+
+.form-route {
+  position: sticky;
+  top: 16px;
+}
+
+.form-route-title {
+  margin: 2px 0 10px 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.form-route ol {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O trilho: a ordem da escuta ligando as seções. */
+.form-route ol::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: var(--r1-slate-300);
+}
+
+.form-route a {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 7px 8px 7px 6px;
+  border-radius: var(--r1-radius-sm);
+  color: var(--r1-text);
+  font-size: 12.5px;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.form-route a:hover {
+  background: var(--r1-surface);
+}
+
+.form-route a[aria-current='true'] {
+  background: var(--r1-surface);
+  box-shadow: 0 0 0 1px var(--r1-border-subtle);
+  font-weight: 600;
+}
+
+.form-route a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.form-route-text small {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--r1-text-subtle);
+}
+
+/* Anel de progresso: o preenchimento da seção em fração de volta. */
+.form-route-node {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: conic-gradient(var(--r1-accent) calc(var(--p, 0) * 1turn), var(--r1-slate-300) 0);
+}
+
+.form-route-node::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--r1-bg);
+}
+
+.form-route a:hover .form-route-node::after,
+.form-route a[aria-current='true'] .form-route-node::after {
+  background: var(--r1-surface);
+}
+
+.form-route a .form-route-node.is-done::after {
+  inset: 0;
+  background: var(--r1-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 9px no-repeat;
+}
+
+.form-route a .form-route-node.is-risk {
+  background: var(--r1-danger);
+}
+
+.form-route a .form-route-node.is-risk::after {
+  inset: 4px;
+  background: var(--r1-surface);
+}
+
+.form-route-foot {
+  margin: 12px 0 0 2px;
+  font-size: 11.5px;
+  color: var(--r1-text-subtle);
+}
+
+/* Coluna estreita (assistente ao lado, tablet): o trilho vira faixa de
+   atalhos no topo, rolando na horizontal. Nenhuma seção some. */
+@container (max-width: 760px) {
+  .form-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .form-route {
+    top: 0;
+    z-index: 5;
+    padding: 6px 0;
+    overflow-x: auto;
+    background: var(--r1-bg);
+  }
+
+  .form-route-title,
+  .form-route-foot,
+  .form-route-text small {
+    display: none;
+  }
+
+  .form-route ol {
+    display: flex;
+    gap: 4px;
+    width: max-content;
+  }
+
+  .form-route ol::before {
+    display: none;
+  }
+
+  .form-route a {
+    padding: 6px 10px 6px 8px;
+    white-space: nowrap;
+  }
+}
+
+/* ---------- identificação (Acupuntura) ---------- */
+
+.forms-scope .identity-panel {
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.forms-scope .identity-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.forms-scope .identity-grid span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .identity-grid b {
+  font-size: 13.5px;
+}
+
+.forms-scope .inline-edit {
+  border: 1px solid var(--r1-accent);
+  border-radius: var(--r1-radius-md);
+  background: color-mix(in srgb, var(--r1-accent) 5%, var(--r1-surface));
+}
+
+.forms-scope .anamnese-intro p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .anamnese-intro p b {
+  color: var(--r1-text);
+}
+
+.forms-scope .patient-consent {
+  color: var(--r1-text);
+}
+
+/* ---------- Escala de Bristol (apoio visual) ---------- */
+
+.forms-scope .panel .box.bristol-scale {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  background: var(--r1-surface);
+}
+
+.forms-scope .bristol-scale-item {
+  border-color: var(--r1-border-subtle);
+}
+
+.forms-scope .bristol-scale-item p {
+  color: var(--r1-text-subtle);
+}
+
+/* ---------- percurso ativo e escolha de percurso ---------- */
+
+.forms-scope .panel .box.psi-profile-summary {
+  align-items: flex-start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.forms-scope .psi-profile-summary h3 {
+  margin: 4px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.forms-scope .psi-profile-summary .small {
+  max-width: 68ch;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-path-hero h2 {
+  font-family: var(--r1-font-sans);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.forms-scope .psi-path-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.forms-scope .psi-path-card {
+  min-height: 0;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
+.forms-scope .psi-path-card:hover:not(:disabled) {
+  transform: none;
+  border-color: var(--r1-accent);
+  box-shadow: none;
+}
+
+.forms-scope .psi-path-card.active {
+  transform: none;
+  border-color: var(--r1-accent);
+  background: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-surface));
+  box-shadow: inset 0 0 0 1px var(--r1-accent);
+}
+
+.forms-scope .psi-path-card b {
+  font-size: 14.5px;
+}
+
+.forms-scope .psi-path-card small {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-path-card-icon {
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.forms-scope .psi-path-warning {
+  color: var(--r1-danger);
+}
+
+/* ---------- blocos de contexto: tracejado = por pertinência, fechado ---------- */
+
+.forms-scope .psi-context-modules {
+  gap: 8px;
+}
+
+.forms-scope .psi-context-modules > .small {
+  margin: -6px 0 6px;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .panel .box.psi-context-module {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px dashed var(--r1-slate-300);
+  background: var(--r1-surface-sunken);
+}
+
+.forms-scope .panel .box.psi-context-module.open {
+  border-style: solid;
+  border-color: var(--r1-border-subtle);
+  background: var(--r1-surface);
+}
+
+.forms-scope .psi-context-module.open .psi-context-module-head {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.forms-scope .psi-context-module-summary {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-context-module-count {
+  border: 0;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.forms-scope .panel .psi-context-module-head .tag {
+  min-height: 30px;
+  padding: 4px 11px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--r1-accent-strong);
+}
+
+.forms-scope .panel .psi-context-module-head .tag:hover {
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .panel .psi-context-module-head .tag.active {
+  border-color: var(--r1-slate-300);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
+/* ---------- sinais de risco: cor semântica de perigo ---------- */
+
+.forms-scope .panel .box.psi-risk-box {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.forms-scope .psi-risk-cards {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.forms-scope .psi-risk-card {
+  padding: 12px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.forms-scope .psi-risk-card.active {
+  border-color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+}
+
+/* O botão do cartão vira caixa de marcar (o ✓ é o próprio desenho). */
+.forms-scope .panel .psi-risk-card-head .tag,
+.forms-scope .panel .psi-risk-card-head .tag:hover:not(:disabled) {
+  gap: 9px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--r1-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.forms-scope .panel .psi-risk-card-head .tag::before {
+  content: "";
+  flex: none;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--r1-danger);
+  border-radius: 5px;
+  background: var(--r1-surface) center / 12px no-repeat;
+}
+
+.forms-scope .panel .psi-risk-card-head .tag.active::before {
+  background-color: var(--r1-danger);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+}
+
+/* Alinha com o texto do sinal, não com a caixa de marcar. */
+.forms-scope .psi-risk-card-head .psi-risk-toggle {
+  margin-left: 26px;
+}
+
+.forms-scope .psi-risk-toggle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text);
+  text-decoration-color: var(--r1-slate-400);
+  text-underline-offset: 3px;
+}
+
+.forms-scope .psi-risk-summary {
+  margin: 6px 0 0 26px;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-risk-detail {
+  margin-left: 26px;
+  border-top-color: var(--r1-danger-border);
+}
+
+.forms-scope .psi-risk-card-reminder {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--r1-danger);
+}
+
+/* ---------- eixos de raciocínio: cartões lado a lado ---------- */
+
+.forms-scope .psi-axes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 0;
+}
+
+.forms-scope .psi-axes > .small {
+  grid-column: 1 / -1;
+  margin: -6px 0 0;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-axis {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.forms-scope .psi-axis-head {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.forms-scope .psi-axis-head b {
+  font-size: 13.5px;
+  color: var(--r1-text);
+}
+
+.forms-scope .psi-axis-tag {
+  background: var(--r1-bg);
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .psi-axis-summary {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .panel .psi-axis-note {
+  min-height: 64px;
+  margin: 0;
+}
+
+/* ---------- informante (Psicologia infantojuvenil) ---------- */
+
+.forms-scope .psi-informant-box {
+  margin-top: 0;
+  padding: 10px 12px;
+  border-color: var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.forms-scope .psi-informant-fields {
+  align-items: flex-end;
+}
+
+.forms-scope .panel .psi-informant-fields > label {
+  font-size: 12px;
+}
+
+.forms-scope .psi-response-history-entry {
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+}
+
+.forms-scope .psi-response-history-entry small {
+  color: var(--r1-text-subtle);
+}
+
+/* ---------- avaliação neuropsicológica ---------- */
+
+.forms-scope .psi-neuro-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.forms-scope .psi-neuro-row-head .small {
+  margin: 0;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .panel .box.psi-neuro-instrument,
+.forms-scope .panel .box.psi-neuro-session {
+  background: var(--r1-surface);
+}
+
+.forms-scope .psi-neuro-session > summary span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--r1-bg);
+  color: var(--r1-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ---------- assistente lateral (IA) ---------- */
+
+.forms-scope .assistant-panel {
+  border-color: var(--r1-border-subtle);
+  box-shadow: none;
+}
+
+.forms-scope .assistant-panel .panel-title {
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  border-bottom: 0;
+  font-size: 13px;
+}
+
+.forms-scope .assistant-panel .panel-title::after {
+  order: -1;
+  width: 7px;
+  height: 7px;
+  background: var(--r1-accent);
+  box-shadow: none;
+}
+
+.forms-scope .assistant-panel .panel-body {
+  padding: 0 16px 16px;
+}
+
+.forms-scope .assistant-rail-following .assistant-panel {
+  border-color: var(--r1-accent);
+  box-shadow: none;
+  transform: none;
+}
+
+.forms-scope .synth-hypo,
+.forms-scope .synth-confidence,
+.forms-scope .synth-block {
+  border-top-color: var(--r1-border-subtle);
+}
+
+.forms-scope .synth-label {
+  color: var(--r1-text-subtle);
+  font-size: 10.5px;
+}
+
+.forms-scope .synth-hypo-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+/* Barra fina; o número sai para a direita da barra, legível em qualquer
+   cor de clínica (dentro da barra ele ficava sobre o preenchimento). */
+.forms-scope .synth-meter {
+  height: 8px;
+  margin: 10px 44px 0 0;
+  overflow: visible;
+  background: var(--r1-border-subtle);
+}
+
+.forms-scope .synth-meter-fill {
+  background: var(--r1-accent);
+}
+
+.forms-scope .synth-meter-val {
+  inset: -5px -44px auto auto;
+  width: 40px;
+  height: 18px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.forms-scope .synth-percent-note,
+.forms-scope .synth-reason,
+.forms-scope .synth-diff {
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .synth-block p,
+.forms-scope .deepdive-section p,
+.forms-scope .deepdive-section ul {
+  color: var(--r1-text);
+}
+
+.forms-scope .synth-flag {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.forms-scope .synth-badge {
+  border: 0;
+  font-weight: 700;
+}
+
+.forms-scope .synth-badge-alta {
+  background: color-mix(in srgb, var(--r1-success) 14%, transparent);
+  color: var(--r1-success);
+}
+
+.forms-scope .synth-badge-moderada {
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.forms-scope .synth-badge-baixa {
+  background: var(--r1-bg);
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .deepdive-redflags {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+}
+
+.forms-scope .synth-quick {
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+
+.forms-scope .quick-chip {
+  align-items: flex-start;
+  padding: 7px 9px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.forms-scope .quick-chip b {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.forms-scope .quick-chip span {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .quick-chip-alert {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+}
+
+.forms-scope .quick-chip-alert b {
+  color: var(--r1-danger);
+}
+
+/* Nada disso vai para o papel. */
+@media print {
+  .form-route {
+    display: none !important;
+  }
+
+  .form-layout {
+    display: block;
+  }
+}

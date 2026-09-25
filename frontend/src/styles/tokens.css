@@ -175,7 +175,9 @@
 
   --r1-field-bg: #ffffff;
   --r1-field-bg-disabled: var(--r1-slate-100);
-  --r1-focus-ring: rgba(15, 76, 73, 0.34);
+  /* Anel de foco na cor da clínica (acompanha o override do AuthContext,
+     como o --r1-accent-wash). */
+  --r1-focus-ring: color-mix(in srgb, var(--r1-accent) 34%, transparent);
 
   --r1-scrim: rgba(11, 22, 20, 0.52);
 

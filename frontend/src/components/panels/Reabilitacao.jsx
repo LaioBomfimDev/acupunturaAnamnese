@@ -81,7 +81,7 @@ export function Reabilitacao({ state, onUpdate }) {
 
       {!rehabilitation.ativa ? (
         <div className="box">
-          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Avaliação não ativada</h3>
+          <h3 className="form-subtitle">Avaliação não ativada</h3>
           <p className="small">Ative apenas quando fizer sentido acompanhar funcionalidade ou resposta à reabilitação deste paciente.</p>
           <button type="button" className="tag active" onClick={activate}>
             Ativar avaliação de reabilitação
@@ -96,7 +96,7 @@ export function Reabilitacao({ state, onUpdate }) {
           </div>
 
           <div className="box">
-            <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Nova avaliação funcional</h3>
+            <h3 className="form-subtitle">Nova avaliação funcional</h3>
             <div className="form-grid">
               <label>
                 Data
@@ -129,7 +129,7 @@ export function Reabilitacao({ state, onUpdate }) {
             <button type="button" className="tag active" onClick={saveAssessment}>Registrar avaliação</button>
           </div>
 
-          <h3 style={{ color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>Histórico funcional</h3>
+          <h3 className="form-subtitle">Histórico funcional</h3>
           <div style={{ overflowX: 'auto' }}>
             <table className="evo-table">
               <thead>

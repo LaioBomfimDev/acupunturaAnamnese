@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Panel } from '../ui/Panel';
-import { getActiveTextFields, getProfile, getSelected } from '../../data/anamneseKit';
+import { describeEvolutionEntry, getActiveTextFields, getProfile, getSelected } from '../../data/anamneseKit';
 import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
 import {
   PrintFooter,
@@ -48,6 +48,17 @@ function InlineRow({ label, value, fallback = 'Não preenchido.' }) {
   return (
     <p style={{ margin: '14px 0', lineHeight: 1.65, fontSize: 16 }}>
       <b>{label}:</b> {value || fallback}
+    </p>
+  );
+}
+
+// Uma sessão da evolução: título com a data e, embaixo, cada indicador e
+// campo com o próprio rótulo — sem rótulo o texto vira um bloco corrido
+// e o leitor não sabe o que é conduta e o que é resposta.
+function EvolutionRow({ label, value }) {
+  return (
+    <p style={{ margin: '6px 0', lineHeight: 1.6, fontSize: 15 }}>
+      <b>{label}:</b> {value}
     </p>
   );
 }
@@ -208,19 +219,38 @@ export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp,
       {mode.scope === 'full' && evolucoes.length > 0 && (
         <>
           <h3 style={{ margin: '26px 0 10px', color: 'var(--navy)' }}>Evolução registrada</h3>
-          {evolucoes.map((evolucao, index) => (
-            <InlineRow
-              key={evolucao.id || index}
-              label={`Sessão ${evolucao.sessao || index + 1}${evolucao.data ? ` — ${evolucao.data}` : ''}`}
-              value={evolucao.attendanceStatus && evolucao.attendanceStatus !== 'attended'
-                ? `${ATTENDANCE_REPORT_LABELS[evolucao.attendanceStatus] || 'faltou'}.${evolucao.observacao ? ` ${evolucao.observacao}` : ''}`
-                : config.evolution.fields
-                  .map(field => String(evolucao[field.id] || '').trim())
-                  .filter(Boolean)
-                  .join(' ')}
-              fallback="sem descrição registrada."
-            />
-          ))}
+          {evolucoes.map((evolucao, index) => {
+            const isFalta = evolucao.attendanceStatus && evolucao.attendanceStatus !== 'attended';
+            const { indicators, fields: evolutionFields } = describeEvolutionEntry(config, evolucao);
+            return (
+              <div key={evolucao.id || index} style={{ margin: '18px 0' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>
+                  Sessão {evolucao.sessao || index + 1}{evolucao.data ? ` — ${evolucao.data}` : ''}
+                </p>
+                {isFalta ? (
+                  <EvolutionRow
+                    label="Presença"
+                    value={`${ATTENDANCE_REPORT_LABELS[evolucao.attendanceStatus] || 'faltou'}.${evolucao.observacao ? ` ${evolucao.observacao}` : ''}`}
+                  />
+                ) : (
+                  <>
+                    {indicators.length > 0 && (
+                      <EvolutionRow
+                        label="Indicadores"
+                        value={indicators.map(indicator => `${indicator.label}: ${indicator.value}`).join('; ')}
+                      />
+                    )}
+                    {evolutionFields.map(field => (
+                      <EvolutionRow key={field.id} label={field.label} value={field.value} />
+                    ))}
+                    {indicators.length === 0 && evolutionFields.length === 0 && (
+                      <p style={{ margin: '6px 0', fontSize: 15 }}>Sem descrição registrada.</p>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </>
       )}
 

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
-import { hasRiskSelected } from '../../data/anamneseKit';
+import { hasRiskSelected, validateEvolutionIndicators } from '../../data/anamneseKit';
 import { insertPatientEvolution } from '../../services/patientEvolutionService';
 import { createIdempotencyKey } from '../../services/clinicalSaveQueue';
 import { validateFaltaObservation } from '../../utils/evolutionQueue';
@@ -98,6 +98,11 @@ export function DisciplineEvolucao({
       const hasContent = config.evolution.fields.some(field => String(form[field.id] || '').trim());
       if (!hasContent) {
         setSaveError('Preencha ao menos um campo antes de registrar a sessão.');
+        return;
+      }
+      const indicatorError = validateEvolutionIndicators(config, form);
+      if (indicatorError) {
+        setSaveError(indicatorError);
         return;
       }
     }

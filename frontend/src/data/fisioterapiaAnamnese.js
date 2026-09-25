@@ -823,10 +823,10 @@ export const FISIOTERAPIA_ANAMNESE = {
       'Registre cada atendimento: conduta realizada, resposta, intercorrências e progressão. '
       + 'Os indicadores servem para comparar sessões — quem lê a evolução é você.',
     indicators: [
-      { id: 'eva', label: 'Dor (EVA 0-10)' },
-      { id: 'amplitude', label: 'Amplitude (% do esperado)' },
-      { id: 'forca', label: 'Força (0-5)' },
-      { id: 'percepcaoMelhora', label: 'Percepção de melhora (0-10)' },
+      { id: 'eva', label: 'Dor (EVA 0-10)', min: 0, max: 10 },
+      { id: 'amplitude', label: 'Amplitude (% do esperado)', min: 0, max: 200 },
+      { id: 'forca', label: 'Força (0-5)', min: 0, max: 5, grade: true },
+      { id: 'percepcaoMelhora', label: 'Percepção de melhora (0-10)', min: 0, max: 10 },
     ],
     fields: [
       { id: 'conduta', label: 'Conduta realizada nesta sessão', placeholder: 'Exercícios e dose, terapia manual, recursos…' },

@@ -208,3 +208,61 @@ export function buildWorkspaceSummary(config, session) {
           : config.readyAction,
   };
 }
+
+// ---- Evolução ----------------------------------------------------
+// Indicador de evolução é NÚMERO para comparar sessões. `min`/`max` na
+// config são trava de digitação (EVA 11, força 9, peso 725 no lugar de
+// 72,5), não faixa clínica. `grade` aceita o +/- das escalas graduadas
+// (força 4+ / 4-). Vazio é permitido: indicador é opcional.
+
+const INDICATOR_NUMBER = /^(\d+(?:[.,]\d+)?)$/;
+const INDICATOR_GRADE = /^(\d+(?:[.,]\d+)?)([+-]?)$/;
+
+function formatIndicatorBound(value) {
+  return value.toLocaleString('pt-BR');
+}
+
+function describeIndicatorRange(indicator) {
+  const min = indicator.min ?? 0;
+  const range = Number.isFinite(indicator.max)
+    ? `use um número de ${formatIndicatorBound(min)} a ${formatIndicatorBound(indicator.max)}`
+    : `use um número a partir de ${formatIndicatorBound(min)}`;
+  return indicator.grade ? `${range} (aceita + ou -, como 4+)` : range;
+}
+
+/**
+ * Primeiro indicador inválido do formulário, como mensagem pronta para
+ * a tela; null quando está tudo certo.
+ */
+export function validateEvolutionIndicators(config, form) {
+  for (const indicator of config?.evolution?.indicators || []) {
+    const raw = String(form?.[indicator.id] ?? '').trim();
+    if (!raw) continue;
+    const match = raw.match(indicator.grade ? INDICATOR_GRADE : INDICATOR_NUMBER);
+    const value = match ? Number(match[1].replace(',', '.')) : Number.NaN;
+    const sign = match?.[2] || '';
+    const min = indicator.min ?? 0;
+    const max = indicator.max ?? Number.POSITIVE_INFINITY;
+    const valid = Number.isFinite(value)
+      && value >= min
+      && value <= max
+      && !(sign === '+' && value >= max)
+      && !(sign === '-' && value <= min);
+    if (!valid) return `${indicator.label}: ${describeIndicatorRange(indicator)}.`;
+  }
+  return null;
+}
+
+/**
+ * Indicadores e campos preenchidos de uma sessão, com o rótulo da
+ * config — base do relatório, para não imprimir texto solto sem título.
+ */
+export function describeEvolutionEntry(config, entry) {
+  const filledWithLabel = items => (items || [])
+    .map(item => ({ id: item.id, label: item.label, value: String(entry?.[item.id] ?? '').trim() }))
+    .filter(item => item.value);
+  return {
+    indicators: filledWithLabel(config?.evolution?.indicators),
+    fields: filledWithLabel(config?.evolution?.fields),
+  };
+}

@@ -721,10 +721,10 @@ export const NUTRICAO_ANAMNESE = {
       'Registre cada retorno: o que foi ajustado, dificuldades relatadas e metas pactuadas. '
       + 'Os indicadores servem para comparar consultas — a leitura clínica é sua.',
     indicators: [
-      { id: 'peso', label: 'Peso (kg)' },
-      { id: 'cintura', label: 'Cintura (cm)' },
-      { id: 'adesao', label: 'Adesão ao combinado (0-10)' },
-      { id: 'sintomas', label: 'Sintomas digestivos (0-10)' },
+      { id: 'peso', label: 'Peso (kg)', min: 0, max: 400 },
+      { id: 'cintura', label: 'Cintura (cm)', min: 0, max: 250 },
+      { id: 'adesao', label: 'Adesão ao combinado (0-10)', min: 0, max: 10 },
+      { id: 'sintomas', label: 'Sintomas digestivos (0-10)', min: 0, max: 10 },
     ],
     fields: [
       { id: 'trabalhado', label: 'O que foi trabalhado nesta consulta', placeholder: 'Orientações, ajustes, educação alimentar…' },

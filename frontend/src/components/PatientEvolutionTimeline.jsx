@@ -3,6 +3,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { getDiscipline } from '../data/disciplines';
 import { getAnamneseConfig } from '../data/anamneseRegistry';
+import { validateEvolutionIndicators } from '../data/anamneseKit';
 import { listPatientEvolutions, updatePatientEvolution } from '../services/patientEvolutionService';
 import { listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { formatRegisteredSessionCount, getClinicLetterheadColor } from '../utils/reportUtils';
@@ -180,6 +181,14 @@ export function PatientEvolutionTimeline({ patient, therapistProfile, onBack }) 
   }
 
   async function saveEdit(entry) {
+    // Mesma trava de digitação do formulário de evolução (só as
+    // disciplinas com config genérica têm faixa de indicador).
+    const config = entry.conteudo.tipo === 'falta' ? null : getAnamneseConfig(entry.discipline);
+    const indicatorError = config ? validateEvolutionIndicators(config, editForm) : null;
+    if (indicatorError) {
+      setSaveError(indicatorError);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {

@@ -1370,6 +1370,347 @@
   color: var(--r1-danger);
 }
 
+/* ---------- abas próprias de Fisioterapia e Nutrição ---------- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.forms-scope .area-intro {
+  margin: 0 0 4px;
+  max-width: 72ch;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .area-empty {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--r1-slate-300);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .area-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+/* Campo curto com rótulo em cima (medidas, datas, selects). */
+.forms-scope .panel .measure-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.forms-scope .panel .measure-field > span small {
+  font-weight: 500;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .panel .measure-field :where(input, select) {
+  width: 100%;
+  margin-top: 0;
+}
+
+.forms-scope .measure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px 14px;
+  margin-bottom: 8px;
+}
+
+/* Linha de "adicionar" (articulação + movimento + lado → botão). */
+.forms-scope .measure-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.forms-scope .measure-add .measure-field {
+  flex: 1 1 190px;
+}
+
+.forms-scope .measure-add .tag {
+  min-height: 40px;
+}
+
+.forms-scope .measure-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.forms-scope .measure-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.6fr) repeat(2, minmax(90px, 0.7fr)) auto auto;
+  gap: 10px 12px;
+  align-items: end;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.forms-scope .measure-row--strength {
+  grid-template-columns: minmax(180px, 1.6fr) minmax(110px, 0.7fr) minmax(170px, 1fr) auto;
+}
+
+.forms-scope .measure-row--scale {
+  grid-template-columns: minmax(180px, 1.4fr) minmax(90px, 0.6fr) minmax(110px, 0.6fr) minmax(140px, 1fr) auto;
+}
+
+.forms-scope .measure-row--exam {
+  grid-template-columns: minmax(170px, 1.3fr) minmax(90px, 0.6fr) minmax(80px, 0.5fr) minmax(110px, 0.6fr) minmax(130px, 1fr) auto;
+}
+
+.forms-scope .measure-row-title {
+  display: grid;
+  gap: 2px;
+  align-self: center;
+}
+
+.forms-scope .measure-row-title b {
+  font-size: 13px;
+}
+
+.forms-scope .measure-row-title small {
+  font-size: 11.5px;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .measure-row .check-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* IMC e relação cintura-quadril calculados. */
+.forms-scope .calc-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.forms-scope .calc-item {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-accent);
+  border-radius: var(--r1-radius-md);
+  background: color-mix(in srgb, var(--r1-accent) 5%, var(--r1-surface));
+}
+
+.forms-scope .calc-item span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .calc-item b {
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+
+.forms-scope .calc-item small {
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+/* Testes especiais: nome + resultado + lado. */
+.forms-scope .test-group h4 {
+  margin-top: 14px;
+}
+
+.forms-scope .test-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 6px 14px;
+  margin-top: 8px;
+}
+
+.forms-scope .test-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 110px;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: var(--r1-radius-sm);
+}
+
+.forms-scope .test-row.is-positive {
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .test-name {
+  font-size: 13px;
+}
+
+.forms-scope .panel .test-row select {
+  min-height: 34px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+}
+
+/* Recordatório por refeição. */
+.forms-scope .meal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.forms-scope .meal-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+}
+
+.forms-scope .meal-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.forms-scope .meal-row-head > b {
+  font-size: 14px;
+  align-self: center;
+}
+
+.forms-scope .meal-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.forms-scope .meal-row-meta .measure-field {
+  width: 150px;
+}
+
+/* Histórico de medidas. */
+.forms-scope .history-table-wrap {
+  overflow-x: auto;
+}
+
+.forms-scope .history-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.forms-scope .history-table th {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--r1-slate-300);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .history-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.forms-scope .history-table tr[aria-current='true'] td {
+  background: var(--r1-accent-wash);
+}
+
+/* Painel: atalhos para cada aba de avaliação, com o andamento. */
+.forms-scope .area-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.forms-scope .area-shortcut {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.forms-scope .area-shortcut:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.forms-scope .area-shortcut:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.forms-scope .area-shortcut:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.forms-scope .area-shortcut b {
+  font-size: 13.5px;
+}
+
+.forms-scope .area-shortcut small {
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+@media (max-width: 760px) {
+  .forms-scope .measure-row,
+  .forms-scope .measure-row--strength,
+  .forms-scope .measure-row--scale,
+  .forms-scope .measure-row--exam {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .forms-scope .measure-row-title {
+    grid-column: 1 / -1;
+  }
+
+  .forms-scope .test-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .forms-scope .test-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .forms-scope .test-name {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Nada disso vai para o papel. */
 @media print {
   .form-route {

@@ -70,7 +70,10 @@ const ATTENDANCE_REPORT_LABELS = {
   excused: 'faltou (com justificativa)',
 };
 
-export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp, selectedPatient, therapistProfile, onRelatorioChange }) {
+// extraSections (opcional): seções das abas próprias da área (exame
+// físico, escalas, antropometria…), montadas por scope ('full' |
+// 'summary') — ver components/areas/disciplineAreas.js.
+export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp, selectedPatient, therapistProfile, onRelatorioChange, extraSections }) {
   const modes = config.report.modes;
   const [modeId, setModeId] = useState(modes[0].id);
   const [editing, setEditing] = useState(false);
@@ -99,6 +102,7 @@ export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp,
   const axes = config.axes
     .map(axis => ({ label: axis.label, value: String(session.axisNotes?.[axis.id] || '').trim() }))
     .filter(axis => axis.value);
+  const areaSections = typeof extraSections === 'function' ? extraSections(mode.scope) : [];
   const riskSigns = getSelected(session.selectedMap, config.riskGroup);
   const riskNotes = String(session.riskNotes || '').trim();
   // evolucoesProp já vem mesclada (legado + patient_evolutions, data do
@@ -197,6 +201,15 @@ export function DisciplineRelatorio({ config, session, evolucoes: evolucoesProp,
       <InlineRow label="Momento" value={`${sessaoLabel}.`} />
 
       {fields.map(field => <InlineRow key={field.id} label={field.label} value={`${field.value}.`} />)}
+
+      {areaSections.map(section => (
+        <div key={section.title}>
+          <h3 style={{ margin: '26px 0 10px', color: 'var(--navy)' }}>{section.title}</h3>
+          {section.rows.map((row, index) => (
+            <InlineRow key={`${row.label}-${index}`} label={row.label} value={`${row.value}.`} />
+          ))}
+        </div>
+      ))}
 
       {axes.length > 0 && (
         <>

@@ -117,6 +117,40 @@ const NAV_ICONS = {
       <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
     </>
   ),
+  // ── Abas próprias de Fisioterapia e Nutrição (components/areas) ──
+  'Exame físico': (
+    <>
+      <path d="M6 3v6a4 4 0 0 0 8 0V3" />
+      <path d="M10 13v2a5 5 0 0 0 10 0v-2" />
+      <circle cx="20" cy="11" r="2" />
+    </>
+  ),
+  'Escalas funcionais': (
+    <>
+      <path d="M4 20h16" />
+      <path d="M7 16v-4M12 16V8M17 16V5" />
+    </>
+  ),
+  'Antropometria': (
+    <>
+      <path d="M3 17 17 3l4 4L7 21z" />
+      <path d="m7 13 2 2M10 10l2 2M13 7l2 2" />
+    </>
+  ),
+  'Consumo alimentar': (
+    <>
+      <path d="M7 3v7a2 2 0 0 0 2 2v9" />
+      <path d="M11 3v7a2 2 0 0 1-2 2" />
+      <path d="M17 3c-1.5 1.5-2 3.5-2 6s1 3 2 3v9" />
+    </>
+  ),
+  'Exames': (
+    <>
+      <path d="M9 3h6" />
+      <path d="M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />
+      <path d="M7.5 15h9" />
+    </>
+  ),
   // ── Abas do workspace de Psicologia (Plano C) ──
   'Avaliação neuropsicológica': (
     <>

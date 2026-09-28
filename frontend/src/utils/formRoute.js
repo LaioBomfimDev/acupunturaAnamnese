@@ -15,6 +15,22 @@
 // ============================================================
 
 import { checklists } from '../data/checklists.js';
+import {
+  EXAM_TEXT_FIELDS,
+  PAIN_FIELDS,
+  VITAL_SIGNS,
+  normalizeFisioEscalas,
+  normalizeFisioExame,
+} from '../data/fisioterapiaAvaliacao.js';
+import {
+  ANTHRO_BASIC_FIELDS,
+  ANTHRO_COMPOSITION_FIELDS,
+  ANTHRO_SKINFOLD_FIELDS,
+  MEALS,
+  normalizeAntropometria,
+  normalizeConsumo,
+  normalizeExames,
+} from '../data/nutricaoAvaliacao.js';
 
 const filled = value => String(value ?? '').trim().length > 0;
 
@@ -228,6 +244,152 @@ export function buildNeuroAssessmentRoute(evaluation) {
       title: 'Integração profissional',
       done: NEURO_INTEGRATION_FIELD_IDS.filter(key => filled(integration[key])).length,
       total: NEURO_INTEGRATION_FIELD_IDS.length,
+    }),
+  ];
+}
+
+const countFilled = (source, fields) => fields.filter(field => filled(source?.[field.id])).length;
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+
+/** Fisioterapia → Exame físico (session.exameFisico). */
+export function buildFisioExameRoute(raw) {
+  const exame = normalizeFisioExame(raw);
+  const testsDone = Object.values(exame.testes).filter(entry => filled(entry?.result)).length;
+  return [
+    item({ id: 'fisio-sinais', number: '1', title: 'Sinais vitais', done: countFilled(exame.sinais, VITAL_SIGNS), total: VITAL_SIGNS.length }),
+    item({ id: 'fisio-dor', number: '2', title: 'Dor (0 a 10)', done: countFilled(exame.dor, PAIN_FIELDS), total: PAIN_FIELDS.length }),
+    item({
+      id: 'fisio-adm',
+      number: '3',
+      title: 'Amplitude de movimento',
+      done: exame.adm.filter(entry => filled(entry.active) || filled(entry.passive)).length,
+      total: exame.adm.length,
+      unitLabel: 'medidos',
+      hint: 'nenhum movimento adicionado',
+    }),
+    item({
+      id: 'fisio-forca',
+      number: '4',
+      title: 'Força muscular (MRC)',
+      done: exame.forca.filter(entry => filled(entry.grade)).length,
+      total: exame.forca.length,
+      unitLabel: 'graduados',
+      hint: 'nenhum grupo adicionado',
+    }),
+    item({
+      id: 'fisio-testes',
+      number: '5',
+      title: 'Testes especiais',
+      total: 0,
+      hint: testsDone ? plural(testsDone, 'teste registrado', 'testes registrados') : 'nenhum teste registrado',
+    }),
+    item({
+      id: 'fisio-achados',
+      number: '6',
+      title: 'Inspeção, palpação e outros achados',
+      done: countFilled(exame, EXAM_TEXT_FIELDS),
+      total: EXAM_TEXT_FIELDS.length,
+    }),
+  ];
+}
+
+/** Fisioterapia → Escalas funcionais (session.escalas). */
+export function buildFisioEscalasRoute(raw) {
+  const escalas = normalizeFisioEscalas(raw);
+  return [
+    item({
+      id: 'escalas-aplicadas',
+      number: '1',
+      title: 'Escalas aplicadas',
+      done: escalas.itens.filter(entry => filled(entry.score)).length,
+      total: escalas.itens.length,
+      unitLabel: 'com escore',
+      hint: 'nenhuma escala adicionada',
+    }),
+    item({
+      id: 'escalas-observacoes',
+      number: '2',
+      title: 'Observações da avaliação funcional',
+      done: filled(escalas.observacoes) ? 1 : 0,
+      total: 1,
+    }),
+  ];
+}
+
+/** Nutrição → Antropometria (session.antropometria), sobre a medida mais recente. */
+export function buildNutriAntropometriaRoute(raw) {
+  const { medidas } = normalizeAntropometria(raw);
+  const latest = medidas[0];
+  const composition = [...ANTHRO_SKINFOLD_FIELDS, ...ANTHRO_COMPOSITION_FIELDS];
+  return [
+    item({
+      id: 'antro-medidas',
+      number: '1',
+      title: 'Peso, altura e circunferências',
+      done: latest ? countFilled(latest, ANTHRO_BASIC_FIELDS) : 0,
+      total: latest ? ANTHRO_BASIC_FIELDS.length : 0,
+      hint: 'nenhuma medida registrada',
+    }),
+    item({
+      id: 'antro-composicao',
+      number: '2',
+      title: 'Dobras cutâneas e composição corporal',
+      done: latest ? countFilled(latest, composition) : 0,
+      total: latest ? composition.length : 0,
+      hint: 'nenhuma medida registrada',
+    }),
+    item({
+      id: 'antro-historico',
+      number: '3',
+      title: 'Histórico de medidas',
+      total: 0,
+      hint: medidas.length ? plural(medidas.length, 'medida', 'medidas') : 'sem histórico',
+    }),
+  ];
+}
+
+/** Nutrição → Consumo alimentar (session.consumo). */
+export function buildNutriConsumoRoute(raw) {
+  const consumo = normalizeConsumo(raw);
+  return [
+    item({ id: 'consumo-dia', number: '1', title: 'Dia avaliado', done: filled(consumo.tipoDia) ? 1 : 0, total: 1 }),
+    item({
+      id: 'consumo-refeicoes',
+      number: '2',
+      title: 'Recordatório 24 horas',
+      done: MEALS.filter(meal => filled(consumo.refeicoes[meal.id]?.alimentos)).length,
+      total: MEALS.length,
+      unitLabel: 'refeições registradas',
+    }),
+    item({
+      id: 'consumo-hidratacao',
+      number: '3',
+      title: 'Hidratação e observações',
+      done: [consumo.agua, consumo.observacoes].filter(filled).length,
+      total: 2,
+    }),
+  ];
+}
+
+/** Nutrição → Exames (session.exames). */
+export function buildNutriExamesRoute(raw) {
+  const exames = normalizeExames(raw);
+  return [
+    item({
+      id: 'exames-registrados',
+      number: '1',
+      title: 'Exames laboratoriais',
+      done: exames.itens.filter(entry => filled(entry.nome) && filled(entry.valor)).length,
+      total: exames.itens.length,
+      unitLabel: 'com resultado',
+      hint: 'nenhum exame adicionado',
+    }),
+    item({
+      id: 'exames-observacoes',
+      number: '2',
+      title: 'Observações sobre os exames',
+      done: filled(exames.observacoes) ? 1 : 0,
+      total: 1,
     }),
   ];
 }

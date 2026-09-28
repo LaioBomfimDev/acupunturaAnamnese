@@ -18,23 +18,28 @@ import { getAnamneseConfig } from '../data/anamneseRegistry';
 import {
   buildWorkspaceSummary,
   createEmptySession,
+  getProfileSections,
   getSuggestedContextModules,
   normalizeSession,
 } from '../data/anamneseKit';
 import { DisciplineAnamnese } from './anamnese/DisciplineAnamnese';
 import { DisciplineRelatorio } from './anamnese/DisciplineRelatorio';
+import { getDisciplineArea } from './areas/disciplineAreas';
+import { buildAnamneseRoute, summarizeRoute } from '../utils/formRoute';
 
 const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
 
 // ============================================================
-// Workspace GENÉRICO de disciplina (fisioterapia, nutrição e as
-// próximas). Espelha o shell da Psicologia — sidebar, topbar,
-// autosave, painel + anamnese — mas sem nada específico de uma área:
-// tudo o que varia vem da configuração (data/anamneseRegistry.js).
+// Casca das áreas com anamnese no motor comum (fisioterapia, nutrição).
+// Espelha o shell da Psicologia — sidebar, topbar, autosave, painel +
+// anamnese — e cada área acrescenta as PRÓPRIAS abas de avaliação
+// (components/areas/disciplineAreas.js): Exame físico e Escalas na
+// Fisioterapia; Antropometria, Consumo alimentar e Exames na Nutrição.
 //
 // Persistência: UM registro por disciplina carrega a sessão inteira do
-// paciente (anamnese, evoluções e rascunhos), como no MTC e na Psi.
+// paciente (anamnese, abas próprias, evoluções e rascunhos), como no MTC
+// e na Psi. Esta casca é a peça única de gravação das duas áreas.
 //
 // Invariante: a ficha organiza e lembra; quem decide é a profissional.
 // ============================================================
@@ -47,17 +52,24 @@ const TABS = {
   DOCUMENTOS: 'Documentos',
 };
 
-const NAV_GROUPS = [
-  { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
-  { title: 'Avaliação', tabs: [TABS.ANAMNESE] },
-  { title: 'Documentos', tabs: [TABS.RELATORIO] },
-];
+function buildNavGroups(area) {
+  return [
+    { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
+    { title: 'Avaliação', tabs: [TABS.ANAMNESE, ...(area?.tabs || []).map(tab => tab.name)] },
+    { title: 'Documentos', tabs: [TABS.RELATORIO] },
+  ];
+}
+
+function routeStatus(items) {
+  const { done, total } = summarizeRoute(items);
+  return total ? `${done} de ${total} itens` : 'nada registrado ainda';
+}
 
 const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.DOCUMENTOS];
 
 // Escolha do percurso: define o roteiro específico e pré-abre os
 // módulos de contexto pertinentes.
-function PathChooser({ config, session, selectedPatient, onSelectProfile, onFillTestAnswers }) {
+function PathChooser({ config, session, selectedPatient, onSelectProfile, onFillTestAnswers, shortcuts = [], onOpenTab }) {
   const current = config.profiles.find(profile => profile.id === session.intakeProfile);
   return (
     <Panel title={`Boas-vindas — ${config.label}`}>
@@ -93,6 +105,26 @@ function PathChooser({ config, session, selectedPatient, onSelectProfile, onFill
           <h3>{current?.shortLabel || 'Ainda não definido'}</h3>
         </div>
       </div>
+
+      {shortcuts.length > 0 && (
+        <>
+          <h3 className="psi-section-title">Avaliação desta área</h3>
+          <div className="area-shortcuts">
+            {shortcuts.map(shortcut => (
+              <button
+                key={shortcut.tab}
+                type="button"
+                className="area-shortcut"
+                disabled={shortcut.disabled}
+                onClick={() => onOpenTab(shortcut.tab)}
+              >
+                <b>{shortcut.tab}</b>
+                <small>{shortcut.status}</small>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </Panel>
   );
 }
@@ -105,6 +137,9 @@ export function DisciplineWorkspace({
   onSignOut,
 }) {
   const config = getAnamneseConfig(disciplineId);
+  const area = getDisciplineArea(disciplineId);
+  const areaTabs = area?.tabs || [];
+  const navGroups = buildNavGroups(area);
   const { selectedPatient, activeAppointment } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
@@ -336,6 +371,11 @@ export function DisciplineWorkspace({
     setSession(prev => ({ ...prev, relatorio }));
   }
 
+  // Abas próprias da área: cada uma grava a sua chave na mesma sessão.
+  function updateSessionKey(key, value) {
+    setSession(prev => ({ ...prev, [key]: value }));
+  }
+
   function selectProfile(profileId) {
     setSession(prev => ({
       ...prev,
@@ -355,6 +395,17 @@ export function DisciplineWorkspace({
     ? TABS.HOME
     : activeTab;
   const summary = buildWorkspaceSummary(config, session);
+  const activeAreaTab = areaTabs.find(tab => tab.name === effectiveTab) || null;
+  const shortcuts = [
+    {
+      tab: TABS.ANAMNESE,
+      disabled: !session.intakeProfile,
+      status: session.intakeProfile
+        ? routeStatus(buildAnamneseRoute({ ...config, sections: getProfileSections(config, session.intakeProfile) }, session))
+        : 'escolha o percurso acima',
+    },
+    ...areaTabs.map(tab => ({ tab: tab.name, status: routeStatus(tab.route(session[tab.sessionKey])) })),
+  ];
   // Mescla o legado (session.evolucoes) com os registros novos vindos de
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
@@ -392,6 +443,18 @@ export function DisciplineWorkspace({
           selectedPatient={selectedPatient}
           therapistProfile={profile}
           onRelatorioChange={handleRelatorioChange}
+          extraSections={area ? scope => area.reportSections(session, scope, patientAge) : undefined}
+        />
+      );
+    }
+
+    if (activeAreaTab) {
+      const AreaPanel = activeAreaTab.Component;
+      return (
+        <AreaPanel
+          value={session[activeAreaTab.sessionKey]}
+          onChange={value => updateSessionKey(activeAreaTab.sessionKey, value)}
+          patientAge={patientAge}
         />
       );
     }
@@ -418,6 +481,8 @@ export function DisciplineWorkspace({
         session={session}
         selectedPatient={selectedPatient}
         onSelectProfile={selectProfile}
+        shortcuts={shortcuts}
+        onOpenTab={handleTabChange}
       />
     );
   }
@@ -437,7 +502,7 @@ export function DisciplineWorkspace({
         sessionCount={evolucoes.length}
         lastVisit=""
         hasMultipleDisciplines={hasMultipleDisciplines}
-        navGroups={NAV_GROUPS}
+        navGroups={navGroups}
         patientTab={TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
       />
@@ -470,6 +535,12 @@ export function DisciplineWorkspace({
         {effectiveTab === TABS.ANAMNESE && (
           <div className="alert psi-draft-banner">
             <b>Vocabulário em validação.</b> {config.draftNotice}
+          </div>
+        )}
+
+        {activeAreaTab && area?.notice && (
+          <div className="alert psi-draft-banner">
+            <b>Avaliação em validação.</b> {area.notice}
           </div>
         )}
 

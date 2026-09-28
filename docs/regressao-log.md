@@ -19,6 +19,16 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-09-25 - Compartilhar paciente falhava sempre (42702 ambíguo)
+
+- Sintoma: uma adm de clínica, dona da paciente, tentou enviar uma paciente de Psicologia para ela mesma na Acupuntura e depois para outra profissional; os dois envios mostraram só "O compartilhamento não foi criado. Revise os vínculos e tente novamente.". `record_shares` estava vazia em produção: nenhum envio tinha funcionado até então.
+- Causa: `create_record_share_after_reauthentication` declara `RETURNS TABLE (id, patient_id, ...)`, e em PL/pgSQL essas colunas viram variáveis. O `ON CONFLICT (patient_id, discipline)` do INSERT da matrícula de destino passou a colidir com a variável `patient_id` e o Postgres abortava com 42702 no último passo, depois de todas as validações. O defeito veio de `20260723_clinical_data_hardening.sql` e foi copiado em `20260818` e `20260910`; os testes só liam o texto da função, nunca a executavam. A Edge Function esconde o código do erro atrás de uma mensagem genérica (proposital, para não vazar detalhe), por isso parecia problema de vínculo.
+- Diagnóstico: RPC chamada como `service_role` em transação com ROLLBACK (`request.jwt.claims`), com os IDs reais; a correção foi validada do mesmo jeito antes de ser aplicada.
+- Correção: `supabase/migrations/20260925_record_share_enrollment_conflict_fix.sql` troca o alvo por `ON CONFLICT ON CONSTRAINT patient_enrollments_patient_id_discipline_key`, sem outra mudança no corpo. Aplicada em produção em 2026-09-25.
+- Regra nova: em função PL/pgSQL, `ON CONFLICT` usa `ON CONSTRAINT <nome>` sempre que uma coluna do alvo tiver o mesmo nome de uma coluna de `RETURNS TABLE`, de um parâmetro ou de uma variável.
+- Teste obrigatório: `frontend/tests/regression/plpgsql-on-conflict-ambiguity.test.mjs` percorre a versão vigente de todas as funções das migrations e falha se houver colisão.
+- Regra destilada em: `AGENTS.md` §9.
+
 ### 2026-09-24 - Lateral das áreas ilegível com a cor da clínica
 
 - Sintoma: na lateral escura das áreas de atendimento, o nome da marca, as iniciais e a aba ativa ficavam em cor escura sobre fundo escuro — contraste entre 1,0:1 e 2,0:1 nas 10 cores da paleta da clínica (medido a partir do CSS; não observado com login).

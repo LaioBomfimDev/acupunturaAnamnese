@@ -1,4 +1,6 @@
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
+import { fallbackGridLabel } from '../../../utils/agendaSettings';
+import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import { AgendaDayRows } from './AgendaDayRows';
 
 // ============================================================
@@ -41,6 +43,7 @@ export function AgendaDayView({
   onQuickMove,
 }) {
   const { rows, hasSchedule, holiday } = timeline;
+  const gridLabel = fallbackGridLabel(useAgendaSettings());
 
   return (
     <div className="agd">
@@ -75,7 +78,7 @@ export function AgendaDayView({
       {!hasSchedule && (
         <p className="agd-banner">
           Sem jornada cadastrada para este profissional neste dia — a grade
-          abaixo é só uma sugestão das 07h às 20h.{' '}
+          abaixo é só uma sugestão {gridLabel}.{' '}
           {onOpenSchedule && (
             <button type="button" className="agd-linkbtn" onClick={onOpenSchedule}>
               Cadastrar horários

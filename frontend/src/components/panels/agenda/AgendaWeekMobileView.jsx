@@ -1,5 +1,7 @@
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { buildDayTimeline } from '../../../utils/agendaTimeline';
+import { fallbackGridOf } from '../../../utils/agendaSettings';
+import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import { AgendaDayRows } from './AgendaDayRows';
 
 // ============================================================
@@ -34,10 +36,12 @@ export function AgendaWeekMobileView({
   onQuickConfirm,
   onQuickMove,
 }) {
+  const fallback = fallbackGridOf(useAgendaSettings());
+
   return (
     <div className="agwm" role="list" aria-label="Agenda da semana, um dia por vez">
       {week.map(day => {
-        const timeline = buildDayTimeline({ date: day.date, schedules, appointments, holidays });
+        const timeline = buildDayTimeline({ date: day.date, schedules, appointments, holidays, fallback });
 
         return (
           <section

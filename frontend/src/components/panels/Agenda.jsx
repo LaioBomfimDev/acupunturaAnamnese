@@ -27,13 +27,28 @@ import {
   createAppointment,
   createSeries,
   deleteAppointment,
+  deleteAppointments,
   listAppointments,
+  listSeriesFrom,
   rescheduleAppointment,
   updateAppointmentDetails,
   updateAppointmentStatus,
 } from '../../services/appointmentService';
 import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from '../../services/agendaScheduleService';
+import { loadAgendaSettings } from '../../services/agendaSettingsService';
+import {
+  appointmentLookAttrs,
+  disciplineColorFor,
+  fallbackGridOf,
+  hidesAppointment,
+  nextRescheduledFrom,
+  normalizeAgendaSettings,
+  rescheduledLabel,
+  seriesKindOf,
+  seriesMarkOf,
+} from '../../utils/agendaSettings';
+import { AgendaSettingsContext } from '../../hooks/AgendaSettingsContext';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -42,9 +57,10 @@ import { SearchSelect } from '../ui/SearchSelect';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
-  IconCake, IconCheck, IconCalendarCheck,
+  IconCake, IconCheck, IconCalendarCheck, IconSliders,
 } from './agenda/AgendaIcons';
 import AgendaDayView from './agenda/AgendaDayView';
+import AgendaSettingsEditor from './agenda/AgendaSettingsEditor';
 import AgendaWeekView from './agenda/AgendaWeekView';
 import AgendaWeekMobileView from './agenda/AgendaWeekMobileView';
 import BirthdaysPanel from './agenda/BirthdaysPanel';
@@ -156,10 +172,17 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     month: today.getMonth() + 1,
   }));
   const [selectedKey, setSelectedKey] = useState(() => toDayKey(today));
-  const [view, setView] = useState(() => (
-    VIEWS.some(item => item.id === initialView && item.id !== 'evolucoes-pendentes') ? initialView : DEFAULT_VIEW
-  ));
+  const hasInitialView = VIEWS.some(item => item.id === initialView && item.id !== 'evolucoes-pendentes');
+  const [view, setView] = useState(() => (hasInitialView ? initialView : DEFAULT_VIEW));
+  // A visão inicial da Configurar agenda chega depois da primeira
+  // pintura; só vale se ninguém já escolheu outra (link direto ou toque).
+  const viewTouchedRef = useRef(hasInitialView);
+  const durationTouchedRef = useRef(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [agendaSettings, setAgendaSettings] = useState(() => normalizeAgendaSettings(null));
+  const [agendaSettingsAvailable, setAgendaSettingsAvailable] = useState(true);
+  const [settingsNotice, setSettingsNotice] = useState('');
   const [showHolidays, setShowHolidays] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showBirthdays, setShowBirthdays] = useState(initialShowBirthdays);
@@ -224,6 +247,9 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   // liberado pra qualquer um com acesso à agenda — a diferença é que
   // excluir some do histórico/BI, então o corte é mais estrito.
   const canDeleteAppointment = profile?.role === 'clinic_admin' || profile?.role === 'super_admin';
+  // Espelha clinic_admin_update_agenda_settings (20260928): a regra vale
+  // para a equipe toda, então só o Admin da clínica altera.
+  const canConfigureAgenda = profile?.role === 'clinic_admin';
 
   const [form, setForm] = useState(() => ({
     kind: 'appointment',
@@ -269,6 +295,35 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   const [pendingException, setPendingException] = useState(null);
 
   const disciplineValue = form.discipline || availableDisciplines[0]?.id || '';
+
+  // Configuração da agenda da instituição. Se falhar, a agenda segue no
+  // padrão — mas avisa, em vez de parecer que a configuração sumiu.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { settings, available } = await loadAgendaSettings(profile?.clinic_id);
+        if (cancelled) return;
+        applyAgendaSettings(settings);
+        setAgendaSettingsAvailable(available);
+        setSettingsNotice('');
+      } catch (err) {
+        if (cancelled) return;
+        setSettingsNotice(`${err.message || 'Configuração da agenda indisponível.'} A agenda segue no visual padrão.`);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [profile?.clinic_id]);
+
+  function applyAgendaSettings(settings) {
+    setAgendaSettings(settings);
+    if (!viewTouchedRef.current) setView(settings.defaultView);
+    if (!durationTouchedRef.current) {
+      setForm(prev => ({ ...prev, durationMinutes: settings.defaultDurationMinutes }));
+    }
+  }
 
   // O flag de cancelamento evita que a resposta de um mês antigo
   // sobrescreva a do mês atual quando se troca de mês rápido.
@@ -335,9 +390,12 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   // parecer livre quando na verdade está bloqueado (buildDayTimeline
   // decide ROW_STATES.BLOCKED pela presença do bloqueio na lista).
   const visibleAppointments = useMemo(() => {
-    const byProfessional = agendaOf === ALL_PROFESSIONALS
+    const byProfessional = (agendaOf === ALL_PROFESSIONALS
       ? appointments
-      : appointments.filter(item => item.professional_id === agendaOf);
+      : appointments.filter(item => item.professional_id === agendaOf))
+      // "Esconder cancelados" (Configurar agenda): some da tela, não do
+      // banco nem dos relatórios; o filtro de status traz de volta.
+      .filter(item => !hidesAppointment(item, agendaSettings, statusFilter));
 
     if (!disciplineFilter && !statusFilter && !modalityFilter) return byProfessional;
 
@@ -349,7 +407,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       if (modalityFilter && item.modality !== modalityFilter) return false;
       return true;
     });
-  }, [appointments, agendaOf, disciplineFilter, statusFilter, modalityFilter]);
+  }, [appointments, agendaOf, disciplineFilter, statusFilter, modalityFilter, agendaSettings]);
 
   const byDay = useMemo(() => appointmentsByDay(visibleAppointments), [visibleAppointments]);
   const birthdays = useMemo(
@@ -424,7 +482,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     schedules: timelineSchedules,
     appointments: visibleAppointments,
     holidays,
-  }), [selectedDate, today, timelineSchedules, visibleAppointments, holidays]);
+    fallback: fallbackGridOf(agendaSettings),
+  }), [selectedDate, today, timelineSchedules, visibleAppointments, holidays, agendaSettings]);
 
   function patientName(id) {
     return patients.find(item => item.id === id)?.name || 'Paciente';
@@ -746,19 +805,41 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     persist(pendingException || slotEvaluation);
   }
 
+  /**
+   * A contagem do aviso vem do banco (`listSeriesFrom`), não de
+   * `appointments`: a tela só carrega o período visível, e o aviso dizia
+   * "e as 2 seguintes" enquanto `cancelSeriesFrom` cancelava as 9 do
+   * pacote. O filtro de status é o mesmo que `cancelSeriesFrom` aplica.
+   * Cancelar não pede motivo nem digitação — não é exclusão definitiva.
+   */
   async function handleCancelSeries(appointment) {
-    const total = appointments.filter(item => (
-      item.recurrence_group_id === appointment.recurrence_group_id
-      && new Date(item.starts_at) >= new Date(appointment.starts_at)
-      && item.status === 'scheduled'
-    )).length;
+    setError('');
+    setSaving(true);
+    let sessions;
+    try {
+      const series = await listSeriesFrom(appointment.recurrence_group_id, {
+        fromIso: appointment.starts_at,
+      });
+      sessions = series.filter(item => item.status === 'scheduled');
+    } catch (err) {
+      setError(err.message || 'Não foi possível ler as sessões do pacote.');
+      return;
+    } finally {
+      setSaving(false);
+    }
 
-    if (!window.confirm(
-      `Cancelar esta sessão e as ${total - 1} seguintes do pacote?
+    if (sessions.length === 0) {
+      setError('Nenhuma sessão agendada deste pacote a partir desta data.');
+      return;
+    }
 
-`
-      + 'As sessões já atendidas não são afetadas.',
-    )) return;
+    const dateOf = item => new Date(item.starts_at).toLocaleDateString('pt-BR');
+    const count = sessions.length;
+    const scope = count === 1
+      ? `Cancelar 1 sessão deste pacote (${dateOf(sessions[0])})? Não há outras agendadas depois dela.`
+      : `Cancelar ${count} sessões deste pacote (de ${dateOf(sessions[0])} a ${dateOf(sessions[count - 1])})?`;
+
+    if (!window.confirm(`${scope}\n\nAs sessões já atendidas não são afetadas.`)) return;
 
     setSaving(true);
     try {
@@ -768,7 +849,6 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       const byId = new Map(cancelled.map(item => [item.id, item]));
       setAppointments(prev => prev.map(item => byId.get(item.id) || item));
       setSelectedAppointment(null);
-      setError('');
     } catch (err) {
       setError(err.message || 'Não foi possível cancelar as sessões.');
     } finally {
@@ -822,6 +902,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         ).toISOString(),
         isException: evaluation.isException,
         exceptionReason: evaluation.reason,
+        // Sessão de pacote movida deixa de parecer fixa (Configurar agenda).
+        rescheduledFrom: nextRescheduledFrom(appointment, start.toISOString()),
       });
       setAppointments(prev => prev.map(item => (item.id === updated.id ? updated : item)));
       setMoving(null);
@@ -843,6 +925,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     if (dayKey !== selectedKey) setSelectedKey(dayKey);
     setSelectedAppointment(null);
     setPendingException(null);
+    durationTouchedRef.current = true;
     setForm(prev => ({
       ...prev,
       time: minutesToLabel(row.startMinutes),
@@ -907,6 +990,69 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setSelectedAppointment(prev => (prev?.id === appointment.id ? null : prev));
     } catch (err) {
       setError(err.message || 'Não foi possível excluir o agendamento.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Pacote marcado errado: apaga esta sessão e as seguintes com UMA
+   * confirmação por digitação, em vez de abrir e excluir uma a uma. A
+   * lista vem do banco (`listSeriesFrom`), não da tela — o pacote passa
+   * do período carregado.
+   */
+  async function handleDeleteSeries(appointment) {
+    setError('');
+    setSaving(true);
+    let sessions;
+    try {
+      sessions = await listSeriesFrom(appointment.recurrence_group_id, {
+        fromIso: appointment.starts_at,
+      });
+    } catch (err) {
+      setError(err.message || 'Não foi possível ler as sessões do pacote.');
+      return;
+    } finally {
+      setSaving(false);
+    }
+
+    if (sessions.length === 0) {
+      setError('Nenhuma sessão deste pacote encontrada a partir desta data.');
+      return;
+    }
+
+    const dateOf = item => new Date(item.starts_at).toLocaleDateString('pt-BR');
+    const count = sessions.length;
+    const scope = count === 1
+      ? `1 sessão deste pacote (${dateOf(sessions[0])})`
+      : `${count} sessões deste pacote (de ${dateOf(sessions[0])} a ${dateOf(sessions[count - 1])})`;
+
+    const confirmText = window.prompt(
+      `Isso apaga ${scope} PRA SEMPRE — somem da agenda e do histórico/relatórios, sem volta.\n\n`
+      + 'Use só quando o pacote foi marcado errado. Se o paciente desistiu do pacote, feche esta janela '
+      + 'e use "Cancelar esta e as próximas do pacote".\n\n'
+      + 'Para confirmar, digite excluir:',
+    );
+    if (confirmText === null) return;
+    if (!isDeleteConfirmationValid(confirmText)) {
+      setError('Exclusão não confirmada: digite exatamente "excluir" para apagar.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { deleted, failed } = await deleteAppointments(sessions);
+      const gone = new Set(deleted.map(item => item.id));
+      setAppointments(prev => prev.filter(item => !gone.has(item.id)));
+      setSelectedAppointment(prev => (prev && gone.has(prev.id) ? null : prev));
+      if (failed.length > 0) {
+        const done = deleted.length === 1 ? 'Foi excluída 1' : `Foram excluídas ${deleted.length}`;
+        setError(
+          `${done} de ${count} sessões. Ficaram: ${failed.map(dateOf).join(', ')} — ${failed[0].message}`,
+        );
+      }
+    } catch (err) {
+      setError(err.message || 'Não foi possível excluir as sessões.');
     } finally {
       setSaving(false);
     }
@@ -1061,6 +1207,17 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     );
   }
 
+  if (showSettings && canConfigureAgenda) {
+    return (
+      <AgendaSettingsEditor
+        settings={agendaSettings}
+        available={agendaSettingsAvailable}
+        onSaved={saved => { applyAgendaSettings(saved); setAgendaSettingsAvailable(true); setSettingsNotice(''); }}
+        onBack={() => setShowSettings(false)}
+      />
+    );
+  }
+
   if (showHolidays) {
     return (
       <HolidaysEditor
@@ -1083,6 +1240,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     }) || '';
 
   return (
+    <AgendaSettingsContext.Provider value={agendaSettings}>
     <div className={`ag${view === 'dia' ? ' ag--day' : ''}`}>
       <section className="ag-main">
         <header className="ag-head">
@@ -1132,6 +1290,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                       onOpenEvolutions();
                       return;
                     }
+                    viewTouchedRef.current = true;
                     setView(item.id);
                     resetTransient();
                   }}
@@ -1168,6 +1327,17 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             <IconFlagCalendar />
             Feriados
           </button>
+          {canConfigureAgenda && (
+            <button
+              type="button"
+              className="ag-btn ag-tool-btn"
+              onClick={() => setShowSettings(true)}
+              title="Visual do cancelado, fixo × avulso, cores e padrões da agenda — vale para a equipe toda"
+            >
+              <IconSliders />
+              Configurar<span className="ag-tool-long"> agenda</span>
+            </button>
+          )}
         </div>
 
         {CALENDAR_VIEWS.has(view) && (
@@ -1274,6 +1444,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
         {error && <div className="ag-alert" role="alert">{error}</div>}
         {notice && <div className="ag-notice">{notice}</div>}
+        {settingsNotice && <div className="ag-notice">{settingsNotice}</div>}
         {completedNote && <div className="ag-notice" role="status">{completedNote}</div>}
 
         {moving && (
@@ -1421,7 +1592,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                       // só selecionar a célula (sem trocar de visão) parece
                       // não ter feito nada, porque a grade do mês inteiro
                       // continua na tela.
-                      onClick={() => { selectDay(cell.key); setView('dia'); }}
+                      onClick={() => { selectDay(cell.key); viewTouchedRef.current = true; setView('dia'); }}
                       aria-pressed={cell.key === selectedKey}
                       title={holiday ? holiday.name : undefined}
                     >
@@ -1510,8 +1681,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
           ) : selectedAppointment ? (
             <div
               className="ag-detail"
-              style={selectedAppointment.kind !== 'block' && getDiscipline(selectedAppointment.discipline)?.color
-                ? { '--card-color': getDiscipline(selectedAppointment.discipline).color }
+              style={selectedAppointment.kind !== 'block' && disciplineColorFor(selectedAppointment.discipline, agendaSettings)
+                ? { '--card-color': disciplineColorFor(selectedAppointment.discipline, agendaSettings) }
                 : undefined}
             >
               <div className="ag-item-top">
@@ -1587,9 +1758,14 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 </div>
               )}
 
-              {selectedAppointment.recurrence_group_id && (
+              {seriesKindOf(selectedAppointment) && (
                 <p className="ag-detail-series">
-                  Faz parte de um pacote de sessões.
+                  {seriesKindOf(selectedAppointment) === 'fixed'
+                    ? 'Fixo: faz parte de um pacote de sessões.'
+                    : selectedAppointment.recurrence_group_id
+                    ? 'Avulso: sessão do pacote remarcada só desta vez.'
+                    : 'Avulso: marcado só para este dia, não se repete.'}
+                  {rescheduledLabel(selectedAppointment) && ` ${rescheduledLabel(selectedAppointment)}.`}
                 </p>
               )}
 
@@ -1632,7 +1808,19 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                   disabled={saving}
                   title="Some da agenda e do histórico pra sempre — use só se foi marcado errado"
                 >
-                  Excluir agendamento
+                  {selectedAppointment.recurrence_group_id ? 'Excluir só esta sessão' : 'Excluir agendamento'}
+                </button>
+              )}
+
+              {canDeleteAppointment && selectedAppointment.recurrence_group_id && (
+                <button
+                  type="button"
+                  className="ag-btn ag-btn--danger"
+                  onClick={() => handleDeleteSeries(selectedAppointment)}
+                  disabled={saving}
+                  title="Apaga esta sessão e todas as seguintes do pacote de uma vez — use só se o pacote foi marcado errado"
+                >
+                  Excluir esta e as próximas do pacote
                 </button>
               )}
             </div>
@@ -1648,7 +1836,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                   <ul className="ag-list">
                     {dayAppointments.map(item => {
                       const isBlock = item.kind === 'block';
-                      const disciplineColor = !isBlock ? getDiscipline(item.discipline)?.color : null;
+                      const disciplineColor = !isBlock ? disciplineColorFor(item.discipline, agendaSettings) : null;
+                      const seriesMark = seriesMarkOf(item, agendaSettings);
                       return (
                       <li
                         key={item.id}
@@ -1659,6 +1848,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           !isBlock && patientPending(item.patient_id) ? 'ag-item--pending' : '',
                         ].filter(Boolean).join(' ')}
                         style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
+                        {...appointmentLookAttrs(item, agendaSettings)}
                       >
                         <button
                           type="button"
@@ -1680,6 +1870,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           </span>
                           <span className="ag-item-meta">
                             {[
+                              seriesMark?.label,
                               item.kind === 'block' ? null : item.discipline,
                               showProfessional ? professionalName(item.professional_id) : null,
                             ].filter(Boolean).join(' · ')}
@@ -1961,7 +2152,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                       id="ag-duration"
                       className="ag-select"
                       value={form.durationMinutes}
-                      onChange={e => { setForm(prev => ({ ...prev, durationMinutes: Number(e.target.value) })); setPendingException(null); }}
+                      onChange={e => { durationTouchedRef.current = true; setForm(prev => ({ ...prev, durationMinutes: Number(e.target.value) })); setPendingException(null); }}
                       disabled={saving}
                     >
                       {[...new Set([Number(form.durationMinutes) || 60, 20, 30, 45, 60, 90, 120, 180, 240])]
@@ -2182,6 +2373,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         onSave={handleSaveEdit}
       />
     </div>
+    </AgendaSettingsContext.Provider>
   );
 }
 

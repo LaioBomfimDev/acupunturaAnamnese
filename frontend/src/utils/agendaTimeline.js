@@ -63,6 +63,9 @@ export function schedulesOfDay(schedules, date) {
  * @param schedules    professional_schedules do profissional escolhido
  * @param appointments agendamentos JÁ filtrados por profissional
  * @param holidays     [{ day, name, is_working_day }]
+ * @param fallback     { start, end, slot } em minutos — grade de quem não
+ *                     cadastrou jornada (Configurar agenda). Sem ele,
+ *                     07h–20h de hora em hora.
  *
  * @returns {{
  *   rows: Array<{ key, startMinutes, endMinutes, label, endLabel, state, items, fromSchedule }>,
@@ -75,6 +78,7 @@ export function buildDayTimeline({
   schedules = [],
   appointments = [],
   holidays = [],
+  fallback = null,
 } = {}) {
   const empty = { rows: [], hasSchedule: false, holiday: null };
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return empty;
@@ -130,8 +134,11 @@ export function buildDayTimeline({
       }
     }
   } else {
-    for (let cursor = FALLBACK_DAY_START; cursor < FALLBACK_DAY_END; cursor += FALLBACK_SLOT_MINUTES) {
-      pushRow(cursor, cursor + FALLBACK_SLOT_MINUTES, ROW_STATES.FREE, false);
+    const gridStart = Number.isFinite(fallback?.start) ? fallback.start : FALLBACK_DAY_START;
+    const gridEnd = Number.isFinite(fallback?.end) ? fallback.end : FALLBACK_DAY_END;
+    const gridSlot = fallback?.slot > 0 ? fallback.slot : FALLBACK_SLOT_MINUTES;
+    for (let cursor = gridStart; cursor < gridEnd; cursor += gridSlot) {
+      pushRow(cursor, Math.min(cursor + gridSlot, gridEnd), ROW_STATES.FREE, false);
     }
   }
 

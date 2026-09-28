@@ -25,7 +25,7 @@ const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 const APPOINTMENT_COLUMNS =
   'id,clinic_id,patient_id,professional_id,discipline,starts_at,ends_at,status,note,cancellation_reason,'
   + 'kind,appointment_type,modality,block_type,room,confirmed_at,checked_in_at,recurrence_group_id,is_exception,exception_reason,'
-  + 'created_by,created_at,updated_at';
+  + 'rescheduled_from,created_by,created_at,updated_at';
 
 // Espelha o CHECK appointments_kind_check da migração 20260810.
 export const APPOINTMENT_KINDS = ['appointment', 'block'];
@@ -772,6 +772,7 @@ export async function rescheduleAppointment(id, {
   endsAt,
   isException = false,
   exceptionReason = null,
+  rescheduledFrom,
   runtime,
 } = {}) {
   if (!id) throw new Error('Agendamento não informado.');
@@ -798,6 +799,9 @@ export async function rescheduleAppointment(id, {
     is_exception: isException === true,
     exception_reason: isException === true ? String(exceptionReason).trim() : null,
   };
+  // Horário original antes de mover (utils/agendaSettings.js →
+  // nextRescheduledFrom). undefined = quem chamou não sabe: não mexe.
+  if (rescheduledFrom !== undefined) patch.rescheduled_from = rescheduledFrom || null;
 
   if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
     const list = getLocalAppointments();
@@ -965,6 +969,12 @@ export async function deleteAppointment(id, { runtime } = {}) {
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsDeleteMessage(error));
+    // patient_evolutions.appointment_id é ON DELETE RESTRICT: sessão com
+    // evolução não se apaga, porque o prontuário não pode sumir junto.
+    if (error.code === '23503') {
+      throw new Error('Esta sessão já tem evolução registrada e não pode ser excluída — o prontuário '
+        + 'não se apaga junto com a agenda.');
+    }
     throw new Error(error.message || 'Não foi possível excluir o agendamento.');
   }
 
@@ -974,4 +984,76 @@ export async function deleteAppointment(id, { runtime } = {}) {
   if (!data) throw new Error(rlsDeleteMessage({ message: 'nenhuma linha afetada' }));
 
   return data;
+}
+
+/**
+ * Sessões de uma série a partir de uma data (inclusive), lidas do banco.
+ *
+ * Do banco e não da lista da tela: a agenda só carrega o período
+ * visível, e um pacote de 10 semanas passa disso — contar pelo que está
+ * na tela diria "3 sessões" e deixaria as outras 7 para trás.
+ */
+export async function listSeriesFrom(groupId, { fromIso, runtime } = {}) {
+  if (!groupId) throw new Error('Série não informada.');
+
+  const from = new Date(fromIso);
+  if (Number.isNaN(from.getTime())) throw new Error('Data inicial inválida.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    return getLocalAppointments()
+      .filter(item => item.recurrence_group_id === groupId && new Date(item.starts_at) >= from)
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  }
+
+  const { data, error } = await client.from('appointments')
+    .select(APPOINTMENT_COLUMNS)
+    .eq('recurrence_group_id', groupId)
+    .gte('starts_at', from.toISOString())
+    .order('starts_at', { ascending: true });
+
+  if (error) {
+    if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível ler as sessões do pacote.');
+  }
+
+  return data || [];
+}
+
+/**
+ * Exclui várias sessões de uma vez — pacote marcado errado.
+ *
+ * PARCIAL É DE PROPÓSITO, como em `createSeries`: uma sessão que já tem
+ * evolução o banco recusa apagar, e isso não pode segurar as outras nove.
+ * Cada falha volta com a data, para a tela dizer qual ficou.
+ *
+ * @param items [{ id, starts_at }]
+ * @returns { deleted: [], failed: [{ id, starts_at, message }] }
+ */
+export async function deleteAppointments(items, { runtime } = {}) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('Nenhuma sessão para excluir.');
+  }
+
+  const deleted = [];
+  const failed = [];
+  for (const item of items) {
+    try {
+      deleted.push(await deleteAppointment(item.id, { runtime }));
+    } catch (error) {
+      failed.push({
+        id: item.id,
+        starts_at: item.starts_at,
+        message: error.message || 'Não foi possível excluir a sessão.',
+      });
+    }
+  }
+
+  return { deleted, failed };
 }

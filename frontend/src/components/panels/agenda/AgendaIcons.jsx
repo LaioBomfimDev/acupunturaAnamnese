@@ -152,6 +152,23 @@ export function IconCalendarCheck(props) {
   );
 }
 
+// Configurar agenda: três réguas com cursores — "ajustar", não "sistema".
+export function IconSliders(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M4 6h9" />
+      <path d="M17 6h3" />
+      <circle cx="15" cy="6" r="2" />
+      <path d="M4 12h3" />
+      <path d="M11 12h9" />
+      <circle cx="9" cy="12" r="2" />
+      <path d="M4 18h11" />
+      <path d="M19 18h1" />
+      <circle cx="17" cy="18" r="2" />
+    </svg>
+  );
+}
+
 export function IconShare(props) {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>

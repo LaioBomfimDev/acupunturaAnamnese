@@ -505,6 +505,159 @@ test('deleteAppointment não finge sucesso quando a RLS barra em silêncio (0 li
   );
 });
 
+// ---------- excluir pacote marcado errado de uma vez ----------
+// Incidente 2026-09-28: pacote de 10 sessões marcado errado só saía
+// abrindo e excluindo sessão por sessão.
+
+function deleteRuntime({ failIds = {} } = {}) {
+  const calls = [];
+  return {
+    calls,
+    runtime: {
+      getAuthenticatedUser: async () => ({ id: 'admin-1' }),
+      from: () => ({
+        delete: () => ({
+          eq: (_col, id) => ({
+            select: () => ({
+              maybeSingle: async () => {
+                calls.push(id);
+                if (failIds[id]) return { data: null, error: failIds[id] };
+                return { data: { id }, error: null };
+              },
+            }),
+          }),
+        }),
+      }),
+    },
+  };
+}
+
+test('deleteAppointment explica que sessão com evolução não se apaga (FK RESTRICT)', async () => {
+  const { runtime } = deleteRuntime({
+    failIds: {
+      a1: {
+        code: '23503',
+        message: 'update or delete on table "appointments" violates foreign key constraint on table "patient_evolutions"',
+      },
+    },
+  });
+
+  await assert.rejects(
+    () => service.deleteAppointment('a1', { runtime }),
+    /já tem evolução registrada/,
+  );
+});
+
+test('listSeriesFrom lê o pacote do banco a partir da data, não do período da tela', async () => {
+  const filters = [];
+  const runtime = {
+    getAuthenticatedUser: async () => ({ id: 'admin-1' }),
+    from: (table) => {
+      assert.equal(table, 'appointments');
+      const query = {
+        select: () => query,
+        eq: (col, value) => { filters.push(['eq', col, value]); return query; },
+        gte: (col, value) => { filters.push(['gte', col, value]); return query; },
+        order: async (col, opts) => {
+          filters.push(['order', col, opts.ascending]);
+          return { data: [{ id: 's1' }, { id: 's2' }], error: null };
+        },
+      };
+      return query;
+    },
+  };
+
+  const sessions = await service.listSeriesFrom('grupo-1', {
+    fromIso: '2026-09-28T12:00:00.000Z',
+    runtime,
+  });
+
+  assert.equal(sessions.length, 2);
+  assert.deepEqual(filters, [
+    ['eq', 'recurrence_group_id', 'grupo-1'],
+    ['gte', 'starts_at', '2026-09-28T12:00:00.000Z'],
+    ['order', 'starts_at', true],
+  ]);
+});
+
+test('listSeriesFrom recusa série ou data ausente antes de tocar no banco', async () => {
+  const runtime = {
+    getAuthenticatedUser: async () => { throw new Error('não deveria autenticar'); },
+    from: () => { throw new Error('não deveria consultar o banco'); },
+  };
+
+  await assert.rejects(() => service.listSeriesFrom(null, { fromIso: '2026-09-28', runtime }), /Série não informada/);
+  await assert.rejects(() => service.listSeriesFrom('g1', { fromIso: 'x', runtime }), /Data inicial inválida/);
+});
+
+test('deleteAppointments apaga o pacote inteiro numa chamada só', async () => {
+  const { runtime, calls } = deleteRuntime();
+  const items = Array.from({ length: 10 }, (_, index) => ({
+    id: `s${index + 1}`,
+    starts_at: `2026-10-${String(index + 1).padStart(2, '0')}T12:00:00.000Z`,
+  }));
+
+  const { deleted, failed } = await service.deleteAppointments(items, { runtime });
+
+  assert.equal(deleted.length, 10);
+  assert.equal(failed.length, 0);
+  assert.deepEqual(calls, items.map(item => item.id));
+});
+
+test('deleteAppointments é parcial: sessão com evolução fica, as outras saem', async () => {
+  const { runtime } = deleteRuntime({
+    failIds: { s2: { code: '23503', message: 'violates foreign key constraint' } },
+  });
+  const items = [
+    { id: 's1', starts_at: '2026-10-01T12:00:00.000Z' },
+    { id: 's2', starts_at: '2026-10-08T12:00:00.000Z' },
+    { id: 's3', starts_at: '2026-10-15T12:00:00.000Z' },
+  ];
+
+  const { deleted, failed } = await service.deleteAppointments(items, { runtime });
+
+  assert.deepEqual(deleted.map(item => item.id), ['s1', 's3']);
+  assert.equal(failed.length, 1);
+  assert.equal(failed[0].id, 's2');
+  assert.equal(failed[0].starts_at, '2026-10-08T12:00:00.000Z');
+  assert.match(failed[0].message, /já tem evolução registrada/);
+});
+
+test('deleteAppointments recusa lista vazia', async () => {
+  await assert.rejects(() => service.deleteAppointments([]), /Nenhuma sessão para excluir/);
+});
+
+test('Agenda oferece excluir o pacote de uma vez, com a lista do banco e confirmação por digitação', async () => {
+  const source = await readFile(path.resolve(root, 'src/components/panels/Agenda.jsx'), 'utf8');
+  const handler = source.match(/async function handleDeleteSeries[\s\S]*?\r?\n {2}}\r?\n/);
+  assert.ok(handler, 'handleDeleteSeries precisa existir');
+  assert.match(handler[0], /listSeriesFrom\(/, 'a contagem vem do banco, não do período carregado na tela');
+  assert.match(handler[0], /isDeleteConfirmationValid\(/, 'exclusão definitiva confirma por digitação');
+  assert.doesNotMatch(handler[0], /window\.confirm\(/, 'nunca sim/não em exclusão definitiva');
+  assert.match(source, /onClick=\{\(\) => handleDeleteSeries\(selectedAppointment\)\}/);
+  assert.match(source, /Excluir esta e as próximas do pacote/);
+});
+
+// Incidente 2026-09-28: o aviso de "Cancelar esta e as próximas do
+// pacote" contava só as sessões do período carregado na tela ("e as 2
+// seguintes"), mas cancelSeriesFrom cancela o pacote inteiro no banco (9).
+// Na última sessão, dizia "e as 0 seguintes".
+test('Agenda conta as sessões a cancelar pelo banco, não pelo período da tela', async () => {
+  const source = await readFile(path.resolve(root, 'src/components/panels/Agenda.jsx'), 'utf8');
+  const handler = source.match(/async function handleCancelSeries[\s\S]*?\r?\n {2}}\r?\n/);
+  assert.ok(handler, 'handleCancelSeries precisa existir');
+  assert.match(handler[0], /listSeriesFrom\(/, 'a contagem vem do banco, não do período carregado na tela');
+  assert.match(handler[0], /status === 'scheduled'/, 'mesmo filtro de status que cancelSeriesFrom aplica');
+  assert.doesNotMatch(handler[0], /\bappointments\.filter\(/, 'o estado local só tem o período visível');
+  assert.doesNotMatch(handler[0], /- 1\} seguintes/, 'contar "as N - 1 seguintes" dá "as 0 seguintes" na última sessão');
+  assert.match(handler[0], /count === 1/, 'uma sessão só pede singular');
+  assert.match(handler[0], /1 sessão deste pacote/);
+  assert.match(handler[0], /\$\{count\} sessões deste pacote \(de /, 'plural mostra o intervalo de datas');
+  assert.match(handler[0], /window\.confirm\(/, 'cancelar não é exclusão definitiva: sim/não basta');
+  assert.doesNotMatch(handler[0], /window\.prompt\(/, 'cancelar não pede motivo nem digitação');
+  assert.match(handler[0], /cancelSeriesFrom\(/);
+});
+
 test('appointments_delete continua restrito a Admin da clínica ou SuperAdm', async () => {
   const sql = await readFile(migrationPath, 'utf8');
   const policy = sql.match(/CREATE POLICY appointments_delete[\s\S]*?;/);

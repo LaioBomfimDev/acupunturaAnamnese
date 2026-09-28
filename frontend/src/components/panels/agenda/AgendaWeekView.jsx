@@ -1,7 +1,14 @@
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { ROW_STATES, buildDayTimeline } from '../../../utils/agendaTimeline';
 import { minutesToLabel } from '../../../utils/agendaExceptions';
-import { getDiscipline } from '../../../data/disciplines';
+import {
+  appointmentLookAttrs,
+  disciplineColorFor,
+  fallbackGridOf,
+  rescheduledLabel,
+  seriesMarkOf,
+} from '../../../utils/agendaSettings';
+import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import { BLOCK_TYPE_ICONS, BLOCK_TYPE_LABEL, isPast } from './AgendaDayRows';
 import { IconCheck, IconPin, IconVideo } from './AgendaIcons';
 
@@ -47,11 +54,14 @@ export function AgendaWeekView({
   movingId = null,
   now = null,
 }) {
+  const settings = useAgendaSettings();
+  const fallback = fallbackGridOf(settings);
   const timelines = week.map(day => buildDayTimeline({
     date: day.date,
     schedules,
     appointments,
     holidays,
+    fallback,
   }));
 
   const ruler = buildRuler(timelines);
@@ -125,7 +135,9 @@ export function AgendaWeekView({
                     const pending = !isBlock && Boolean(patientPending?.(appointment.patient_id));
                     const blockLabel = BLOCK_TYPE_LABEL[appointment.block_type] || BLOCK_TYPE_LABEL.outro;
                     const BlockIcon = BLOCK_TYPE_ICONS[appointment.block_type] || BLOCK_TYPE_ICONS.outro;
-                    const disciplineColor = !isBlock ? getDiscipline(appointment.discipline)?.color : null;
+                    const disciplineColor = !isBlock ? disciplineColorFor(appointment.discipline, settings) : null;
+                    const seriesMark = seriesMarkOf(appointment, settings);
+                    const moved = !isBlock ? rescheduledLabel(appointment) : '';
 
                     return (
                       <button
@@ -141,16 +153,26 @@ export function AgendaWeekView({
                           pending ? 'agw-item--pending' : '',
                         ].filter(Boolean).join(' ')}
                         style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
+                        {...appointmentLookAttrs(appointment, settings)}
                         onClick={() => onSelectAppointment?.(appointment)}
                         title={isBlock
                           ? `${blockLabel}${appointment.note ? `: ${appointment.note}` : ''}`
-                          : `${patientName(appointment.patient_id)}${pending ? ' — Pendência marcada' : ''}${confirmed ? ' — Confirmado' : ''}`}
+                          : [
+                            patientName(appointment.patient_id),
+                            seriesMark?.label,
+                            moved,
+                            pending ? 'Pendência marcada' : '',
+                            confirmed ? 'Confirmado' : '',
+                          ].filter(Boolean).join(' — ')}
                       >
                         {isBlock
                           ? <BlockIcon className="agw-item-icon" />
                           : (appointment.modality === 'online'
                             ? <IconVideo className="agw-item-icon" />
                             : <IconPin className="agw-item-icon" />)}
+                        {seriesMark && (
+                          <span className="agw-series">{seriesMark.label}</span>
+                        )}
                         {isBlock
                           ? (appointment.note?.trim() || blockLabel)
                           : patientName(appointment.patient_id)}

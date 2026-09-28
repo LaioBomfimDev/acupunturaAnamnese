@@ -357,25 +357,8 @@
 }
 
 .ag-item--attended { opacity: 0.8; }
-.ag-item--excused { opacity: 0.8; }
-
-.ag-item--filled.ag-item--no_show,
-.ag-item--filled.ag-item--cancelled {
-  /* --r1-text-subtle é claro demais no tema escuro pra sustentar
-     4.5:1 com texto branco (contraste medido: ~3.3:1) — usa o slate
-     escuro fixo em vez do token de texto, mesma ideia das outras
-     cores "sempre escuras" desta paleta de preenchimento. */
-  border-color: var(--r1-slate-700);
-  background: var(--r1-slate-700);
-  opacity: 0.72;
-}
-
-.ag-item--no_show .ag-item-name,
-.ag-item--cancelled .ag-item-name {
-  text-decoration: line-through;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 1px;
-}
+/* Cancelado e não-compareceu: ver "Visual de status" no fim do arquivo
+   (data-look, escolhido em Configurar agenda). */
 
 /* Painel de detalhe de um agendamento — não é a lista compacta, tem
    botão/ação dentro, então não recebe fundo cheio (colidiria com os
@@ -1185,31 +1168,11 @@
   color: var(--r1-text-on-inverse);
 }
 
-/* Atendido/faltou-com-aviso: mesma disciplina, só recua visualmente —
-   aconteceu (ou não), não foi apagado. Cancelado/não-compareceu, com
-   nome riscado, são os únicos que TROCAM de cor (cinza, não importa a
-   disciplina): já estão resolvidos e não pedem mais atenção na agenda
-   ao vivo. */
+/* Atendido: mesma disciplina, só recua visualmente — aconteceu, não foi
+   apagado. Cancelado/cancelado pelo paciente/não-compareceu ganham o
+   visual escolhido em Configurar agenda: ver "Visual de status" no fim
+   do arquivo (data-look). */
 .agd-card--attended { opacity: 0.72; }
-.agd-card--excused { opacity: 0.72; }
-
-.agd-card--filled.agd-card--no_show,
-.agd-card--filled.agd-card--cancelled {
-  /* --r1-text-subtle é claro demais no tema escuro pra sustentar
-     4.5:1 com texto branco (contraste medido: ~3.3:1) — usa o slate
-     escuro fixo em vez do token de texto, mesma ideia das outras
-     cores "sempre escuras" desta paleta de preenchimento. */
-  border-color: var(--r1-slate-700);
-  background: var(--r1-slate-700);
-  opacity: 0.7;
-}
-
-.agd-card--no_show .agd-card-name,
-.agd-card--cancelled .agd-card-name {
-  text-decoration: line-through;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 1px;
-}
 
 /* Pendência manual (item 9): faixa âmbar por DENTRO do border-left de
    disciplina/status — canal visual separado, não disputa a mesma borda. */
@@ -1549,17 +1512,7 @@
 }
 
 .agw-item--attended { opacity: 0.75; }
-.agw-item--excused { opacity: 0.75; }
-.agw-item--no_show,
-.agw-item--cancelled { text-decoration: line-through; }
-
-.agw-item--filled.agw-item--no_show,
-.agw-item--filled.agw-item--cancelled {
-  /* Mesmo ajuste de contraste do card da visão Dia — ver comentário lá. */
-  border-left-color: var(--r1-slate-700);
-  background: var(--r1-slate-700);
-  opacity: 0.65;
-}
+/* Cancelado e não-compareceu: ver "Visual de status" no fim do arquivo. */
 
 .agw-item--past.agw-item--scheduled,
 .agw-item--past.agw-item--ready {
@@ -2807,5 +2760,484 @@
   .ag-pill {
     font-size: 11px;
     padding: 3px 9px;
+  }
+}
+
+/* ============================================================
+   Visual de status e fixo × avulso — Configurar agenda
+   (utils/agendaSettings.js → appointmentLookAttrs)
+
+   data-look          visual do cancelado/cancelado pelo paciente
+                      (cancelledLook) e do não-compareceu (noShowLook):
+                      solid-x | solid | x | outline | faded
+   data-series        fixed | one-off (só quando é o tipo destacado)
+   data-series-mark   dashed | stripes | badge
+
+   Um bloco só para os quatro cards (Dia/Semana celular = .agd-card,
+   Semana desktop = .agw-item, lista do Mês = .ag-item, Hoje =
+   .agh-card). Fica no FIM do arquivo de propósito: empata em
+   especificidade com as regras de status de cada card e ganha pela
+   ordem. Nenhuma cor nova: preto é --r1-ink; vermelho continua só
+   para conflito.
+   ============================================================ */
+
+:is(.agd-card, .agw-item, .ag-item, .agh-card)[data-look] {
+  position: relative;
+  opacity: 1;
+}
+
+/* Nome riscado em todo visual de "não vai acontecer". */
+:is(.agd-card, .ag-item, .agh-card)[data-look] :is(.agd-card-name, .ag-item-name, .agh-name),
+.agw-item[data-look] {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: currentColor;
+}
+
+/* Preto (com ou sem X) */
+:is(.agd-card, .agw-item, .ag-item, .agh-card):is([data-look="solid"], [data-look="solid-x"]) {
+  border-color: var(--r1-ink);
+  border-left-color: var(--r1-ink);
+  background: var(--r1-ink);
+  color: var(--r1-text-on-inverse);
+}
+
+.agh-card:is([data-look="solid"], [data-look="solid-x"]) :is(.agh-hour, .agh-name, .agh-done) {
+  color: var(--r1-text-on-inverse);
+}
+
+.agh-card:is([data-look="solid"], [data-look="solid-x"]) :is(.agh-meta, .agh-moved) {
+  color: var(--r1-text-on-inverse-muted);
+}
+
+/* X grande — sobre o preto ou sobre a cor da disciplina. */
+:is(.agd-card, .agw-item, .ag-item, .agh-card):is([data-look="solid-x"], [data-look="x"])::after {
+  content: "✕" / "";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  color: currentColor;
+  pointer-events: none;
+}
+
+.agw-item:is([data-look="solid-x"], [data-look="x"]) {
+  padding-right: 18px;
+}
+
+.agw-item:is([data-look="solid-x"], [data-look="x"])::after {
+  right: 4px;
+  font-size: 13px;
+}
+
+.agh-card:is([data-look="solid-x"], [data-look="x"])::after {
+  right: 14px;
+  font-size: 36px;
+}
+
+.agh-card[data-look="x"] {
+  border-left-color: var(--r1-ink);
+}
+
+/* O selo de confirmado mora no mesmo canto do X. */
+.agd-card:is([data-look="solid-x"], [data-look="x"]) .agd-card-confirmed {
+  display: none;
+}
+
+/* Vazado: parece horário livre com contorno — o oposto do preto. */
+:is(.agd-card, .agw-item, .ag-item, .agh-card)[data-look="outline"] {
+  border: 2px dashed var(--card-color, var(--r1-text-muted));
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
+.agh-card[data-look="outline"] {
+  border-color: var(--r1-text-muted);
+}
+
+.agd-card[data-look="outline"] .agd-card-meta,
+.ag-item[data-look="outline"] :is(.ag-item-status, .ag-item-meta) {
+  color: var(--r1-text-muted);
+}
+
+.agd-card[data-look="outline"] .agd-chip {
+  border-color: var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+}
+
+/* Cinza apagado: o visual de antes. Slate fixo em vez de token de texto
+   para segurar 4,5:1 com o texto branco. */
+:is(.agd-card, .agw-item, .ag-item)[data-look="faded"] {
+  border-color: var(--r1-slate-700);
+  border-left-color: var(--r1-slate-700);
+  background: var(--r1-slate-700);
+  color: var(--r1-text-on-inverse);
+  opacity: 0.7;
+}
+
+.agh-card[data-look="faded"] {
+  opacity: 0.82;
+}
+
+/* ---------- fixo × avulso ---------- */
+
+:is(.agd-card, .ag-item)[data-series-mark="dashed"] {
+  outline: 2px dashed rgba(255, 255, 255, 0.9);
+  outline-offset: -5px;
+}
+
+.agw-item[data-series-mark="dashed"] {
+  outline: 1.5px dashed rgba(255, 255, 255, 0.9);
+  outline-offset: -3px;
+}
+
+.agh-card[data-series-mark="dashed"] {
+  outline: 2px dashed var(--r1-text-muted);
+  outline-offset: -5px;
+}
+
+:is(.agd-card, .agw-item, .ag-item)[data-series-mark="stripes"] {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0 7px,
+    transparent 7px 14px
+  );
+}
+
+.agh-card[data-series-mark="stripes"] {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--r1-surface-sunken) 0 7px,
+    transparent 7px 14px
+  );
+}
+
+/* Selo: sempre presente com a marca — padrão visual sozinho não é
+   leitura acessível. */
+.agd-card--filled .agd-chip--series {
+  border-color: var(--r1-text-on-inverse);
+  background: var(--r1-text-on-inverse);
+  color: var(--card-color);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.agw-series {
+  flex: 0 0 auto;
+  margin-right: 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--r1-text-on-inverse);
+  color: var(--card-color);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.agh-series {
+  padding: 1px 7px;
+  border: 1px solid var(--r1-text);
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--r1-text);
+}
+
+.agd-card-moved,
+.agh-moved {
+  font-size: 11px;
+  color: var(--r1-text-muted);
+}
+
+.agd-card--filled .agd-card-moved {
+  color: var(--r1-text-on-inverse);
+}
+
+/* ============================================================
+   Tela "Configurar agenda" (AgendaSettingsEditor.jsx)
+   ============================================================ */
+
+.agcfg {
+  padding-bottom: 8px;
+}
+
+.agcfg-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agcfg-index a {
+  padding: 5px 11px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-text);
+  text-decoration: none;
+}
+
+.agcfg-index a:hover {
+  border-color: var(--r1-accent);
+}
+
+.agcfg-index a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agcfg-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+#agcfg-cancelado,
+#agcfg-falta {
+  display: grid;
+  gap: 8px;
+}
+
+.agcfg-legend {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-help {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  gap: 8px;
+}
+
+.agcfg-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 8px;
+}
+
+.agcfg-choices--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agcfg-option,
+.agcfg-choice {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  cursor: pointer;
+}
+
+.agcfg-choice {
+  gap: 3px;
+}
+
+.agcfg-chip {
+  position: relative;
+  padding: 7px 13px;
+  border: 1px solid var(--r1-border);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.agcfg-option:hover,
+.agcfg-choice:hover,
+.agcfg-chip:hover {
+  border-color: var(--r1-accent);
+}
+
+.agcfg-option.is-on,
+.agcfg-choice.is-on,
+.agcfg-chip.is-on {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 1px var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+/* Rádio escondido, mas focável e lido pelo leitor de tela. */
+.agcfg-option input,
+.agcfg-choice input,
+.agcfg-chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.agcfg-option:focus-within,
+.agcfg-choice:focus-within,
+.agcfg-chip:focus-within {
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agcfg-option-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agcfg-option-hint {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-sample {
+  cursor: default;
+  pointer-events: none;
+}
+
+.agcfg-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+
+.agcfg-pair-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-toggle {
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  line-height: 1.5;
+}
+
+.agcfg-toggle input {
+  margin-top: 3px;
+}
+
+.agcfg-colors {
+  display: grid;
+  gap: 12px;
+}
+
+.agcfg-color-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.agcfg-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agcfg-swatch {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid var(--r1-surface);
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: 0 0 0 1px var(--r1-border);
+  cursor: pointer;
+}
+
+.agcfg-swatch--default {
+  width: auto;
+  padding: 0 11px;
+  border-radius: 999px;
+  color: var(--r1-text-on-inverse);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.agcfg-swatch.is-on {
+  box-shadow: 0 0 0 2px var(--r1-text);
+}
+
+.agcfg-swatch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agcfg-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 10px;
+}
+
+.agcfg-invalid {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-warning);
+}
+
+.agcfg-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  box-shadow: 0 -6px 16px rgba(17, 17, 17, 0.06);
+}
+
+.agcfg-bar-status {
+  margin-right: auto;
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+@media (max-width: 640px) {
+  .agcfg-color-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agcfg-swatch {
+    width: 36px;
+    height: 36px;
+  }
+
+  .agcfg-bar .ag-btn {
+    flex: 1 1 auto;
   }
 }

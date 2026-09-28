@@ -292,3 +292,11 @@ Modelo de entrada:
 - Regra nova: toda disciplina usa o shell clínico compartilhado (sidebar + conteúdo + rail), com navegação e assistente específicos da disciplina. Instruções clínicas globais também são separadas por disciplina; Psicologia nunca herda `clinical-global` da MTC.
 - Teste ou verificação obrigatória: `psychology-workspace.test.mjs` bloqueia a ausência do shell/rail e a duplicação da leitura; `psychology-ai.test.mjs` exige `psych-global`, `psych-anamnese-marks` e `psych-case-assistant` nas duas Edge Functions e no painel do SuperAdm.
 - Regra destilada em: `docs/plano-clinica-multidisciplinar.md` §5.2 e `docs/mapa-gatilhos-ia-frontend.md`.
+
+### 2026-09-28 - Cancelar pacote avisava menos sessões do que cancelava
+
+- Sintoma: em "Cancelar esta e as próximas do pacote", num pacote de 10 semanas, o aviso dizia "esta sessão e as 2 seguintes" e o sistema cancelava 9. Na última sessão do pacote, dizia "e as 0 seguintes".
+- Causa: `handleCancelSeries` (`Agenda.jsx`) contava pelo estado local `appointments`, que só carrega o período visível (dia/semana/mês), enquanto `cancelSeriesFrom` atualiza no banco todas as sessões `scheduled` do `recurrence_group_id` a partir da data. O texto usava `total - 1` sem caso singular. É o mesmo erro que `listSeriesFrom` foi criado para evitar em "Excluir esta e as próximas do pacote"; o cancelamento, mais antigo, continuava contando pela tela.
+- Regra nova: ação em lote sobre um pacote conta e lista pelo banco com o mesmo filtro de status da escrita, e o aviso mostra a quantidade real ("1 sessão"/"N sessões") e o intervalo de datas. Cancelar continua em `window.confirm`, sem motivo; só a exclusão definitiva exige digitação.
+- Teste ou verificação obrigatória: `agenda.test.mjs`, teste "Agenda conta as sessões a cancelar pelo banco, não pelo período da tela", exige `listSeriesFrom(` e o filtro `status === 'scheduled'` em `handleCancelSeries`, proíbe `appointments.filter(` e "N - 1 seguintes", e exige singular, plural com intervalo e `window.confirm` sem `window.prompt`.
+- Regra destilada em: `AGENTS.md` §7.

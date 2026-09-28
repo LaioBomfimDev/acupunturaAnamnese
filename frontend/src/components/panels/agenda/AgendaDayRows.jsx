@@ -1,5 +1,11 @@
 import { ROW_STATES } from '../../../utils/agendaTimeline';
-import { getDiscipline } from '../../../data/disciplines';
+import {
+  appointmentLookAttrs,
+  disciplineColorFor,
+  rescheduledLabel,
+  seriesMarkOf,
+} from '../../../utils/agendaSettings';
+import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import {
   IconCheck, IconMic, IconPin, IconTag, IconUsers, IconVideo,
 } from './AgendaIcons';
@@ -127,9 +133,13 @@ function AppointmentCard({
   const isBlock = appointment.kind === 'block';
   const confirmed = Boolean(appointment.confirmed_at);
   const BlockIcon = BLOCK_TYPE_ICONS[appointment.block_type] || BLOCK_TYPE_ICONS.outro;
-  // Cor por disciplina (não por status) — ver tokens.css. Bloqueio nunca
-  // tem disciplina (constraint do banco), continua no visual tracejado.
-  const disciplineColor = !isBlock ? getDiscipline(appointment.discipline)?.color : null;
+  const settings = useAgendaSettings();
+  // Cor por disciplina (não por status) — ver tokens.css, ou a que o
+  // Admin escolheu em Configurar agenda. Bloqueio nunca tem disciplina
+  // (constraint do banco), continua no visual tracejado.
+  const disciplineColor = !isBlock ? disciplineColorFor(appointment.discipline, settings) : null;
+  const seriesMark = seriesMarkOf(appointment, settings);
+  const moved = !isBlock ? rescheduledLabel(appointment) : '';
 
   return (
     <div className="agd-card-wrap">
@@ -145,6 +155,7 @@ function AppointmentCard({
           !isBlock && isPending ? 'agd-card--pending' : '',
         ].filter(Boolean).join(' ')}
         style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
+        {...appointmentLookAttrs(appointment, settings)}
         onClick={() => onSelect?.(appointment)}
         title={!isBlock && isPending ? 'Paciente com pendência marcada na ficha' : undefined}
       >
@@ -163,6 +174,11 @@ function AppointmentCard({
             <span className="agd-chip">
               <BlockIcon />
               {BLOCK_TYPE_LABEL[appointment.block_type] || BLOCK_TYPE_LABEL.outro}
+            </span>
+          )}
+          {seriesMark && (
+            <span className={`agd-chip agd-chip--series agd-chip--${seriesMark.kind}`}>
+              {seriesMark.label}
             </span>
           )}
           {!isBlock && (
@@ -188,6 +204,7 @@ function AppointmentCard({
         {appointment.is_exception && (
           <span className="agd-card-exception">Fora do padrão: {appointment.exception_reason}</span>
         )}
+        {moved && <span className="agd-card-moved">{moved}</span>}
       </button>
 
       {isSelected && !isBlock && (

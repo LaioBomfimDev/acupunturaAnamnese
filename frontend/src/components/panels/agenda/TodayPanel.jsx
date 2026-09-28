@@ -1,5 +1,11 @@
 import { getStatusLabel } from '../../../utils/agenda';
-import { getDiscipline } from '../../../data/disciplines';
+import {
+  appointmentLookAttrs,
+  disciplineColorFor,
+  rescheduledLabel,
+  seriesMarkOf,
+} from '../../../utils/agendaSettings';
+import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import { IconCheck } from './AgendaIcons';
 
 // ============================================================
@@ -32,9 +38,15 @@ function QueueCard({
 }) {
   const { appointment } = item;
   const pending = Boolean(patientPending?.(appointment.patient_id));
+  const settings = useAgendaSettings();
+  const seriesMark = seriesMarkOf(appointment, settings);
+  const moved = rescheduledLabel(appointment);
 
   return (
-    <li className={`agh-card agh-card--${tone}${pending ? ' agh-card--pending' : ''}`}>
+    <li
+      className={`agh-card agh-card--${tone}${pending ? ' agh-card--pending' : ''}`}
+      {...appointmentLookAttrs(appointment, settings)}
+    >
       <button type="button" className="agh-open" onClick={() => onOpen(appointment)}>
         <span className="agh-top">
           <span className="agh-hour">{hora(appointment.starts_at)}</span>
@@ -46,12 +58,15 @@ function QueueCard({
           {tone !== 'next' && (
             <span className="agh-done">{getStatusLabel(appointment.status)}</span>
           )}
+          {seriesMark && (
+            <span className={`agh-series agh-series--${seriesMark.kind}`}>{seriesMark.label}</span>
+          )}
         </span>
 
         <span className="agh-name">
           <span
             className="agh-discipline-dot"
-            style={{ background: getDiscipline(appointment.discipline)?.color }}
+            style={{ background: disciplineColorFor(appointment.discipline, settings) }}
             aria-hidden="true"
           />
           {patientName(appointment.patient_id)}
@@ -64,6 +79,7 @@ function QueueCard({
             appointment.room,
           ].filter(Boolean).join(' · ')}
         </span>
+        {moved && <span className="agh-moved">{moved}</span>}
       </button>
 
       {actions.length > 0 && (

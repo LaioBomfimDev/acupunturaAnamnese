@@ -133,7 +133,10 @@ test('visão Semana desktop: sem sinal de "Chegou"; confirmado ganha V verde leg
 
   const confirmado = render({ status: 'scheduled', confirmed_at: '2026-08-11T21:00:00.000Z' });
   assert.match(confirmado, /class="agw-confirmed"/);
-  assert.match(confirmado, /Ana Souza — Confirmado/);
+  // Sessão sem pacote é avulsa: com a configuração padrão da agenda
+  // (destacar avulsos, agenda-settings.test.mjs) o selo entra no title
+  // antes do confirmado.
+  assert.match(confirmado, /title="Ana Souza — Avulso — Confirmado"/);
 });
 
 test('visão Semana celular: 7 dias empilhados, cada um com suas próprias faixas', () => {

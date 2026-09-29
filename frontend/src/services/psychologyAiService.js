@@ -29,6 +29,7 @@ import {
   getPsychologySelected,
   getPsychologyTextFields,
 } from '../data/psychologyAnamnese';
+import { NEURO_ASSESSMENT_SESSIONS_ACTIVE } from '../data/neuropsychologyEvaluation';
 
 export { confidenceBand };
 
@@ -323,10 +324,15 @@ function anonymizeDeep(value, patientName) {
 }
 
 export function buildNeuropsychologyReportCase(evaluation, context = {}) {
+  // Sessões da Avaliação desligadas: o que ficou gravado nelas não vai
+  // para a IA (ver NEURO_ASSESSMENT_SESSIONS_ACTIVE).
+  const sessions = NEURO_ASSESSMENT_SESSIONS_ACTIVE && Array.isArray(evaluation?.sessions)
+    ? evaluation.sessions
+    : [];
   return anonymizeDeep({
     referral: evaluation?.referral || {},
     instruments: Array.isArray(evaluation?.instruments) ? evaluation.instruments : [],
-    sessions: Array.isArray(evaluation?.sessions) ? evaluation.sessions : [],
+    sessions,
     integration: evaluation?.integration || {},
   }, context.patientName);
 }

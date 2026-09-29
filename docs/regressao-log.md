@@ -19,6 +19,15 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-09-29 - Paciente de Neuropsicologia fora de "Falta evoluir"
+
+- Sintoma: paciente atendida no dia pela neuropsicóloga não aparecia na fila da tela Evoluções; a sessão acabava registrada nas "Sessões" de dentro da Avaliação neuropsicológica, fora do controle de pendências.
+- Causa: a Neuropsicologia nasceu (10/09) como "avaliação + relatório", sem evolução, e `EVOLUTION_DISCIPLINES` a tirava da fila de propósito. No banco, `20260910_neuropsicologia_discipline.sql` tinha liberado a área em `insert_patient_evolution`, mas `20260924b_evolution_requires_appointment.sql` recriou a função a partir da versão de 20260911 e voltou às 4 áreas antigas. O teste lia um arquivo de migration fixo e não percebeu.
+- Correção: `20260929b_neuropsicologia_evolution.sql` (só o array muda; validada em transação com ROLLBACK e aplicada em produção em 2026-09-29). No app, a fila aceita Neuropsicologia, que usa `PsychologyEvolucao` com `discipline="neuropsicologia"`, sem ler anamnese (sem aviso de risco, por decisão da administradora). As Sessões da Avaliação ficaram desligadas por `NEURO_ASSESSMENT_SESSIONS_ACTIVE` (tela, roteiro, relatório e IA), sem apagar o gravado.
+- Regra nova: migration que recria uma RPC parte da versão mais recente dela; teste de paridade lê a última migration que define a função, não um arquivo fixo.
+- Teste obrigatório: `evolutions-screen.test.mjs` ("Neuropsicologia entra na fila…", lê a versão viva da RPC); `neuropsychology-workspace.test.mjs` ("sessões dentro da Avaliação desligadas…"); `psychology-ai.test.mjs` (IA sem as sessões).
+- Regra destilada em: `AGENTS.md` §7.
+
 ### 2026-09-25 - Compartilhar paciente falhava sempre (42702 ambíguo)
 
 - Sintoma: uma adm de clínica, dona da paciente, tentou enviar uma paciente de Psicologia para ela mesma na Acupuntura e depois para outra profissional; os dois envios mostraram só "O compartilhamento não foi criado. Revise os vínculos e tente novamente.". `record_shares` estava vazia em produção: nenhum envio tinha funcionado até então.

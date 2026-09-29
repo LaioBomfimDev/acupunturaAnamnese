@@ -31,6 +31,7 @@ import {
   normalizeConsumo,
   normalizeExames,
 } from '../data/nutricaoAvaliacao.js';
+import { NEURO_ASSESSMENT_SESSIONS_ACTIVE } from '../data/neuropsychologyEvaluation.js';
 
 const filled = value => String(value ?? '').trim().length > 0;
 
@@ -213,6 +214,16 @@ export function buildNeuroAssessmentRoute(evaluation) {
   const instruments = Array.isArray(evaluation?.instruments) ? evaluation.instruments : [];
   const sessions = Array.isArray(evaluation?.sessions) ? evaluation.sessions : [];
   const integration = evaluation?.integration || {};
+  const sessionsItem = NEURO_ASSESSMENT_SESSIONS_ACTIVE
+    ? [item({
+      id: 'sessoes',
+      number: '3',
+      title: 'Sessões e evoluções da avaliação',
+      done: sessions.filter(entry => entry.status === 'concluida').length,
+      total: sessions.length,
+      unitLabel: 'concluídas',
+    })]
+    : [];
   return [
     item({
       id: 'encaminhamento',
@@ -230,17 +241,10 @@ export function buildNeuroAssessmentRoute(evaluation) {
       unitLabel: 'revisados',
       hint: instruments.length ? '' : 'nenhum instrumento',
     }),
-    item({
-      id: 'sessoes',
-      number: '3',
-      title: 'Sessões e evoluções da avaliação',
-      done: sessions.filter(entry => entry.status === 'concluida').length,
-      total: sessions.length,
-      unitLabel: 'concluídas',
-    }),
+    ...sessionsItem,
     item({
       id: 'integracao',
-      number: '4',
+      number: NEURO_ASSESSMENT_SESSIONS_ACTIVE ? '4' : '3',
       title: 'Integração profissional',
       done: NEURO_INTEGRATION_FIELD_IDS.filter(key => filled(integration[key])).length,
       total: NEURO_INTEGRATION_FIELD_IDS.length,

@@ -18,10 +18,13 @@ export const ATTENDANCE_LABELS = {
 };
 
 // Áreas com formulário de evolução — as mesmas que o banco aceita em
-// insert_patient_evolution. Neuropsicologia fica de fora de propósito
-// (é avaliação + relatório): o agendamento dela aparece na view de
-// pendências, mas não tem evolução para escrever.
-export const EVOLUTION_DISCIPLINES = ['acupuntura', 'fisioterapia', 'psicologia', 'nutricao'];
+// insert_patient_evolution. Neuropsicologia entrou em 2026-09-29: usa o
+// formulário da Psicologia, mas a evolução é gravada como
+// neuropsicologia (a mesma área do agendamento).
+export const EVOLUTION_DISCIPLINES = ['acupuntura', 'fisioterapia', 'psicologia', 'nutricao', 'neuropsicologia'];
+
+// Áreas cuja evolução usa o formulário de Psicologia (PsychologyEvolucao).
+export const PSYCHOLOGY_FORM_DISCIPLINES = ['psicologia', 'neuropsicologia'];
 
 export function onlyEvolutionDisciplines(items) {
   return (Array.isArray(items) ? items : []).filter(item => EVOLUTION_DISCIPLINES.includes(item?.discipline));

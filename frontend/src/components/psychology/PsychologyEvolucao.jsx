@@ -51,7 +51,9 @@ const ATTENDANCE_LABELS = {
   excused: 'Cancelado pelo paciente (falta justificada)',
 };
 
-export function PsychologyEvolucao({ session, evolucoes, patientId, activeAppointment, onEvolucoesChange, onEvolutionSaved, submitLabel = 'Adicionar sessão' }) {
+// `discipline`: Neuropsicologia usa este mesmo formulário, mas grava a
+// evolução como neuropsicologia — o banco exige a área do agendamento.
+export function PsychologyEvolucao({ session, evolucoes, patientId, activeAppointment, onEvolucoesChange, onEvolutionSaved, submitLabel = 'Adicionar sessão', discipline = 'psicologia' }) {
   const sessions = Array.isArray(evolucoes) ? evolucoes : (Array.isArray(session.evolucoes) ? session.evolucoes : []);
   const riskInAnamnese = hasPsychologyRiskSelected(session.selectedMap);
 
@@ -127,7 +129,7 @@ export function PsychologyEvolucao({ session, evolucoes, patientId, activeAppoin
     try {
       await insertPatientEvolution({
         patientId,
-        discipline: 'psicologia',
+        discipline,
         data: conteudo,
         appointmentId: activeAppointment?.id || null,
         atendimentoEm,

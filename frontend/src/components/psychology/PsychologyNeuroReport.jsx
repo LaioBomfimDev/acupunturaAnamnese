@@ -4,6 +4,7 @@ import { Panel } from '../ui/Panel';
 import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import { AI_SURFACES } from '../../services/aiCorrectionService';
 import { generateNeuropsychologyReport } from '../../services/psychologyAiService';
+import { NEURO_ASSESSMENT_SESSIONS_ACTIVE } from '../../data/neuropsychologyEvaluation';
 import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
 import {
   PrintFooter,
@@ -41,7 +42,8 @@ function sanitizeHtml(html) {
 }
 
 function buildDeterministicHtml(evaluation) {
-  const completed = (evaluation.sessions || []).filter(session =>
+  const sessions = NEURO_ASSESSMENT_SESSIONS_ACTIVE ? (evaluation.sessions || []) : [];
+  const completed = sessions.filter(session =>
     session.status === 'concluida' || session.observations || session.partialResults);
   const instruments = (evaluation.instruments || []).filter(item => item.name);
   const integration = evaluation.integration || {};

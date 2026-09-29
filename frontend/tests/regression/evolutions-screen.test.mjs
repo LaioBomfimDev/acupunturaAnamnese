@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { before, test } from 'node:test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import {
   FALTA_OBSERVATION_REQUIRED,
   ATTENDANCE_LABELS,
   EVOLUTION_DISCIPLINES,
+  PSYCHOLOGY_FORM_DISCIPLINES,
   canWriteEvolution,
   filterQueue,
   groupQueueByDay,
@@ -24,8 +25,21 @@ import {
 // disciplina volta a ter formulário de evolução próprio.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260924b_evolution_requires_appointment.sql');
+const MIGRATIONS_DIR = path.resolve(root, '../supabase/migrations');
 const read = relative => readFile(path.resolve(root, relative), 'utf8');
+
+// Versão viva de insert_patient_evolution: a última migration que a
+// recria. Ler um arquivo fixo deixou passar 20260924b ter derrubado a
+// Neuropsicologia que 20260910 tinha liberado.
+async function latestInsertEvolutionMigration() {
+  const files = (await readdir(MIGRATIONS_DIR)).filter(name => name.endsWith('.sql')).sort();
+  let latest = null;
+  for (const name of files) {
+    const sql = await readFile(path.join(MIGRATIONS_DIR, name), 'utf8');
+    if (/CREATE OR REPLACE FUNCTION public\.insert_patient_evolution\(/.test(sql)) latest = [name, sql];
+  }
+  return latest;
+}
 
 let sources;
 
@@ -41,9 +55,10 @@ before(async () => {
     evolucao: 'src/components/panels/Evolucao.jsx',
     psychologyEvolucao: 'src/components/psychology/PsychologyEvolucao.jsx',
     disciplineEvolucao: 'src/components/anamnese/DisciplineEvolucao.jsx',
+    timeline: 'src/components/PatientEvolutionTimeline.jsx',
   }).map(async ([key, file]) => [key, await read(file)]));
   sources = Object.fromEntries(entries);
-  sources.migration = await readFile(MIGRATION_PATH, 'utf8');
+  [sources.migrationName, sources.migration] = await latestInsertEvolutionMigration();
 });
 
 const item = (id, startsAt, extra = {}) => ({
@@ -188,20 +203,36 @@ test('tela Evoluções não regrava o prontuário da disciplina (só lê)', () =
   assert.match(sources.recordPanel, /<PanelLoading \/>/);
 });
 
-test('Neuropsicologia não entra na fila: não tem formulário e o banco recusa', () => {
-  // Achado na verificação de 2026-09-24: 27 atendimentos de neuro
-  // apareciam na fila e abrir um deles quebraria a tela.
+test('Neuropsicologia entra na fila e evolui com o formulário da Psicologia', () => {
+  // 2026-09-29: a paciente de neuro atendida no dia não aparecia em
+  // "Falta evoluir" (a área ficava fora da fila e o banco recusava) e a
+  // sessão acabava registrada dentro da Avaliação. Agora ela evolui aqui,
+  // com o formulário da Psicologia, gravada como neuropsicologia.
   const fila = [
     item('acup', '2026-09-23T10:00:00'),
     item('neuro', '2026-09-23T11:00:00', { discipline: 'neuropsicologia' }),
+    item('outra', '2026-09-23T12:00:00', { discipline: 'area-sem-formulario' }),
   ];
-  assert.deepEqual(onlyEvolutionDisciplines(fila).map(entry => entry.appointment_id), ['acup']);
+  assert.deepEqual(onlyEvolutionDisciplines(fila).map(entry => entry.appointment_id), ['acup', 'neuro']);
+  assert.ok(PSYCHOLOGY_FORM_DISCIPLINES.includes('neuropsicologia'));
 
-  // Mesma lista que insert_patient_evolution aceita.
+  // Mesma lista que a versão viva de insert_patient_evolution aceita.
+  assert.equal(sources.migrationName, '20260929b_neuropsicologia_evolution.sql');
   const fromSql = sources.migration.match(/ARRAY\[([^\]]+)\]::TEXT\[\]/)[1]
     .split(',').map(part => part.trim().replace(/'/g, '')).sort();
   assert.deepEqual([...EVOLUTION_DISCIPLINES].sort(), fromSql);
   assert.match(sources.screen, /onlyEvolutionDisciplines\(/);
   assert.match(sources.app, /onlyEvolutionDisciplines\(list\)\.length/, 'o número do card inicial conta só o que dá para evoluir');
   assert.match(sources.recordPanel, /Esta área não tem formulário de evolução/);
+
+  // Formulário da Psicologia, mas gravando a área do agendamento.
+  assert.match(sources.recordPanel, /<PsychologyEvolucao \{\.\.\.common\} session=\{clinical\.session\} discipline=\{discipline\}/);
+  assert.match(sources.psychologyEvolucao, /discipline = 'psicologia' \}\)/);
+  assert.match(sources.psychologyEvolucao, /patientId,\s+discipline,\s+data: conteudo/);
+  assert.doesNotMatch(sources.psychologyEvolucao, /discipline: 'psicologia'/, 'área fixa gravaria neuro como psicologia e o banco recusaria');
+  // Sem anamnese própria: não lê a anamnese de Psicologia (sem aviso de risco por enquanto).
+  assert.match(sources.recordPanel, /if \(discipline === 'neuropsicologia'\) \{\s+return \{ session: createEmptyPsychologySession\(\) \};/);
+  // A linha do tempo do paciente mostra os campos da Psicologia.
+  assert.match(sources.timeline, /PSYCHOLOGY_FORM_DISCIPLINES\.includes\(discipline\)/);
 });
+

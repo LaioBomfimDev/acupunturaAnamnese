@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getLatestRecord } from '../../services/clinicalRecordService';
 import { listPatientEvolutions } from '../../services/patientEvolutionService';
 import { mergeEvolutionHistory } from '../../utils/evolutionHistory';
+import { PSYCHOLOGY_FORM_DISCIPLINES } from '../../utils/evolutionQueue';
 import { analyze } from '../../utils/analyzer';
 import { createInitialState } from '../../hooks/useClinicState';
 import { getAnamneseConfig } from '../../data/anamneseRegistry';
@@ -58,6 +59,13 @@ async function loadClinicalSession(patient, discipline) {
     };
   }
 
+  // Neuropsicologia não tem anamnese própria: o formulário é o da
+  // Psicologia, sem o aviso de risco que viria da anamnese (decisão de
+  // 2026-09-29 — por enquanto não lê a anamnese de Psicologia).
+  if (discipline === 'neuropsicologia') {
+    return { session: createEmptyPsychologySession() };
+  }
+
   const config = getAnamneseConfig(discipline);
   const record = await getLatestRecord(patient.id, config.recordType, discipline);
   return {
@@ -69,7 +77,7 @@ async function loadClinicalSession(patient, discipline) {
 
 function emptyClinicalSession(patient, discipline) {
   if (discipline === 'acupuntura') return { state: createInitialState(patient), selectedMap: {} };
-  if (discipline === 'psicologia') return { session: createEmptyPsychologySession() };
+  if (PSYCHOLOGY_FORM_DISCIPLINES.includes(discipline)) return { session: createEmptyPsychologySession() };
   return { session: createEmptySession(getAnamneseConfig(discipline)) };
 }
 
@@ -78,7 +86,8 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
   const [clinical, setClinical] = useState(null);
   const [records, setRecords] = useState([]);
   const [loadWarning, setLoadWarning] = useState('');
-  const hasForm = discipline === 'acupuntura' || discipline === 'psicologia' || Boolean(getAnamneseConfig(discipline));
+  const usesPsychologyForm = PSYCHOLOGY_FORM_DISCIPLINES.includes(discipline);
+  const hasForm = discipline === 'acupuntura' || usesPsychologyForm || Boolean(getAnamneseConfig(discipline));
 
   useEffect(() => {
     if (!hasForm) return undefined;
@@ -142,10 +151,10 @@ export function EvolutionRecordPanel({ patient, discipline, activeAppointment, s
       {discipline === 'acupuntura' && (
         <Evolucao {...common} state={clinical.state} onUpdate={noop} analysis={analysis} />
       )}
-      {discipline === 'psicologia' && (
-        <PsychologyEvolucao {...common} session={clinical.session} onEvolucoesChange={noop} />
+      {usesPsychologyForm && (
+        <PsychologyEvolucao {...common} session={clinical.session} discipline={discipline} onEvolucoesChange={noop} />
       )}
-      {discipline !== 'acupuntura' && discipline !== 'psicologia' && (
+      {discipline !== 'acupuntura' && !usesPsychologyForm && (
         <DisciplineEvolucao
           {...common}
           config={getAnamneseConfig(discipline)}

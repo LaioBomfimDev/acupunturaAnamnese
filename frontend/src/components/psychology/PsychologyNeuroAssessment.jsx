@@ -3,6 +3,7 @@ import { FieldInput } from '../ui/FieldInput';
 import { FormLayout, FormRoute, FormSectionTitle } from '../ui/FormRoute';
 import { buildNeuroAssessmentRoute, findRouteItem } from '../../utils/formRoute';
 import {
+  NEURO_ASSESSMENT_SESSIONS_ACTIVE,
   NEUROPSYCHOLOGY_DRAFT_NOTICE,
   NEUROPSYCHOLOGY_INSTRUMENT_TEMPLATES,
   buildNeuropsychologySummary,
@@ -111,15 +112,18 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
           <p className="app-eyebrow">Percurso independente</p>
           <h3>Avaliação neuropsicológica longitudinal</h3>
           <p className="small">
-            A anamnese clínica permanece em registro próprio. Aqui ficam planejamento, instrumentos,
-            sessões/evoluções, resultados, integração e relatório da avaliação.
+            {NEURO_ASSESSMENT_SESSIONS_ACTIVE
+              ? 'A anamnese clínica permanece em registro próprio. Aqui ficam planejamento, instrumentos, sessões/evoluções, resultados, integração e relatório da avaliação.'
+              : 'A anamnese clínica permanece em registro próprio. Aqui ficam planejamento, instrumentos, resultados, integração e relatório da avaliação. A evolução de cada sessão é feita na tela Evoluções.'}
           </p>
         </div>
         <button type="button" className="tag" onClick={onChoosePath}>Trocar percurso</button>
       </div>
 
       <div className="cards summary-cards">
-        <div className="card"><p className="small">Sessões preenchidas</p><h3>{summary.completedSessions}/{summary.plannedSessions}</h3></div>
+        {NEURO_ASSESSMENT_SESSIONS_ACTIVE && (
+          <div className="card"><p className="small">Sessões preenchidas</p><h3>{summary.completedSessions}/{summary.plannedSessions}</h3></div>
+        )}
         <div className="card"><p className="small">Instrumentos</p><h3>{summary.instrumentCount}</h3></div>
         <div className="card"><p className="small">Instrumentos revisados</p><h3>{summary.reviewedInstruments}</h3></div>
         <div className="card"><p className="small">Campos de integração</p><h3>{summary.integrationFields}</h3></div>
@@ -178,47 +182,49 @@ export function PsychologyNeuroAssessment({ evaluation, onChange, onChoosePath }
         </div>
       </section>
 
-      <section className="psi-neuro-section">
-        <FormSectionTitle entry={entry('sessoes')} />
-        <div className="psi-neuro-row-head">
-          <p className="small">Dez sessões são o roteiro inicial; a profissional pode adicionar ou remover conforme o caso.</p>
-          <div className="psi-neuro-row-actions">
-            <button type="button" className="tag" onClick={addSession}>Adicionar sessão</button>
-            <button type="button" className="tag" onClick={removeLastSession} disabled={sessions.length <= 1}>Remover última</button>
+      {NEURO_ASSESSMENT_SESSIONS_ACTIVE && (
+        <section className="psi-neuro-section">
+          <FormSectionTitle entry={entry('sessoes')} />
+          <div className="psi-neuro-row-head">
+            <p className="small">Dez sessões são o roteiro inicial; a profissional pode adicionar ou remover conforme o caso.</p>
+            <div className="psi-neuro-row-actions">
+              <button type="button" className="tag" onClick={addSession}>Adicionar sessão</button>
+              <button type="button" className="tag" onClick={removeLastSession} disabled={sessions.length <= 1}>Remover última</button>
+            </div>
           </div>
-        </div>
-        <div className="psi-neuro-sessions">
-          {sessions.map((session, index) => (
-            <details key={session.id || index} className="box psi-neuro-session" open={index === 0}>
-              <summary>
-                <b>Sessão {index + 1}</b> — {session.purpose || 'Sem objetivo definido'}
-                <span>{session.status === 'concluida' ? 'Concluída' : 'Planejada'}</span>
-              </summary>
-              <div className="form-grid two">
-                <label>Data<input value={session.date || ''} onChange={event => updateSession(index, 'date', event.target.value)} placeholder="dd/mm/aaaa" /></label>
-                <label>Status
-                  <select value={session.status || 'planejada'} onChange={event => updateSession(index, 'status', event.target.value)}>
-                    <option value="planejada">Planejada</option>
-                    <option value="em_andamento">Em andamento</option>
-                    <option value="concluida">Concluída</option>
-                    <option value="remarcada">Remarcada</option>
-                    <option value="cancelada">Cancelada</option>
-                  </select>
-                </label>
-              </div>
-              <label>Objetivo da sessão<TextArea value={session.purpose} onChange={value => updateSession(index, 'purpose', value)} /></label>
-              <label>Participantes<TextArea value={session.participants} onChange={value => updateSession(index, 'participants', value)} placeholder="Paciente, mãe, pai, responsável ou outro informante" /></label>
-              <label>Informante principal<TextArea value={session.informant} onChange={value => updateSession(index, 'informant', value)} /></label>
-              <label>Instrumentos/procedimentos realizados<TextArea value={session.instruments} onChange={value => updateSession(index, 'instruments', value)} /></label>
-              <label>Observações clínicas<TextArea value={session.observations} onChange={value => updateSession(index, 'observations', value)} /></label>
-              <label>Comportamento durante a sessão<TextArea value={session.behavior} onChange={value => updateSession(index, 'behavior', value)} /></label>
-              <label>Resultados parciais — sem conclusão automática<TextArea value={session.partialResults} onChange={value => updateSession(index, 'partialResults', value)} /></label>
-              <label>Intercorrências<TextArea value={session.intercurrences} onChange={value => updateSession(index, 'intercurrences', value)} /></label>
-              <label>Próximos passos<TextArea value={session.nextSteps} onChange={value => updateSession(index, 'nextSteps', value)} /></label>
-            </details>
-          ))}
-        </div>
-      </section>
+          <div className="psi-neuro-sessions">
+            {sessions.map((session, index) => (
+              <details key={session.id || index} className="box psi-neuro-session" open={index === 0}>
+                <summary>
+                  <b>Sessão {index + 1}</b> — {session.purpose || 'Sem objetivo definido'}
+                  <span>{session.status === 'concluida' ? 'Concluída' : 'Planejada'}</span>
+                </summary>
+                <div className="form-grid two">
+                  <label>Data<input value={session.date || ''} onChange={event => updateSession(index, 'date', event.target.value)} placeholder="dd/mm/aaaa" /></label>
+                  <label>Status
+                    <select value={session.status || 'planejada'} onChange={event => updateSession(index, 'status', event.target.value)}>
+                      <option value="planejada">Planejada</option>
+                      <option value="em_andamento">Em andamento</option>
+                      <option value="concluida">Concluída</option>
+                      <option value="remarcada">Remarcada</option>
+                      <option value="cancelada">Cancelada</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Objetivo da sessão<TextArea value={session.purpose} onChange={value => updateSession(index, 'purpose', value)} /></label>
+                <label>Participantes<TextArea value={session.participants} onChange={value => updateSession(index, 'participants', value)} placeholder="Paciente, mãe, pai, responsável ou outro informante" /></label>
+                <label>Informante principal<TextArea value={session.informant} onChange={value => updateSession(index, 'informant', value)} /></label>
+                <label>Instrumentos/procedimentos realizados<TextArea value={session.instruments} onChange={value => updateSession(index, 'instruments', value)} /></label>
+                <label>Observações clínicas<TextArea value={session.observations} onChange={value => updateSession(index, 'observations', value)} /></label>
+                <label>Comportamento durante a sessão<TextArea value={session.behavior} onChange={value => updateSession(index, 'behavior', value)} /></label>
+                <label>Resultados parciais — sem conclusão automática<TextArea value={session.partialResults} onChange={value => updateSession(index, 'partialResults', value)} /></label>
+                <label>Intercorrências<TextArea value={session.intercurrences} onChange={value => updateSession(index, 'intercurrences', value)} /></label>
+                <label>Próximos passos<TextArea value={session.nextSteps} onChange={value => updateSession(index, 'nextSteps', value)} /></label>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="psi-neuro-section">
         <FormSectionTitle entry={entry('integracao')} />

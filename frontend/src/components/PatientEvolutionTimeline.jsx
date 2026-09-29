@@ -7,6 +7,7 @@ import { validateEvolutionIndicators } from '../data/anamneseKit';
 import { listPatientEvolutions, updatePatientEvolution } from '../services/patientEvolutionService';
 import { listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { formatRegisteredSessionCount, getClinicLetterheadColor } from '../utils/reportUtils';
+import { PSYCHOLOGY_FORM_DISCIPLINES } from '../utils/evolutionQueue';
 import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems } from '../utils/reportUtils';
@@ -68,12 +69,12 @@ const PSICOLOGIA_FIELDS = [
 // Acupuntura e Psicologia têm tela própria (sem config de disciplina
 // genérica); Fisioterapia/Nutrição leem de anamneseRegistry — mesma
 // fonte que DisciplineEvolucao já usa, sem duplicar rótulo em dois
-// lugares. Neuropsicologia não tem evolução própria (ver disciplines.js).
+// lugares. Neuropsicologia evolui com o formulário da Psicologia.
 function getEvolutionSchema(discipline) {
   if (discipline === 'acupuntura') {
     return { metrics: ACUPUNTURA_METRICS, fields: ACUPUNTURA_FIELDS, hasPoints: true };
   }
-  if (discipline === 'psicologia') {
+  if (PSYCHOLOGY_FORM_DISCIPLINES.includes(discipline)) {
     return { metrics: [], fields: PSICOLOGIA_FIELDS, hasPoints: false };
   }
   const config = getAnamneseConfig(discipline);

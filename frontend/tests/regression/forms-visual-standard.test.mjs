@@ -201,7 +201,7 @@ test('roteiro da Acupuntura: seção 7 segue o sexo clínico e segurança vira f
   assert.equal(byId('seguranca').hint, '1 sinal marcado');
 });
 
-test('roteiro da Avaliação neuropsicológica conta sessões concluídas e instrumentos revisados', async () => {
+test('roteiro da Avaliação neuropsicológica conta instrumentos revisados (sessões desligadas)', async () => {
   const neuro = await server.ssrLoadModule('/src/data/neuropsychologyEvaluation.js');
   const evaluation = neuro.createEmptyNeuropsychologyEvaluation();
   evaluation.sessions[0].status = 'concluida';
@@ -209,11 +209,15 @@ test('roteiro da Avaliação neuropsicológica conta sessões concluídas e inst
   evaluation.referral.reason = 'Esquecimentos no trabalho';
   const items = route.buildNeuroAssessmentRoute(evaluation);
   const byId = id => route.findRouteItem(items, id);
-  assert.deepEqual([byId('sessoes').done, byId('sessoes').total], [1, 10]);
-  assert.equal(byId('sessoes').unitLabel, 'concluídas');
+  // Sessões da Avaliação desligadas em 2026-09-29: fora do roteiro, e a
+  // Integração vira a seção 3.
+  assert.equal(neuro.NEURO_ASSESSMENT_SESSIONS_ACTIVE, false);
+  assert.equal(byId('sessoes'), null);
+  assert.deepEqual(items.map(entry => entry.number), ['1', '2', '3']);
   assert.deepEqual([byId('instrumentos').done, byId('instrumentos').total], [1, evaluation.instruments.length]);
   assert.deepEqual([byId('encaminhamento').done, byId('encaminhamento').total], [1, 5]);
   assert.equal(byId('integracao').total, 10);
+  assert.equal(byId('integracao').number, '3');
 });
 
 // ---- ficha renderizada ------------------------------------------------

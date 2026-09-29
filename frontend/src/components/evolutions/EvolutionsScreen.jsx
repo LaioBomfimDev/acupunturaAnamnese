@@ -36,8 +36,8 @@ import '../../styles/evolutions.css';
 // e ele abre aqui para evoluir.
 // ============================================================
 
-// Só áreas com formulário de evolução: registrar Neuropsicologia aqui
-// criaria um atendimento que a fila não mostra.
+// Só áreas com formulário de evolução: registrar uma área sem formulário
+// aqui criaria um atendimento que a fila não mostra.
 const REGISTER_DISCIPLINES = DISCIPLINES.filter(
   discipline => discipline.available && EVOLUTION_DISCIPLINES.includes(discipline.id),
 );

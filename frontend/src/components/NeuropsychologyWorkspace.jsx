@@ -11,6 +11,7 @@ import {
   upsertVersionedClinicalRecord,
 } from '../services/clinicalRecordService';
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
+import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { getDiscipline, resolveUserDisciplines } from '../data/disciplines';
 import {
   NEUROPSYCHOLOGY_CONTENT_STATUS,
@@ -29,10 +30,12 @@ const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
 // Workspace de Neuropsicologia — extraída de dentro de Psicologia em
 // 10/09/2026 (era a opção "Avaliação" do PathChooser de Psicologia).
 // Escopo mínimo decidido com a usuária: Painel + Avaliação
-// (instrumentos/sessões) + Relatório — sem Anamnese nem Evolução
-// próprias. Documentos timbrados só pelos botões de boas-vindas
-// (Hub/PatientStart), sem aba na lateral — mesmo padrão adotado nas
-// demais disciplinas.
+// (instrumentos) + Relatório — sem Anamnese nem aba de Evolução. Desde
+// 29/09/2026 a sessão de Neuropsicologia se evolui na tela Evoluções,
+// com o formulário da Psicologia, e as Sessões de dentro da Avaliação
+// ficam desligadas (NEURO_ASSESSMENT_SESSIONS_ACTIVE). Documentos
+// timbrados só pelos botões de boas-vindas (Hub/PatientStart), sem aba
+// na lateral — mesmo padrão adotado nas demais disciplinas.
 //
 // Reaproveita PsychologyNeuroAssessment/PsychologyNeuroReport tal como
 // já existiam dentro de Psicologia — só o registro clínico muda de
@@ -85,6 +88,7 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
   const [saveStatus, setSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [hasPending, setHasPending] = useState(false);
+  const [evolutionCount, setEvolutionCount] = useState(0);
 
   const hydratingRef = useRef(false);
   const saveTimerRef = useRef(null);
@@ -144,6 +148,19 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
 
     return () => { cancelled = true; };
   }, [saveQueue, selectedPatient?.id]);
+
+  // Contador da lateral: evoluções de Neuropsicologia escritas na tela
+  // Evoluções (mesma fonte das outras áreas), não as sessões da Avaliação.
+  useEffect(() => {
+    const patientId = selectedPatient?.id;
+    setEvolutionCount(0);
+    if (!patientId) return undefined;
+    let cancelled = false;
+    listPatientEvolutions(patientId, 'neuropsicologia')
+      .then(records => { if (!cancelled) setEvolutionCount(Array.isArray(records) ? records.length : 0); })
+      .catch(() => { if (!cancelled) setEvolutionCount(0); });
+    return () => { cancelled = true; };
+  }, [selectedPatient?.id]);
 
   const doSave = useCallback(async () => {
     const patientId = patientIdRef.current;
@@ -305,9 +322,7 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
         onSwitchDiscipline={handleSwitchArea}
         selectedPatient={selectedPatient}
         patientAge={patientAge}
-        sessionCount={Array.isArray(neuroEvaluation.sessions)
-          ? neuroEvaluation.sessions.filter(item => item.status === 'concluida').length
-          : 0}
+        sessionCount={evolutionCount}
         lastVisit=""
         hasMultipleDisciplines={hasMultipleDisciplines}
         navGroups={NAV_GROUPS}

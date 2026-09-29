@@ -3,6 +3,14 @@ export const NEUROPSYCHOLOGY_CONTENT_STATUS = 'rascunho_a_validar';
 export const NEUROPSYCHOLOGY_DRAFT_NOTICE =
   'Estrutura inicial para revisão da neuropsicóloga. Instrumentos, sequência, interpretação e conclusão permanecem sob decisão profissional.';
 
+// Sessões/evoluções dentro da Avaliação: desligadas em 2026-09-29, a
+// pedido da administradora, enquanto se decide o que fazer com elas. A
+// sessão de Neuropsicologia se evolui na tela Evoluções, com o mesmo
+// formulário da Psicologia. A seção some da tela, do roteiro e do
+// relatório, mas o que já foi digitado segue gravado em
+// evaluation.sessions (normalize preserva) — religar é só virar isto.
+export const NEURO_ASSESSMENT_SESSIONS_ACTIVE = false;
+
 export const NEUROPSYCHOLOGY_INSTRUMENT_TEMPLATES = [
   { name: 'Entrevista clínica e anamnese', domain: 'Histórico e demanda' },
   { name: 'Escala ETDAH (se indicada)', domain: 'Atenção e comportamento' },

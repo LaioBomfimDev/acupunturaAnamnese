@@ -256,3 +256,14 @@ test('relatório neuropsicológico usa prompt próprio, dados anonimizados e gat
   assert.ok(!JSON.stringify(payload).includes('11999998888'));
   assert.ok(!JSON.stringify(payload).includes('Maria'));
 });
+
+test('relatório neuropsicológico não manda para a IA as sessões desligadas da Avaliação', () => {
+  // 2026-09-29: as Sessões de dentro da Avaliação foram desligadas (a
+  // evolução de neuro passou para a tela Evoluções). O que ficou gravado
+  // nelas não entra no rascunho da IA.
+  const payload = psychologyAiService.buildNeuropsychologyReportCase({
+    referral: { reason: 'Demanda' },
+    sessions: [{ observations: 'Não deve sair', status: 'concluida' }],
+  });
+  assert.deepEqual(payload.sessions, []);
+});

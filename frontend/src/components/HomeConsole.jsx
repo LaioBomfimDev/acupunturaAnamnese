@@ -4,6 +4,7 @@ import { listAppointments, listPatientsAwaitingReturn } from '../services/appoin
 import { listClinicMembers } from '../services/clinicMembersService';
 import { listClinicPatients } from '../services/clinicPatientsService';
 import { currentMonthBirthdays, isCountableAppointment } from '../utils/gestaoDashboard';
+import { greetingFor } from '../utils/greeting';
 import '../styles/console.css';
 
 // ============================================================
@@ -14,8 +15,9 @@ import '../styles/console.css';
 //                        Vê a navegação institucional primeiro e TODAS
 //                        as áreas da clínica, só para consulta.
 //   'admin-professional' administra e também atende (ex.: Denise).
-//                        Sidebar prioriza as áreas dela; navegação
-//                        institucional continua sempre visível abaixo.
+//                        As áreas dela ficam só no conteúdo (não se
+//                        repetem na barra lateral, que é só a
+//                        navegação institucional).
 //   'professional'       profissional comum: agenda, evolução pendente
 //                        e a Gestão pessoal (cor da tela e cadastro)
 //                        na navegação, área própria em destaque no
@@ -126,15 +128,7 @@ function Icon({ id, glyphs = TOOL_GLYPHS }) {
   );
 }
 
-function NavItem({ icon, title, description, badge, onClick, compact = false }) {
-  if (compact) {
-    return (
-      <button type="button" className="hc-nav-item-compact" onClick={onClick}>
-        <span className="hc-nav-icon-sm"><Icon id={icon} glyphs={DISCIPLINE_GLYPHS} /></span>
-        <span>{title}</span>
-      </button>
-    );
-  }
+function NavItem({ icon, title, description, badge, onClick }) {
   return (
     <button type="button" className="hc-nav-item" onClick={onClick}>
       {badge > 0 && <span className="hc-nav-badge">{badge > 99 ? '99+' : badge}</span>}
@@ -310,21 +304,7 @@ export function HomeConsole({
         <h1 className="hc-clinic">{clinicName}</h1>
         <p className="hc-role">{copy.role}</p>
 
-        <p className="hc-greeting">Oi, {therapistName || 'profissional'}</p>
-
         <nav className="hc-nav">
-          {variant === 'admin-professional' && attendable.length > 0 && (
-            <>
-              <p className="hc-nav-label">Suas áreas</p>
-              <div className="hc-nav-list">
-                {attendable.map(card => (
-                  <NavItem key={card.id} icon={card.id} title={card.label} compact onClick={() => onSelect(card.id)} />
-                ))}
-              </div>
-              <div className="hc-nav-divider" />
-            </>
-          )}
-
           <p className="hc-nav-label">{copy.navLabel}</p>
           <div className="hc-nav-list">
             {onOpenAgenda && (
@@ -381,6 +361,7 @@ export function HomeConsole({
       </aside>
 
       <main className="hc-main">
+        <p className="hc-greeting">{greetingFor(therapistName)}</p>
         <h2>{copy.heading}</h2>
         {(copy.lead || areasNote) && <p className="hc-lead">{copy.lead || areasNote}</p>}
 

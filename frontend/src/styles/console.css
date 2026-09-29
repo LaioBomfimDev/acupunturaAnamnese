@@ -50,19 +50,12 @@
 }
 
 .hc-role {
-  margin: 4px 0 22px;
+  margin: 4px 0 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--r1-border-inverse);
   font-size: 12.5px;
   font-weight: 600;
   color: var(--r1-text-on-inverse-muted);
-}
-
-.hc-greeting {
-  margin: 0 0 18px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--r1-border-inverse);
-  font-family: var(--r1-font-display);
-  font-size: 16px;
-  font-weight: 700;
 }
 
 .hc-nav-label {
@@ -151,54 +144,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.hc-nav-divider {
-  height: 1px;
-  background: var(--r1-border-inverse);
-  margin: 14px 0;
-}
-
-.hc-nav-item-compact {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-  padding: 9px 10px;
-  border: none;
-  border-radius: var(--r1-radius-md);
-  background: rgba(255, 255, 255, 0.10);
-  color: inherit;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--r1-dur-fast) var(--r1-ease);
-}
-
-.hc-nav-item-compact:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.hc-nav-item-compact:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--hc-focus-on-dark);
-}
-
-.hc-nav-icon-sm {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r1-radius-sm);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.hc-nav-icon-sm svg {
-  width: 14px;
-  height: 14px;
-}
-
 .hc-signout {
   margin-top: auto;
   display: flex;
@@ -232,6 +177,14 @@
   flex: 1;
   padding: 36px 44px 40px;
   overflow-y: auto;
+}
+
+.hc-greeting {
+  margin: 0 0 4px;
+  font-family: var(--r1-font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
 }
 
 .hc-main h2 {

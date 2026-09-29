@@ -29,7 +29,7 @@ function isValidToken(token) {
 async function loadOpenSurvey(supabaseAdmin, token) {
   const { data, error } = await supabaseAdmin
     .from('satisfaction_surveys')
-    .select('id,clinic_id,expires_at,responded_at')
+    .select('id,clinic_id,appointment_id,expires_at,responded_at')
     .eq('token', token)
     .maybeSingle();
 
@@ -37,6 +37,38 @@ async function loadOpenSurvey(supabaseAdmin, token) {
   if (data.responded_at) return null;
   if (new Date(data.expires_at).getTime() < Date.now()) return null;
   return data;
+}
+
+// O que a tela mostra antes da nota: marca da clínica e, quando a
+// pesquisa veio de um atendimento, com quem e em que dia foi — o
+// paciente precisa saber QUAL atendimento está avaliando. Nada de
+// disciplina/observação. O filtro por clinic_id no agendamento é
+// defesa: a policy de INSERT confere o paciente, não o appointment_id.
+async function loadSurveyView(supabaseAdmin, survey) {
+  const { data: clinic } = await supabaseAdmin
+    .from('clinics')
+    .select('name,brand_color')
+    .eq('id', survey.clinic_id)
+    .maybeSingle();
+
+  let appointment = null;
+  if (survey.appointment_id) {
+    const { data } = await supabaseAdmin
+      .from('appointments')
+      .select('starts_at,ends_at,profiles!professional_id(full_name)')
+      .eq('id', survey.appointment_id)
+      .eq('clinic_id', survey.clinic_id)
+      .maybeSingle();
+    appointment = data;
+  }
+
+  return {
+    clinicName: clinic?.name || null,
+    clinicColor: clinic?.brand_color || null,
+    professionalName: appointment?.profiles?.full_name || null,
+    startsAt: appointment?.starts_at || null,
+    endsAt: appointment?.ends_at || null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -80,13 +112,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: GENERIC_ERROR }, 404);
       }
 
-      const { data: clinic } = await supabaseAdmin
-        .from('clinics')
-        .select('name')
-        .eq('id', survey.clinic_id)
-        .maybeSingle();
-
-      return jsonResponse({ clinicName: clinic?.name || null });
+      return jsonResponse(await loadSurveyView(supabaseAdmin, survey));
     }
 
     const rating = Number(body.rating);

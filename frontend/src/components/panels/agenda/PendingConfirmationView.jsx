@@ -133,7 +133,8 @@ export function PendingConfirmationView({
     const confirmacao = `Por favor, confirme sua presença aqui: ${link}`;
 
     const paragrafos = [saudacao, confirmacao];
-    if (clinicAddress) paragrafos.push(`Nosso endereço: ${clinicAddress}.`);
+    // Online não vai até a clínica: mandar o endereço só confunde.
+    if (clinicAddress && appointment.modality !== 'online') paragrafos.push(`Nosso endereço: ${clinicAddress}.`);
     paragrafos.push('Obrigado(a)!');
 
     return { href: buildWhatsAppLink({ phone, message: paragrafos.join('\n\n') }), reason: 'ok' };

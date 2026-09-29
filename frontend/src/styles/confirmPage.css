@@ -1,47 +1,82 @@
 /* ============================================================
-   Confirmação de agendamento — página pública, sem sessão.
-   Mobile-first: o link chega pelo WhatsApp do profissional, abre
-   direto no telefone do paciente. Mesmos tokens de surveyPage.css,
-   prefixo próprio porque é outra página.
+   Páginas públicas, sem sessão: confirmação de agendamento (dona do
+   arquivo), pesquisa de satisfação (+ surveyPage.css) e agenda
+   pública (.pa-*, no fim). Mobile-first: o link chega pelo WhatsApp,
+   abre direto no telefone do paciente.
+
+   Cor da clínica: ConfirmAppointmentPage troca --r1-accent e
+   --r1-accent-strong no próprio .cf-page (clinicAccentStyle). Por isso
+   o wash e o anel de foco são redeclarados AQUI — os de tokens.css já
+   chegam resolvidos com a cor padrão e não acompanhariam a troca.
    ============================================================ */
 
 .cf-page {
+  --cf-accent-wash: color-mix(in srgb, var(--r1-accent) 10%, var(--r1-surface));
+  --cf-accent-line: color-mix(in srgb, var(--r1-accent) 26%, transparent);
+  --r1-focus-ring: color-mix(in srgb, var(--r1-accent) 34%, transparent);
+
+  box-sizing: border-box;
   min-height: 100svh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: var(--r1-bg);
+  background:
+    radial-gradient(120% 55% at 50% 0%, color-mix(in srgb, var(--r1-accent) 9%, transparent), transparent 72%),
+    var(--r1-bg);
   color: var(--r1-text);
   font-family: var(--r1-font-sans);
 }
 
+/* border-box aqui mesmo: a página não depende do reset global do
+   App.css pra caber na tela do celular. */
 .cf-card {
+  box-sizing: border-box;
+  position: relative;
   width: 100%;
   max-width: 420px;
-  padding: 28px 24px;
+  padding: 28px 24px 24px;
+  overflow: hidden;
   border: 1px solid var(--r1-border-subtle);
   border-radius: var(--r1-radius-lg);
   background: var(--r1-surface);
   box-shadow: var(--r1-shadow-md);
 }
 
+/* Faixa fina na cor da clínica: marca a página sem pintar o cartão. */
+.cf-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--r1-accent);
+}
+
 .cf-card h1 {
   margin: 0 0 8px;
   font-family: var(--r1-font-display);
   font-size: 22px;
-  font-weight: 400;
+  font-weight: 600;
+  letter-spacing: -0.2px;
   line-height: 1.25;
   color: var(--r1-text);
 }
 
 .cf-clinic {
-  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--r1-accent-strong);
+}
+
+.cf-clinic svg {
+  flex: 0 0 auto;
 }
 
 .cf-note {
@@ -51,38 +86,168 @@
   color: var(--r1-text-muted);
 }
 
-.cf-summary {
-  display: grid;
-  gap: 12px;
-  margin: 0 0 20px;
-  padding: 16px;
-  border: 1px solid var(--r1-border-subtle);
-  border-radius: var(--r1-radius-md);
-  background: var(--r1-surface-sunken);
+.cf-head {
+  margin-bottom: 18px;
 }
 
-.cf-summary div {
+/* ---------- Quando: bloquinho de calendário + extenso ---------- */
+
+.cf-when {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--cf-accent-line);
+  border-radius: var(--r1-radius-md);
+  background: var(--cf-accent-wash);
 }
 
-.cf-summary dt {
-  font-size: 11.5px;
-  font-weight: 600;
+.cf-date-tile {
+  flex: 0 0 58px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--cf-accent-line);
+  border-radius: 12px;
+  background: var(--r1-surface);
+  text-align: center;
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.cf-date-month {
+  padding: 3px 0;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.cf-date-day {
+  padding: 4px 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.cf-when-text {
+  min-width: 0;
+}
+
+.cf-when-chip {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.3px;
+}
+
+.cf-when-date {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--r1-text);
+}
+
+.cf-when-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text);
+}
+
+.cf-when-time svg {
+  color: var(--r1-accent-strong);
+}
+
+/* ---------- Resumo com ícones ---------- */
+
+.cf-details {
+  margin: 8px 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.cf-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.cf-detail:last-child {
+  border-bottom: 0;
+}
+
+.cf-detail-icon {
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--cf-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.cf-detail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.cf-detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--r1-text-muted);
 }
 
-.cf-summary dd {
-  margin: 0;
-  font-size: 14px;
+.cf-detail-value {
+  font-size: 15px;
   font-weight: 600;
-  text-align: right;
+  line-height: 1.35;
   color: var(--r1-text);
+  overflow-wrap: anywhere;
 }
+
+.cf-map-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cf-map-link:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* ---------- Ação e estados ---------- */
 
 .cf-error {
   padding: 10px 12px;
@@ -95,21 +260,39 @@
 }
 
 .cf-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  min-height: var(--r1-tap);
+  min-height: 50px;
   border: 0;
-  border-radius: var(--r1-radius-sm);
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--r1-accent) 30%, transparent);
+  transition: transform var(--r1-dur-fast) var(--r1-ease), box-shadow var(--r1-dur) var(--r1-ease);
+}
+
+.cf-submit:active:not(:disabled) {
+  transform: scale(0.985);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--r1-accent) 26%, transparent);
 }
 
 .cf-submit:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Desabilitado porque está enviando (não porque falta algo): menos apagado. */
+.cf-submit[aria-busy='true'] {
+  opacity: 0.8;
+  cursor: progress;
 }
 
 .cf-submit:focus-visible {
@@ -117,16 +300,111 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
-.cf-confirmed-badge {
-  margin: 0;
-  padding: 12px;
-  border-radius: var(--r1-radius-sm);
-  background: color-mix(in srgb, var(--r1-success) 12%, var(--r1-surface));
-  border: 1px solid color-mix(in srgb, var(--r1-success) 35%, transparent);
+.cf-done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--r1-success) 30%, transparent);
+  border-radius: var(--r1-radius-md);
+  background: color-mix(in srgb, var(--r1-success) 9%, var(--r1-surface));
+  animation: cf-pop var(--r1-dur) var(--r1-ease);
+}
+
+.cf-done-icon {
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--r1-success);
+  color: #ffffff;
+}
+
+.cf-done strong {
+  display: block;
+  font-size: 15px;
   color: var(--r1-success);
-  font-size: 14px;
-  font-weight: 700;
+}
+
+.cf-done span:not(.cf-done-icon) {
+  font-size: 13px;
+  color: var(--r1-text-muted);
+}
+
+.cf-state {
   text-align: center;
+}
+
+.cf-state-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 4px auto 14px;
+  border-radius: 50%;
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+  color: var(--r1-text-subtle);
+}
+
+.cf-state-icon--success {
+  border-color: transparent;
+  background: var(--r1-success);
+  color: #ffffff;
+  animation: cf-pop var(--r1-dur) var(--r1-ease);
+}
+
+.cf-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0;
+}
+
+.cf-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid color-mix(in srgb, var(--r1-accent) 18%, transparent);
+  border-top-color: var(--r1-accent);
+  border-radius: 50%;
+  animation: cf-spin 0.8s linear infinite;
+}
+
+.cf-spinner--on-accent {
+  width: 16px;
+  height: 16px;
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+}
+
+.cf-foot {
+  max-width: 420px;
+  margin: 14px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--r1-text-subtle);
+}
+
+@keyframes cf-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cf-pop {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-spinner { animation-duration: 2.4s; }
+}
+
+@media (max-width: 380px) {
+  .cf-card { padding: 24px 18px 20px; }
+  .cf-when { gap: 12px; padding: 12px; }
 }
 
 /* ---------- Agenda pública (PublicAgendaPage.jsx) ---------- */

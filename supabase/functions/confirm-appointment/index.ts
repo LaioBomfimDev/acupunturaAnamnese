@@ -33,8 +33,8 @@ function isValidToken(token) {
 // created_by) — profiles(full_name) sem hint fica ambíguo pro PostgREST
 // e a query falha inteira. profiles!professional_id desambigua.
 const APPOINTMENT_PUBLIC_SELECT =
-  'id,starts_at,room,discipline,status,confirmed_at,clinic_id,' +
-  'patients(name),profiles!professional_id(full_name),clinics(name)';
+  'id,starts_at,ends_at,room,modality,discipline,status,confirmed_at,clinic_id,' +
+  'patients(name),profiles!professional_id(full_name),clinics(name,address,brand_color)';
 
 async function loadAppointment(supabaseAdmin, token) {
   const { data, error } = await supabaseAdmin
@@ -48,12 +48,24 @@ async function loadAppointment(supabaseAdmin, token) {
 }
 
 function toPublicView(appointment) {
+  // Nulo conta como presencial — mesma leitura da Agenda: atendimento
+  // de antes da migração 20260818 não tinha modalidade gravada.
+  const modality = appointment.modality === 'online' ? 'online' : 'presencial';
+  const clinicAddress = String(appointment.clinics?.address || '').trim();
+
   return {
     patientName: appointment.patients?.name || null,
     professionalName: appointment.profiles?.full_name || null,
     clinicName: appointment.clinics?.name || null,
+    // Cor pública da própria clínica: a página veste a marca dela.
+    clinicColor: appointment.clinics?.brand_color || null,
     discipline: appointment.discipline,
     startsAt: appointment.starts_at,
+    endsAt: appointment.ends_at,
+    modality,
+    // Endereço só pra quem vai até a clínica — no online ele só
+    // confundiria ("preciso ir até lá?").
+    clinicAddress: modality === 'presencial' && clinicAddress ? clinicAddress : null,
     room: appointment.room,
     confirmed: Boolean(appointment.confirmed_at),
     confirmable: CONFIRMABLE_STATUSES.includes(appointment.status),

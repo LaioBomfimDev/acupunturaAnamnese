@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
-import { relativeDayLabel } from './utils/agenda';
+import {
+  buildConfirmationDetails,
+  clinicAccentStyle,
+  describeAppointmentWhen,
+} from './utils/appointmentConfirmation';
+import { IconPin, IconVideo } from './components/panels/agenda/AgendaIcons';
+import {
+  IconBuilding,
+  IconCalendarOff,
+  IconCheckBold,
+  IconDoor,
+  IconExternal,
+  IconLinkOff,
+  IconPerson,
+  IconStethoscope,
+  PublicLoading,
+  PublicStateMessage,
+  PublicWhenBlock,
+} from './components/public/PublicPageParts';
 import './styles/tokens.css';
 import './styles/confirmPage.css';
 
@@ -14,7 +32,8 @@ import './styles/confirmPage.css';
 // frontend/src/utils/whatsapp.js); não há conta nem sessão.
 // Toda validação (token existe, agendamento ainda ativo) acontece na
 // Edge Function confirm-appointment — esta tela só reflete o que ela
-// devolve.
+// devolve. O que aparece em cada caso (endereço só presencial etc.)
+// mora em utils/appointmentConfirmation.js.
 // ============================================================
 
 function getTokenFromUrl() {
@@ -29,12 +48,14 @@ async function callConfirmFunction(body) {
   return data;
 }
 
-function formatWhen(iso) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  const hora = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  return `${relativeDayLabel(iso, new Date())}, às ${hora}`;
-}
+const DETAIL_ICONS = {
+  patient: <IconPerson />,
+  professional: <IconStethoscope />,
+  presencial: <IconBuilding />,
+  online: <IconVideo width="18" height="18" />,
+  address: <IconPin width="18" height="18" />,
+  room: <IconDoor />,
+};
 
 export function ConfirmAppointmentPage() {
   const [token] = useState(getTokenFromUrl);
@@ -75,69 +96,90 @@ export function ConfirmAppointmentPage() {
     }
   }
 
+  const when = appointment ? describeAppointmentWhen(appointment.startsAt, appointment.endsAt, new Date()) : null;
+  const details = buildConfirmationDetails(appointment);
+  const confirmed = Boolean(appointment?.confirmed);
+
   return (
-    <div className="cf-page">
-      <div className="cf-card">
-        {status === 'loading' && <p className="cf-note">Carregando…</p>}
+    <div className="cf-page" style={clinicAccentStyle(appointment?.clinicColor) || undefined}>
+      <main className="cf-card" aria-busy={status === 'loading'}>
+        {status === 'loading' && <PublicLoading>Carregando seu agendamento…</PublicLoading>}
 
         {status === 'invalid' && (
-          <>
-            <h1>Link indisponível</h1>
-            <p className="cf-note">
-              Este link é inválido. Se você recebeu um link novo, confira se
-              copiou o endereço completo.
-            </p>
-          </>
+          <PublicStateMessage tone="neutral" icon={<IconLinkOff />} title="Link indisponível">
+            Este link é inválido. Se você recebeu um link novo, confira se
+            copiou o endereço completo.
+          </PublicStateMessage>
         )}
 
         {status === 'closed' && appointment && (
-          <>
-            <h1>Agendamento não disponível</h1>
-            <p className="cf-note">
-              Este agendamento não está mais aberto para confirmação. Se
-              precisar remarcar, entre em contato com {appointment.clinicName || 'a clínica'}.
-            </p>
-          </>
+          <PublicStateMessage tone="neutral" icon={<IconCalendarOff />} title="Agendamento não disponível">
+            Este agendamento não está mais aberto para confirmação. Se
+            precisar remarcar, entre em contato com {appointment.clinicName || 'a clínica'}.
+          </PublicStateMessage>
         )}
 
         {status === 'view' && appointment && (
           <>
-            <h1>{appointment.confirmed ? 'Consulta confirmada' : 'Confirmar consulta'}</h1>
-            {appointment.clinicName && <p className="cf-clinic">{appointment.clinicName}</p>}
-
-            <dl className="cf-summary">
-              <div>
-                <dt>Paciente</dt>
-                <dd>{appointment.patientName || 'Não informado'}</dd>
-              </div>
-              <div>
-                <dt>Profissional</dt>
-                <dd>{appointment.professionalName || 'Não informado'}</dd>
-              </div>
-              <div>
-                <dt>Quando</dt>
-                <dd>{formatWhen(appointment.startsAt)}</dd>
-              </div>
-              {appointment.room && (
-                <div>
-                  <dt>Local</dt>
-                  <dd>{appointment.room}</dd>
-                </div>
+            <header className="cf-head">
+              {appointment.clinicName && (
+                <p className="cf-clinic">
+                  <IconBuilding size={14} />
+                  {appointment.clinicName}
+                </p>
               )}
-            </dl>
+              <h1>{confirmed ? 'Consulta confirmada' : 'Confirme sua consulta'}</h1>
+              {!confirmed && (
+                <p className="cf-note">Confira os dados abaixo e toque em “Confirmar presença”.</p>
+              )}
+            </header>
+
+            <PublicWhenBlock when={when} />
+
+            <ul className="cf-details">
+              {details.map(row => (
+                <li key={row.id} className="cf-detail">
+                  <span className="cf-detail-icon">{DETAIL_ICONS[row.id]}</span>
+                  <div className="cf-detail-text">
+                    <span className="cf-detail-label">{row.label}</span>
+                    <span className="cf-detail-value">{row.value}</span>
+                    {row.href && (
+                      <a className="cf-map-link" href={row.href} target="_blank" rel="noopener noreferrer">
+                        Abrir no mapa
+                        <IconExternal />
+                      </a>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
 
             {errorMessage && <div className="cf-error" role="alert">{errorMessage}</div>}
 
-            {appointment.confirmed ? (
-              <p className="cf-confirmed-badge">✓ Presença confirmada</p>
+            {confirmed ? (
+              <div className="cf-done" role="status">
+                <span className="cf-done-icon"><IconCheckBold size={20} /></span>
+                <div>
+                  <strong>Presença confirmada</strong>
+                  <span>Obrigado! Até lá.</span>
+                </div>
+              </div>
             ) : (
-              <button type="button" className="cf-submit" onClick={handleConfirm} disabled={confirming}>
-                {confirming ? 'Confirmando…' : 'Confirmar presença'}
+              <button type="button" className="cf-submit" onClick={handleConfirm} disabled={confirming} aria-busy={confirming}>
+                {confirming ? (
+                  <><span className="cf-spinner cf-spinner--on-accent" aria-hidden="true" />Confirmando…</>
+                ) : (
+                  <><IconCheckBold />Confirmar presença</>
+                )}
               </button>
             )}
           </>
         )}
-      </div>
+      </main>
+
+      {status === 'view' && (
+        <p className="cf-foot">Este link é pessoal: mostra só o seu agendamento.</p>
+      )}
     </div>
   );
 }

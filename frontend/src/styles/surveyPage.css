@@ -1,103 +1,135 @@
 /* ============================================================
    Pesquisa de satisfação — página pública, sem sessão.
    Mobile-first: o link chega por WhatsApp/SMS, abre direto no
-   telefone do paciente.
+   telefone do paciente. Página, cartão, estados e botão vêm de
+   confirmPage.css (.cf-*); aqui só o que é da pesquisa.
    ============================================================ */
 
-.sv-page {
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  background: var(--r1-bg);
-  color: var(--r1-text);
-  font-family: var(--r1-font-sans);
+/* ---------- Estrelas (radios nativos: setas do teclado funcionam) ---------- */
+
+.sv-stars {
+  margin: 18px 0 6px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
-.sv-card {
-  width: 100%;
-  max-width: 420px;
-  padding: 28px 24px;
-  border: 1px solid var(--r1-border-subtle);
-  border-radius: var(--r1-radius-lg);
-  background: var(--r1-surface);
-  box-shadow: var(--r1-shadow-md);
-}
-
-.sv-card h1 {
-  margin: 0 0 8px;
-  font-family: var(--r1-font-display);
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 1.25;
-  color: var(--r1-text);
-}
-
-.sv-note {
-  margin: 0 0 18px;
-  font-size: 13.5px;
-  line-height: 1.5;
+.sv-legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
   color: var(--r1-text-muted);
 }
 
-.sv-rating {
+.sv-stars-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  gap: 4px;
 }
 
-.sv-rating-btn {
-  flex: 1;
-  min-height: var(--r1-tap);
-  border: 1px solid var(--r1-border);
-  border-radius: var(--r1-radius-sm);
-  background: var(--r1-field-bg);
-  color: var(--r1-text);
-  font: inherit;
-  font-size: 16px;
-  font-weight: 700;
+.sv-star {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
   cursor: pointer;
-  transition: border-color var(--r1-dur-fast) var(--r1-ease),
-    background var(--r1-dur-fast) var(--r1-ease),
-    color var(--r1-dur-fast) var(--r1-ease);
+  color: var(--r1-border);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.sv-rating-btn:hover {
-  border-color: var(--r1-accent);
+/* Radio fica acessível (foco, setas, leitor de tela) mas invisível. */
+.sv-star input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
-.sv-rating-btn[aria-pressed='true'] {
-  border-color: transparent;
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
+.sv-star-glyph {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  transition: transform var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
 }
 
-.sv-rating-btn:focus-visible {
-  outline: none;
+.sv-star--on {
+  color: var(--r1-accent);
+}
+
+.sv-star:active .sv-star-glyph {
+  transform: scale(0.9);
+}
+
+.sv-star input:checked + .sv-star-glyph {
+  transform: scale(1.08);
+}
+
+.sv-star input:focus-visible + .sv-star-glyph {
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
+
+.sv-rating-label {
+  min-height: 20px;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  text-align: center;
+  color: var(--r1-text-subtle);
+}
+
+.sv-rating-label--set {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
+}
+
+/* ---------- Comentário ---------- */
 
 .sv-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 18px;
-  font-size: 12.5px;
+  margin: 18px 0;
+}
+
+.sv-field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--r1-text-muted);
+  color: var(--r1-text);
+}
+
+.sv-optional {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--r1-text-subtle);
 }
 
 .sv-field textarea {
   box-sizing: border-box;
-  padding: 10px 12px;
+  width: 100%;
+  padding: 11px 12px;
   border: 1px solid var(--r1-border);
-  border-radius: var(--r1-radius-sm);
+  border-radius: var(--r1-radius-md);
   background: var(--r1-field-bg);
   color: var(--r1-text);
   font: inherit;
-  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.45;
   resize: vertical;
+}
+
+.sv-field textarea::placeholder {
+  color: var(--r1-text-subtle);
 }
 
 .sv-field textarea:focus-visible {
@@ -106,35 +138,40 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
-.sv-error {
-  padding: 10px 12px;
-  margin-bottom: 14px;
-  border: 1px solid var(--r1-danger-border);
-  border-radius: var(--r1-radius-sm);
-  background: var(--r1-danger-bg);
-  color: var(--r1-danger);
-  font-size: 13px;
+.sv-counter {
+  align-self: flex-end;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text-subtle);
 }
 
-.sv-submit {
-  width: 100%;
-  min-height: var(--r1-tap);
-  border: 0;
-  border-radius: var(--r1-radius-sm);
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
-  font: inherit;
+/* ---------- Obrigado ---------- */
+
+.sv-given {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding: 12px;
+  border-radius: var(--r1-radius-md);
+  background: var(--cf-accent-wash);
   font-size: 14px;
   font-weight: 700;
-  cursor: pointer;
+  color: var(--r1-accent-strong);
 }
 
-.sv-submit:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.sv-given-stars {
+  display: flex;
+  gap: 2px;
+  color: var(--r1-border);
 }
 
-.sv-submit:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+.sv-given-stars svg {
+  width: 24px;
+  height: 24px;
+}
+
+.sv-given-stars .sv-star--on {
+  color: var(--r1-accent);
 }

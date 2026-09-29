@@ -60,6 +60,7 @@ Toda correção de bug vem com teste de regressão:
 - reproduz o problema quando viável; idealmente falha antes da correção e passa depois;
 - se não der para automatizar, registre o motivo e a validação manual feita;
 - não remova nem enfraqueça testes existentes para a suíte passar;
+- teste que lê código-fonte com regex casa fim de linha com `\r?\n`, nunca só `\n`: checkout no Windows traz CRLF, e o teste passa num disco e falha no outro;
 - **bug recorrente vira regra** — destile a regra na seção/doc certo e registre o incidente completo em `docs/regressao-log.md` (não acumule relatos longos aqui: append constante quebra o cache e infla toda leitura).
 
 ```bash

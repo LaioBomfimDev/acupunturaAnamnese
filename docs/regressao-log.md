@@ -309,3 +309,11 @@ Modelo de entrada:
 - Regra nova: ação em lote sobre um pacote conta e lista pelo banco com o mesmo filtro de status da escrita, e o aviso mostra a quantidade real ("1 sessão"/"N sessões") e o intervalo de datas. Cancelar continua em `window.confirm`, sem motivo; só a exclusão definitiva exige digitação.
 - Teste ou verificação obrigatória: `agenda.test.mjs`, teste "Agenda conta as sessões a cancelar pelo banco, não pelo período da tela", exige `listSeriesFrom(` e o filtro `status === 'scheduled'` em `handleCancelSeries`, proíbe `appointments.filter(` e "N - 1 seguintes", e exige singular, plural com intervalo e `window.confirm` sem `window.prompt`.
 - Regra destilada em: `AGENTS.md` §7.
+
+### 2026-09-29 - Regex de teste com `\n` falha em checkout CRLF
+
+- Sintoma: `confirm-appointment-page.test.mjs` e `survey-page.test.mjs` passavam no disco de trabalho e falhavam numa cópia limpa do mesmo commit (worktree novo no Windows). Segunda vez: em 2026-09-28 o teste de `handleDeleteSeries` já tinha falhado pelo mesmo motivo (`Agenda.jsx` em CRLF).
+- Causa: o teste recortava a função do código-fonte com `/function x[\s\S]*?\n}\n/`. Arquivo criado ou editado pela IA fica em LF no disco; o checkout do git no Windows (autocrlf) traz CRLF, e `\n}\n` deixa de casar. O recorte vinha vazio e as asserções falhavam.
+- Regra nova: regex de teste sobre código-fonte usa `\r?\n` em toda quebra de linha; quando recorta um trecho, afirma que o recorte não veio vazio, pra falha dizer "não achei" em vez de mentir sobre o conteúdo.
+- Teste ou verificação obrigatória: antes de publicar, rodar os testes novos num worktree limpo do commit (`git worktree add`), não só no disco de trabalho.
+- Regra destilada em: `AGENTS.md` §4.

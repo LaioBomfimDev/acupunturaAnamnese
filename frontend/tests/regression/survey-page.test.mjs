@@ -72,7 +72,9 @@ test('estrelas são radios nativos (teclado e leitor de tela), não botões solt
 
 test('Edge Function devolve cor da clínica e contexto do atendimento, preso à mesma clínica', async () => {
   const source = await readFile(path.resolve(root, '../supabase/functions/satisfaction-survey/index.ts'), 'utf8');
-  const view = source.match(/async function loadSurveyView[\s\S]*?\n}\n/)?.[0] || '';
+  // \r?\n: checkout no Windows traz o .ts em CRLF.
+  const view = source.match(/async function loadSurveyView[\s\S]*?\r?\n}\r?\n/)?.[0] || '';
+  assert.ok(view, 'loadSurveyView não encontrada no código da function');
 
   assert.match(view, /select\('name,brand_color'\)/);
   assert.match(view, /select\('starts_at,ends_at,profiles!professional_id\(full_name\)'\)/);

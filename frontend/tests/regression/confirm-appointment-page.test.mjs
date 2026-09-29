@@ -131,7 +131,9 @@ test('Edge Function devolve modalidade, término e endereço só pra presencial'
   assert.match(select, /\bends_at\b/);
   assert.match(select, /clinics\(name,address,brand_color\)/);
 
-  const view = source.match(/function toPublicView[\s\S]*?\n}\n/)?.[0] || '';
+  // \r?\n: checkout no Windows traz o .ts em CRLF.
+  const view = source.match(/function toPublicView[\s\S]*?\r?\n}\r?\n/)?.[0] || '';
+  assert.ok(view, 'toPublicView não encontrada no código da function');
   assert.match(view, /modality === 'online' \? 'online' : 'presencial'/);
   assert.match(view, /clinicAddress: modality === 'presencial' && clinicAddress \? clinicAddress : null/);
 });

@@ -236,3 +236,25 @@ test('Neuropsicologia entra na fila e evolui com o formulário da Psicologia', (
   assert.match(sources.timeline, /PSYCHOLOGY_FORM_DISCIPLINES\.includes\(discipline\)/);
 });
 
+test('fila só cobra atendimentos a partir de 22/09/2026 (histórico importado fica fora)', async () => {
+  // 2026-09-29: o histórico da agenda anterior, importado em 14/09 já
+  // como Atendido, virou 132 pendências de atendimentos que têm evolução
+  // no sistema anterior. Qualquer migração que recriar a view precisa
+  // manter o corte, senão elas voltam para a fila, o atalho e a ficha.
+  const files = (await readdir(MIGRATIONS_DIR)).filter(name => name.endsWith('.sql')).sort();
+  const defining = [];
+  for (const name of files) {
+    const sql = await readFile(path.join(MIGRATIONS_DIR, name), 'utf8');
+    if (/CREATE OR REPLACE VIEW public\.appointments_awaiting_evolution\b/.test(sql)) defining.push([name, sql]);
+  }
+  // Vale a versão viva: a última migration que recria a view.
+  const [, latestSql] = defining.at(-1);
+  assert.match(latestSql, /AND a\.starts_at >= TIMESTAMPTZ '2026-09-22 00:00:00-03'/);
+  // O resto da regra continua igual.
+  assert.match(latestSql, /WITH \(security_invoker = true\)/);
+  assert.match(latestSql, /a\.status IN \('attended', 'no_show', 'excused'\)/);
+  assert.match(latestSql, /NOT EXISTS \(\s+SELECT 1 FROM public\.patient_evolutions pe\s+WHERE pe\.appointment_id = a\.id\s+\)/);
+  assert.match(latestSql, /REVOKE ALL ON public\.appointments_awaiting_evolution FROM anon;/);
+  // Corte é só de leitura da fila: não mexe em agendamento nem cria evolução.
+  assert.doesNotMatch(latestSql, /\b(UPDATE|DELETE FROM|INSERT INTO)\b/);
+});

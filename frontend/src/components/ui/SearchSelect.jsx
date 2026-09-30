@@ -82,7 +82,10 @@ export function SearchSelect({
           if (event.key === 'Enter' && filtered.length > 0) {
             event.preventDefault();
             commit(filtered[0]);
-          } else if (event.key === 'Escape') {
+          } else if (event.key === 'Escape' && open) {
+            // Primeiro Esc fecha só a lista; a janela em volta (useDismiss)
+            // ignora Esc já tratado e só fecha no Esc seguinte.
+            event.preventDefault();
             setOpen(false);
             setQuery(selected?.label || '');
           }

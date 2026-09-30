@@ -1,0 +1,329 @@
+/* ============================================================
+   Camadas sobrepostas compartilhadas — só tokens (--r1-*).
+   - .help-trigger / .help-drawer: botão "Como funciona" e o painel
+     lateral de ajuda (components/ui/ScreenHelp.jsx). No celular o
+     painel sobe de baixo.
+   - .dismiss-prompt: pergunta "descartar o que foi digitado?" quando
+     Esc/clique fora tentam fechar um formulário preenchido
+     (components/ui/DismissPrompt.jsx + hooks/useDismiss.js).
+   ============================================================ */
+
+/* ---------- botão "Como funciona" ---------- */
+
+.help-trigger {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 15px 8px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease), background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.help-trigger svg {
+  width: 17px;
+  height: 17px;
+  color: var(--r1-text-subtle);
+}
+
+.help-trigger:hover,
+.help-trigger[aria-expanded='true'] {
+  border-color: var(--r1-border);
+  background: var(--r1-surface-sunken);
+}
+
+.help-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* ---------- painel lateral de ajuda ---------- */
+
+.help-drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  justify-content: flex-end;
+  background: color-mix(in srgb, var(--r1-navy-900) 26%, transparent);
+  animation: help-scrim-in var(--r1-dur) var(--r1-ease);
+}
+
+.help-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100%);
+  height: 100%;
+  border-radius: var(--r1-radius-lg) 0 0 var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-lg);
+  animation: help-drawer-in var(--r1-dur) var(--r1-ease);
+}
+
+.help-drawer-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: calc(22px + var(--r1-safe-top)) 20px 16px 22px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.help-drawer-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.help-drawer-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.help-drawer-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.help-drawer-head h2 {
+  margin: 2px 0 0;
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--r1-text);
+}
+
+.help-drawer-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text-subtle);
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.help-drawer-close:hover {
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+}
+
+.help-drawer-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.help-drawer-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 22px 24px;
+}
+
+.help-drawer-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--r1-text);
+}
+
+.help-drawer-section h3::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--r1-border);
+}
+
+.help-drawer-section p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--r1-text);
+}
+
+.help-drawer-section ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-drawer-section li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--r1-text);
+}
+
+.help-drawer-section li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--r1-text-subtle);
+}
+
+/* "Bom saber" é regra/prazo: vai numa caixa para não se perder no meio. */
+.help-drawer-section--notes {
+  padding: 14px 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.help-drawer-foot {
+  padding: 12px 22px calc(12px + var(--r1-safe-bottom));
+  border-top: 1px solid var(--r1-border-subtle);
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+.help-drawer-foot-touch {
+  display: none;
+}
+
+/* Tela de toque não tem Esc: o rodapé ensina o gesto certo. */
+@media (hover: none) and (pointer: coarse) {
+  .help-drawer-foot-keys { display: none; }
+  .help-drawer-foot-touch { display: inline; }
+}
+
+.help-drawer-foot kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 5px;
+  background: var(--r1-surface-sunken);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+@keyframes help-scrim-in {
+  from { opacity: 0; }
+}
+
+@keyframes help-drawer-in {
+  from { transform: translateX(28px); opacity: 0; }
+}
+
+@keyframes help-sheet-in {
+  from { transform: translateY(28px); opacity: 0; }
+}
+
+@media (max-width: 640px) {
+  .help-drawer-scrim {
+    align-items: flex-end;
+  }
+
+  .help-drawer {
+    width: 100%;
+    height: auto;
+    max-height: 86vh;
+    border-radius: var(--r1-radius-lg) var(--r1-radius-lg) 0 0;
+    animation-name: help-sheet-in;
+  }
+
+  .help-drawer-head {
+    padding-top: 18px;
+  }
+}
+
+/* ---------- "descartar o que foi digitado?" ---------- */
+
+.dismiss-prompt {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-warning-bg);
+  color: var(--r1-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.dismiss-prompt p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.dismiss-prompt p span {
+  color: var(--r1-text-subtle);
+}
+
+.dismiss-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dismiss-prompt-actions button {
+  min-height: 34px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dismiss-prompt-keep {
+  border: 1px solid var(--r1-border);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
+.dismiss-prompt-discard {
+  border: 1px solid var(--r1-danger-border);
+  background: transparent;
+  color: var(--r1-danger);
+}
+
+.dismiss-prompt-actions button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}

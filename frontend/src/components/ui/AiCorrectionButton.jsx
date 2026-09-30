@@ -13,6 +13,8 @@ import {
   submitAiCorrection,
   looksLikeContainsPII,
 } from '../../services/aiCorrectionService';
+import { useDismiss } from '../../hooks/useDismiss';
+import { DismissPrompt } from './DismissPrompt';
 
 // Resumo legível do que a IA disse, a partir das formas conhecidas de saída.
 function summarizeAiOutput(aiOutput) {
@@ -58,6 +60,9 @@ export function AiCorrectionButton({
     setOpen(false);
     reset();
   }
+
+  // Esc/clique fora fecham; com correção já digitada, pergunta antes.
+  const dismiss = useDismiss({ open, onClose: close, busy: saving && !done, guardUnsaved: !done });
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -105,9 +110,7 @@ export function AiCorrectionButton({
         <div
           className="admin-modal-backdrop"
           role="presentation"
-          onMouseDown={event => {
-            if (event.target === event.currentTarget) close();
-          }}
+          {...dismiss.backdropProps}
         >
           <section
             className="ai-correction-dialog"
@@ -123,13 +126,15 @@ export function AiCorrectionButton({
               <button className="quiet-button" type="button" onClick={close}>Fechar</button>
             </header>
 
+            <DismissPrompt dismiss={dismiss} />
+
             {done ? (
               <div className="inline-success" style={{ margin: 0 }}>
                 Correção registrada. A IA já vai considerá-la nas suas próximas análises;
                 passará a valer para todas após a aprovação da SuperAdm.
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="ai-correction-form">
+              <form onSubmit={handleSubmit} className="ai-correction-form" {...dismiss.panelProps}>
                 {saidText && (
                   <div className="ai-correction-said">
                     <span className="small"><b>A IA disse:</b></span>

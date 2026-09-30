@@ -4,6 +4,7 @@ import { assistantSynthesis } from '../utils/analyzer';
 import { getDiscipline } from '../data/disciplines';
 import { getShareScope } from '../data/shareScopes';
 import { getSharedRecords } from '../services/recordSharesService';
+import { useDismiss } from '../hooks/useDismiss';
 import { getAnamneseConfig } from '../data/anamneseRegistry';
 import { getActiveTextFields, getProfile, getSelected } from '../data/anamneseKit';
 import {
@@ -333,6 +334,7 @@ export function SharedSessionViewer({ patient, scopes = [], fromDiscipline, onCl
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const dismiss = useDismiss({ onClose });
 
   useEffect(() => {
     let cancelled = false;
@@ -346,7 +348,7 @@ export function SharedSessionViewer({ patient, scopes = [], fromDiscipline, onCl
   }, [patient.id]);
 
   return (
-    <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Prontuário compartilhado de ${patient.name}`}>
+    <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Prontuário compartilhado de ${patient.name}`} {...dismiss.backdropProps}>
       <div className="cp-modal-panel cp-modal-panel--wide">
         <div className="cp-modal-head">
           <h3 className="cp-modal-title">Prontuário compartilhado — {patient.name}</h3>

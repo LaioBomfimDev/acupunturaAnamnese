@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DISCIPLINES } from '../../../data/disciplines';
 import { getStatusLabel } from '../../../utils/agenda';
 import { createAgendaShareLink, revokeAgendaShareLink, buildAgendaShareLink } from '../../../services/agendaShareLinkService';
+import { useDismiss } from '../../../hooks/useDismiss';
 
 // ============================================================
 // Compartilhar agenda — mensagem de texto OU link público
@@ -63,6 +64,7 @@ export function ShareAgendaPanel({
   const [generating, setGenerating] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [linkError, setLinkError] = useState('');
+  const dismiss = useDismiss({ open, onClose, busy: generating || revoking });
 
   // Reabrir o painel é uma nova rodada: o link de uma sessão anterior
   // (talvez de outro dia) não deveria continuar na tela como se fosse
@@ -197,7 +199,7 @@ export function ShareAgendaPanel({
   if (!open) return null;
 
   return (
-    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label="Compartilhar agenda">
+    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label="Compartilhar agenda" {...dismiss.backdropProps}>
       <div className="ag-dialog-panel">
         <div className="ag-dialog-head">
           <h3 className="ag-dialog-title">Compartilhar agenda</h3>

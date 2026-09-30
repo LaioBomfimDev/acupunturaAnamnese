@@ -11,6 +11,8 @@ import './styles/hub.css'
 import './styles/forms.css'
 import './styles/clinicPatients.css'
 import './styles/appLoading.css'
+// Ajuda "Como funciona" e a pergunta de descartar ao fechar janela.
+import './styles/overlays.css'
 import App from './App.jsx'
 import { SurveyPage } from './SurveyPage.jsx'
 import { ConfirmAppointmentPage } from './ConfirmAppointmentPage.jsx'

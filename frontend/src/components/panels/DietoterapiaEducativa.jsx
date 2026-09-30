@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useDismiss } from '../../hooks/useDismiss';
 import {
   FOOD_AXES,
   FOOD_CATALOG,
@@ -51,6 +52,7 @@ function FoodResearchDialog({ food, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const dismiss = useDismiss({ onClose });
 
   async function handleResearch() {
     if (!mode || loading) return;
@@ -73,7 +75,7 @@ function FoodResearchDialog({ food, onClose }) {
     <div
       className="admin-modal-backdrop"
       role="presentation"
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+      {...dismiss.backdropProps}
     >
       <section
         className="box"
@@ -396,13 +398,14 @@ function resolvePropertyMeta(property) {
  */
 function PropertyCrossRefDialog({ property, isBlocked, currentFoodId, onOpenFood, onClose }) {
   const meta = resolvePropertyMeta(property);
+  const dismiss = useDismiss({ open: Boolean(meta), onClose });
   if (!meta) return null;
   const foods = meta.foods.filter(f => !isBlocked(f.id));
   return (
     <div
       className="admin-modal-backdrop"
       role="presentation"
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+      {...dismiss.backdropProps}
     >
       <section
         className="box"
@@ -467,11 +470,12 @@ function PropertyCrossRefDialog({ property, isBlocked, currentFoodId, onOpenFood
  * de propriedade em propriedade sem sair do fluxo.
  */
 function FoodDetailDialog({ food, approved, onPropertyClick, onClose }) {
+  const dismiss = useDismiss({ onClose });
   return (
     <div
       className="admin-modal-backdrop"
       role="presentation"
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+      {...dismiss.backdropProps}
     >
       <section
         className="box"

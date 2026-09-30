@@ -12,6 +12,8 @@ import {
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { filterClinicDirectory, filterClinics } from './superAdminFilters';
 import { readLogoFile } from '../../utils/clinicLogo';
+import { useDismiss } from '../../hooks/useDismiss';
+import { DismissPrompt } from '../ui/DismissPrompt';
 
 const EMPTY_CLINIC = {
   id: null,
@@ -200,6 +202,12 @@ export function ClinicAdminPanel() {
     professionalQuery || professionalClinicFilter !== 'all',
   );
 
+  const createDismiss = useDismiss({
+    open: createForClinic !== null,
+    onClose: () => setCreateForClinic(null),
+    guardUnsaved: true,
+  });
+
   return (
     <div className="clinic-admin">
       {(error || success) && (
@@ -209,8 +217,9 @@ export function ClinicAdminPanel() {
       )}
 
       {createForClinic !== null && (
-        <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
-          <div className="clinic-professional-modal">
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true" {...createDismiss.backdropProps}>
+          <div className="clinic-professional-modal" {...createDismiss.panelProps}>
+            <DismissPrompt dismiss={createDismiss} />
             <ProfessionalCreateForm
               key={createForClinic || 'sem-clinica'}
               clinics={clinics}

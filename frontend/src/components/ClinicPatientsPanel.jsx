@@ -20,6 +20,7 @@ import { formatAge, formatPatientCount, getInitials } from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
+import { useDismiss } from '../hooks/useDismiss';
 
 // ============================================================
 // Pacientes da instituição (Fases 2 e 3 — docs/plano-clinica-multidisciplinar.md)
@@ -208,6 +209,12 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
     setDeletionConfirmText('');
     setDeletionAckBackup(false);
   }
+
+  const deletionDismiss = useDismiss({
+    open: Boolean(deletionReview),
+    onClose: closeDeletionReview,
+    busy: Boolean(decidingId),
+  });
 
   async function handleRejectDeletion(request) {
     setDecidingId(request.request_id);
@@ -809,7 +816,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
       )}
 
       {deletionReview && (
-        <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Excluir ${deletionReview.patient_name}`}>
+        <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Excluir ${deletionReview.patient_name}`} {...deletionDismiss.backdropProps}>
           <div className="cp-modal-panel">
             <div className="cp-modal-head">
               <h3 className="cp-modal-title">

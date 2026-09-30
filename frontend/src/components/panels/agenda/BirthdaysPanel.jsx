@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { upcomingBirthdays } from '../../../utils/agenda';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../../utils/whatsapp';
 import { getInitials } from '../../../utils/patientUi';
+import { useDismiss } from '../../../hooks/useDismiss';
 
 // ============================================================
 // Aniversários — lista de marketing/relacionamento
@@ -59,6 +60,7 @@ function metaLabel(item) {
 export function BirthdaysPanel({ open, onClose, patients, today, clinicName }) {
   const [range, setRange] = useState(30);
   const [copied, setCopied] = useState(false);
+  const dismiss = useDismiss({ open, onClose });
 
   const all = useMemo(() => upcomingBirthdays(patients, today), [patients, today]);
   const filtered = useMemo(
@@ -112,7 +114,7 @@ export function BirthdaysPanel({ open, onClose, patients, today, clinicName }) {
   if (!open) return null;
 
   return (
-    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label="Aniversários">
+    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label="Aniversários" {...dismiss.backdropProps}>
       <div className="ag-dialog-panel">
         <div className="ag-dialog-head">
           <h3 className="ag-dialog-title">Aniversários</h3>

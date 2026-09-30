@@ -3,6 +3,8 @@ import { DISCIPLINE_IDS, getDiscipline } from '../data/disciplines';
 import { OPTIONAL_SHARE_SCOPES } from '../data/shareScopes';
 import { createRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
+import { useDismiss } from '../hooks/useDismiss';
+import { DismissPrompt } from './ui/DismissPrompt';
 
 // ============================================================
 // Diálogo "Enviar para outro profissional" (Fase 3)
@@ -41,6 +43,7 @@ export function SharePatientDialog({ patient, onClose, onDone }) {
   const [submitting, setSubmitting] = useState(false);
   const [members, setMembers] = useState(null); // null = ainda carregando/indisponível
   const idempotencyKeyRef = useRef(null);
+  const dismiss = useDismiss({ onClose, busy: submitting, guardUnsaved: true });
 
   useEffect(() => {
     let cancelled = false;
@@ -113,12 +116,14 @@ export function SharePatientDialog({ patient, onClose, onDone }) {
   }
 
   return (
-    <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Enviar ${patient.name}`}>
-      <form className="cp-modal-panel" onSubmit={handleSubmit}>
+    <div className="cp-modal-overlay" role="dialog" aria-modal="true" aria-label={`Enviar ${patient.name}`} {...dismiss.backdropProps}>
+      <form className="cp-modal-panel" onSubmit={handleSubmit} {...dismiss.panelProps}>
         <div className="cp-modal-head">
           <h3 className="cp-modal-title">Enviar {patient.name}</h3>
           <button type="button" className="cp-modal-close" onClick={onClose} aria-label="Fechar">×</button>
         </div>
+
+        <DismissPrompt dismiss={dismiss} />
 
         <div className="cp-modal-body">
           <p className="cp-modal-intro">

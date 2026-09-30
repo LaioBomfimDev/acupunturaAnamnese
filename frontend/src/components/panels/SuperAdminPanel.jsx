@@ -31,6 +31,8 @@ import { DeployHealthPanel } from './DeployHealthPanel';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
 import { CurationSections, CURATION_SECTIONS } from './CurationSections';
 import { filterManagedProfessionals } from './superAdminFilters';
+import { useDismiss } from '../../hooks/useDismiss';
+import { DismissPrompt } from '../ui/DismissPrompt';
 
 // Seções de curadoria roteadas pelo CurationSections (maps tem bloco próprio
 // abaixo, com a caixa de solicitações dos terapeutas).
@@ -205,6 +207,15 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
     return professionals.find(profile => profile.id === selectedProfile.id) || selectedProfile;
   }, [professionals, selectedProfile]);
 
+  // Esc/clique fora fecham o painel sem descartar calado a edição do
+  // cadastro; o painel continua aberto depois de salvar (markSaved).
+  const profileDismiss = useDismiss({
+    open: Boolean(selectedLiveProfile),
+    onClose: closeProfilePanel,
+    busy: profileSaving,
+    guardUnsaved: true,
+  });
+
   const filteredProfessionals = useMemo(() => {
     return filterManagedProfessionals(professionals, {
       query,
@@ -376,6 +387,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
         await setProfileClinic(selectedLiveProfile.id, editForm.clinicId || null);
       }
       setSuccess('Cadastro profissional atualizado.');
+      profileDismiss.markSaved();
       const nextProfiles = await load();
       const updatedProfile = nextProfiles.find(item => item.id === selectedLiveProfile.id);
       if (updatedProfile) {
@@ -461,6 +473,21 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       setMfaResettingId('');
     }
   }
+
+  // Diálogos de senha/segundo fator: Esc e clique fora fecham, sem
+  // descartar calado o que foi digitado.
+  const resetDismiss = useDismiss({
+    open: Boolean(resetTarget),
+    onClose: () => setResetTarget(null),
+    busy: Boolean(resetTarget && resettingId === resetTarget.id),
+    guardUnsaved: true,
+  });
+  const mfaDismiss = useDismiss({
+    open: Boolean(mfaResetTarget),
+    onClose: () => setMfaResetTarget(null),
+    busy: Boolean(mfaResetTarget && mfaResettingId === mfaResetTarget.id),
+    guardUnsaved: true,
+  });
 
   return (
     <section className="super-admin">
@@ -728,7 +755,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       )}
 
       {selectedLiveProfile && (
-        <div className="admin-modal-backdrop admin-profile-backdrop" role="dialog" aria-modal="true">
+        <div className="admin-modal-backdrop admin-profile-backdrop" role="dialog" aria-modal="true" {...profileDismiss.backdropProps}>
           <aside className="admin-profile-panel">
             <div className="admin-profile-head">
               <div>
@@ -761,6 +788,8 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
                 Fechar
               </button>
             </div>
+
+            <DismissPrompt dismiss={profileDismiss} />
 
             <div className="admin-profile-metrics">
               <div>
@@ -808,7 +837,7 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
               </div>
             </div>
 
-            <form className="admin-profile-form" onSubmit={handleProfileUpdate}>
+            <form className="admin-profile-form" onSubmit={handleProfileUpdate} {...profileDismiss.panelProps}>
               <label>
                 Nome *
                 <input
@@ -912,8 +941,9 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       )}
 
       {resetTarget && (
-        <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
-          <form className="admin-reset-modal" onSubmit={handleResetPassword}>
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true" {...resetDismiss.backdropProps}>
+          <form className="admin-reset-modal" onSubmit={handleResetPassword} {...resetDismiss.panelProps}>
+            <DismissPrompt dismiss={resetDismiss} />
             <div className="force-password-head">
               <p>Senha temporária</p>
               <h1>Redefinir acesso</h1>
@@ -950,8 +980,9 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
       )}
 
       {mfaResetTarget && (
-        <div className="admin-modal-backdrop" role="dialog" aria-modal="true">
-          <form className="admin-reset-modal" onSubmit={handleMfaRecovery}>
+        <div className="admin-modal-backdrop" role="dialog" aria-modal="true" {...mfaDismiss.backdropProps}>
+          <form className="admin-reset-modal" onSubmit={handleMfaRecovery} {...mfaDismiss.panelProps}>
+            <DismissPrompt dismiss={mfaDismiss} />
             <div className="force-password-head">
               <p>Recuperação auditada</p>
               <h1>Remover segundo fator</h1>

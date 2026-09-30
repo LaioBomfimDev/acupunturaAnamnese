@@ -10,6 +10,7 @@
 // ============================================================
 
 import { useMemo, useState } from 'react';
+import { useDismiss } from '../../hooks/useDismiss';
 import { curatedAcupoints } from '../../knowledge/generated/curated-body-points';
 import { isCommonlyUsedPointKey } from '../../knowledge/commonlyUsedPoints';
 import { addCommonlyUsedOverride } from '../../knowledge/commonlyUsedOverrides';
@@ -57,9 +58,10 @@ function DetailBlock({ title, children }) {
 }
 
 function PointDetailModal({ point, common, status, isPropose, onPropose, onPromoteNow, onClose }) {
+  const dismiss = useDismiss({ open: Boolean(point), onClose });
   if (!point) return null;
   return (
-    <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Ficha do ponto ${point.displayCode}`}>
+    <div className="admin-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Ficha do ponto ${point.displayCode}`} {...dismiss.backdropProps}>
       <div className="admin-profile-panel" style={{ maxWidth: 560 }}>
         <div className="admin-profile-head">
           <div>

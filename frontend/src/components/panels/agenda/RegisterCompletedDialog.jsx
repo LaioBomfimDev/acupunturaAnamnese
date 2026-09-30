@@ -12,6 +12,8 @@ import {
 } from '../../../utils/completedAppointment';
 import { usePatient } from '../../../hooks/PatientContext';
 import { SearchSelect } from '../../ui/SearchSelect';
+import { DismissPrompt } from '../../ui/DismissPrompt';
+import { useDismiss } from '../../../hooks/useDismiss';
 import '../../../styles/agenda.css';
 
 // ============================================================
@@ -79,6 +81,7 @@ export function RegisterCompletedDialog({
   const [appointmentType, setAppointmentType] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const dismiss = useDismiss({ onClose, busy: saving, guardUnsaved: true });
   const [error, setError] = useState('');
   // O recado fica no topo e o botão, no pé: sem rolar, quem clicou em
   // "Registrar" não vê por que não gravou.
@@ -187,12 +190,14 @@ export function RegisterCompletedDialog({
   const disciplineLabel = disciplineOptions.find(item => item.id === disciplineValue)?.label || disciplineValue;
 
   return (
-    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label={COMPLETED_APPOINTMENT_LABEL}>
-      <div className="ag-dialog-panel">
+    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label={COMPLETED_APPOINTMENT_LABEL} {...dismiss.backdropProps}>
+      <div className="ag-dialog-panel" {...dismiss.panelProps}>
         <div className="ag-dialog-head">
           <h3 className="ag-dialog-title">{COMPLETED_APPOINTMENT_LABEL}</h3>
           <button type="button" className="ag-chip-btn" onClick={onClose} disabled={saving}>Fechar</button>
         </div>
+
+        <DismissPrompt dismiss={dismiss} />
 
         <form className="ag-dialog-body agc-body" onSubmit={handleSubmit}>
           <p className="ag-note">

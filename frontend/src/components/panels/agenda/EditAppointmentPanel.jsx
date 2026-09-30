@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { APPOINTMENT_BLOCK_TYPES, APPOINTMENT_MODALITIES, APPOINTMENT_TYPES } from '../../../services/appointmentService';
+import { useDismiss } from '../../../hooks/useDismiss';
+import { DismissPrompt } from '../../ui/DismissPrompt';
 
 function durationOf(appointment) {
   const start = new Date(appointment.starts_at);
@@ -41,6 +43,7 @@ export function EditAppointmentPanel({
   const [blockType, setBlockType] = useState(() => appointment?.block_type || 'outro');
   const [durationMinutes, setDurationMinutes] = useState(() => (appointment ? durationOf(appointment) : 60));
   const [note, setNote] = useState(() => appointment?.note || '');
+  const dismiss = useDismiss({ open: Boolean(open && appointment), onClose, busy: saving, guardUnsaved: true });
 
   if (!open || !appointment) return null;
 
@@ -60,12 +63,14 @@ export function EditAppointmentPanel({
   }
 
   return (
-    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label="Editar atendimento">
-      <div className="ag-dialog-panel">
+    <div className="ag-dialog-overlay" role="dialog" aria-modal="true" aria-label="Editar atendimento" {...dismiss.backdropProps}>
+      <div className="ag-dialog-panel" {...dismiss.panelProps}>
         <div className="ag-dialog-head">
           <h3 className="ag-dialog-title">{isBlock ? 'Editar bloqueio' : 'Editar atendimento'}</h3>
           <button type="button" className="ag-chip-btn" onClick={onClose}>Fechar</button>
         </div>
+
+        <DismissPrompt dismiss={dismiss} />
 
         <form className="ag-dialog-body" onSubmit={handleSubmit}>
           {isBlock ? (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/AuthContext';
+import { useDismiss } from '../../hooks/useDismiss';
 import '../../styles/login.css';
 
 const TERMS_SECTIONS = [
@@ -124,6 +125,8 @@ export function Login() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const termsDismiss = useDismiss({ open: showTerms, onClose: () => setShowTerms(false) });
+  const securityDismiss = useDismiss({ open: showSecurityInfo, onClose: () => setShowSecurityInfo(false) });
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -272,9 +275,9 @@ export function Login() {
           aria-modal="true"
           aria-labelledby="terms-title"
           className="r1-modal"
-          onClick={() => setShowTerms(false)}
+          {...termsDismiss.backdropProps}
         >
-          <div className="r1-modal__panel" onClick={e => e.stopPropagation()}>
+          <div className="r1-modal__panel">
             <div className="r1-modal__head">
               <p className="r1-modal__eyebrow">Termo de consentimento</p>
               <h2 id="terms-title" className="r1-modal__title">
@@ -319,9 +322,9 @@ export function Login() {
           aria-modal="true"
           aria-labelledby="security-info-title"
           className="r1-modal"
-          onClick={() => setShowSecurityInfo(false)}
+          {...securityDismiss.backdropProps}
         >
-          <div className="r1-modal__panel" onClick={e => e.stopPropagation()}>
+          <div className="r1-modal__panel">
             <div className="r1-modal__head">
               <p className="r1-modal__eyebrow">Segurança e confiança</p>
               <h2 id="security-info-title" className="r1-modal__title">

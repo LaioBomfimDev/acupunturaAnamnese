@@ -34,7 +34,9 @@ test('admin usa Documentos pela aba da Gestão; profissional e recepção pelo m
   assert.match(gestaoSource, /\{ id: 'documentos', label: 'Documentos timbrados' \}/);
   assert.match(gestaoSource, /section === 'documentos' && \(\s*<Suspense[^\n]*\n\s*<DocumentosTimbrados therapistProfile=\{profile\} \/>/);
   // A folha timbrada é impressa de dentro da Gestão: as abas não podem ir pro papel.
-  assert.match(gestaoSource, /className="gt-tabs no-print"/);
+  // Desde 2026-09-30 as abas moram dentro de .gt-tabbar (abas + "Como funciona"),
+  // e é o contêiner inteiro que fica fora da impressão.
+  assert.match(gestaoSource, /className="gt-tabbar no-print">\s*<div className="gt-tabs"/);
 
   // Menu solto do hub some só para o admin (que tem a Gestão da
   // instituição, com a aba Documentos); os demais perfis têm só a Gestão

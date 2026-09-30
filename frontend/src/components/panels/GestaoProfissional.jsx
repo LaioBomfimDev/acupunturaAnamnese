@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { MeuCadastro } from './MeuCadastro';
 import { PersonalAccentPicker } from './PersonalAccentPicker';
+import { ScreenHelp } from '../ui/ScreenHelp';
+import { GESTAO_PROFISSIONAL_HELP } from '../../data/screenHelp';
 import '../../styles/gestao.css';
 
 // ============================================================
@@ -33,29 +35,28 @@ export function GestaoProfissional({ profile, initialSection = null }) {
 
   return (
     <div className="gt">
-      <div className="gt-tabs" role="tablist" aria-label="Gestão">
-        {SECTIONS.map(item => (
-          <button
-            key={item.id}
-            type="button"
-            className="gt-tab"
-            aria-pressed={section === item.id}
-            onClick={() => setSection(item.id)}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {TAB_ICONS[item.id]}
-            </svg>
-            {item.label}
-          </button>
-        ))}
+      <div className="gt-tabbar">
+        <div className="gt-tabs" role="tablist" aria-label="Gestão">
+          {SECTIONS.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className="gt-tab"
+              aria-pressed={section === item.id}
+              onClick={() => setSection(item.id)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {TAB_ICONS[item.id]}
+              </svg>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <ScreenHelp topic={GESTAO_PROFISSIONAL_HELP[section]} />
       </div>
 
       {section === 'personalizar' && (
         <section className="gt-custom">
-          <p className="gt-note">
-            Aqui você ajusta só a sua tela. Cadastro da instituição, papel timbrado e logo
-            ficam com a administração, e os documentos saem sempre com a cor da instituição.
-          </p>
           <PersonalAccentPicker profile={profile} />
         </section>
       )}

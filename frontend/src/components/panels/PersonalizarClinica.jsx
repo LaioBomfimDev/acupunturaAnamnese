@@ -119,13 +119,6 @@ export function PersonalizarClinica({ profile }) {
 
   return (
     <section className="gt-custom">
-      <p className="gt-note">
-        Escolha a cor que a equipe vê no sistema, a cor que sai nos documentos (relatórios,
-        evoluções e papel timbrado) e o logo da instituição. As cores podem ser iguais ou
-        diferentes. Você também decide se a cor da tela é fixa para toda a equipe ou se cada
-        profissional escolhe a sua. Documentos saem sempre com a cor da instituição.
-      </p>
-
       {(error || success) && (
         <div className={`gt-notice${error ? ' gt-notice-error' : ''}`} role="status">
           {error || success}

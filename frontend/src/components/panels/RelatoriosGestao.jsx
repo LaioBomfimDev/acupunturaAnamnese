@@ -2,7 +2,19 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { getStatusLabel } from '../../utils/agenda';
 import { DASHBOARD_PERIOD_PRESETS, presetToRange } from '../../utils/gestaoDashboard';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
-import { getAvatarColor, getInitials } from '../../utils/patientUi';
+import { getAvatarColor, getInitials, isDeleteConfirmationValid } from '../../utils/patientUi';
+import {
+  SURVEY_PERIOD_MODES,
+  canAdvanceSurveyPeriod,
+  isInSurveyPeriod,
+  shiftSurveyPeriod,
+  surveyDeletedMessage,
+  surveyDeletionSummary,
+  surveyPeriodLabel,
+  surveyPeriodRange,
+  surveySelectionLabel,
+  surveyStats as computeSurveyStats,
+} from '../../utils/gestaoSurveys';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../utils/whatsapp';
 import { listAppointments, listMissedAppointments, listPatientsAwaitingReturn } from '../../services/appointmentService';
 import { listClinicMembers, setMemberHasAgenda, shortName } from '../../services/clinicMembersService';
@@ -10,11 +22,15 @@ import { listClinicPatients } from '../../services/clinicPatientsService';
 import { listClinicAccessLogs } from '../../services/clinicAccessLogService';
 import { loadDashboardMetrics } from '../../services/gestaoDashboardService';
 import {
+  SURVEY_DELETE_MIGRATION_HINT,
   buildSurveyLink,
   createSatisfactionSurvey,
+  deleteSatisfactionSurveys,
   listSatisfactionSurveys,
 } from '../../services/satisfactionSurveyService';
 import { SearchSelect } from '../ui/SearchSelect';
+import { ScreenHelp } from '../ui/ScreenHelp';
+import { GESTAO_HELP } from '../../data/screenHelp';
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { PersonalizarClinica } from './PersonalizarClinica';
 import { MeuCadastro } from './MeuCadastro';
@@ -204,6 +220,8 @@ function StackedBarList({ items, emptyLabel }) {
 
 const ACCESS_ACTION_LABELS = { login: 'Entrou', logout: 'Saiu' };
 const RETURN_THRESHOLD_OPTIONS = [15, 30, 45, 60, 90];
+// Teto da lista de pesquisas; passando dele a tela avisa que é um recorte.
+const SURVEY_LIST_LIMIT = 500;
 
 function toDayInput(date) {
   return date.toISOString().slice(0, 10);
@@ -369,6 +387,19 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
   const [surveyProfessionalFilter, setSurveyProfessionalFilter] = useState('');
   const [surveyDisciplineFilter, setSurveyDisciplineFilter] = useState('');
   const [surveyStatusFilter, setSurveyStatusFilter] = useState(''); // '' | 'waiting' | 'rated'
+  // Semana/mês pela data de envio; os números do topo seguem o período.
+  const [surveyPeriodMode, setSurveyPeriodMode] = useState('month');
+  const [surveyPeriodAnchor, setSurveyPeriodAnchor] = useState(() => new Date(now));
+  const surveyRange = useMemo(
+    () => surveyPeriodRange(surveyPeriodMode, surveyPeriodAnchor),
+    [surveyPeriodMode, surveyPeriodAnchor],
+  );
+  const surveyRangeKey = surveyRange ? `${surveyRange.start.getTime()}-${surveyRange.end.getTime()}` : 'all';
+  const [selectedSurveyIds, setSelectedSurveyIds] = useState(() => new Set());
+  const [surveyDeleteOpen, setSurveyDeleteOpen] = useState(false);
+  const [surveyDeleteText, setSurveyDeleteText] = useState('');
+  const [surveyDeleting, setSurveyDeleting] = useState(false);
+  const [surveyDeleteNotice, setSurveyDeleteNotice] = useState('');
 
   useEffect(() => {
     if (section !== 'pesquisa') return undefined;
@@ -376,10 +407,16 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
     (async () => {
       setSurveysLoading(true);
+      setSelectedSurveyIds(new Set());
+      setSurveyDeleteOpen(false);
       try {
         const [clinicPatients, list, team] = await Promise.all([
           patients.length ? Promise.resolve(patients) : listClinicPatients(),
-          listSatisfactionSurveys({ limit: 100 }),
+          listSatisfactionSurveys({
+            limit: SURVEY_LIST_LIMIT,
+            from: surveyRange?.start.toISOString() || null,
+            to: surveyRange?.end.toISOString() || null,
+          }),
           members.length ? Promise.resolve(members) : listClinicMembers(),
         ]);
         if (cancelled) return;
@@ -398,7 +435,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section]);
+  }, [section, surveyRangeKey]);
 
   // Atendimento relacionado (Fase 8): sem isto a pesquisa só sabia o
   // paciente, nunca por qual profissional/disciplina — impossível
@@ -492,7 +529,8 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
       });
       const link = buildSurveyLink(created.token);
       setSurveyGeneratedLink(link);
-      setSurveys(prev => [created, ...prev]);
+      // Olhando um mês/semana passado, a nova não pertence à lista aberta.
+      if (isInSurveyPeriod(created.created_at, surveyRange)) setSurveys(prev => [created, ...prev]);
       setSurveyPatientId('');
     } catch (err) {
       setSurveyError(err.message || 'Não foi possível gerar a pesquisa.');
@@ -508,6 +546,64 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
       setSurveyCopied(true);
     } catch {
       setSurveyCopied(false);
+    }
+  }
+
+  function changeSurveyPeriodMode(mode) {
+    setSurveyPeriodMode(mode);
+    setSurveyPeriodAnchor(new Date(now));
+    setSurveyDeleteNotice('');
+  }
+
+  function shiftSurveyPeriodBy(step) {
+    setSurveyPeriodAnchor(prev => shiftSurveyPeriod(surveyPeriodMode, prev, step));
+    setSurveyDeleteNotice('');
+  }
+
+  function toggleSurveySelected(id) {
+    setSelectedSurveyIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function openSurveyDelete() {
+    setSurveyDeleteText('');
+    setSurveyDeleteNotice('');
+    setSurveysError('');
+    setSurveyDeleteOpen(true);
+  }
+
+  // Apaga só o que está marcado E visível: marcar, trocar o filtro e
+  // excluir não pode levar junto o que saiu da tela.
+  async function handleDeleteSurveys(e) {
+    e.preventDefault();
+    if (!isDeleteConfirmationValid(surveyDeleteText) || !selectedSurveys.length) return;
+    const requestedIds = selectedSurveys.map(item => item.id);
+    setSurveyDeleting(true);
+    setSurveysError('');
+    try {
+      const deletedIds = await deleteSatisfactionSurveys(requestedIds);
+      const deleted = new Set(deletedIds);
+      setSurveys(prev => prev.filter(item => !deleted.has(item.id)));
+      setSelectedSurveyIds(prev => new Set([...prev].filter(id => !deleted.has(id))));
+      if (deletedIds.length === requestedIds.length) {
+        setSurveyDeleteOpen(false);
+        setSurveyDeleteNotice(surveyDeletedMessage(deletedIds.length));
+      } else if (!deletedIds.length) {
+        setSurveysError(`Nenhuma pesquisa foi excluída. ${SURVEY_DELETE_MIGRATION_HINT}`);
+      } else {
+        const kept = requestedIds.length - deletedIds.length;
+        setSurveyDeleteNotice(surveyDeletedMessage(deletedIds.length));
+        setSurveysError(`${kept === 1 ? '1 pesquisa não pôde ser excluída' : `${kept} pesquisas não puderam ser excluídas`} — continua marcada na lista.`);
+      }
+    } catch (err) {
+      setSurveysError(err.message || 'Não foi possível excluir as pesquisas.');
+    } finally {
+      setSurveyDeleting(false);
+      setSurveyDeleteText('');
     }
   }
 
@@ -639,14 +735,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
     return accessItems;
   }, [accessItems, accessFilter]);
 
-  const surveyStats = useMemo(() => {
-    const responded = surveys.filter(item => item.responded_at);
-    const rate = surveys.length ? responded.length / surveys.length : 0;
-    const avg = responded.length
-      ? responded.reduce((sum, item) => sum + item.rating, 0) / responded.length
-      : 0;
-    return { total: surveys.length, rate, avg };
-  }, [surveys]);
+  const surveyStats = useMemo(() => computeSurveyStats(surveys), [surveys]);
 
   const filteredSurveys = useMemo(() => {
     let list = surveys;
@@ -665,32 +754,39 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveys, surveyProfessionalFilter, surveyDisciplineFilter, surveyStatusFilter, now]);
 
+  const selectedSurveys = filteredSurveys.filter(item => selectedSurveyIds.has(item.id));
+  const allSurveysSelected = filteredSurveys.length > 0 && selectedSurveys.length === filteredSurveys.length;
+  const surveyDeletion = surveyDeletionSummary(selectedSurveys);
+
+  function toggleAllSurveys() {
+    setSelectedSurveyIds(allSurveysSelected ? new Set() : new Set(filteredSurveys.map(item => item.id)));
+  }
+
   return (
     <div className="gt">
       {/* no-print: a aba Documentos imprime a folha timbrada daqui de dentro. */}
-      <div className="gt-tabs no-print" role="tablist" aria-label="Relatórios de gestão">
-        {SECTIONS.map(item => (
-          <button
-            key={item.id}
-            type="button"
-            className="gt-tab"
-            aria-pressed={section === item.id}
-            onClick={() => setSection(item.id)}
-          >
-            <Icon id={item.id} glyphs={TAB_ICONS} />
-            {item.label}
-          </button>
-        ))}
+      <div className="gt-tabbar no-print">
+        <div className="gt-tabs" role="tablist" aria-label="Relatórios de gestão">
+          {SECTIONS.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className="gt-tab"
+              aria-pressed={section === item.id}
+              onClick={() => setSection(item.id)}
+            >
+              <Icon id={item.id} glyphs={TAB_ICONS} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {/* Explicação de cada aba mora aqui (data/screenHelp.js), não
+            mais num parágrafo aberto no topo. */}
+        <ScreenHelp topic={GESTAO_HELP[section]} />
       </div>
 
       {section === 'faltosos' && (
         <section>
-          <p className="gt-note">
-            Atendimentos marcados como &quot;não compareceu&quot; ou &quot;faltou com
-            aviso&quot; no período. Busque pelo nome do paciente para ver só as
-            faltas dele — data, horário e status de cada uma.
-          </p>
-
           <div className="gt-stat-row">
             <Stat icon="agenda" value={faltososCounts.total} label="Faltas no período" active={!statusFilter} onClick={() => setStatusFilter('')} />
             <Stat icon="alert" tone="danger" value={faltososCounts.noShow} label="Sem aviso" active={statusFilter === 'no_show'} onClick={() => setStatusFilter(prev => (prev === 'no_show' ? '' : 'no_show'))} />
@@ -784,11 +880,6 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
       {section === 'retornos' && (
         <section>
-          <p className="gt-note">
-            Pacientes cujo último atendimento não teve retorno agendado depois.
-            Clique num número para focar direto naquele recorte, ou ajuste o limite manualmente.
-          </p>
-
           <div className="gt-stat-row">
             <Stat icon="people" value={returnItems.length} label="Aguardando retorno" active={returnThreshold === 30} onClick={() => setReturnThreshold(30)} />
             <Stat icon="clock" tone="warning" value={returnStats.max} label="Mais dias sem voltar" active={returnThreshold === returnStats.max && returnStats.max > 0} onClick={() => returnStats.max > 0 && setReturnThreshold(returnStats.max)} />
@@ -851,13 +942,6 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
       {section === 'profissionais' && (
         <section>
-          <p className="gt-note">
-            Quem atende paciente aparece como profissional na Agenda (chip de agenda
-            pessoal e seletor de novo agendamento). Desmarque quem é só administrativo
-            — não deixa de ser membro da equipe, só sai da lista de quem pode ser
-            escolhido pra atender. Só administrador da clínica pode alterar.
-          </p>
-
           <div className="gt-stat-row">
             <Stat icon="people" value={teamStats.total} label="Profissionais na equipe" active={!teamFilter} onClick={() => setTeamFilter('')} />
             <Stat icon="check" value={teamStats.attending} label="Atendem (na agenda)" active={teamFilter === 'attending'} onClick={() => setTeamFilter(prev => (prev === 'attending' ? '' : 'attending'))} />
@@ -937,11 +1021,6 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
       {section === 'acessos' && (
         <section>
-          <p className="gt-note">
-            Login e logout de quem acessa o sistema nesta instituição.
-            Visível só para administrador da clínica.
-          </p>
-
           <div className="gt-stat-row">
             <Stat icon="agenda" value={accessStats.total} label="Acessos registrados" active={!accessFilter} onClick={() => setAccessFilter('')} />
             <Stat icon="check" value={accessStats.today} label="Logins hoje" active={accessFilter === 'today'} onClick={() => setAccessFilter(prev => (prev === 'today' ? '' : 'today'))} />
@@ -974,12 +1053,42 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
       {section === 'pesquisa' && (
         <section>
-          <p className="gt-note">
-            Gere um link com nota de 1 a 5 e comentário livre, amarrado a um atendimento
-            específico — assim dá pra ver depois quais profissionais e disciplinas estão
-            sendo comentados. O paciente responde sem login; o link expira em 14 dias ou
-            assim que respondido.
-          </p>
+          <div className="gt-period-bar">
+            <div className="gt-segmented" role="group" aria-label="Período das pesquisas">
+              {SURVEY_PERIOD_MODES.map(mode => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  aria-pressed={surveyPeriodMode === mode.id}
+                  onClick={() => changeSurveyPeriodMode(mode.id)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            {surveyRange && (
+              <div className="gt-period-nav">
+                <button
+                  type="button"
+                  className="gt-period-arrow"
+                  onClick={() => shiftSurveyPeriodBy(-1)}
+                  aria-label={surveyPeriodMode === 'week' ? 'Semana anterior' : 'Mês anterior'}
+                >
+                  ‹
+                </button>
+                <span className="gt-period-label" aria-live="polite">{surveyPeriodLabel(surveyPeriodMode, surveyPeriodAnchor)}</span>
+                <button
+                  type="button"
+                  className="gt-period-arrow"
+                  onClick={() => shiftSurveyPeriodBy(1)}
+                  disabled={!canAdvanceSurveyPeriod(surveyPeriodMode, surveyPeriodAnchor, new Date(now))}
+                  aria-label={surveyPeriodMode === 'week' ? 'Próxima semana' : 'Próximo mês'}
+                >
+                  ›
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="gt-stat-row">
             <Stat icon="agenda" value={surveyStats.total} label="Pesquisas enviadas" active={!surveyStatusFilter} onClick={() => setSurveyStatusFilter('')} />
@@ -1048,6 +1157,75 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
           )}
 
           {surveysError && <div className="gt-notice gt-notice-error" role="alert">{surveysError}</div>}
+          {surveyDeleteNotice && <div className="gt-notice gt-notice-success" role="status">{surveyDeleteNotice}</div>}
+
+          {isClinicAdmin && !surveysLoading && filteredSurveys.length > 0 && (
+            <div className="gt-select-bar">
+              <label className="gt-check">
+                <input type="checkbox" checked={allSurveysSelected} onChange={toggleAllSurveys} />
+                {surveySelectionLabel(selectedSurveys.length)}
+              </label>
+              <button
+                type="button"
+                className="gt-btn gt-btn--sm gt-btn--danger"
+                disabled={!selectedSurveys.length || surveyDeleteOpen}
+                onClick={openSurveyDelete}
+              >
+                Excluir
+              </button>
+            </div>
+          )}
+
+          {isClinicAdmin && surveyDeleteOpen && selectedSurveys.length > 0 && (
+            <form
+              className="gt-delete-panel"
+              onSubmit={handleDeleteSurveys}
+              role="alertdialog"
+              aria-labelledby="gt-survey-delete-title"
+            >
+              <h4 id="gt-survey-delete-title">{surveyDeletion.title}</h4>
+              <ul className="gt-delete-list">
+                {selectedSurveys.map(survey => (
+                  <li key={survey.id}>
+                    <b>{patientName(survey.patient_id)}</b>
+                    <span>enviada em {new Date(survey.created_at).toLocaleDateString('pt-BR')}</span>
+                    <span className={survey.responded_at ? 'gt-delete-rated' : ''}>
+                      {survey.responded_at ? `nota ${survey.rating}/5${survey.comment ? ' e comentário' : ''}` : 'sem resposta'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {surveyDeletion.ratedWarning && (
+                <p className="gt-delete-warning">{surveyDeletion.ratedWarning}</p>
+              )}
+              <p>
+                Some da lista e dos números desta aba, e o link enviado para de funcionar.
+                Não dá para desfazer. Confirme digitando <b>excluir</b>.
+              </p>
+              <label className="gt-field">
+                Confirmação
+                <input
+                  className="gt-input"
+                  value={surveyDeleteText}
+                  onChange={e => setSurveyDeleteText(e.target.value)}
+                  placeholder="Digite excluir"
+                  autoFocus
+                />
+              </label>
+              <div className="gt-delete-actions">
+                <button type="button" className="gt-btn gt-btn--sm" onClick={() => setSurveyDeleteOpen(false)} disabled={surveyDeleting}>
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="gt-btn gt-btn--sm gt-btn--danger-solid"
+                  disabled={!isDeleteConfirmationValid(surveyDeleteText) || surveyDeleting}
+                >
+                  {surveyDeleting ? 'Excluindo…' : 'Excluir definitivamente'}
+                </button>
+              </div>
+            </form>
+          )}
 
           {surveysLoading ? (
             <p className="gt-empty">Carregando…</p>
@@ -1060,8 +1238,18 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
                 const name = patientName(survey.patient_id);
                 const disciplineLabel = survey.appointments?.discipline ? getDiscipline(survey.appointments.discipline)?.label : null;
                 const professionalLabel = survey.appointments?.professional_id ? professionalName(survey.appointments.professional_id) : null;
+                const selected = selectedSurveyIds.has(survey.id);
                 return (
-                  <li key={survey.id} className={`gt-card${status.rated ? ' gt-card-gold' : status.tone === 'pending' ? ' gt-card-warning' : ''}`}>
+                  <li key={survey.id} className={`gt-card${status.rated ? ' gt-card-gold' : status.tone === 'pending' ? ' gt-card-warning' : ''}${selected ? ' gt-card-selected' : ''}`}>
+                    {isClinicAdmin && (
+                      <input
+                        type="checkbox"
+                        className="gt-card-check"
+                        checked={selected}
+                        onChange={() => toggleSurveySelected(survey.id)}
+                        aria-label={`Selecionar pesquisa de ${name}, enviada em ${new Date(survey.created_at).toLocaleDateString('pt-BR')}`}
+                      />
+                    )}
                     <DateChip iso={survey.created_at} />
                     <Avatar name={name} />
                     <div className="gt-card-info">
@@ -1086,16 +1274,16 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
               })}
             </ul>
           )}
+          {!surveysLoading && surveys.length >= SURVEY_LIST_LIMIT && (
+            <p className="gt-filter-note">
+              Mostrando só as {SURVEY_LIST_LIMIT} mais recentes deste recorte — um período menor mostra as demais.
+            </p>
+          )}
         </section>
       )}
 
       {section === 'indicadores' && (
         <section>
-          <p className="gt-note">
-            Panorama do período: faltas e cancelamentos, horários mais
-            procurados e novos pacientes vs. retorno.
-          </p>
-
           <div className="gt-filters">
             <div className="gt-field">
               <label htmlFor="gt-dash-preset">Período</label>

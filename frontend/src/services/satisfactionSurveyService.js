@@ -3,7 +3,8 @@
 // Migração: supabase/migrations/20260901_satisfaction_surveys.sql
 //
 // Criar/listar aqui passa por RLS normal (staff autenticado da
-// clínica). A RESPOSTA do paciente não passa por este arquivo — vai
+// clínica); excluir, só administradora da clínica
+// (20260929b_satisfaction_surveys_delete.sql). A RESPOSTA do paciente não passa por este arquivo — vai
 // direto para a Edge Function pública satisfaction-survey, chamada por
 // SurveyPage.jsx sem sessão nenhuma.
 // ============================================================
@@ -64,22 +65,23 @@ function isMissingAppointmentEmbedError(error) {
   return /appointments/.test(text) && /schema cache|relationship|Could not find/i.test(text);
 }
 
-export async function listSatisfactionSurveys({ limit = 100 } = {}) {
-  let { data, error } = await supabase
-    .from('satisfaction_surveys')
-    .select(SURVEY_COLUMNS_WITH_APPOINTMENT)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+// `from`/`to` (ISO, `to` exclusivo) recortam pela data de envio — o
+// filtro de semana/mês da Gestão. Sem eles, as mais recentes.
+export async function listSatisfactionSurveys({ limit = 100, from = null, to = null } = {}) {
+  const query = columns => {
+    let request = supabase.from('satisfaction_surveys').select(columns);
+    if (from) request = request.gte('created_at', from);
+    if (to) request = request.lt('created_at', to);
+    return request.order('created_at', { ascending: false }).limit(limit);
+  };
+
+  let { data, error } = await query(SURVEY_COLUMNS_WITH_APPOINTMENT);
 
   // Ambiente sem o vínculo appointment_id ainda populado/detectável
   // (banco mais antigo): cai pra lista sem profissional/disciplina em
   // vez de quebrar a aba inteira.
   if (error && isMissingAppointmentEmbedError(error)) {
-    ({ data, error } = await supabase
-      .from('satisfaction_surveys')
-      .select(SURVEY_COLUMNS)
-      .order('created_at', { ascending: false })
-      .limit(limit));
+    ({ data, error } = await query(SURVEY_COLUMNS));
   }
 
   if (error) {
@@ -88,6 +90,41 @@ export async function listSatisfactionSurveys({ limit = 100 } = {}) {
   }
 
   return data || [];
+}
+
+export const SURVEY_DELETE_MIGRATION_HINT =
+  'Exclusão de pesquisa ainda não liberada no banco. Aplique a migração ' +
+  'supabase/migrations/20260929b_satisfaction_surveys_delete.sql no Supabase.';
+
+function isMissingDeleteGrantError(error) {
+  const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ');
+  return error?.code === '42501' || /permission denied/i.test(text);
+}
+
+/**
+ * Exclusão definitiva (só administradora da clínica, pela policy de
+ * DELETE). Devolve os ids que o banco apagou de fato: RLS que barra
+ * uma linha não dá erro, só deixa de apagá-la (é o que acontece antes
+ * da migração, já que o GRANT padrão do Supabase existe e a policy
+ * não) — quem chama compara com o que pediu em vez de supor que foi
+ * tudo.
+ */
+export async function deleteSatisfactionSurveys(ids) {
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+  if (!uniqueIds.length) return [];
+
+  const { data, error } = await supabase
+    .from('satisfaction_surveys')
+    .delete()
+    .in('id', uniqueIds)
+    .select('id');
+
+  if (error) {
+    if (isMissingDeleteGrantError(error)) throw new Error(SURVEY_DELETE_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível excluir as pesquisas.');
+  }
+
+  return (data || []).map(row => row.id);
 }
 
 export function buildSurveyLink(token) {

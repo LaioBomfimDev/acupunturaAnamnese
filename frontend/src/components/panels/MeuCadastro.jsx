@@ -145,12 +145,6 @@ export function MeuCadastro({ profile }) {
 
   return (
     <form className="gt-profile" onSubmit={handleSubmit}>
-      <p className="gt-note">
-        Confira e corrija os seus dados. Nome e registro no conselho saem nos relatórios e
-        documentos. Login, e-mail, tipo de acesso, profissão e instituição são definidos pela
-        administração — se algo estiver errado nesses campos, peça a ela.
-      </p>
-
       {(error || success) && (
         <div className={`gt-notice${error ? ' gt-notice-error' : ''}`} role="status">
           {error || success}
@@ -158,7 +152,8 @@ export function MeuCadastro({ profile }) {
       )}
 
       <div className="gt-custom-card">
-        <header><h3>Acesso</h3><span>Só leitura</span></header>
+        {/* Aviso que explica o campo travado fica na tela, não na ajuda. */}
+        <header><h3>Acesso</h3><span>Só leitura · quem altera é a administração</span></header>
         <div className="gt-profile-grid">
           <ReadOnlyField label="Login" value={row?.username} />
           <ReadOnlyField label="E-mail" value={row?.email} />

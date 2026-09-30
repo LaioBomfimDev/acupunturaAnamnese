@@ -4,11 +4,19 @@
    resumo (.gt-stat) é também um botão de filtro — ver gt-stat-active.
    ============================================================ */
 
+/* Abas à esquerda, "Como funciona" (ScreenHelp) no canto direito. */
+.gt-tabbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px 16px;
+  margin-bottom: 22px;
+}
+
 .gt-tabs {
+  flex: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 22px;
 }
 
 .gt-tab {
@@ -542,6 +550,225 @@
   font-size: 12.5px;
 }
 
+/* ---------- período e exclusão (Pesquisa) ---------- */
+
+.gt-period-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.gt-segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+}
+
+.gt-segmented button {
+  min-height: 32px;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gt-segmented button[aria-pressed='true'] {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.gt-segmented button:focus-visible,
+.gt-period-arrow:focus-visible,
+.gt-card-check:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-period-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gt-period-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--r1-border);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gt-period-arrow:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.gt-period-arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gt-period-label {
+  min-width: 150px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-notice-success {
+  color: var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 10%, var(--r1-surface));
+  border-color: color-mix(in srgb, var(--r1-success) 35%, transparent);
+}
+
+.gt-select-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 0 4px 0 14px;
+}
+
+.gt-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+  cursor: pointer;
+}
+
+.gt-check input,
+.gt-card-check {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--r1-accent);
+  cursor: pointer;
+}
+
+.gt-card-selected {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.gt-btn--danger {
+  border-color: var(--r1-danger-border);
+  color: var(--r1-danger);
+}
+
+.gt-btn--danger:hover:not(:disabled) {
+  border-color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+}
+
+.gt-btn--danger-solid {
+  border-color: transparent;
+  background: var(--r1-danger);
+  color: #fff;
+}
+
+.gt-btn--danger-solid:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--r1-danger);
+  filter: brightness(0.92);
+}
+
+.gt-delete-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--r1-text);
+}
+
+.gt-delete-panel h4 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.gt-delete-panel p {
+  margin: 0;
+}
+
+.gt-delete-list {
+  display: grid;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gt-delete-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.gt-delete-list b {
+  color: var(--r1-text);
+}
+
+.gt-delete-rated {
+  font-weight: 700;
+  color: var(--r1-danger);
+}
+
+.gt-delete-warning {
+  padding: 10px 12px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+  font-weight: 600;
+}
+
+.gt-delete-panel .gt-input {
+  max-width: 260px;
+}
+
+.gt-delete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* ── Indicadores (Fase 5 — Dashboard/BI) ──────────────────────
    Sem lib, só --r1-* e barra de largura em % — mesma filosofia leve
    do resto do app. */
@@ -743,6 +970,15 @@
 }
 
 @media (max-width: 720px) {
+  .gt-tabbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gt-tabbar .help-trigger {
+    align-self: flex-end;
+  }
+
   .gt-filters {
     flex-direction: column;
     align-items: stretch;

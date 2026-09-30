@@ -1332,7 +1332,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
               type="button"
               className="ag-btn ag-tool-btn"
               onClick={() => setShowSettings(true)}
-              title="Visual do cancelado, fixo × avulso, cores e padrões da agenda — vale para a equipe toda"
+              title="Visual do cancelado, fixo × eventual, cores e padrões da agenda — vale para a equipe toda"
             >
               <IconSliders />
               Configurar<span className="ag-tool-long"> agenda</span>
@@ -1763,8 +1763,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                   {seriesKindOf(selectedAppointment) === 'fixed'
                     ? 'Fixo: faz parte de um pacote de sessões.'
                     : selectedAppointment.recurrence_group_id
-                    ? 'Avulso: sessão do pacote remarcada só desta vez.'
-                    : 'Avulso: marcado só para este dia, não se repete.'}
+                    ? 'Eventual: sessão do pacote remarcada só desta vez.'
+                    : 'Eventual: marcado só para este dia, não se repete.'}
                   {rescheduledLabel(selectedAppointment) && ` ${rescheduledLabel(selectedAppointment)}.`}
                 </p>
               )}

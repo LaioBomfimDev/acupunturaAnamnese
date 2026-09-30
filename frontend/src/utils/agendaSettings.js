@@ -23,11 +23,11 @@ export const STATUS_LOOKS = [
   { id: 'faded', label: 'Cinza apagado', hint: 'O visual antigo, mais discreto.' },
 ];
 
-// Fixo = sessão de pacote no horário do pacote. Avulso = marcado só
+// Fixo = sessão de pacote no horário do pacote. Eventual = marcado só
 // para aquele dia, ou sessão de pacote que foi movida.
 export const SERIES_HIGHLIGHTS = [
-  { id: 'one-off', label: 'Destacar os avulsos', hint: 'O fixo fica normal; o marcado só para aquele dia ganha a marca.' },
-  { id: 'fixed', label: 'Destacar os fixos', hint: 'O pacote ganha a marca; o avulso fica normal.' },
+  { id: 'one-off', label: 'Destacar os eventuais', hint: 'O fixo fica normal; o marcado só para aquele dia ganha a marca.' },
+  { id: 'fixed', label: 'Destacar os fixos', hint: 'O pacote ganha a marca; o eventual fica normal.' },
   { id: 'none', label: 'Não diferenciar', hint: 'Todos iguais, como era antes.' },
 ];
 
@@ -161,7 +161,7 @@ export function statusLookOf(appointment, settings) {
 
 /**
  * 'fixed' | 'one-off' | null (bloqueio). Sessão de pacote movida vira
- * avulsa: naquele dia está fora do horário fixo, e é isso que a
+ * eventual: naquele dia está fora do horário fixo, e é isso que a
  * recepção precisa enxergar.
  */
 export function seriesKindOf(appointment) {
@@ -170,7 +170,7 @@ export function seriesKindOf(appointment) {
 }
 
 /**
- * Marca de fixo/avulso a desenhar no card, ou null. Card cancelado ou
+ * Marca de fixo/eventual a desenhar no card, ou null. Card cancelado ou
  * de falta não ganha marca: já está resolvido, e o visual de status
  * manda nele.
  */
@@ -182,11 +182,11 @@ export function seriesMarkOf(appointment, settings) {
   return {
     kind,
     style: settings?.seriesMarkStyle || AGENDA_SETTINGS_DEFAULTS.seriesMarkStyle,
-    label: kind === 'fixed' ? 'Fixo' : 'Avulso',
+    label: kind === 'fixed' ? 'Fixo' : 'Eventual',
   };
 }
 
-/** Atributos data-* que o CSS da agenda lê (visual de status e fixo/avulso). */
+/** Atributos data-* que o CSS da agenda lê (visual de status e fixo/eventual). */
 export function appointmentLookAttrs(appointment, settings) {
   const look = statusLookOf(appointment, settings);
   const mark = seriesMarkOf(appointment, settings);

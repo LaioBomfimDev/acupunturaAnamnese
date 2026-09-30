@@ -1,12 +1,12 @@
 // ============================================================
-// Configurar agenda — visual do cancelado, fixo × avulso, cores e
+// Configurar agenda — visual do cancelado, fixo × eventual, cores e
 // padrões (pedido de 2026-09-28)
 //
 // Travas:
 //  - cancelado ("Cancelado pelo paciente" incluso) nunca mais é só
 //    opacidade: todo card de cancelado/falta sai com data-look;
 //  - fixo = pacote no horário do pacote; sessão de pacote MOVIDA vira
-//    avulsa (rescheduled_from guarda o horário original);
+//    eventual (rescheduled_from guarda o horário original);
 //  - o que vem do banco passa por normalizeAgendaSettings e nunca quebra
 //    a agenda;
 //  - só o clinic_admin grava (RPC + botão), e a regra vale para todos.
@@ -181,9 +181,9 @@ test('card da visão Dia: cancelado sai com data-look e nome, nunca só opacidad
   });
 });
 
-// ---------- fixo × avulso ----------
+// ---------- fixo × eventual ----------
 
-test('fixo = pacote no horário do pacote; movida ou marcada sozinha = avulso', () => {
+test('fixo = pacote no horário do pacote; movida ou marcada sozinha = eventual', () => {
   assert.equal(settings.seriesKindOf(appointment({ recurrence_group_id: 'g1' })), 'fixed');
   assert.equal(
     settings.seriesKindOf(appointment({ recurrence_group_id: 'g1', rescheduled_from: '2026-09-29T17:00:00.000Z' })),
@@ -196,7 +196,7 @@ test('fixo = pacote no horário do pacote; movida ou marcada sozinha = avulso', 
 test('marca só o tipo escolhido, e nunca em card cancelado', () => {
   const config = settings.normalizeAgendaSettings({ seriesHighlight: 'one-off', seriesMarkStyle: 'stripes' });
 
-  assert.deepEqual(settings.seriesMarkOf(appointment(), config), { kind: 'one-off', style: 'stripes', label: 'Avulso' });
+  assert.deepEqual(settings.seriesMarkOf(appointment(), config), { kind: 'one-off', style: 'stripes', label: 'Eventual' });
   assert.equal(settings.seriesMarkOf(appointment({ recurrence_group_id: 'g1' }), config), null);
   assert.equal(settings.seriesMarkOf(appointment({ status: 'excused' }), config), null);
 
@@ -207,21 +207,21 @@ test('marca só o tipo escolhido, e nunca em card cancelado', () => {
   assert.equal(settings.seriesMarkOf(appointment({ recurrence_group_id: 'g1' }), fixed)?.label, 'Fixo');
 });
 
-test('card da visão Dia mostra o selo Avulso e a remarcação; o fixo fica sem selo', () => {
-  const avulso = renderDay([appointment()], {});
-  assert.match(avulso, /data-series="one-off"/);
-  assert.match(avulso, /data-series-mark="dashed"/);
-  assert.match(avulso, />Avulso</);
+test('card da visão Dia mostra o selo Eventual e a remarcação; o fixo fica sem selo', () => {
+  const eventual = renderDay([appointment()], {});
+  assert.match(eventual, /data-series="one-off"/);
+  assert.match(eventual, /data-series-mark="dashed"/);
+  assert.match(eventual, />Eventual</);
 
   const fixo = renderDay([appointment({ recurrence_group_id: 'g1' })], {});
   assert.doesNotMatch(fixo, /data-series=/);
-  assert.doesNotMatch(fixo, />Avulso</);
+  assert.doesNotMatch(fixo, />Eventual</);
 
   const movida = renderDay([appointment({
     recurrence_group_id: 'g1',
     rescheduled_from: new Date(2026, 8, 29, 10, 0).toISOString(),
   })], {});
-  assert.match(movida, />Avulso</);
+  assert.match(movida, />Eventual</);
   assert.match(movida, /Remarcada de ter 29\/09 10:00/);
 });
 
@@ -242,7 +242,7 @@ test('visão Semana desktop leva o selo e a cor escolhida pelo Admin', () => {
     ),
   );
 
-  assert.match(html, /class="agw-series">Avulso</);
+  assert.match(html, /class="agw-series">Eventual</);
   assert.match(html, /--card-color:#3F7D5C/);
 });
 
@@ -258,7 +258,7 @@ test('nextRescheduledFrom guarda o ORIGINAL e limpa quando volta para ele', () =
   assert.equal(second, original, 'segunda remarcação não troca a origem');
 
   const back = settings.nextRescheduledFrom({ starts_at: sabado, rescheduled_from: original }, original);
-  assert.equal(back, null, 'voltou ao horário fixo: deixa de ser avulsa');
+  assert.equal(back, null, 'voltou ao horário fixo: deixa de ser eventual');
 });
 
 test('rescheduleAppointment grava rescheduled_from só quando informado', async () => {
@@ -385,8 +385,23 @@ test('Agenda: botão Configurar só para clinic_admin, e mover guarda o horário
 
 test('CSS do visual de status não usa vermelho (reservado a conflito)', async () => {
   const css = await readFile(path.join(root, 'src/styles/agenda.css'), 'utf8');
-  const start = css.indexOf('Visual de status e fixo × avulso');
+  const start = css.indexOf('Visual de status e fixo × eventual');
   assert.ok(start > 0);
   const block = css.slice(start, css.indexOf('Tela "Configurar agenda"', start));
   assert.doesNotMatch(block, /--r1-danger|#[cC]0|red\b/);
+});
+
+test('a Agenda chama de "Eventual" o que não é fixo; "avulso" não volta (pedido de 2026-09-29)', async () => {
+  const files = [
+    'src/utils/agendaSettings.js',
+    'src/components/panels/Agenda.jsx',
+    'src/components/panels/agenda/AgendaSettingsEditor.jsx',
+  ];
+  for (const file of files) {
+    const source = await readFile(path.join(root, file), 'utf8');
+    assert.doesNotMatch(source, /avuls/i, `${file} ainda fala em avulso`);
+  }
+
+  const labels = settings.SERIES_HIGHLIGHTS.map(option => option.label);
+  assert.ok(labels.includes('Destacar os eventuais'));
 });

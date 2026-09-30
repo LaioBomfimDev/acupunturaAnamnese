@@ -159,7 +159,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
       <nav className="agcfg-index" aria-label="Seções desta tela">
         <a href="#agcfg-cancelado">Cancelado</a>
         <a href="#agcfg-falta">Não compareceu</a>
-        <a href="#agcfg-serie">Fixo × avulso</a>
+        <a href="#agcfg-serie">Fixo × eventual</a>
         <a href="#agcfg-cores">Cores</a>
         <a href="#agcfg-padroes">Padrões</a>
       </nav>
@@ -201,11 +201,11 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
       </div>
 
       <fieldset className="agcfg-section" id="agcfg-serie">
-        <legend className="agcfg-legend">Fixo × avulso</legend>
+        <legend className="agcfg-legend">Fixo × eventual</legend>
         <p className="agcfg-help">
           <b>Fixo</b> é a sessão de um pacote no horário do pacote (ex.: toda terça às 14h).
-          <b> Avulso</b> é o marcado só para aquele dia, ou a sessão do pacote que foi movida
-          (ex.: nesta semana foi para sexta). O avulso não se repete nas próximas semanas.
+          <b> Eventual</b> é o marcado só para aquele dia, ou a sessão do pacote que foi movida
+          (ex.: nesta semana foi para sexta). O eventual não se repete nas próximas semanas.
         </p>
 
         <div className="agcfg-choices" role="radiogroup" aria-label="O que destacar">

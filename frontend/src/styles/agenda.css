@@ -2764,7 +2764,7 @@
 }
 
 /* ============================================================
-   Visual de status e fixo × avulso — Configurar agenda
+   Visual de status e fixo × eventual — Configurar agenda
    (utils/agendaSettings.js → appointmentLookAttrs)
 
    data-look          visual do cancelado/cancelado pelo paciente
@@ -2883,7 +2883,7 @@
   opacity: 0.82;
 }
 
-/* ---------- fixo × avulso ---------- */
+/* ---------- fixo × eventual ---------- */
 
 :is(.agd-card, .ag-item)[data-series-mark="dashed"] {
   outline: 2px dashed rgba(255, 255, 255, 0.9);

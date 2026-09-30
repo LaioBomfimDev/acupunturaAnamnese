@@ -2916,6 +2916,63 @@
   );
 }
 
+/* Molduras novas (2026-09-30). Mesma regra das de cima: só contorno e
+   fundo — sombra é de selecionado, movendo, foco e pendência. Card de cor
+   (Dia, Semana, Mês) leva traço branco; o card claro do painel Hoje, cinza. */
+
+:is(.agd-card, .ag-item)[data-series-mark="dotted"] {
+  outline: 2px dotted rgba(255, 255, 255, 0.95);
+  outline-offset: -5px;
+}
+
+.agw-item[data-series-mark="dotted"] {
+  outline: 1.5px dotted rgba(255, 255, 255, 0.95);
+  outline-offset: -3px;
+}
+
+.agh-card[data-series-mark="dotted"] {
+  outline: 2px dotted var(--r1-text-muted);
+  outline-offset: -5px;
+}
+
+:is(.agd-card, .ag-item)[data-series-mark="double"] {
+  outline: 4px double rgba(255, 255, 255, 0.9);
+  outline-offset: -7px;
+}
+
+.agw-item[data-series-mark="double"] {
+  outline: 3px double rgba(255, 255, 255, 0.9);
+  outline-offset: -4px;
+}
+
+.agh-card[data-series-mark="double"] {
+  outline: 4px double var(--r1-text-muted);
+  outline-offset: -7px;
+}
+
+/* Anel por fora: fica sobre o fundo claro da página, então a cor do selo
+   (paleta escura da agenda) sempre aparece; selo branco usa a tinta do
+   texto. --series-color vem de appointmentCardStyle. */
+:is(.agd-card, .ag-item, .agh-card)[data-series-mark="ring"] {
+  outline: 2px solid var(--series-color, var(--r1-text));
+  outline-offset: 2px;
+}
+
+.agw-item[data-series-mark="ring"] {
+  outline: 1.5px solid var(--series-color, var(--r1-text));
+  outline-offset: 1px;
+}
+
+:is(.agd-card, .agw-item, .ag-item)[data-series-mark="dots"] {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.3) 1.4px, transparent 1.7px);
+  background-size: 9px 9px;
+}
+
+.agh-card[data-series-mark="dots"] {
+  background-image: radial-gradient(var(--r1-border) 1.4px, transparent 1.7px);
+  background-size: 9px 9px;
+}
+
 /* Selo: sempre presente com a marca — padrão visual sozinho não é
    leitura acessível. */
 .agd-card--filled .agd-chip--series {
@@ -2948,6 +3005,40 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--r1-text);
+}
+
+.agw-series,
+.agh-series {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Ícone do selo: acompanha a letra de cada visão. */
+.ag-series-icon {
+  flex: 0 0 auto;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+/* Cor própria do selo (Configurar agenda → nome, cor e ícone). Só a
+   paleta da agenda chega aqui: texto branco legível e nenhum tom de
+   conflito. A borda clara separa o selo do card da mesma família de cor. */
+.agd-card--filled .agd-chip--series.has-color,
+.agw-series.has-color {
+  border-color: var(--r1-text-on-inverse);
+  background: var(--series-color);
+  color: var(--r1-text-on-inverse);
+}
+
+.agw-series.has-color {
+  box-shadow: 0 0 0 1px var(--r1-text-on-inverse);
+}
+
+.agh-series.has-color {
+  border-color: var(--series-color);
+  background: var(--series-color);
+  color: var(--r1-text-on-inverse);
 }
 
 .agd-card-moved,
@@ -3107,8 +3198,11 @@
   font-weight: 600;
 }
 
+/* Peso explícito: a opção é um <label>, e o `label { font-weight: 700 }`
+   global deixava a explicação tão forte quanto o título dela. */
 .agcfg-option-hint {
   font-size: 11.5px;
+  font-weight: 400;
   line-height: 1.4;
   color: var(--r1-text-muted);
 }
@@ -3184,8 +3278,246 @@
   font-weight: 700;
 }
 
+/* "Padrão" do selo = selo branco: botão claro com borda, não um disco de cor. */
+.agcfg-swatch--plain {
+  border-color: var(--r1-border);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
 .agcfg-swatch.is-on {
   box-shadow: 0 0 0 2px var(--r1-text);
+}
+
+/* Seção fixo × eventual: três passos (o que destacar → como fica →
+   cada selo). O número do passo é o único toque da cor da clínica. */
+.agcfg-step {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.agcfg-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.agcfg-step-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--r1-accent);
+  color: var(--r1-text-on-inverse);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.agcfg-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+}
+
+.agcfg-badge {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+}
+
+/* Selo que não aparece com o destaque atual: continua editável (o nome
+   vale no detalhe), só sai do primeiro plano. */
+.agcfg-badge.is-idle {
+  border-style: dashed;
+  background: var(--r1-surface-sunken);
+}
+
+.agcfg-badge-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.agcfg-badge-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--r1-text);
+  overflow-wrap: anywhere;
+}
+
+.agcfg-badge-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-link {
+  flex: 0 0 auto;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.agcfg-link:disabled {
+  color: var(--r1-text-subtle);
+  text-decoration: none;
+  cursor: default;
+}
+
+.agcfg-link:focus-visible {
+  outline: none;
+  border-radius: 3px;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.agcfg-badge-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-badge.is-idle .agcfg-badge-note {
+  background: var(--r1-surface);
+}
+
+.agcfg-group {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.agcfg-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agcfg-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--r1-text-muted);
+}
+
+.agcfg-counter {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text-subtle);
+}
+
+.agcfg-marks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.agcfg-mark {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 6px 6px 7px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  cursor: pointer;
+}
+
+.agcfg-mark:hover {
+  border-color: var(--r1-accent);
+}
+
+.agcfg-mark.is-on {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 1px var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.agcfg-mark input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.agcfg-mark:focus-within {
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* Miniatura: card de verdade (mesmas classes e data-*), só menor. Margem
+   de 4px para o "Anel por fora" caber dentro da opção. */
+.agcfg-mark-tile.agd-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 40px;
+  margin: 4px;
+  padding: 6px;
+}
+
+.agcfg-mark-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--r1-text);
+}
+
+.agcfg-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.agcfg-chip--small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--r1-text);
+}
+
+.agcfg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.agcfg-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
 .agcfg-swatch:focus-visible {
@@ -3235,6 +3567,11 @@
   .agcfg-swatch {
     width: 36px;
     height: 36px;
+  }
+
+  /* O "Padrão" é texto, não disco: sem isto a regra acima o corta em "Padrã". */
+  .agcfg-swatch--default {
+    width: auto;
   }
 
   .agcfg-bar .ag-btn {

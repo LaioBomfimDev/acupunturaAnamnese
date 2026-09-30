@@ -5,15 +5,27 @@ import {
   AGENDA_COLOR_PALETTE,
   DEFAULT_VIEW_OPTIONS,
   DURATION_OPTIONS,
+  SERIES_BADGE_DEFAULTS,
   SERIES_HIGHLIGHTS,
+  SERIES_ICONS,
+  SERIES_KINDS,
+  SERIES_LABEL_MAX_LENGTH,
+  SERIES_LABEL_SUGGESTIONS,
   SERIES_MARK_STYLES,
   SLOT_OPTIONS,
   STATUS_LOOKS,
+  appointmentCardStyle,
   appointmentLookAttrs,
+  cleanSeriesLabel,
   disciplineColorFor,
+  isSeriesKindHighlighted,
   normalizeAgendaSettings,
+  seriesHighlightLabel,
+  seriesLabelOf,
+  seriesLabelsClash,
   seriesMarkOf,
 } from '../../../utils/agendaSettings';
+import { SeriesBadge, SeriesIcon } from './SeriesBadge';
 
 // ============================================================
 // Configurar agenda — só o Admin da clínica (clinic_admin)
@@ -40,15 +52,195 @@ function SampleCard({ appointment, settings, caption }) {
   return (
     <span
       className={`agd-card agd-card--filled agd-card--${appointment.status} agcfg-sample`}
-      style={color ? { '--card-color': color } : undefined}
+      style={appointmentCardStyle(color, mark)}
       {...appointmentLookAttrs(appointment, settings)}
     >
       <span className="agd-card-name">{SAMPLE_NAME}</span>
       <span className="agd-card-meta">
-        {mark && <span className={`agd-chip agd-chip--series agd-chip--${mark.kind}`}>{mark.label}</span>}
+        {mark && <SeriesBadge mark={mark} className={`agd-chip agd-chip--series agd-chip--${mark.kind}`} />}
         <span className="agd-chip">{caption}</span>
       </span>
     </span>
+  );
+}
+
+// Cada tipo no editor do selo: o card de amostra força o destaque daquele
+// tipo, para o selo aparecer mesmo quando o destacado na agenda é o outro.
+const SERIES_KIND_INFO = {
+  'one-off': {
+    sub: 'Marcado só para aquele dia, ou sessão do pacote que foi movida.',
+    appointment: { kind: 'appointment', discipline: 'acupuntura', status: 'scheduled' },
+  },
+  fixed: {
+    sub: 'Sessão do pacote no horário de sempre.',
+    appointment: { kind: 'appointment', discipline: 'acupuntura', status: 'scheduled', recurrence_group_id: 'amostra' },
+  },
+};
+
+const BADGE_FIELDS = ['label', 'color', 'icon', 'mark'];
+
+function withBadge(settings, kind, patch) {
+  return {
+    ...settings,
+    seriesHighlight: kind,
+    seriesBadges: { ...settings.seriesBadges, [kind]: { ...settings.seriesBadges[kind], ...patch } },
+  };
+}
+
+/** Miniatura de uma moldura: o mesmo card da agenda, só com o selo. */
+function MarkTile({ kind, mark, settings }) {
+  const { appointment } = SERIES_KIND_INFO[kind];
+  const tileSettings = withBadge(settings, kind, { mark });
+  const seriesMark = seriesMarkOf(appointment, tileSettings);
+  const color = disciplineColorFor(appointment.discipline, tileSettings);
+
+  return (
+    <span
+      className="agd-card agd-card--filled agd-card--scheduled agcfg-sample agcfg-mark-tile"
+      style={appointmentCardStyle(color, seriesMark)}
+      {...appointmentLookAttrs(appointment, tileSettings)}
+      aria-hidden="true"
+    >
+      <SeriesBadge mark={seriesMark} className={`agd-chip agd-chip--series agd-chip--${kind}`} />
+    </span>
+  );
+}
+
+function SeriesBadgePicker({ kind, badge, preview, highlighted, highlightLabel, onChange, onReset, onHighlight }) {
+  const info = SERIES_KIND_INFO[kind];
+  const idBase = `agcfg-badge-${kind}`;
+  const typed = cleanSeriesLabel(badge.label);
+  const current = preview.seriesBadges[kind];
+  const isDefault = BADGE_FIELDS.every(field => current[field] === SERIES_BADGE_DEFAULTS[kind][field]);
+  const currentMark = SERIES_MARK_STYLES.find(option => option.id === badge.mark);
+
+  return (
+    <section className={`agcfg-badge${highlighted ? '' : ' is-idle'}`} aria-labelledby={`${idBase}-title`}>
+      <header className="agcfg-badge-head">
+        <div>
+          <h5 id={`${idBase}-title`} className="agcfg-badge-title">Selo {current.label}</h5>
+          <p className="agcfg-badge-sub">{info.sub}</p>
+        </div>
+        <button type="button" className="agcfg-link" onClick={onReset} disabled={isDefault}>
+          Voltar ao padrão
+        </button>
+      </header>
+
+      <SampleCard appointment={info.appointment} settings={{ ...preview, seriesHighlight: kind }} caption="Acup." />
+
+      {!highlighted && (
+        <p className="agcfg-badge-note">
+          Hoje este selo não aparece nos cards; o nome continua no detalhe do agendamento.{' '}
+          <button type="button" className="agcfg-link" onClick={onHighlight}>{highlightLabel}</button>
+        </p>
+      )}
+
+      <div className="agcfg-group">
+        <div className="agcfg-group-head">
+          <label className="agcfg-group-label" htmlFor={`${idBase}-name`}>Nome</label>
+          <span className="agcfg-counter" aria-hidden="true">
+            {Array.from(badge.label).length}/{SERIES_LABEL_MAX_LENGTH}
+          </span>
+        </div>
+        <input
+          id={`${idBase}-name`}
+          className="ag-input"
+          type="text"
+          maxLength={SERIES_LABEL_MAX_LENGTH}
+          value={badge.label}
+          onChange={e => onChange({ label: e.target.value })}
+          // Campo vazio não vira selo vazio: volta ao nome padrão.
+          onBlur={() => { if (!typed) onChange({ label: SERIES_BADGE_DEFAULTS[kind].label }); }}
+          autoComplete="off"
+        />
+        <div className="agcfg-suggestions" role="group" aria-label="Sugestões de nome">
+          {SERIES_LABEL_SUGGESTIONS[kind].map(name => (
+            <button
+              key={name}
+              type="button"
+              className={`agcfg-chip agcfg-chip--small${typed === name ? ' is-on' : ''}`}
+              aria-pressed={typed === name}
+              onClick={() => onChange({ label: name })}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="agcfg-group">
+        <span id={`${idBase}-color`} className="agcfg-group-label">Cor do selo</span>
+        <div className="agcfg-swatches" role="radiogroup" aria-labelledby={`${idBase}-color`}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!badge.color}
+            className={`agcfg-swatch agcfg-swatch--default agcfg-swatch--plain${!badge.color ? ' is-on' : ''}`}
+            onClick={() => onChange({ color: '' })}
+            title="Selo branco com o texto na cor do card"
+          >
+            Branco
+          </button>
+          {AGENDA_COLOR_PALETTE.map(color => (
+            <button
+              key={color.value}
+              type="button"
+              role="radio"
+              aria-checked={badge.color === color.value}
+              aria-label={color.label}
+              title={color.label}
+              className={`agcfg-swatch${badge.color === color.value ? ' is-on' : ''}`}
+              style={{ '--swatch': color.value }}
+              onClick={() => onChange({ color: color.value })}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="agcfg-group">
+        <span id={`${idBase}-icon`} className="agcfg-group-label">Ícone</span>
+        <div className="agcfg-choices agcfg-choices--inline" role="radiogroup" aria-labelledby={`${idBase}-icon`}>
+          {SERIES_ICONS.map(icon => (
+            <label key={icon.id} className={`agcfg-chip agcfg-chip--small${badge.icon === icon.id ? ' is-on' : ''}`}>
+              <input
+                type="radio"
+                name={`${idBase}-icon`}
+                value={icon.id}
+                checked={badge.icon === icon.id}
+                onChange={() => onChange({ icon: icon.id })}
+              />
+              <SeriesIcon id={icon.id} className="agcfg-icon" />
+              {icon.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="agcfg-group">
+        <span id={`${idBase}-mark`} className="agcfg-group-label">Moldura do card</span>
+        <div className="agcfg-marks" role="radiogroup" aria-labelledby={`${idBase}-mark`}>
+          {SERIES_MARK_STYLES.map(option => (
+            <label
+              key={option.id}
+              className={`agcfg-mark${badge.mark === option.id ? ' is-on' : ''}`}
+              title={option.hint}
+            >
+              <input
+                type="radio"
+                name={`${idBase}-mark`}
+                value={option.id}
+                checked={badge.mark === option.id}
+                onChange={() => onChange({ mark: option.id })}
+                aria-label={`${option.label}: ${option.hint}`}
+              />
+              <MarkTile kind={kind} mark={option.id} settings={preview} />
+              <span className="agcfg-mark-label">{option.label}</span>
+            </label>
+          ))}
+        </div>
+        {currentMark && <p className="agcfg-option-hint">{currentMark.hint}</p>}
+      </div>
+    </section>
   );
 }
 
@@ -91,13 +283,47 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
   const [savedNote, setSavedNote] = useState('');
 
   const saved = useMemo(() => normalizeAgendaSettings(settings), [settings]);
+  // O rascunho guarda o nome do selo como está sendo digitado; as amostras
+  // mostram o que seria gravado. Exceção: com os dois nomes iguais a
+  // normalização volta ao padrão, mas a amostra mantém o digitado para o
+  // problema ficar à vista junto do aviso.
+  const preview = useMemo(() => {
+    const normalized = normalizeAgendaSettings(draft);
+    const seriesBadges = {};
+    for (const kind of SERIES_KINDS) {
+      const typed = cleanSeriesLabel(draft.seriesBadges?.[kind]?.label);
+      seriesBadges[kind] = { ...normalized.seriesBadges[kind], label: typed || normalized.seriesBadges[kind].label };
+    }
+    return { ...normalized, seriesBadges };
+  }, [draft]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const gridInvalid = draft.fallbackDayEndHour <= draft.fallbackDayStartHour;
+  const labelsClash = seriesLabelsClash(draft.seriesBadges);
+  const invalid = gridInvalid || labelsClash;
+  const fixedLabel = seriesLabelOf('fixed', preview);
+  const oneOffLabel = seriesLabelOf('one-off', preview);
+  // "Destacar os dois" com selos idênticos fora o nome: vale o aviso.
+  const badgesLookAlike = draft.seriesHighlight === 'both'
+    && ['color', 'icon', 'mark'].every(field => preview.seriesBadges.fixed[field] === preview.seriesBadges['one-off'][field]);
   const disciplines = DISCIPLINES.filter(item => item.available);
 
   function change(patch) {
     setDraft(prev => ({ ...prev, ...patch }));
     setSavedNote('');
+  }
+
+  function changeBadge(kind, patch) {
+    setDraft(prev => ({
+      ...prev,
+      seriesBadges: { ...prev.seriesBadges, [kind]: { ...prev.seriesBadges[kind], ...patch } },
+    }));
+    setSavedNote('');
+  }
+
+  // Atalho do selo que não aparece: sem destaque nenhum, passa a destacar
+  // só ele; com o outro destacado, passa a destacar os dois.
+  function highlightAlso(kind) {
+    change({ seriesHighlight: draft.seriesHighlight === 'none' ? kind : 'both' });
   }
 
   function changeColor(disciplineId, color) {
@@ -111,7 +337,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
   }
 
   async function handleSave() {
-    if (gridInvalid) return;
+    if (invalid) return;
     setError('');
     setSaving(true);
     try {
@@ -159,7 +385,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
       <nav className="agcfg-index" aria-label="Seções desta tela">
         <a href="#agcfg-cancelado">Cancelado</a>
         <a href="#agcfg-falta">Não compareceu</a>
-        <a href="#agcfg-serie">Fixo × eventual</a>
+        <a href="#agcfg-serie">{fixedLabel} × {oneOffLabel}</a>
         <a href="#agcfg-cores">Cores</a>
         <a href="#agcfg-padroes">Padrões</a>
       </nav>
@@ -171,7 +397,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
           help='Vale para "Cancelado pelo paciente" e para as sessões canceladas de um pacote.'
           status="excused"
           value={draft.cancelledLook}
-          settings={draft}
+          settings={preview}
           onChange={id => change({ cancelledLook: id })}
         />
 
@@ -195,69 +421,96 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
           help="Visual próprio para a falta, separado do cancelado, para não confundir os dois."
           status="no_show"
           value={draft.noShowLook}
-          settings={draft}
+          settings={preview}
           onChange={id => change({ noShowLook: id })}
         />
       </div>
 
       <fieldset className="agcfg-section" id="agcfg-serie">
-        <legend className="agcfg-legend">Fixo × eventual</legend>
+        <legend className="agcfg-legend">{fixedLabel} × {oneOffLabel}</legend>
         <p className="agcfg-help">
-          <b>Fixo</b> é a sessão de um pacote no horário do pacote (ex.: toda terça às 14h).
-          <b> Eventual</b> é o marcado só para aquele dia, ou a sessão do pacote que foi movida
-          (ex.: nesta semana foi para sexta). O eventual não se repete nas próximas semanas.
+          <b>{fixedLabel}</b> é a sessão de um pacote no horário do pacote (ex.: toda terça às 14h).
+          <b> {oneOffLabel}</b> é o marcado só para aquele dia, ou a sessão do pacote que foi movida
+          (ex.: nesta semana foi para sexta), e não se repete nas próximas semanas. O card destacado
+          ganha um selo e uma moldura, e os dois são seus: nome, cor, ícone e moldura de cada um.
         </p>
 
-        <div className="agcfg-choices" role="radiogroup" aria-label="O que destacar">
-          {SERIES_HIGHLIGHTS.map(option => (
-            <label key={option.id} className={`agcfg-choice${draft.seriesHighlight === option.id ? ' is-on' : ''}`}>
-              <input
-                type="radio"
-                name="seriesHighlight"
-                value={option.id}
-                checked={draft.seriesHighlight === option.id}
-                onChange={() => change({ seriesHighlight: option.id })}
-              />
-              <span className="agcfg-option-label">{option.label}</span>
-              <span className="agcfg-option-hint">{option.hint}</span>
-            </label>
-          ))}
-        </div>
-
-        {draft.seriesHighlight !== 'none' && (
-          <div className="agcfg-choices agcfg-choices--inline" role="radiogroup" aria-label="Como destacar">
-            {SERIES_MARK_STYLES.map(option => (
-              <label key={option.id} className={`agcfg-chip${draft.seriesMarkStyle === option.id ? ' is-on' : ''}`}>
+        <div className="agcfg-step">
+          <h4 className="agcfg-subtitle"><span className="agcfg-step-n" aria-hidden="true">1</span>O que ganha destaque</h4>
+          <div className="agcfg-choices" role="radiogroup" aria-label="O que ganha destaque">
+            {SERIES_HIGHLIGHTS.map(option => (
+              <label key={option.id} className={`agcfg-choice${draft.seriesHighlight === option.id ? ' is-on' : ''}`}>
                 <input
                   type="radio"
-                  name="seriesMarkStyle"
+                  name="seriesHighlight"
                   value={option.id}
-                  checked={draft.seriesMarkStyle === option.id}
-                  onChange={() => change({ seriesMarkStyle: option.id })}
+                  checked={draft.seriesHighlight === option.id}
+                  onChange={() => change({ seriesHighlight: option.id })}
                 />
-                {option.label}
+                <span className="agcfg-option-label">{seriesHighlightLabel(option, preview)}</span>
+                <span className="agcfg-option-hint">{option.hint}</span>
               </label>
             ))}
           </div>
-        )}
+        </div>
 
-        <div className="agcfg-pair" aria-label="Amostra">
-          <div>
-            <span className="agcfg-pair-label">Ter 14:00 · pacote</span>
-            <SampleCard
-              appointment={{ kind: 'appointment', discipline: 'acupuntura', status: 'scheduled', recurrence_group_id: 'amostra' }}
-              settings={draft}
-              caption="Acup."
-            />
+        <div className="agcfg-step">
+          <h4 className="agcfg-subtitle"><span className="agcfg-step-n" aria-hidden="true">2</span>Como fica na agenda</h4>
+          <div className="agcfg-pair" aria-label="Amostra da agenda">
+            <div>
+              <span className="agcfg-pair-label">Ter 14:00 · pacote</span>
+              <SampleCard
+                appointment={SERIES_KIND_INFO.fixed.appointment}
+                settings={preview}
+                caption="Acup."
+              />
+            </div>
+            <div>
+              <span className="agcfg-pair-label">Sex 10:00 · só nesta semana</span>
+              <SampleCard
+                appointment={SERIES_KIND_INFO['one-off'].appointment}
+                settings={preview}
+                caption="Acup."
+              />
+            </div>
           </div>
-          <div>
-            <span className="agcfg-pair-label">Sex 10:00 · só nesta semana</span>
-            <SampleCard
-              appointment={{ kind: 'appointment', discipline: 'acupuntura', status: 'scheduled' }}
-              settings={draft}
-              caption="Acup."
-            />
+          {badgesLookAlike && (
+            <p className="agcfg-badge-note">
+              Os dois selos estão com a mesma cor, o mesmo ícone e a mesma moldura: de longe, só o
+              nome diferencia. Vale trocar a moldura ou a cor de um deles no passo 3.
+            </p>
+          )}
+        </div>
+
+        <div className="agcfg-step">
+          <h4 className="agcfg-subtitle"><span className="agcfg-step-n" aria-hidden="true">3</span>Cada selo: nome, cor, ícone e moldura</h4>
+          <p className="agcfg-help">
+            O nome aparece no card e no detalhe do agendamento (até {SERIES_LABEL_MAX_LENGTH} letras).
+            As cores são as mesmas das disciplinas: todas legíveis com texto branco, nenhuma vermelha.
+            O selo aparece sempre; a moldura é o reforço para ver de longe.
+          </p>
+          <div className="agcfg-badges">
+            {SERIES_KINDS.map(kind => (
+              <SeriesBadgePicker
+                key={kind}
+                kind={kind}
+                badge={draft.seriesBadges[kind]}
+                preview={preview}
+                highlighted={isSeriesKindHighlighted(kind, draft)}
+                highlightLabel={draft.seriesHighlight === 'none'
+                  ? `Destacar ${seriesLabelOf(kind, preview)}`
+                  : 'Destacar os dois'}
+                onChange={patch => changeBadge(kind, patch)}
+                onReset={() => changeBadge(kind, { ...SERIES_BADGE_DEFAULTS[kind] })}
+                onHighlight={() => highlightAlso(kind)}
+              />
+            ))}
           </div>
+          {labelsClash && (
+            <p className="agcfg-invalid" role="alert">
+              Os dois selos estão com o mesmo nome. Use nomes diferentes para dar para distinguir.
+            </p>
+          )}
         </div>
       </fieldset>
 
@@ -275,7 +528,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
               <div key={discipline.id} className="agcfg-color-row">
                 <SampleCard
                   appointment={{ kind: 'appointment', discipline: discipline.id, status: 'scheduled' }}
-                  settings={{ ...draft, seriesHighlight: 'none' }}
+                  settings={{ ...preview, seriesHighlight: 'none' }}
                   caption={discipline.label}
                 />
                 <div className="agcfg-swatches" role="radiogroup" aria-label={`Cor de ${discipline.label}`}>
@@ -412,7 +665,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
           type="button"
           className="ag-btn ag-btn--primary"
           onClick={handleSave}
-          disabled={saving || !dirty || gridInvalid}
+          disabled={saving || !dirty || invalid}
         >
           {saving ? 'Salvando…' : 'Salvar configuração'}
         </button>

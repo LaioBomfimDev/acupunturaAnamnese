@@ -24,17 +24,58 @@ export const STATUS_LOOKS = [
 ];
 
 // Fixo = sessão de pacote no horário do pacote. Eventual = marcado só
-// para aquele dia, ou sessão de pacote que foi movida.
+// para aquele dia, ou sessão de pacote que foi movida. O NOME de cada um
+// é da clínica (seriesBadges): aqui ficam só os ids e a explicação, e o
+// rótulo da opção sai de seriesHighlightLabel.
 export const SERIES_HIGHLIGHTS = [
-  { id: 'one-off', label: 'Destacar os eventuais', hint: 'O fixo fica normal; o marcado só para aquele dia ganha a marca.' },
-  { id: 'fixed', label: 'Destacar os fixos', hint: 'O pacote ganha a marca; o eventual fica normal.' },
+  { id: 'one-off', hint: 'Ganha o selo o que foi marcado só para aquele dia, ou a sessão do pacote que foi movida.' },
+  { id: 'fixed', hint: 'Ganha o selo a sessão do pacote no horário de sempre.' },
+  { id: 'both', hint: 'Cada tipo com o próprio selo e a própria moldura: os dois se distinguem de longe.' },
   { id: 'none', label: 'Não diferenciar', hint: 'Todos iguais, como era antes.' },
 ];
 
+export const SERIES_KINDS = ['one-off', 'fixed'];
+
+// Selo de cada tipo: nome, cor, ícone e moldura escolhidos pelo Admin.
+// Cor vazia = selo branco com o texto na cor do card (o visual de antes).
+export const SERIES_BADGE_DEFAULTS = Object.freeze({
+  'one-off': Object.freeze({ label: 'Eventual', color: '', icon: 'none', mark: 'dashed' }),
+  fixed: Object.freeze({ label: 'Fixo', color: '', icon: 'none', mark: 'dashed' }),
+});
+
+// O selo mora dentro do card da visão Semana: nome comprido quebra a linha.
+export const SERIES_LABEL_MAX_LENGTH = 16;
+
+// Atalhos na tela; a pessoa também pode escrever outro nome.
+export const SERIES_LABEL_SUGGESTIONS = Object.freeze({
+  'one-off': ['Eventual', 'Avulso', 'Pontual'],
+  fixed: ['Fixo', 'Pacote', 'Recorrente'],
+});
+
+// Ids que o SeriesBadge.jsx desenha. Nada que já tenha outro sentido na
+// agenda (alfinete = presencial, câmera = online, etiqueta = bloqueio).
+export const SERIES_ICONS = [
+  { id: 'none', label: 'Sem ícone' },
+  { id: 'star', label: 'Estrela' },
+  { id: 'bolt', label: 'Raio' },
+  { id: 'clock', label: 'Relógio' },
+  { id: 'repeat', label: 'Repetir' },
+  { id: 'flag', label: 'Bandeira' },
+  { id: 'sparkle', label: 'Brilho' },
+];
+
+// Moldura do card destacado — o reforço visto de longe; o selo aparece
+// sempre, porque padrão visual sozinho não é leitura acessível. Só
+// contorno (outline) e fundo: sombra já é de selecionado, movendo, foco
+// e pendência (agenda.css), e as duas coisas não podem se apagar.
 export const SERIES_MARK_STYLES = [
-  { id: 'dashed', label: 'Moldura tracejada + selo' },
-  { id: 'stripes', label: 'Listras + selo' },
-  { id: 'badge', label: 'Só o selo' },
+  { id: 'dashed', label: 'Tracejada', hint: 'Contorno em traços por dentro do card.' },
+  { id: 'dotted', label: 'Pontilhada', hint: 'Contorno em pontos por dentro do card.' },
+  { id: 'double', label: 'Dupla', hint: 'Duas linhas finas por dentro do card.' },
+  { id: 'ring', label: 'Anel por fora', hint: 'Contorno em volta do card, na cor do selo (grafite se o selo for branco).' },
+  { id: 'stripes', label: 'Listras', hint: 'Fundo com listras diagonais claras.' },
+  { id: 'dots', label: 'Bolinhas', hint: 'Fundo com bolinhas claras.' },
+  { id: 'badge', label: 'Só o selo', hint: 'Card normal; só o selo avisa.' },
 ];
 
 export const DEFAULT_VIEW_OPTIONS = [
@@ -77,7 +118,7 @@ export const AGENDA_SETTINGS_DEFAULTS = Object.freeze({
   noShowLook: 'outline',
   hideCancelled: false,
   seriesHighlight: 'one-off',
-  seriesMarkStyle: 'dashed',
+  seriesBadges: SERIES_BADGE_DEFAULTS,
   disciplineColors: Object.freeze({}),
   defaultDurationMinutes: 60,
   defaultView: 'hoje',
@@ -106,6 +147,52 @@ function pickHour(value, fallback) {
   return Number.isInteger(number) && number >= 0 && number <= 24 ? number : fallback;
 }
 
+function plainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+/** Nome do selo sem quebra de linha, espaço sobrando ou excesso; '' se não sobrar nada. */
+export function cleanSeriesLabel(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim();
+  return Array.from(text).slice(0, SERIES_LABEL_MAX_LENGTH).join('').trim();
+}
+
+/** Os dois selos com o mesmo nome (sem diferenciar maiúscula) apagam a diferença que eles mostram. */
+export function seriesLabelsClash(badges) {
+  const fixed = cleanSeriesLabel(badges?.fixed?.label).toLocaleLowerCase('pt-BR');
+  const oneOff = cleanSeriesLabel(badges?.['one-off']?.label).toLocaleLowerCase('pt-BR');
+  return Boolean(fixed) && fixed === oneOff;
+}
+
+const SERIES_COLORS = AGENDA_COLOR_PALETTE.map(color => color.value);
+
+// `legacyMark`: até 2026-09-30 a moldura era uma só (seriesMarkStyle) para
+// qualquer selo. Configuração salva nesse formato continua valendo para os
+// dois, até o Admin escolher a moldura de cada um.
+function normalizeSeriesBadges(raw, legacyMark) {
+  const source = plainObject(raw);
+  const badges = {};
+  for (const kind of SERIES_KINDS) {
+    const item = plainObject(source[kind]);
+    const defaults = SERIES_BADGE_DEFAULTS[kind];
+    // Só a paleta da agenda: garante contraste com o texto branco e
+    // nenhum vermelho (reservado a conflito).
+    const color = typeof item.color === 'string' ? item.color.toUpperCase() : '';
+    badges[kind] = {
+      label: cleanSeriesLabel(item.label) || defaults.label,
+      color: SERIES_COLORS.includes(color) ? color : '',
+      icon: pickFrom(SERIES_ICONS, item.icon, defaults.icon),
+      mark: pickFrom(SERIES_MARK_STYLES, item.mark, pickFrom(SERIES_MARK_STYLES, legacyMark, defaults.mark)),
+    };
+  }
+  // Mesmo nome nos dois não tem conserto parcial: voltam os dois nomes.
+  if (seriesLabelsClash(badges)) {
+    for (const kind of SERIES_KINDS) badges[kind].label = SERIES_BADGE_DEFAULTS[kind].label;
+  }
+  return badges;
+}
+
 /** Qualquer coisa → configuração válida e completa. Nunca lança. */
 export function normalizeAgendaSettings(raw) {
   const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
@@ -132,7 +219,7 @@ export function normalizeAgendaSettings(raw) {
     noShowLook: pickFrom(STATUS_LOOKS, source.noShowLook, defaults.noShowLook),
     hideCancelled: source.hideCancelled === true,
     seriesHighlight: pickFrom(SERIES_HIGHLIGHTS, source.seriesHighlight, defaults.seriesHighlight),
-    seriesMarkStyle: pickFrom(SERIES_MARK_STYLES, source.seriesMarkStyle, defaults.seriesMarkStyle),
+    seriesBadges: normalizeSeriesBadges(source.seriesBadges, source.seriesMarkStyle),
     disciplineColors,
     defaultDurationMinutes: pickNumber(DURATION_OPTIONS, source.defaultDurationMinutes, defaults.defaultDurationMinutes),
     defaultView: pickFrom(DEFAULT_VIEW_OPTIONS, source.defaultView, defaults.defaultView),
@@ -169,21 +256,54 @@ export function seriesKindOf(appointment) {
   return appointment.recurrence_group_id && !appointment.rescheduled_from ? 'fixed' : 'one-off';
 }
 
+/** Nome que a clínica deu ao tipo ('fixed' | 'one-off'): "Fixo", "Avulso"… */
+export function seriesLabelOf(kind, settings) {
+  return settings?.seriesBadges?.[kind]?.label || SERIES_BADGE_DEFAULTS[kind]?.label || '';
+}
+
+/** Rótulo da opção de destaque com o nome da clínica: "Destacar Avulso". */
+export function seriesHighlightLabel(option, settings) {
+  if (option.id === 'none') return option.label;
+  if (option.id === 'both') {
+    return `Destacar ${seriesLabelOf('one-off', settings)} e ${seriesLabelOf('fixed', settings)}`;
+  }
+  return `Destacar ${seriesLabelOf(option.id, settings)}`;
+}
+
+/** O tipo ('fixed' | 'one-off') ganha selo nos cards com o destaque atual? */
+export function isSeriesKindHighlighted(kind, settings) {
+  const highlight = settings?.seriesHighlight || AGENDA_SETTINGS_DEFAULTS.seriesHighlight;
+  return highlight === 'both' || highlight === kind;
+}
+
 /**
  * Marca de fixo/eventual a desenhar no card, ou null. Card cancelado ou
  * de falta não ganha marca: já está resolvido, e o visual de status
- * manda nele.
+ * manda nele. Nome, cor, ícone e moldura vêm de seriesBadges.
  */
 export function seriesMarkOf(appointment, settings) {
   const kind = seriesKindOf(appointment);
-  const highlight = settings?.seriesHighlight || AGENDA_SETTINGS_DEFAULTS.seriesHighlight;
-  if (!kind || highlight === 'none' || kind !== highlight) return null;
+  if (!kind || !isSeriesKindHighlighted(kind, settings)) return null;
   if (statusLookOf(appointment, settings)) return null;
+  const badge = settings?.seriesBadges?.[kind] || SERIES_BADGE_DEFAULTS[kind];
   return {
     kind,
-    style: settings?.seriesMarkStyle || AGENDA_SETTINGS_DEFAULTS.seriesMarkStyle,
-    label: kind === 'fixed' ? 'Fixo' : 'Eventual',
+    style: badge.mark || SERIES_BADGE_DEFAULTS[kind].mark,
+    label: seriesLabelOf(kind, settings),
+    color: badge.color || '',
+    icon: badge.icon || 'none',
   };
+}
+
+/**
+ * Estilo inline do card: a cor da disciplina e, quando o selo tem cor
+ * própria, essa cor (o "Anel por fora" desenha com ela).
+ */
+export function appointmentCardStyle(disciplineColor, mark) {
+  const style = {};
+  if (disciplineColor) style['--card-color'] = disciplineColor;
+  if (mark?.color) style['--series-color'] = mark.color;
+  return Object.keys(style).length ? style : undefined;
 }
 
 /** Atributos data-* que o CSS da agenda lê (visual de status e fixo/eventual). */

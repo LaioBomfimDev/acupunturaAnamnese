@@ -1,5 +1,6 @@
 import { ROW_STATES } from '../../../utils/agendaTimeline';
 import {
+  appointmentCardStyle,
   appointmentLookAttrs,
   disciplineColorFor,
   rescheduledLabel,
@@ -9,6 +10,7 @@ import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import {
   IconCheck, IconMic, IconPin, IconTag, IconUsers, IconVideo,
 } from './AgendaIcons';
+import { SeriesBadge } from './SeriesBadge';
 
 // ============================================================
 // Faixas de um dia (lista de horários + cards de atendimento)
@@ -154,7 +156,7 @@ function AppointmentCard({
           isSelected ? 'agd-card--selected' : '',
           !isBlock && isPending ? 'agd-card--pending' : '',
         ].filter(Boolean).join(' ')}
-        style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
+        style={appointmentCardStyle(disciplineColor, seriesMark)}
         {...appointmentLookAttrs(appointment, settings)}
         onClick={() => onSelect?.(appointment)}
         title={!isBlock && isPending ? 'Paciente com pendência marcada na ficha' : undefined}
@@ -177,9 +179,7 @@ function AppointmentCard({
             </span>
           )}
           {seriesMark && (
-            <span className={`agd-chip agd-chip--series agd-chip--${seriesMark.kind}`}>
-              {seriesMark.label}
-            </span>
+            <SeriesBadge mark={seriesMark} className={`agd-chip agd-chip--series agd-chip--${seriesMark.kind}`} />
           )}
           {!isBlock && (
             <span className="agd-chip">

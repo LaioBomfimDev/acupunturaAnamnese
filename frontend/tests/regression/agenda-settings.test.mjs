@@ -112,7 +112,8 @@ test('valor fora da lista cai no padrão só naquele item', () => {
   assert.equal(result.cancelledLook, 'solid-x');
   assert.equal(result.noShowLook, 'solid');
   assert.equal(result.seriesHighlight, 'fixed');
-  assert.equal(result.seriesMarkStyle, 'dashed');
+  assert.equal(result.seriesBadges['one-off'].mark, 'dashed', 'moldura desconhecida (formato antigo) cai no padrão');
+  assert.equal(result.seriesBadges.fixed.mark, 'dashed');
   assert.equal(result.defaultDurationMinutes, 60);
   assert.equal(result.defaultView, 'hoje');
   assert.equal(result.fallbackSlotMinutes, 30);
@@ -196,7 +197,7 @@ test('fixo = pacote no horário do pacote; movida ou marcada sozinha = eventual'
 test('marca só o tipo escolhido, e nunca em card cancelado', () => {
   const config = settings.normalizeAgendaSettings({ seriesHighlight: 'one-off', seriesMarkStyle: 'stripes' });
 
-  assert.deepEqual(settings.seriesMarkOf(appointment(), config), { kind: 'one-off', style: 'stripes', label: 'Eventual' });
+  assert.deepEqual(settings.seriesMarkOf(appointment(), config), { kind: 'one-off', style: 'stripes', label: 'Eventual', color: '', icon: 'none' });
   assert.equal(settings.seriesMarkOf(appointment({ recurrence_group_id: 'g1' }), config), null);
   assert.equal(settings.seriesMarkOf(appointment({ status: 'excused' }), config), null);
 
@@ -391,17 +392,205 @@ test('CSS do visual de status não usa vermelho (reservado a conflito)', async (
   assert.doesNotMatch(block, /--r1-danger|#[cC]0|red\b/);
 });
 
-test('a Agenda chama de "Eventual" o que não é fixo; "avulso" não volta (pedido de 2026-09-29)', async () => {
+// ---------- selo personalizável: nome, cor e ícone (pedido de 2026-09-30) ----------
+
+test('selo: padrão é Eventual/Fixo, sem cor própria, sem ícone e com moldura tracejada', () => {
+  assert.deepEqual(settings.normalizeAgendaSettings(null).seriesBadges, {
+    'one-off': { label: 'Eventual', color: '', icon: 'none', mark: 'dashed' },
+    fixed: { label: 'Fixo', color: '', icon: 'none', mark: 'dashed' },
+  });
+});
+
+test('selo: nome livre é limpo, cortado no limite e nunca fica vazio', () => {
+  const labelOf = raw => settings.normalizeAgendaSettings({
+    seriesBadges: { 'one-off': { label: raw } },
+  }).seriesBadges['one-off'].label;
+
+  assert.equal(labelOf('  Avulso  '), 'Avulso');
+  assert.equal(labelOf('Só\n\thoje'), 'Só hoje');
+  assert.equal(labelOf(''), 'Eventual');
+  assert.equal(labelOf('   '), 'Eventual');
+  assert.equal(labelOf(42), 'Eventual');
+  assert.equal(labelOf(null), 'Eventual');
+
+  const long = labelOf('Atendimento extraordinário da semana');
+  assert.ok(Array.from(long).length <= settings.SERIES_LABEL_MAX_LENGTH);
+  assert.equal(long, long.trim());
+});
+
+test('selo: os dois nomes iguais voltam ao padrão (fixo e eventual não podem se confundir)', () => {
+  const result = settings.normalizeAgendaSettings({
+    seriesBadges: { fixed: { label: 'Pacote' }, 'one-off': { label: ' pacote ' } },
+  });
+  assert.equal(result.seriesBadges.fixed.label, 'Fixo');
+  assert.equal(result.seriesBadges['one-off'].label, 'Eventual');
+  assert.equal(settings.seriesLabelsClash({ fixed: { label: 'Pacote' }, 'one-off': { label: 'PACOTE' } }), true);
+  assert.equal(settings.seriesLabelsClash({ fixed: { label: 'Fixo' }, 'one-off': { label: 'Avulso' } }), false);
+});
+
+test('selo: cor só da paleta da agenda (sem vermelho) e ícone só da lista', () => {
+  const result = settings.normalizeAgendaSettings({
+    seriesBadges: {
+      'one-off': { label: 'Avulso', color: '#6a4c93', icon: 'bolt' },
+      fixed: { label: 'Pacote', color: '#C0392B', icon: 'caveira' },
+    },
+  });
+  assert.deepEqual(result.seriesBadges['one-off'], { label: 'Avulso', color: '#6A4C93', icon: 'bolt', mark: 'dashed' });
+  assert.deepEqual(result.seriesBadges.fixed, { label: 'Pacote', color: '', icon: 'none', mark: 'dashed' });
+
+  for (const raw of ['x', [], 42, { 'one-off': 'Avulso' }]) {
+    assert.deepEqual(
+      settings.normalizeAgendaSettings({ seriesBadges: raw }).seriesBadges,
+      settings.normalizeAgendaSettings(null).seriesBadges,
+    );
+  }
+});
+
+test('seriesMarkOf e seriesLabelOf entregam o nome, a cor e o ícone da clínica', () => {
+  const config = settings.normalizeAgendaSettings({
+    seriesMarkStyle: 'badge',
+    seriesBadges: { 'one-off': { label: 'Avulso', color: '#6A4C93', icon: 'star' } },
+  });
+
+  assert.deepEqual(settings.seriesMarkOf(appointment(), config), {
+    kind: 'one-off',
+    style: 'badge',
+    label: 'Avulso',
+    color: '#6A4C93',
+    icon: 'star',
+  });
+  assert.equal(settings.seriesLabelOf('one-off', config), 'Avulso');
+  assert.equal(settings.seriesLabelOf('fixed', config), 'Fixo');
+  assert.equal(settings.seriesLabelOf('one-off', undefined), 'Eventual');
+});
+
+test('card da visão Dia e da Semana mostram o selo personalizado', () => {
+  const config = {
+    seriesBadges: { 'one-off': { label: 'Avulso', color: '#6A4C93', icon: 'star' } },
+  };
+
+  const day = renderDay([appointment()], config);
+  assert.match(day, /class="agd-chip agd-chip--series agd-chip--one-off has-color"/);
+  assert.match(day, /--series-color:#6A4C93/);
+  assert.match(day, /<svg[^>]*class="ag-series-icon"[\s\S]*?<\/svg>Avulso</);
+  assert.doesNotMatch(day, />Eventual</);
+
+  const week = renderToStaticMarkup(
+    React.createElement(
+      Context.Provider,
+      { value: settings.normalizeAgendaSettings(config) },
+      React.createElement(WeekView, {
+        week: timeline.buildWeekStrip(DIA, { today: DIA }),
+        schedules: [],
+        appointments: [appointment()],
+        holidays: [],
+        selectedKey: '2026-09-29',
+        onPickCell: () => {},
+        patientName: () => 'Jasmine',
+      }),
+    ),
+  );
+  assert.match(week, /class="agw-series has-color"/);
+  assert.match(week, /title="Jasmine — Avulso"/);
+});
+
+test('nenhuma tela da Agenda escreve o nome do selo por conta própria', async () => {
   const files = [
-    'src/utils/agendaSettings.js',
     'src/components/panels/Agenda.jsx',
+    'src/components/panels/agenda/AgendaDayRows.jsx',
+    'src/components/panels/agenda/AgendaWeekView.jsx',
+    'src/components/panels/agenda/TodayPanel.jsx',
     'src/components/panels/agenda/AgendaSettingsEditor.jsx',
+    'src/components/panels/agenda/SeriesBadge.jsx',
   ];
   for (const file of files) {
     const source = await readFile(path.join(root, file), 'utf8');
-    assert.doesNotMatch(source, /avuls/i, `${file} ainda fala em avulso`);
+    assert.doesNotMatch(source, /['">`](Fixo|Eventual|Avulso)\b/, `${file} escreve o nome do selo à mão`);
   }
 
-  const labels = settings.SERIES_HIGHLIGHTS.map(option => option.label);
-  assert.ok(labels.includes('Destacar os eventuais'));
+  const agenda = await readFile(path.join(root, 'src/components/panels/Agenda.jsx'), 'utf8');
+  assert.match(agenda, /seriesLabelOf\('fixed', agendaSettings\)/);
+  assert.match(agenda, /seriesLabelOf\('one-off', agendaSettings\)/);
+});
+
+test('no celular o botão "Padrão" das cores não é cortado pelo tamanho do disco', async () => {
+  const css = await readFile(path.join(root, 'src/styles/agenda.css'), 'utf8');
+  const start = css.indexOf('Tela "Configurar agenda"');
+  const mobile = css.slice(css.indexOf('@media (max-width: 640px)', start));
+  assert.match(mobile, /\.agcfg-swatch \{\s*width: 36px;/);
+  assert.match(mobile, /\.agcfg-swatch--default \{\s*width: auto;/);
+});
+
+// ---------- moldura por selo e "destacar os dois" (pedido de 2026-09-30) ----------
+
+test('moldura: a escolha antiga (seriesMarkStyle) continua valendo para os dois selos', () => {
+  const legacy = settings.normalizeAgendaSettings({ seriesMarkStyle: 'stripes' });
+  assert.equal(legacy.seriesBadges['one-off'].mark, 'stripes');
+  assert.equal(legacy.seriesBadges.fixed.mark, 'stripes');
+  assert.equal('seriesMarkStyle' in legacy, false, 'o formato novo guarda a moldura dentro de cada selo');
+
+  const mixed = settings.normalizeAgendaSettings({
+    seriesMarkStyle: 'stripes',
+    seriesBadges: { fixed: { mark: 'ring' } },
+  });
+  assert.equal(mixed.seriesBadges.fixed.mark, 'ring', 'a moldura do próprio selo ganha da antiga');
+  assert.equal(mixed.seriesBadges['one-off'].mark, 'stripes');
+});
+
+test('moldura: as sete opções valem e o resto cai no padrão', () => {
+  const ids = settings.SERIES_MARK_STYLES.map(option => option.id);
+  assert.deepEqual(ids, ['dashed', 'dotted', 'double', 'ring', 'stripes', 'dots', 'badge']);
+  for (const id of ids) {
+    const result = settings.normalizeAgendaSettings({ seriesBadges: { 'one-off': { mark: id } } });
+    assert.equal(result.seriesBadges['one-off'].mark, id);
+  }
+  const unknown = settings.normalizeAgendaSettings({ seriesBadges: { 'one-off': { mark: 'neon' } } });
+  assert.equal(unknown.seriesBadges['one-off'].mark, 'dashed');
+});
+
+test('"destacar os dois": cada tipo ganha o próprio selo e a própria moldura', () => {
+  const config = settings.normalizeAgendaSettings({
+    seriesHighlight: 'both',
+    seriesBadges: {
+      'one-off': { label: 'Avulso', mark: 'dotted' },
+      fixed: { label: 'Pacote', mark: 'stripes', icon: 'repeat' },
+    },
+  });
+  assert.equal(config.seriesHighlight, 'both');
+
+  const oneOff = settings.seriesMarkOf(appointment(), config);
+  const fixed = settings.seriesMarkOf(appointment({ recurrence_group_id: 'g1' }), config);
+  assert.deepEqual([oneOff.kind, oneOff.style, oneOff.label], ['one-off', 'dotted', 'Avulso']);
+  assert.deepEqual([fixed.kind, fixed.style, fixed.label, fixed.icon], ['fixed', 'stripes', 'Pacote', 'repeat']);
+  assert.equal(settings.seriesMarkOf(appointment({ status: 'no_show' }), config), null, 'falta continua sem marca');
+
+  assert.equal(settings.seriesHighlightLabel({ id: 'both' }, config), 'Destacar Avulso e Pacote');
+});
+
+test('anel por fora: o card recebe a cor do selo; sem cor, o CSS usa a tinta do texto', () => {
+  assert.deepEqual(
+    settings.appointmentCardStyle('#0F4C49', { color: '#8C6D12' }),
+    { '--card-color': '#0F4C49', '--series-color': '#8C6D12' },
+  );
+  assert.deepEqual(settings.appointmentCardStyle('#0F4C49', { color: '' }), { '--card-color': '#0F4C49' });
+  assert.equal(settings.appointmentCardStyle(null, null), undefined);
+
+  const day = renderDay([appointment()], {
+    seriesBadges: { 'one-off': { label: 'Avulso', color: '#8C6D12', mark: 'ring' } },
+  });
+  assert.match(day, /data-series-mark="ring"/);
+  assert.match(day, /class="agd-card[^"]*"[^>]*style="--card-color:[^;"]+;--series-color:#8C6D12"/);
+});
+
+test('molduras usam só contorno e fundo: sombra é de selecionado, movendo, foco e pendência', async () => {
+  const css = await readFile(path.join(root, 'src/styles/agenda.css'), 'utf8');
+  const start = css.indexOf('/* ---------- fixo × eventual ---------- */');
+  const end = css.indexOf('/* Selo:', start);
+  assert.ok(start > 0 && end > start);
+  const marks = css.slice(start, end);
+  assert.doesNotMatch(marks, /box-shadow/);
+  for (const id of ['dashed', 'dotted', 'double', 'ring', 'stripes', 'dots']) {
+    assert.ok(marks.includes(`[data-series-mark="${id}"]`), `moldura ${id} sem CSS`);
+  }
+  assert.match(marks, /var\(--series-color, var\(--r1-text\)\)/);
 });

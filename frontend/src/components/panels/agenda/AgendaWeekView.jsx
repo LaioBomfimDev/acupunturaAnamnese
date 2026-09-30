@@ -2,6 +2,7 @@ import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { ROW_STATES, buildDayTimeline } from '../../../utils/agendaTimeline';
 import { minutesToLabel } from '../../../utils/agendaExceptions';
 import {
+  appointmentCardStyle,
   appointmentLookAttrs,
   disciplineColorFor,
   fallbackGridOf,
@@ -11,6 +12,7 @@ import {
 import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import { BLOCK_TYPE_ICONS, BLOCK_TYPE_LABEL, isPast } from './AgendaDayRows';
 import { IconCheck, IconPin, IconVideo } from './AgendaIcons';
+import { SeriesBadge } from './SeriesBadge';
 
 // ============================================================
 // Visão Semana — para o desktop
@@ -152,7 +154,7 @@ export function AgendaWeekView({
                           confirmed ? 'agw-item--confirmed' : '',
                           pending ? 'agw-item--pending' : '',
                         ].filter(Boolean).join(' ')}
-                        style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
+                        style={appointmentCardStyle(disciplineColor, seriesMark)}
                         {...appointmentLookAttrs(appointment, settings)}
                         onClick={() => onSelectAppointment?.(appointment)}
                         title={isBlock
@@ -170,9 +172,7 @@ export function AgendaWeekView({
                           : (appointment.modality === 'online'
                             ? <IconVideo className="agw-item-icon" />
                             : <IconPin className="agw-item-icon" />)}
-                        {seriesMark && (
-                          <span className="agw-series">{seriesMark.label}</span>
-                        )}
+                        <SeriesBadge mark={seriesMark} className="agw-series" />
                         {isBlock
                           ? (appointment.note?.trim() || blockLabel)
                           : patientName(appointment.patient_id)}

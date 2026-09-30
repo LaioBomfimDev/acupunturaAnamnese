@@ -1,5 +1,6 @@
 import { getStatusLabel } from '../../../utils/agenda';
 import {
+  appointmentCardStyle,
   appointmentLookAttrs,
   disciplineColorFor,
   rescheduledLabel,
@@ -7,6 +8,7 @@ import {
 } from '../../../utils/agendaSettings';
 import { useAgendaSettings } from '../../../hooks/AgendaSettingsContext';
 import { IconCheck } from './AgendaIcons';
+import { SeriesBadge } from './SeriesBadge';
 
 // ============================================================
 // Painel "Hoje" — a lista do dia
@@ -45,6 +47,7 @@ function QueueCard({
   return (
     <li
       className={`agh-card agh-card--${tone}${pending ? ' agh-card--pending' : ''}`}
+      style={appointmentCardStyle(null, seriesMark)}
       {...appointmentLookAttrs(appointment, settings)}
     >
       <button type="button" className="agh-open" onClick={() => onOpen(appointment)}>
@@ -59,7 +62,7 @@ function QueueCard({
             <span className="agh-done">{getStatusLabel(appointment.status)}</span>
           )}
           {seriesMark && (
-            <span className={`agh-series agh-series--${seriesMark.kind}`}>{seriesMark.label}</span>
+            <SeriesBadge mark={seriesMark} className={`agh-series agh-series--${seriesMark.kind}`} />
           )}
         </span>
 

@@ -38,6 +38,7 @@ import { listClinicMembers, shortName, sortWithSelfFirst } from '../../services/
 import { listHolidays, listProfessionalSchedules } from '../../services/agendaScheduleService';
 import { loadAgendaSettings } from '../../services/agendaSettingsService';
 import {
+  appointmentCardStyle,
   appointmentLookAttrs,
   disciplineColorFor,
   fallbackGridOf,
@@ -46,6 +47,7 @@ import {
   normalizeAgendaSettings,
   rescheduledLabel,
   seriesKindOf,
+  seriesLabelOf,
   seriesMarkOf,
 } from '../../utils/agendaSettings';
 import { AgendaSettingsContext } from '../../hooks/AgendaSettingsContext';
@@ -1332,7 +1334,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
               type="button"
               className="ag-btn ag-tool-btn"
               onClick={() => setShowSettings(true)}
-              title="Visual do cancelado, fixo × eventual, cores e padrões da agenda — vale para a equipe toda"
+              title={`Visual do cancelado, ${seriesLabelOf('fixed', agendaSettings)} × ${seriesLabelOf('one-off', agendaSettings)}, cores e padrões da agenda — vale para a equipe toda`}
             >
               <IconSliders />
               Configurar<span className="ag-tool-long"> agenda</span>
@@ -1761,10 +1763,10 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
               {seriesKindOf(selectedAppointment) && (
                 <p className="ag-detail-series">
                   {seriesKindOf(selectedAppointment) === 'fixed'
-                    ? 'Fixo: faz parte de um pacote de sessões.'
+                    ? `${seriesLabelOf('fixed', agendaSettings)}: faz parte de um pacote de sessões.`
                     : selectedAppointment.recurrence_group_id
-                    ? 'Eventual: sessão do pacote remarcada só desta vez.'
-                    : 'Eventual: marcado só para este dia, não se repete.'}
+                    ? `${seriesLabelOf('one-off', agendaSettings)}: sessão do pacote remarcada só desta vez.`
+                    : `${seriesLabelOf('one-off', agendaSettings)}: marcado só para este dia, não se repete.`}
                   {rescheduledLabel(selectedAppointment) && ` ${rescheduledLabel(selectedAppointment)}.`}
                 </p>
               )}
@@ -1847,7 +1849,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           isBlock ? '' : `ag-item--${item.status}`,
                           !isBlock && patientPending(item.patient_id) ? 'ag-item--pending' : '',
                         ].filter(Boolean).join(' ')}
-                        style={disciplineColor ? { '--card-color': disciplineColor } : undefined}
+                        style={appointmentCardStyle(disciplineColor, seriesMark)}
                         {...appointmentLookAttrs(item, agendaSettings)}
                       >
                         <button

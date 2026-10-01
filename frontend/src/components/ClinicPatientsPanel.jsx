@@ -21,6 +21,8 @@ import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
 import { useDismiss } from '../hooks/useDismiss';
+import { ScreenHelp } from './ui/ScreenHelp';
+import { PACIENTES_HELP } from '../data/screenHelp';
 
 // ============================================================
 // Pacientes da instituição (Fases 2 e 3 — docs/plano-clinica-multidisciplinar.md)
@@ -418,11 +420,10 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
 
       <main className="hub-body clinic-patients">
         <p className="hub-greeting">Cadastro central</p>
-        <h2>Pacientes da instituição</h2>
-        <p className="hub-note">
-          O paciente é um só e entra em cada área por matrícula. Enviar para outro profissional
-          compartilha só o que você escolher, com confirmação de senha, e pode ser revogado.
-        </p>
+        <div className="screen-title-row">
+          <h2>Pacientes da instituição</h2>
+          <ScreenHelp topic={PACIENTES_HELP} />
+        </div>
 
         {notice && (
           <div className={`cp-notice cp-notice-${notice.type}`}>{notice.text}</div>

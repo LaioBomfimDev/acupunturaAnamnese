@@ -1,7 +1,9 @@
 // ============================================================
 // Ajuda "Como funciona" (2026-09-30): o parágrafo explicativo que abria
 // cada aba da Gestão saiu da tela e foi para um painel lateral, com
-// títulos fixos. Decisões:
+// títulos fixos. Na mesma data seguiu para Evoluções, Pacientes da
+// instituição e os editores da Agenda (Horários, Feriados, Configurar).
+// Decisões:
 // - cada aba tem o seu tópico, com os rótulos iguais aos da tela;
 // - botão com texto ("Como funciona"), não só "?";
 // - curadoria continua com a explicação aberta (AGENTS.md §8);
@@ -44,6 +46,17 @@ function tabIds(source) {
   return [...block.matchAll(/id: '([a-z]+)'/g)].map(match => match[1]);
 }
 
+// Todo tópico de ajuda do sistema, com um nome para a mensagem de erro.
+function everyTopic() {
+  return [
+    ...Object.entries(help.GESTAO_HELP).map(([id, topic]) => [`Gestão/${id}`, topic]),
+    ...Object.entries(help.GESTAO_PROFISSIONAL_HELP).map(([id, topic]) => [`Gestão pessoal/${id}`, topic]),
+    ['Evoluções', help.EVOLUCOES_HELP],
+    ['Pacientes', help.PACIENTES_HELP],
+    ...Object.entries(help.AGENDA_HELP).map(([id, topic]) => [`Agenda/${id}`, topic]),
+  ];
+}
+
 function allText(topic) {
   return help.HELP_SECTIONS
     .flatMap(section => [topic[section.key]].flat())
@@ -70,23 +83,21 @@ test('ajuda só usa as seções fixas, na mesma ordem', () => {
   assert.deepEqual(help.HELP_SECTIONS.map(section => section.title), [
     'O que é', 'O que dá pra fazer', 'Como ler', 'Quem vê e quem altera', 'Bom saber',
   ]);
-  for (const topics of [help.GESTAO_HELP, help.GESTAO_PROFISSIONAL_HELP]) {
-    for (const [id, topic] of Object.entries(topics)) {
-      for (const key of Object.keys(topic)) {
-        assert.ok(allowed.has(key), `ajuda de ${id} com seção desconhecida: ${key}`);
-      }
+  for (const [id, topic] of everyTopic()) {
+    assert.ok(topic.title && topic.summary, `ajuda de ${id} sem título ou "O que é"`);
+    for (const key of Object.keys(topic)) {
+      assert.ok(allowed.has(key), `ajuda de ${id} com seção desconhecida: ${key}`);
     }
   }
 });
 
 test('texto da ajuda usa os nomes atuais da tela, em pt-BR', () => {
-  for (const topics of [help.GESTAO_HELP, help.GESTAO_PROFISSIONAL_HELP]) {
-    for (const [id, topic] of Object.entries(topics)) {
-      const text = allText(topic);
-      assert.doesNotMatch(text, /\bitems\b/i, `ajuda de ${id} com "items"`);
-      // Status antigo: hoje a Agenda chama de "Cancelado pelo paciente".
-      assert.doesNotMatch(text, /faltou com aviso/i, `ajuda de ${id} com status antigo`);
-    }
+  for (const [id, topic] of everyTopic()) {
+    const text = allText(topic);
+    assert.doesNotMatch(text, /\bitems\b/i, `ajuda de ${id} com "items"`);
+    assert.doesNotMatch(text, /\w\(s\)/, `ajuda de ${id} com plural "(s)"`);
+    // Status antigo: hoje a Agenda chama de "Cancelado pelo paciente".
+    assert.doesNotMatch(text, /faltou com aviso/i, `ajuda de ${id} com status antigo`);
   }
   assert.match(allText(help.GESTAO_HELP.faltosos), /Cancelado pelo paciente/);
   assert.match(allText(help.GESTAO_HELP.faltosos), /Não compareceu/);
@@ -128,4 +139,55 @@ test('curadoria não usa o botão de ajuda: explicação fica aberta na tela', a
     const source = await readFile(path.join(srcDir, name), 'utf8');
     assert.doesNotMatch(source, /ScreenHelp/, `${name} escondeu a explicação da curadoria`);
   }
+});
+
+const SCREENS = [
+  ['components/evolutions/EvolutionsScreen.jsx', 'EVOLUCOES_HELP'],
+  ['components/ClinicPatientsPanel.jsx', 'PACIENTES_HELP'],
+  ['components/panels/agenda/ScheduleEditor.jsx', 'AGENDA_HELP.horarios'],
+  ['components/panels/agenda/HolidaysEditor.jsx', 'AGENDA_HELP.feriados'],
+  ['components/panels/agenda/AgendaSettingsEditor.jsx', 'AGENDA_HELP.configurar'],
+];
+
+test('Evoluções, Pacientes e editores da Agenda têm "Como funciona" no lugar do parágrafo', async () => {
+  for (const [name, topic] of SCREENS) {
+    const source = await readFile(path.join(srcDir, name), 'utf8');
+    assert.ok(source.includes(`<ScreenHelp topic={${topic}} />`), `${name} sem o botão de ajuda`);
+    assert.doesNotMatch(source, /className="(?:hub-note|agj-note)"/, `${name} ainda abre com parágrafo explicativo`);
+  }
+});
+
+test('o que muda o que dá pra fazer continua visível na tela', async () => {
+  // Evoluções: atendimento de colega segue com cadeado, legenda e aviso.
+  const evolucoes = await readFile(path.join(srcDir, 'components/evolutions/EvolutionsScreen.jsx'), 'utf8');
+  assert.match(evolucoes, /de outro profissional<\/span>/);
+  assert.match(evolucoes, /Só o profissional do\s+atendimento escreve a evolução\./);
+
+  // Horários: quem cadastra não pode achar que se tranca fora da jornada.
+  const horarios = await readFile(path.join(srcDir, 'components/panels/agenda/ScheduleEditor.jsx'), 'utf8');
+  assert.match(horarios, /horário normal, não um limite/);
+  // Feriados e Configurar agenda mantêm o subtítulo curto.
+  const feriados = await readFile(path.join(srcDir, 'components/panels/agenda/HolidaysEditor.jsx'), 'utf8');
+  assert.match(feriados, /Avisos na agenda, não um bloqueio/);
+  const configurar = await readFile(path.join(srcDir, 'components/panels/agenda/AgendaSettingsEditor.jsx'), 'utf8');
+  assert.match(configurar, /Vale para a equipe toda · só o Admin da clínica altera/);
+});
+
+test('botão de adicionar jornada usa plural de verdade, não "dia(s)"', async () => {
+  const horarios = await readFile(path.join(srcDir, 'components/panels/agenda/ScheduleEditor.jsx'), 'utf8');
+  assert.doesNotMatch(horarios, /dia\(s\)/);
+  assert.match(horarios, /'Adicionar em 1 dia'/);
+  assert.match(horarios, /`Adicionar em \$\{form\.weekdays\.length\} dias`/);
+});
+
+test('ajuda das novas telas confere com as regras do sistema', () => {
+  const evolucoes = allText(help.EVOLUCOES_HELP);
+  assert.match(evolucoes, /22\/09\/2026/);
+  assert.match(evolucoes, /30 dias/);
+  assert.match(evolucoes, /recepção não usa esta tela/);
+  // Exclusão de paciente: só a administração exclui de vez.
+  assert.match(allText(help.PACIENTES_HELP), /Excluir paciente de vez é só da administração/);
+  // Feriado é aviso, não bloqueio; jornada é normal, não limite.
+  assert.match(allText(help.AGENDA_HELP.feriados), /aviso, não bloqueio/);
+  assert.match(allText(help.AGENDA_HELP.horarios), /não o que é permitido/);
 });

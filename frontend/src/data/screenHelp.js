@@ -206,3 +206,123 @@ export const GESTAO_PROFISSIONAL_HELP = {
   },
   cadastro: MEU_CADASTRO_HELP,
 };
+
+/** Tela Evoluções (components/evolutions/EvolutionsScreen.jsx). */
+export const EVOLUCOES_HELP = {
+  title: 'Evoluções',
+  summary: 'A fila dos atendimentos da Agenda que ainda não têm evolução, com o formulário para escrever cada uma.',
+  actions: [
+    'Escolher o atendimento na fila, ou buscar o paciente pelo nome, e escrever a evolução ao lado.',
+    '“Salvar e ir para o próximo” grava e já abre o próximo pendente. No último da fila o botão vira “Salvar evolução”.',
+    'Filtrar a fila por situação, área, atendimento (atendido ou ausência) e período: hoje, últimos 7 dias ou tudo.',
+    'Atendeu sem ter agendado? Use “Registrar atendimento realizado”: o atendimento entra como Atendido e abre aqui para evoluir.',
+  ],
+  reading: [
+    'Ícone vermelho = falta evoluir. Verde = evoluído agora, nesta tela. Cadeado = atendimento de outro profissional.',
+    'A fila vem do mais recente para o mais antigo, separada por dia.',
+    'Selo ao lado do nome: Atendido, Não compareceu ou Cancelado pelo paciente.',
+  ],
+  access: [
+    'Cada profissional só escreve a evolução dos próprios atendimentos, nas áreas liberadas para ele.',
+    'A administração vê a fila da equipe inteira; os atendimentos dos colegas aparecem com cadeado.',
+    'Evolução é trabalho clínico: a recepção não usa esta tela.',
+  ],
+  notes: [
+    '“Não compareceu” e “Cancelado pelo paciente” pedem uma observação antes de salvar.',
+    'Depois de salva, a evolução não se corrige por aqui: use a linha do tempo na ficha do paciente.',
+    'Quem você evoluiu fica verde até sair da tela; na próxima visita, já não aparece na fila.',
+    '“Registrar atendimento realizado” vale para atendimentos de até 30 dias atrás.',
+    'A fila só cobra atendimentos a partir de 22/09/2026, quando o sistema entrou em uso; o histórico importado do sistema anterior fica de fora.',
+  ],
+};
+
+/** Pacientes da instituição (components/ClinicPatientsPanel.jsx). */
+export const PACIENTES_HELP = {
+  title: 'Pacientes da instituição',
+  summary: 'O cadastro central de pacientes. O paciente é um só na instituição e entra em cada área por matrícula.',
+  actions: [
+    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, convênio, endereço e matrícula inicial.',
+    '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha.',
+    '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
+    '“Ver compartilhado”: ler o que já foi compartilhado daquele paciente.',
+    'Revogar um compartilhamento no × ao lado dele.',
+  ],
+  reading: [
+    'Selos com o nome da área são as matrículas do paciente; passe o mouse para ver a situação: em atendimento, pausado ou alta.',
+    '“sem matrícula” = cadastrado, mas ainda sem nenhuma área. O cartão “Ver pacientes cadastrados” mostra quantos estão assim.',
+    '“pendência” = marcado à mão na ficha do paciente. “inativo” = suspenso, uma pausa que pode ser desfeita na ficha.',
+    '“Área → destino” = compartilhamento ativo.',
+  ],
+  access: [
+    'Quem recebe um compartilhamento só lê os itens enviados: nada é copiado, e o envio fica registrado.',
+    'Excluir paciente de vez é só da administração. Os outros perfis solicitam a exclusão pela ficha: o paciente é arquivado na hora e a administração decide depois, em “Revisar”.',
+  ],
+  notes: [
+    'Paciente menor de idade exige responsável no cadastro. Campos com * são obrigatórios.',
+    'Excluir apaga prontuário, evoluções, agenda e matrículas, e não tem como desfazer pela tela.',
+  ],
+};
+
+/** Editores que abrem de dentro da Agenda (components/panels/agenda/). */
+export const AGENDA_HELP = {
+  horarios: {
+    title: 'Horários de atendimento',
+    summary: 'A jornada do profissional: os dias e horários que são o normal dele na agenda.',
+    actions: [
+      'Adicionar uma faixa: escolher os dias, o início e o fim, o intervalo (se tiver) e a duração padrão do atendimento.',
+      'Cadastrar mais de uma faixa no mesmo dia, como manhã e noite.',
+      'Remover uma faixa no dia em que ela aparece.',
+    ],
+    reading: [
+      'O nome no topo é de quem é a jornada.',
+      'Cada dia mostra as faixas, com intervalo e duração. “Não atende” = dia sem faixa.',
+    ],
+    access: [
+      'Cada profissional cadastra a própria jornada; a administração da instituição também cadastra a de qualquer profissional.',
+    ],
+    notes: [
+      'A jornada diz o que é horário normal, não o que é permitido: marcar fora dela (sábado, feriado, intervalo, madrugada) continua possível. A agenda avisa, pede confirmação e registra como exceção.',
+      'Sem jornada cadastrada, a agenda usa a grade padrão de “Configurar agenda”.',
+    ],
+  },
+  feriados: {
+    title: 'Feriados',
+    summary: 'Os feriados que a agenda conhece, para avisar antes de marcar em cima deles.',
+    actions: [
+      'Adicionar um feriado com data e nome.',
+      'Marcar “Clínica atende neste dia” quando o feriado não fecha a clínica, como um ponto facultativo em que vocês trabalham.',
+      'Remover um feriado da lista.',
+    ],
+    access: [
+      'Só a administração da instituição altera os feriados.',
+    ],
+    notes: [
+      'Feriado é aviso, não bloqueio: a agenda pede confirmação dupla antes de marcar em cima dele, mas deixa marcar.',
+      'Os feriados nacionais já vêm cadastrados, do ano em que a instituição foi criada até 4 anos depois. Confira a lista e acrescente os da sua cidade.',
+      'Sem feriado cadastrado, a agenda não tem o que avisar.',
+    ],
+  },
+  configurar: {
+    title: 'Configurar agenda',
+    summary: 'Como a agenda aparece para toda a instituição: cancelado e falta, selos de fixo e eventual, cor de cada disciplina e os padrões.',
+    actions: [
+      'Escolher o visual do cancelado e do não compareceu, e se os cancelados somem da agenda.',
+      'Decidir o que ganha destaque entre fixo e eventual e personalizar cada selo: nome, cor, ícone e moldura.',
+      'Escolher a cor de cada disciplina.',
+      'Em Padrões: a duração de um agendamento novo, a visão que abre primeiro e a grade de quem ainda não cadastrou os horários.',
+      'Ir direto a uma seção pelo índice no topo.',
+    ],
+    reading: [
+      'As amostras mostram o card exatamente como fica na agenda.',
+      'A barra de baixo diz se há alterações não salvas.',
+    ],
+    access: [
+      'Vale para a equipe toda, e só a administração da instituição altera.',
+    ],
+    notes: [
+      'Nada muda até “Salvar configuração”. “Descartar” volta ao que estava salvo; “Restaurar padrão” volta ao padrão do sistema e só vale depois de salvar.',
+      'Relatórios, evoluções e documentos não mudam: aqui é só o visual e os padrões da agenda.',
+      'Esconder os cancelados deixa o horário livre na agenda, mas eles continuam nos relatórios e voltam com o filtro “Cancelado pelo paciente”.',
+    ],
+  },
+};

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { minutesToLabel, timeToMinutes } from '../../../utils/agendaExceptions';
+import { ScreenHelp } from '../../ui/ScreenHelp';
+import { AGENDA_HELP } from '../../../data/screenHelp';
 import {
   deleteProfessionalSchedule,
   listProfessionalSchedules,
@@ -12,8 +14,9 @@ import {
 //
 // Define o que é DENTRO DO NORMAL — nunca o que é permitido. Marcar
 // fora daqui continua possível, com aviso e confirmação dupla
-// (docs/plano-agenda-gestao-clinica.md §6.1). O texto da tela precisa
-// dizer isso, senão a pessoa cadastra com medo de se trancar.
+// (docs/plano-agenda-gestao-clinica.md §6.1). A tela precisa dizer isso,
+// senão a pessoa cadastra com medo de se trancar: fica no subtítulo, à
+// vista, e o detalhe no "Como funciona" (data/screenHelp.js).
 //
 // Sem jornada, a agenda não sabe o que é horário livre e a visão Dia
 // cai numa grade genérica. É a primeira coisa a configurar.
@@ -147,18 +150,13 @@ export function ScheduleEditor({ professionalId, professionalLabel, onBack }) {
       <header className="agj-head">
         <div>
           <h3 className="agj-title">Horários de atendimento</h3>
-          <p className="agj-sub">{professionalLabel}</p>
+          <p className="agj-sub">{professionalLabel} · horário normal, não um limite</p>
         </div>
-        <button type="button" className="ag-btn" onClick={onBack}>← Voltar à agenda</button>
+        <div className="help-actions">
+          <ScreenHelp topic={AGENDA_HELP.horarios} />
+          <button type="button" className="ag-btn" onClick={onBack}>← Voltar à agenda</button>
+        </div>
       </header>
-
-      <p className="agj-note">
-        A jornada diz o que é <b>horário normal</b>, não o que é permitido.
-        Marcar fora dela — sábado, feriado, intervalo, madrugada — continua
-        possível: a agenda avisa e pede uma confirmação, e registra como
-        exceção. Cadastre o comum; o resto o sistema deixa você decidir na
-        hora.
-      </p>
 
       {error && <div className="ag-alert" role="alert">{error}</div>}
 
@@ -287,7 +285,7 @@ export function ScheduleEditor({ professionalId, professionalLabel, onBack }) {
         </div>
 
         <button type="submit" className="ag-btn ag-btn--primary" disabled={saving || loading}>
-          {saving ? 'Salvando…' : `Adicionar em ${form.weekdays.length} dia(s)`}
+          {saving ? 'Salvando…' : form.weekdays.length === 1 ? 'Adicionar em 1 dia' : `Adicionar em ${form.weekdays.length} dias`}
         </button>
       </form>
     </div>

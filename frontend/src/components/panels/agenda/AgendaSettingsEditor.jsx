@@ -26,6 +26,8 @@ import {
   seriesMarkOf,
 } from '../../../utils/agendaSettings';
 import { SeriesBadge, SeriesIcon } from './SeriesBadge';
+import { ScreenHelp } from '../../ui/ScreenHelp';
+import { AGENDA_HELP } from '../../../data/screenHelp';
 
 // ============================================================
 // Configurar agenda — só o Admin da clínica (clinic_admin)
@@ -364,15 +366,11 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
           <h3 className="agj-title">Configurar agenda</h3>
           <p className="agj-sub">Vale para a equipe toda · só o Admin da clínica altera</p>
         </div>
-        <button type="button" className="ag-btn" onClick={handleBack}>← Voltar à agenda</button>
+        <div className="help-actions">
+          <ScreenHelp topic={AGENDA_HELP.configurar} />
+          <button type="button" className="ag-btn" onClick={handleBack}>← Voltar à agenda</button>
+        </div>
       </header>
-
-      <p className="agj-note">
-        Escolha como a agenda aparece para todo mundo da instituição. As amostras
-        mostram o card exatamente como fica na agenda. Nada muda até você tocar em
-        <b> Salvar configuração</b>. Relatórios, evoluções e documentos não são afetados:
-        isto é só o visual e os padrões da agenda.
-      </p>
 
       {!available && (
         <div className="ag-alert" role="alert">

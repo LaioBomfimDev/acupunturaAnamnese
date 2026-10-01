@@ -20,6 +20,8 @@ import { EvolutionRecordPanel } from './EvolutionRecordPanel';
 import { RegisterCompletedDialog } from '../panels/agenda/RegisterCompletedDialog';
 import { PanelLoading } from '../ui/PanelLoading';
 import { SearchSelect } from '../ui/SearchSelect';
+import { ScreenHelp } from '../ui/ScreenHelp';
+import { EVOLUCOES_HELP } from '../../data/screenHelp';
 import '../../styles/evolutions.css';
 
 // ============================================================
@@ -333,14 +335,12 @@ export function EvolutionsScreen({ profile }) {
 
   return (
     <div className="evs">
-      <header className="evs-hero">
+      {/* Explicação da tela no "Como funciona" (data/screenHelp.js). O que
+          muda o que dá pra fazer — atendimento de colega — já está na fila
+          (cadeado + legenda) e no aviso do próprio atendimento. */}
+      <header className="evs-hero screen-title-row">
         <h2>Evoluções</h2>
-        <p className="hub-note">
-          Escolha o atendimento na fila, escreva e salve: o paciente fica verde e o próximo abre sozinho.
-          Só entram atendimentos marcados na Agenda; atendeu sem agendar, use “{COMPLETED_APPOINTMENT_LABEL}”.
-          Não compareceu e cancelado pelo paciente pedem uma observação.
-          {hasTeamItems && ' Você vê a fila da equipe, mas só escreve as suas (as outras aparecem com cadeado).'}
-        </p>
+        <ScreenHelp topic={EVOLUCOES_HELP} />
       </header>
 
       {error && <div className="evs-error" role="alert">{error}</div>}

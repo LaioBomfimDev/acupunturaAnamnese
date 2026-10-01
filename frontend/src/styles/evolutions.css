@@ -10,10 +10,6 @@
   color: var(--r1-text);
 }
 
-.evs-hero .hub-note {
-  margin-bottom: 16px;
-}
-
 .evs-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;

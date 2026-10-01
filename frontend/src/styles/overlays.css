@@ -47,6 +47,28 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
+/* Título da tela + "Como funciona" na mesma linha (Evoluções, Pacientes). */
+.screen-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 18px;
+}
+
+.screen-title-row > h2 {
+  margin: 0;
+}
+
+/* "Como funciona" ao lado do botão de voltar (editores da Agenda). */
+.help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ---------- painel lateral de ajuda ---------- */
 
 .help-drawer-scrim {

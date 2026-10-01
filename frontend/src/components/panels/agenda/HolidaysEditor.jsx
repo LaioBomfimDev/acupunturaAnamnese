@@ -4,6 +4,8 @@ import {
   listHolidays,
   saveHoliday,
 } from '../../../services/agendaScheduleService';
+import { ScreenHelp } from '../../ui/ScreenHelp';
+import { AGENDA_HELP } from '../../../data/screenHelp';
 
 // ============================================================
 // Feriados da clínica
@@ -113,15 +115,11 @@ export function HolidaysEditor({ onBack }) {
           <h3 className="agj-title">Feriados</h3>
           <p className="agj-sub">Avisos na agenda, não um bloqueio</p>
         </div>
-        <button type="button" className="ag-btn" onClick={onBack}>← Voltar à agenda</button>
+        <div className="help-actions">
+          <ScreenHelp topic={AGENDA_HELP.feriados} />
+          <button type="button" className="ag-btn" onClick={onBack}>← Voltar à agenda</button>
+        </div>
       </header>
-
-      <p className="agj-note">
-        Um feriado cadastrado aqui aparece na agenda e avisa com confirmação
-        dupla antes de marcar em cima dele — não impede o agendamento.
-        Marque <b>&quot;clínica atende neste dia&quot;</b> quando o feriado
-        não fechar a clínica (ex.: ponto facultativo que vocês trabalham).
-      </p>
 
       {error && <div className="ag-alert" role="alert">{error}</div>}
 

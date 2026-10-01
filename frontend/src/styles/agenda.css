@@ -1655,17 +1655,6 @@
   color: var(--r1-text-muted);
 }
 
-.agj-note {
-  margin: 0;
-  padding: 11px 13px;
-  border: 1px solid var(--r1-border-subtle);
-  border-radius: var(--r1-radius-sm);
-  background: var(--r1-surface-sunken);
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--r1-text-muted);
-}
-
 .agj-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));

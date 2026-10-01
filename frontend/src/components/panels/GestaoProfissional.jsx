@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GestaoNav, GestaoSectionHead } from './GestaoNav';
 import { MeuCadastro } from './MeuCadastro';
 import { PersonalAccentPicker } from './PersonalAccentPicker';
 import { ScreenHelp } from '../ui/ScreenHelp';
@@ -19,6 +20,11 @@ const SECTIONS = [
   { id: 'cadastro', label: 'Meu cadastro' },
 ];
 
+// Mesmo menu da Gestão do admin (GestaoNav), com um grupo só.
+const SECTION_GROUPS = [
+  { label: 'Sua conta', ids: ['personalizar', 'cadastro'] },
+];
+
 const TAB_ICONS = {
   personalizar: (
     <><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.9-.3-.9.3-1.8 1.3-1.8H17a4 4 0 0 0 4-4c0-5.1-4-10.3-9-10.3Z" /><circle cx="7.5" cy="11" r="1" /><circle cx="10" cy="7" r="1" /><circle cx="14.5" cy="7" r="1" /></>
@@ -30,38 +36,33 @@ const TAB_ICONS = {
 
 export function GestaoProfissional({ profile, initialSection = null }) {
   const [section, setSection] = useState(() => (
-    SECTIONS.some(item => item.id === initialSection) ? initialSection : 'personalizar'
+    SECTIONS.some(item => item.id === initialSection) ? initialSection : SECTION_GROUPS[0].ids[0]
   ));
 
   return (
-    <div className="gt">
-      <div className="gt-tabbar">
-        <div className="gt-tabs" role="tablist" aria-label="Gestão">
-          {SECTIONS.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              className="gt-tab"
-              aria-pressed={section === item.id}
-              onClick={() => setSection(item.id)}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                {TAB_ICONS[item.id]}
-              </svg>
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <ScreenHelp topic={GESTAO_PROFISSIONAL_HELP[section]} />
+    <div className="gt gt--rail">
+      <GestaoNav
+        label="Gestão"
+        sections={SECTIONS}
+        groups={SECTION_GROUPS}
+        icons={TAB_ICONS}
+        active={section}
+        onSelect={setSection}
+      />
+
+      <div className="gt-main">
+        <GestaoSectionHead groups={SECTION_GROUPS} sections={SECTIONS} active={section}>
+          <ScreenHelp topic={GESTAO_PROFISSIONAL_HELP[section]} />
+        </GestaoSectionHead>
+
+        {section === 'personalizar' && (
+          <section className="gt-custom">
+            <PersonalAccentPicker profile={profile} />
+          </section>
+        )}
+
+        {section === 'cadastro' && <MeuCadastro profile={profile} />}
       </div>
-
-      {section === 'personalizar' && (
-        <section className="gt-custom">
-          <PersonalAccentPicker profile={profile} />
-        </section>
-      )}
-
-      {section === 'cadastro' && <MeuCadastro profile={profile} />}
     </div>
   );
 }

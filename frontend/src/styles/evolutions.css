@@ -152,18 +152,20 @@
   gap: 6px;
   width: 100%;
   padding: 8px 10px;
-  border: 1px dashed var(--r1-accent);
+  border: 1.5px dashed var(--r1-accent);
   border-radius: var(--r1-radius-sm);
-  background: var(--r1-accent-wash);
-  color: var(--r1-accent-strong);
+  background: var(--r1-surface);
+  color: var(--r1-accent);
   font: inherit;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
+  transition: background var(--r1-dur-fast) var(--r1-ease);
 }
 
 .evs-register:hover {
-  background: color-mix(in srgb, var(--r1-accent) 14%, transparent);
+  border-style: solid;
+  background: var(--r1-accent-wash);
 }
 
 .evs-register:focus-visible {
@@ -229,9 +231,9 @@
 }
 
 .evs-chip[aria-pressed='true'] {
-  background: var(--r1-surface-inverse);
+  background: var(--r1-accent);
   border-color: transparent;
-  color: var(--r1-text-on-inverse);
+  color: var(--r1-accent-contrast);
 }
 
 .evs-chip:focus-visible,

@@ -12,6 +12,8 @@ const appSource = read('../../src/App.jsx');
 const sidebarSource = read('../../src/components/Sidebar.jsx');
 const psychSource = read('../../src/components/PsychologyWorkspace.jsx');
 const gestaoSource = read('../../src/components/panels/RelatoriosGestao.jsx');
+const gestaoNavSource = read('../../src/components/panels/GestaoNav.jsx');
+const gestaoCss = read('../../src/styles/gestao.css');
 const docxHelpers = read('../../src/components/panels/documentosDocx.js');
 const pagination = read('../../src/components/report/reportPagination.js');
 
@@ -34,9 +36,14 @@ test('admin usa Documentos pela aba da Gestão; profissional e recepção pelo m
   assert.match(gestaoSource, /\{ id: 'documentos', label: 'Documentos timbrados' \}/);
   assert.match(gestaoSource, /section === 'documentos' && \(\s*<Suspense[^\n]*\n\s*<DocumentosTimbrados therapistProfile=\{profile\} \/>/);
   // A folha timbrada é impressa de dentro da Gestão: as abas não podem ir pro papel.
-  // Desde 2026-09-30 as abas moram dentro de .gt-tabbar (abas + "Como funciona"),
-  // e é o contêiner inteiro que fica fora da impressão.
-  assert.match(gestaoSource, /className="gt-tabbar no-print">\s*<div className="gt-tabs"/);
+  // Desde 2026-09-30 (noite) as abas são o menu à esquerda (GestaoNav) e o
+  // título da aba + "Como funciona" moram no GestaoSectionHead: os dois
+  // ficam fora da impressão, e o layout em colunas some no papel.
+  assert.match(gestaoSource, /<GestaoNav\r?\n/);
+  assert.match(gestaoSource, /<GestaoSectionHead /);
+  assert.match(gestaoNavSource, /<nav className="gt-nav no-print"/);
+  assert.match(gestaoNavSource, /<header className="gt-head no-print">/);
+  assert.match(gestaoCss, /@media print \{\s*\.gt--rail \{\s*display: block;/);
 
   // Menu solto do hub some só para o admin (que tem a Gestão da
   // instituição, com a aba Documentos); os demais perfis têm só a Gestão

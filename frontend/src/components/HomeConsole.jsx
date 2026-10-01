@@ -329,7 +329,7 @@ export function HomeConsole({
                 icon="gestao"
                 title="Gestão"
                 description={hasInstitutionalGestao
-                  ? 'Faltosos, retornos, indicadores, pesquisa de satisfação, documentos timbrados e personalização.'
+                  ? 'Indicadores, faltosos, retornos, pesquisa de satisfação, equipe, personalização e documentos timbrados.'
                   : 'Cor da sua tela e os seus dados de cadastro.'}
                 onClick={() => onOpenGestao()}
               />

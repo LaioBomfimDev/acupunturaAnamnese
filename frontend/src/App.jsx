@@ -445,7 +445,7 @@ export default function App() {
               ← Voltar às áreas
             </button>
           </header>
-          <main className="hub-body">
+          <main className="hub-body hub-body--wide">
             <Suspense fallback={<PanelLoading />}>
               {isClinicAdmin ? (
                 <RelatoriosGestao

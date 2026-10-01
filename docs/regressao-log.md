@@ -317,3 +317,12 @@ Modelo de entrada:
 - Regra nova: regex de teste sobre código-fonte usa `\r?\n` em toda quebra de linha; quando recorta um trecho, afirma que o recorte não veio vazio, pra falha dizer "não achei" em vez de mentir sobre o conteúdo.
 - Teste ou verificação obrigatória: antes de publicar, rodar os testes novos num worktree limpo do commit (`git worktree add`), não só no disco de trabalho.
 - Regra destilada em: `AGENTS.md` §4.
+
+### 2026-09-30 - Cor da clínica não chegava a botões, chips e barra da janela
+
+- Sintoma: clínica com cor azul via preto/petróleo em "Registrar atendimento realizado", nos chips Todos/Todas da fila de Evoluções, em "Abrir agenda"/"Voltar às áreas" (cinza), nos botões principais da Agenda, Pacientes, Personalizar e Meu cadastro, no "hoje" do calendário e na barra de título do app instalado (sempre petróleo). Na Gestão, o hover do botão principal apagava o texto (branco sobre fundo claro).
+- Causa: o rebrand Vitalis fez accent = petróleo e muitos estados de ação/seleção foram escritos com `--r1-surface-inverse` (petróleo escuro) ou com o petróleo em hex/rgba (~70 em `App.css`); quando o accent passou a seguir a cor da clínica, esses pontos ficaram presos ao fixo. `<meta name="theme-color">` era estático. O hover genérico do `.gt-btn` tinha mais especificidade que `.gt-btn--primary`.
+- Correção: ação e seleção trocadas por `--r1-accent`/`--r1-accent-strong`; secundário com texto na cor da clínica e contorno `--r1-accent-line` (token novo); rgba do petróleo virou `color-mix` do accent; `applyThemeColorMeta` atualiza a barra; hover próprio para principal/aviso/WhatsApp. Fichas mantêm o secundário neutro (`.forms-scope .quiet-button`). De passagem: selo "Cancelado pelo paciente" da Agenda estava verde-água (era o dourado antigo) e voltou ao âmbar; avatar do resumo do paciente tinha texto escuro sobre fundo escuro.
+- Regra nova: estado de ação ou seleção nunca usa cor fixa da marca; só os tokens do accent.
+- Teste ou verificação obrigatória: `clinic-accent-everywhere.test.mjs` (proíbe fundo escuro fixo e primitivas da marca nas telas do hub, exige accent nos selecionados e no texto dos secundários, proíbe rgba do petróleo no `App.css`, testa a barra da janela e a ordem do menu da Gestão).
+- Regra destilada em: `AGENTS.md` §7.

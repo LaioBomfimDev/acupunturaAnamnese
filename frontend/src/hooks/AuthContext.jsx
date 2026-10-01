@@ -10,7 +10,7 @@ import {
 import { getClinicForProfile } from '../services/clinicService';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { buildReportAccentPalette } from '../utils/reportUtils';
-import { resolveScreenAccentColor } from '../utils/screenAccent';
+import { applyThemeColorMeta, resolveScreenAccentColor } from '../utils/screenAccent';
 import { recordAuthEvent, recordAuthError } from '../lib/authDiagnostics';
 
 const AuthContext = createContext({});
@@ -294,12 +294,14 @@ export const AuthProvider = ({ children }) => {
     if (!screenAccentColor) {
       root.removeProperty('--r1-accent');
       root.removeProperty('--r1-accent-strong');
+      applyThemeColorMeta('');
       return;
     }
 
     const { accent, shade } = buildReportAccentPalette(screenAccentColor);
     root.setProperty('--r1-accent', accent);
     root.setProperty('--r1-accent-strong', shade);
+    applyThemeColorMeta(accent);
   }, [screenAccentColor]);
 
   const signInWithPassword = async (emailOrUsername, password) => {

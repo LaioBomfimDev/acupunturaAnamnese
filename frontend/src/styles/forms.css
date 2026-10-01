@@ -459,6 +459,13 @@
   background: var(--r1-accent-strong);
 }
 
+/* Fora das fichas o secundário ganhou a cor da clínica (App.css); aqui
+   ele continua neutro — a cor fica só no elemento principal. */
+.forms-scope .quiet-button {
+  border-color: color-mix(in srgb, var(--r1-accent) 24%, transparent);
+  color: var(--r1-text);
+}
+
 .forms-scope .ai-analyze-btn {
   padding: 9px 12px;
   border: 1px solid var(--r1-accent);

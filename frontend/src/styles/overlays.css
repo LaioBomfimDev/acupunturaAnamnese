@@ -17,11 +17,11 @@
   gap: 7px;
   min-height: 40px;
   padding: 8px 15px 8px 12px;
-  border: 1px solid var(--r1-border-subtle);
+  border: 1px solid var(--r1-accent-line);
   border-radius: 999px;
   background: var(--r1-surface);
   box-shadow: var(--r1-shadow-sm);
-  color: var(--r1-text);
+  color: var(--r1-accent);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -33,13 +33,12 @@
 .help-trigger svg {
   width: 17px;
   height: 17px;
-  color: var(--r1-text-subtle);
 }
 
 .help-trigger:hover,
 .help-trigger[aria-expanded='true'] {
-  border-color: var(--r1-border);
-  background: var(--r1-surface-sunken);
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
 }
 
 .help-trigger:focus-visible {

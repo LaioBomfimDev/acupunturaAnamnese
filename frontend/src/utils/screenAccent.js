@@ -20,3 +20,16 @@ export function resolveScreenAccentColor(profile) {
   if (personal && isPersonalAccentAllowed(profile)) return personal;
   return profile?.clinic?.brand_color || '';
 }
+
+// Barra de título do app instalado (e a do navegador no celular) vem do
+// <meta name="theme-color">: segue a mesma cor da tela. O valor do
+// index.html fica guardado no próprio meta para voltar quando não há cor
+// (login, SuperAdm).
+export function applyThemeColorMeta(color, doc = globalThis.document) {
+  const meta = doc?.querySelector?.('meta[name="theme-color"]');
+  if (!meta) return;
+  if (meta.dataset.defaultColor === undefined) {
+    meta.dataset.defaultColor = meta.getAttribute('content') || '';
+  }
+  meta.setAttribute('content', color || meta.dataset.defaultColor);
+}

@@ -71,14 +71,18 @@
   color: var(--r1-accent-strong);
 }
 
+/* Botão secundário segue a cor da clínica (texto e contorno); o
+   principal é o preenchido. Dentro das fichas (.forms-scope) continua
+   neutro — lá a cor fica só no elemento principal (forms.css). */
 .topbar-button {
   padding: 8px 14px;
-  border: 1px solid var(--r1-border);
+  border: 1px solid var(--r1-accent-line);
   border-radius: var(--r1-radius-sm);
   background: var(--r1-surface);
-  color: var(--r1-text);
+  color: var(--r1-accent);
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: border-color var(--r1-dur-fast) var(--r1-ease),
     background var(--r1-dur-fast) var(--r1-ease);
@@ -100,6 +104,11 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 26px 30px 44px;
+}
+
+/* Gestão: o menu ocupa uma coluna, então a tela ganha a largura dele. */
+.hub-body--wide {
+  max-width: 1360px;
 }
 
 .hub-greeting {

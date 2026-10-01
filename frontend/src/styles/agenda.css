@@ -72,10 +72,10 @@
   gap: 6px;
   min-height: 34px;
   padding: 7px 12px;
-  border: 1px solid var(--r1-border);
+  border: 1px solid var(--r1-accent-line);
   border-radius: var(--r1-radius-sm);
   background: var(--r1-surface);
-  color: var(--r1-text);
+  color: var(--r1-accent);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -85,6 +85,7 @@
 
 .ag-btn:hover:not(:disabled) {
   border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
 }
 
 .ag-btn:focus-visible {
@@ -98,14 +99,14 @@
 }
 
 .ag-btn--primary {
-  background: var(--r1-surface-inverse);
+  background: var(--r1-accent);
   border-color: transparent;
-  color: var(--r1-text-on-inverse);
+  color: var(--r1-accent-contrast);
   font-weight: 600;
 }
 
 .ag-btn--primary:hover:not(:disabled) {
-  background: var(--r1-navy-700);
+  background: var(--r1-accent-strong);
 }
 
 .ag-btn--danger {
@@ -224,7 +225,7 @@
   height: 23px;
   margin: -3px 0 -2px -3px;
   border-radius: 50%;
-  background: var(--r1-surface-inverse);
+  background: var(--r1-accent);
   color: var(--r1-text-on-inverse);
 }
 
@@ -267,8 +268,8 @@
 }
 
 .ag-pill--count {
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
 }
 
 .ag-pill--birthday {
@@ -429,9 +430,9 @@
 }
 
 .ag-chip-btn[aria-pressed='true'] {
-  background: var(--r1-surface-inverse);
+  background: var(--r1-accent);
   border-color: transparent;
-  color: var(--r1-text-on-inverse);
+  color: var(--r1-accent-contrast);
 }
 
 /* Confirmação de presença (confirmed_at) — verde e com V, para quem lê
@@ -658,8 +659,8 @@
 }
 
 .ag-seg-btn[aria-pressed='true'] {
-  background: var(--r1-surface);
-  color: var(--r1-text);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
   box-shadow: var(--r1-shadow-sm);
 }
 
@@ -814,6 +815,11 @@
   font-weight: 600;
 }
 
+.ag-btn--warn:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--r1-warning) 86%, #000000);
+}
+
 /* ---------- barra de visões ---------- */
 
 .ag-toolbar {
@@ -961,7 +967,7 @@
 }
 
 .agd-wday--on {
-  background: var(--r1-surface-inverse);
+  background: var(--r1-accent);
   border-color: transparent;
   color: var(--r1-text-on-inverse-muted);
 }
@@ -1993,7 +1999,10 @@
   color: #1a9e4e;
 }
 
-.agp-whatsapp:hover {
+/* :not(:disabled) iguala a força do hover do .ag-btn (que pinta com a
+   cor da clínica) — o botão do WhatsApp fica sempre verde. */
+.agp-whatsapp:hover:not(:disabled) {
+  border-color: #25d366;
   background: color-mix(in srgb, #25d366 12%, var(--r1-surface));
 }
 
@@ -2066,9 +2075,10 @@
   background: color-mix(in srgb, var(--r1-danger) 16%, transparent);
 }
 
+/* Âmbar como em Evoluções: cancelado com aviso não é erro nem é marca. */
 .ag-badge--excused {
-  color: var(--r1-gold-400);
-  background: color-mix(in srgb, var(--r1-gold-400) 18%, transparent);
+  color: var(--r1-warning);
+  background: var(--r1-warning-bg);
 }
 
 /* ============================================================

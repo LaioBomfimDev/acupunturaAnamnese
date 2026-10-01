@@ -499,10 +499,10 @@
   gap: 6px;
   min-height: var(--r1-tap);
   padding: 9px 16px;
-  border: 1px solid var(--r1-border);
+  border: 1px solid var(--r1-accent-line);
   border-radius: var(--r1-radius-sm);
   background: var(--r1-surface);
-  color: var(--r1-text);
+  color: var(--r1-accent);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -529,12 +529,13 @@
 
 .cp-btn--primary {
   border-color: transparent;
-  background: var(--r1-surface-inverse);
-  color: var(--r1-text-on-inverse);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
 }
 
 .cp-btn--primary:hover:not(:disabled) {
-  background: var(--r1-navy-700);
+  border-color: transparent;
+  background: var(--r1-accent-strong);
 }
 
 .cp-btn--danger {

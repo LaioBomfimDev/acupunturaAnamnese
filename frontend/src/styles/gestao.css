@@ -4,51 +4,137 @@
    resumo (.gt-stat) é também um botão de filtro — ver gt-stat-active.
    ============================================================ */
 
-/* Abas à esquerda, "Como funciona" (ScreenHelp) no canto direito. */
-.gt-tabbar {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px 16px;
-  margin-bottom: 22px;
+/* ---------- menu à esquerda (GestaoNav) + título da aba ----------
+   Abas agrupadas por assunto numa coluna fixa; o conteúdo da aba fica
+   à direita, com o título e o "Como funciona" no topo. No celular o
+   menu vira uma faixa que rola de lado (ver @media 900px). */
+
+.gt--rail {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
 }
 
-.gt-tabs {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.gt-main {
+  min-width: 0;
 }
 
-.gt-tab {
+.gt-nav {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 12px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.gt-nav-group {
+  display: grid;
+  gap: 2px;
+}
+
+.gt-nav-group + .gt-nav-group {
+  padding-top: 12px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.gt-nav-label {
+  margin: 2px 0 6px;
+  padding: 0 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.gt-nav-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 9px 16px;
+  gap: 11px;
+  width: 100%;
+  min-height: var(--r1-tap);
+  padding: 6px 10px 6px 6px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r1-radius-md);
   background: transparent;
-  color: var(--r1-text-muted);
+  color: var(--r1-text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
+  transition: background var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
 }
 
-.gt-tab svg {
+/* Ícone num ladrilho com a cor da clínica: dá cor ao menu inteiro sem
+   pintar o texto, que continua preto e fácil de ler. */
+.gt-nav-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent);
+  transition: background var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.gt-nav-icon svg {
   width: 17px;
   height: 17px;
 }
 
-.gt-tab[aria-pressed='true'] {
+.gt-nav-item:hover {
+  background: color-mix(in srgb, var(--r1-accent) 7%, transparent);
+}
+
+.gt-nav-item[aria-current='page'] {
   background: var(--r1-accent);
   color: var(--r1-accent-contrast);
   box-shadow: var(--r1-shadow-sm);
 }
 
-.gt-tab:focus-visible {
+.gt-nav-item[aria-current='page'] .gt-nav-icon {
+  background: color-mix(in srgb, var(--r1-accent-contrast) 18%, transparent);
+  color: var(--r1-accent-contrast);
+}
+
+.gt-nav-item:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 20px;
+}
+
+.gt-head-kicker {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--r1-accent);
+}
+
+/* .hub-body h2 (hub.css) é o título grande das telas do hub; aqui o
+   título é da aba, um degrau abaixo. */
+.hub-body .gt-head-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
 }
 
 .gt-note {
@@ -505,10 +591,10 @@
   gap: 6px;
   min-height: var(--r1-tap);
   padding: 9px 16px;
-  border: 1px solid var(--r1-border);
+  border: 1px solid var(--r1-accent-line);
   border-radius: var(--r1-radius-sm);
   background: var(--r1-surface);
-  color: var(--r1-text);
+  color: var(--r1-accent);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -530,6 +616,13 @@
   border-color: transparent;
   background: var(--r1-accent);
   color: var(--r1-accent-contrast);
+}
+
+/* Sem isto o hover genérico do .gt-btn (fundo claro) apagava o texto
+   branco do botão principal. */
+.gt-btn--primary:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--r1-accent-strong);
 }
 
 .gt-btn--sm {
@@ -969,16 +1062,51 @@
   }
 }
 
+@media (max-width: 900px) {
+  .gt--rail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  /* Menu vira faixa horizontal: grupos lado a lado, sem rótulo, com um
+     filete separando um grupo do outro. */
+  .gt-nav {
+    position: static;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .gt-nav-group {
+    display: flex;
+    gap: 4px;
+  }
+
+  .gt-nav-group + .gt-nav-group {
+    padding: 0 0 0 6px;
+    border-top: 0;
+    border-left: 1px solid var(--r1-border-subtle);
+  }
+
+  .gt-nav-label {
+    display: none;
+  }
+
+  .gt-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+@media print {
+  .gt--rail {
+    display: block;
+  }
+}
+
 @media (max-width: 720px) {
-  .gt-tabbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .gt-tabbar .help-trigger {
-    align-self: flex-end;
-  }
-
   .gt-filters {
     flex-direction: column;
     align-items: stretch;

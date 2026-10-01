@@ -164,6 +164,9 @@
   --r1-accent-strong: var(--r1-gold-700);
   --r1-accent-contrast: var(--r1-text-on-inverse);
   --r1-accent-wash: color-mix(in srgb, var(--r1-accent) 14%, transparent);
+  /* Contorno do botão secundário (texto na cor da clínica): mais leve
+     que o accent cheio pra não competir com o botão principal. */
+  --r1-accent-line: color-mix(in srgb, var(--r1-accent) 48%, transparent);
 
   --r1-danger: var(--r1-red-500);
   --r1-danger-bg: var(--r1-red-100);

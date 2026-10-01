@@ -276,7 +276,7 @@
   .help-drawer {
     width: 100%;
     height: auto;
-    max-height: 86vh;
+    max-height: calc(86 * var(--vh));
     border-radius: var(--r1-radius-lg) var(--r1-radius-lg) 0 0;
     animation-name: help-sheet-in;
   }

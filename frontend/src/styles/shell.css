@@ -28,7 +28,7 @@
    interface embaixo da barra. */
 @supports (height: 100dvh) {
   .app {
-    min-height: 100dvh;
+    min-height: calc(100 * var(--dvh));
   }
 }
 

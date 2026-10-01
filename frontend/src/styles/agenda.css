@@ -308,7 +308,7 @@
 
 .ag-side-body {
   padding: 14px 16px 16px;
-  max-height: 62vh;
+  max-height: calc(62 * var(--vh));
   overflow-y: auto;
 }
 
@@ -1408,7 +1408,7 @@
 }
 
 .agw-body {
-  max-height: 62vh;
+  max-height: calc(62 * var(--vh));
   overflow-y: auto;
 }
 
@@ -2154,7 +2154,7 @@
   gap: 3px;
   margin: 0;
   padding: 0;
-  max-height: 34vh;
+  max-height: calc(34 * var(--vh));
   overflow-y: auto;
   list-style: none;
   counter-reset: none;
@@ -2540,7 +2540,7 @@
 .ag-dialog-panel {
   width: 100%;
   max-width: 480px;
-  max-height: 88vh;
+  max-height: calc(88 * var(--vh));
   display: flex;
   flex-direction: column;
   border-radius: var(--r1-radius-lg) var(--r1-radius-lg) 0 0;
@@ -2663,7 +2663,7 @@
   .ag-side {
     position: sticky;
     top: 20px;
-    max-height: calc(100vh - 40px);
+    max-height: calc(100 * var(--vh) - 40px);
     display: flex;
     flex-direction: column;
   }

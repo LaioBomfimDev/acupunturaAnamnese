@@ -14,7 +14,7 @@
    ============================================================ */
 
 .hub-screen {
-  min-height: 100svh;
+  min-height: calc(100 * var(--svh));
   background:
     radial-gradient(1100px 520px at 88% -12%, var(--r1-accent-wash), transparent 62%),
     var(--r1-bg);
@@ -100,15 +100,12 @@
 
 /* ---------- corpo ---------- */
 
+/* Ocupa a largura da tela inteira, como sistema de trabalho: o teto de
+   1120px (1360px na Gestão) deixava faixas vazias dos lados e o conteúdo
+   espremido no meio. Quem precisa de linha curta para ler (texto
+   corrido, formulário) limita a si mesmo, não a tela toda. */
 .hub-body {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 26px 30px 44px;
-}
-
-/* Gestão: o menu ocupa uma coluna, então a tela ganha a largura dele. */
-.hub-body--wide {
-  max-width: 1360px;
+  padding: 24px 32px 44px;
 }
 
 /* Evoluções: fila, conferência e tabela da equipe usam a tela toda. */

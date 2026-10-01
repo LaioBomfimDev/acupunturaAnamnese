@@ -316,7 +316,7 @@ export function PsychAnamneseCurationPanel({ actor = { role: 'super_admin', labe
         </div>
 
         {/* Detalhe do grupo selecionado — acompanha o scroll (sticky) */}
-        <div style={{ position: 'sticky', top: 16, alignSelf: 'start', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
+        <div style={{ position: 'sticky', top: 16, alignSelf: 'start', maxHeight: 'calc(100 * var(--vh) - 32px)', overflowY: 'auto' }}>
           {adding ? (
             <div className="curation-detail">
               <h3 style={{ marginTop: 0 }}>Novo · {PSYCH_KIND_LABEL[activeKind].toLowerCase()}</h3>

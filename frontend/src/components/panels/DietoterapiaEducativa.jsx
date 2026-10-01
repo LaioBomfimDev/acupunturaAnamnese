@@ -82,7 +82,7 @@ function FoodResearchDialog({ food, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label={`Pesquisar ${food.commonName} com IA`}
-        style={{ maxWidth: 640, width: '92%', maxHeight: '88vh', overflowY: 'auto', margin: 0 }}
+        style={{ maxWidth: 640, width: '92%', maxHeight: 'calc(88 * var(--vh))', overflowY: 'auto', margin: 0 }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <div>
@@ -412,7 +412,7 @@ function PropertyCrossRefDialog({ property, isBlocked, currentFoodId, onOpenFood
         role="dialog"
         aria-modal="true"
         aria-label={`Alimentos com ${meta.title}`}
-        style={{ maxWidth: 560, width: '92%', maxHeight: '86vh', overflowY: 'auto', margin: 0 }}
+        style={{ maxWidth: 560, width: '92%', maxHeight: 'calc(86 * var(--vh))', overflowY: 'auto', margin: 0 }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <div>
@@ -482,7 +482,7 @@ function FoodDetailDialog({ food, approved, onPropertyClick, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label={food.commonName}
-        style={{ maxWidth: 620, width: '92%', maxHeight: '88vh', overflowY: 'auto', margin: 0, padding: 0, background: 'transparent', border: 'none' }}
+        style={{ maxWidth: 620, width: '92%', maxHeight: 'calc(88 * var(--vh))', overflowY: 'auto', margin: 0, padding: 0, background: 'transparent', border: 'none' }}
       >
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
           <button type="button" className="quiet-button" onClick={onClose}>Fechar</button>

@@ -10,7 +10,7 @@ import { reportClientError } from '../services/telemetry';
 // silêncio se uma classe de outra tela for renomeada de novo.
 const styles = {
   screen: {
-    minHeight: '100svh',
+    minHeight: 'calc(100 * var(--svh))',
     display: 'grid',
     placeItems: 'center',
     padding: 'max(24px, env(safe-area-inset-top, 0px)) 20px max(24px, env(safe-area-inset-bottom, 0px))',

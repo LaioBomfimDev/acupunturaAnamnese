@@ -75,6 +75,8 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--cream);
   color: var(--navy);
+  /* Escala da tela inteira (ver --app-zoom em tokens.css). */
+  zoom: var(--app-zoom);
 }
 
 #root {
@@ -88,7 +90,7 @@ body {
 /* ======= LAYOUT ======= */
 .app {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100 * var(--vh));
   background: var(--cream);
 }
 
@@ -395,7 +397,7 @@ body {
   margin-left: 268px;
   padding: 24px 28px 32px;
   width: calc(100% - 268px);
-  min-height: 100vh;
+  min-height: calc(100 * var(--vh));
 }
 
 .app-topbar {
@@ -951,7 +953,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* ======= INÍCIO DO ATENDIMENTO ======= */
 .start-shell {
-  min-height: 100vh;
+  min-height: calc(100 * var(--vh));
   background:
     linear-gradient(135deg, rgba(6,31,58,.96), rgba(2,16,31,.98)),
     repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 80px),
@@ -1491,7 +1493,7 @@ textarea { min-height: 95px; resize: vertical; }
 .home-screen {
   position: relative;
   color: var(--navy);
-  min-height: calc(100vh - 120px);
+  min-height: calc(100 * var(--vh) - 120px);
   padding: 0;
   width: 100%;
   max-width: none;
@@ -1693,7 +1695,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .reviewer-home-shell {
   width: min(100%, 1440px);
-  min-height: calc(100vh - 188px);
+  min-height: calc(100 * var(--vh) - 188px);
   margin: 0 auto;
   padding: clamp(28px, 4vw, 62px);
   border: 1px solid color-mix(in srgb, var(--r1-accent) 22%, transparent);
@@ -1962,7 +1964,7 @@ textarea { min-height: 95px; resize: vertical; }
   }
 
   .reviewer-home-shell {
-    min-height: calc(100vh - 20px);
+    min-height: calc(100 * var(--vh) - 20px);
     padding: 24px 18px;
     border-radius: var(--r1-radius-md);
   }
@@ -4553,7 +4555,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .map-point-dialog {
   width: min(1060px, 100%);
-  max-height: min(88vh, 860px);
+  max-height: min(88 * var(--vh), 860px);
   overflow: auto;
   background: white;
   border: 1px solid color-mix(in srgb, var(--r1-accent) 28%, transparent);
@@ -4666,7 +4668,7 @@ textarea { min-height: 95px; resize: vertical; }
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(1120px, 100%);
-  max-height: min(92vh, 880px);
+  max-height: min(92 * var(--vh), 880px);
   overflow: hidden;
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, .12);
@@ -4820,7 +4822,7 @@ textarea { min-height: 95px; resize: vertical; }
   align-content: start;
   gap: 10px;
   min-height: 380px;
-  max-height: calc(92vh - 210px);
+  max-height: calc(92 * var(--vh) - 210px);
   overflow: auto;
   background: white;
   border: 1px solid rgba(15, 23, 42, .10);
@@ -4869,7 +4871,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .point-review-source-zoom-button img {
-  max-height: calc(92vh - 280px);
+  max-height: calc(92 * var(--vh) - 280px);
   object-fit: contain;
 }
 
@@ -5103,8 +5105,8 @@ textarea { min-height: 95px; resize: vertical; }
 .point-review-lightbox-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  width: min(1380px, 96vw);
-  max-height: 94vh;
+  width: min(1380px, 96 * var(--vw));
+  max-height: calc(94 * var(--vh));
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .20);
   border-radius: var(--r1-radius-sm);
@@ -5180,11 +5182,11 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .point-review-source-arrow.lightbox.prev {
-  left: max(26px, calc((100vw - 1380px) / 2 + 30px));
+  left: max(26px, calc((100 * var(--vw) - 1380px) / 2 + 30px));
 }
 
 .point-review-source-arrow.lightbox.next {
-  right: max(26px, calc((100vw - 1380px) / 2 + 30px));
+  right: max(26px, calc((100 * var(--vw) - 1380px) / 2 + 30px));
 }
 
 @keyframes point-review-source-slide-in {
@@ -5301,7 +5303,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 /* ======= PRIMEIRO ACESSO ======= */
 .force-password-screen {
-  min-height: 100vh;
+  min-height: calc(100 * var(--vh));
   display: grid;
   place-items: center;
   padding: 24px;
@@ -5830,7 +5832,7 @@ textarea { min-height: 95px; resize: vertical; }
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(1180px, 100%);
-  max-height: min(92vh, 900px);
+  max-height: min(92 * var(--vh), 900px);
   overflow: hidden;
   padding: 0;
   border-radius: var(--r1-radius-sm);
@@ -5926,7 +5928,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .knowledge-review-source-column .atlas-source-images {
-  max-height: calc(92vh - 260px);
+  max-height: calc(92 * var(--vh) - 260px);
   overflow: auto;
   padding-right: 2px;
 }
@@ -6185,7 +6187,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .anamnese-knowledge-panel .pdf-learning-list {
-  max-height: calc(100vh - 360px);
+  max-height: calc(100 * var(--vh) - 360px);
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
@@ -6269,7 +6271,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .anamnese-knowledge-proof .pdf-source-preview-frame {
-  max-height: min(360px, 46vh);
+  max-height: min(360px, 46 * var(--vh));
 }
 
 .anamnese-knowledge-proof .pdf-source-preview-frame img {
@@ -6549,7 +6551,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .clinic-professional-modal {
   width: min(880px, 100%);
-  max-height: 92vh;
+  max-height: calc(92 * var(--vh));
   overflow: auto;
 }
 
@@ -6567,7 +6569,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .admin-profile-panel {
   width: min(760px, 100%);
-  height: 100vh;
+  height: calc(100 * var(--vh));
   overflow: auto;
   background: white;
   border-left: 1px solid color-mix(in srgb, var(--r1-accent) 28%, transparent);
@@ -6948,7 +6950,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .herbal-curation-list {
-  max-height: calc(100vh - 360px);
+  max-height: calc(100 * var(--vh) - 360px);
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
@@ -7088,7 +7090,7 @@ textarea { min-height: 95px; resize: vertical; }
 }
 
 .herbal-source-image {
-  max-height: min(420px, 48vh);
+  max-height: min(420px, 48 * var(--vh));
 }
 
 .herbal-source-sections {
@@ -7425,14 +7427,14 @@ textarea { min-height: 95px; resize: vertical; }
     width: fit-content;
   }
   .map-point-dialog {
-    max-height: 92vh;
+    max-height: calc(92 * var(--vh));
     padding: 16px;
   }
   .knowledge-review-backdrop {
     padding: 10px;
   }
   .knowledge-review-dialog {
-    max-height: 94vh;
+    max-height: calc(94 * var(--vh));
   }
   .knowledge-review-dialog-head {
     flex-direction: column;
@@ -7449,13 +7451,13 @@ textarea { min-height: 95px; resize: vertical; }
     border-bottom: 1px solid rgba(15, 23, 42, .08);
   }
   .knowledge-review-source-column .atlas-source-images {
-    max-height: 52vh;
+    max-height: calc(52 * var(--vh));
   }
   .point-review-backdrop {
     padding: 10px;
   }
   .point-review-dialog {
-    max-height: 94vh;
+    max-height: calc(94 * var(--vh));
   }
   .point-review-body {
     overflow: auto;
@@ -7466,7 +7468,7 @@ textarea { min-height: 95px; resize: vertical; }
   }
   .point-review-source-frame {
     min-height: 260px;
-    max-height: 54vh;
+    max-height: calc(54 * var(--vh));
   }
   .point-review-source-zoom-button {
     min-height: 240px;
@@ -7629,7 +7631,7 @@ textarea { min-height: 95px; resize: vertical; }
 
 .ai-correction-dialog {
   width: min(560px, 100%);
-  max-height: min(92vh, 760px);
+  max-height: min(92 * var(--vh), 760px);
   overflow: auto;
   background: #fff;
   border: 1px solid var(--line);

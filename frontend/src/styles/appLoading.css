@@ -15,7 +15,7 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  min-height: 45vh;
+  min-height: calc(45 * var(--vh));
   padding: 48px 16px;
   text-align: center;
 }

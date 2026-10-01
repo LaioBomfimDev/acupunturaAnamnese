@@ -250,7 +250,7 @@
 }
 
 .evs-queue-list {
-  max-height: calc(100svh - 440px);
+  max-height: calc(100 * var(--svh) - 440px);
   min-height: 120px;
   margin: 0 -4px;
   padding: 0 4px;

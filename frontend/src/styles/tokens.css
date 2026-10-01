@@ -128,6 +128,21 @@
   --r1-safe-bottom: env(safe-area-inset-bottom, 0px);
   --r1-safe-top: env(safe-area-inset-top, 0px);
 
+  /* ---- Escala da tela ----
+     As telas foram desenhadas em px fixo e com letra pequena; o zoom
+     no body (App.css) aumenta texto, espaço e ícone juntos, na mesma
+     proporção. Vale só da gaveta pra cima (> 1024px, ver @media logo
+     abaixo do :root): celular e tablet já têm tamanho de toque, e a
+     impressão (relatório, papel timbrado) fica de fora.
+     Com zoom, 1vh/1vw passam a cobrir 1,1 da janela: altura ou largura
+     presa à janela usa --vh/--svh/--dvh/--vw, que desfazem a escala,
+     senão janela e tela cheia passam do fim da tela. */
+  --app-zoom: 1;
+  --vh: calc(1vh / var(--app-zoom));
+  --svh: calc(1svh / var(--app-zoom));
+  --dvh: calc(1dvh / var(--app-zoom));
+  --vw: calc(1vw / var(--app-zoom));
+
   /* ============================================================
      Semânticos — tema CLARO (padrão)
      As telas usam SÓ os tokens abaixo. Trocar de tema é trocar
@@ -185,6 +200,14 @@
   --r1-scrim: rgba(11, 22, 20, 0.52);
 
   color-scheme: light;
+}
+
+/* 10% maior em notebook e monitor: a letra base de 11-13px ficava
+   pequena para leitura prolongada. */
+@media screen and (min-width: 1025px) {
+  :root {
+    --app-zoom: 1.1;
+  }
 }
 
 /* Respeita quem pediu menos animação no sistema operacional. */

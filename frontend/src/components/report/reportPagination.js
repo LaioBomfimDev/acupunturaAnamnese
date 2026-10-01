@@ -27,6 +27,13 @@ const MIN_BODY_BUDGET_MM = 60;
 // medição (fontes/arredondamento) antes que o clip do .rpage-body atue.
 const SLICE_SAFETY = 0.96;
 
+// Altura no espaço do papel. getBoundingClientRect já vem multiplicado
+// pelo zoom da tela (--app-zoom no body); offsetTop/offsetHeight, usados
+// nos blocos, não. Misturar os dois encolhia a área de texto da folha.
+function paperHeight(el) {
+  return el.getBoundingClientRect().height / (el.currentCSSZoom || 1);
+}
+
 function verticalMargin(node) {
   const cs = getComputedStyle(node);
   return (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
@@ -121,8 +128,8 @@ export function paginateReportBody(html, { stage, header, footer }) {
   if (!stage || !header || !footer) return { pages: [html], bodyHeightPx: null };
   stage.innerHTML = html;
 
-  const headerH = header.getBoundingClientRect().height;
-  const footerH = footer.getBoundingClientRect().height;
+  const headerH = paperHeight(header);
+  const footerH = paperHeight(footer);
   const usableH = (PAGE_H_MM - PAGE_PAD_TOP_MM - PAGE_PAD_BOTTOM_MM) * MM_TO_PX;
   const budget = Math.max(
     usableH - headerH - (HEADER_GAP_MM * MM_TO_PX) - footerH - (FOOTER_GAP_MM * MM_TO_PX),

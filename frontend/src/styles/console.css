@@ -11,7 +11,7 @@
    ============================================================ */
 
 .hc-screen {
-  min-height: 100svh;
+  min-height: calc(100 * var(--svh));
   display: flex;
   background: var(--r1-bg);
   color: var(--r1-text);

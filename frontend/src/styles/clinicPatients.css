@@ -822,7 +822,7 @@
 .cp-modal-panel {
   width: 100%;
   max-width: 560px;
-  max-height: 90vh;
+  max-height: calc(90 * var(--vh));
   display: flex;
   flex-direction: column;
   border-radius: var(--r1-radius-lg) var(--r1-radius-lg) 0 0;

@@ -5,6 +5,8 @@ import { listClinicMembers } from '../services/clinicMembersService';
 import { listClinicPatients } from '../services/clinicPatientsService';
 import { currentMonthBirthdays, isCountableAppointment } from '../utils/gestaoDashboard';
 import { greetingFor } from '../utils/greeting';
+import { HOME_HELP } from '../data/screenHelp';
+import { ScreenHelp } from './ui/ScreenHelp';
 import '../styles/console.css';
 
 // ============================================================
@@ -191,7 +193,6 @@ const VARIANT_COPY = {
   admin: {
     role: 'Console de administração',
     heading: 'Visão geral de hoje',
-    lead: 'Sua conta não atende pacientes — a navegação da administração fica fixa ao lado. Aqui embaixo você acompanha os números da clínica e pode abrir qualquer área só para consulta.',
     navLabel: 'Administração',
     areasLabel: 'Áreas da clínica',
     areasPill: 'Modo consulta',
@@ -199,7 +200,6 @@ const VARIANT_COPY = {
   'admin-professional': {
     role: 'Administração e atendimento',
     heading: 'Visão geral de hoje',
-    lead: 'Você administra a instituição e também atende — a lista abaixo já separa suas áreas do resto da clínica.',
     navLabel: 'Administração',
     areasLabel: 'Suas áreas de atendimento',
   },
@@ -211,7 +211,6 @@ const VARIANT_COPY = {
   reception: {
     role: 'Recepção',
     heading: 'Visão geral de hoje',
-    lead: 'Sua conta cuida da agenda e do cadastro de pacientes da clínica — sem acesso a prontuário, evolução ou financeiro.',
     navLabel: 'Recepção',
   },
 };
@@ -292,9 +291,6 @@ export function HomeConsole({
     return () => { cancelled = true; };
   }, [variant, profile?.id, isFrontDeskView]);
 
-  const areasNote = variant === 'professional'
-    ? `Você enxerga todas as áreas da instituição; ${attendable.length === 1 ? 'a colorida é a liberada' : 'as coloridas são as liberadas'} para o seu perfil.`
-    : null;
   const areasLabel = copy.areasLabel || (attendable.length === 1 ? 'Sua área' : 'Suas áreas');
 
   return (
@@ -322,7 +318,7 @@ export function HomeConsole({
                 icon="evolucao"
                 title="Evoluções"
                 description={variant === 'professional'
-                  ? 'Fila do que falta evoluir: salvou um, o próximo já abre. Também registra evolução avulsa.'
+                  ? 'Fila do que falta evoluir: salvou um, o próximo já abre. Atendeu sem agendar? Registre por lá.'
                   : 'Pendências de toda a equipe; você escreve as suas na mesma tela.'}
                 badge={pendingEvolutionsCount}
                 onClick={onOpenPendingEvolutions}
@@ -362,8 +358,12 @@ export function HomeConsole({
 
       <main className="hc-main">
         <p className="hc-greeting">{greetingFor(therapistName)}</p>
-        <h2>{copy.heading}</h2>
-        {(copy.lead || areasNote) && <p className="hc-lead">{copy.lead || areasNote}</p>}
+        {/* A frase explicativa de cada perfil foi para o "Como funciona"
+            (data/screenHelp.js, HOME_HELP), igual às outras telas. */}
+        <div className="screen-title-row">
+          <h2>{copy.heading}</h2>
+          <ScreenHelp topic={HOME_HELP[variant] || HOME_HELP.professional} />
+        </div>
 
         {variant !== 'professional' && (
           <div className="hc-stat-row">

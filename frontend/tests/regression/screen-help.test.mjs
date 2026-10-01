@@ -2,7 +2,8 @@
 // Ajuda "Como funciona" (2026-09-30): o parágrafo explicativo que abria
 // cada aba da Gestão saiu da tela e foi para um painel lateral, com
 // títulos fixos. Na mesma data seguiu para Evoluções, Pacientes da
-// instituição e os editores da Agenda (Horários, Feriados, Configurar).
+// instituição e os editores da Agenda (Horários, Feriados, Configurar);
+// em 2026-10-01, a tela inicial (um tópico por perfil).
 // Decisões:
 // - cada aba tem o seu tópico, com os rótulos iguais aos da tela;
 // - botão com texto ("Como funciona"), não só "?";
@@ -54,6 +55,7 @@ function everyTopic() {
     ['Evoluções', help.EVOLUCOES_HELP],
     ['Pacientes', help.PACIENTES_HELP],
     ...Object.entries(help.AGENDA_HELP).map(([id, topic]) => [`Agenda/${id}`, topic]),
+    ...Object.entries(help.HOME_HELP).map(([id, topic]) => [`Tela inicial/${id}`, topic]),
   ];
 }
 
@@ -190,4 +192,22 @@ test('ajuda das novas telas confere com as regras do sistema', () => {
   // Feriado é aviso, não bloqueio; jornada é normal, não limite.
   assert.match(allText(help.AGENDA_HELP.feriados), /aviso, não bloqueio/);
   assert.match(allText(help.AGENDA_HELP.horarios), /não o que é permitido/);
+});
+
+test('tela inicial: frase de cada perfil foi para o "Como funciona"', async () => {
+  const home = await readFile(path.join(srcDir, 'components/HomeConsole.jsx'), 'utf8');
+  assert.match(home, /<ScreenHelp topic=\{HOME_HELP\[variant\] \|\| HOME_HELP\.professional\} \/>/);
+  assert.doesNotMatch(home, /className="hc-lead"/);
+  assert.doesNotMatch(home, /\blead: '/);
+
+  // Todo perfil da tela inicial tem a sua ajuda.
+  const block = home.match(/const VARIANT_COPY = \{([\s\S]*?)\r?\n\};/)[1];
+  const variants = [...block.matchAll(/^ {2}'?([a-z-]+)'?: \{/gm)].map(match => match[1]);
+  assert.deepEqual(variants.sort(), Object.keys(help.HOME_HELP).sort());
+});
+
+test('tela inicial não promete evolução avulsa (acabou em 2026-09-24)', async () => {
+  const home = await readFile(path.join(srcDir, 'components/HomeConsole.jsx'), 'utf8');
+  assert.doesNotMatch(home, /evolução avulsa/i);
+  assert.match(allText(help.HOME_HELP.reception), /sem acesso a prontuário, evolução ou financeiro/);
 });

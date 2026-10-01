@@ -195,12 +195,13 @@
   letter-spacing: -0.3px;
 }
 
-.hc-lead {
-  margin: 0 0 26px;
-  max-width: 72ch;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--r1-text-muted);
+/* Título + "Como funciona" (ScreenHelp): no lugar da antiga frase .hc-lead. */
+.hc-main .screen-title-row {
+  margin-bottom: 24px;
+}
+
+.hc-main .screen-title-row h2 {
+  margin: 0;
 }
 
 .hc-stat-row {

@@ -326,3 +326,73 @@ export const AGENDA_HELP = {
     ],
   },
 };
+
+// Tela inicial (components/HomeConsole.jsx): um tópico por `variant`, porque
+// cada perfil vê navegação, números e áreas diferentes.
+const HOME_TITLE = 'Tela inicial';
+
+export const HOME_HELP = {
+  admin: {
+    title: HOME_TITLE,
+    summary: 'O resumo do dia da instituição e o ponto de partida da administração.',
+    actions: [
+      'Abrir pela navegação ao lado: Agenda completa, Evoluções, Gestão e Pacientes da instituição.',
+      'Clicar nos números do topo para ir direto ao detalhe: “Atendimentos hoje” abre a Agenda, “Profissionais ativos” abre os Indicadores da Gestão e “Aniversariantes do mês” abre a lista de aniversários.',
+      'Abrir qualquer área da clínica em “Ver →”, só para consulta.',
+    ],
+    reading: [
+      '“Atendimentos hoje” conta os atendimentos marcados para hoje na clínica toda; bloqueios de horário e os marcados como “Cancelado” não entram.',
+      'O número ao lado de Evoluções é quantos atendimentos da equipe aguardam evolução.',
+      'Selo “Consulta” = a área abre só para leitura.',
+    ],
+    access: [
+      'Esta conta não atende pacientes: nas áreas clínicas, tudo é só consulta.',
+    ],
+  },
+  'admin-professional': {
+    title: HOME_TITLE,
+    summary: 'O resumo do dia, com os seus atendimentos e os da clínica, e a entrada nas suas áreas e na administração.',
+    actions: [
+      'Começar um atendimento em “Atender →”, na área em que você atende.',
+      'Abrir pela navegação ao lado: Agenda completa, Evoluções, Gestão e Pacientes da instituição.',
+      'Clicar nos números do topo: “Seus atendimentos hoje” e “Atendimentos da clínica” abrem a Agenda; “Retornos pendentes” abre os Retornos da Gestão.',
+    ],
+    reading: [
+      '“Suas áreas de atendimento” são as liberadas para o seu perfil; as outras aparecem em “Outras áreas da instituição”, como “Não habilitada”.',
+      'Os atendimentos de hoje não contam bloqueios de horário nem os marcados como “Cancelado”.',
+      'O número ao lado de Evoluções é quantos atendimentos da equipe aguardam evolução.',
+    ],
+    notes: [
+      'Documentos timbrados fica dentro da Gestão, na aba própria.',
+    ],
+  },
+  professional: {
+    title: HOME_TITLE,
+    summary: 'O ponto de partida do atendimento: escolha a área e comece.',
+    actions: [
+      'Começar um atendimento em “Atender →”.',
+      'Abrir pela navegação ao lado: Agenda, Evoluções, Gestão (cor da sua tela e seu cadastro), Pacientes da instituição e Documentos timbrados.',
+    ],
+    reading: [
+      'As áreas coloridas são as liberadas para o seu perfil; as outras aparecem em “Outras áreas da instituição”, como “Não habilitada”.',
+      'O número ao lado de Evoluções é quantos atendimentos seus aguardam evolução.',
+    ],
+    access: [
+      'Quem libera as áreas do seu perfil é a administração da instituição.',
+    ],
+  },
+  reception: {
+    title: HOME_TITLE,
+    summary: 'O resumo do dia da recepção: agenda e cadastro de pacientes da instituição.',
+    actions: [
+      'Abrir pela navegação ao lado: Agenda completa, Gestão (cor da sua tela e seu cadastro), Pacientes da instituição e Documentos timbrados.',
+      'Clicar em “Atendimentos hoje” abre a Agenda; “Aniversariantes do mês” abre a lista de aniversários.',
+    ],
+    reading: [
+      '“Atendimentos hoje” conta os atendimentos marcados para hoje na clínica toda; bloqueios de horário e os marcados como “Cancelado” não entram.',
+    ],
+    access: [
+      'A recepção cuida da agenda e do cadastro de pacientes, sem acesso a prontuário, evolução ou financeiro.',
+    ],
+  },
+};

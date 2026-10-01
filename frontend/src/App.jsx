@@ -399,7 +399,7 @@ export default function App() {
               </button>
             </div>
           </header>
-          <main className="hub-body">
+          <main className="hub-body hub-body--full">
             <Suspense fallback={<PanelLoading />}>
               <EvolutionsScreen profile={profile} />
             </Suspense>

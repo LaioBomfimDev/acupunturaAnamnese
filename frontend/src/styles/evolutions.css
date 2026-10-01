@@ -382,3 +382,585 @@
     max-height: 260px;
   }
 }
+
+/* ============================================================
+   Escrever × Ver evoluções (2026-10-01). "Ver" é conferência: se cada
+   atendimento foi evoluído e quando, nunca o texto. Pedido da
+   administradora: tela inteira, letra e botões grandes, filtros numa
+   barra só, dois números (concluídos e falta evoluir). Verde =
+   evoluído; vermelho = falta evoluir, como na fila.
+   ============================================================ */
+
+/* A fila fica montada (escondida) enquanto se confere: não perde texto. */
+.evs-layout[hidden] {
+  display: none;
+}
+
+.evs-mode {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 22px;
+  padding: 5px;
+  border: 1px solid var(--r1-accent-line, color-mix(in srgb, var(--r1-accent) 48%, transparent));
+  border-radius: 999px;
+  background: var(--r1-surface);
+}
+
+.evs-mode-btn {
+  min-height: 46px;
+  padding: 10px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.evs-mode-btn:hover {
+  background: var(--r1-accent-wash);
+}
+
+.evs-mode-btn[aria-pressed='true'] {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.evs-mode-btn:focus-visible,
+.evs-review-arrow:focus-visible,
+.evs-review-segmented button:focus-visible,
+.evs-review-stat:focus-visible,
+.evs-review-prof:focus-visible,
+.evs-review-link:focus-visible,
+.evs-review-clear:focus-visible,
+.evs-review-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* minmax(0, 1fr): sem isso a tabela larga estica a coluna e a página
+   ganha rolagem de lado no telefone (a tabela rola dentro da caixa). */
+.evs-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  font-size: 15px;
+}
+
+/* ---------- barra de filtros ---------- */
+
+/* Uma linha só: busca larga, profissional e área médios, período no
+   tamanho dele. Profissional e área podem não existir — flex não deixa
+   buraco onde grid com colunas fixas deixaria. */
+.evs-review-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.evs-review-field {
+  display: grid;
+  flex: 1 1 160px;
+  gap: 7px;
+  min-width: 0;
+}
+
+.evs-review-field--search {
+  flex: 2 1 220px;
+}
+
+.evs-review-field--period {
+  flex: 0 0 auto;
+}
+
+.evs-review-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--r1-text);
+}
+
+.evs-review-search {
+  position: relative;
+}
+
+.evs-review-search > svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 19px;
+  height: 19px;
+  color: var(--r1-text-subtle);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* display: block e margin 0 (o input global ganha margem em cima):
+   sem isso os rótulos da barra ficam desalinhados entre si. */
+.evs-review-search input,
+.evs-review-select,
+.evs-review-toolbar .ss-combo-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  min-height: 48px;
+  box-sizing: border-box;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-field-bg, var(--r1-surface));
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.evs-review-search input {
+  padding: 10px 44px;
+}
+
+.evs-review-search input:focus,
+.evs-review-select:focus {
+  border-color: var(--r1-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.evs-review-clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.evs-review-clear:hover {
+  background: var(--r1-surface-sunken);
+}
+
+.evs-review-select {
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.evs-review-toolbar .ss-combo-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.evs-review-period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.evs-review-segmented {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--r1-accent-line, color-mix(in srgb, var(--r1-accent) 48%, transparent));
+  border-radius: 999px;
+  background: var(--r1-surface);
+}
+
+.evs-review-segmented button {
+  min-height: 38px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evs-review-segmented button:hover {
+  background: var(--r1-accent-wash);
+}
+
+.evs-review-segmented button[aria-pressed='true'] {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.evs-review-arrow {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--r1-accent-line, color-mix(in srgb, var(--r1-accent) 48%, transparent));
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.evs-review-arrow:hover:not(:disabled) {
+  background: var(--r1-accent-wash);
+}
+
+.evs-review-arrow:disabled {
+  border-color: var(--r1-border-subtle);
+  color: var(--r1-text-subtle);
+  cursor: default;
+}
+
+.evs-review-period-label {
+  min-width: 132px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---------- os dois números (também filtram a lista) ---------- */
+
+.evs-review-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.evs-review-stat {
+  --evs-stat-tone: var(--r1-accent);
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 18px 22px;
+  border: 1px solid var(--r1-border-subtle);
+  border-left: 5px solid var(--evs-stat-tone);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease), background var(--r1-dur-fast) var(--r1-ease);
+}
+
+.evs-review-stat--pending { --evs-stat-tone: var(--r1-danger); }
+
+.evs-review-stat:hover {
+  background: var(--r1-bg);
+}
+
+.evs-review-stat[aria-pressed='true'] {
+  border-color: var(--r1-accent);
+  border-left-color: var(--evs-stat-tone);
+  background: var(--r1-accent-wash);
+}
+
+.evs-review-stat-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.evs-review-stat b {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.evs-review-stat--pending b {
+  color: var(--r1-danger);
+}
+
+.evs-review-stat small {
+  min-height: 1.3em;
+  font-size: 14px;
+  color: var(--r1-text-muted);
+}
+
+/* ---------- caixas: por profissional e atendimentos ---------- */
+
+.evs-review-team,
+.evs-review-results {
+  padding: 18px 20px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.evs-review-team h3,
+.evs-review-results h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.evs-review-team h3 {
+  margin-bottom: 10px;
+}
+
+.evs-review-results-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-bottom: 10px;
+}
+
+.evs-review-results-head > span {
+  font-size: 14px;
+  color: var(--r1-text-muted);
+}
+
+.evs-review-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.evs-review-table-wrap {
+  overflow-x: auto;
+}
+
+.evs-review-table,
+.evs-review-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.evs-review-table th,
+.evs-review-table td,
+.evs-review-grid th,
+.evs-review-grid td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.evs-review-table thead th,
+.evs-review-grid thead th {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--r1-text-muted);
+  white-space: nowrap;
+}
+
+.evs-review-table td {
+  text-align: right;
+}
+
+.evs-review-table thead th:not(:first-child) {
+  text-align: right;
+}
+
+.evs-review-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.evs-review-table tr.is-selected {
+  background: var(--r1-accent-wash);
+}
+
+.evs-review-cell--pending {
+  font-weight: 700;
+  color: var(--r1-danger);
+}
+
+.evs-review-prof {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--r1-accent);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.evs-review-prof:hover {
+  text-decoration: underline;
+}
+
+.evs-review-hint {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  color: var(--r1-text-muted);
+}
+
+/* ---------- lista de atendimentos (tabela por dia) ---------- */
+
+.evs-review-dayrow th {
+  padding: 18px 12px 8px;
+  border-bottom: 1px solid var(--r1-border);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+/* "quarta-feira, 30 de setembro": só a primeira letra maiúscula. */
+.evs-review-dayrow th::first-letter {
+  text-transform: uppercase;
+}
+
+.evs-review-day-count {
+  margin-left: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--r1-text-muted);
+}
+
+.evs-review-grid tbody tr:not(.evs-review-dayrow):hover {
+  background: var(--r1-bg);
+}
+
+.evs-review-c-hora {
+  width: 1%;
+  white-space: nowrap;
+  color: var(--r1-text-muted);
+}
+
+.evs-review-c-paciente b {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.evs-review-c-paciente small,
+.evs-review-c-evo small {
+  display: block;
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--r1-text-muted);
+}
+
+.evs-review-c-status .evs-status {
+  font-size: 13px;
+  padding: 3px 11px;
+}
+
+.evs-review-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.evs-review-badge--done {
+  color: var(--r1-success);
+  background: color-mix(in srgb, var(--r1-success) 14%, transparent);
+}
+
+.evs-review-badge--pending {
+  color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+}
+
+.evs-review-empty {
+  margin: 26px 0 14px;
+  font-size: 15px;
+  text-align: center;
+  color: var(--r1-text-muted);
+}
+
+@media (max-width: 760px) {
+  .evs-mode {
+    display: flex;
+  }
+
+  .evs-mode-btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+
+  .evs-review-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .evs-review-stats {
+    gap: 10px;
+  }
+
+  .evs-review-stat {
+    padding: 14px 16px;
+  }
+
+  .evs-review-stat b {
+    font-size: 30px;
+  }
+
+  /* No telefone cada atendimento vira um cartão: hora e paciente em
+     cima, o resto embaixo — sem tabela rolando de lado. */
+  .evs-review-grid thead {
+    display: none;
+  }
+
+  .evs-review-grid,
+  .evs-review-grid tbody,
+  .evs-review-grid tr,
+  .evs-review-grid th,
+  .evs-review-grid td {
+    display: block;
+  }
+
+  .evs-review-grid tbody tr:not(.evs-review-dayrow) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--r1-border-subtle);
+  }
+
+  .evs-review-grid td {
+    padding: 0;
+    border: 0;
+  }
+
+  .evs-review-grid td:not(.evs-review-c-hora) {
+    grid-column: 2;
+  }
+
+  .evs-review-c-hora {
+    grid-row: 1;
+    width: auto;
+    padding-top: 2px;
+  }
+
+  .evs-review-c-paciente {
+    grid-row: 1;
+  }
+
+  .evs-review-c-prof,
+  .evs-review-c-area {
+    font-size: 14px;
+    color: var(--r1-text-muted);
+  }
+
+  .evs-review-dayrow th {
+    padding: 16px 4px 6px;
+  }
+}

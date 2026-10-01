@@ -111,6 +111,11 @@
   max-width: 1360px;
 }
 
+/* Evoluções: fila, conferência e tabela da equipe usam a tela toda. */
+.hub-body--full {
+  max-width: none;
+}
+
 .hub-greeting {
   margin: 0 0 2px;
   font-size: 12px;

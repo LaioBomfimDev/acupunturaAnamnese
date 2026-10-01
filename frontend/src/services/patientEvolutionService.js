@@ -272,3 +272,61 @@ export async function listPatientEvolutions(patientId, discipline = null) {
 
   return data || [];
 }
+
+// Colunas de "Ver evoluções": se existe, quando foi escrita e quantas
+// vezes foi corrigida. NUNCA conteudo_encrypted — a conferência mostra
+// o registro, não o texto clínico (decisão de 2026-10-01).
+export const EVOLUTION_REVIEW_COLUMNS =
+  'id,appointment_id,therapist_id,discipline,attendance_status,atendimento_em,registrado_em,updated_at,revision';
+
+// Mesmo teto de listAppointments: passou disso, a tela avisa que é recorte.
+export const EVOLUTION_REVIEW_LIMIT = 2000;
+
+/**
+ * Registro das evoluções de um período [from, to), sem o conteúdo. Quem
+ * vê o quê é a RLS de patient_evolutions: o profissional, as próprias;
+ * a administração, as da instituição inteira.
+ */
+export async function listEvolutionReviewRows({ from, to, runtime } = {}) {
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+
+  const user = await client.getAuthenticatedUser();
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  if (LOCAL_DEVELOPMENT_MODE && user._isLocal) {
+    const start = from ? new Date(from).getTime() : -Infinity;
+    const end = to ? new Date(to).getTime() : Infinity;
+    return getLocalEvolutions()
+      .filter(item => {
+        const time = new Date(item.atendimento_em).getTime();
+        return time >= start && time < end;
+      })
+      .map(item => ({
+        id: item.id,
+        appointment_id: item.appointment_id,
+        therapist_id: item.therapist_id,
+        discipline: item.discipline,
+        attendance_status: item.attendance_status,
+        atendimento_em: item.atendimento_em,
+        registrado_em: item.registrado_em,
+        updated_at: item.updated_at,
+        revision: item.revision || 1,
+      }));
+  }
+
+  let query = client.from('patient_evolutions').select(EVOLUTION_REVIEW_COLUMNS);
+  if (from) query = query.gte('atendimento_em', new Date(from).toISOString());
+  if (to) query = query.lt('atendimento_em', new Date(to).toISOString());
+
+  const { data, error } = await query.order('atendimento_em', { ascending: false }).limit(EVOLUTION_REVIEW_LIMIT);
+
+  if (error) {
+    if (isMissingPatientEvolutionsRpc(error)) throw new Error(PATIENT_EVOLUTIONS_MIGRATION_HINT);
+    throw new Error(error.message || 'Não foi possível carregar o registro das evoluções.');
+  }
+
+  return data || [];
+}

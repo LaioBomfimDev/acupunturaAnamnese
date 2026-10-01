@@ -216,6 +216,7 @@ export const EVOLUCOES_HELP = {
     '“Salvar e ir para o próximo” grava e já abre o próximo pendente. No último da fila o botão vira “Salvar evolução”.',
     'Filtrar a fila por situação, área, atendimento (atendido ou ausência) e período: hoje, últimos 7 dias ou tudo.',
     'Atendeu sem ter agendado? Use “Registrar atendimento realizado”: o atendimento entra como Atendido e abre aqui para evoluir.',
+    'Para conferir o que já foi evoluído e quando, use “Ver evoluções”, no topo.',
   ],
   reading: [
     'Ícone vermelho = falta evoluir. Verde = evoluído agora, nesta tela. Cadeado = atendimento de outro profissional.',
@@ -233,6 +234,36 @@ export const EVOLUCOES_HELP = {
     'Quem você evoluiu fica verde até sair da tela; na próxima visita, já não aparece na fila.',
     '“Registrar atendimento realizado” vale para atendimentos de até 30 dias atrás.',
     'A fila só cobra atendimentos a partir de 22/09/2026, quando o sistema entrou em uso; o histórico importado do sistema anterior fica de fora.',
+  ],
+};
+
+/** Evoluções > "Ver evoluções" (components/evolutions/EvolutionsReview.jsx). */
+export const EVOLUCOES_REVIEW_HELP = {
+  title: 'Ver evoluções',
+  summary: 'Conferência das evoluções: para cada atendimento concluído do período, se a evolução foi escrita e quando — sem mostrar o texto.',
+  actions: [
+    'Buscar o paciente pelo nome: não precisa de acento nem do nome inteiro (“ana rib” acha Ana Ribeiro).',
+    'Filtrar por profissional e por área, e escolher o período: semana (domingo a sábado) ou mês, andando pelas setas.',
+    'Clicar em “Falta evoluir” para ver só o que está pendente; clicar de novo, ou em “Atendimentos concluídos”, volta para todos.',
+    'Em “Por profissional”, clicar no nome mostra só os atendimentos daquela pessoa.',
+    '“Limpar filtros” volta tudo ao começo.',
+  ],
+  reading: [
+    '“Atendimentos concluídos” conta os marcados na Agenda como Atendido, Não compareceu ou Cancelado pelo paciente; embaixo, quantos já foram evoluídos.',
+    '“Falta evoluir” mostra quantos ainda não têm evolução e há quantos dias está o mais antigo.',
+    'Na lista, selo verde “Evoluído” com o dia e a hora em que foi escrita (e quantas vezes foi corrigida, se foi). Selo vermelho “Falta evoluir”, com há quantos dias foi o atendimento.',
+    '“Atendimento lançado depois” = o atendimento entrou na Agenda depois de acontecer, como pelo “Registrar atendimento realizado”.',
+  ],
+  access: [
+    'A administração vê os atendimentos da equipe inteira e o quadro “Por profissional”.',
+    'Cada profissional vê só os próprios atendimentos.',
+    'Nada se altera por aqui: para escrever, use “Escrever evoluções”.',
+  ],
+  notes: [
+    'O texto da evolução não aparece nesta tela: ela mostra se foi feita e quando, não o que foi escrito.',
+    'Conta pela data do atendimento, não pela data em que a evolução foi escrita.',
+    'A conferência começa em 22/09/2026, quando o sistema entrou em uso; o histórico importado do sistema anterior fica de fora.',
+    'Atendimento “Cancelado” (pacote encerrado) não pede evolução e não entra na conta.',
   ],
 };
 

@@ -16,21 +16,30 @@ import {
   toActiveAppointment,
 } from '../../utils/evolutionQueue';
 import { COMPLETED_APPOINTMENT_LABEL, canChooseProfessional, toEvolutionQueueItem } from '../../utils/completedAppointment';
+import { canSeeTeamEvolutions } from '../../utils/evolutionReview';
 import { EvolutionRecordPanel } from './EvolutionRecordPanel';
+import { EvolutionsReview } from './EvolutionsReview';
 import { RegisterCompletedDialog } from '../panels/agenda/RegisterCompletedDialog';
 import { PanelLoading } from '../ui/PanelLoading';
 import { SearchSelect } from '../ui/SearchSelect';
 import { ScreenHelp } from '../ui/ScreenHelp';
-import { EVOLUCOES_HELP } from '../../data/screenHelp';
+import { EVOLUCOES_HELP, EVOLUCOES_REVIEW_HELP } from '../../data/screenHelp';
 import '../../styles/evolutions.css';
 
 // ============================================================
 // Evoluções — tela própria, fora das disciplinas.
 //
-// Uma tela só: o formulário do atendimento aberto à esquerda e a fila à
+// Dois botões no topo (2026-10-01): "Escrever evoluções" e "Ver
+// evoluções".
+//
+// Escrever: o formulário do atendimento aberto à esquerda e a fila à
 // direita, que também é o filtro (busca + situação, área, atendimento e
 // período). Salvou, o paciente fica VERDE na fila (não some) e o próximo
 // pendente abre sozinho. Vermelho = falta evoluir.
+//
+// Ver: conferência do que foi evoluído e quando, sem o texto
+// (EvolutionsReview). A administração vê a equipe; o profissional, as
+// próprias.
 //
 // Só existe evolução a partir de agendamento concluído — não há registro
 // avulso (o banco recusa desde 20260924b). Quem atendeu sem agendar usa
@@ -43,6 +52,11 @@ import '../../styles/evolutions.css';
 const REGISTER_DISCIPLINES = DISCIPLINES.filter(
   discipline => discipline.available && EVOLUTION_DISCIPLINES.includes(discipline.id),
 );
+
+const MODES = [
+  { id: 'escrever', label: 'Escrever evoluções' },
+  { id: 'ver', label: 'Ver evoluções' },
+];
 
 function IconPlus() {
   return (
@@ -155,6 +169,8 @@ export function EvolutionsScreen({ profile }) {
   const [atendimento, setAtendimento] = useState('todos');
   const [periodo, setPeriodo] = useState('tudo');
   const [registering, setRegistering] = useState(false);
+  // A administração entra conferindo a equipe; quem atende entra escrevendo.
+  const [mode, setMode] = useState(() => (canSeeTeamEvolutions(profile) ? 'ver' : 'escrever'));
 
   const patientsById = useMemo(
     () => new Map((patients || []).map(patient => [patient.id, patient])),
@@ -340,12 +356,32 @@ export function EvolutionsScreen({ profile }) {
           (cadeado + legenda) e no aviso do próprio atendimento. */}
       <header className="evs-hero screen-title-row">
         <h2>Evoluções</h2>
-        <ScreenHelp topic={EVOLUCOES_HELP} />
+        {mode === 'escrever'
+          ? <ScreenHelp topic={EVOLUCOES_HELP} />
+          : <ScreenHelp topic={EVOLUCOES_REVIEW_HELP} />}
       </header>
 
-      {error && <div className="evs-error" role="alert">{error}</div>}
+      <div className="evs-mode" role="group" aria-label="O que fazer em Evoluções">
+        {MODES.map(option => (
+          <button
+            key={option.id}
+            type="button"
+            className="evs-mode-btn"
+            aria-pressed={mode === option.id}
+            onClick={() => setMode(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
-      <div className="evs-layout">
+      {mode === 'ver' && <EvolutionsReview profile={profile} patients={patients} members={members} />}
+
+      {mode === 'escrever' && error && <div className="evs-error" role="alert">{error}</div>}
+
+      {/* Escondido, não desmontado: quem está no meio de uma evolução e
+          vai conferir algo em "Ver evoluções" volta com o texto lá. */}
+      <div className="evs-layout" hidden={mode !== 'escrever'}>
         <section className="evs-main">
           {toast && <div className="evs-toast" role="status">{toast}</div>}
           {renderMain()}

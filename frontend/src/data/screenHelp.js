@@ -168,22 +168,25 @@ export const GESTAO_HELP = {
   },
   personalizar: {
     title: 'Personalizar',
-    summary: 'A aparência da instituição no sistema e nos documentos: cor da tela, cor do papel timbrado e logo.',
+    summary: 'A aparência da instituição no sistema, nos documentos e nos links do paciente: cor da tela, cor do papel timbrado, logo e cor dos links.',
     actions: [
       'Escolher a cor do sistema: botões, aba ativa e destaques da tela.',
       'Decidir quem escolhe a cor da tela: cor fixa para toda a equipe, ou cada profissional escolhe a sua (a da instituição vira o padrão de quem não escolher).',
       'Usar uma cor diferente no papel timbrado, se quiser.',
       'Enviar o logo (PNG, JPG, WEBP ou SVG) e, se quiser, usá-lo como marca d’água no fundo dos relatórios.',
+      'Em “Cor dos links enviados ao paciente”, escolher uma cor para a Confirmação de agendamento e outra para a Pesquisa de satisfação.',
       'Gravar em “Salvar personalização”, ou voltar ao que estava em “Desfazer”.',
     ],
     reading: [
-      'As prévias mostram como ficam a tela e a folha timbrada antes de salvar.',
+      'As prévias mostram como ficam a tela, a folha timbrada e a página de cada link antes de salvar.',
+      'Em cada link, a cor marcada é a que o paciente vê hoje. Sem escolha, o link segue a cor do sistema.',
     ],
     access: [
       'Só a administração da instituição altera. Com a escolha liberada para a equipe, a administração também escolhe a cor da própria tela em “Sua tela”.',
     ],
     notes: [
       'Relatórios, evoluções e papel timbrado saem sempre com a cor da instituição, nunca com a cor pessoal de quem imprimiu.',
+      'Os links valem para toda a equipe: quem manda o link não muda a cor que o paciente vê.',
     ],
   },
   cadastro: MEU_CADASTRO_HELP,
@@ -198,7 +201,7 @@ export const GESTAO_PROFISSIONAL_HELP = {
       'Escolher a cor da sua tela, quando a instituição libera essa escolha.',
     ],
     access: [
-      'Muda só a sua tela. Cadastro da instituição, papel timbrado e logo ficam com a administração.',
+      'Muda só a sua tela. Cadastro da instituição, papel timbrado, logo e cor dos links do paciente ficam com a administração.',
     ],
     notes: [
       'Relatórios, evoluções e papel timbrado saem sempre com a cor da instituição.',

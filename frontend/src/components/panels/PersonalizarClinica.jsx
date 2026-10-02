@@ -3,15 +3,18 @@ import { useAuth } from '../../hooks/AuthContext';
 import {
   CLINIC_BRAND_COLORS,
   CLINIC_LETTERHEAD_COLORS,
+  CLINIC_LINK_COLORS,
   DEFAULT_BRAND_COLOR,
   updateClinicAppearance,
+  updateClinicLinkColors,
   updateClinicLogo,
   updateClinicPersonalAccent,
 } from '../../services/clinicService';
+import { getClinicLinkColor } from '../../utils/appointmentConfirmation';
 import { readLogoFile } from '../../utils/clinicLogo';
 import { colorLabel, sameColor } from '../../utils/colorOptions';
 import { buildReportAccentPalette } from '../../utils/reportUtils';
-import { AppColorPreview, ColorPresets } from './ColorPresets';
+import { AppColorPreview, ColorPresets, LinkPagePreview } from './ColorPresets';
 import { PersonalAccentPicker } from './PersonalAccentPicker';
 
 // ============================================================
@@ -24,7 +27,18 @@ import { PersonalAccentPicker } from './PersonalAccentPicker';
 // Cor fixa ou livre (2026-09-25): o admin decide se a cor do sistema
 // vale para toda a equipe ou se cada profissional escolhe a da própria
 // tela (clinic_admin_set_personal_accent). Documentos não mudam.
+//
+// Links para o paciente (2026-10-01): confirmação de agendamento e
+// pesquisa de satisfação têm cor própria, escolhida aqui
+// (clinic_admin_update_link_colors). A paleta mostra a cor que o
+// paciente vê hoje; ao salvar, as duas são gravadas explícitas, para o
+// link não mudar junto quando a cor do sistema trocar.
 // ============================================================
+
+const LINK_KINDS = [
+  { id: 'confirmation', title: 'Confirmação de agendamento' },
+  { id: 'survey', title: 'Pesquisa de satisfação' },
+];
 
 export function PersonalizarClinica({ profile }) {
   const { refreshProfile } = useAuth();
@@ -34,11 +48,19 @@ export function PersonalizarClinica({ profile }) {
   const initialLogo = clinic?.logo_url || '';
   const initialWatermark = clinic?.logo_watermark !== false;
   const initialPersonalAllowed = clinic?.personal_accent_allowed === true;
+  // Sem escolha gravada, o link segue a cor do sistema — é o que o
+  // paciente vê hoje e é o que a paleta mostra marcado.
+  const initialLinks = {
+    confirmation: getClinicLinkColor(clinic, 'confirmation') || initialBrand,
+    survey: getClinicLinkColor(clinic, 'survey') || initialBrand,
+  };
+  const linksFollowBrand = !clinic?.confirmation_link_color || !clinic?.survey_link_color;
 
   const [brandColor, setBrandColor] = useState(initialBrand);
   const [personalAllowed, setPersonalAllowed] = useState(initialPersonalAllowed);
   const [separateLetterhead, setSeparateLetterhead] = useState(Boolean(initialLetterhead));
   const [letterheadColor, setLetterheadColor] = useState(initialLetterhead || initialBrand);
+  const [linkColors, setLinkColors] = useState(initialLinks);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [watermark, setWatermark] = useState(initialWatermark);
   const [logoLoading, setLogoLoading] = useState(false);
@@ -54,7 +76,8 @@ export function PersonalizarClinica({ profile }) {
     || !sameColor(separateLetterhead ? letterheadColor : '', initialLetterhead);
   const logoDirty = logoUrl !== initialLogo || (Boolean(logoUrl) && watermark !== initialWatermark);
   const policyDirty = personalAllowed !== initialPersonalAllowed;
-  const dirty = colorsDirty || logoDirty || policyDirty;
+  const linksDirty = LINK_KINDS.some(kind => !sameColor(linkColors[kind.id], initialLinks[kind.id]));
+  const dirty = colorsDirty || logoDirty || policyDirty || linksDirty;
 
   if (!clinic?.id) {
     return (
@@ -81,8 +104,16 @@ export function PersonalizarClinica({ profile }) {
       if (policyDirty) {
         await updateClinicPersonalAccent(personalAllowed);
       }
+      // Trocar a cor do sistema também grava os links que ainda seguiam
+      // ela: o paciente continua vendo a cor marcada aqui.
+      if (linksDirty || (colorsDirty && linksFollowBrand)) {
+        await updateClinicLinkColors({
+          confirmationColor: linkColors.confirmation,
+          surveyColor: linkColors.survey,
+        });
+      }
       await refreshProfile();
-      setSuccess('Personalização salva. O sistema e os próximos documentos já usam a nova escolha.');
+      setSuccess('Personalização salva. O sistema, os próximos documentos e os links já usam a nova escolha.');
     } catch (err) {
       setError(err.message || 'Não foi possível salvar a personalização.');
     } finally {
@@ -97,6 +128,7 @@ export function PersonalizarClinica({ profile }) {
     setLogoUrl(initialLogo);
     setWatermark(initialWatermark);
     setPersonalAllowed(initialPersonalAllowed);
+    setLinkColors(initialLinks);
     setError('');
     setSuccess('');
   }
@@ -268,6 +300,40 @@ export function PersonalizarClinica({ profile }) {
                 <span>Usar o logo como marca d&apos;água (grande e transparente) no fundo dos relatórios</span>
               </label>
             </div>
+          </div>
+        </article>
+
+        <article className="gt-custom-card gt-custom-card-wide">
+          <header>
+            <h3>Cor dos links enviados ao paciente</h3>
+          </header>
+          <p className="gt-custom-help">
+            A página que o paciente abre pelo link do WhatsApp. Cada link tem a sua cor,
+            separada da cor da tela.
+          </p>
+          <div className="gt-link-colors">
+            {LINK_KINDS.map(kind => {
+              const color = linkColors[kind.id];
+              return (
+                <section key={kind.id} className="gt-link-color">
+                  <div className="gt-link-color-head">
+                    <h4>{kind.title}</h4>
+                    <span>{colorLabel(CLINIC_LINK_COLORS, color)}</span>
+                  </div>
+                  <ColorPresets
+                    options={CLINIC_LINK_COLORS}
+                    value={color}
+                    onChange={value => setLinkColors(current => ({ ...current, [kind.id]: value }))}
+                    label={`Cor do link de ${kind.title.toLowerCase()}`}
+                  />
+                  <LinkPagePreview
+                    palette={buildReportAccentPalette(color)}
+                    kind={kind.id}
+                    clinicName={clinic.name}
+                  />
+                </section>
+              );
+            })}
           </div>
         </article>
       </div>

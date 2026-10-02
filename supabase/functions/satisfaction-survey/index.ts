@@ -47,7 +47,7 @@ async function loadOpenSurvey(supabaseAdmin, token) {
 async function loadSurveyView(supabaseAdmin, survey) {
   const { data: clinic } = await supabaseAdmin
     .from('clinics')
-    .select('name,brand_color')
+    .select('name,brand_color,survey_link_color')
     .eq('id', survey.clinic_id)
     .maybeSingle();
 
@@ -64,7 +64,9 @@ async function loadSurveyView(supabaseAdmin, survey) {
 
   return {
     clinicName: clinic?.name || null,
-    clinicColor: clinic?.brand_color || null,
+    // Cor que a instituição escolheu para este link (Gestão →
+    // Personalizar); sem escolha, a cor do sistema.
+    clinicColor: clinic?.survey_link_color || clinic?.brand_color || null,
     professionalName: appointment?.profiles?.full_name || null,
     startsAt: appointment?.starts_at || null,
     endsAt: appointment?.ends_at || null,

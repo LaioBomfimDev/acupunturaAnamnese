@@ -1270,6 +1270,132 @@
 .gt-custom-sheet-lines i:nth-child(2) { width: 85%; }
 .gt-custom-sheet-lines i:nth-child(4) { width: 60%; }
 
+/* ---------- Cor dos links enviados ao paciente (2026-10-01) ---------- */
+
+.gt-custom-card-wide {
+  grid-column: 1 / -1;
+}
+
+.gt-link-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.gt-link-color {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.gt-link-color-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gt-link-color-head h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.gt-link-color-head span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+/* Miniatura da página pública: mesmas peças de confirmPage.css, na cor
+   escolhida para o link (--link-accent / --link-shade). */
+.gt-link-preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 14px 14px;
+}
+
+.gt-link-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--link-accent);
+}
+
+.gt-link-preview-clinic {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--link-shade);
+}
+
+.gt-link-preview b {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.gt-link-preview-stars {
+  display: flex;
+  gap: 4px;
+  color: var(--link-accent);
+}
+
+.gt-link-preview-when {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.gt-link-preview-when > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.gt-link-preview-when > span small {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.gt-link-preview-when i {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: 38px;
+  padding: 4px 0;
+  border: 1px solid color-mix(in srgb, var(--link-accent) 26%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--link-accent) 10%, #fff);
+  color: var(--link-shade);
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.gt-link-preview-when i small {
+  font-size: 9.5px;
+  text-transform: uppercase;
+}
+
+.gt-link-preview-button {
+  margin-top: 4px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: var(--link-accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .gt-custom-actions {
   display: flex;
   justify-content: flex-end;

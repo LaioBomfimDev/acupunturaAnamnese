@@ -34,7 +34,8 @@ function isValidToken(token) {
 // e a query falha inteira. profiles!professional_id desambigua.
 const APPOINTMENT_PUBLIC_SELECT =
   'id,starts_at,ends_at,room,modality,discipline,status,confirmed_at,clinic_id,' +
-  'patients(name),profiles!professional_id(full_name),clinics(name,address,brand_color)';
+  'patients(name),profiles!professional_id(full_name),' +
+  'clinics(name,address,brand_color,confirmation_link_color)';
 
 async function loadAppointment(supabaseAdmin, token) {
   const { data, error } = await supabaseAdmin
@@ -57,8 +58,11 @@ function toPublicView(appointment) {
     patientName: appointment.patients?.name || null,
     professionalName: appointment.profiles?.full_name || null,
     clinicName: appointment.clinics?.name || null,
-    // Cor pública da própria clínica: a página veste a marca dela.
-    clinicColor: appointment.clinics?.brand_color || null,
+    // Cor que a instituição escolheu para este link (Gestão →
+    // Personalizar); sem escolha, a cor do sistema. Nunca a cor pessoal
+    // de quem mandou o link.
+    clinicColor:
+      appointment.clinics?.confirmation_link_color || appointment.clinics?.brand_color || null,
     discipline: appointment.discipline,
     startsAt: appointment.starts_at,
     endsAt: appointment.ends_at,

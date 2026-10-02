@@ -46,6 +46,11 @@ export const CLINIC_LETTERHEAD_COLORS = [
   { value: '#3A3F45', label: 'Grafite' },
 ];
 
+// Os links enviados ao paciente (confirmação de agendamento e pesquisa
+// de satisfação) aceitam as mesmas cores do timbrado: o botão da página
+// leva texto branco, e grafite serve a quem quer o link sóbrio.
+export const CLINIC_LINK_COLORS = CLINIC_LETTERHEAD_COLORS;
+
 async function loadLocalProfiles() {
   if (!LOCAL_AUTH_FALLBACK_ENABLED) return [];
   const localAuth = await import('../dev/localAuthFallback.js');
@@ -279,6 +284,22 @@ export async function updateClinicAppearance({ brandColor, letterheadColor = nul
   }
 }
 
+// Cor de cada link enviado ao paciente, pelo clinic_admin (mesma aba).
+// null = o link segue a cor do sistema. Lidas pelas Edge Functions
+// confirm-appointment e satisfaction-survey, nunca pela cor pessoal.
+export async function updateClinicLinkColors({ confirmationColor = null, surveyColor = null }) {
+  const { error } = await supabase.rpc('clinic_admin_update_link_colors', {
+    p_confirmation_color: confirmationColor || null,
+    p_survey_color: surveyColor || null,
+  });
+  if (error) {
+    if (isMissingClinicSchemaError(error) || /clinic_admin_update_link_colors/i.test(error.message || '')) {
+      throw new Error('A cor dos links ainda não está disponível no banco (migração 20261001 pendente).');
+    }
+    throw new Error(error.message || 'Não foi possível salvar a cor dos links.');
+  }
+}
+
 // Trava da cor da tela pelo clinic_admin (mesma aba): false = cor fixa
 // para toda a equipe; true = cada profissional escolhe a própria e a cor
 // da instituição vira só o padrão. Documentos não mudam em nenhum caso.
@@ -319,9 +340,18 @@ export async function getClinicForProfile(profile) {
       const BASE_COLUMNS = 'id,name,legal_name,cnpj,address,phone,email,brand_color,created_at,updated_at';
       let { data, error } = await supabase
         .from('clinics')
-        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed`)
+        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed,confirmation_link_color,survey_link_color`)
         .eq('id', profile.clinic_id)
         .maybeSingle();
+      // Banco ainda sem a cor dos links (20261001): refaz sem ela — os
+      // links seguem a cor do sistema, igual antes.
+      if (error && /_link_color/i.test(error.message || '')) {
+        ({ data, error } = await supabase
+          .from('clinics')
+          .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed`)
+          .eq('id', profile.clinic_id)
+          .maybeSingle());
+      }
       // Banco ainda sem a trava da cor pessoal (20260925b): refaz sem ela —
       // sem a coluna, a cor da clínica vale para todos (cor fixa).
       if (error && /personal_accent_allowed/i.test(error.message || '')) {

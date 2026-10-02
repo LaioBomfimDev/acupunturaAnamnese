@@ -97,3 +97,20 @@ export function clinicAccentStyle(color) {
   const { accent, shade } = buildReportAccentPalette(text);
   return { '--r1-accent': accent, '--r1-accent-strong': shade };
 }
+
+// Coluna de clinics com a cor de cada link enviado ao paciente
+// (Gestão → Personalizar). As Edge Functions leem a mesma coluna.
+export const PUBLIC_LINK_COLOR_COLUMNS = {
+  confirmation: 'confirmation_link_color',
+  survey: 'survey_link_color',
+};
+
+/**
+ * Cor que o paciente vê no link (`confirmation` ou `survey`). Sem
+ * escolha da instituição, segue a cor do sistema. Nunca a cor pessoal
+ * de quem mandou o link: a página não tem sessão, é da instituição.
+ */
+export function getClinicLinkColor(clinic, link) {
+  const column = PUBLIC_LINK_COLOR_COLUMNS[link];
+  return (column && clinic?.[column]) || clinic?.brand_color || '';
+}

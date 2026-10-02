@@ -129,7 +129,8 @@ test('Edge Function devolve modalidade, término e endereço só pra presencial'
   const select = source.match(/const APPOINTMENT_PUBLIC_SELECT =([\s\S]*?);/)?.[1] || '';
   assert.match(select, /\bmodality\b/);
   assert.match(select, /\bends_at\b/);
-  assert.match(select, /clinics\(name,address,brand_color\)/);
+  // confirmation_link_color: cor do link escolhida em Personalizar (2026-10-01).
+  assert.match(select, /clinics\(name,address,brand_color,confirmation_link_color\)/);
 
   // \r?\n: checkout no Windows traz o .ts em CRLF.
   const view = source.match(/function toPublicView[\s\S]*?\r?\n}\r?\n/)?.[0] || '';

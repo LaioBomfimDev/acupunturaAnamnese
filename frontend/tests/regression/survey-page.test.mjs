@@ -76,7 +76,8 @@ test('Edge Function devolve cor da clínica e contexto do atendimento, preso à 
   const view = source.match(/async function loadSurveyView[\s\S]*?\r?\n}\r?\n/)?.[0] || '';
   assert.ok(view, 'loadSurveyView não encontrada no código da function');
 
-  assert.match(view, /select\('name,brand_color'\)/);
+  // survey_link_color: cor do link escolhida em Personalizar (2026-10-01).
+  assert.match(view, /select\('name,brand_color,survey_link_color'\)/);
   assert.match(view, /select\('starts_at,ends_at,profiles!professional_id\(full_name\)'\)/);
   assert.match(view, /\.eq\('clinic_id', survey\.clinic_id\)/);
   // Nada clínico na página pública: nem disciplina nem observação.

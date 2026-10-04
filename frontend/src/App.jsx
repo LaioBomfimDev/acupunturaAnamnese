@@ -11,6 +11,7 @@ import { onlyEvolutionDisciplines } from './utils/evolutionQueue';
 import { Sidebar } from './components/Sidebar';
 import { PatientStart } from './components/PatientStart';
 import { HomeConsole } from './components/HomeConsole';
+import { HubBackButton, HubDock } from './components/HubNav';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
 import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
@@ -317,6 +318,7 @@ export default function App() {
             onOpenBirthdays={(isClinicAdmin || isReceptionist) ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
           />
+          {renderHubDock('inicio')}
         </Suspense>
       );
     }
@@ -328,6 +330,7 @@ export default function App() {
             isClinicAdmin={isClinicAdmin}
             onBack={() => setShowClinicPatients(false)}
           />
+          {renderHubDock('pacientes')}
         </Suspense>
       );
     }
@@ -341,13 +344,10 @@ export default function App() {
               <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Agenda</p>
             </div>
-            <button
-              type="button"
-              className="topbar-button"
+            <HubBackButton
+              label="Voltar às áreas"
               onClick={() => { setShowHubAgenda(false); setHubAgendaShowBirthdays(false); }}
-            >
-              ← Voltar às áreas
-            </button>
+            />
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
@@ -376,6 +376,7 @@ export default function App() {
               />
             </Suspense>
           </main>
+          {renderHubDock('agenda')}
         </div>
       );
     }
@@ -385,18 +386,19 @@ export default function App() {
     if (showHubEvolutions) {
       return (
         <div className="hub-screen">
-          <header className="hub-topbar">
+          {/* --titled: o corpo já tem o título "Evoluções" com o "Como
+              funciona"; no celular o topo mostra só a instituição. */}
+          <header className="hub-topbar hub-topbar--titled">
             <div className="hub-brand">
               <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Evoluções</p>
             </div>
             <div className="app-topbar-actions">
-              <button type="button" className="topbar-button" onClick={() => { setShowHubEvolutions(false); setShowHubAgenda(true); }}>
+              {/* hub-topbar-extra: no celular a Agenda já está na barra de baixo. */}
+              <button type="button" className="topbar-button hub-topbar-extra" onClick={() => { setShowHubEvolutions(false); setShowHubAgenda(true); }}>
                 Abrir agenda
               </button>
-              <button type="button" className="topbar-button" onClick={() => setShowHubEvolutions(false)}>
-                ← Voltar às áreas
-              </button>
+              <HubBackButton label="Voltar às áreas" onClick={() => setShowHubEvolutions(false)} />
             </div>
           </header>
           <main className="hub-body hub-body--full">
@@ -404,6 +406,7 @@ export default function App() {
               <EvolutionsScreen profile={profile} />
             </Suspense>
           </main>
+          {renderHubDock('evolucao')}
         </div>
       );
     }
@@ -418,15 +421,14 @@ export default function App() {
               <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Documentos timbrados</p>
             </div>
-            <button type="button" className="topbar-button" onClick={() => setShowHubDocuments(false)}>
-              ← Voltar às áreas
-            </button>
+            <HubBackButton label="Voltar às áreas" onClick={() => setShowHubDocuments(false)} />
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
               <DocumentosTimbrados therapistProfile={profile} />
             </Suspense>
           </main>
+          {renderHubDock('documentos')}
         </div>
       );
     }
@@ -441,9 +443,10 @@ export default function App() {
               <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
               <p>Gestão</p>
             </div>
-            <button type="button" className="topbar-button" onClick={() => { setShowHubGestao(false); setHubGestaoInitialSection(null); }}>
-              ← Voltar às áreas
-            </button>
+            <HubBackButton
+              label="Voltar às áreas"
+              onClick={() => { setShowHubGestao(false); setHubGestaoInitialSection(null); }}
+            />
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
@@ -463,6 +466,7 @@ export default function App() {
               )}
             </Suspense>
           </main>
+          {renderHubDock('gestao')}
         </div>
       );
     }
@@ -639,6 +643,37 @@ export default function App() {
     setActiveTab('Tela inicial');
   }
 
+  // Troca de tela pela barra de baixo do hub (celular): uma tela por vez,
+  // e cada uma abre do começo, como quando vem da tela inicial. null
+  // volta à tela inicial.
+  function openHubScreen(screen) {
+    setShowHubAgenda(screen === 'agenda');
+    setHubAgendaShowBirthdays(false);
+    setShowHubEvolutions(screen === 'evolucao');
+    setShowHubDocuments(screen === 'documentos');
+    setShowHubGestao(screen === 'gestao');
+    setHubGestaoInitialSection(null);
+    setShowClinicPatients(screen === 'pacientes');
+  }
+
+  // Mesmos destinos e mesmas regras de perfil do menu da tela inicial
+  // (HomeConsole): recepção sem Evoluções, admin com Documentos dentro da
+  // Gestão. Só aparece no celular (styles/hub.css).
+  function renderHubDock(active) {
+    return (
+      <HubDock
+        active={active}
+        onHome={() => openHubScreen(null)}
+        onOpenAgenda={() => openHubScreen('agenda')}
+        onOpenEvolutions={isReceptionist ? undefined : () => openHubScreen('evolucao')}
+        onOpenPatients={() => openHubScreen('pacientes')}
+        onOpenGestao={() => openHubScreen('gestao')}
+        onOpenDocuments={isClinicAdmin ? undefined : () => openHubScreen('documentos')}
+        pendingEvolutionsCount={pendingEvolutionsCount}
+      />
+    );
+  }
+
   // Sair a partir do hub: não há atendimento aberto para confirmar.
   async function handleHubSignOut() {
     sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
@@ -669,6 +704,7 @@ export default function App() {
         sessionCount={evolucoes.length}
         lastVisit={lastVisit}
         hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
+        onSignOut={handleSignOut}
       />
 
       {/* forms-scope: kit visual das fichas (styles/forms.css). O SuperAdm
@@ -685,7 +721,8 @@ export default function App() {
             )}
             <h1>{isSuperAdminTab ? 'SuperAdm' : 'Paciente em atendimento'}</h1>
             {!isSuperAdmin && resolveUserDisciplines(profile).length > 1 && (
-              <div className="active-specialty-badge">
+              // app-specialty-switch: no celular a volta mora no Menu (gaveta).
+              <div className="active-specialty-badge app-specialty-switch">
                 Especialidade: <b>Acupuntura</b>
                 <button type="button" className="btn-switch-specialty-top" onClick={handleSwitchDiscipline} title="Voltar à tela principal">
                   Voltar à tela principal
@@ -709,7 +746,7 @@ export default function App() {
                 hasPendingChanges={hasPendingChanges}
               />
             )}
-            <button className="topbar-button" onClick={handleSignOut}>Sair</button>
+            <button className="topbar-button app-signout" onClick={handleSignOut}>Sair</button>
           </div>
         </div>
         )}

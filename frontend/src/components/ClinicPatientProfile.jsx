@@ -22,6 +22,7 @@ import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../utils/reportUtils';
 import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
+import { HubBackButton } from './HubNav';
 import { getStatusLabel } from '../utils/agenda';
 
 // ============================================================
@@ -567,7 +568,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
           <h1>{full?.name || patient.name}</h1>
           <p>Ficha do paciente</p>
         </div>
-        <button type="button" className="topbar-button" onClick={onBack}>← Voltar à lista</button>
+        <HubBackButton nested label="Voltar à lista" onClick={onBack} />
       </header>
 
       <main className="hub-body clinic-patients no-print">

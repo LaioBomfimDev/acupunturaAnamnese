@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { WEEKDAY_LABELS } from '../../../utils/agenda';
 import { minutesToLabel, timeToMinutes } from '../../../utils/agendaExceptions';
 import { ScreenHelp } from '../../ui/ScreenHelp';
+import { HubBackButton } from '../../HubNav';
 import { AGENDA_HELP } from '../../../data/screenHelp';
 import {
   deleteProfessionalSchedule,
@@ -154,7 +155,7 @@ export function ScheduleEditor({ professionalId, professionalLabel, onBack }) {
         </div>
         <div className="help-actions">
           <ScreenHelp topic={AGENDA_HELP.horarios} />
-          <button type="button" className="ag-btn" onClick={onBack}>← Voltar à agenda</button>
+          <HubBackButton nested className="ag-btn" label="Voltar à agenda" onClick={onBack} />
         </div>
       </header>
 

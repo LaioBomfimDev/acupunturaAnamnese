@@ -19,7 +19,8 @@
 .shell-menu,
 .shell-scrim,
 .shell-tabs,
-.shell-drawer-close {
+.shell-drawer-close,
+.sidebar-signout {
   display: none;
 }
 
@@ -384,16 +385,53 @@
 
   .app-topbar {
     flex-wrap: wrap;
-    /* Deixa passar o botão de menu flutuante no canto. */
-    padding-left: calc(var(--r1-tap) + 8px);
   }
 
   .app-topbar h1 {
     font-size: 23px;
   }
 
-  .mini-clock {
+  /* .main na frente: sem ele, .forms-scope .mini-clock (forms.css, peso
+     maior) mostrava o relógio no topo das áreas mesmo no telefone. */
+  .main .mini-clock {
     display: none;
+  }
+
+  /* Navegação no polegar (opção C, 04/10/2026): no telefone o topo da
+     área só diz onde a pessoa está e mostra o salvamento. O ☰ flutuante
+     repetia o "Menu" da barra de baixo; "Voltar à tela principal" e
+     "Sair" já moram na gaveta (topo e fim dela). No tablet (769–1024px)
+     não há barra de baixo, então ali tudo fica como estava.
+     .main + classe vence .forms-scope .topbar-button (mesmo peso, este
+     arquivo vem depois na cascata). */
+  .shell-menu,
+  .main .app-signout,
+  .main .app-specialty-switch,
+  .main .home-specialty-switcher-banner {
+    display: none;
+  }
+
+  .sidebar-signout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: var(--r1-tap);
+    margin: 18px 0 0;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+    border-radius: var(--r1-radius-sm);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .sidebar-signout:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--r1-focus-ring);
   }
 }
 
@@ -402,7 +440,8 @@
   .shell-menu,
   .shell-scrim,
   .shell-tabs,
-  .shell-drawer-close {
+  .shell-drawer-close,
+  .sidebar-signout {
     display: none !important;
   }
 }

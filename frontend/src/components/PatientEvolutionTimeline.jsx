@@ -11,6 +11,7 @@ import { PSYCHOLOGY_FORM_DISCIPLINES } from '../utils/evolutionQueue';
 import { PrintFooter, PrintLetterhead } from './report/reportPrint';
 import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems } from '../utils/reportUtils';
+import { HubBackButton } from './HubNav';
 
 // ============================================================
 // Linha do tempo da evolução de UM paciente — destino do botão "Ver
@@ -279,12 +280,14 @@ export function PatientEvolutionTimeline({ patient, therapistProfile, onBack }) 
 
   return (
     <div className="hub-screen">
-      <header className="hub-topbar no-print">
+      {/* --lead: aqui o h1 já é o título (não o nome da instituição); no
+          celular ele continua grande e a frase de baixo vira subtítulo. */}
+      <header className="hub-topbar hub-topbar--lead no-print">
         <div className="hub-brand">
           <h1>Evolução — {patient.name}</h1>
           <p>Registro de cada sessão, como a profissional escreveu</p>
         </div>
-        <button type="button" className="topbar-button" onClick={onBack}>← Voltar à ficha</button>
+        <HubBackButton nested label="Voltar à ficha" onClick={onBack} />
       </header>
 
       <main className="hub-body clinic-patients no-print">

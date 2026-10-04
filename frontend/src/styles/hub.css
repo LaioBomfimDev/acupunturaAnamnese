@@ -452,3 +452,236 @@
     font-size: 22px;
   }
 }
+
+/* ============================================================
+   Celular (≤ 768px) — navegação no polegar (opção C, 04/10/2026)
+
+   No celular o "← Voltar às áreas" quebrava em duas linhas e espremia
+   o nome da instituição; em Evoluções os dois botões empilhavam. Agora
+   o topo só diz onde a pessoa está, ir de uma tela do hub a outra é a
+   barra de baixo (.hub-dock, components/HubNav.jsx) e o voltar de tela
+   dentro de tela (.hub-back--nested: Ficha → lista, Evolução → ficha,
+   editores da Agenda) vira uma faixa logo acima dela, com o texto
+   inteiro. No computador nada disto aparece.
+
+   z-index 50: acima do conteúdo (cabeçalhos presos da Agenda usam 20)
+   e abaixo das janelas (.ag-dialog-overlay 60, ajuda 210).
+   ============================================================ */
+
+:root {
+  --r1-hub-strip-h: 50px;
+}
+
+.hub-dock {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* O fim da tela termina acima da barra (e da faixa de voltar). */
+  .hub-screen,
+  .hc-screen {
+    padding-bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom));
+  }
+
+  .hub-screen:has(.hub-back--nested) {
+    padding-bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom) + var(--r1-hub-strip-h));
+  }
+
+  /* Ficha aberta de dentro de uma área (PatientStart): lá a barra de
+     baixo é a da área, e o .main já reserva o espaço dela. */
+  .main .hub-screen {
+    padding-bottom: 0;
+  }
+
+  .main .hub-screen:has(.hub-back--nested) {
+    padding-bottom: var(--r1-hub-strip-h);
+  }
+
+  /* ---------- topo: só "onde estou" ---------- */
+
+  .hub-topbar {
+    display: block;
+    padding: 16px 18px 14px;
+  }
+
+  .hub-topbar .hub-back:not(.hub-back--nested),
+  .hub-topbar-extra {
+    display: none;
+  }
+
+  .hub-wordmark {
+    display: none;
+  }
+
+  .hub-brand h1 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: var(--r1-text-subtle);
+  }
+
+  .hub-brand p {
+    margin-top: 4px;
+    font-size: 22px;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    color: var(--r1-text);
+  }
+
+  /* O corpo já tem o próprio título (com o "Como funciona"): o topo
+     fica só com a instituição, colado nele, sem repetir o nome. */
+  .hub-topbar--titled {
+    padding-bottom: 0;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  .hub-topbar--titled .hub-brand p {
+    display: none;
+  }
+
+  .hub-topbar--titled + .hub-body {
+    padding-top: 6px;
+  }
+
+  /* O h1 já é o título da tela (não a instituição). */
+  .hub-topbar--lead .hub-brand h1 {
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    text-transform: none;
+    color: var(--r1-text);
+  }
+
+  .hub-topbar--lead .hub-brand p {
+    margin-top: 6px;
+    font-size: 13px;
+    letter-spacing: 0;
+    line-height: 1.45;
+  }
+
+  /* ---------- faixa de voltar (tela dentro de tela) ----------
+     button + duas classes: vence .forms-scope .topbar-button (ficha
+     aberta de dentro de uma área) e o .ag-btn dos editores da Agenda. */
+  button.hub-back.hub-back--nested {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom));
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: var(--r1-hub-strip-h);
+    margin: 0;
+    padding: 0 16px;
+    border: 0;
+    border-top: 1px solid var(--r1-border-subtle);
+    border-radius: 0;
+    background: var(--r1-surface);
+    box-shadow: 0 -2px 10px rgba(4, 18, 31, 0.06);
+    color: var(--r1-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .hub-back--nested .hub-back-arrow {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    background: var(--r1-accent-wash);
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  /* ---------- barra de baixo ---------- */
+
+  .hub-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: stretch;
+    padding-bottom: var(--r1-safe-bottom);
+    border-top: 1px solid var(--r1-border-subtle);
+    background: var(--r1-surface);
+    box-shadow: 0 -2px 14px rgba(4, 18, 31, 0.10);
+  }
+
+  .hub-dock-item {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: var(--r1-bottom-nav-h);
+    padding: 6px 4px;
+    border: 0;
+    background: transparent;
+    color: var(--r1-text-muted);
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .hub-dock-item > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Destino atual: filete no topo além da cor (cor sozinha não
+     distingue para quem tem daltonismo) — mesmo sinal da barra das
+     áreas de atendimento (.shell-tab--active). */
+  .hub-dock-item[aria-current='page'] {
+    color: var(--r1-text);
+    box-shadow: inset 0 3px 0 var(--r1-accent);
+  }
+
+  .hub-dock-item[aria-current='page'] svg {
+    color: var(--r1-accent);
+  }
+
+  .hub-dock-item:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--r1-accent);
+  }
+
+  /* Pendência de evolução: mesmo sinal do menu da tela inicial
+     (.hc-nav-badge). */
+  .hub-dock-count {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--r1-danger);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1;
+  }
+}

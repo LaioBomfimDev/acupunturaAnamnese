@@ -344,6 +344,7 @@ export function Sidebar({
   navGroups = NAV_GROUPS,
   patientTab = 'Painel',
   tabsWithoutPatient = ['Tela inicial', 'Biblioteca', 'Documentos'],
+  onSignOut,
 }) {
   // A gaveta mora aqui, e não no App, porque três shells diferentes
   // (MTC, Psicologia, disciplina genérica) montam esta mesma sidebar.
@@ -521,6 +522,19 @@ export function Sidebar({
           </div>
         ))}
       </nav>
+
+      {/* Saída no fim da gaveta, só no telefone (shell.css): lá o topo
+          da área fica só com "onde estou" e o salvamento, e o "Sair" do
+          cabeçalho (.app-signout) some. Continua havendo uma saída só. */}
+      {onSignOut && (
+        <button
+          type="button"
+          className="sidebar-signout no-print"
+          onClick={() => { setDrawerOpen(false); onSignOut(); }}
+        >
+          Sair
+        </button>
+      )}
       </aside>
 
       {/* Barra inferior: só no telefone. Três destinos + menu, cada um

@@ -505,6 +505,7 @@ export function DisciplineWorkspace({
         navGroups={navGroups}
         patientTab={TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
+        onSignOut={handleSignOut}
       />
 
       <main className="main psi-main forms-scope">
@@ -528,7 +529,7 @@ export function DisciplineWorkspace({
               hasPatient={Boolean(selectedPatient)}
               hasPendingChanges={hasPending}
             />
-            <button type="button" className="topbar-button" onClick={handleSignOut}>Sair</button>
+            <button type="button" className="topbar-button app-signout" onClick={handleSignOut}>Sair</button>
           </div>
         </div>
 

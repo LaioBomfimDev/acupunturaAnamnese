@@ -92,7 +92,8 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
           <p className="patient-start-description">Selecione um paciente para iniciar ou retomar o atendimento.</p>
         </div>
         <div className="home-meta">
-          {onSignOut && <button type="button" className="quiet-button" onClick={onSignOut}>Sair</button>}
+          {/* app-signout: no celular a saída mora no Menu (gaveta da Sidebar). */}
+          {onSignOut && <button type="button" className="quiet-button app-signout" onClick={onSignOut}>Sair</button>}
         </div>
       </header>
 

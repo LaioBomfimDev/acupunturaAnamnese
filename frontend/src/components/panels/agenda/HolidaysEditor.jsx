@@ -5,6 +5,7 @@ import {
   saveHoliday,
 } from '../../../services/agendaScheduleService';
 import { ScreenHelp } from '../../ui/ScreenHelp';
+import { HubBackButton } from '../../HubNav';
 import { AGENDA_HELP } from '../../../data/screenHelp';
 
 // ============================================================
@@ -117,7 +118,7 @@ export function HolidaysEditor({ onBack }) {
         </div>
         <div className="help-actions">
           <ScreenHelp topic={AGENDA_HELP.feriados} />
-          <button type="button" className="ag-btn" onClick={onBack}>← Voltar à agenda</button>
+          <HubBackButton nested className="ag-btn" label="Voltar à agenda" onClick={onBack} />
         </div>
       </header>
 

@@ -20,6 +20,7 @@ import { formatAge, formatPatientCount, getInitials } from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
+import { HubBackButton } from './HubNav';
 import { useDismiss } from '../hooks/useDismiss';
 import { ScreenHelp } from './ui/ScreenHelp';
 import { PACIENTES_HELP } from '../data/screenHelp';
@@ -409,13 +410,15 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
 
   return (
     <div className="hub-screen">
-      <header className="hub-topbar">
+      {/* --titled: o corpo já tem o título com o "Como funciona"; no
+          celular o topo mostra só a instituição. */}
+      <header className="hub-topbar hub-topbar--titled">
         <div className="hub-brand">
           <span className="hub-wordmark">Vitalis</span>
           <h1>{clinicName}</h1>
           <p>Pacientes da instituição</p>
         </div>
-        <button type="button" className="topbar-button" onClick={onBack}>← Voltar às áreas</button>
+        <HubBackButton label="Voltar às áreas" onClick={onBack} />
       </header>
 
       <main className="hub-body clinic-patients">

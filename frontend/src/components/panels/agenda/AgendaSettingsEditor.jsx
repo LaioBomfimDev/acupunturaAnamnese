@@ -27,6 +27,7 @@ import {
 } from '../../../utils/agendaSettings';
 import { SeriesBadge, SeriesIcon } from './SeriesBadge';
 import { ScreenHelp } from '../../ui/ScreenHelp';
+import { HubBackButton } from '../../HubNav';
 import { AGENDA_HELP } from '../../../data/screenHelp';
 
 // ============================================================
@@ -368,7 +369,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
         </div>
         <div className="help-actions">
           <ScreenHelp topic={AGENDA_HELP.configurar} />
-          <button type="button" className="ag-btn" onClick={handleBack}>← Voltar à agenda</button>
+          <HubBackButton nested className="ag-btn" label="Voltar à agenda" onClick={handleBack} />
         </div>
       </header>
 

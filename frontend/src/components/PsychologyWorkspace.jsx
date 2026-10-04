@@ -575,6 +575,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         navGroups={PSYCHOLOGY_NAV_GROUPS}
         patientTab={PSYCHOLOGY_TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
+        onSignOut={handleSignOut}
       />
 
       <main className="main psi-main forms-scope">
@@ -598,7 +599,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
               hasPatient={Boolean(selectedPatient)}
               hasPendingChanges={hasPending}
             />
-            <button type="button" className="topbar-button" onClick={handleSignOut}>Sair</button>
+            <button type="button" className="topbar-button app-signout" onClick={handleSignOut}>Sair</button>
           </div>
         </div>
 

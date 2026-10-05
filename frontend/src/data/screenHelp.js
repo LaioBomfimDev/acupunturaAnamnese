@@ -215,7 +215,7 @@ export const EVOLUCOES_HELP = {
   title: 'Evoluções',
   summary: 'A fila dos atendimentos da Agenda que ainda não têm evolução, com o formulário para escrever cada uma.',
   actions: [
-    'Escolher o atendimento na fila, ou buscar o paciente pelo nome, e escrever a evolução ao lado.',
+    'Escolher o atendimento na fila, à esquerda, ou buscar o paciente pelo nome, e escrever a evolução ao lado.',
     '“Salvar e ir para o próximo” grava e já abre o próximo pendente. No último da fila o botão vira “Salvar evolução”.',
     'Filtrar a fila por situação, área, atendimento (atendido ou ausência) e período: hoje, últimos 7 dias ou tudo.',
     'Atendeu sem ter agendado? Use “Registrar atendimento realizado”: o atendimento entra como Atendido e abre aqui para evoluir.',
@@ -223,7 +223,7 @@ export const EVOLUCOES_HELP = {
   ],
   reading: [
     'Ícone vermelho = falta evoluir. Verde = evoluído agora, nesta tela. Cadeado = atendimento de outro profissional.',
-    'A fila vem do mais recente para o mais antigo, separada por dia.',
+    'A fila vem do mais recente para o mais antigo, separada por dia, com a hora do atendimento na frente do nome. A seta marca o atendimento aberto ao lado.',
     'Selo ao lado do nome: Atendido, Não compareceu ou Cancelado pelo paciente.',
   ],
   access: [

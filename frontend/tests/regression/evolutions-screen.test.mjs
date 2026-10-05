@@ -9,6 +9,7 @@ import {
   EVOLUTION_DISCIPLINES,
   PSYCHOLOGY_FORM_DISCIPLINES,
   canWriteEvolution,
+  endSentence,
   filterQueue,
   groupQueueByDay,
   nextQueueItem,
@@ -52,6 +53,7 @@ before(async () => {
     painelInicial: 'src/components/panels/PainelInicial.jsx',
     recordPanel: 'src/components/evolutions/EvolutionRecordPanel.jsx',
     screen: 'src/components/evolutions/EvolutionsScreen.jsx',
+    css: 'src/styles/evolutions.css',
     evolucao: 'src/components/panels/Evolucao.jsx',
     psychologyEvolucao: 'src/components/psychology/PsychologyEvolucao.jsx',
     disciplineEvolucao: 'src/components/anamnese/DisciplineEvolucao.jsx',
@@ -257,4 +259,55 @@ test('fila só cobra atendimentos a partir de 22/09/2026 (histórico importado f
   assert.match(latestSql, /REVOKE ALL ON public\.appointments_awaiting_evolution FROM anon;/);
   // Corte é só de leitura da fila: não mexe em agendamento nem cria evolução.
   assert.doesNotMatch(latestSql, /\b(UPDATE|DELETE FROM|INSERT INTO)\b/);
+});
+
+test('aviso de atendimento de colega não repete o ponto do nome curto', () => {
+  // 2026-10-05: "Este atendimento é de Laize de S.. Só o profissional...".
+  // O nome curto já termina em ponto (shortName: "Laize de S.").
+  assert.equal(endSentence('Laize de S.'), 'Laize de S.');
+  assert.equal(endSentence('Marina'), 'Marina.');
+  assert.equal(endSentence('Ana Paula '), 'Ana Paula.');
+  assert.equal(endSentence('você'), 'você.');
+
+  // A tela fecha a frase pelo helper nas duas mensagens com o nome.
+  assert.match(sources.screen, /Este atendimento é de \{endSentence\(professionalName\(current\.professional_id\)\)\} Só o profissional/);
+  assert.match(sources.screen, /`Ele está na fila de \$\{endSentence\(professionalName\(item\.professional_id\)\)\}`/);
+  assert.doesNotMatch(sources.screen, /professionalName\([^)]*\)\}?\./, 'nome curto seguido de ponto escrito à mão');
+});
+
+test('fila à esquerda (40%), formulário à direita (60%), hora em coluna', () => {
+  // Opção B, escolhida em 05/10/2026: presa em 300px à direita, a fila
+  // ficava com ~25% da tela e letra miúda ao lado do formulário.
+  const css = sources.css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const layout = css.match(/(?:^|\r?\n)\.evs-layout\s*\{([^}]*)\}/);
+  assert.ok(layout, '.evs-layout não encontrado');
+  assert.match(layout[1], /grid-template-columns:\s*minmax\(0, 2fr\) minmax\(0, 3fr\);/);
+
+  // A fila vem antes do formulário no HTML: à esquerda no computador, em
+  // cima no celular, e na mesma ordem para quem navega pelo teclado.
+  const queueAt = sources.screen.indexOf('<aside className="evs-queue"');
+  const mainAt = sources.screen.indexOf('<section className="evs-main">');
+  assert.ok(queueAt > 0 && mainAt > queueAt, 'fila precisa vir antes do formulário');
+
+  // Hora em coluna própria; a linha de baixo não repete a hora.
+  assert.match(sources.screen, /<span className="evs-queue-time">\{hora\(item\.starts_at\)\}<\/span>/);
+  assert.doesNotMatch(sources.screen, /<small>\s*\{hora\(item\.starts_at\)\}/);
+
+  // Lista com a altura que sobra (flex), não com conta fixa de px.
+  const list = css.match(/(?:^|\r?\n)\.evs-queue-list\s*\{([^}]*)\}/);
+  assert.ok(list, '.evs-queue-list não encontrado');
+  assert.match(list[1], /flex:\s*1 1 auto;/);
+  assert.doesNotMatch(list[1], /max-height/);
+
+  // Letra da fila não volta ao miúdo de antes (11px).
+  const small = [];
+  let checked = 0;
+  for (const [, selector, body] of css.matchAll(/(?:^|\r?\n)([^{}\r\n@][^{}]*?)\s*\{([^}]*)\}/g)) {
+    if (!selector.split(',').every(part => /^\.evs-(queue|chip|filter-label|register|legend|select)\b/.test(part.trim()))) continue;
+    checked += 1;
+    const size = body.match(/font-size:\s*([\d.]+)px/);
+    if (size && Number(size[1]) < 12.5) small.push(`${selector.trim()}: ${size[1]}px`);
+  }
+  assert.ok(checked >= 8, `só ${checked} regras da fila conferidas: o seletor mudou?`);
+  assert.deepEqual(small, [], 'texto da fila com menos de 12.5px');
 });

@@ -41,6 +41,15 @@ export function validateFaltaObservation(text) {
   return String(text || '').trim() ? null : FALTA_OBSERVATION_REQUIRED;
 }
 
+/**
+ * Fecha a frase com ponto, sem repetir: o nome curto do profissional já
+ * termina em ponto ("Laize de S."), e o aviso mostrava "Laize de S..".
+ */
+export function endSentence(text) {
+  const value = String(text || '').trimEnd();
+  return /[.!?…]$/.test(value) ? value : `${value}.`;
+}
+
 // A view devolve appointment_id (não id) — adapta pro formato que os
 // formulários de evolução já esperam (o mesmo de PatientContext).
 export function toActiveAppointment(item) {

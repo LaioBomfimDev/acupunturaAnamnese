@@ -8,6 +8,7 @@ import {
   EVOLUTION_DISCIPLINES,
   QUEUE_PERIODS,
   canWriteEvolution,
+  endSentence,
   filterQueue,
   groupQueueByDay,
   nextQueueItem,
@@ -32,10 +33,11 @@ import '../../styles/evolutions.css';
 // Dois botões no topo (2026-10-01): "Escrever evoluções" e "Ver
 // evoluções".
 //
-// Escrever: o formulário do atendimento aberto à esquerda e a fila à
-// direita, que também é o filtro (busca + situação, área, atendimento e
-// período). Salvou, o paciente fica VERDE na fila (não some) e o próximo
-// pendente abre sozinho. Vermelho = falta evoluir.
+// Escrever: a fila à esquerda, como caixa de entrada (escolhe o paciente,
+// escreve ao lado), e o formulário do atendimento aberto à direita. A
+// fila também é o filtro (busca + situação, área, atendimento e período).
+// Salvou, o paciente fica VERDE na fila (não some) e o próximo pendente
+// abre sozinho. Vermelho = falta evoluir.
 //
 // Ver: conferência do que foi evoluído e quando, sem o texto
 // (EvolutionsReview). A administração vê a equipe; o profissional, as
@@ -104,6 +106,14 @@ function IconDone() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <path d="m8 12.5 2.7 2.7L16 9.8" />
+    </svg>
+  );
+}
+
+function IconChevron() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m9 6 6 6-6 6" />
     </svg>
   );
 }
@@ -281,7 +291,7 @@ export function EvolutionsScreen({ profile }) {
       setToast(`Atendimento de ${name} registrado. Escreva a evolução abaixo.`);
     } else {
       setToast(`Atendimento de ${name} registrado. ${
-        item.professional_id === profile?.id ? 'Ele está na sua fila.' : `Ele está na fila de ${professionalName(item.professional_id)}.`
+        item.professional_id === profile?.id ? 'Ele está na sua fila.' : `Ele está na fila de ${endSentence(professionalName(item.professional_id))}`
       }`);
     }
     window.scrollTo({ top: 0 });
@@ -332,7 +342,7 @@ export function EvolutionsScreen({ profile }) {
           </p>
         ) : !writable ? (
           <p className="evs-note">
-            Este atendimento é de {professionalName(current.professional_id)}. Só o profissional do
+            Este atendimento é de {endSentence(professionalName(current.professional_id))} Só o profissional do
             atendimento escreve a evolução.
           </p>
         ) : (
@@ -380,13 +390,10 @@ export function EvolutionsScreen({ profile }) {
       {mode === 'escrever' && error && <div className="evs-error" role="alert">{error}</div>}
 
       {/* Escondido, não desmontado: quem está no meio de uma evolução e
-          vai conferir algo em "Ver evoluções" volta com o texto lá. */}
+          vai conferir algo em "Ver evoluções" volta com o texto lá.
+          Fila primeiro (opção B, 05/10/2026): à esquerda no computador,
+          em cima no celular. */}
       <div className="evs-layout" hidden={mode !== 'escrever'}>
-        <section className="evs-main">
-          {toast && <div className="evs-toast" role="status">{toast}</div>}
-          {renderMain()}
-        </section>
-
         <aside className="evs-queue" aria-label="Fila de evoluções">
           <button type="button" className="evs-register" onClick={() => setRegistering(true)}>
             <IconPlus />
@@ -408,31 +415,35 @@ export function EvolutionsScreen({ profile }) {
             emptyLabel="Ninguém na fila com esse nome."
           />
 
-          <Chips
-            label="Situação"
-            options={SITUACOES.map(option => ({
-              ...option,
-              label: option.id === 'pendentes' ? `${option.label} (${pendingCount})`
-                : option.id === 'evoluidos' ? `${option.label} (${items.length - pendingCount})`
-                  : option.label,
-            }))}
-            value={situacao}
-            onChange={setSituacao}
-          />
-          {areasNaFila.length > 1 && (
+          {/* Dois a dois: Situação | Atendimento em cima, Área | Período
+              embaixo. A fila estreita (celular) volta a uma coluna. */}
+          <div className="evs-filters">
             <Chips
-              label="Área"
-              options={[{ id: '', label: 'Todas' }, ...areasNaFila.map(item => ({ id: item.id, label: item.label }))]}
-              value={area}
-              onChange={setArea}
+              label="Situação"
+              options={SITUACOES.map(option => ({
+                ...option,
+                label: option.id === 'pendentes' ? `${option.label} (${pendingCount})`
+                  : option.id === 'evoluidos' ? `${option.label} (${items.length - pendingCount})`
+                    : option.label,
+              }))}
+              value={situacao}
+              onChange={setSituacao}
             />
-          )}
-          <Chips label="Atendimento" options={ATENDIMENTOS} value={atendimento} onChange={setAtendimento} />
-          <div className="evs-filter">
-            <label className="evs-filter-label" htmlFor="evs-periodo">Período</label>
-            <select id="evs-periodo" className="evs-select" value={periodo} onChange={event => setPeriodo(event.target.value)}>
-              {QUEUE_PERIODS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
-            </select>
+            <Chips label="Atendimento" options={ATENDIMENTOS} value={atendimento} onChange={setAtendimento} />
+            {areasNaFila.length > 1 && (
+              <Chips
+                label="Área"
+                options={[{ id: '', label: 'Todas' }, ...areasNaFila.map(item => ({ id: item.id, label: item.label }))]}
+                value={area}
+                onChange={setArea}
+              />
+            )}
+            <div className="evs-filter">
+              <label className="evs-filter-label" htmlFor="evs-periodo">Período</label>
+              <select id="evs-periodo" className="evs-select" value={periodo} onChange={event => setPeriodo(event.target.value)}>
+                {QUEUE_PERIODS.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+            </div>
           </div>
 
           <div className="evs-queue-list">
@@ -455,13 +466,15 @@ export function EvolutionsScreen({ profile }) {
                           onClick={() => openItem(item.appointment_id)}
                           title={writable ? undefined : 'Atendimento de outro profissional: só ele escreve a evolução.'}
                         >
+                          {/* Hora na frente, em coluna: bate com a Agenda. */}
+                          <span className="evs-queue-time">{hora(item.starts_at)}</span>
                           <span className={`evs-icon evs-icon--${icon}`}>
                             {icon === 'done' ? <IconDone /> : icon === 'pending' ? <IconPending /> : <IconLock />}
                           </span>
                           <span className="evs-queue-text">
                             <b>{patientOf(item).name}</b>
                             <small>
-                              {hora(item.starts_at)} · {getDiscipline(item.discipline)?.label || item.discipline}
+                              {getDiscipline(item.discipline)?.label || item.discipline}
                               {savedAt
                                 ? <> · <span className="evs-ok">evoluído às {hora(savedAt)}</span></>
                                 : item.attendance_status !== 'attended'
@@ -470,6 +483,7 @@ export function EvolutionsScreen({ profile }) {
                               {hasTeamItems && item.professional_id !== profile?.id ? ` · ${professionalName(item.professional_id)}` : ''}
                             </small>
                           </span>
+                          <span className="evs-queue-chev"><IconChevron /></span>
                         </button>
                       </li>
                     );
@@ -485,6 +499,11 @@ export function EvolutionsScreen({ profile }) {
             {hasTeamItems && <span><span className="evs-icon evs-icon--locked"><IconLock /></span> de outro profissional</span>}
           </p>
         </aside>
+
+        <section className="evs-main">
+          {toast && <div className="evs-toast" role="status">{toast}</div>}
+          {renderMain()}
+        </section>
       </div>
 
       {registering && (

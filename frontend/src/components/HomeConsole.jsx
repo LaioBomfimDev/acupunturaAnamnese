@@ -240,6 +240,28 @@ export function HomeConsole({
   }, [variant, profile?.id, isFrontDeskView]);
 
   const areasLabel = copy.areasLabel || (attendable.length === 1 ? 'Sua área' : 'Suas áreas');
+  // Profissional não tem números: no celular as áreas dele (o "Atender")
+  // entram no cartão do dia, logo abaixo da pergunta.
+  const areasInHero = variant === 'professional';
+  const areasSection = variant !== 'reception' && (
+    <div className="hc-areas">
+      <p className="hc-section-label">
+        {areasLabel}
+        {copy.areasPill && <span className="hc-pill">{copy.areasPill}</span>}
+      </p>
+      <div className="hc-row-list">
+        {attendable.map(card => (
+          <DisciplineRow
+            key={card.id}
+            card={card}
+            ctaLabel={variant === 'admin' ? 'Ver →' : 'Atender →'}
+            tagLabel={variant === 'admin' ? 'Consulta' : null}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="hc-screen">
@@ -305,60 +327,74 @@ export function HomeConsole({
       </aside>
 
       <main className="hc-main">
-        <p className="hc-greeting">{greetingFor(therapistName)}</p>
-        {/* A frase explicativa de cada perfil foi para o "Como funciona"
-            (data/screenHelp.js, HOME_HELP), igual às outras telas. */}
-        <div className="screen-title-row">
-          <h2>{copy.heading}</h2>
-          <ScreenHelp topic={HOME_HELP[variant] || HOME_HELP.professional} />
+        {/* Cartão do dia (opção B, 05/10/2026): no celular este bloco vira
+            um cartão na cor da clínica com a instituição, o "Sair", a
+            saudação, o título e os números, e o menu escuro some (a barra
+            de baixo já leva aos mesmos lugares). No computador o bloco não
+            desenha nada (display: contents) e a tela fica como era. */}
+        <div className="hc-hero">
+          <div className="hc-hero-top">
+            <p className="hc-hero-clinic">{clinicName}</p>
+            <button type="button" className="hc-hero-signout" onClick={onSignOut}>Sair</button>
+          </div>
+          <p className="hc-greeting">{greetingFor(therapistName)}</p>
+          {/* A frase explicativa de cada perfil foi para o "Como funciona"
+              (data/screenHelp.js, HOME_HELP), igual às outras telas. */}
+          <div className="screen-title-row">
+            <h2>{copy.heading}</h2>
+            <ScreenHelp topic={HOME_HELP[variant] || HOME_HELP.professional} />
+          </div>
+
+          {variant !== 'professional' && (
+            <div className="hc-stat-row">
+              {isFrontDeskView ? (
+                <>
+                  <Stat icon="agenda" value={stats?.today ?? null} label="Atendimentos hoje" onClick={onOpenAgenda} />
+                  <Stat
+                    icon="pacientes"
+                    value={stats?.activeProfessionals ?? null}
+                    label="Profissionais ativos"
+                    onClick={openInstitutionalGestao ? () => openInstitutionalGestao('indicadores') : undefined}
+                  />
+                  <Stat icon="cake" value={stats?.birthdaysThisMonth ?? null} label="Aniversariantes do mês" onClick={onOpenBirthdays} />
+                </>
+              ) : (
+                <>
+                  <Stat icon="agenda" value={stats?.ownToday ?? null} label="Seus atendimentos hoje" personal onClick={onOpenAgenda} />
+                  <Stat icon="agenda" value={stats?.today ?? null} label="Atendimentos da clínica" onClick={onOpenAgenda} />
+                  <Stat
+                    icon="returns"
+                    value={stats?.awaitingReturn ?? null}
+                    label="Retornos pendentes"
+                    onClick={openInstitutionalGestao ? () => openInstitutionalGestao('retornos') : undefined}
+                  />
+                </>
+              )}
+            </div>
+          )}
+
+          {areasInHero && areasSection}
         </div>
 
-        {variant !== 'professional' && (
-          <div className="hc-stat-row">
-            {isFrontDeskView ? (
-              <>
-                <Stat icon="agenda" value={stats?.today ?? null} label="Atendimentos hoje" onClick={onOpenAgenda} />
-                <Stat
-                  icon="pacientes"
-                  value={stats?.activeProfessionals ?? null}
-                  label="Profissionais ativos"
-                  onClick={openInstitutionalGestao ? () => openInstitutionalGestao('indicadores') : undefined}
-                />
-                <Stat icon="cake" value={stats?.birthdaysThisMonth ?? null} label="Aniversariantes do mês" onClick={onOpenBirthdays} />
-              </>
-            ) : (
-              <>
-                <Stat icon="agenda" value={stats?.ownToday ?? null} label="Seus atendimentos hoje" personal onClick={onOpenAgenda} />
-                <Stat icon="agenda" value={stats?.today ?? null} label="Atendimentos da clínica" onClick={onOpenAgenda} />
-                <Stat
-                  icon="returns"
-                  value={stats?.awaitingReturn ?? null}
-                  label="Retornos pendentes"
-                  onClick={openInstitutionalGestao ? () => openInstitutionalGestao('retornos') : undefined}
-                />
-              </>
-            )}
-          </div>
-        )}
+        {!areasInHero && areasSection}
 
-        {variant !== 'reception' && (
-          <>
-            <p className="hc-section-label">
-              {areasLabel}
-              {copy.areasPill && <span className="hc-pill">{copy.areasPill}</span>}
-            </p>
+        {/* Só no celular: a barra de baixo leva no máximo cinco destinos
+            (HubNav, MAX_DOCK_ITEMS) e, para o profissional, Documentos
+            timbrados fica de fora; aqui ele continua a um toque. */}
+        {variant === 'professional' && onOpenDocuments && (
+          <div className="hc-mobile-only">
+            <p className="hc-section-label">{copy.navLabel}</p>
             <div className="hc-row-list">
-              {attendable.map(card => (
-                <DisciplineRow
-                  key={card.id}
-                  card={card}
-                  ctaLabel={variant === 'admin' ? 'Ver →' : 'Atender →'}
-                  tagLabel={variant === 'admin' ? 'Consulta' : null}
-                  onSelect={onSelect}
-                />
-              ))}
+              <button type="button" className="hc-row-item" onClick={onOpenDocuments}>
+                <span className="hc-row-icon"><Icon id="documentos" /></span>
+                <span className="hc-row-text">
+                  <b>Documentos timbrados</b>
+                  <p>Envie um Word (.docx) e receba o documento no papel timbrado da instituição.</p>
+                </span>
+                <span className="hc-row-cta">Abrir →</span>
+              </button>
             </div>
-          </>
+          </div>
         )}
 
         {locked.length > 0 && (

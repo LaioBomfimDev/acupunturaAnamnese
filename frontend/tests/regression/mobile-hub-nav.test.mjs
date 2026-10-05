@@ -22,6 +22,7 @@ const noop = () => {};
 
 let server;
 let hubNav;
+let homeConsole;
 
 before(async () => {
   server = await createServer({
@@ -31,6 +32,7 @@ before(async () => {
     appType: 'custom',
   });
   hubNav = await server.ssrLoadModule('/src/components/HubNav.jsx');
+  homeConsole = await server.ssrLoadModule('/src/components/HomeConsole.jsx');
 });
 
 after(async () => {
@@ -192,4 +194,74 @@ test('áreas de atendimento no celular: sem ☰ flutuante, voltar e sair dentro 
   assert.match(app, /className="active-specialty-badge app-specialty-switch"/);
   const start = await read('components/PatientStart.jsx');
   assert.match(start, /className="quiet-button app-signout"/);
+});
+
+// Tela inicial no celular (opção B, 05/10/2026): o menu escuro ocupava a
+// primeira tela inteira e repetia a barra de baixo; o "Bom dia" e os
+// números só apareciam rolando. Agora o topo é o cartão do dia.
+function renderHome(variant, extra = {}) {
+  const profile = {
+    id: 'p1',
+    role: variant === 'professional' ? 'professional' : 'clinic_admin',
+    clinic: { name: 'Clínica de teste' },
+    disciplines: ['psicologia'],
+  };
+  return renderToStaticMarkup(React.createElement(homeConsole.HomeConsole, {
+    profile,
+    therapistName: 'Karen',
+    variant,
+    onSelect: noop,
+    onSignOut: noop,
+    onOpenAgenda: noop,
+    onOpenGestao: noop,
+    onOpenClinicPatients: noop,
+    ...extra,
+  }));
+}
+
+test('tela inicial no celular: cartão do dia com instituição, Sair, saudação e números', () => {
+  const html = renderHome('admin', { onOpenPendingEvolutions: noop, onOpenBirthdays: noop });
+  const hero = html.indexOf('class="hc-hero"');
+  assert.ok(hero > html.indexOf('</aside>'), 'cartão fica no conteúdo, não no menu escuro');
+  const top = html.slice(hero, html.indexOf('hc-greeting', hero));
+  assert.match(top, /class="hc-hero-clinic">Clínica de teste</);
+  assert.match(top, /class="hc-hero-signout"[^>]*>Sair<\/button>/);
+  const order = ['hc-greeting', '<h2>Visão geral de hoje</h2>', 'hc-stat-row', 'class="hc-areas"']
+    .map(mark => html.indexOf(mark, hero));
+  assert.ok(order.every((at, i) => at > 0 && (i === 0 || at > order[i - 1])), `ordem do cartão: ${order}`);
+  // Saída: uma visível por largura (menu escuro no computador, cartão no celular).
+  assert.equal((html.match(/>Sair<\/button>/g) || []).length, 2);
+  assert.doesNotMatch(html, /hc-mobile-only/, 'admin não tem atalho extra: Documentos mora na Gestão');
+});
+
+test('tela inicial no celular: profissional atende de dentro do cartão e acha Documentos', async () => {
+  const html = renderHome('professional', { onOpenPendingEvolutions: noop, onOpenDocuments: noop });
+  assert.doesNotMatch(html, /hc-stat-row/, 'profissional continua sem números');
+  // A barra de baixo do profissional não leva Documentos (cinco destinos no máximo)…
+  assert.doesNotMatch(renderDock({
+    onHome: noop, onOpenAgenda: noop, onOpenEvolutions: noop, onOpenPatients: noop, onOpenGestao: noop, onOpenDocuments: noop,
+  }), /Documentos/);
+  // …então a tela inicial guarda o atalho, só no celular.
+  assert.match(html, /class="hc-mobile-only"><p class="hc-section-label">Atalhos<\/p>[\s\S]*?<b>Documentos timbrados<\/b>/);
+  // Recepção tem Documentos na barra de baixo: sem atalho repetido.
+  assert.doesNotMatch(renderHome('reception', { onOpenDocuments: noop }), /hc-mobile-only/);
+
+  const source = await read('components/HomeConsole.jsx');
+  assert.match(source, /const areasInHero = variant === 'professional';/);
+  const heroBlock = source.slice(source.indexOf('<div className="hc-hero">'), source.indexOf('{!areasInHero && areasSection}'));
+  assert.match(heroBlock, /\{areasInHero && areasSection\}\s*<\/div>/, 'áreas do profissional dentro do cartão');
+});
+
+test('tela inicial: computador igual, celular sem o menu escuro', async () => {
+  const css = await read('styles/console.css');
+  const block = mediaBlock(css, 'Cartão do dia (celular, opção B');
+  // No computador o cartão não desenha nada e as partes do celular somem.
+  assert.match(block, /\.hc-hero \{\s*display: contents;\s*\}\s*\.hc-hero-top,\s*\.hc-mobile-only \{\s*display: none;/);
+  const phone = block.slice(block.indexOf('@media (max-width: 768px)'));
+  assert.match(phone, /\.hc-rail \{\s*display: none;/);
+  assert.match(phone, /\.hc-hero \{\s*display: grid;[^}]*background: var\(--r1-accent-strong\);/);
+  assert.match(phone, /\.hc-hero \.hc-stat-row \{\s*grid-area: stats;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(phone, /\.hc-hero-signout \{[^}]*min-height: 40px;/);
+  // Vem depois da faixa ≤900px, que empilha os números em uma coluna.
+  assert.ok(css.indexOf('Cartão do dia (celular') > css.indexOf('@media (max-width: 900px)'));
 });

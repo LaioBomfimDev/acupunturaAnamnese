@@ -7,7 +7,8 @@ import { useDismiss } from '../../../hooks/useDismiss';
 // As seis ações do topo (Registrar atendimento realizado, Compartilhar,
 // Aniversários, Horários, Feriados, Configurar) ocupavam duas fileiras:
 // no celular eram 332px antes do primeiro atendimento. Agora ficam atrás
-// de um botão só, no computador e no celular. No computador a lista abre
+// de um botão só, no computador e no celular. Em 06/10/2026 entrou a
+// sétima, "Copiar horários vagos", que copia sem abrir janela. No computador a lista abre
 // sob o botão; no celular, sobe de baixo (styles/agenda.css, .agt-*).
 //
 // Os itens chegam como filhos, com o onClick de sempre; tocar em

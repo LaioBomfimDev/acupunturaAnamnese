@@ -3586,6 +3586,15 @@
 }
 .agt-item:hover { background: var(--r1-accent-wash); }
 .agt-item svg { width: 16px; height: 16px; color: var(--r1-accent); flex: none; }
+/* Dia que "Copiar horários vagos" vai copiar, no canto do item. */
+.agt-item-note {
+  margin-left: auto;
+  padding-left: 8px;
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
 /* Só no celular: no computador o painel lateral já está à vista. */
 .ag-fab,
 .ag-sheet-close,

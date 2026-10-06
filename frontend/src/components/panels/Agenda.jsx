@@ -12,6 +12,7 @@ import {
 } from '../../utils/agenda';
 import { evaluateSlot, minutesToLabel } from '../../utils/agendaExceptions';
 import { buildDayTimeline, buildWeekStrip } from '../../utils/agendaTimeline';
+import { buildFreeSlotsCopy, freeSlotsNotice } from '../../utils/agendaFreeSlots';
 import {
   buildRecurrenceDates,
   describeSeries,
@@ -60,7 +61,7 @@ import { SearchSelect } from '../ui/SearchSelect';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
-  IconCake, IconCheck, IconCalendarCheck, IconSliders,
+  IconCake, IconCheck, IconCalendarCheck, IconSliders, IconCopy,
 } from './agenda/AgendaIcons';
 import { AgendaToolsMenu } from './agenda/AgendaToolsMenu';
 import AgendaDayView from './agenda/AgendaDayView';
@@ -203,6 +204,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   const [showRegisterCompleted, setShowRegisterCompleted] = useState(false);
   // Recado de sucesso próprio: `notice` é zerado a cada recarga do mês.
   const [completedNote, setCompletedNote] = useState('');
+  // Ferramentas → "Copiar horários vagos": o recado diz o que foi copiado.
+  const [freeSlotsNote, setFreeSlotsNote] = useState('');
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -599,7 +602,52 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     setSelectedAppointment(null);
     setSeriesPreview(null);
     setCompletedNote('');
+    setFreeSlotsNote('');
     setSheetOpen(false);
+  }
+
+  // Ferramentas → "Copiar horários vagos" (06/10/2026): um toque copia os
+  // horários vagos do dia escolhido, um por linha, para a recepção colar
+  // no WhatsApp e escrever a mensagem lá. A conta (utils/agendaFreeSlots)
+  // usa todos os atendimentos do profissional, não os filtrados na tela.
+  async function copyFreeSlots() {
+    // Mês carregando ou agenda sem carregar: a lista de atendimentos não
+    // é a do dia, e tudo pareceria vago.
+    if (loading) {
+      setFreeSlotsNote('A agenda ainda está carregando. Tente de novo em instantes.');
+      return;
+    }
+    if (error) {
+      setFreeSlotsNote('A agenda não carregou: não dá para saber os horários vagos agora.');
+      return;
+    }
+
+    const date = selectedDate || today;
+    const clock = new Date();
+    const allProfessionals = agendaOf === ALL_PROFESSIONALS;
+    const result = buildFreeSlotsCopy({
+      date,
+      professionals: allProfessionals
+        ? agendaProfessionals.map(member => ({ id: member.id, name: shortName(member.full_name) }))
+        : [{ id: agendaOf, name: null }],
+      allProfessionals,
+      schedules,
+      appointments,
+      holidays,
+      fallback: fallbackGridOf(agendaSettings),
+      now: clock,
+    });
+
+    let copied = false;
+    if (result.total > 0) {
+      try {
+        await navigator.clipboard.writeText(result.text);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+    setFreeSlotsNote(freeSlotsNotice({ result, date, now: clock, copied }));
   }
 
   /** Mover precisa da agenda à vista: no celular o painel de baixo fecha. */
@@ -1283,12 +1331,24 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       weekday: 'long', day: '2-digit', month: 'long',
     }) || '';
 
-  // As seis ferramentas, guardadas atrás de "Ferramentas" (AgendaToolsMenu).
+  // As sete ferramentas, guardadas atrás de "Ferramentas" (AgendaToolsMenu).
   // O mesmo conteúdo aparece em dois lugares e o CSS mostra um por vez: no
   // computador ao lado de ← Hoje → (os seis botões de visão ocupam a linha
   // de baixo inteira); no celular ao lado de "Filtros".
   const toolItems = (
     <>
+      <button
+        type="button"
+        className="agt-item"
+        onClick={copyFreeSlots}
+        title="Copia os horários vagos do dia escolhido, um por linha, para colar no WhatsApp"
+      >
+        <IconCopy />
+        Copiar horários vagos
+        <span className="agt-item-note">
+          {(selectedDate || today).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+        </span>
+      </button>
       <button
         type="button"
         className="agt-item"
@@ -1503,6 +1563,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         {notice && <div className="ag-notice">{notice}</div>}
         {settingsNotice && <div className="ag-notice">{settingsNotice}</div>}
         {completedNote && <div className="ag-notice" role="status">{completedNote}</div>}
+        {freeSlotsNote && <div className="ag-notice" role="status">{freeSlotsNote}</div>}
 
         {moving && (
           <div className="ag-warn ag-warn--confirm">

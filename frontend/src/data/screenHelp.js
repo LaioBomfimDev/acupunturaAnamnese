@@ -317,6 +317,7 @@ export const AGENDA_HELP = {
     notes: [
       'A jornada diz o que é horário normal, não o que é permitido: marcar fora dela (sábado, feriado, intervalo, madrugada) continua possível. A agenda avisa, pede confirmação e registra como exceção.',
       'Sem jornada cadastrada, a agenda usa a grade padrão de “Configurar agenda”.',
+      'Em Ferramentas, “Copiar horários vagos” sai desta jornada: copia as faixas livres do dia escolhido, um horário por linha, para colar no WhatsApp. Na visão da equipe toda, entra só quem tem jornada naquele dia.',
     ],
   },
   feriados: {

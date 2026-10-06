@@ -19,7 +19,8 @@ let agenda;
 before(async () => {
   css = await readFile(path.resolve(root, 'src/styles/agenda.css'), 'utf8');
   agenda = await readFile(path.resolve(root, 'src/components/panels/Agenda.jsx'), 'utf8');
-  const start = css.indexOf('Topo da agenda no celular (≤768px)');
+  // Celular e tablet (≤1024px desde 06/10/2026: tablet é celular grande).
+  const start = css.indexOf('Topo da agenda no celular e no tablet (≤1024px)');
   assert.ok(start > 0, 'bloco do topo no celular precisa existir');
   mobile = css.slice(start, css.indexOf('@media (max-width: 480px)', start));
 });

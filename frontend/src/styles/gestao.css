@@ -7,7 +7,7 @@
 /* ---------- menu à esquerda (GestaoNav) + título da aba ----------
    Abas agrupadas por assunto numa coluna fixa; o conteúdo da aba fica
    à direita, com o título e o "Como funciona" no topo. No celular o
-   menu vira uma faixa que rola de lado (ver @media 900px). */
+   menu vira uma faixa que rola de lado (ver @media 1024px). */
 
 .gt--rail {
   display: grid;
@@ -1052,7 +1052,9 @@
   background: var(--r1-text-muted);
 }
 
-@media (max-width: 900px) {
+/* Celular e tablet (até 1024px, desde 06/10/2026: tablet é celular
+   grande, mesmo corte da barra de baixo). Antes, 900px e 720px. */
+@media (max-width: 1024px) {
   .gt-stat-row {
     grid-template-columns: 1fr;
   }
@@ -1062,7 +1064,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .gt--rail {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
@@ -1106,10 +1108,17 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .gt-filters {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* Em coluna, o flex-basis de 220px de .gt-field--grow e .gt-search
+     virava ALTURA: sobrava um vão de ~160px embaixo de Profissional e
+     de Disciplina. */
+  .gt-filters > * {
+    flex: 0 0 auto;
   }
 
   .gt-bar-row {

@@ -12,9 +12,11 @@
   color: var(--r1-text);
 }
 
+/* minmax(0, 1fr), nunca 1fr: a coluna crescia até o conteúdo mais
+   largo (384px num celular de 375) e a Agenda inteira rolava de lado. */
 @media (max-width: 1080px) {
   .ag {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2279,11 +2281,12 @@
 }
 
 /* ---------- toque ----------
-   Abaixo de 768px o dedo é o ponteiro: todo controle da agenda alcança
-   o mínimo de 44px da WCAG 2.2 (2.5.8) e a grade do mês ganha altura
-   de célula suficiente para não errar o dia. */
+   No celular e no tablet (até 1024px: tablet é celular grande, desde
+   06/10/2026) o dedo é o ponteiro: todo controle da agenda alcança o
+   mínimo de 44px da WCAG 2.2 (2.5.8) e a grade do mês ganha altura de
+   célula suficiente para não errar o dia. */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .ag {
     gap: 14px;
   }
@@ -2322,7 +2325,7 @@
 }
 
 /* ============================================================
-   Topo da agenda no celular (≤768px)
+   Topo da agenda no celular e no tablet (≤1024px)
 
    - navegação de data numa linha só, com o campo de data esticado;
    - filtros recolhidos atrás do botão "Filtros" (com contagem), que
@@ -2333,7 +2336,7 @@
    05/10/2026; antes eram visões em grade 3×2 e ferramentas em 2×2,
    que somavam 332px antes do primeiro atendimento).
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .ag-head {
     flex-direction: column;
     align-items: stretch;
@@ -3589,7 +3592,10 @@
 .ag-sheet-scrim,
 .ag-sheet-alert { display: none; }
 
-@media (max-width: 768px) {
+/* Ferramentas ao lado de "Filtros" e painel de baixo: celular e tablet
+   (≤ 1024px: tablet é celular grande, mesmo corte da barra de baixo do
+   hub). As ferramentas começavam em 768px até 06/10/2026. */
+@media (max-width: 1024px) {
   .ag-toolbar .ag-seg--views { grid-column: 1 / -1; }
   .ag-seg--views .ag-seg-btn { flex-direction: row; min-height: 40px; padding: 0 14px; font-size: 13px; }
   .ag-filters-toggle { margin-bottom: 0; }
@@ -3612,11 +3618,8 @@
   .agt-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .agt-title { margin: 0; font-size: 18px; font-weight: 700; }
   .agt-close { min-height: 40px; padding: 0 14px; border: 1px solid var(--r1-border-subtle); border-radius: 999px; background: var(--r1-surface); font: inherit; font-size: 13px; font-weight: 600; }
-}
 
-/* Painel de baixo no celular e no tablet (≤ 1024px: tablet é celular
-   grande desde 05/10/2026, mesmo corte da barra de baixo do hub). */
-@media (max-width: 1024px) {
+  /* Painel de baixo (desde 05/10/2026). */
   .ag-sheet-close { min-height: 40px; padding: 0 14px; border: 1px solid var(--r1-border-subtle); border-radius: 999px; background: var(--r1-surface); font: inherit; font-size: 13px; font-weight: 600; }
   .ag-side { display: none; }
   .ag-side.ag-side--sheet {

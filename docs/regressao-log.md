@@ -335,3 +335,12 @@ Modelo de entrada:
 - Regra nova: tablet é celular grande (um corte só, 1024px), e nada na faixa de celular pode ficar mais largo que 360px.
 - Teste ou verificação obrigatória: `evolutions-review.test.mjs` ("celular e tablet: Ver evoluções cabe na largura da tela", falha no código anterior) e `mobile-hub-nav.test.mjs` ("tablet segue o celular", proíbe corte em 768px nos arquivos da navegação e de Evoluções).
 - Regra destilada em: `AGENTS.md` §7.
+
+### 2026-10-06 - Agenda e ficha do paciente rolavam de lado no celular; filtros da Gestão com vão
+
+- Sintoma: ao alinhar Agenda, Pacientes e Gestão do tablet com o celular, a conferência no navegador (componentes e CSS reais, dados fictícios) achou três defeitos que já estavam no celular: a Agenda media 404px num celular de 375 em todas as visões; a ficha do paciente media 459px; os filtros da Gestão, empilhados, tinham ~160px de vão embaixo de Profissional e de Disciplina.
+- Causa: `.ag` em `max-width: 1080px` usava `grid-template-columns: 1fr`, e a coluna crescia até o conteúdo mais largo (é o mesmo erro que a conferência de Evoluções já tinha corrigido com `minmax(0, 1fr)`). As cinco ações da ficha (`.pf-identity-actions`) ficavam numa linha só com `flex: 1` e sem `flex-wrap`. Na Gestão, `.gt-filters` vira coluna e o `flex: 1 1 220px` de `.gt-field--grow`/`.gt-search` passava a valer como altura.
+- Correção: `minmax(0, 1fr)` na Agenda; ações da ficha com `flex-wrap: wrap` e `flex: 1 1 auto`; filtros empilhados com `flex: 0 0 auto`. No mesmo pacote, o jeito de celular das três telas passou a valer até 1024px (Agenda: toque, topo, ferramentas e semana; Pacientes: ficha e formulário; Gestão: menu, números e filtros; margens das telas do hub). Conferido em 375, 820, 1024 e 1280px nas cinco visões da Agenda, na escolha, lista e cinco abas da ficha de Pacientes e nas nove abas da Gestão: largura da página igual à da tela; acima de 1024px nada mudou.
+- Regra nova: coluna de grid com conteúdo largo usa `minmax(0, 1fr)`; em flex de coluna, `flex-basis` em px vira altura.
+- Teste ou verificação obrigatória: `tablet-phone-screens.test.mjs` (os quatro testes falham no código anterior).
+- Regra destilada em: `AGENTS.md` §7.

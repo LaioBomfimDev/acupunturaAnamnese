@@ -439,7 +439,9 @@
   white-space: nowrap;
 }
 
-@media (max-width: 720px) {
+/* Margens e título do celular também no tablet (até 1024px, desde
+   06/10/2026; antes, 720px). */
+@media (max-width: 1024px) {
   .hub-topbar {
     padding: 14px 18px;
   }

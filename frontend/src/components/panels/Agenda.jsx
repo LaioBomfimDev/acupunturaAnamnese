@@ -121,11 +121,11 @@ const TEAM_AVATAR_COLORS = ['#33403f', '#2e5578', '#5c3d63', '#7a5a2e', '#46426b
 // status/modalidade e o campo "pular pra data" só fazem sentido aqui.
 const CALENDAR_VIEWS = new Set(['hoje', 'dia', 'semana', 'mes']);
 
-// Mesma largura que já rege o resto do recorte mobile da Agenda
-// (agenda.css: .ag vira 1 coluna em 1080px, sidebar vira gaveta em
-// 1024px) — em 900px a Semana já tem a tela inteira só pra ela, não
-// existe faixa intermediária que mudaria a conta.
-const AGENDA_WEEK_MOBILE_QUERY = '(max-width: 900px)';
+// Semana do celular também no tablet (≤ 1024px, desde 06/10/2026:
+// tablet é celular grande, mesmo corte da barra de baixo e do topo da
+// Agenda). Até então começava em 900px e o tablet via a grade de sete
+// colunas do computador.
+const AGENDA_WEEK_MOBILE_QUERY = '(max-width: 1024px)';
 
 // Celular e tablet (mesma faixa da barra de baixo, HubNav, ≤ 1024px): o
 // painel lateral (detalhe do atendimento e "Novo agendamento") vira um

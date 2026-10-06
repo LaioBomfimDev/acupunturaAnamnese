@@ -38,7 +38,8 @@ before(async () => {
   css = await read('styles/agenda.css');
   const block = css.slice(css.indexOf('Ferramentas guardadas + painel de baixo (05/10/2026'));
   assert.ok(css.includes('Ferramentas guardadas + painel de baixo (05/10/2026'), 'bloco do painel de baixo precisa existir');
-  phone = block.slice(block.indexOf('@media (max-width: 768px)'));
+  // Ferramentas na barra e painel de baixo: um bloco só, celular e tablet.
+  phone = block.slice(block.indexOf('@media (max-width: 1024px)'));
   sheetCss = block.slice(block.indexOf('@media (max-width: 1024px)'));
 });
 

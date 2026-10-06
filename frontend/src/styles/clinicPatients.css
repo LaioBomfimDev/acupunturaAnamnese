@@ -329,7 +329,8 @@
   margin-bottom: 0;
 }
 
-@media (max-width: 860px) {
+/* Celular e tablet (até 1024px: tablet é celular grande): duas colunas. */
+@media (max-width: 1024px) {
   .cp-form-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -1191,8 +1192,9 @@
 
 /* Link compartilhado é lido sem login, com frequência no celular de
    quem recebeu o encaminhamento — a tabela precisa do próprio scroll
-   horizontal em vez de empurrar a página inteira. */
-@media (max-width: 768px) {
+   horizontal em vez de empurrar a página inteira. Vale até 1024px
+   (tablet é celular grande). */
+@media (max-width: 1024px) {
   .shv-evolucao {
     display: block;
     overflow-x: auto;
@@ -1373,17 +1375,22 @@
   gap: 8px;
 }
 
-@media (max-width: 640px) {
+/* Celular e tablet (até 1024px): nome em cima e as ações embaixo,
+   quebrando linha. Presas numa linha só (flex: 1 sem wrap), as cinco
+   ações (Marcar pendência … Excluir paciente) mediam 459px num celular
+   de 375 e a ficha inteira rolava de lado. */
+@media (max-width: 1024px) {
   .pf-identity {
     flex-direction: column;
   }
 
   .pf-identity-actions {
+    flex-wrap: wrap;
     width: 100%;
   }
 
   .pf-identity-actions .cp-btn {
-    flex: 1;
+    flex: 1 1 auto;
   }
 }
 

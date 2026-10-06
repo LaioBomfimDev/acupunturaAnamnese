@@ -54,6 +54,7 @@ import { AgendaSettingsContext } from '../../hooks/AgendaSettingsContext';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useDismiss } from '../../hooks/useDismiss';
 import { getInitials, isDeleteConfirmationValid } from '../../utils/patientUi';
 import { SearchSelect } from '../ui/SearchSelect';
 import {
@@ -61,6 +62,7 @@ import {
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
   IconCake, IconCheck, IconCalendarCheck, IconSliders,
 } from './agenda/AgendaIcons';
+import { AgendaToolsMenu } from './agenda/AgendaToolsMenu';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaSettingsEditor from './agenda/AgendaSettingsEditor';
 import AgendaWeekView from './agenda/AgendaWeekView';
@@ -124,6 +126,13 @@ const CALENDAR_VIEWS = new Set(['hoje', 'dia', 'semana', 'mes']);
 // 1024px) — em 900px a Semana já tem a tela inteira só pra ela, não
 // existe faixa intermediária que mudaria a conta.
 const AGENDA_WEEK_MOBILE_QUERY = '(max-width: 900px)';
+
+// Celular e tablet (mesma faixa da barra de baixo, HubNav, ≤ 1024px): o
+// painel lateral (detalhe do atendimento e "Novo agendamento") vira um
+// painel que sobe de baixo. Sem isso, tocar num atendimento abria o
+// detalhe no fim da página, fora da tela, e o formulário só aparecia
+// rolando tudo.
+const AGENDA_PHONE_QUERY = '(max-width: 1024px)';
 
 /**
  * Janela de busca da agenda: os mesmos 42 dias (6 semanas) que
@@ -473,6 +482,16 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   );
 
   const isMobileWeek = useMediaQuery(AGENDA_WEEK_MOBILE_QUERY);
+  const isPhone = useMediaQuery(AGENDA_PHONE_QUERY);
+  // Painel de baixo (celular): abre ao tocar num atendimento, num horário
+  // livre ou no "+ Novo agendamento"; fecha ao salvar, ao começar a mover
+  // ou ao trocar de dia. Quem decide se ele aparece por cima é o CSS
+  // (≤768px, .ag-side--sheet); no computador o painel lateral fica sempre
+  // à vista e o estado não muda nada na tela. Assim, girar o aparelho ou
+  // estreitar a janela não deixa o detalhe escondido. isPhone só serve
+  // para dizer ao leitor de tela que o painel virou janela.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const sheetDismiss = useDismiss({ open: sheetOpen, onClose: () => setSheetOpen(false), busy: saving });
 
   const todayQueue = useMemo(
     () => buildTodayQueue({ appointments: visibleAppointments, now, dayKey: selectedKey }),
@@ -580,6 +599,21 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     setSelectedAppointment(null);
     setSeriesPreview(null);
     setCompletedNote('');
+    setSheetOpen(false);
+  }
+
+  /** Mover precisa da agenda à vista: no celular o painel de baixo fecha. */
+  function startMoving(appointment) {
+    setMoving(appointment);
+    setSelectedAppointment(null);
+    setSheetOpen(false);
+  }
+
+  /** "+ Novo agendamento" do celular: o formulário, não o último detalhe aberto. */
+  function openNewAppointment() {
+    setSelectedAppointment(null);
+    setPendingException(null);
+    setSheetOpen(true);
   }
 
   function shiftMonth(delta) {
@@ -663,6 +697,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setPatientSearch('');
       setPendingException(null);
       setError('');
+      setSheetOpen(false);
     } catch (err) {
       setError(err.message || 'Não foi possível criar o agendamento.');
       setPendingException(null);
@@ -731,6 +766,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setSeriesPreview(null);
       setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false }));
       setPatientSearch('');
+      setSheetOpen(false);
 
       // Falha parcial precisa aparecer nomeada: "criei 8 de 10" sem
       // dizer quais duas faltaram (e por quê) obriga a conferir a agenda
@@ -935,6 +971,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       // deixa passar faixa degenerada.
       durationMinutes: Math.max(row.endMinutes - row.startMinutes, 5),
     }));
+    // Celular: tocou em "Livre" e o formulário já sobe com a hora.
+    setSheetOpen(true);
   }
 
   function pickCell(day, startMinutes, endMinutes) {
@@ -990,6 +1028,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       await deleteAppointment(appointment.id);
       setAppointments(prev => prev.filter(item => item.id !== appointment.id));
       setSelectedAppointment(prev => (prev?.id === appointment.id ? null : prev));
+      setSheetOpen(false);
     } catch (err) {
       setError(err.message || 'Não foi possível excluir o agendamento.');
     } finally {
@@ -1052,6 +1091,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         setError(
           `${done} de ${count} sessões. Ficaram: ${failed.map(dateOf).join(', ')} — ${failed[0].message}`,
         );
+      } else {
+        setSheetOpen(false);
       }
     } catch (err) {
       setError(err.message || 'Não foi possível excluir as sessões.');
@@ -1064,6 +1105,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     if (moving) return;
     setPendingException(null);
     setSelectedAppointment(appointment);
+    setSheetOpen(true);
   }
 
   /** Aplica um patch vindo do service ao agendamento na lista e no detalhe. */
@@ -1241,6 +1283,51 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       weekday: 'long', day: '2-digit', month: 'long',
     }) || '';
 
+  // As seis ferramentas, guardadas atrás de "Ferramentas" (AgendaToolsMenu).
+  // O mesmo conteúdo aparece em dois lugares e o CSS mostra um por vez: no
+  // computador ao lado de ← Hoje → (os seis botões de visão ocupam a linha
+  // de baixo inteira); no celular ao lado de "Filtros".
+  const toolItems = (
+    <>
+      <button
+        type="button"
+        className="agt-item"
+        onClick={() => setShowRegisterCompleted(true)}
+        title="Paciente atendido sem estar na Agenda: entra como Atendido e vai para a fila de Evoluções"
+      >
+        <IconCalendarCheck />
+        {COMPLETED_APPOINTMENT_LABEL}
+      </button>
+      <button type="button" className="agt-item" onClick={() => setShowShare(true)}>
+        <IconShare />
+        Compartilhar
+      </button>
+      <button type="button" className="agt-item" onClick={() => setShowBirthdays(true)}>
+        <IconCake />
+        Aniversários
+      </button>
+      <button type="button" className="agt-item" onClick={() => setShowSchedule(true)}>
+        <IconClockCalendar />
+        Horários de atendimento
+      </button>
+      <button type="button" className="agt-item" onClick={() => setShowHolidays(true)}>
+        <IconFlagCalendar />
+        Feriados
+      </button>
+      {canConfigureAgenda && (
+        <button
+          type="button"
+          className="agt-item"
+          onClick={() => setShowSettings(true)}
+          title={`Visual do cancelado, ${seriesLabelOf('fixed', agendaSettings)} × ${seriesLabelOf('one-off', agendaSettings)}, cores e padrões da agenda — vale para a equipe toda`}
+        >
+          <IconSliders />
+          Configurar agenda
+        </button>
+      )}
+    </>
+  );
+
   return (
     <AgendaSettingsContext.Provider value={agendaSettings}>
     <div className={`ag${view === 'dia' ? ' ag--day' : ''}`}>
@@ -1271,6 +1358,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 aria-label="Pular para uma data"
               />
             )}
+            <AgendaToolsMenu placement="head">{toolItems}</AgendaToolsMenu>
           </div>
         </header>
 
@@ -1304,62 +1392,29 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             })}
           </div>
 
-          <button
-            type="button"
-            className="ag-btn ag-tool-btn ag-tool-btn--wide"
-            onClick={() => setShowRegisterCompleted(true)}
-            title="Paciente atendido sem estar na Agenda: entra como Atendido e vai para a fila de Evoluções"
-          >
-            <IconCalendarCheck />
-            {COMPLETED_APPOINTMENT_LABEL}
-          </button>
-          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowShare(true)}>
-            <IconShare />
-            Compartilhar
-          </button>
-          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowBirthdays(true)}>
-            <IconCake />
-            Aniversários
-          </button>
-          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowSchedule(true)}>
-            <IconClockCalendar />
-            Horários<span className="ag-tool-long"> de atendimento</span>
-          </button>
-          <button type="button" className="ag-btn ag-tool-btn" onClick={() => setShowHolidays(true)}>
-            <IconFlagCalendar />
-            Feriados
-          </button>
-          {canConfigureAgenda && (
+          {/* No celular o "Filtros" divide a linha com "Ferramentas"; no
+              computador ele some e os filtros ficam sempre à vista. */}
+          {CALENDAR_VIEWS.has(view) && (
             <button
               type="button"
-              className="ag-btn ag-tool-btn"
-              onClick={() => setShowSettings(true)}
-              title={`Visual do cancelado, ${seriesLabelOf('fixed', agendaSettings)} × ${seriesLabelOf('one-off', agendaSettings)}, cores e padrões da agenda — vale para a equipe toda`}
+              className="ag-filters-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls="ag-filters"
+              onClick={() => setFiltersOpen(open => !open)}
             >
-              <IconSliders />
-              Configurar<span className="ag-tool-long"> agenda</span>
+              <IconFilterTag />
+              Filtros
+              {activeFilters > 0 && (
+                <span className="ag-filters-count">
+                  {activeFilters === 1 ? '1 ativo' : `${activeFilters} ativos`}
+                </span>
+              )}
+              <span className="ag-filters-chevron" aria-hidden="true">▾</span>
             </button>
           )}
-        </div>
 
-        {CALENDAR_VIEWS.has(view) && (
-          <button
-            type="button"
-            className="ag-filters-toggle"
-            aria-expanded={filtersOpen}
-            aria-controls="ag-filters"
-            onClick={() => setFiltersOpen(open => !open)}
-          >
-            <IconFilterTag />
-            Filtros
-            {activeFilters > 0 && (
-              <span className="ag-filters-count">
-                {activeFilters === 1 ? '1 ativo' : `${activeFilters} ativos`}
-              </span>
-            )}
-            <span className="ag-filters-chevron" aria-hidden="true">▾</span>
-          </button>
-        )}
+          <AgendaToolsMenu placement="bar">{toolItems}</AgendaToolsMenu>
+        </div>
 
         {CALENDAR_VIEWS.has(view) && (
           <div
@@ -1514,7 +1569,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             selectedAppointmentId={selectedAppointment?.id || null}
             onQuickStatus={handleStatus}
             onQuickConfirm={appointment => handleConfirm(appointment, Boolean(appointment.confirmed_at))}
-            onQuickMove={appointment => { setMoving(appointment); setSelectedAppointment(null); }}
+            onQuickMove={startMoving}
           />
         )}
 
@@ -1536,7 +1591,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             selectedAppointmentId={selectedAppointment?.id || null}
             onQuickStatus={handleStatus}
             onQuickConfirm={appointment => handleConfirm(appointment, Boolean(appointment.confirmed_at))}
-            onQuickMove={appointment => { setMoving(appointment); setSelectedAppointment(null); }}
+            onQuickMove={startMoving}
           />
         ) : (
           <AgendaWeekView
@@ -1642,7 +1697,24 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         )}
       </section>
 
-      <aside className="ag-side" id="ag-side-panel">
+      {sheetOpen && <div className="ag-sheet-scrim" {...sheetDismiss.backdropProps} />}
+      {!sheetOpen && !moving && (
+        <button type="button" className="ag-fab" onClick={openNewAppointment}>
+          <span aria-hidden="true">+</span> Novo agendamento
+        </button>
+      )}
+
+      <aside
+        className={`ag-side${sheetOpen ? ' ag-side--sheet' : ''}`}
+        id="ag-side-panel"
+        role={isPhone && sheetOpen ? 'dialog' : undefined}
+        aria-modal={isPhone && sheetOpen ? 'true' : undefined}
+        aria-label={isPhone && sheetOpen ? 'Agendamento' : undefined}
+      >
+        {sheetOpen && (
+          <button type="button" className="ag-sheet-close" onClick={() => setSheetOpen(false)}>Fechar</button>
+        )}
+        {sheetOpen && error && <div className="ag-alert ag-sheet-alert" role="alert">{error}</div>}
         <div className="ag-side-head">
           <h3 className="ag-side-title">
             {selectedDate
@@ -1783,7 +1855,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 <button
                   type="button"
                   className="ag-btn"
-                  onClick={() => { setMoving(selectedAppointment); setSelectedAppointment(null); }}
+                  onClick={() => startMoving(selectedAppointment)}
                   disabled={saving}
                 >
                   Mover para outro horário

@@ -24,16 +24,26 @@ before(async () => {
   mobile = css.slice(start, css.indexOf('@media (max-width: 480px)', start));
 });
 
-test('visões ocupam a largura toda em 3 colunas (sem vão à direita)', () => {
-  assert.match(mobile, /\.ag-seg--views \{\s+grid-column: 1 \/ -1;\s+grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
-  // Precisa vir depois da faixa ≤900px, que põe 2 colunas.
-  assert.ok(css.indexOf('Topo da agenda no celular') > css.indexOf('grid-template-columns: repeat(2, minmax(64px, 1fr))'));
+// 05/10/2026 (junção das opções A e B): as visões em grade 3×2 e as
+// ferramentas em grade 2×2 somavam 332px antes do primeiro atendimento.
+// Visões viraram uma linha só e as ferramentas foram para "Ferramentas".
+test('visões numa linha só, rolando para o lado', () => {
+  assert.match(css, /\.ag-seg--views \{\s+display: flex;\s+flex-wrap: nowrap;\s+overflow-x: auto;/);
+  assert.doesNotMatch(css, /\.ag-seg--views \{\s+(grid-column: 1 \/ -1;\s+)?grid-template-columns: repeat\(/, 'grade de visões voltou');
+  assert.match(css, /\.ag-seg--views \.ag-seg-btn \{ flex-direction: row; min-height: 40px;/);
 });
 
-test('ferramentas em grade 2x2 de largura igual', () => {
+test('ferramentas guardadas: no celular ao lado de Filtros, no computador ao lado de ← Hoje →', () => {
   assert.match(mobile, /\.ag-toolbar \{\s+display: grid;\s+grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
-  assert.match(agenda, /Horários<span className="ag-tool-long"> de atendimento<\/span>/);
-  assert.match(mobile, /\.ag-tool-long \{\s+display: none;/);
+  assert.match(agenda, /<AgendaToolsMenu placement="bar">\{toolItems\}<\/AgendaToolsMenu>/);
+  assert.match(agenda, /<AgendaToolsMenu placement="head">\{toolItems\}<\/AgendaToolsMenu>/);
+  // Dentro do menu o rótulo é inteiro; não há mais rótulo encurtado.
+  assert.match(agenda, /<IconClockCalendar \/>\s+Horários de atendimento/);
+  assert.match(agenda, /<IconSliders \/>\s+Configurar agenda/);
+  assert.doesNotMatch(agenda, /ag-tool-long|ag-tool-btn--wide/);
+  // Um lugar por largura: .agt--bar só no celular, .agt--head só no computador.
+  assert.match(css, /\.agt--bar \{ display: none; \}/);
+  assert.match(css, /\.agt--head \{ display: none; \}\s+\.agt--bar \{ display: block; \}/);
 });
 
 test('filtros recolhidos no celular, sempre visíveis no desktop, sem negrito herdado', () => {

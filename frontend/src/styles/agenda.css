@@ -885,8 +885,18 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
+/* Visões numa linha só, rolando para o lado quando não cabem (no
+   celular sempre; no computador só em janela estreita). */
 .ag-seg--views {
-  grid-template-columns: repeat(3, minmax(64px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ag-seg--views .ag-seg-btn {
+  flex: none;
+  white-space: nowrap;
 }
 
 /* Ícone por aba + pílula sólida na cor de destaque quando ativa — canal
@@ -2311,33 +2321,17 @@
   }
 }
 
-@media (max-width: 900px) {
-  /* Seis botões ficam apertados em 3 colunas nesta largura; 2 colunas
-     (3 linhas) dá mais espaço por rótulo. Nenhuma visão precisa sumir
-     do seletor: a Semana ganhou layout próprio pro celular (.agwm-*,
-     AgendaWeekMobileView.jsx) em vez do grid de 620px que não cabia.
-     (Uma versão anterior desta regra escondia :nth-child(2) achando
-     que era "Semana" — a ordem real de VIEWS faz isso esconder "Dia",
-     a visão pensada pro telefone; por isso a troca por layout, não
-     esconderijo.) */
-  .ag-seg--views {
-    grid-template-columns: repeat(2, minmax(64px, 1fr));
-  }
-}
-
 /* ============================================================
    Topo da agenda no celular (≤768px)
 
-   Antes: o seletor de visões era uma grade de 2 colunas que não ocupava
-   a largura (sobrava um vão à direita), os quatro botões de ferramenta
-   tinham larguras diferentes e os três filtros empilhavam em fonte
-   grande e negrito antes do calendário. Agora:
    - navegação de data numa linha só, com o campo de data esticado;
-   - visões em 3 colunas, largura cheia, ícone sobre o rótulo;
-   - ferramentas em grade 2×2 de largura igual ("Horários" encurta);
-   - filtros recolhidos atrás do botão "Filtros" (com contagem);
+   - filtros recolhidos atrás do botão "Filtros" (com contagem), que
+     divide a linha com "Ferramentas";
    - equipe numa faixa rolável em vez de quebrar linha.
-   Vem depois da faixa ≤900px de propósito, para vencer o empate.
+   As visões numa linha só e as ferramentas guardadas ficam no bloco
+   "Ferramentas guardadas + painel de baixo", no fim do arquivo (desde
+   05/10/2026; antes eram visões em grade 3×2 e ferramentas em 2×2,
+   que somavam 332px antes do primeiro atendimento).
    ============================================================ */
 @media (max-width: 768px) {
   .ag-head {
@@ -2360,45 +2354,6 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-  }
-
-  .ag-seg--views {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ag-seg--views .ag-seg-btn {
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    min-height: 56px;
-    padding: 6px 4px;
-    font-size: 12px;
-    line-height: 1.2;
-    text-align: center;
-  }
-
-  .ag-seg--views .ag-seg-btn svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .ag-toolbar .ag-tool-btn {
-    justify-content: flex-start;
-    width: 100%;
-    min-width: 0;
-    padding: 8px 12px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  .ag-tool-long {
-    display: none;
-  }
-
-  /* Rótulo longo que não encolhe: ocupa a linha inteira. */
-  .ag-toolbar .ag-tool-btn--wide {
-    grid-column: 1 / -1;
   }
 
   .ag-filters-toggle {
@@ -3575,5 +3530,128 @@
 
   .agcfg-bar .ag-btn {
     flex: 1 1 auto;
+  }
+}
+
+/* ============================================================
+   Ferramentas guardadas + painel de baixo (05/10/2026, junção A+B)
+
+   As seis ferramentas do topo (duas fileiras; no celular, 332px antes
+   do primeiro atendimento) ficam atrás de "Ferramentas"
+   (AgendaToolsMenu.jsx): no computador ao lado de ← Hoje → (.agt--head),
+   no celular ao lado de "Filtros" (.agt--bar), abrindo de baixo. As
+   visões viram uma linha só. No celular e no tablet (≤ 1024px) o painel
+   lateral (detalhe e "Novo agendamento") só aparece como painel de
+   baixo (.ag-side--sheet),
+   aberto pelo "+ Novo agendamento" (.ag-fab), por um horário livre ou
+   por um atendimento. Camadas: "+ Novo" 45 < barra de baixo 50 <
+   menu 52/53 < painel 55/56 < janelas da Agenda 60.
+   ============================================================ */
+.agt { position: relative; }
+.agt--bar { display: none; }
+.agt-backdrop { position: fixed; inset: 0; z-index: 40; }
+.agt-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 41;
+  width: 290px;
+  padding: 6px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-md);
+}
+.agt-head { display: none; }
+.agt-list { display: grid; gap: 2px; }
+.agt-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r1-radius-sm);
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.agt-item:hover { background: var(--r1-accent-wash); }
+.agt-item svg { width: 16px; height: 16px; color: var(--r1-accent); flex: none; }
+/* Só no celular: no computador o painel lateral já está à vista. */
+.ag-fab,
+.ag-sheet-close,
+.ag-sheet-scrim,
+.ag-sheet-alert { display: none; }
+
+@media (max-width: 768px) {
+  .ag-toolbar .ag-seg--views { grid-column: 1 / -1; }
+  .ag-seg--views .ag-seg-btn { flex-direction: row; min-height: 40px; padding: 0 14px; font-size: 13px; }
+  .ag-filters-toggle { margin-bottom: 0; }
+  .agt--head { display: none; }
+  .agt--bar { display: block; }
+  .ag-seg--views + .agt--bar { grid-column: 1 / -1; }
+  .agt-trigger { width: 100%; justify-content: center; }
+  .agt-backdrop { z-index: 52; background: var(--r1-scrim); }
+  .agt-panel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 53;
+    width: auto;
+    padding: 12px 16px calc(16px + var(--r1-safe-bottom));
+    border-radius: 22px 22px 0 0;
+  }
+  .agt-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .agt-title { margin: 0; font-size: 18px; font-weight: 700; }
+  .agt-close { min-height: 40px; padding: 0 14px; border: 1px solid var(--r1-border-subtle); border-radius: 999px; background: var(--r1-surface); font: inherit; font-size: 13px; font-weight: 600; }
+}
+
+/* Painel de baixo no celular e no tablet (≤ 1024px: tablet é celular
+   grande desde 05/10/2026, mesmo corte da barra de baixo do hub). */
+@media (max-width: 1024px) {
+  .ag-sheet-close { min-height: 40px; padding: 0 14px; border: 1px solid var(--r1-border-subtle); border-radius: 999px; background: var(--r1-surface); font: inherit; font-size: 13px; font-weight: 600; }
+  .ag-side { display: none; }
+  .ag-side.ag-side--sheet {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 56;
+    max-height: calc(88 * var(--dvh));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: var(--r1-safe-bottom);
+  }
+  .ag-sheet-close { display: block; margin: 10px 12px 0 auto; }
+  .ag-side--sheet > .ag-sheet-alert { display: block; margin: 8px 16px 0; }
+  .ag-sheet-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: var(--r1-scrim); }
+  .ag-fab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom) + 16px);
+    z-index: 45;
+    min-height: 52px;
+    padding: 0 20px 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--r1-accent);
+    color: var(--r1-accent-contrast);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: var(--r1-shadow-md);
   }
 }

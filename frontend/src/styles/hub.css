@@ -454,7 +454,8 @@
 }
 
 /* ============================================================
-   Celular (≤ 768px) — navegação no polegar (opção C, 04/10/2026)
+   Celular e tablet (≤ 1024px) — navegação no polegar (opção C,
+   04/10/2026; o tablet entrou junto em 05/10/2026: é celular grande)
 
    No celular o "← Voltar às áreas" quebrava em duas linhas e espremia
    o nome da instituição; em Evoluções os dois botões empilhavam. Agora
@@ -462,7 +463,7 @@
    barra de baixo (.hub-dock, components/HubNav.jsx) e o voltar de tela
    dentro de tela (.hub-back--nested: Ficha → lista, Evolução → ficha,
    editores da Agenda) vira uma faixa logo acima dela, com o texto
-   inteiro. No computador nada disto aparece.
+   inteiro. No computador (acima de 1024px) nada disto aparece.
 
    z-index 50: acima do conteúdo (cabeçalhos presos da Agenda usam 20)
    e abaixo das janelas (.ag-dialog-overlay 60, ajuda 210).
@@ -476,7 +477,7 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   /* O fim da tela termina acima da barra (e da faixa de voltar). */
   .hub-screen,
   .hc-screen {

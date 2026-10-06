@@ -326,3 +326,12 @@ Modelo de entrada:
 - Regra nova: estado de ação ou seleção nunca usa cor fixa da marca; só os tokens do accent.
 - Teste ou verificação obrigatória: `clinic-accent-everywhere.test.mjs` (proíbe fundo escuro fixo e primitivas da marca nas telas do hub, exige accent nos selecionados e no texto dos secundários, proíbe rgba do petróleo no `App.css`, testa a barra da janela e a ordem do menu da Gestão).
 - Regra destilada em: `AGENTS.md` §7.
+
+### 2026-10-05 - Evoluções rolava para a direita no celular; tablet num meio-termo
+
+- Sintoma: no celular a página de Evoluções andava para o lado. No tablet (769–1024px) a navegação era um meio-termo: gaveta com ☰ flutuante e "Voltar às áreas" no topo, sem a barra de baixo do celular.
+- Causa: em "Ver evoluções" o bloco Período (`.evs-review-field--period`, `flex: 0 0 auto`, com o nome do mês em `min-width: 132px`) media 392px e não encolhia numa tela de 375px; a página inteira ficava com 427px. A regra de celular da barra de filtros mudava `grid-template-columns` numa barra que é flex, e não fazia nada. A tabela "Por profissional" (626px) rolava de lado dentro da caixa. A barra de baixo, o topo "onde estou" e o cartão do dia começavam em 768px, e a gaveta em 1024px.
+- Correção: no celular e no tablet o Período ocupa a linha toda ("Semana | Mês" em cima, ‹ mês › embaixo, nome do mês podendo encolher) e "Por profissional" vira cartão com o rótulo de cada número (`data-label`). Navegação de celular (`hub.css`, `shell.css`, cartão do dia em `console.css`) e layout de Evoluções passaram a valer até 1024px. Conferido no navegador com os componentes e o CSS reais e dados fictícios em 360, 375, 820, 900, 1000, 1024, 1280 e 1366px: largura da página igual à da tela em todas; acima de 1024px nada mudou.
+- Regra nova: tablet é celular grande (um corte só, 1024px), e nada na faixa de celular pode ficar mais largo que 360px.
+- Teste ou verificação obrigatória: `evolutions-review.test.mjs` ("celular e tablet: Ver evoluções cabe na largura da tela", falha no código anterior) e `mobile-hub-nav.test.mjs` ("tablet segue o celular", proíbe corte em 768px nos arquivos da navegação e de Evoluções).
+- Regra destilada em: `AGENTS.md` §7.

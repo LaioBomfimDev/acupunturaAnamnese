@@ -439,9 +439,10 @@
   height: 14px;
 }
 
-/* No telefone a fila (que já vem primeiro) fica em cima do formulário,
-   solta da tela e com a lista mais curta. */
-@media (max-width: 900px) {
+/* No celular e no tablet (até 1024px: tablet é celular grande) a fila,
+   que já vem primeiro, fica em cima do formulário, solta da tela e com
+   a lista mais curta. */
+@media (max-width: 1024px) {
   .evs-layout {
     grid-template-columns: 1fr;
   }
@@ -959,7 +960,8 @@
   color: var(--r1-text-muted);
 }
 
-@media (max-width: 760px) {
+/* Celular e tablet: o mesmo corte da navegação de baixo (hub.css). */
+@media (max-width: 1024px) {
   .evs-mode {
     display: flex;
   }
@@ -971,8 +973,88 @@
   }
 
   .evs-review-toolbar {
-    grid-template-columns: minmax(0, 1fr);
     padding: 16px;
+  }
+
+  /* Período em linha própria: "Semana | Mês" em cima e ‹ mês › embaixo.
+     Preso no tamanho dele (flex: 0 0 auto) e com o nome do mês em
+     132px, o bloco media 392px e passava da tela de 375px: a página
+     inteira rolava para o lado. */
+  .evs-review-field--period {
+    flex: 1 1 100%;
+  }
+
+  .evs-review-period {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .evs-review-segmented {
+    display: flex;
+    grid-column: 1 / -1;
+  }
+
+  .evs-review-segmented button {
+    flex: 1;
+  }
+
+  .evs-review-period-label {
+    min-width: 0;
+  }
+
+  /* "Por profissional" em cartão: o nome em cima e os quatro números
+     embaixo, cada um com o próprio rótulo (data-label). A tabela de
+     626px rolava de lado dentro da caixa. */
+  .evs-review-table thead {
+    display: none;
+  }
+
+  .evs-review-table,
+  .evs-review-table tbody,
+  .evs-review-table th,
+  .evs-review-table td {
+    display: block;
+  }
+
+  .evs-review-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px 10px;
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--r1-border-subtle);
+  }
+
+  .evs-review-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .evs-review-table th,
+  .evs-review-table td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .evs-review-table tbody th {
+    grid-column: 1 / -1;
+  }
+
+  /* Rótulo em cima, número embaixo: os números ficam na mesma linha
+     mesmo quando um rótulo quebra em duas. */
+  .evs-review-table td {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .evs-review-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--r1-text-muted);
   }
 
   .evs-review-stats {

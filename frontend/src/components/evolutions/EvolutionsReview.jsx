@@ -385,10 +385,12 @@ export function EvolutionsReview({ profile, patients, members }) {
                         {professionalName(item.id)}
                       </button>
                     </th>
-                    <td>{item.total}</td>
-                    <td>{item.evolved}</td>
-                    <td className={item.pending ? 'evs-review-cell--pending' : undefined}>{item.pending}</td>
-                    <td>{pendingDaysLabel(item.oldestPendingDays)}</td>
+                    {/* data-label: rótulo de cada número quando a tabela
+                        vira cartão (celular e tablet, evolutions.css). */}
+                    <td data-label="Concluídos">{item.total}</td>
+                    <td data-label="Evoluídos">{item.evolved}</td>
+                    <td data-label="Falta evoluir" className={item.pending ? 'evs-review-cell--pending' : undefined}>{item.pending}</td>
+                    <td data-label="Mais antiga">{pendingDaysLabel(item.oldestPendingDays)}</td>
                   </tr>
                 ))}
               </tbody>

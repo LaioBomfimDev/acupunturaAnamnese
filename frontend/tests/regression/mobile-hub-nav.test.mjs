@@ -145,10 +145,10 @@ test('todas as telas do hub usam o botão compartilhado e a barra de baixo', asy
 
 test('celular: topo sem voltar, faixa acima da barra, abaixo das janelas', async () => {
   const css = await read('styles/hub.css');
-  const mobile = mediaBlock(css, 'Celular (≤ 768px) — navegação no polegar');
+  const mobile = mediaBlock(css, 'Celular e tablet (≤ 1024px) — navegação no polegar');
 
-  // Fora do celular a barra não existe.
-  assert.match(mobile, /\.hub-dock \{\s*display: none;\s*\}\s*@media \(max-width: 768px\)/);
+  // Fora do celular e do tablet a barra não existe.
+  assert.match(mobile, /\.hub-dock \{\s*display: none;\s*\}\s*@media \(max-width: 1024px\)/);
   assert.match(mobile, /\.hub-topbar \.hub-back:not\(\.hub-back--nested\),\s*\.hub-topbar-extra \{\s*display: none;/);
   assert.match(mobile, /button\.hub-back\.hub-back--nested \{[^}]*position: fixed;[^}]*bottom: calc\(var\(--r1-bottom-nav-h\) \+ var\(--r1-safe-bottom\)\);/);
   assert.match(mobile, /\.hub-dock \{[^}]*position: fixed;[^}]*bottom: 0;/);
@@ -167,7 +167,7 @@ test('celular: topo sem voltar, faixa acima da barra, abaixo das janelas', async
 
 test('áreas de atendimento no celular: sem ☰ flutuante, voltar e sair dentro do Menu', async () => {
   const shell = await read('styles/shell.css');
-  const phone = mediaBlock(shell, '@media (max-width: 768px)', '@media print');
+  const phone = mediaBlock(shell, '≤ 1024px — barra inferior (celular e tablet)', '@media print');
   assert.match(phone, /\.shell-menu,\s*\.main \.app-signout,\s*\.main \.app-specialty-switch,\s*\.main \.home-specialty-switcher-banner \{\s*display: none;/);
   assert.match(phone, /\.sidebar-signout \{\s*display: flex;/);
   // Bug achado junto: .forms-scope .mini-clock (forms.css) vencia o
@@ -257,11 +257,40 @@ test('tela inicial: computador igual, celular sem o menu escuro', async () => {
   const block = mediaBlock(css, 'Cartão do dia (celular, opção B');
   // No computador o cartão não desenha nada e as partes do celular somem.
   assert.match(block, /\.hc-hero \{\s*display: contents;\s*\}\s*\.hc-hero-top,\s*\.hc-mobile-only \{\s*display: none;/);
-  const phone = block.slice(block.indexOf('@media (max-width: 768px)'));
+  const phone = block.slice(block.indexOf('@media (max-width: 1024px)'));
+  assert.ok(phone.length > 0 && block.includes('@media (max-width: 1024px)'), 'cartão do dia vale até 1024px');
   assert.match(phone, /\.hc-rail \{\s*display: none;/);
   assert.match(phone, /\.hc-hero \{\s*display: grid;[^}]*background: var\(--r1-accent-strong\);/);
   assert.match(phone, /\.hc-hero \.hc-stat-row \{\s*grid-area: stats;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(phone, /\.hc-hero-signout \{[^}]*min-height: 40px;/);
   // Vem depois da faixa ≤900px, que empilha os números em uma coluna.
   assert.ok(css.indexOf('Cartão do dia (celular') > css.indexOf('@media (max-width: 900px)'));
+});
+
+// Pedido de 05/10/2026: "tablet é só um celular grande". Até então a
+// barra de baixo começava em 768px e o tablet ficava num meio-termo
+// (gaveta com ☰ flutuante, "Voltar às áreas" no topo, menu escuro na
+// tela inicial). Agora o corte da navegação é um só, 1024px, o mesmo da
+// gaveta: acima dele é computador.
+test('tablet segue o celular: navegação com um corte só, 1024px', async () => {
+  const hub = await read('styles/hub.css');
+  const shell = await read('styles/shell.css');
+  const consoleCss = await read('styles/console.css');
+  const evolutions = await read('styles/evolutions.css');
+
+  const dock = mediaBlock(hub, 'Celular e tablet (≤ 1024px) — navegação no polegar');
+  assert.match(dock, /@media \(max-width: 1024px\) \{/);
+  const bar = mediaBlock(shell, '≤ 1024px — barra inferior (celular e tablet)', '@media print');
+  assert.match(bar, /\*\/\r?\n@media \(max-width: 1024px\) \{/);
+  assert.match(bar, /\.shell-tabs \{\s*position: fixed;/);
+  const card = mediaBlock(consoleCss, 'Cartão do dia (celular, opção B');
+  assert.match(card, /@media \(max-width: 1024px\) \{\s*\.hc-rail \{\s*display: none;/);
+
+  // Nenhum dos arquivos da navegação volta a cortar em 768px.
+  for (const [name, css] of [['hub.css', hub], ['shell.css', shell], ['console.css', consoleCss], ['evolutions.css', evolutions]]) {
+    assert.doesNotMatch(css, /@media \(max-width: 76[0-9]px\)/, `${name} voltou a separar tablet de celular`);
+  }
+  // O zoom de 1,1 continua só acima do corte (computador).
+  const tokens = await read('styles/tokens.css');
+  assert.match(tokens, /@media screen and \(min-width: 1025px\) \{\s*:root \{\s*--app-zoom: 1\.1;/);
 });

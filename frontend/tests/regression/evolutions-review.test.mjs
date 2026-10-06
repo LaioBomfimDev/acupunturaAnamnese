@@ -248,3 +248,31 @@ test('conferência só com os dois números pedidos, na tela inteira', async () 
   const app = await readFile(path.join(root, 'src/App.jsx'), 'utf8');
   assert.match(app, /<main className="hub-body hub-body--full">\r?\n\s*<Suspense fallback=\{<PanelLoading \/>\}>\r?\n\s*<EvolutionsScreen /);
 });
+
+// Bug de 05/10/2026: no celular a página de Evoluções rolava para a
+// direita. Em "Ver evoluções" o bloco Período (Semana | Mês, ‹ mês ›)
+// não encolhia (flex: 0 0 auto, nome do mês em 132px) e media 392px numa
+// tela de 375px. A tabela "Por profissional" (626px) também rolava de
+// lado dentro da caixa. Conferido no navegador em 360, 375, 820 e 1024px.
+test('celular e tablet: Ver evoluções cabe na largura da tela', async () => {
+  const css = (await readFile(path.join(root, 'src/styles/evolutions.css'), 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const start = css.lastIndexOf('@media (max-width: 1024px)');
+  assert.ok(start > css.indexOf('.evs-review-field--period'), 'faixa de celular e tablet depois das regras do computador');
+  const phone = css.slice(start);
+
+  // Período em linha própria, com o nome do mês podendo encolher.
+  assert.match(phone, /\.evs-review-field--period \{\s*flex: 1 1 100%;/);
+  assert.match(phone, /\.evs-review-period \{\s*display: grid;\s*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
+  assert.match(phone, /\.evs-review-segmented \{[^}]*grid-column: 1 \/ -1;/);
+  assert.match(phone, /\.evs-review-period-label \{\s*min-width: 0;/);
+  // Regra morta de antes: a barra é flex, grid-template-columns não fazia nada.
+  assert.doesNotMatch(phone, /\.evs-review-toolbar \{[^}]*grid-template-columns/);
+
+  // "Por profissional" vira cartão, com o rótulo de cada número.
+  assert.match(phone, /\.evs-review-table thead \{\s*display: none;/);
+  assert.match(phone, /\.evs-review-table tbody tr \{\s*display: grid;\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(phone, /\.evs-review-table td::before \{\s*content: attr\(data-label\);/);
+  for (const label of ['Concluídos', 'Evoluídos', 'Falta evoluir', 'Mais antiga']) {
+    assert.match(reviewScreen, new RegExp(`<td data-label="${label}"`), `número "${label}" sem rótulo no cartão`);
+  }
+});

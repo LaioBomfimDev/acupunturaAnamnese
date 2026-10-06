@@ -10,8 +10,9 @@
    a lateral clara das áreas de atendimento (.sidebar--clinical). Tudo
    entra DEPOIS do App.css na cascata.
 
-   Os breakpoints são os canônicos declarados em tokens.css:
-   1024px (a sidebar vira gaveta) e 768px (barra inferior aparece).
+   Os breakpoints são os canônicos declarados em tokens.css: até
+   1024px a sidebar vira gaveta e a barra inferior aparece. Tablet é
+   celular grande (pedido de 05/10/2026): mesma navegação, mesmo visual.
    ============================================================ */
 
 /* Controles que só existem no telefone/tablet: ficam escondidos por
@@ -316,9 +317,13 @@
 }
 
 /* ============================================================
-   ≤ 768px — barra inferior
+   ≤ 1024px — barra inferior (celular e tablet)
+   Até 05/10/2026 começava em 768px e o tablet ficava num meio-termo:
+   gaveta com ☰ flutuante, sem barra embaixo. Agora o tablet segue o
+   celular em tudo. Vem depois da faixa da gaveta acima, que tem a
+   mesma largura: aqui é que o ☰ some e o fim da tela reserva a barra.
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .shell-tabs {
     position: fixed;
     left: 0;
@@ -397,11 +402,10 @@
     display: none;
   }
 
-  /* Navegação no polegar (opção C, 04/10/2026): no telefone o topo da
-     área só diz onde a pessoa está e mostra o salvamento. O ☰ flutuante
-     repetia o "Menu" da barra de baixo; "Voltar à tela principal" e
-     "Sair" já moram na gaveta (topo e fim dela). No tablet (769–1024px)
-     não há barra de baixo, então ali tudo fica como estava.
+  /* Navegação no polegar (opção C, 04/10/2026): no celular e no tablet
+     o topo da área só diz onde a pessoa está e mostra o salvamento. O ☰
+     flutuante repetia o "Menu" da barra de baixo; "Voltar à tela
+     principal" e "Sair" já moram na gaveta (topo e fim dela).
      .main + classe vence .forms-scope .topbar-button (mesmo peso, este
      arquivo vem depois na cascata). */
   .shell-menu,

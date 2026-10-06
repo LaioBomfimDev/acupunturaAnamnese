@@ -116,8 +116,10 @@
      @media, então ficam aqui como contrato escrito):
 
        ≤ 480px   telefone estreito
-       ≤ 768px   telefone / barra inferior no lugar da sidebar
-       ≤ 1024px  tablet / sidebar vira gaveta
+       ≤ 768px   telefone (só ajuste de conteúdo, não de navegação)
+       ≤ 1024px  celular e tablet: gaveta, barra inferior e o topo só
+                 com "onde estou". Tablet é celular grande (pedido de
+                 05/10/2026): mesma navegação e mesmo visual
        ≥ 1280px  desktop largo
 
      44px é o alvo mínimo de toque da WCAG 2.2 (2.5.8). Vale para

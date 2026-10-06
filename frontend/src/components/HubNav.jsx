@@ -3,7 +3,8 @@ import { TOOL_GLYPHS } from './ui/hubGlyphs';
 // ============================================================
 // Navegação do hub no celular (opção C, escolhida em 04/10/2026)
 //
-// No celular (≤ 768px) o topo das telas do hub — Agenda, Evoluções,
+// No celular e no tablet (≤ 1024px; tablet é celular grande, desde
+// 05/10/2026) o topo das telas do hub — Agenda, Evoluções,
 // Pacientes, Gestão, Documentos — só diz onde a pessoa está. Ir de uma
 // para outra é a barra de baixo (HubDock), no alcance do polegar; o
 // "Voltar às áreas" some porque "Início" está na barra. O voltar de

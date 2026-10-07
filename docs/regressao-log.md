@@ -344,3 +344,12 @@ Modelo de entrada:
 - Regra nova: coluna de grid com conteúdo largo usa `minmax(0, 1fr)`; em flex de coluna, `flex-basis` em px vira altura.
 - Teste ou verificação obrigatória: `tablet-phone-screens.test.mjs` (os quatro testes falham no código anterior).
 - Regra destilada em: `AGENTS.md` §7.
+
+### 2026-10-06 - Ficha cadastral e evoluções imprimiam o texto cru antes do papel timbrado
+
+- Sintoma: ao imprimir (ou salvar em PDF) a ficha cadastral do paciente ou a linha do tempo de evoluções, a primeira página trazia o conteúdo sem cabeçalho, rodapé nem margens; a folha timbrada de verdade começava no meio da página e era cortada entre duas folhas.
+- Causa: em `ClinicPatientProfile.jsx` e `PatientEvolutionTimeline.jsx`, a div de origem (`printSourceRef`, de onde a paginação lê o `innerHTML`) era filha direta de `.report-print-pages`, fora do `.rpage-measure-stage`. Na tela isso não aparece (o bloco fica em `position: fixed` fora da tela), mas no `@media print` o `.report-print-pages` volta a `position: static` e nada escondia essa div. Ao corrigir, apareceu um segundo defeito que o primeiro escondia: a folha A4 tem menos de 1024px, a regra de celular do `.hub-screen` (espaço da barra de baixo, 108px com a faixa de voltar) valia no papel e, com a última `.rpage` enchendo a página, empurrava uma folha em branco.
+- Correção: a div de origem passou para dentro do `.rpage-measure-stage` (mesma solução do `FormResponseDialog`); `.hub-screen` ganhou `padding-bottom: 0 !important` no `@media print` (a barra de baixo já é `no-print`). `reportPagination.js` e o visual do timbrado não mudaram. Conferido com Chrome headless (`--print-to-pdf`) num harness com os componentes e o CSS reais e dados fictícios: antes, 2 páginas com texto cru na primeira; depois, ficha e evolução curta em 1 folha timbrada, evolução com 25 sessões em 7 folhas, todas com cabeçalho e rodapé, sem folha em branco.
+- Regra nova: dentro de `.report-print-pages` só o palco invisível e as folhas `.rpage`; regra de celular (≤1024px) vale na impressão.
+- Teste ou verificação obrigatória: `print-source-stage.test.mjs` (três dos quatro testes falham no código anterior; o genérico vale para toda tela com `.report-print-pages`).
+- Regra destilada em: `AGENTS.md` §7.

@@ -466,9 +466,10 @@ export function PatientEvolutionTimeline({ patient, therapistProfile, onBack }) 
             <PrintFooter items={contactItems} clinicName={clinicName} />
           </div>
           <div ref={printMeasureRef} className="rpage-body" />
+          {/* Fonte do corpo (innerHTML já escapado pelo React): fica no
+              palco invisível para nunca sair sozinha no papel. */}
+          <div ref={printSourceRef}>{printBody}</div>
         </div>
-
-        <div ref={printSourceRef}>{printBody}</div>
 
         {printDoc.pages.map((html, index) => (
           <section className="rpage" key={index}>

@@ -8586,8 +8586,14 @@ textarea { min-height: 95px; resize: vertical; }
 
   /* Ficha do paciente (ClinicPatientProfile): o fundo em gradiente do
      hub não pode vazar atrás da folha timbrada — mesmo tratamento que
-     .app acima recebe pra telas de relatório. */
-  .hub-screen { background: white !important; min-height: auto !important; }
+     .app acima recebe pra telas de relatório. A folha A4 tem menos de
+     1024px, então o espaço da barra de baixo (hub.css) valeria também no
+     papel e jogaria uma folha em branco depois da última .rpage. */
+  .hub-screen {
+    background: white !important;
+    min-height: auto !important;
+    padding-bottom: 0 !important;
+  }
 }
 
 /* ── Trocar de área (sidebar) ───────────────────────────────── */

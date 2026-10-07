@@ -1059,11 +1059,11 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
             <PrintFooter items={contactItems} clinicName={clinicName} />
           </div>
           <div ref={printMeasureRef} className="rpage-body" />
+          {/* Fonte do corpo — só existe pra fornecer o innerHTML já escapado
+              pelo React antes da paginação. Fica no palco invisível: fora
+              dele, sairia sozinha no papel antes das folhas timbradas. */}
+          <div ref={printSourceRef}>{printBody}</div>
         </div>
-
-        {/* Fonte do corpo — só existe pra fornecer o innerHTML já escapado
-            pelo React antes da paginação; nunca aparece sozinha. */}
-        <div ref={printSourceRef}>{printBody}</div>
 
         {printDoc.pages.map((html, index) => (
           <section className="rpage" key={index}>

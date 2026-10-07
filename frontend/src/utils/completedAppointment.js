@@ -18,7 +18,7 @@
 
 import { toDayKey } from './agenda.js';
 
-export const COMPLETED_APPOINTMENT_LABEL = 'Registrar atendimento realizado';
+export const COMPLETED_APPOINTMENT_LABEL = 'Registrar atendimento já realizado';
 
 export const COMPLETED_MAX_DAYS_BACK = 30;
 

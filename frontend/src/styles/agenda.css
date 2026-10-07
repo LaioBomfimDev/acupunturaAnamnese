@@ -3558,7 +3558,9 @@
   top: calc(100% + 6px);
   right: 0;
   z-index: 41;
-  width: 290px;
+  /* 330px: "Configurar horários de atendimento" e "Registrar atendimento
+     já realizado" (06/10/2026) cabem numa linha só no computador. */
+  width: 330px;
   padding: 6px;
   border: 1px solid var(--r1-border-subtle);
   border-radius: var(--r1-radius-md);

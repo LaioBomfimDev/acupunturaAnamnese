@@ -210,7 +210,8 @@ test('agendamento comum continua nascendo sem confirmação', async () => {
 // ---------- telas ----------
 
 test('botão com o nome combinado nas duas telas, abrindo o mesmo formulário', () => {
-  assert.equal(COMPLETED_APPOINTMENT_LABEL, 'Registrar atendimento realizado');
+  // "já" (06/10/2026): deixa claro que é para o que já aconteceu.
+  assert.equal(COMPLETED_APPOINTMENT_LABEL, 'Registrar atendimento já realizado');
   for (const source of [sources.screen, sources.agenda]) {
     assert.match(source, /<RegisterCompletedDialog/);
     assert.match(source, /\{COMPLETED_APPOINTMENT_LABEL\}/);

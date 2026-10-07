@@ -39,7 +39,7 @@ test('ferramentas guardadas: no celular ao lado de Filtros, no computador ao lad
   assert.match(agenda, /<AgendaToolsMenu placement="bar">\{toolItems\}<\/AgendaToolsMenu>/);
   assert.match(agenda, /<AgendaToolsMenu placement="head">\{toolItems\}<\/AgendaToolsMenu>/);
   // Dentro do menu o rótulo é inteiro; não há mais rótulo encurtado.
-  assert.match(agenda, /<IconClockCalendar \/>\s+Horários de atendimento/);
+  assert.match(agenda, /<IconClockCalendar \/>\s+Configurar horários de atendimento/);
   assert.match(agenda, /<IconSliders \/>\s+Configurar agenda/);
   assert.doesNotMatch(agenda, /ag-tool-long|ag-tool-btn--wide/);
   // Um lugar por largura: .agt--bar só no celular, .agt--head só no computador.

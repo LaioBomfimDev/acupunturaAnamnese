@@ -162,7 +162,7 @@ export function freeSlotsNotice({ result, date, now = null, copied = true }) {
   if (result?.closedReason === 'past') return `${capitalize(day)} já passou: não há horário vago para oferecer.`;
   if (result?.closedReason === 'holiday') return `Feriado sem atendimento em ${day}: nenhum horário vago.`;
   if (result?.closedReason === 'no-schedule') {
-    return `Ninguém da equipe tem jornada em ${day}. Escolha um profissional ou cadastre os Horários de atendimento.`;
+    return `Ninguém da equipe tem jornada em ${day}. Escolha um profissional ou cadastre em “Configurar horários de atendimento”.`;
   }
 
   const total = result?.total || 0;

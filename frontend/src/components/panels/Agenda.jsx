@@ -1360,7 +1360,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       </button>
       <button type="button" className="agt-item" onClick={() => setShowShare(true)}>
         <IconShare />
-        Compartilhar
+        Compartilhar agenda do dia
       </button>
       <button type="button" className="agt-item" onClick={() => setShowBirthdays(true)}>
         <IconCake />
@@ -1368,11 +1368,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       </button>
       <button type="button" className="agt-item" onClick={() => setShowSchedule(true)}>
         <IconClockCalendar />
-        Horários de atendimento
+        Configurar horários de atendimento
       </button>
       <button type="button" className="agt-item" onClick={() => setShowHolidays(true)}>
         <IconFlagCalendar />
-        Feriados
+        Configurar feriados
       </button>
       {canConfigureAgenda && (
         <button

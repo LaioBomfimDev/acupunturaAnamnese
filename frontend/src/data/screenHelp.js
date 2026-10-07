@@ -218,7 +218,7 @@ export const EVOLUCOES_HELP = {
     'Escolher o atendimento na fila, à esquerda, ou buscar o paciente pelo nome, e escrever a evolução ao lado.',
     '“Salvar e ir para o próximo” grava e já abre o próximo pendente. No último da fila o botão vira “Salvar evolução”.',
     'Filtrar a fila por situação, área, atendimento (atendido ou ausência) e período: hoje, últimos 7 dias ou tudo.',
-    'Atendeu sem ter agendado? Use “Registrar atendimento realizado”: o atendimento entra como Atendido e abre aqui para evoluir.',
+    'Atendeu sem ter agendado? Use “Registrar atendimento já realizado”: o atendimento entra como Atendido e abre aqui para evoluir.',
     'Para conferir o que já foi evoluído e quando, use “Ver evoluções”, no topo.',
   ],
   reading: [
@@ -235,7 +235,7 @@ export const EVOLUCOES_HELP = {
     '“Não compareceu” e “Cancelado pelo paciente” pedem uma observação antes de salvar.',
     'Depois de salva, a evolução não se corrige por aqui: use a linha do tempo na ficha do paciente.',
     'Quem você evoluiu fica verde até sair da tela; na próxima visita, já não aparece na fila.',
-    '“Registrar atendimento realizado” vale para atendimentos de até 30 dias atrás.',
+    '“Registrar atendimento já realizado” vale para atendimentos de até 30 dias atrás.',
     'A fila só cobra atendimentos a partir de 22/09/2026, quando o sistema entrou em uso; o histórico importado do sistema anterior fica de fora.',
   ],
 };
@@ -255,7 +255,7 @@ export const EVOLUCOES_REVIEW_HELP = {
     '“Atendimentos concluídos” conta os marcados na Agenda como Atendido, Não compareceu ou Cancelado pelo paciente; embaixo, quantos já foram evoluídos.',
     '“Falta evoluir” mostra quantos ainda não têm evolução e há quantos dias está o mais antigo.',
     'Na lista, selo verde “Evoluído” com o dia e a hora em que foi escrita (e quantas vezes foi corrigida, se foi). Selo vermelho “Falta evoluir”, com há quantos dias foi o atendimento.',
-    '“Atendimento lançado depois” = o atendimento entrou na Agenda depois de acontecer, como pelo “Registrar atendimento realizado”.',
+    '“Atendimento lançado depois” = o atendimento entrou na Agenda depois de acontecer, como pelo “Registrar atendimento já realizado”.',
   ],
   access: [
     'A administração vê os atendimentos da equipe inteira e o quadro “Por profissional”.',

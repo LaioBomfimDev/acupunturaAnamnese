@@ -20,9 +20,11 @@ import { isDismissKey, isTopLayer, pushLayer, removeLayer } from '../utils/dismi
 //     <form className="…-panel" {...dismiss.panelProps}>
 //       <DismissPrompt dismiss={dismiss} />
 // Se a janela continua aberta depois de salvar, chame dismiss.markSaved().
+// Editor que muda por botão (adicionar/remover/mover), não só digitando,
+// passa `unsaved` com o estado dele: conta como algo digitado.
 // ============================================================
 
-export function useDismiss({ open = true, onClose, busy = false, guardUnsaved = false } = {}) {
+export function useDismiss({ open = true, onClose, busy = false, guardUnsaved = false, unsaved = false } = {}) {
   const layerId = useId();
   const [dirty, setDirty] = useState(false);
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
@@ -41,7 +43,7 @@ export function useDismiss({ open = true, onClose, busy = false, guardUnsaved = 
 
   function requestDismiss() {
     if (busy) return;
-    if (guardUnsaved && dirty) {
+    if (guardUnsaved && (dirty || unsaved)) {
       setConfirmingDiscard(true);
       return;
     }

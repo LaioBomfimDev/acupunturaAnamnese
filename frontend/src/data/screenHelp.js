@@ -136,6 +136,33 @@ export const GESTAO_HELP = {
       'Excluir não tem volta: a pesquisa some da lista e dos números, e o link para de funcionar — a nota do paciente vai junto, se ele já respondeu.',
     ],
   },
+  importaveis: {
+    title: 'Importáveis',
+    summary: 'Formulários e entrevistas que o paciente responde pelo celular, na Área do Paciente, no lugar do papel impresso.',
+    actions: [
+      '“Formulários”: “Novo formulário” monta as perguntas. Sim / Não, Escolha única, Várias escolhas e Escala são de marcar; Texto curto, Texto longo, Data e Número o paciente digita. “Nova parte” divide o formulário em páginas.',
+      '“Só aparece conforme outra resposta” cria o “Se sim, qual?”: a pergunta só aparece quando a resposta escolhida bate.',
+      '“Pré-visualizar” mostra a tela do paciente. Só formulário publicado pode ser enviado; “Duplicar” começa um novo a partir de outro.',
+      '“Envios e respostas”: escolha paciente, formulário e prazo e clique em “Enviar”. Depois mande a mensagem pronta pelo WhatsApp ou copie.',
+      '“Ver respostas” abre o que o paciente respondeu, com “Imprimir / salvar PDF” no papel timbrado e “Baixar Word”.',
+      '“Exportar planilha”: com um formulário escolhido no filtro, baixa todos os respondidos dele, um paciente por linha.',
+    ],
+    reading: [
+      'Números do topo: Enviados, Aguardando (ainda não abriu), Respondendo (com a porcentagem), Atrasados (passou do prazo sem enviar) e Respondidos. Clique para filtrar.',
+      '“De marcar” no editor mostra quanto do formulário é de marcar; a meta combinada é 80% a 90%.',
+      '“Ver o que já respondeu” aparece enquanto o paciente ainda não enviou: são as respostas salvas até agora.',
+    ],
+    access: [
+      'Só a administração da instituição vê formulários, envios e respostas. O paciente vê só os formulários enviados a ele, nunca o prontuário.',
+      'O acesso de cada paciente (código, bloqueio, código novo) fica na ficha do paciente, aba “Área do Paciente”.',
+    ],
+    notes: [
+      'O paciente entra com o código de acesso e a data de nascimento do cadastro. Sem data de nascimento, não dá para enviar.',
+      'As respostas são salvas sozinhas enquanto o paciente responde: ele pode parar e continuar depois. Passar do prazo não trava o formulário.',
+      'Editar um formulário já enviado não muda o que o paciente recebeu: cada envio guarda a versão daquele dia.',
+      'Escala ou questionário publicado com direito autoral não entra com as perguntas copiadas: só o que a clínica criou.',
+    ],
+  },
   indicadores: {
     title: 'Indicadores',
     summary: 'Panorama do período: faltas e cancelamentos, dias e horários de mais movimento, e pacientes novos × retorno.',

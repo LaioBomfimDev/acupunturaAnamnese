@@ -11,6 +11,10 @@
     {
       "source": "/agenda-publica",
       "destination": "/index.html"
+    },
+    {
+      "source": "/area-do-paciente",
+      "destination": "/index.html"
     }
   ],
   "headers": [

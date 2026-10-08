@@ -17,6 +17,7 @@ import App from './App.jsx'
 import { SurveyPage } from './SurveyPage.jsx'
 import { ConfirmAppointmentPage } from './ConfirmAppointmentPage.jsx'
 import { PublicAgendaPage } from './PublicAgendaPage.jsx'
+import { PatientPortalPage } from './PatientPortalPage.jsx'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { AuthProvider } from './hooks/AuthContext'
 import { PatientProvider } from './hooks/PatientContext'
@@ -24,14 +25,15 @@ import { installGlobalErrorTelemetry } from './services/telemetry'
 
 installGlobalErrorTelemetry()
 
-// Pesquisa de satisfação, confirmação de agendamento e agenda pública:
-// links públicos, sem login. Curto-circuita ANTES de montar
-// AuthProvider/PatientProvider — quem abre esses links não tem conta
-// nenhuma no sistema, e não deveria precisar de uma.
+// Pesquisa de satisfação, confirmação de agendamento, agenda pública e
+// Área do Paciente: links públicos, sem login. Curto-circuita ANTES de
+// montar AuthProvider/PatientProvider — quem abre esses links não tem
+// conta no sistema (o paciente entra pela Edge Function patient-portal).
 const path = window.location.pathname
 const isPublicSurveyRoute = path === '/pesquisa-satisfacao'
 const isPublicConfirmRoute = path === '/confirmar-agendamento'
 const isPublicAgendaRoute = path === '/agenda-publica'
+const isPublicPatientPortalRoute = path === '/area-do-paciente'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -41,6 +43,8 @@ createRoot(document.getElementById('root')).render(
       <ConfirmAppointmentPage />
     ) : isPublicAgendaRoute ? (
       <PublicAgendaPage />
+    ) : isPublicPatientPortalRoute ? (
+      <PatientPortalPage />
     ) : (
       <AuthProvider>
         <PatientProvider>

@@ -350,6 +350,38 @@
   opacity: 0.55;
 }
 
+/* Entrada da Área do Paciente: discreta, abaixo do acesso profissional. */
+.r1-patient-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-muted);
+  font-size: 13.5px;
+  text-decoration: none;
+}
+
+.r1-patient-entry b {
+  color: var(--r1-accent-strong);
+}
+
+.r1-patient-entry:hover b,
+.r1-patient-entry:focus-visible b {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.r1-patient-entry:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
 .r1-login__foot {
   width: 100%;
   margin-top: 28px;

@@ -184,7 +184,14 @@ test('configuração versionada libera JWT só para as functions deliberadamente
     config,
     /\[functions\.public-agenda\][\s\S]*?verify_jwt\s*=\s*false/,
   );
-  assert.equal(publicFunctionOverrides.length, 4);
+  // Área do Paciente (06/10/2026): o paciente não tem conta no Auth; entra
+  // com código + data de nascimento, sessão e bloqueio dentro do handler.
+  // Revisada em tests/regression/patient-portal.test.mjs.
+  assert.match(
+    config,
+    /\[functions\.patient-portal\][\s\S]*?verify_jwt\s*=\s*false/,
+  );
+  assert.equal(publicFunctionOverrides.length, 5);
 });
 
 test('fonte visual registra somente eventos operacionais sanitizados', async () => {

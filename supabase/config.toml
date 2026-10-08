@@ -18,3 +18,9 @@ verify_jwt = false
 # aberto sem conta pelo destinatário (WhatsApp, e-mail etc.).
 [functions.public-agenda]
 verify_jwt = false
+
+# Área do Paciente: o paciente entra com código + data de nascimento e
+# não tem conta no Supabase Auth. Sessão, bloqueio por tentativas e
+# limites persistentes ficam dentro do handler (patient-portal/index.ts).
+[functions.patient-portal]
+verify_jwt = false

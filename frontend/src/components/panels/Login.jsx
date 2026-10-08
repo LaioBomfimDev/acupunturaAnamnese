@@ -258,6 +258,13 @@ export function Login() {
             </button>
           </form>
 
+          {/* Mesmo endereço do sistema: o paciente responde formulários
+              com código + data de nascimento, sem conta (PatientPortalPage). */}
+          <a className="r1-patient-entry" href="/area-do-paciente">
+            <span>É paciente?</span>
+            <b>Entrar na Área do Paciente →</b>
+          </a>
+
           <button
             type="button"
             className="r1-login__foot"

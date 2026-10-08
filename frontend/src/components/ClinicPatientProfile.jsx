@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
@@ -24,6 +24,11 @@ import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadC
 import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
 import { HubBackButton } from './HubNav';
 import { getStatusLabel } from '../utils/agenda';
+
+// Área do Paciente (acesso + formulários): só a administração abre, então
+// carrega à parte e não pesa na ficha de quem não vê a aba.
+const PatientPortalTab = lazy(() => import('./patientForms/PatientPortalTab')
+  .then(module => ({ default: module.PatientPortalTab })));
 
 // ============================================================
 // Ficha do paciente (Fase 5) — página própria, aberta ao clicar num
@@ -81,6 +86,8 @@ const TABS = [
   { id: 'agenda', label: 'Agendamentos' },
   { id: 'evolucao', label: 'Evolução' },
   { id: 'anexos', label: 'Anexos' },
+  // Só aparece para clinic_admin (filtro no tablist): acesso do paciente e formulários.
+  { id: 'portal', label: 'Área do Paciente' },
 ];
 
 function buildEditForm(p) {
@@ -669,7 +676,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
             )}
 
             <div className="pf-tabs" role="tablist">
-              {TABS.map(tab => (
+              {TABS.filter(tab => tab.id !== 'portal' || isClinicAdmin).map(tab => (
                 <button
                   key={tab.id}
                   type="button"
@@ -1027,6 +1034,19 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   )}
               </section>
             </section>
+
+            {/* ================= ÁREA DO PACIENTE (só administração) ================= */}
+            {isClinicAdmin && activeTab === 'portal' && (
+              <section className="pf-panel">
+                <Suspense fallback={<p className="small">Carregando…</p>}>
+                  <PatientPortalTab
+                    patient={full}
+                    profile={therapistProfile}
+                    onEditCadastro={() => { setActiveTab('cadastro'); startEdit(); }}
+                  />
+                </Suspense>
+              </section>
+            )}
           </>
         )}
       </main>

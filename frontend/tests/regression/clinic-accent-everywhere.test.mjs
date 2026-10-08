@@ -116,6 +116,7 @@ test('Gestão: menu agrupado na ordem combinada, toda aba num grupo só', () => 
 
   assert.deepEqual(groups, [
     { label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
+    { label: 'Área do Paciente', ids: ['importaveis'] },
     { label: 'Equipe', ids: ['profissionais', 'acessos', 'cadastro'] },
     { label: 'Instituição', ids: ['personalizar', 'documentos'] },
   ]);

@@ -42,6 +42,11 @@ import '../../styles/gestao.css';
 const DocumentosTimbrados = lazy(() => import('./DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
 
+// Importáveis (formulários que o paciente responde na Área do Paciente):
+// editor, respostas e exportação só carregam quando a aba abre.
+const Importaveis = lazy(() => import('../patientForms/Importaveis')
+  .then(module => ({ default: module.Importaveis })));
+
 // ============================================================
 // Gestão da instituição — relatórios operacionais (Fase 8)
 //
@@ -60,6 +65,7 @@ const SECTIONS = [
   { id: 'faltosos', label: 'Faltosos' },
   { id: 'retornos', label: 'Retornos' },
   { id: 'pesquisa', label: 'Pesquisa de satisfação' },
+  { id: 'importaveis', label: 'Importáveis' },
   { id: 'profissionais', label: 'Profissionais' },
   { id: 'acessos', label: 'Acessos' },
   { id: 'cadastro', label: 'Meu cadastro' },
@@ -69,8 +75,10 @@ const SECTIONS = [
 
 // Ordem do menu (2026-09-30): primeiro o panorama, depois o que pede ação
 // com paciente, a equipe e, por último, o que se ajusta uma vez só.
+// Área do Paciente (2026-10-06): formulários que o paciente responde online.
 const SECTION_GROUPS = [
   { label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
+  { label: 'Área do Paciente', ids: ['importaveis'] },
   { label: 'Equipe', ids: ['profissionais', 'acessos', 'cadastro'] },
   { label: 'Instituição', ids: ['personalizar', 'documentos'] },
 ];
@@ -90,6 +98,9 @@ const TAB_ICONS = {
   ),
   pesquisa: (
     <><path d="M12 3l2.6 5.9L21 9.6l-4.6 4.2L17.6 21 12 17.6 6.4 21l1.2-7.2L3 9.6l6.4-.7L12 3Z" /></>
+  ),
+  importaveis: (
+    <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1" /><path d="m8.5 11 1.5 1.5 3-3" /><path d="M8.5 16.5h7" /></>
   ),
   indicadores: (
     <><path d="M4 19h16" /><rect x="6" y="11" width="3" height="8" /><rect x="11" y="6" width="3" height="13" /><rect x="16" y="14" width="3" height="5" /></>
@@ -1382,6 +1393,12 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
               </>
             )}
           </section>
+        )}
+
+        {section === 'importaveis' && (
+          <Suspense fallback={<p className="gt-note">Carregando formulários…</p>}>
+            <Importaveis profile={profile} />
+          </Suspense>
         )}
 
         {section === 'documentos' && (

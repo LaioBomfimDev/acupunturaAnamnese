@@ -68,6 +68,40 @@ test('groupByTimeOfDay usa os cortes de periodOfDay (manhã/tarde/noite)', () =>
   assert.deepEqual(byId, { manha: 2, tarde: 1, noite: 1 });
 });
 
+// Regressão (07/10/2026): "Não compareceu" e "Cancelado pelo paciente"
+// entravam nos gráficos de atendimentos, que só tiravam "Cancelado".
+// Falta já tem gráfico próprio; aqui só Agendado e Atendido.
+const ABSENCES_AND_BLOCK_AT_14H = [
+  appointment('2026-08-12T14:00', 60, { status: 'no_show' }),
+  appointment('2026-08-12T14:00', 60, { status: 'excused' }),
+  appointment('2026-08-12T14:00', 60, { status: 'cancelled' }),
+  { kind: 'block', status: 'scheduled', starts_at: new Date('2026-08-12T14:00').toISOString() },
+];
+
+test('isHeldOrScheduledAppointment: só Agendado e Atendido, nunca falta, cancelamento ou bloqueio', () => {
+  assert.equal(dashboard.isHeldOrScheduledAppointment(appointment('2026-08-12T09:00', 60)), true);
+  assert.equal(dashboard.isHeldOrScheduledAppointment(appointment('2026-08-12T09:00', 60, { status: 'attended' })), true);
+  for (const item of ABSENCES_AND_BLOCK_AT_14H) {
+    assert.equal(dashboard.isHeldOrScheduledAppointment(item), false, item.status || item.kind);
+  }
+});
+
+test('groupByTimeOfDay e groupByWeekday não contam falta, cancelamento nem bloqueio', () => {
+  const list = [
+    appointment('2026-08-12T14:00', 60, { status: 'attended' }),
+    appointment('2026-08-12T15:00', 60), // agendado
+    ...ABSENCES_AND_BLOCK_AT_14H,
+  ];
+  const byPeriod = Object.fromEntries(dashboard.groupByTimeOfDay(list).map(item => [item.id, item.count]));
+  assert.deepEqual(byPeriod, { manha: 0, tarde: 2, noite: 0 });
+  assert.deepEqual(dashboard.groupByWeekday(list).map(item => item.count), [0, 0, 0, 2, 0, 0, 0]);
+});
+
+test('groupByTimeOfDay diz o horário de cada faixa, para o número não ser lido como horas', () => {
+  const hints = Object.fromEntries(dashboard.groupByTimeOfDay([]).map(item => [item.id, item.hint]));
+  assert.deepEqual(hints, { manha: 'até 12h', tarde: '12h às 18h', noite: '18h em diante' });
+});
+
 test('groupAbsencesByProfessional ranqueia do maior pro menor e ignora quem não faltou', () => {
   // Devolve só {id, count} de propósito — resolver o nome é trabalho da
   // tela (professionalName()/shortName()), não deste módulo puro.

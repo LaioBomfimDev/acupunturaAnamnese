@@ -28,7 +28,18 @@ export function isAbsence(item) {
   return item?.kind === 'appointment' && ABSENCE_STATUSES.includes(item?.status);
 }
 
+// Gráficos "Atendimentos por dia da semana / por período do dia": só o
+// que aconteceu ou ainda vai acontecer (Agendado, Atendido). Até
+// 07/10/2026 só "Cancelado" saía, e "Não compareceu"/"Cancelado pelo
+// paciente" pareciam atendimento; falta já tem gráfico próprio.
+export function isHeldOrScheduledAppointment(item) {
+  return item?.kind === 'appointment' && !ABSENCE_STATUSES.includes(item?.status);
+}
+
 export const TIME_OF_DAY_LABELS = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
+// Faixa pela hora de início (periodOfDay): 11h59 é manhã, 18h em ponto
+// já é noite. Aparece junto do nome para o número não ser lido como horas.
+export const TIME_OF_DAY_HOURS = { manha: 'até 12h', tarde: '12h às 18h', noite: '18h em diante' };
 const TIME_OF_DAY_ORDER = ['manha', 'tarde', 'noite'];
 
 function sortedEntries(map, order) {
@@ -45,6 +56,7 @@ function sortedByCountDesc(map, labelOf) {
 export function groupByWeekday(appointments) {
   const counts = new Map();
   for (const item of appointments || []) {
+    if (!isHeldOrScheduledAppointment(item)) continue;
     const date = new Date(item?.starts_at);
     if (Number.isNaN(date.getTime())) continue;
     const weekday = date.getDay();
@@ -61,6 +73,7 @@ export function groupByWeekday(appointments) {
 export function groupByTimeOfDay(appointments) {
   const counts = new Map();
   for (const item of appointments || []) {
+    if (!isHeldOrScheduledAppointment(item)) continue;
     const bucket = periodOfDay(item?.starts_at);
     if (!bucket) continue;
     counts.set(bucket, (counts.get(bucket) || 0) + 1);
@@ -68,6 +81,7 @@ export function groupByTimeOfDay(appointments) {
   return sortedEntries(counts, TIME_OF_DAY_ORDER).map(entry => ({
     ...entry,
     label: TIME_OF_DAY_LABELS[entry.id],
+    hint: TIME_OF_DAY_HOURS[entry.id],
   }));
 }
 

@@ -176,23 +176,33 @@ function formatTime(iso) {
 // Barra ranqueada única (faltas/cancelamentos, dia da semana, período do
 // dia): largura relativa ao maior valor da própria lista, não a um teto
 // fixo — o objetivo é comparar os itens entre si, não medir contra 100%.
-function BarList({ items, emptyLabel }) {
+// `unit` = [singular, plural] escrito ao lado do número; `item.hint` é uma
+// linha menor sob o rótulo (o horário de cada faixa do dia).
+function BarList({ items, emptyLabel, unit = null }) {
   if (!items.length) return <p className="gt-empty">{emptyLabel}</p>;
   const max = Math.max(1, ...items.map(item => item.count));
   return (
-    <ul className="gt-bars">
+    <ul className={unit ? 'gt-bars gt-bars--unit' : 'gt-bars'}>
       {items.map(item => (
         <li key={item.id} className="gt-bar-row">
-          <span className="gt-bar-label">{item.label}</span>
+          <span className="gt-bar-label">
+            {item.label}
+            {item.hint && <span className="gt-bar-hint">{item.hint}</span>}
+          </span>
           <span className="gt-bar-track">
             <span className="gt-bar-fill" style={{ width: `${(item.count / max) * 100}%` }} />
           </span>
-          <span className="gt-bar-value">{item.count}</span>
+          <span className="gt-bar-value">
+            {item.count}
+            {unit && <span className="gt-bar-unit"> {item.count === 1 ? unit[0] : unit[1]}</span>}
+          </span>
         </li>
       ))}
     </ul>
   );
 }
+
+const ATTENDANCE_UNIT = ['atendimento', 'atendimentos'];
 
 // Barra empilhada de duas séries (novos vs. retorno por mês): largura
 // total relativa ao maior total entre os meses, faixa de "novos" vem
@@ -1355,11 +1365,11 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
                   </div>
                   <div className="gt-chart-card">
                     <h4>Atendimentos por dia da semana</h4>
-                    <BarList items={dashboardData.byWeekday} emptyLabel="Nenhum atendimento no período." />
+                    <BarList items={dashboardData.byWeekday} unit={ATTENDANCE_UNIT} emptyLabel="Nenhum atendimento no período." />
                   </div>
                   <div className="gt-chart-card">
                     <h4>Atendimentos por período do dia</h4>
-                    <BarList items={dashboardData.byTimeOfDay} emptyLabel="Nenhum atendimento no período." />
+                    <BarList items={dashboardData.byTimeOfDay} unit={ATTENDANCE_UNIT} emptyLabel="Nenhum atendimento no período." />
                   </div>
                   <div className="gt-chart-card gt-chart-card--wide">
                     <h4>Pacientes novos vs. retorno por mês</h4>

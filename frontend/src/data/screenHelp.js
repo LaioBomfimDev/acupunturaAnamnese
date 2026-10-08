@@ -146,7 +146,9 @@ export const GESTAO_HELP = {
     ],
     reading: [
       'As barras comparam faltas e cancelamentos por profissional e por disciplina.',
-      '“Atendimentos por dia da semana” e “por período do dia” mostram quando a instituição mais atende.',
+      '“Atendimentos por dia da semana” e “por período do dia” mostram quando a instituição mais atende. O número é de atendimentos, não de horas: cada um vale 1, na faixa em que começa (Manhã até 12h, Tarde das 12h às 18h, Noite das 18h em diante). Sem profissional escolhido, soma a equipe toda.',
+      'Nesses dois gráficos entram só os agendamentos “Agendado” e “Atendido”. “Não compareceu”, “Cancelado pelo paciente” e “Cancelado” ficam em “Faltas e cancelamentos”.',
+      'A barra mais cheia é a faixa com mais atendimentos no período, não uma agenda lotada.',
       '“Pacientes novos vs. retorno” usa o tipo marcado no agendamento (primeira vez ou retorno): atendimento sem tipo não entra nessa conta.',
     ],
     notes: [

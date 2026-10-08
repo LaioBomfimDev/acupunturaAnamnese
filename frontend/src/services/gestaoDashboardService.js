@@ -62,8 +62,10 @@ export async function loadDashboardMetrics({
       byProfessional: groupAbsencesByProfessional(appointments),
       byDiscipline: groupAbsencesByDiscipline(appointments),
     },
-    byWeekday: groupByWeekday(countable),
-    byTimeOfDay: groupByTimeOfDay(countable),
+    // Os dois tiram falta, cancelamento e bloqueio por conta própria
+    // (isHeldOrScheduledAppointment): `countable` deixaria falta passar.
+    byWeekday: groupByWeekday(appointments),
+    byTimeOfDay: groupByTimeOfDay(appointments),
     newVsReturning: groupNewVsReturning(countable),
     birthdays: currentMonthBirthdays(patients),
   };

@@ -990,6 +990,14 @@
   text-overflow: ellipsis;
 }
 
+.gt-bar-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .gt-bar-track {
   position: relative;
   height: 10px;
@@ -1025,6 +1033,33 @@
   font-variant-numeric: tabular-nums;
   min-width: 2ch;
   text-align: right;
+}
+
+.gt-bar-unit {
+  font-weight: 400;
+  color: var(--r1-text-subtle);
+}
+
+/* Com unidade ("1 atendimento", "8 atendimentos") o número muda de
+   largura a cada linha: as linhas dividem as colunas da lista (subgrid)
+   para todos os trilhos terem o mesmo tamanho e a comparação não
+   distorcer. Sem subgrid, a coluna do número fica com largura fixa. */
+.gt-bars--unit {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  column-gap: 10px;
+  row-gap: 9px;
+}
+
+.gt-bars--unit .gt-bar-row {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+@supports not (grid-template-columns: subgrid) {
+  .gt-bars--unit .gt-bar-value {
+    min-width: 8.1em;
+  }
 }
 
 .gt-bar-legend {

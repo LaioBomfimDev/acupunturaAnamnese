@@ -56,6 +56,11 @@ const NAV_ICONS = {
       <path d="M14 6h6v8h-3l-3 3V6Z" />
     </>
   ),
+  'Escalas': (
+    <>
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    </>
+  ),
   'Língua': (
     <>
       <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />

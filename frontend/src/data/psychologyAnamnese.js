@@ -60,6 +60,7 @@ export const PSYCHOLOGY_TABS = {
   PAINEL: 'Painel',
   ANAMNESE: 'Anamnese',
   PERGUNTAS_COMPLEMENTARES: 'Perguntas complementares',
+  ESCALAS: 'Escalas',
   SINTESE: 'Síntese do caso',
   HIPOTESES: 'Hipóteses/diagnóstico',
   OBJETIVOS: 'Objetivos',

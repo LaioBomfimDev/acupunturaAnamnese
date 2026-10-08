@@ -1,0 +1,453 @@
+/* ============================================================
+   Escalas clínicas (components/instruments/) — só tokens (--r1-*).
+   Faixas do gráfico num tom só (a cor da clínica, mais forte conforme
+   a faixa sobe); vermelho só no aviso de risco (.alert do kit).
+   Mobile: nada passa de 360px; a lista de aplicações quebra linha.
+   ============================================================ */
+
+.instrument-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.instrument-list {
+  display: grid;
+  gap: 16px;
+}
+
+.instrument-blocked {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.instrument-loading {
+  margin: 0;
+}
+
+.instrument-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.instrument-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.instrument-card-head > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.instrument-card-head h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 17px;
+}
+
+.instrument-card-head p {
+  margin: 0;
+}
+
+.instrument-review-badge {
+  padding: 2px 9px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: 999px;
+  background: var(--r1-warning-bg);
+  color: var(--r1-text);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.instrument-latest,
+.instrument-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+
+.instrument-latest .small,
+.instrument-result .small {
+  flex-basis: 100%;
+}
+
+.instrument-score {
+  color: var(--r1-text);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-risk {
+  font-weight: 600;
+}
+
+/* ---------- gráfico ---------- */
+
+.instrument-chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.instrument-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.instrument-chart figcaption {
+  margin-top: 4px;
+}
+
+.instrument-band-0 { fill: color-mix(in srgb, var(--r1-accent) 4%, var(--r1-surface)); }
+.instrument-band-1 { fill: color-mix(in srgb, var(--r1-accent) 9%, var(--r1-surface)); }
+.instrument-band-2 { fill: color-mix(in srgb, var(--r1-accent) 14%, var(--r1-surface)); }
+.instrument-band-3 { fill: color-mix(in srgb, var(--r1-accent) 19%, var(--r1-surface)); }
+.instrument-band-4 { fill: color-mix(in srgb, var(--r1-accent) 24%, var(--r1-surface)); }
+
+.instrument-band {
+  stroke: var(--r1-surface);
+  stroke-width: 2;
+}
+
+.instrument-band-label,
+.instrument-axis-label {
+  fill: var(--r1-text-subtle);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-band-label {
+  fill: var(--r1-text);
+}
+
+/* Celular: o nome da faixa entra no gráfico, sem disputar com a linha. */
+.instrument-band-label.is-inside {
+  fill: var(--r1-text-subtle);
+  font-size: 10.5px;
+  paint-order: stroke;
+  stroke: var(--r1-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.instrument-line {
+  fill: none;
+  stroke: var(--r1-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.instrument-point {
+  fill: var(--r1-accent);
+  stroke: var(--r1-surface);
+  stroke-width: 2;
+}
+
+.instrument-point.is-last {
+  fill: var(--r1-accent-strong);
+}
+
+.instrument-point-hit {
+  fill: transparent;
+}
+
+.instrument-point-group:hover .instrument-point {
+  stroke: var(--r1-accent-line);
+  stroke-width: 4;
+}
+
+.instrument-point-label {
+  fill: var(--r1-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- lista de aplicações (versão em texto do gráfico) ---------- */
+
+.instrument-history {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.instrument-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  min-width: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.instrument-history-date,
+.instrument-history-score {
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-history-date {
+  min-width: 6.5em;
+}
+
+.instrument-history-score {
+  min-width: 5.5em;
+  font-weight: 700;
+}
+
+.instrument-history-band {
+  flex: 1 1 8em;
+  min-width: 0;
+}
+
+.instrument-history li.is-voided .instrument-history-score,
+.instrument-history li.is-voided .instrument-history-band {
+  text-decoration: line-through;
+  color: var(--r1-text-subtle);
+}
+
+.instrument-voided-tag {
+  padding: 1px 8px;
+  border: 1px solid var(--r1-border);
+  border-radius: 999px;
+  color: var(--r1-text);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.instrument-about summary {
+  cursor: pointer;
+  color: var(--r1-accent-strong);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.instrument-about ul {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+
+/* ---------- aplicar ---------- */
+
+.instrument-apply {
+  display: grid;
+  gap: 14px;
+}
+
+.instrument-instructions {
+  margin: 0;
+  font-weight: 600;
+}
+
+.instrument-questions {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instrument-question {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.instrument-question p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.instrument-question--extra {
+  border-bottom: 0;
+}
+
+.instrument-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Alvo de toque confortável no tablet do consultório. */
+.forms-scope .panel .instrument-options .tag {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+.instrument-apply-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 12em) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.instrument-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.instrument-progress {
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-confirm {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-warning-bg);
+}
+
+.instrument-confirm p {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ---------- janela da aplicação ---------- */
+
+.instrument-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--r1-scrim);
+}
+
+.instrument-dialog {
+  width: min(640px, 100%);
+  max-height: calc(88 * var(--vh));
+  overflow-y: auto;
+  border-radius: var(--r1-radius-md);
+  box-shadow: var(--r1-shadow-lg);
+}
+
+.instrument-dialog .panel {
+  margin: 0;
+}
+
+.instrument-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.instrument-dialog-close {
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.instrument-dialog-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.instrument-dialog-body {
+  display: grid;
+  gap: 12px;
+}
+
+.instrument-answer-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.instrument-answer-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.instrument-answer-list li > span:first-child {
+  display: block;
+}
+
+.instrument-answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.instrument-answer .small {
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-sum {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-extra-answer,
+.instrument-note-text {
+  margin: 0;
+}
+
+.instrument-void {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 1024px) {
+  .instrument-apply-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .instrument-card {
+    padding: 12px;
+  }
+
+  .instrument-card-head .primary-button {
+    width: 100%;
+  }
+
+  .instrument-dialog-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .instrument-dialog {
+    width: 100%;
+    border-radius: var(--r1-radius-md) var(--r1-radius-md) 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instrument-point-group:hover .instrument-point {
+    stroke-width: 2;
+  }
+}

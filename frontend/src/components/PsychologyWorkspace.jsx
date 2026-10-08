@@ -35,6 +35,8 @@ import { PsychologyComplementaryQuestions } from './psychology/PsychologyComplem
 
 const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
+const PatientInstrumentsPanel = lazy(() => import('./instruments/PatientInstrumentsPanel')
+  .then(module => ({ default: module.PatientInstrumentsPanel })));
 
 // ============================================================
 // Workspace de Psicologia — SHELL (Plano C, Rodada 1).
@@ -59,6 +61,7 @@ const PSYCHOLOGY_NAV_GROUPS = [
     tabs: [
       PSYCHOLOGY_TABS.ANAMNESE,
       PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES,
+      PSYCHOLOGY_TABS.ESCALAS,
     ],
   },
   { title: 'Formulação clínica', tabs: [PSYCHOLOGY_TABS.SINTESE, PSYCHOLOGY_TABS.HIPOTESES] },
@@ -525,6 +528,16 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onQuestionsChange={handleComplementaryQuestionsChange}
             onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
           />
+        );
+      case PSYCHOLOGY_TABS.ESCALAS:
+        return (
+          <Suspense fallback={<div className="empty-state">Carregando escalas...</div>}>
+            <PatientInstrumentsPanel
+              patient={selectedPatient}
+              discipline="psicologia"
+              currentUserId={profile?.id}
+            />
+          </Suspense>
         );
       case PSYCHOLOGY_TABS.HIPOTESES:
         return (

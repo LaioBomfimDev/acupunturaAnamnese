@@ -388,6 +388,7 @@ test('migração: só vê e aplica quem atende o paciente na disciplina, na mesm
   assert.match(access, /appointment\.discipline = p_discipline/);
   assert.match(access, /appointment\.clinic_id = public\.user_clinic_id\(p_user\)/);
   // ...ou responsável pela matrícula. Matrícula sozinha (sem ser dele) não basta.
+  // (20261012 tirou o referred_by: ver instrument-responsible.test.mjs.)
   assert.match(access, /enrollment\.status = 'active'/);
   assert.match(access, /enrollment\.clinic_id = public\.user_clinic_id\(p_user\)/);
   assert.match(access, /\(enrollment\.assigned_to = p_user OR enrollment\.referred_by = p_user\)/);
@@ -576,7 +577,7 @@ test('migração da etapa 2: código, envio, resposta e alerta com a permissão 
   assert.match(save, /v_row\.id, v_has_risk/, 'idempotência pelo id do envio');
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.portal_save_answers\([^)]*\) FROM PUBLIC, anon, authenticated;/);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.portal_save_answers\([^)]*\) TO service_role;/);
-  assert.match(functionBody(sql, 'portal_admin_read_answers'), /AND f\.kind = 'form'/, 'resposta de escala não vai para a administração');
+  assert.match(functionBody(sql, 'portal_admin_read_answers'), /AND f\.kind = 'form'/, 'escala abre pelo resultado da aplicação (list_patient_instrument_applications), não pelas respostas cruas');
 
   // Alerta: só quem atende vê e marca; no consultório nasce visto.
   const alerts = functionBody(sql, 'list_my_instrument_risk_alerts');

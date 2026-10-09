@@ -149,6 +149,42 @@
   max-width: 14em;
 }
 
+/* Responsável claro antes de enviar (20261012): a escolha ocupa a largura
+   que tiver, sem passar dela no celular. */
+.instrument-portal-send .instrument-responsible {
+  width: 100%;
+  max-width: 28em;
+  min-width: 0;
+}
+
+.instrument-portal-send .instrument-responsible select {
+  width: 100%;
+  min-width: 0;
+}
+
+.instrument-recipient-note {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.instrument-recipient-note p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.instrument-recipient-block {
+  padding-left: 8px;
+  border-left: 3px solid var(--r1-warning-border);
+  color: var(--r1-text);
+  font-weight: 600;
+}
+
+/* Administração vê as escalas sem atender: o aviso fica junto do topo. */
+.instrument-readonly-note {
+  margin: 0;
+}
+
 /* ---------- gráfico ---------- */
 
 .instrument-chart {
@@ -564,4 +600,15 @@
 .instrument-risk-alerts .quiet-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* Envio pela ficha (Área do Paciente): o nome da escala é longo; no
+   celular o campo encolhe em vez de alargar a página. */
+.instrument-send-form .gt-field {
+  min-width: 0;
+}
+
+.instrument-send-form .gt-input {
+  width: 100%;
+  min-width: 0;
 }

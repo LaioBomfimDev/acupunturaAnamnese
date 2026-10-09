@@ -344,3 +344,12 @@ Modelo de entrada:
 - Regra nova: coluna de grid com conteúdo largo usa `minmax(0, 1fr)`; em flex de coluna, `flex-basis` em px vira altura.
 - Teste ou verificação obrigatória: `tablet-phone-screens.test.mjs` (os quatro testes falham no código anterior).
 - Regra destilada em: `AGENTS.md` §7.
+
+### 2026-10-09 - Resultado do PHQ-9 ficou com quem criou a matrícula, não com a psicóloga
+
+- Sintoma: a administradora enviou a paciente para a Psicologia escolhendo a psicóloga e, logo depois, mandou o PHQ-9 para casa. A paciente respondeu, e a psicóloga (também da administração) recebeu em "Ver resultado": "você precisa atender o paciente nessa área (atendimento na Agenda ou responsável pela matrícula)". O alerta de risco da resposta foi marcado como visto pela administradora, a única que tinha acesso.
+- Causa: o "Enviar para outra área" grava o profissional de destino no compartilhamento (`record_shares.to_user_id`), mas não na matrícula (`assigned_to` ficava vazio). E `can_use_patient_instruments` contava `referred_by` (quem criou a matrícula) como "quem atende": a trava do envio ("alguém atende?") passava pela própria administradora, e a nota e o alerta foram para ela. Nenhuma tela preenchia o "responsável pela matrícula" que a mensagem pedia.
+- Correção (20261012): `referred_by` deixou de contar; o destino do "Enviar" vira responsável (trigger em `record_shares` + correção das matrículas antigas); envio da administração com matrícula na área exige responsável escolhido ou confirmado na própria tela, que diz para quem vão a nota e o alerta; ficha → Matrículas mostra o responsável, e só a administração escolhe ou troca (`set_enrollment_responsible`; o cliente perdeu o UPDATE de `assigned_to`). Pedido da administradora no mesmo dia: a administração lê as escalas sempre (`can_read_patient_instruments`), sem aplicar nem marcar o alerta. Migração conferida no banco em transação desfeita, chamando as RPCs como cada pessoa.
+- Regra nova: quem recebe resultado clínico é decidido por vínculo explícito (Agenda ou responsável), nunca por quem criou o registro; a tela de envio diz para quem vai antes de enviar.
+- Teste ou verificação obrigatória: `instrument-responsible.test.mjs` (o caso do incidente: administração com matrícula sem responsável não envia sem escolher).
+- Regra destilada em: `AGENTS.md` §7 (Escalas clínicas).

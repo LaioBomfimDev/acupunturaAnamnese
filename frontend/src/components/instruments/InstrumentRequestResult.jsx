@@ -9,8 +9,9 @@ import '../../styles/instruments.css';
 // ============================================================
 // "Ver resultado" de uma escala respondida em casa, direto do envio
 // (Importáveis e ficha do paciente). Abre a mesma janela da aba Escalas.
-// Quem pode ver continua sendo decidido no banco (quem atende o paciente
-// na área): para os demais, a janela explica onde o resultado fica.
+// Quem pode ver continua sendo decidido no banco: quem atende o paciente
+// na área e a administração (20261012). Para os demais, a janela explica
+// onde o resultado fica e como passar a ver.
 // ============================================================
 
 const AREA_LABELS = {
@@ -81,8 +82,9 @@ export function InstrumentRequestResult({ request, currentUserId = null, onClose
       {state.loading && <p className="small">Carregando o resultado…</p>}
       {!state.loading && isInstrumentAccessDenied(state.error) && (
         <p>
-          O resultado fica com quem atende o paciente na {area}, na aba Escalas da ficha dele. Para ver aqui, você
-          precisa atender o paciente nessa área (atendimento na Agenda ou responsável pela matrícula).
+          O resultado fica com quem atende o paciente na {area} e com a administração. Para ver aqui, você precisa
+          atender o paciente nessa área: ter atendimento com ele na Agenda ou ser o responsável dele (a administração
+          escolhe na ficha, aba Matrículas).
         </p>
       )}
       {!state.loading && state.error && !isInstrumentAccessDenied(state.error) && (

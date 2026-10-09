@@ -3,9 +3,10 @@
 // Migração: supabase/migrations/20261008_patient_instruments.sql
 //
 // Tudo passa pelas RPCs: a tabela não tem leitura direta. Quem vê e quem
-// aplica é decidido no banco (can_use_patient_instruments): quem atende o
-// paciente na disciplina (atendimento na Agenda ou responsável pela
-// matrícula), ativo e da mesma clínica.
+// aplica é decidido no banco: aplica quem atende o paciente na disciplina
+// (atendimento na Agenda ou responsável da matrícula, can_use_patient_
+// instruments); lê quem atende e a administração da clínica
+// (can_read_patient_instruments, 20261012).
 // Sem fallback local: escala é dado clínico (AGENTS.md §9).
 // ============================================================
 
@@ -129,7 +130,12 @@ export function patientFacingTitle(instrument) {
   return `Questionário ${instrument.shortName}`;
 }
 
-export async function sendInstrumentToPortal({ patientId, discipline, instrument, dueDate = null }) {
+/**
+ * `responsibleId`: quem a administração escolheu (ou confirmou) como
+ * responsável do paciente na área. O banco grava na matrícula e só deixa
+ * a administração mandar; quem atende e não é da administração manda sem.
+ */
+export async function sendInstrumentToPortal({ patientId, discipline, instrument, dueDate = null, responsibleId = null }) {
   if (!patientId) throw new Error('Escolha o paciente.');
   const { data, error } = await supabase.rpc('portal_send_instrument', {
     p_patient_id: patientId,
@@ -139,9 +145,55 @@ export async function sendInstrumentToPortal({ patientId, discipline, instrument
     p_title: patientFacingTitle(instrument),
     p_questions: buildPortalQuestions(instrument),
     p_due_date: dueDate || null,
+    p_responsible: responsibleId || null,
   });
-  if (error) failPortal(error, 'Não foi possível enviar a escala.');
+  if (error) failResponsible(error, 'Não foi possível enviar a escala.');
   return data;
+}
+
+// ---------- responsável claro: para quem vai o resultado ----------
+
+export const INSTRUMENT_RESPONSIBLE_MIGRATION_HINT =
+  'O responsável pelas escalas ainda não existe no banco. Aplique a migração '
+  + 'supabase/migrations/20261012_instrument_result_responsible.sql no Supabase.';
+
+function failResponsible(error, fallback) {
+  const text = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ');
+  if (/instrument_result_recipients|p_responsible|set_enrollment_responsible/.test(text)
+    && /does not exist|schema cache|Could not find|PGRST202/i.test(text)) {
+    throw new Error(INSTRUMENT_RESPONSIBLE_MIGRATION_HINT);
+  }
+  failPortal(error, fallback);
+}
+
+function mapPerson(person) {
+  return person && person.id ? { id: person.id, name: person.name || 'Profissional' } : null;
+}
+
+/** Resposta de instrument_result_recipients → objeto da tela (utils/instrumentRecipients.js). */
+export function mapRecipientsRow(row) {
+  const data = row && typeof row === 'object' ? row : {};
+  const responsible = mapPerson(data.responsible);
+  return {
+    enrollmentId: data.enrollment_id || null,
+    enrollmentStatus: data.enrollment_status || null,
+    responsible: responsible ? { ...responsible, receives: data.responsible.receives === true } : null,
+    agenda: (Array.isArray(data.agenda) ? data.agenda : []).map(mapPerson).filter(Boolean),
+    candidates: (Array.isArray(data.candidates) ? data.candidates : []).map(mapPerson).filter(Boolean),
+    viewerAttends: data.viewer_attends === true,
+    viewerIsAdmin: data.viewer_is_admin === true,
+  };
+}
+
+/** Quem recebe a nota e o alerta desta área, e quem pode ser o responsável. */
+export async function getInstrumentResultRecipients({ patientId, discipline }) {
+  if (!patientId || !discipline) return null;
+  const { data, error } = await supabase.rpc('instrument_result_recipients', {
+    p_patient_id: patientId,
+    p_discipline: discipline,
+  });
+  if (error) failResponsible(error, 'Não foi possível ver quem recebe o resultado.');
+  return mapRecipientsRow(data);
 }
 
 export function mapRequestRow(row) {

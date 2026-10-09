@@ -161,7 +161,8 @@ export const GESTAO_HELP = {
       'As respostas são salvas sozinhas enquanto o paciente responde: ele pode parar e continuar depois. Passar do prazo não trava o formulário.',
       'Editar um formulário já enviado não muda o que o paciente recebeu: cada envio guarda a versão daquele dia.',
       'Escala ou questionário publicado com direito autoral não entra com as perguntas copiadas: só o que a clínica criou.',
-      'Escala enviada para casa (PHQ-9, GAD-7) tem “Ver resultado” no envio respondido: abre a nota, a faixa e as respostas para quem atende o paciente na área. Para os demais, o resultado fica na aba Escalas de quem atende.',
+      'Escala enviada para casa (PHQ-9, GAD-7) tem “Ver resultado” no envio respondido: abre a nota, a faixa e as respostas para a administração e para quem atende o paciente na área.',
+      'Antes de enviar uma escala, a tela mostra para quem vão a nota e o alerta de risco e pede o “Responsável” do paciente na área da escala. Quem você escolher fica como responsável na ficha, aba Matrículas.',
     ],
   },
   indicadores: {
@@ -227,7 +228,7 @@ export const GESTAO_HELP = {
     ],
     reading: [
       'O nome ao lado de “Código de acesso do paciente” mostra a escolha que vale agora.',
-      '“Quem atende” é quem tem atendimento com o paciente na Agenda ou é responsável pela matrícula dele, na própria área.',
+      '“Quem atende” é quem tem atendimento com o paciente na Agenda ou é o responsável dele na área (ficha do paciente, aba Matrículas).',
     ],
     access: [
       'Só a administração altera esta escolha.',
@@ -329,12 +330,14 @@ export const PACIENTES_HELP = {
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
     '“Ver compartilhado”: ler o que já foi compartilhado daquele paciente.',
     'Revogar um compartilhamento no × ao lado dele.',
+    'Na ficha, aba Matrículas, “Escolher” ou “Trocar” o responsável do paciente em cada área (só a administração).',
   ],
   reading: [
     'Selos com o nome da área são as matrículas do paciente; passe o mouse para ver a situação: em atendimento, pausado ou alta.',
     '“sem matrícula” = cadastrado, mas ainda sem nenhuma área. O cartão “Ver pacientes cadastrados” mostra quantos estão assim.',
     '“pendência” = marcado à mão na ficha do paciente. “inativo” = suspenso, uma pausa que pode ser desfeita na ficha.',
     '“Área → destino” = compartilhamento ativo.',
+    '“Responsável” (ficha, aba Matrículas) = quem atende o paciente naquela área. Ele recebe as escalas e o alerta de risco, junto com quem tem atendimento na Agenda. Ao enviar o paciente para outra área, o profissional de destino já fica como responsável.',
   ],
   access: [
     'Quem recebe um compartilhamento só lê os itens enviados: nada é copiado, e o envio fica registrado.',

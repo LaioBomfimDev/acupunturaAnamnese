@@ -7,6 +7,8 @@ import {
   listInstrumentRequests,
 } from '../../services/patientInstrumentService';
 import { riskMessages } from '../../utils/instrumentScoring';
+import { currentReceivers, receiversLabel } from '../../utils/instrumentRecipients';
+import { useInstrumentRecipients } from '../../hooks/useInstrumentRecipients';
 import { InstrumentApplyForm } from './InstrumentApplyForm';
 import { InstrumentApplicationDialog } from './InstrumentApplicationDialog';
 import { InstrumentPortalBox } from './InstrumentPortalBox';
@@ -20,8 +22,10 @@ import '../../styles/instruments.css';
 // quando dá para reaplicar, gráfico da evolução e a lista de aplicações
 // (a versão em texto do gráfico). Faixa é do instrumento, nunca
 // diagnóstico; o aviso de risco destaca e lembra, nunca decide.
-// Quem vê: o banco decide (can_use_patient_instruments) — quem atende o
-// paciente nesta área (Agenda ou responsável pela matrícula).
+// Quem vê: o banco decide. Aplica e marca "Vi o alerta" quem atende o
+// paciente nesta área (Agenda ou responsável da matrícula); a
+// administração lê sempre (20261012) e, sem atender, vê a aba só para
+// leitura (readOnly), com o nome de quem atende.
 // ============================================================
 
 const DISCIPLINE_LABELS = {
@@ -44,6 +48,8 @@ function InstrumentCard({
   clinicName,
   discipline,
   currentUserId,
+  recipients,
+  readOnly,
   acknowledging,
   onApply,
   onOpen,
@@ -73,7 +79,9 @@ function InstrumentCard({
           </h3>
           <p className="small">{instrument.name} · {instrument.measures}</p>
         </div>
-        <button type="button" className="primary-button" onClick={() => onApply(instrument, latest)}>Aplicar agora</button>
+        {!readOnly && (
+          <button type="button" className="primary-button" onClick={() => onApply(instrument, latest)}>Aplicar agora</button>
+        )}
       </header>
 
       {latest ? (
@@ -98,14 +106,18 @@ function InstrumentCard({
             <b>Alerta de risco</b> na aplicação de {formatInstrumentDate(app.appliedAt)}:{' '}
             {riskMessages(instrument, app.result.riskItems || [], { source: app.source }).map(risk => risk.message).join(' ')}
           </p>
-          <button
-            type="button"
-            className="quiet-button"
-            onClick={() => onAcknowledge(app)}
-            disabled={acknowledging === app.id}
-          >
-            {acknowledging === app.id ? 'Marcando…' : 'Vi o alerta'}
-          </button>
+          {readOnly ? (
+            <p className="small">Quem atende o paciente marca “Vi o alerta”.</p>
+          ) : (
+            <button
+              type="button"
+              className="quiet-button"
+              onClick={() => onAcknowledge(app)}
+              disabled={acknowledging === app.id}
+            >
+              {acknowledging === app.id ? 'Marcando…' : 'Vi o alerta'}
+            </button>
+          )}
         </div>
       ))}
 
@@ -121,6 +133,8 @@ function InstrumentCard({
         clinicName={clinicName}
         discipline={discipline}
         requests={requests}
+        recipients={recipients}
+        currentUserId={currentUserId}
         onChanged={onPortalChanged}
       />
 
@@ -183,6 +197,10 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId, cl
   const [opened, setOpened] = useState(null);
   const [notice, setNotice] = useState(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const recipients = useInstrumentRecipients(patientId, discipline);
+  // Administração que não atende: lê tudo, mas aplicar e marcar o alerta
+  // ficam com quem atende. Sem a leitura (banco antigo), a aba segue como era.
+  const readOnly = Boolean(recipients.info) && !recipients.info.viewerAttends;
 
   // Trocou de paciente: começa limpo (ajuste no render, não em efeito).
   const patientKey = `${patientId}|${discipline}`;
@@ -277,8 +295,17 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId, cl
       <div className="instrument-panel" ref={topRef}>
         <p className="small area-intro">
           Aplique a escala no atendimento ou envie para o paciente responder em casa: o sistema soma os pontos e mostra a faixa do instrumento e a evolução.
-          A faixa não é diagnóstico. Só profissionais desta área que atendem o paciente veem as escalas.
+          A faixa não é diagnóstico. Veem as escalas quem atende o paciente nesta área (atendimento na Agenda ou responsável) e a administração.
         </p>
+
+        {readOnly && (
+          <div className="alert alert-info instrument-readonly-note" role="status">
+            Você vê as escalas por ser da administração. Aplicar no atendimento e marcar “Vi o alerta” ficam com quem atende
+            {currentReceivers(recipients.info).length
+              ? `: ${receiversLabel(currentReceivers(recipients.info), currentUserId)}.`
+              : '. Ninguém atende este paciente nesta área ainda: escolha o responsável na ficha, aba Matrículas.'}
+          </div>
+        )}
 
         {notice && (
           <div className={`alert ${notice.risk ? 'instrument-risk' : 'alert-info'}`} role="status">
@@ -292,7 +319,10 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId, cl
             <div className="alert" role="alert">
               {error}
               {isAccessDenied(error) && (
-                <> Para ver e aplicar escalas, este paciente precisa ter um atendimento com você na {area}, marcado na Agenda.</>
+                <>
+                  {' '}Para ver e aplicar escalas, este paciente precisa ter um atendimento com você na {area}, marcado na Agenda,
+                  ou você precisa ser o responsável dele nessa área (a administração escolhe na ficha, aba Matrículas).
+                </>
               )}
             </div>
             <button type="button" className="quiet-button" onClick={reload} disabled={loading}>
@@ -315,6 +345,8 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId, cl
                   clinicName={clinicName}
                   discipline={discipline}
                   currentUserId={currentUserId}
+                  recipients={recipients}
+                  readOnly={readOnly}
                   acknowledging={acknowledging}
                   onAcknowledge={handleAcknowledge}
                   onPortalChanged={text => { setNotice({ text, risk: false }); reload(); }}

@@ -14,6 +14,7 @@ import {
   enrollPatient, enrollmentStatusLabel, setPatientSuspended, listPatientEnrollments, decidePatientDeletion,
 } from '../services/clinicPatientsService';
 import { SharePatientDialog } from './SharePatientDialog';
+import { EnrollmentResponsible } from './EnrollmentResponsible';
 import {
   listPatientAttachments, uploadPatientAttachment, getPatientAttachmentUrl, deletePatientAttachment,
 } from '../services/patientAttachmentsService';
@@ -504,6 +505,31 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       setNotice({ type: 'error', text: err.message || 'Não foi possível matricular o paciente nessa área.' });
     } finally {
       setEnrollingDiscipline(null);
+    }
+  }
+
+  // Responsável trocado na aba Matrículas: a lista de pacientes também
+  // passa a mostrar o novo (mesmo caminho do envio para outra área).
+  function handleResponsibleSaved(updated, responsibleName) {
+    const nextEnrollments = enrollments.map(item => (item.id === updated.id ? { ...item, ...updated } : item));
+    setEnrollments(nextEnrollments);
+    onPatientUpdated?.({ ...full, enrollments: nextEnrollments });
+    const label = getDiscipline(updated.discipline)?.label || updated.discipline;
+    setNotice({
+      type: 'success',
+      text: responsibleName ? `Responsável na ${label}: ${responsibleName}.` : `${label} ficou sem responsável.`,
+    });
+  }
+
+  // Envio de escala com responsável escolhido (aba Área do Paciente): o
+  // banco gravou na matrícula; a aba Matrículas relê para mostrar o mesmo.
+  async function refreshEnrollments() {
+    try {
+      const nextEnrollments = await listPatientEnrollments(full.id);
+      setEnrollments(nextEnrollments);
+      onPatientUpdated?.({ ...full, enrollments: nextEnrollments });
+    } catch {
+      // O envio já foi feito; a aba só fica desatualizada até reabrir a ficha.
     }
   }
 
@@ -1018,7 +1044,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   <h4>Quem enxerga este paciente</h4>
                   <p className="small" style={{ marginTop: -4, marginBottom: 12 }}>
                     Todas as disciplinas da clínica — não só as matriculadas — para o entendimento ficar completo.
-                    Clique numa área sem matrícula pra compartilhar o paciente com quem atende lá.
+                    Clique numa área sem matrícula pra compartilhar o paciente com quem atende lá. Em cada área
+                    matriculada aparece o responsável: quem atende o paciente ali e recebe as escalas e o alerta de risco.
                   </p>
                   <div className="pf-discipline-list">
                     {DISCIPLINES.map(discipline => {
@@ -1042,8 +1069,15 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                         </>
                       );
                       return enrollment ? (
-                        <div key={discipline.id} className="pf-discipline-row is-active">
-                          {rowContent}
+                        <div key={discipline.id} className="pf-discipline-row is-active pf-discipline-row--enrolled">
+                          <div className="pf-discipline-main">{rowContent}</div>
+                          <EnrollmentResponsible
+                            enrollment={enrollment}
+                            disciplineLabel={discipline.label}
+                            members={members}
+                            canEdit={isClinicAdmin}
+                            onSaved={handleResponsibleSaved}
+                          />
                         </div>
                       ) : (
                         <button
@@ -1171,6 +1205,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     profile={therapistProfile}
                     onEditCadastro={() => { openSection('cadastro'); startEdit(); }}
                     onStatusChange={setPortalStatus}
+                    onEnrollmentsChanged={refreshEnrollments}
                   />
                 </Suspense>
               </section>

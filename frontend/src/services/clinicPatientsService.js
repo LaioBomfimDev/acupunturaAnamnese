@@ -112,7 +112,7 @@ export async function listClinicPatients() {
 
   let { data, error } = await supabase
     .from('patients')
-    .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+    .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at,assigned_to)')
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(2000);
@@ -120,7 +120,7 @@ export async function listClinicPatients() {
   if (error && isMissingPendingColumnError(error)) {
     ({ data, error } = await supabase
       .from('patients')
-      .select('id,name,phone,age,birth_date,cpf,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+      .select('id,name,phone,age,birth_date,cpf,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at,assigned_to)')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(2000));
@@ -129,7 +129,7 @@ export async function listClinicPatients() {
   if (error && isMissingCpfColumnError(error)) {
     ({ data, error } = await supabase
       .from('patients')
-      .select('id,name,phone,age,birth_date,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at)')
+      .select('id,name,phone,age,birth_date,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at,assigned_to)')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(2000));
@@ -207,7 +207,7 @@ export async function listPatientEnrollments(patientId) {
 
   const { data, error } = await supabase
     .from('patient_enrollments')
-    .select('id,discipline,status,note,created_at')
+    .select('id,discipline,status,note,created_at,assigned_to')
     .eq('patient_id', patientId);
 
   if (error) {
@@ -215,6 +215,33 @@ export async function listPatientEnrollments(patientId) {
     throw error;
   }
   return data || [];
+}
+
+/**
+ * Escolhe (ou tira, com null) o responsável do paciente numa área. O
+ * responsável recebe as escalas da área e o alerta de risco, como quem
+ * tem atendimento na Agenda. Só a administração; a regra está no banco
+ * (set_enrollment_responsible, 20261012) — o cliente não grava
+ * assigned_to direto.
+ */
+export async function setEnrollmentResponsible(enrollmentId, responsibleId) {
+  const { data, error } = await supabase.rpc('set_enrollment_responsible', {
+    p_enrollment_id: enrollmentId,
+    p_responsible: responsibleId || null,
+  });
+  if (error) {
+    const text = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' ');
+    if (/set_enrollment_responsible/.test(text) && /does not exist|schema cache|Could not find|PGRST202/i.test(text)) {
+      throw new Error('Escolher o responsável ainda não existe no banco. Aplique a migração '
+        + 'supabase/migrations/20261012_instrument_result_responsible.sql no Supabase.');
+    }
+    throw new Error(error.message || 'Não foi possível salvar o responsável.');
+  }
+  return {
+    enrollmentId: data?.enrollment_id || enrollmentId,
+    responsibleId: data?.responsible_id || null,
+    responsibleName: data?.responsible_name || '',
+  };
 }
 
 /**

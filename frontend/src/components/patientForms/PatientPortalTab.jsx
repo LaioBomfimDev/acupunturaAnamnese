@@ -29,7 +29,7 @@ function dateTime(iso) {
   return iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 }
 
-export function PatientPortalTab({ patient, profile, onEditCadastro, onStatusChange }) {
+export function PatientPortalTab({ patient, profile, onEditCadastro, onStatusChange, onEnrollmentsChanged }) {
   const clinicName = profile?.clinic?.name || profile?.clinic_name || '';
   const [access, setAccess] = useState(null);
   const [forms, setForms] = useState([]);
@@ -253,9 +253,12 @@ export function PatientPortalTab({ patient, profile, onEditCadastro, onStatusCha
           </div>
           <SendInstrumentForm
             patient={patient}
+            viewerId={profile?.id}
             onSent={async () => {
               await loadAssignments();
               setAccess(await getPatientAccess(patient.id));
+              // O envio pode ter gravado o responsável na matrícula.
+              await onEnrollmentsChanged?.();
             }}
           />
         </section>

@@ -169,6 +169,7 @@ export function HomeConsole({
   onSelect, onSignOut,
   onOpenAgenda, onOpenPendingEvolutions, onOpenGestao, onOpenClinicPatients, onOpenDocuments, onOpenBirthdays,
   pendingEvolutionsCount = 0,
+  onOpenInstrumentAlert = null,
 }) {
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Vitalis';
   const copy = VARIANT_COPY[variant] || VARIANT_COPY.professional;
@@ -333,7 +334,11 @@ export function HomeConsole({
             não atende e não vê; sem alerta, o bloco não aparece. */}
         {variant !== 'reception' && (
           <InstrumentRiskAlerts
-            onOpenArea={discipline => (attendable.some(card => card.id === discipline) ? onSelect(discipline) : null)}
+            onOpen={alert => {
+              if (!attendable.some(card => card.id === alert.discipline)) return;
+              if (onOpenInstrumentAlert) onOpenInstrumentAlert(alert);
+              else onSelect(alert.discipline);
+            }}
           />
         )}
 

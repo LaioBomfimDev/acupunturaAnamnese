@@ -19,7 +19,7 @@ const AREA_LABELS = {
   acupuntura: 'Acupuntura',
 };
 
-export function InstrumentRiskAlerts({ onOpenArea = null }) {
+export function InstrumentRiskAlerts({ onOpen = null }) {
   const [alerts, setAlerts] = useState([]);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -65,9 +65,9 @@ export function InstrumentRiskAlerts({ onOpenArea = null }) {
                 o resultado está em {area} → Escalas.
               </p>
               <div className="instrument-actions">
-                {onOpenArea && (
-                  <button type="button" className="quiet-button" onClick={() => onOpenArea(alert.discipline)}>
-                    Abrir {area}
+                {onOpen && (
+                  <button type="button" className="quiet-button" onClick={() => onOpen(alert)}>
+                    Ver resultado
                   </button>
                 )}
                 <button

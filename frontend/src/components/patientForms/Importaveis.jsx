@@ -20,6 +20,7 @@ import {
 } from '../../services/patientPortalService';
 import { PatientFormEditor } from './PatientFormEditor';
 import { FormResponseDialog } from './FormResponseDialog';
+import { InstrumentRequestResult } from '../instruments/InstrumentRequestResult';
 import { SendFormPanel } from './SendFormPanel';
 import { AssignmentList } from './AssignmentList';
 import '../../styles/patientForms.css';
@@ -565,7 +566,10 @@ export function Importaveis({ profile }) {
         />
       )}
 
-      {viewing && (
+      {viewing?.kind === 'instrument' && (
+        <InstrumentRequestResult request={viewing} currentUserId={profile?.id} onClose={() => setViewing(null)} />
+      )}
+      {viewing && viewing.kind !== 'instrument' && (
         <FormResponseDialog
           assignment={viewing}
           patient={patientById.get(viewing.patient_id)}

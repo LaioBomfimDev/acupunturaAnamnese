@@ -161,7 +161,7 @@ export const GESTAO_HELP = {
       'As respostas são salvas sozinhas enquanto o paciente responde: ele pode parar e continuar depois. Passar do prazo não trava o formulário.',
       'Editar um formulário já enviado não muda o que o paciente recebeu: cada envio guarda a versão daquele dia.',
       'Escala ou questionário publicado com direito autoral não entra com as perguntas copiadas: só o que a clínica criou.',
-      'Escala enviada para casa (PHQ-9, GAD-7) aparece nos envios sem “Ver respostas”: o resultado fica na aba Escalas de quem atende o paciente.',
+      'Escala enviada para casa (PHQ-9, GAD-7) tem “Ver resultado” no envio respondido: abre a nota, a faixa e as respostas para quem atende o paciente na área. Para os demais, o resultado fica na aba Escalas de quem atende.',
     ],
   },
   indicadores: {

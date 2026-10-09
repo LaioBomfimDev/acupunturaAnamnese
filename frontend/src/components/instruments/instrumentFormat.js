@@ -104,3 +104,32 @@ export function requestStatusLabel(request) {
   if (request.status === 'in_progress') return `${STATUS_LABELS.in_progress} (${request.progress}%)`;
   return STATUS_LABELS[request.status] || '';
 }
+
+/** Recusa do banco para quem não atende o paciente na área (frase das RPCs). */
+export function isInstrumentAccessDenied(message) {
+  return /não está em atendimento nesta área/.test(String(message || ''));
+}
+
+/**
+ * A aplicação que um envio para casa gerou: mesma escala, vinda da Área do
+ * Paciente, no instante em que o envio foi respondido (portal_save_answers
+ * grava os dois com o mesmo now()). Aceita até 1 s de diferença por causa
+ * do arredondamento do horário e fica com a mais próxima; a mesma escala
+ * não tem dois envios abertos ao mesmo tempo. `request` é a linha de
+ * patient_form_assignments.
+ */
+export function findRequestApplication(applications, request) {
+  const answeredAt = new Date(request?.submitted_at || 0).getTime();
+  if (!answeredAt) return null;
+  let best = null;
+  let bestGap = Infinity;
+  for (const app of applications || []) {
+    if (app.source !== 'area_do_paciente' || app.instrumentId !== request.instrument_id) continue;
+    const gap = Math.abs(new Date(app.appliedAt).getTime() - answeredAt);
+    if (gap <= 1000 && gap < bestGap) {
+      best = app;
+      bestGap = gap;
+    }
+  }
+  return best;
+}

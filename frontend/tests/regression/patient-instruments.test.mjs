@@ -621,9 +621,64 @@ test('telas da etapa 2: alerta na tela inicial, envio pela aba e pela ficha, Con
     assert.match(service, new RegExp(`supabase\\.rpc\\('${rpc}'`), rpc);
   }
 
+  // Alerta da tela inicial leva direto às Escalas da paciente.
+  const app = await src('App.jsx');
+  assert.match(app, /onOpenInstrumentAlert=\{openInstrumentAlert\}/);
+  assert.match(app, /if \(patient\) selectPatient\(patient\);\r?\n\s*handleSelectDiscipline\(discipline, patient \? 'escalas' : null\);/);
+  assert.match(app, /entryView=\{workspaceEntryView\}/);
+  const workspace = await src('components/PsychologyWorkspace.jsx');
+  assert.match(workspace, /entryView === 'escalas' && selectedPatient \? PSYCHOLOGY_TABS\.ESCALAS : PSYCHOLOGY_TABS\.HOME/);
+  assert.match(alerts, /onClick=\{\(\) => onOpen\(alert\)\}>\r?\n\s*Ver resultado/);
+
   const gestao = await src('components/panels/RelatoriosGestao.jsx');
   assert.match(gestao, /section === 'acessopaciente' && <AcessoPaciente profile=\{profile\} \/>/);
   const config = await src('components/panels/AcessoPaciente.jsx');
   assert.match(config, /await setClinicPortalPolicy\(next\)/);
   assert.match(config, /setAllowed\(previous\)/, 'volta à escolha anterior se o banco recusar');
+});
+
+// 09/10/2026: a administradora mandou, a paciente respondeu, e o resultado
+// só existia dentro da aba Escalas. O envio agora tem "Ver resultado".
+test('envio respondido: "Ver resultado" abre a aplicação gravada por aquele envio', async () => {
+  const request = { id: 'r1', kind: 'instrument', instrument_id: 'phq9', submitted_at: '2026-10-09T14:17:10.454601+00:00' };
+  const fromHome = { id: 'a1', source: 'area_do_paciente', instrumentId: 'phq9', appliedAt: '2026-10-09T14:17:10.454601Z' };
+  const apps = [
+    { id: 'a0', source: 'consultorio', instrumentId: 'phq9', appliedAt: request.submitted_at },
+    { id: 'a2', source: 'area_do_paciente', instrumentId: 'gad7', appliedAt: request.submitted_at },
+    { id: 'a3', source: 'area_do_paciente', instrumentId: 'phq9', appliedAt: '2026-10-02T10:00:00Z' },
+    fromHome,
+  ];
+  assert.equal(format.findRequestApplication(apps, request), fromHome);
+  assert.equal(format.findRequestApplication(apps.slice(0, 3), request), null);
+  const rounded = { ...fromHome, id: 'a4', appliedAt: '2026-10-09T14:17:10Z' };
+  assert.equal(format.findRequestApplication([...apps.slice(0, 3), rounded], request), rounded, 'horário arredondado ainda casa');
+  const twoSecondsLater = { ...fromHome, id: 'a5', appliedAt: '2026-10-09T14:17:12.6Z' };
+  assert.equal(format.findRequestApplication([twoSecondsLater], request), null, 'outra resposta não casa');
+  assert.equal(format.findRequestApplication(apps, { ...request, submitted_at: null }), null, 'envio ainda aberto');
+  assert.ok(format.isInstrumentAccessDenied('Acesso negado: o paciente não está em atendimento nesta área com você.'));
+
+  const { AssignmentList } = await server.ssrLoadModule('/src/components/patientForms/AssignmentList.jsx');
+  const row = { id: 'r1', patient_id: 'p1', form_title: 'Questionário PHQ-9', created_at: '2026-10-09T12:00:00Z', due_date: null };
+  const html = renderToStaticMarkup(React.createElement(AssignmentList, {
+    assignments: [
+      { ...row, kind: 'instrument', status: 'submitted', submitted_at: request.submitted_at },
+      { ...row, id: 'r2', kind: 'instrument', status: 'in_progress', progress: 40 },
+      { ...row, id: 'r3', kind: 'form', form_title: 'Ficha', status: 'submitted', submitted_at: request.submitted_at },
+    ],
+    onView: () => {},
+    onChanged: () => {},
+  }));
+  assert.equal((html.match(/>Ver resultado</g) || []).length, 1, 'só a escala respondida');
+  assert.equal((html.match(/>Ver respostas</g) || []).length, 1, 'formulário continua com as respostas');
+  assert.doesNotMatch(html, /Ver o que já respondeu/, 'escala pela metade não mostra respostas');
+
+  for (const file of ['components/patientForms/Importaveis.jsx', 'components/patientForms/PatientPortalTab.jsx']) {
+    const source = await src(file);
+    assert.match(source, /viewing\?\.kind === 'instrument' && \(\r?\n\s*<InstrumentRequestResult request=\{viewing\} currentUserId=\{profile\?\.id\}/, file);
+    assert.match(source, /viewing && viewing\.kind !== 'instrument' && \(\r?\n\s*<FormResponseDialog/, file);
+  }
+  const result = await src('components/instruments/InstrumentRequestResult.jsx');
+  assert.match(result, /listInstrumentApplications\(\{ patientId: request\.patient_id, discipline: request\.discipline \}\)/, 'quem vê continua decidido no banco');
+  assert.match(result, /findRequestApplication\(applications, request\)/);
+  assert.match(await src('services/patientPortalService.js'), /kind,instrument_id,instrument_version,discipline,/);
 });

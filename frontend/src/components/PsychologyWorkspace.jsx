@@ -72,12 +72,16 @@ const PSYCHOLOGY_NAV_GROUPS = [
 
 const TABS_WITHOUT_PATIENT = [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.BIBLIOTECA, PSYCHOLOGY_TABS.DOCUMENTOS];
 
-export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
+export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut, entryView = null }) {
   const { selectedPatient, activeAppointment } = usePatient();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
-  const [activeTab, setActiveTab] = useState(PSYCHOLOGY_TABS.HOME);
+  // Alerta de risco da tela inicial ("Ver resultado"): chega com a paciente
+  // já escolhida e abre direto na aba Escalas.
+  const [activeTab, setActiveTab] = useState(() => (
+    entryView === 'escalas' && selectedPatient ? PSYCHOLOGY_TABS.ESCALAS : PSYCHOLOGY_TABS.HOME
+  ));
   // Chegando aqui a partir de "Iniciar atendimento" (Agenda): o paciente
   // e o atendimento já foram selecionados ANTES do workspace montar
   // (Agenda.startAppointment). Sem isso, o profissional caía sempre na

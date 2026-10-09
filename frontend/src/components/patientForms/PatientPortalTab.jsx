@@ -13,6 +13,7 @@ import { SendFormPanel } from './SendFormPanel';
 import { AssignmentList } from './AssignmentList';
 import { SendInstrumentForm } from '../instruments/SendInstrumentForm';
 import { FormResponseDialog } from './FormResponseDialog';
+import { InstrumentRequestResult } from '../instruments/InstrumentRequestResult';
 import '../../styles/gestao.css';
 import '../../styles/patientForms.css';
 
@@ -260,7 +261,10 @@ export function PatientPortalTab({ patient, profile, onEditCadastro, onStatusCha
         </section>
       )}
 
-      {viewing && (
+      {viewing?.kind === 'instrument' && (
+        <InstrumentRequestResult request={viewing} currentUserId={profile?.id} onClose={() => setViewing(null)} />
+      )}
+      {viewing && viewing.kind !== 'instrument' && (
         <FormResponseDialog
           assignment={viewing}
           patient={patient}

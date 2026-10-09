@@ -6,8 +6,9 @@ import { cancelAssignment } from '../../services/patientPortalService';
 // Lista de envios (Importáveis e ficha do paciente): situação, prazo,
 // "Ver respostas" e "Cancelar envio" (pede confirmação no próprio
 // cartão; cancelado some da Área do Paciente e não volta). Escala
-// (kind 'instrument') não tem "Ver respostas": a nota e as respostas
-// ficam na aba Escalas de quem atende, e o banco não as devolve aqui.
+// (kind 'instrument') tem "Ver resultado" em vez de "Ver respostas": abre
+// a janela da aba Escalas, e o banco só a devolve para quem atende o
+// paciente na área (InstrumentRequestResult).
 // ============================================================
 
 function day(iso) {
@@ -54,13 +55,14 @@ export function AssignmentList({
           const open = assignment.status === 'pending' || assignment.status === 'in_progress';
           const isInstrument = assignment.kind === 'instrument';
           const hasAnswers = !isInstrument && (assignment.status === 'submitted' || assignment.status === 'in_progress');
+          const hasResult = isInstrument && assignment.status === 'submitted';
           const name = patientName ? patientName(assignment.patient_id) : '';
           const selected = selectedIds?.has(assignment.id) || false;
           const meta = [
             `Enviado em ${day(assignment.created_at)}`,
             assignment.due_date ? `prazo ${formatDueDate(assignment.due_date)}` : 'sem prazo',
             assignment.submitted_at ? `respondido em ${day(assignment.submitted_at)}` : null,
-            isInstrument ? 'escala: o resultado fica na aba Escalas de quem atende' : null,
+            isInstrument ? 'escala' : null,
           ].filter(Boolean).join(' · ');
 
           return (
@@ -80,9 +82,9 @@ export function AssignmentList({
               </div>
               <span className={`gt-badge gt-badge-${status.tone}`}>{status.label}</span>
               <div className="pq-actions">
-                {hasAnswers && (
+                {(hasAnswers || hasResult) && (
                   <button type="button" className="gt-btn gt-btn--sm" onClick={() => onView(assignment)}>
-                    {assignment.status === 'submitted' ? 'Ver respostas' : 'Ver o que já respondeu'}
+                    {hasResult ? 'Ver resultado' : assignment.status === 'submitted' ? 'Ver respostas' : 'Ver o que já respondeu'}
                   </button>
                 )}
                 {open && confirmingId !== assignment.id && (

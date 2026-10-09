@@ -76,10 +76,13 @@ export default function App() {
     signOut,
     changeTemporaryPassword,
   } = useAuth();
-  const { selectedPatient } = usePatient();
+  const { selectedPatient, patients, selectPatient } = usePatient();
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
   const [hubAgendaShowBirthdays, setHubAgendaShowBirthdays] = useState(false);
   const [hubGestaoInitialSection, setHubGestaoInitialSection] = useState(null);
+  // Por onde o workspace da área abre (null = tela de escolha do paciente).
+  // 'escalas' = alerta de risco da tela inicial, com a paciente já escolhida.
+  const [workspaceEntryView, setWorkspaceEntryView] = useState(null);
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
@@ -317,6 +320,7 @@ export default function App() {
             onOpenPendingEvolutions={isReceptionist ? undefined : () => setShowHubEvolutions(true)}
             onOpenBirthdays={(isClinicAdmin || isReceptionist) ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
+            onOpenInstrumentAlert={openInstrumentAlert}
           />
           {renderHubDock('inicio')}
         </Suspense>
@@ -482,6 +486,7 @@ export default function App() {
           therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
           onSwitchDiscipline={handleSwitchDiscipline}
           onSignOut={handleSignOut}
+          entryView={workspaceEntryView}
         />
       </Suspense>
     );
@@ -629,11 +634,21 @@ export default function App() {
     setSelectedMap(testSelectedMap);
   }
 
-  function handleSelectDiscipline(disciplineId) {
+  function handleSelectDiscipline(disciplineId, entryView = null) {
     if (!canEnterDiscipline(profile, disciplineId)) return;
     sessionStorage.setItem(DISCIPLINE_STORAGE_KEY, disciplineId);
     setActiveDiscipline(disciplineId);
     setActiveTab('Tela inicial');
+    setWorkspaceEntryView(entryView);
+  }
+
+  // "Ver resultado" no alerta de risco das escalas: escolhe a paciente e
+  // abre a área direto na aba Escalas. Sem a paciente na lista, abre só a área.
+  function openInstrumentAlert({ patientId, discipline }) {
+    if (!canEnterDiscipline(profile, discipline)) return;
+    const patient = patients.find(item => item.id === patientId) || null;
+    if (patient) selectPatient(patient);
+    handleSelectDiscipline(discipline, patient ? 'escalas' : null);
   }
 
   function handleSwitchDiscipline() {
@@ -641,6 +656,7 @@ export default function App() {
     sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
     setActiveDiscipline(null);
     setActiveTab('Tela inicial');
+    setWorkspaceEntryView(null);
   }
 
   // Troca de tela pela barra de baixo do hub (celular): uma tela por vez,

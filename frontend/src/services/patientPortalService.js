@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase';
 
 const FORM_COLUMNS = 'id,clinic_id,title,description,questions,status,created_at,updated_at';
 const ASSIGNMENT_COLUMNS =
-  'id,patient_id,form_id,kind,form_title,form_description,form_questions,due_date,status,progress,created_at,started_at,last_saved_at,submitted_at,cancelled_at';
+  'id,patient_id,form_id,kind,instrument_id,instrument_version,discipline,form_title,form_description,form_questions,due_date,status,progress,created_at,started_at,last_saved_at,submitted_at,cancelled_at';
 const ACCESS_COLUMNS = 'id,patient_id,access_code,is_active,failed_attempts,locked_at,last_access_at,code_created_at,created_at';
 
 export const PATIENT_PORTAL_MIGRATION_HINT =

@@ -536,6 +536,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
               patient={selectedPatient}
               discipline="psicologia"
               currentUserId={profile?.id}
+              clinicName={clinicName}
             />
           </Suspense>
         );

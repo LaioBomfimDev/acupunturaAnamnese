@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { PatientRiskSupport } from './PatientRiskSupport';
 import {
   LIMITS,
   OTHER_LABEL,
@@ -76,6 +77,8 @@ export function PatientFormQuestion({ question, answers, onChange, number = null
             </label>
           )}
         </div>
+        {/* Escala com item de risco (PHQ-9): apoio na hora, sem esperar o envio. */}
+        {Array.isArray(question.riskNotice?.values) && question.riskNotice.values.includes(value) && <PatientRiskSupport />}
         {withOther && value === OTHER_VALUE && (
           <input
             className="pq-input pq-other"

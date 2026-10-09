@@ -96,6 +96,59 @@
   font-weight: 600;
 }
 
+/* Alerta vindo de casa: texto + "Vi o alerta" na mesma caixa. */
+.instrument-risk-unseen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.instrument-risk-unseen p {
+  flex: 1 1 18em;
+  min-width: 0;
+  margin: 0;
+}
+
+.instrument-risk-tag {
+  padding: 1px 8px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: 999px;
+  background: var(--r1-danger-bg);
+  color: var(--r1-text);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* Enviar para responder em casa (etapa 2). */
+.instrument-portal {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.instrument-portal-send,
+.instrument-portal-pending {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.instrument-portal-send p,
+.instrument-portal-pending p,
+.instrument-portal-note {
+  margin: 0;
+}
+
+.instrument-portal-send .instrument-date {
+  max-width: 14em;
+}
+
 /* ---------- gráfico ---------- */
 
 .instrument-chart {
@@ -450,4 +503,65 @@
   .instrument-point-group:hover .instrument-point {
     stroke-width: 2;
   }
+}
+
+/* ---------- tela inicial: alertas de risco das escalas ---------- */
+
+.instrument-risk-alerts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--r1-danger-border);
+  border-left: 4px solid var(--r1-danger);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-danger-bg);
+  color: var(--r1-text);
+}
+
+.instrument-risk-alerts h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.instrument-risk-alerts ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instrument-risk-alerts li {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.instrument-risk-alerts li + li {
+  padding-top: 10px;
+  border-top: 1px solid var(--r1-danger-border);
+}
+
+.instrument-risk-alerts p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.instrument-risk-alerts .quiet-button {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.instrument-risk-alerts .quiet-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }

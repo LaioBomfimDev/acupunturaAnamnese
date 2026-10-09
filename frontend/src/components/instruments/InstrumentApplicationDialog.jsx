@@ -28,7 +28,7 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
   const dismiss = useDismiss({ onClose, busy: saving, guardUnsaved: true });
 
   const result = application.result || {};
-  const risks = riskMessages(instrument, result.riskItems || []);
+  const risks = riskMessages(instrument, result.riskItems || [], { source: application.source });
   const extraItems = (instrument.extraItems || []).filter(item => application.answers[item.id] !== undefined);
   const titleId = `instrument-application-${application.id}`;
 
@@ -75,7 +75,11 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
             <div className="instrument-result">
               <span className="instrument-score">{typeof result.score === 'number' ? pointsLabel(result.score) : '—'}</span>
               <span>Faixa do instrumento: <b>{result.bandLabel || '—'}</b></span>
-              <span className="small">Aplicada por {application.appliedByName} em {formatInstrumentDate(application.appliedAt)}.</span>
+              <span className="small">
+                {application.source === 'area_do_paciente'
+                  ? `Respondida pelo paciente na Área do Paciente em ${formatInstrumentDate(application.appliedAt)} (enviada por ${application.appliedByName}).`
+                  : `Aplicada por ${application.appliedByName} em ${formatInstrumentDate(application.appliedAt)}.`}
+              </span>
             </div>
 
             {risks.map(risk => (

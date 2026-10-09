@@ -7,6 +7,7 @@ import { currentMonthBirthdays, isCountableAppointment } from '../utils/gestaoDa
 import { greetingFor } from '../utils/greeting';
 import { HOME_HELP } from '../data/screenHelp';
 import { ScreenHelp } from './ui/ScreenHelp';
+import { InstrumentRiskAlerts } from './instruments/InstrumentRiskAlerts';
 import { TOOL_GLYPHS } from './ui/hubGlyphs';
 import '../styles/console.css';
 
@@ -327,6 +328,15 @@ export function HomeConsole({
       </aside>
 
       <main className="hc-main">
+        {/* Alerta de risco das escalas (respostas de casa): no topo, antes
+            de tudo, até alguém que atende marcar "Vi o alerta". Recepção
+            não atende e não vê; sem alerta, o bloco não aparece. */}
+        {variant !== 'reception' && (
+          <InstrumentRiskAlerts
+            onOpenArea={discipline => (attendable.some(card => card.id === discipline) ? onSelect(discipline) : null)}
+          />
+        )}
+
         {/* Cartão do dia (opção B, 05/10/2026): no celular este bloco vira
             um cartão na cor da clínica com a instituição, o "Sair", a
             saudação, o título e os números, e o menu escuro some (a barra

@@ -55,11 +55,15 @@ export function scoreInstrument(instrument, answers = {}) {
   };
 }
 
-/** Mensagens de risco dos itens marcados, na ordem da escala. */
-export function riskMessages(instrument, riskItems = []) {
+/**
+ * Mensagens de risco dos itens marcados, na ordem da escala. Respondida em
+ * casa (`source: 'area_do_paciente'`), usa a orientação própria do item.
+ */
+export function riskMessages(instrument, riskItems = [], { source = null } = {}) {
+  const fromHome = source === 'area_do_paciente';
   return (instrument.items || [])
     .filter(item => item.risk && riskItems.includes(item.id))
-    .map(item => ({ itemId: item.id, message: item.risk.message }));
+    .map(item => ({ itemId: item.id, message: (fromHome && item.risk.homeMessage) || item.risk.message }));
 }
 
 /**

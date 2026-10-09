@@ -88,3 +88,19 @@ export function savedNotice(instrument, saved) {
     : `${instrument.shortName} salvo.`;
   return { text: base, risk: (result.riskItems || []).length > 0 };
 }
+
+// Envio para a Área do Paciente (etapa 2).
+const STATUS_LABELS = {
+  pending: 'esperando o paciente abrir',
+  in_progress: 'paciente respondendo',
+};
+
+export function openRequestOf(requests) {
+  return requests.find(request => request.status === 'pending' || request.status === 'in_progress') || null;
+}
+
+export function requestStatusLabel(request) {
+  if (!request) return '';
+  if (request.status === 'in_progress') return `${STATUS_LABELS.in_progress} (${request.progress}%)`;
+  return STATUS_LABELS[request.status] || '';
+}

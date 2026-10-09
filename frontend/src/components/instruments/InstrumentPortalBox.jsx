@@ -1,0 +1,136 @@
+import { useState } from 'react';
+import { PortalShareBox } from '../patientForms/PortalShareBox';
+import { getPatientAccess } from '../../services/patientPortalService';
+import {
+  cancelInstrumentRequest,
+  patientFacingTitle,
+  sendInstrumentToPortal,
+} from '../../services/patientInstrumentService';
+import { formatInstrumentDate, openRequestOf, requestStatusLabel, todayInputValue } from './instrumentFormat';
+// A mensagem pronta com o código (PortalShareBox) usa os estilos da
+// Gestão e da Área do Paciente, como na ficha do paciente.
+import '../../styles/gestao.css';
+import '../../styles/patientForms.css';
+
+// ============================================================
+// Escala para responder em casa (etapa 2), dentro do cartão da escala:
+// enviar com prazo opcional, ver se está esperando ou sendo respondida,
+// cancelar. Depois de enviar, a mensagem pronta com o código aparece só
+// para quem pode ver o código (administração, ou quem atende quando a
+// instituição liberou em Configurações > Acesso do paciente); senão, a
+// tela diz que o código fica com a administração.
+// ============================================================
+
+export function InstrumentPortalBox({ instrument, patient, clinicName, discipline, requests, onChanged }) {
+  const [open, setOpen] = useState(false);
+  const [dueDate, setDueDate] = useState('');
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [sentCode, setSentCode] = useState(null);
+  const [codeNote, setCodeNote] = useState('');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  const pending = openRequestOf(requests);
+
+  async function handleSend() {
+    setBusy('send');
+    setError('');
+    try {
+      await sendInstrumentToPortal({ patientId: patient.id, discipline, instrument, dueDate: dueDate || null });
+      // O código só volta para quem pode vê-lo (a regra está no banco).
+      const access = await getPatientAccess(patient.id).catch(() => null);
+      setSentCode(access?.is_active ? access.access_code : null);
+      setCodeNote(!access
+        ? 'O código de acesso deste paciente fica com a administração. Peça que ela mande a mensagem com o código, se o paciente ainda não tiver.'
+        : access.is_active ? '' : 'O acesso deste paciente à Área do Paciente está desativado. Peça à administração para liberar.');
+      setOpen(false);
+      setDueDate('');
+      onChanged?.(`${instrument.shortName} enviado para a Área do Paciente.`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function handleCancel() {
+    setBusy('cancel');
+    setError('');
+    try {
+      await cancelInstrumentRequest(pending.id);
+      setConfirmCancel(false);
+      setSentCode(null);
+      onChanged?.('Envio cancelado. O paciente não vê mais esta escala.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  return (
+    <div className="instrument-portal">
+      {pending ? (
+        <div className="instrument-portal-pending">
+          <p className="small">
+            <b>Enviada para casa</b> em {formatInstrumentDate(pending.sentAt)}
+            {pending.sentByName ? ` por ${pending.sentByName}` : ''}: {requestStatusLabel(pending)}.
+            {pending.dueDate ? ` Prazo: ${formatInstrumentDate(`${pending.dueDate}T12:00:00`)}.` : ''}
+          </p>
+          {confirmCancel ? (
+            <div className="instrument-actions">
+              <button type="button" className="primary-button" onClick={handleCancel} disabled={busy === 'cancel'}>
+                {busy === 'cancel' ? 'Cancelando…' : 'Cancelar o envio'}
+              </button>
+              <button type="button" className="quiet-button" onClick={() => setConfirmCancel(false)} disabled={busy === 'cancel'}>
+                Manter
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="quiet-button" onClick={() => setConfirmCancel(true)}>Cancelar envio</button>
+          )}
+        </div>
+      ) : open ? (
+        <div className="instrument-portal-send">
+          <p className="small">
+            O paciente responde pelo celular, na Área do Paciente, com o código de acesso dele. A nota entra aqui quando ele enviar.
+          </p>
+          <label className="field-block instrument-date">
+            <span>Prazo (opcional)</span>
+            <input
+              id={`instrument-${instrument.id}-due`}
+              type="date"
+              value={dueDate}
+              min={todayInputValue()}
+              onChange={event => setDueDate(event.target.value)}
+            />
+          </label>
+          <div className="instrument-actions">
+            <button type="button" className="primary-button" onClick={handleSend} disabled={busy === 'send'}>
+              {busy === 'send' ? 'Enviando…' : 'Enviar'}
+            </button>
+            <button type="button" className="quiet-button" onClick={() => setOpen(false)} disabled={busy === 'send'}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="quiet-button" onClick={() => { setOpen(true); setError(''); }}>
+          Enviar para responder em casa
+        </button>
+      )}
+
+      {error && <div className="alert" role="alert">{error}</div>}
+
+      {sentCode && (
+        <PortalShareBox
+          patient={patient}
+          clinicName={clinicName}
+          accessCode={sentCode}
+          formTitle={patientFacingTitle(instrument)}
+        />
+      )}
+      {codeNote && <p className="small instrument-portal-note">{codeNote}</p>}
+    </div>
+  );
+}

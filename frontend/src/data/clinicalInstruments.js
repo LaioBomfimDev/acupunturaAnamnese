@@ -73,6 +73,8 @@ export const PHQ9 = {
       risk: {
         fromValue: 1,
         message: 'Resposta positiva no item 9 (pensamentos de morte ou de se ferir). Avalie o risco ainda neste atendimento.',
+        // Respondida em casa (Área do Paciente): não há atendimento acontecendo.
+        homeMessage: 'Resposta positiva no item 9 (pensamentos de morte ou de se ferir), marcada pelo paciente em casa. Entre em contato com o paciente o quanto antes para avaliar o risco.',
       },
     },
   ].map(item => ({ ...item, options: FREQUENCY_OPTIONS })),

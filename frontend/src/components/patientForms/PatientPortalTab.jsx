@@ -11,6 +11,7 @@ import {
 import { PortalShareBox } from './PortalShareBox';
 import { SendFormPanel } from './SendFormPanel';
 import { AssignmentList } from './AssignmentList';
+import { SendInstrumentForm } from '../instruments/SendInstrumentForm';
 import { FormResponseDialog } from './FormResponseDialog';
 import '../../styles/gestao.css';
 import '../../styles/patientForms.css';
@@ -235,6 +236,23 @@ export function PatientPortalTab({ patient, profile, onEditCadastro }) {
           emptyLabel="Nenhum formulário enviado para este paciente."
         />
       </section>
+
+      {/* Escalas da clínica para responder em casa (etapa 2 das escalas).
+          O envio entra na lista de envios acima. */}
+      {!missingBirth && (
+        <section className="pf-card">
+          <div className="pf-section-head">
+            <h4>Escalas</h4>
+          </div>
+          <SendInstrumentForm
+            patient={patient}
+            onSent={async () => {
+              await loadAssignments();
+              setAccess(await getPatientAccess(patient.id));
+            }}
+          />
+        </section>
+      )}
 
       {viewing && (
         <FormResponseDialog

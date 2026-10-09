@@ -11,6 +11,7 @@
 
 import { supabase } from '../lib/supabase';
 import { buildApplicationPayload } from '../utils/instrumentScoring';
+import { buildPortalQuestions } from '../utils/instrumentPortal';
 
 export const PATIENT_INSTRUMENTS_MIGRATION_HINT =
   'As escalas ainda não existem no banco. Aplique a migração '
@@ -53,6 +54,9 @@ export function mapApplicationRow(row) {
     voidedAt: row.voided_at || null,
     voidedByName: row.voided_by_name || '',
     voidReason: row.void_reason || '',
+    hasRisk: row.has_risk === true,
+    riskAcknowledgedAt: row.risk_acknowledged_at || null,
+    riskAcknowledgedByName: row.risk_acknowledged_by_name || '',
   };
 }
 
@@ -103,6 +107,91 @@ export async function voidInstrumentApplication({ id, reason }) {
     p_reason: text,
   });
   if (error) fail(error, 'Não foi possível anular a aplicação.');
+}
+
+// ---------- etapa 2: escala respondida em casa (Área do Paciente) ----------
+
+export const PATIENT_INSTRUMENTS_PORTAL_MIGRATION_HINT =
+  'O envio de escalas para casa ainda não existe no banco. Aplique a migração '
+  + 'supabase/migrations/20261011_patient_instruments_portal.sql no Supabase.';
+
+function failPortal(error, fallback) {
+  const text = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ');
+  if (/portal_send_instrument|patient_instrument_request|instrument_risk/.test(text)
+    && /does not exist|schema cache|Could not find|PGRST202/i.test(text)) {
+    throw new Error(PATIENT_INSTRUMENTS_PORTAL_MIGRATION_HINT);
+  }
+  fail(error, fallback);
+}
+
+/** Nome neutro que o paciente vê na lista dele (sem "depressão" no título). */
+export function patientFacingTitle(instrument) {
+  return `Questionário ${instrument.shortName}`;
+}
+
+export async function sendInstrumentToPortal({ patientId, discipline, instrument, dueDate = null }) {
+  if (!patientId) throw new Error('Escolha o paciente.');
+  const { data, error } = await supabase.rpc('portal_send_instrument', {
+    p_patient_id: patientId,
+    p_discipline: discipline,
+    p_instrument_id: instrument.id,
+    p_instrument_version: instrument.version,
+    p_title: patientFacingTitle(instrument),
+    p_questions: buildPortalQuestions(instrument),
+    p_due_date: dueDate || null,
+  });
+  if (error) failPortal(error, 'Não foi possível enviar a escala.');
+  return data;
+}
+
+export function mapRequestRow(row) {
+  return {
+    id: row.request_id,
+    instrumentId: row.instrument_id,
+    instrumentVersion: Number(row.instrument_version) || 1,
+    status: row.request_status,
+    progress: Number(row.progress) || 0,
+    dueDate: row.due_date || null,
+    sentAt: row.sent_at,
+    submittedAt: row.submitted_at || null,
+    cancelledAt: row.cancelled_at || null,
+    sentByName: row.sent_by_name || '',
+  };
+}
+
+export async function listInstrumentRequests({ patientId, discipline }) {
+  if (!patientId || !discipline) return [];
+  const { data, error } = await supabase.rpc('list_patient_instrument_requests', {
+    p_patient_id: patientId,
+    p_discipline: discipline,
+  });
+  if (error) failPortal(error, 'Não foi possível carregar os envios.');
+  return (data || []).map(mapRequestRow);
+}
+
+export async function cancelInstrumentRequest(requestId) {
+  const { error } = await supabase.rpc('cancel_patient_instrument_request', { p_request_id: requestId });
+  if (error) failPortal(error, 'Não foi possível cancelar o envio.');
+}
+
+export async function acknowledgeInstrumentRisk(applicationId) {
+  const { error } = await supabase.rpc('acknowledge_instrument_risk', { p_application_id: applicationId });
+  if (error) failPortal(error, 'Não foi possível marcar o alerta como visto.');
+}
+
+/** Alertas de risco ainda não vistos de quem está logado (tela inicial). */
+export async function listMyInstrumentRiskAlerts() {
+  const { data, error } = await supabase.rpc('list_my_instrument_risk_alerts');
+  if (error) failPortal(error, 'Não foi possível carregar os alertas.');
+  return (data || []).map(row => ({
+    applicationId: row.application_id,
+    patientId: row.patient_id,
+    patientName: row.patient_name || 'Paciente',
+    instrumentId: row.instrument_id,
+    discipline: row.discipline,
+    appliedAt: row.applied_at,
+    source: row.source,
+  }));
 }
 
 export { newIdempotencyKey };

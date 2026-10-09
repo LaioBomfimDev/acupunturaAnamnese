@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase';
 
 const FORM_COLUMNS = 'id,clinic_id,title,description,questions,status,created_at,updated_at';
 const ASSIGNMENT_COLUMNS =
-  'id,patient_id,form_id,form_title,form_description,form_questions,due_date,status,progress,created_at,started_at,last_saved_at,submitted_at,cancelled_at';
+  'id,patient_id,form_id,kind,form_title,form_description,form_questions,due_date,status,progress,created_at,started_at,last_saved_at,submitted_at,cancelled_at';
 const ACCESS_COLUMNS = 'id,patient_id,access_code,is_active,failed_attempts,locked_at,last_access_at,code_created_at,created_at';
 
 export const PATIENT_PORTAL_MIGRATION_HINT =
@@ -162,4 +162,30 @@ export function setPatientAccessActive(patientId, active) {
     { p_patient_id: patientId, p_active: Boolean(active) },
     active ? 'Não foi possível liberar o acesso.' : 'Não foi possível desativar o acesso.',
   );
+}
+
+// ---------- Configurações > Acesso do paciente ----------
+// A administração decide se quem atende o paciente também gera e vê o
+// código de acesso dele (clinics.portal_professionals_manage_access,
+// migração 20261011). Padrão: só a administração.
+
+export async function getClinicPortalPolicy(clinicId) {
+  if (!clinicId) return { professionalsManageAccess: false };
+  const { data, error } = await supabase
+    .from('clinics')
+    .select('portal_professionals_manage_access')
+    .eq('id', clinicId)
+    .maybeSingle();
+  if (error) {
+    if (/portal_professionals_manage_access/.test(error.message || '')) {
+      throw new Error('Esta configuração ainda não existe no banco. Aplique a migração supabase/migrations/20261011_patient_instruments_portal.sql no Supabase.');
+    }
+    fail(error, 'Não foi possível carregar a configuração da Área do Paciente.');
+  }
+  return { professionalsManageAccess: data?.portal_professionals_manage_access === true };
+}
+
+export async function setClinicPortalPolicy(allowed) {
+  const { error } = await supabase.rpc('clinic_admin_set_portal_access_policy', { p_allowed: allowed === true });
+  if (error) fail(error, 'Não foi possível salvar a configuração.');
 }

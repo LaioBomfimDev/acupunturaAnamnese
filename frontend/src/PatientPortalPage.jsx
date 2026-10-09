@@ -9,6 +9,8 @@ import {
 } from './utils/patientForms';
 import { callPortal, newSaveId, readStoredSession, storeSession } from './services/patientPortalPublic';
 import { PatientFormRunner } from './components/patientForms/PatientFormRunner';
+import { PatientRiskSupport } from './components/patientForms/PatientRiskSupport';
+import { hasRiskAnswer } from './utils/instrumentPortal';
 import {
   IconBuilding,
   IconCheckBold,
@@ -78,6 +80,7 @@ export function PatientPortalPage() {
   const [formError, setFormError] = useState('');
   const [serverMissing, setServerMissing] = useState([]);
   const [blocked, setBlocked] = useState(false);
+  const [sentWithRisk, setSentWithRisk] = useState(false);
   const [opening, setOpening] = useState('');
 
   // O token só vive aqui (e no sessionStorage da aba): nada na tela depende dele.
@@ -328,6 +331,7 @@ export function PatientPortalPage() {
         submitAttemptRef.current = null;
       });
       dirtyRef.current = false;
+      setSentWithRisk(hasRiskAnswer(formRef.current?.questions, answersRef.current));
       formRef.current = null;
       setForm(null);
       setPhase('sent');
@@ -496,6 +500,7 @@ export function PatientPortalPage() {
             <PublicStateMessage tone="success" icon={<IconCheckBold size={26} />} title="Respostas enviadas!">
               A clínica já recebeu. Obrigado por responder.
             </PublicStateMessage>
+            {sentWithRisk && <PatientRiskSupport />}
             <button type="button" className="cf-submit" onClick={() => loadHome(sessionRef.current)}>
               Voltar aos formulários
             </button>
@@ -504,7 +509,7 @@ export function PatientPortalPage() {
       </main>
 
       {(phase === 'login' || phase === 'home') && (
-        <p className="cf-foot">Suas respostas vão só para a administração da clínica, para o seu atendimento.</p>
+        <p className="cf-foot">Suas respostas vão só para a equipe da clínica que cuida do seu atendimento.</p>
       )}
     </div>
   );

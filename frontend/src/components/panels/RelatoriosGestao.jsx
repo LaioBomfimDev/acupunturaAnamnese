@@ -35,6 +35,7 @@ import { GestaoNav, GestaoSectionHead } from './GestaoNav';
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { PersonalizarClinica } from './PersonalizarClinica';
 import { MeuCadastro } from './MeuCadastro';
+import { AcessoPaciente } from './AcessoPaciente';
 import '../../styles/gestao.css';
 
 // Mesmo componente que profissional e recepção abrem pelo menu do hub;
@@ -68,20 +69,35 @@ const SECTIONS = [
   { id: 'importaveis', label: 'Importáveis' },
   { id: 'profissionais', label: 'Profissionais' },
   { id: 'acessos', label: 'Acessos' },
-  { id: 'cadastro', label: 'Meu cadastro' },
-  { id: 'personalizar', label: 'Personalizar' },
   { id: 'documentos', label: 'Documentos timbrados' },
+  { id: 'personalizar', label: 'Personalizar' },
+  { id: 'acessopaciente', label: 'Acesso do paciente' },
+  { id: 'cadastro', label: 'Meu cadastro' },
+];
+
+// Dois lados (08/10/2026, pedido da administradora: "já tem muito lá em
+// gestão"): Gestão é o dia a dia, Configurações é o que se ajusta uma vez
+// só. Cada lado mostra só os próprios grupos no menu.
+const SIDES = [
+  { id: 'gestao', label: 'Gestão' },
+  { id: 'configuracoes', label: 'Configurações' },
 ];
 
 // Ordem do menu (2026-09-30): primeiro o panorama, depois o que pede ação
-// com paciente, a equipe e, por último, o que se ajusta uma vez só.
-// Área do Paciente (2026-10-06): formulários que o paciente responde online.
+// com paciente e a equipe. Área do Paciente (2026-10-06): formulários que
+// o paciente responde online.
 const SECTION_GROUPS = [
-  { label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
-  { label: 'Área do Paciente', ids: ['importaveis'] },
-  { label: 'Equipe', ids: ['profissionais', 'acessos', 'cadastro'] },
-  { label: 'Instituição', ids: ['personalizar', 'documentos'] },
+  { side: 'gestao', label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
+  { side: 'gestao', label: 'Área do Paciente', ids: ['importaveis'] },
+  { side: 'gestao', label: 'Equipe', ids: ['profissionais', 'acessos'] },
+  { side: 'gestao', label: 'Documentos', ids: ['documentos'] },
+  { side: 'configuracoes', label: 'Instituição', ids: ['personalizar', 'acessopaciente'] },
+  { side: 'configuracoes', label: 'Sua conta', ids: ['cadastro'] },
 ];
+
+function sideOf(sectionId) {
+  return SECTION_GROUPS.find(group => group.ids.includes(sectionId))?.side || SIDES[0].id;
+}
 
 const TAB_ICONS = {
   faltosos: (
@@ -113,6 +129,9 @@ const TAB_ICONS = {
   ),
   cadastro: (
     <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2.2" /><path d="M5.8 16.2a3.4 3.4 0 0 1 6.4 0" /><path d="M14.5 10h4M14.5 13.5h3" /></>
+  ),
+  acessopaciente: (
+    <><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9" /><path d="m17 6 3 3" /><path d="m14.5 8.5 2 2" /></>
   ),
 };
 
@@ -275,6 +294,17 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
   const [section, setSection] = useState(() => (
     SECTIONS.some(item => item.id === initialSection) ? initialSection : SECTION_GROUPS[0].ids[0]
   ));
+  const side = sideOf(section);
+  const sideGroups = SECTION_GROUPS.filter(group => group.side === side);
+  // Volta para a última aba aberta de cada lado ao trocar Gestão ↔ Configurações.
+  const lastSectionBySide = useRef({});
+
+  function selectSide(nextSide) {
+    if (nextSide === side) return;
+    lastSectionBySide.current[side] = section;
+    const firstOfSide = SECTION_GROUPS.find(group => group.side === nextSide).ids[0];
+    setSection(lastSectionBySide.current[nextSide] || firstOfSide);
+  }
   const [range, setRange] = useState(defaultRange);
   const [professionalId, setProfessionalId] = useState('');
   const [statusFilter, setStatusFilter] = useState(''); // '' | 'no_show' | 'excused'
@@ -794,12 +824,27 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
 
   return (
     <div className="gt gt--rail">
+      {/* Os dois botões grandes ocupam a largura toda, acima do menu. */}
+      <div className="gt-sides no-print" role="group" aria-label="Gestão ou configurações">
+        {SIDES.map(option => (
+          <button
+            key={option.id}
+            type="button"
+            className="gt-side-btn"
+            aria-pressed={side === option.id}
+            onClick={() => selectSide(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       {/* Menu e título ficam fora da impressão (no-print dentro do
           GestaoNav): a aba Documentos imprime a folha timbrada daqui. */}
       <GestaoNav
-        label="Relatórios de gestão"
+        label={side === 'configuracoes' ? 'Configurações da instituição' : 'Relatórios de gestão'}
         sections={SECTIONS}
-        groups={SECTION_GROUPS}
+        groups={sideGroups}
         icons={TAB_ICONS}
         active={section}
         onSelect={setSection}
@@ -1408,6 +1453,8 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
         )}
 
         {section === 'personalizar' && <PersonalizarClinica profile={profile} />}
+
+        {section === 'acessopaciente' && <AcessoPaciente profile={profile} />}
 
         {section === 'cadastro' && <MeuCadastro profile={profile} />}
       </div>

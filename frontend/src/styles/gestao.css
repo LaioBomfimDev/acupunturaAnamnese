@@ -20,6 +20,47 @@
   min-width: 0;
 }
 
+/* Gestão | Configurações (08/10/2026): dois botões grandes acima do menu,
+   na largura toda do grid. Mesmo desenho do "Escrever / Ver evoluções". */
+.gt-sides {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  justify-self: start;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--r1-accent-line, color-mix(in srgb, var(--r1-accent) 48%, transparent));
+  border-radius: 999px;
+  background: var(--r1-surface);
+}
+
+.gt-side-btn {
+  min-height: 46px;
+  padding: 10px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.gt-side-btn:hover {
+  background: var(--r1-accent-wash);
+}
+
+.gt-side-btn[aria-pressed='true'] {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.gt-side-btn:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 2px;
+}
+
 .gt-nav {
   position: sticky;
   top: 16px;
@@ -1103,6 +1144,18 @@
   .gt--rail {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
+  }
+
+  .gt-sides {
+    display: flex;
+    justify-self: stretch;
+  }
+
+  .gt-side-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 15px;
   }
 
   /* Menu vira faixa horizontal: grupos lado a lado, sem rótulo, com um

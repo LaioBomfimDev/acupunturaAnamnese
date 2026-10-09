@@ -161,6 +161,7 @@ export const GESTAO_HELP = {
       'As respostas são salvas sozinhas enquanto o paciente responde: ele pode parar e continuar depois. Passar do prazo não trava o formulário.',
       'Editar um formulário já enviado não muda o que o paciente recebeu: cada envio guarda a versão daquele dia.',
       'Escala ou questionário publicado com direito autoral não entra com as perguntas copiadas: só o que a clínica criou.',
+      'Escala enviada para casa (PHQ-9, GAD-7) aparece nos envios sem “Ver respostas”: o resultado fica na aba Escalas de quem atende o paciente.',
     ],
   },
   indicadores: {
@@ -216,6 +217,25 @@ export const GESTAO_HELP = {
     notes: [
       'Relatórios, evoluções e papel timbrado saem sempre com a cor da instituição, nunca com a cor pessoal de quem imprimiu.',
       'Os links valem para toda a equipe: quem manda o link não muda a cor que o paciente vê.',
+    ],
+  },
+  acessopaciente: {
+    title: 'Acesso do paciente',
+    summary: 'Quem gera e vê o código que o paciente usa para entrar na Área do Paciente.',
+    actions: [
+      'Em “Quem gera e vê o código”, escolher “Só a administração” ou “A administração e quem atende o paciente”. A escolha é salva na hora.',
+    ],
+    reading: [
+      'O nome ao lado de “Código de acesso do paciente” mostra a escolha que vale agora.',
+      '“Quem atende” é quem tem atendimento com o paciente na Agenda ou é responsável pela matrícula dele, na própria área.',
+    ],
+    access: [
+      'Só a administração altera esta escolha.',
+      'Com “A administração e quem atende o paciente”, quem atende vê o código e a mensagem pronta depois de enviar uma escala para o paciente responder em casa. Se o paciente ainda não tinha código, o envio já cria um.',
+    ],
+    notes: [
+      'Trocar o código, desativar o acesso ou liberar um código bloqueado por datas erradas continua só com a administração, na ficha do paciente, aba “Área do Paciente”.',
+      'Quem atende pode enviar escalas para casa com qualquer uma das duas escolhas. Na primeira, pede à administração a mensagem com o código.',
     ],
   },
   cadastro: MEU_CADASTRO_HELP,

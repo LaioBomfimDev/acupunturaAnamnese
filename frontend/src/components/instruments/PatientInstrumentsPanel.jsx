@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { getInstrument, INSTRUMENT_REVIEW_STATUS, instrumentsForDiscipline } from '../../data/clinicalInstruments';
-import { listInstrumentApplications } from '../../services/patientInstrumentService';
+import {
+  acknowledgeInstrumentRisk,
+  listInstrumentApplications,
+  listInstrumentRequests,
+} from '../../services/patientInstrumentService';
 import { riskMessages } from '../../utils/instrumentScoring';
 import { InstrumentApplyForm } from './InstrumentApplyForm';
 import { InstrumentApplicationDialog } from './InstrumentApplicationDialog';
+import { InstrumentPortalBox } from './InstrumentPortalBox';
 import { InstrumentTrendChart } from './InstrumentTrendChart';
 import { differenceLabel, formatInstrumentDate, pointsLabel, reapplyStatus, savedNotice, validApplications } from './instrumentFormat';
 import '../../styles/instruments.css';
@@ -31,11 +36,28 @@ function isAccessDenied(message) {
   return /não está em atendimento nesta área/.test(String(message || ''));
 }
 
-function InstrumentCard({ instrument, applications, currentUserId, onApply, onOpen }) {
+function InstrumentCard({
+  instrument,
+  applications,
+  requests,
+  patient,
+  clinicName,
+  discipline,
+  currentUserId,
+  acknowledging,
+  onApply,
+  onOpen,
+  onAcknowledge,
+  onPortalChanged,
+}) {
   const valid = validApplications(applications);
   const latest = valid[0] || null;
   const previous = valid[1] || null;
-  const latestRisks = latest ? riskMessages(instrument, latest.result.riskItems || []) : [];
+  // Risco vindo de casa fica em destaque até alguém que atende marcar "Vi o alerta".
+  const unseenRisks = valid.filter(app => app.hasRisk && !app.riskAcknowledgedAt);
+  const latestRisks = latest && !unseenRisks.includes(latest)
+    ? riskMessages(instrument, latest.result.riskItems || [], { source: latest.source })
+    : [];
   const pending = instrument.review?.status !== INSTRUMENT_REVIEW_STATUS.APPROVED;
   const reapply = reapplyStatus(latest?.appliedAt, instrument.reapplyAfterDays);
 
@@ -70,11 +92,37 @@ function InstrumentCard({ instrument, applications, currentUserId, onApply, onOp
         <p className="small area-empty">Ainda não aplicada para este paciente.</p>
       )}
 
+      {unseenRisks.map(app => (
+        <div key={app.id} className="alert instrument-risk instrument-risk-unseen" role="alert">
+          <p>
+            <b>Alerta de risco</b> na aplicação de {formatInstrumentDate(app.appliedAt)}:{' '}
+            {riskMessages(instrument, app.result.riskItems || [], { source: app.source }).map(risk => risk.message).join(' ')}
+          </p>
+          <button
+            type="button"
+            className="quiet-button"
+            onClick={() => onAcknowledge(app)}
+            disabled={acknowledging === app.id}
+          >
+            {acknowledging === app.id ? 'Marcando…' : 'Vi o alerta'}
+          </button>
+        </div>
+      ))}
+
       {latestRisks.map(risk => (
         <div key={risk.itemId} className="alert instrument-risk">
           Na última aplicação: {risk.message}
         </div>
       ))}
+
+      <InstrumentPortalBox
+        instrument={instrument}
+        patient={patient}
+        clinicName={clinicName}
+        discipline={discipline}
+        requests={requests}
+        onChanged={onPortalChanged}
+      />
 
       <InstrumentTrendChart instrument={instrument} applications={applications} />
 
@@ -88,8 +136,11 @@ function InstrumentCard({ instrument, applications, currentUserId, onApply, onOp
               </span>
               <span className="instrument-history-band">{app.result?.bandLabel || '—'}</span>
               <span className="small instrument-history-author">
-                {app.appliedById === currentUserId ? 'Você' : app.appliedByName}
+                {app.source === 'area_do_paciente'
+                  ? 'Respondida em casa'
+                  : app.appliedById === currentUserId ? 'Você' : app.appliedByName}
               </span>
+              {app.hasRisk && !app.voidedAt && <span className="instrument-risk-tag">Risco</span>}
               {app.voidedAt && <span className="instrument-voided-tag">Anulada</span>}
               <button
                 type="button"
@@ -118,11 +169,13 @@ function InstrumentCard({ instrument, applications, currentUserId, onApply, onOp
   );
 }
 
-export function PatientInstrumentsPanel({ patient, discipline, currentUserId }) {
+export function PatientInstrumentsPanel({ patient, discipline, currentUserId, clinicName = '' }) {
   const instruments = instrumentsForDiscipline(discipline);
   const patientId = patient?.id || null;
   const topRef = useRef(null);
   const [applications, setApplications] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [acknowledging, setAcknowledging] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [error, setError] = useState('');
@@ -137,6 +190,7 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId }) 
   if (shownKey !== patientKey) {
     setShownKey(patientKey);
     setApplications([]);
+    setRequests([]);
     setLoading(true);
     setLoadedOnce(false);
     setError('');
@@ -148,10 +202,16 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId }) 
   useEffect(() => {
     if (!patientId) return undefined;
     let cancelled = false;
-    listInstrumentApplications({ patientId, discipline })
-      .then(rows => {
+    // Envios para casa não podem travar a aba: sem eles (banco antigo ou
+    // falha), as escalas do consultório continuam aparecendo.
+    Promise.all([
+      listInstrumentApplications({ patientId, discipline }),
+      listInstrumentRequests({ patientId, discipline }).catch(() => []),
+    ])
+      .then(([rows, sent]) => {
         if (cancelled) return;
         setApplications(rows);
+        setRequests(sent);
         setError('');
       })
       .catch(err => { if (!cancelled) setError(err.message); })
@@ -167,6 +227,19 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId }) 
     setLoading(true);
     setReloadToken(token => token + 1);
   }, []);
+
+  async function handleAcknowledge(app) {
+    setAcknowledging(app.id);
+    try {
+      await acknowledgeInstrumentRisk(app.id);
+      setNotice({ text: 'Alerta marcado como visto.', risk: false });
+      reload();
+    } catch (err) {
+      setNotice({ text: err.message, risk: true });
+    } finally {
+      setAcknowledging('');
+    }
+  }
 
   // Depois de salvar ou anular, o recado e o cartão atualizado ficam à vista.
   useEffect(() => {
@@ -203,7 +276,7 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId }) 
     <Panel title="Escalas">
       <div className="instrument-panel" ref={topRef}>
         <p className="small area-intro">
-          Aplique a escala no atendimento: o sistema soma os pontos e mostra a faixa do instrumento e a evolução.
+          Aplique a escala no atendimento ou envie para o paciente responder em casa: o sistema soma os pontos e mostra a faixa do instrumento e a evolução.
           A faixa não é diagnóstico. Só profissionais desta área que atendem o paciente veem as escalas.
         </p>
 
@@ -237,7 +310,14 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId }) 
                   key={instrument.id}
                   instrument={instrument}
                   applications={applications.filter(app => app.instrumentId === instrument.id)}
+                  requests={requests.filter(request => request.instrumentId === instrument.id)}
+                  patient={patient}
+                  clinicName={clinicName}
+                  discipline={discipline}
                   currentUserId={currentUserId}
+                  acknowledging={acknowledging}
+                  onAcknowledge={handleAcknowledge}
+                  onPortalChanged={text => { setNotice({ text, risk: false }); reload(); }}
                   onApply={(next, latest) => {
                     setNotice(null);
                     setApplying({ instrument: next, lastAppliedAt: latest?.appliedAt || null });

@@ -219,7 +219,10 @@ test('Edge Function: erro genérico, limites, token só em hash e nada de prontu
   }
   assert.match(source, /p_token_hash: tokenHash/);
   assert.doesNotMatch(source, /p_token_hash: token\b/);
-  assert.match(source, /sanitizeAnswers\(assignment\.form_questions, body\.answers\)/);
+  // Respostas limpas pelas perguntas do servidor (cópia do envio ou, na
+  // escala, a definição oficial), nunca pelas que o aparelho mandar.
+  assert.match(source, /const \{ instrument, questions \} = assignmentContent\(assignment\);\r?\n[\s\S]{0,200}?const answers = sanitizeAnswers\(questions, body\.answers\)/);
+  assert.match(source, /return \{ instrument: null, questions: assignment\.form_questions \}/);
   assert.match(source, /\.eq\('patient_id', session\.patientId\)\s*\.eq\('clinic_id', session\.clinicId\)\s*\.in\('status', OPEN_STATUSES\)/);
   for (const table of ['clinical_records', 'patient_evolutions', 'clinical_sessions', 'patient_attachments']) {
     assert.ok(!source.includes(table), `a Área do Paciente não lê ${table}`);

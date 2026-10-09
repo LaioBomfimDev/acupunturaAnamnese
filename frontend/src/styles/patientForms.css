@@ -1041,3 +1041,28 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
   border-radius: 4px;
 }
+
+/* Apoio na hora quando o paciente marca resposta de risco numa escala
+   (PatientRiskSupport). Vermelho só para risco, como no resto do sistema. */
+.pq-risk-support {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-danger-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-danger-bg);
+  color: var(--r1-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pq-risk-support p {
+  margin: 0;
+}
+
+.pq-risk-support a {
+  color: var(--r1-text);
+  font-weight: 700;
+  text-decoration: underline;
+}

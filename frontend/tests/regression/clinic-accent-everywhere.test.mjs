@@ -111,15 +111,23 @@ test('Gestão: menu agrupado na ordem combinada, toda aba num grupo só', () => 
   const source = read('components/panels/RelatoriosGestao.jsx');
   const ids = [...source.match(/const SECTIONS = \[([\s\S]*?)\];/)[1].matchAll(/id: '([a-z]+)'/g)].map(m => m[1]);
   const groups = [...source.match(/const SECTION_GROUPS = \[([\s\S]*?)\];/)[1]
-    .matchAll(/label: '([^']+)', ids: \[([^\]]*)\]/g)]
-    .map(m => ({ label: m[1], ids: [...m[2].matchAll(/'([a-z]+)'/g)].map(x => x[1]) }));
+    .matchAll(/side: '([a-z]+)', label: '([^']+)', ids: \[([^\]]*)\]/g)]
+    .map(m => ({ side: m[1], label: m[2], ids: [...m[3].matchAll(/'([a-z]+)'/g)].map(x => x[1]) }));
 
+  // Dois botões grandes (08/10/2026): Gestão (dia a dia) e Configurações
+  // (o que se ajusta uma vez só). Cada lado mostra só os próprios grupos.
   assert.deepEqual(groups, [
-    { label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
-    { label: 'Área do Paciente', ids: ['importaveis'] },
-    { label: 'Equipe', ids: ['profissionais', 'acessos', 'cadastro'] },
-    { label: 'Instituição', ids: ['personalizar', 'documentos'] },
+    { side: 'gestao', label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
+    { side: 'gestao', label: 'Área do Paciente', ids: ['importaveis'] },
+    { side: 'gestao', label: 'Equipe', ids: ['profissionais', 'acessos'] },
+    { side: 'gestao', label: 'Documentos', ids: ['documentos'] },
+    { side: 'configuracoes', label: 'Instituição', ids: ['personalizar', 'acessopaciente'] },
+    { side: 'configuracoes', label: 'Sua conta', ids: ['cadastro'] },
   ]);
+  assert.match(source, /\{ id: 'gestao', label: 'Gestão' \},\r?\n\s*\{ id: 'configuracoes', label: 'Configurações' \}/);
+  assert.match(source, /groups=\{sideGroups\}/, 'menu mostra só os grupos do lado aberto');
+  assert.match(source, /className="gt-side-btn"\r?\n\s*aria-pressed=\{side === option\.id\}/);
+  assert.match(source, /className="gt-sides no-print"/);
   const grouped = groups.flatMap(group => group.ids);
   assert.deepEqual([...grouped].sort(), [...ids].sort(), 'aba fora do menu ou repetida');
   assert.deepEqual(ids, grouped, 'SECTIONS na mesma ordem do menu');

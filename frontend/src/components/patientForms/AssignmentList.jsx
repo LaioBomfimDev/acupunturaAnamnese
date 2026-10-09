@@ -5,7 +5,9 @@ import { cancelAssignment } from '../../services/patientPortalService';
 // ============================================================
 // Lista de envios (Importáveis e ficha do paciente): situação, prazo,
 // "Ver respostas" e "Cancelar envio" (pede confirmação no próprio
-// cartão; cancelado some da Área do Paciente e não volta).
+// cartão; cancelado some da Área do Paciente e não volta). Escala
+// (kind 'instrument') não tem "Ver respostas": a nota e as respostas
+// ficam na aba Escalas de quem atende, e o banco não as devolve aqui.
 // ============================================================
 
 function day(iso) {
@@ -50,13 +52,15 @@ export function AssignmentList({
         {assignments.map(assignment => {
           const status = assignmentStatus(assignment);
           const open = assignment.status === 'pending' || assignment.status === 'in_progress';
-          const hasAnswers = assignment.status === 'submitted' || assignment.status === 'in_progress';
+          const isInstrument = assignment.kind === 'instrument';
+          const hasAnswers = !isInstrument && (assignment.status === 'submitted' || assignment.status === 'in_progress');
           const name = patientName ? patientName(assignment.patient_id) : '';
           const selected = selectedIds?.has(assignment.id) || false;
           const meta = [
             `Enviado em ${day(assignment.created_at)}`,
             assignment.due_date ? `prazo ${formatDueDate(assignment.due_date)}` : 'sem prazo',
             assignment.submitted_at ? `respondido em ${day(assignment.submitted_at)}` : null,
+            isInstrument ? 'escala: o resultado fica na aba Escalas de quem atende' : null,
           ].filter(Boolean).join(' · ');
 
           return (

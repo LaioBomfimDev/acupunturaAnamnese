@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readFile } from 'node:fs/promises';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -12,11 +12,15 @@ import { createServer } from 'vite';
 // certa), cálculo e risco, payload que vai cifrado, data da aplicação,
 // regras da migração (acesso por disciplina + matrícula, cifra, sem
 // acesso direto à tabela, exclusão de paciente) e a aba na Psicologia.
+// Etapa 2 (Área do Paciente, mesmo dia): espelho do servidor, perguntas
+// do portal com o aviso de risco, migração 20261011 e as telas novas.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const src = rel => readFile(path.join(root, 'src', rel), 'utf8');
 const MIGRATION = path.resolve(root, '../supabase/migrations/20261008_patient_instruments.sql');
 const ERASURE_ORIGINAL = path.resolve(root, '../supabase/migrations/20260915b_patient_suspend_and_erasure.sql');
+const PORTAL_MIGRATION = path.resolve(root, '../supabase/migrations/20261011_patient_instruments_portal.sql');
+const shared = name => import(pathToFileURL(path.resolve(root, '../supabase/functions/_shared', name)).href);
 
 let server;
 let instruments;
@@ -231,6 +235,53 @@ test('data da aplicação: hoje vira agora, passado vira meio-dia, futuro não v
   assert.equal(format.pointsLabel(12), '12 pontos');
 });
 
+// ---- espelho do servidor (etapa 2) -----------------------------------------
+
+test('cálculo do servidor (_shared/instrumentScoring.ts) dá o mesmo resultado da tela', async () => {
+  const back = await import(pathToFileURL(path.resolve(root, '../supabase/functions/_shared/instrumentScoring.ts')).href);
+  // Sorteio com semente fixa: os mesmos casos em toda máquina.
+  let seed = 20261008;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const values = [0, 1, 2, 3, 4, -1, '2', null, undefined, 1.5];
+
+  for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
+    const cases = [
+      {},
+      fill(instrument, 0),
+      { ...fill(instrument, 0), dificuldade: 2 },
+      { ...fill(instrument, 3), dificuldade: 3, intrusa: 1 },
+      { q1: 1, q9: 1 },
+    ];
+    for (let n = 0; n < 200; n += 1) {
+      const answers = {};
+      for (const item of [...instrument.items, ...instrument.extraItems]) {
+        if (random() < 0.9) answers[item.id] = values[Math.floor(random() * values.length)];
+      }
+      cases.push(answers);
+    }
+
+    for (const answers of cases) {
+      const label = `${instrument.id} ${JSON.stringify(answers)}`;
+      assert.deepEqual(back.scoreInstrument(instrument, answers), scoring.scoreInstrument(instrument, answers), label);
+      assert.deepEqual(back.sanitizeInstrumentAnswers(instrument, answers), scoring.sanitizeInstrumentAnswers(instrument, answers), label);
+      assert.deepEqual(
+        back.visibleExtraItems(instrument, answers).map(item => item.id),
+        scoring.visibleExtraItems(instrument, answers).map(item => item.id),
+        label,
+      );
+      const run = lib => {
+        try {
+          return lib.buildApplicationPayload(instrument, answers, ' nota ');
+        } catch (error) {
+          return { error: error.message };
+        }
+      };
+      assert.deepEqual(run(back), run(scoring), label);
+    }
+  }
+  assert.equal(back.INSTRUMENT_NOTE_MAX, scoring.INSTRUMENT_NOTE_MAX);
+});
+
 // ---- tela ------------------------------------------------------------------
 
 test('formulário: uma pergunta por grupo de opções e salvar travado até completar', () => {
@@ -299,7 +350,7 @@ test('CSS das escalas só com tokens e sem o petróleo fixo', async () => {
 // ---- migração --------------------------------------------------------------
 
 function functionBody(sql, name) {
-  const match = sql.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\$${name}\\$;`));
+  const match = sql.match(new RegExp(`CREATE (?:OR REPLACE )?FUNCTION public\\.${name}\\([\\s\\S]*?\\$${name}\\$;`));
   assert.ok(match, `função ${name}`);
   return match[0];
 }
@@ -370,4 +421,209 @@ test('migração: exclusão de paciente copia a versão viva e só acrescenta as
     updated.indexOf('INSERT INTO patient_erasure_backup.snapshots') < updated.indexOf('DELETE FROM public.patient_instrument_applications'),
     'snapshot antes de apagar',
   );
+});
+
+// ---- etapa 2: escala respondida em casa (Área do Paciente) ----------------
+
+test('portal: instruções, itens obrigatórios, aviso de risco só no item 9 e dificuldade opcional', async () => {
+  const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
+  const questions = portal.buildPortalQuestions(instruments.PHQ9);
+  assert.equal(questions[0].type, 'section');
+  assert.equal(questions[0].help, instruments.PHQ9.instructions);
+  assert.equal(questions.filter(question => question.type === 'single' && question.required).length, 9);
+
+  const q9 = instruments.PHQ9.items.find(item => item.id === 'q9');
+  assert.deepEqual(
+    questions.find(question => question.id === 'q9').riskNotice.values,
+    q9.options.filter(option => option.value >= q9.risk.fromValue).map(option => option.label),
+  );
+  assert.equal(questions.filter(question => question.riskNotice).length, 1);
+  const extra = questions.find(question => question.id === 'dificuldade');
+  assert.equal(extra.required, false);
+  assert.equal(extra.help, portal.EXTRA_ITEM_HELP);
+  assert.equal(portal.buildPortalQuestions(instruments.GAD7).filter(question => question.riskNotice).length, 0);
+
+  // O paciente marca o rótulo; o rótulo vira ponto pela definição da escala.
+  const labels = Object.fromEntries(instruments.PHQ9.items.map(item => [item.id, item.options[2].label]));
+  const payload = portal.buildPortalPayload(instruments.PHQ9, labels);
+  assert.equal(payload.result.score, 18);
+  assert.deepEqual(payload.result.riskItems, ['q9']);
+  assert.deepEqual(payload, scoring.buildApplicationPayload(instruments.PHQ9, fill(instruments.PHQ9, 2)));
+
+  assert.ok(portal.hasRiskAnswer(questions, labels));
+  assert.ok(!portal.hasRiskAnswer(questions, { ...labels, q9: q9.options[0].label }));
+  assert.ok(!portal.hasRiskAnswer(questions, { q9: 'Resposta que não existe' }));
+
+  // Respondida em casa não há atendimento acontecendo: a orientação muda.
+  const [office] = scoring.riskMessages(instruments.PHQ9, ['q9']);
+  const [home] = scoring.riskMessages(instruments.PHQ9, ['q9'], { source: 'area_do_paciente' });
+  assert.match(office.message, /ainda neste atendimento/);
+  assert.match(home.message, /marcada pelo paciente em casa/);
+  assert.doesNotMatch(home.message, /neste atendimento/);
+  const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
+  assert.ok(panel.includes('riskMessages(instrument, app.result.riskItems || [], { source: app.source })'), 'alerta usa a orientação da origem');
+});
+
+test('portal: o servidor monta as mesmas perguntas e calcula a mesma nota da tela', async () => {
+  const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
+  const back = await shared('instrumentPortal.ts');
+  const serverDefs = await shared('clinicalInstruments.ts');
+
+  // Definições do servidor geradas da fonte única (scripts/sync-instrument-mirror.mjs).
+  const mirror = await import(pathToFileURL(path.resolve(root, 'scripts/sync-instrument-mirror.mjs')).href);
+  const { body } = await mirror.buildInstrumentMirror();
+  assert.equal(
+    (await readFile(mirror.MIRROR_TARGET, 'utf8')).replace(/\r\n/g, '\n'),
+    body.replace(/\r\n/g, '\n'),
+    'clinicalInstruments.ts desatualizado: rode node frontend/scripts/sync-instrument-mirror.mjs',
+  );
+  assert.equal(serverDefs.getServerInstrument('phq9', 99), null, 'versão desconhecida não é adivinhada');
+  assert.equal(back.EXTRA_ITEM_HELP, portal.EXTRA_ITEM_HELP);
+  assert.equal(back.INSTRUCTIONS_SECTION_ID, portal.INSTRUCTIONS_SECTION_ID);
+  const backScoring = await shared('instrumentScoring.ts');
+  for (const source of [null, 'consultorio', 'area_do_paciente']) {
+    assert.deepEqual(
+      backScoring.riskMessages(serverDefs.getServerInstrument('phq9', instruments.PHQ9.version), ['q9'], { source }),
+      scoring.riskMessages(instruments.PHQ9, ['q9'], { source }),
+      String(source),
+    );
+  }
+
+  let seed = 20261011;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
+    const serverInstrument = serverDefs.getServerInstrument(instrument.id, instrument.version);
+    assert.ok(serverInstrument, `${instrument.id} sem definição no servidor`);
+    assert.deepEqual(back.buildPortalQuestions(serverInstrument), portal.buildPortalQuestions(instrument), instrument.id);
+
+    for (let n = 0; n < 200; n += 1) {
+      const answers = {};
+      for (const item of [...instrument.items, ...instrument.extraItems]) {
+        const labels = [...item.options.map(option => option.label), 'Outra coisa', '', null];
+        if (random() < 0.9) answers[item.id] = labels[Math.floor(random() * labels.length)];
+      }
+      const run = (lib, definition) => {
+        try {
+          return lib.buildPortalPayload(definition, answers);
+        } catch (error) {
+          return { error: error.message };
+        }
+      };
+      assert.deepEqual(back.answersToValues(serverInstrument, answers), portal.answersToValues(instrument, answers));
+      assert.deepEqual(run(back, serverInstrument), run(portal, instrument), `${instrument.id} ${JSON.stringify(answers)}`);
+    }
+  }
+});
+
+test('tela do paciente: CVV e SAMU aparecem só quando marca a resposta de risco', async () => {
+  const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
+  const { PatientFormQuestion } = await server.ssrLoadModule('/src/components/patientForms/PatientFormQuestion.jsx');
+  const q9 = portal.buildPortalQuestions(instruments.PHQ9).find(question => question.id === 'q9');
+  const render = value => renderToStaticMarkup(React.createElement(PatientFormQuestion, {
+    question: q9,
+    answers: value === undefined ? {} : { q9: value },
+    onChange: () => {},
+  }));
+  for (const value of q9.riskNotice.values) {
+    const html = render(value);
+    assert.match(html, /href="tel:188"/);
+    assert.match(html, /href="tel:192"/);
+  }
+  assert.doesNotMatch(render(q9.options[0]), /tel:188/);
+  assert.doesNotMatch(render(undefined), /tel:188/);
+
+  const page = await src('PatientPortalPage.jsx');
+  assert.match(page, /hasRiskAnswer\(/, 'apoio aparece de novo depois de enviar');
+});
+
+test('Edge Function: escala com perguntas e nota da definição oficial, nunca do aparelho', async () => {
+  const edge = await readFile(path.resolve(root, '../supabase/functions/patient-portal/index.ts'), 'utf8');
+  assert.match(edge, /getServerInstrument\(String\(assignment\.instrument_id/);
+  assert.match(edge, /questions: instrument \? buildPortalQuestions\(instrument\) : null/);
+  assert.match(edge, /const answers = sanitizeAnswers\(questions, body\.answers\)/);
+  assert.match(edge, /instrumentPayload = buildPortalPayload\(instrument, answers\)/);
+  assert.match(edge, /p_instrument_payload: instrumentPayload/);
+  assert.match(edge, /case 'invalid_instrument':/);
+});
+
+test('migração da etapa 2: código, envio, resposta e alerta com a permissão certa', async () => {
+  const sql = await readFile(PORTAL_MIGRATION, 'utf8');
+
+  // Código: gerar e ver seguem a configuração; trocar e liberar ficam como
+  // em 20261006 (só a administração).
+  assert.match(sql, /portal_professionals_manage_access BOOLEAN NOT NULL DEFAULT FALSE/);
+  assert.match(functionBody(sql, 'clinic_admin_set_portal_access_policy'), /NOT public\.is_clinic_admin\(v_actor\)/);
+  const manage = functionBody(sql, 'can_manage_patient_access');
+  assert.match(manage, /public\.can_manage_patient_portal\(p\.clinic_id, p_user\)/);
+  assert.match(manage, /c\.portal_professionals_manage_access IS TRUE AND public\.user_attends_patient\(p_patient, p_user\)/);
+  assert.match(functionBody(sql, 'user_attends_patient'), /public\.can_use_patient_instruments\(p_patient, discipline\.id, p_user\)/);
+  assert.match(sql, /CREATE POLICY patient_portal_access_select[\s\S]*?USING \(public\.can_manage_patient_access\(patient_id\)\);/);
+  assert.match(functionBody(sql, 'portal_ensure_access'), /NOT public\.can_manage_patient_access\(p_patient_id\)/);
+  assert.doesNotMatch(sql, /FUNCTION public\.(portal_regenerate_code|portal_set_access_active)\(/);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.portal_ensure_access_row\(UUID\) FROM PUBLIC, anon, authenticated;/);
+
+  // Envio: quem atende ou a administração, e só com alguém para receber a nota.
+  const send = functionBody(sql, 'portal_send_instrument');
+  assert.match(send, /public\.can_manage_patient_portal\(v_clinic, v_uid\)\r?\n\s*OR public\.can_use_patient_instruments\(p_patient_id, p_discipline, v_uid\)/);
+  assert.match(send, /AND public\.can_use_patient_instruments\(p_patient_id, p_discipline, pr\.id\)/);
+  assert.match(send, /Ninguém da área desta escala atende o paciente/);
+  assert.match(send, /f\.status IN \('pending', 'in_progress'\)/, 'sem dois envios abertos da mesma escala');
+
+  // Resposta: só pela Edge Function, com o resultado junto e na mesma transação.
+  const save = functionBody(sql, 'portal_save_answers');
+  assert.match(save, /'invalid_instrument'/);
+  assert.match(save, /'area_do_paciente'/);
+  assert.match(save, /v_row\.id, v_has_risk/, 'idempotência pelo id do envio');
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.portal_save_answers\([^)]*\) FROM PUBLIC, anon, authenticated;/);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.portal_save_answers\([^)]*\) TO service_role;/);
+  assert.match(functionBody(sql, 'portal_admin_read_answers'), /AND f\.kind = 'form'/, 'resposta de escala não vai para a administração');
+
+  // Alerta: só quem atende vê e marca; no consultório nasce visto.
+  const alerts = functionBody(sql, 'list_my_instrument_risk_alerts');
+  assert.match(alerts, /public\.can_use_patient_instruments\(pia\.patient_id, pia\.discipline, v_uid\)/);
+  assert.match(alerts, /pia\.risk_acknowledged_at IS NULL/);
+  assert.match(alerts, /pia\.voided_at IS NULL/);
+  assert.match(functionBody(sql, 'acknowledge_instrument_risk'), /public\.can_use_patient_instruments\(v_row\.patient_id, v_row\.discipline, v_uid\)/);
+  assert.match(functionBody(sql, 'record_patient_instrument_application'), /CASE WHEN v_has_risk THEN v_uid END/);
+
+  assert.doesNotMatch(sql, /ON CONFLICT \(/, 'ON CONFLICT só com ON CONSTRAINT (AGENTS.md §9)');
+  assert.doesNotMatch(sql, /CREATE TABLE/, 'tabela nova com paciente precisaria entrar na exclusão');
+  for (const name of [
+    'clinic_admin_set_portal_access_policy', 'user_attends_patient', 'can_manage_patient_access', 'portal_ensure_access',
+    'list_my_instrument_risk_alerts', 'acknowledge_instrument_risk', 'portal_send_instrument', 'list_patient_instrument_requests',
+    'cancel_patient_instrument_request', 'portal_admin_read_answers',
+  ]) {
+    assert.match(functionBody(sql, name), /SECURITY DEFINER\r?\n\s*SET search_path = pg_catalog/, `${name}: search_path fixo`);
+    if (name !== 'portal_ensure_access') {
+      assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${name}\\([^)]*\\) FROM PUBLIC, anon;`), `${name}: sem anon`);
+    }
+  }
+});
+
+test('telas da etapa 2: alerta na tela inicial, envio pela aba e pela ficha, Configurações', async () => {
+  const home = await src('components/HomeConsole.jsx');
+  assert.match(home, /variant !== 'reception' && \(\r?\n\s*<InstrumentRiskAlerts/, 'recepção não recebe alerta clínico');
+
+  const alerts = await src('components/instruments/InstrumentRiskAlerts.jsx');
+  assert.match(alerts, /O aviso lembra, nunca decide/);
+  assert.match(alerts, /Vi o alerta/);
+
+  const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
+  assert.match(panel, /<InstrumentPortalBox/);
+  assert.match(panel, /Vi o alerta/);
+  assert.match(panel, /Respondida em casa/);
+
+  assert.match(await src('components/patientForms/PatientPortalTab.jsx'), /<SendInstrumentForm/);
+  assert.match(await src('components/patientForms/AssignmentList.jsx'), /const hasAnswers = !isInstrument && /);
+
+  const service = await src('services/patientInstrumentService.js');
+  for (const rpc of ['portal_send_instrument', 'list_patient_instrument_requests', 'cancel_patient_instrument_request', 'acknowledge_instrument_risk', 'list_my_instrument_risk_alerts']) {
+    assert.match(service, new RegExp(`supabase\\.rpc\\('${rpc}'`), rpc);
+  }
+
+  const gestao = await src('components/panels/RelatoriosGestao.jsx');
+  assert.match(gestao, /section === 'acessopaciente' && <AcessoPaciente profile=\{profile\} \/>/);
+  const config = await src('components/panels/AcessoPaciente.jsx');
+  assert.match(config, /await setClinicPortalPolicy\(next\)/);
+  assert.match(config, /setAllowed\(previous\)/, 'volta à escolha anterior se o banco recusar');
 });

@@ -3,6 +3,8 @@ import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { createCorrelationId, logOperationalEvent } from '../_shared/observability.ts';
 import { computeProgress, missingRequired, sanitizeAnswers } from '../_shared/patientFormAnswers.ts';
+import { getServerInstrument } from '../_shared/clinicalInstruments.ts';
+import { buildPortalPayload, buildPortalQuestions } from '../_shared/instrumentPortal.ts';
 
 // ============================================================
 // Área do Paciente — formulários que o paciente responde online
@@ -40,7 +42,11 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const OPEN_STATUSES = ['pending', 'in_progress'];
-const ASSIGNMENT_LIST_COLUMNS = 'id,form_title,form_description,due_date,status,progress,created_at';
+const ASSIGNMENT_LIST_COLUMNS = 'id,form_title,form_description,due_date,status,progress,created_at,kind';
+// Escala da clínica (kind 'instrument', etapa 2 das escalas): perguntas e
+// nota saem da definição oficial (_shared/clinicalInstruments.ts), nunca
+// da cópia guardada no envio nem do que o aparelho mandar.
+const INSTRUMENT_UNAVAILABLE_ERROR = 'Esta escala não está disponível. Fale com a clínica.';
 
 async function sha256Hex(text: string) {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
@@ -120,6 +126,7 @@ async function loadHome(supabaseAdmin: Admin, session: Session) {
       dueDate: item.due_date,
       status: item.status,
       progress: item.progress,
+      kind: item.kind === 'instrument' ? 'instrument' : 'form',
     })),
     sent: (sent || []).map(item => ({ id: item.id, title: item.form_title, submittedAt: item.submitted_at })),
   };
@@ -128,13 +135,24 @@ async function loadHome(supabaseAdmin: Admin, session: Session) {
 async function loadOpenAssignment(supabaseAdmin: Admin, session: Session, assignmentId: string) {
   const { data } = await supabaseAdmin
     .from('patient_form_assignments')
-    .select('id,form_title,form_description,form_questions,due_date,status')
+    .select('id,form_title,form_description,form_questions,due_date,status,kind,instrument_id,instrument_version')
     .eq('id', assignmentId)
     .eq('patient_id', session.patientId)
     .eq('clinic_id', session.clinicId)
     .in('status', OPEN_STATUSES)
     .maybeSingle();
   return data || null;
+}
+
+type OpenAssignment = NonNullable<Awaited<ReturnType<typeof loadOpenAssignment>>>;
+
+/** Perguntas do envio: escala pela definição oficial; formulário pela cópia do envio. */
+function assignmentContent(assignment: OpenAssignment) {
+  if (assignment.kind !== 'instrument') {
+    return { instrument: null, questions: assignment.form_questions };
+  }
+  const instrument = getServerInstrument(String(assignment.instrument_id || ''), Number(assignment.instrument_version));
+  return { instrument, questions: instrument ? buildPortalQuestions(instrument) : null };
 }
 
 async function resolveSession(supabaseAdmin: Admin, token: string): Promise<Session | null> {
@@ -219,11 +237,13 @@ async function handleSave(
   const assignment = await loadOpenAssignment(supabaseAdmin, session, assignmentId);
   if (!assignment) return jsonResponse({ error: NOT_AVAILABLE_ERROR, closed: true }, 409);
 
-  const answers = sanitizeAnswers(assignment.form_questions, body.answers);
-  const progress = computeProgress(assignment.form_questions, answers);
+  const { instrument, questions } = assignmentContent(assignment);
+  if (!questions) return jsonResponse({ error: INSTRUMENT_UNAVAILABLE_ERROR, closed: true }, 409);
+  const answers = sanitizeAnswers(questions, body.answers);
+  const progress = computeProgress(questions, answers);
 
   if (submit) {
-    const missing = missingRequired(assignment.form_questions, answers);
+    const missing = missingRequired(questions, answers);
     if (missing.length) {
       return jsonResponse({
         error: missing.length === 1
@@ -231,6 +251,17 @@ async function handleSave(
           : `Faltam responder ${missing.length} perguntas obrigatórias.`,
         missing,
       }, 422);
+    }
+  }
+
+  // Escala: a nota é calculada aqui, com a definição oficial, e vai junto
+  // com o envio para o banco gravar as duas coisas na mesma transação.
+  let instrumentPayload: ReturnType<typeof buildPortalPayload> | null = null;
+  if (submit && instrument) {
+    try {
+      instrumentPayload = buildPortalPayload(instrument, answers);
+    } catch {
+      return jsonResponse({ error: 'Responda todas as perguntas da escala para enviar.' }, 422);
     }
   }
 
@@ -242,6 +273,7 @@ async function handleSave(
     p_expected_revision: revision,
     p_save_id: saveId,
     p_submit: submit,
+    p_instrument_payload: instrumentPayload,
   });
   if (error) throw new Error('save_unavailable');
 
@@ -258,6 +290,8 @@ async function handleSave(
     case 'closed':
     case 'not_found':
       return jsonResponse({ error: NOT_AVAILABLE_ERROR, closed: true }, 409);
+    case 'invalid_instrument':
+      return jsonResponse({ error: INSTRUMENT_UNAVAILABLE_ERROR }, 422);
     default:
       return jsonResponse({ error: 'Não foi possível salvar. Tente de novo.' }, 400);
   }
@@ -314,6 +348,8 @@ Deno.serve(async (req) => {
       if (!UUID_PATTERN.test(assignmentId)) return jsonResponse({ error: 'Pedido inválido.' }, 400);
       const assignment = await loadOpenAssignment(supabaseAdmin, session, assignmentId);
       if (!assignment) return jsonResponse({ error: NOT_AVAILABLE_ERROR, closed: true }, 409);
+      const { questions } = assignmentContent(assignment);
+      if (!questions) return jsonResponse({ error: INSTRUMENT_UNAVAILABLE_ERROR, closed: true }, 409);
 
       const { data, error } = await supabaseAdmin.rpc('portal_read_answers', {
         p_access_id: session.accessId,
@@ -328,7 +364,8 @@ Deno.serve(async (req) => {
         title: assignment.form_title,
         description: assignment.form_description,
         dueDate: assignment.due_date,
-        questions: assignment.form_questions,
+        kind: assignment.kind === 'instrument' ? 'instrument' : 'form',
+        questions,
         answers: row.result_answers || {},
         revision: row.result_revision,
       });

@@ -28,7 +28,7 @@ function dateTime(iso) {
   return iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 }
 
-export function PatientPortalTab({ patient, profile, onEditCadastro }) {
+export function PatientPortalTab({ patient, profile, onEditCadastro, onStatusChange }) {
   const clinicName = profile?.clinic?.name || profile?.clinic_name || '';
   const [access, setAccess] = useState(null);
   const [forms, setForms] = useState([]);
@@ -99,6 +99,12 @@ export function PatientPortalTab({ patient, profile, onEditCadastro }) {
     setConfirmRegenerate(false);
     if (row) setShowShare(true);
   }
+
+  // A aba da ficha diz o estado do acesso sem ser aberta ("Acesso: Ativo"):
+  // avisa quando ele muda aqui (gerar, trocar, desativar, liberar).
+  useEffect(() => {
+    if (!loading && !error) onStatusChange?.(accessStatus(access));
+  }, [access, loading, error, onStatusChange]);
 
   const status = accessStatus(access);
   const missingBirth = !patient.birth_date;

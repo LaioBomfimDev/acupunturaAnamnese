@@ -1205,49 +1205,270 @@
 /* ============================================================
    Ficha do paciente — abas (ClinicPatientProfile)
    Cada aba mostra só o que é dela; sem empilhar tudo com scroll.
+
+   09/10/2026: a aba só com o nome virou ícone + nome + número + uma
+   linha de resumo (utils/patientProfileTabs.js). Computador: uma faixa
+   só quando as seis cabem (opção A); em tela de notebook ficam três por
+   linha. Nunca rola de lado, que no mouse ninguém acha. Celular e
+   tablet: índice em lista, e cada parte ocupa a tela (opção C, bloco
+   ≤1024px mais abaixo).
    ============================================================ */
 
-.pf-tabs {
-  display: flex;
-  gap: 2px;
-  border-bottom: 1px solid var(--r1-border-subtle);
+/* A faixa mede a própria largura, não a da janela: a ficha também abre
+   dentro de uma área, ao lado do menu. Só os botões ficam dentro do
+   contêiner, porque contêiner prende `position: fixed` e as janelas da
+   ficha precisam cobrir a tela. */
+.pf-tabs-frame {
+  container: pf-tabs / inline-size;
   margin-bottom: 18px;
-  overflow-x: auto;
+}
+
+.pf-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+/* As seis abas, com o resumo, pedem ~1.310px (medido em 09/10/2026):
+   daí para cima, uma faixa só, cada aba do tamanho do que tem dentro. */
+@container pf-tabs (min-width: 1320px) {
+  .pf-tabs {
+    display: flex;
+  }
 }
 
 .pf-tab {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
-  gap: 7px;
-  padding: 12px 15px 11px;
+  gap: 11px;
+  min-width: 0;
+  min-height: 62px;
+  padding: 10px 12px;
   border: none;
-  border-bottom: 2.5px solid transparent;
+  border-radius: var(--r1-radius-md);
   background: none;
-  color: var(--r1-text-muted);
+  color: var(--r1-text);
   font: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
+  text-align: left;
   cursor: pointer;
+  transition: background-color var(--r1-dur-fast) var(--r1-ease);
 }
 
 .pf-tab:hover {
-  color: var(--r1-text);
+  background: var(--r1-surface-sunken);
 }
 
-.pf-tab[aria-selected='true'] {
-  color: var(--r1-accent-strong);
-  border-bottom-color: var(--r1-accent);
+.pf-tab:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 2px;
+}
+
+.pf-tab-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent);
+}
+
+.pf-tab-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pf-tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .pf-tab-count {
-  padding: 1px 7px;
+  padding: 0 7px;
   border: 1px solid var(--r1-border-subtle);
   border-radius: 999px;
   background: var(--r1-surface-sunken);
   color: inherit;
   font-size: 11px;
   font-weight: 700;
+  line-height: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* No computador o número fica ao lado do nome; no índice do celular,
+   à direita, antes da seta. */
+.pf-tab-count--end,
+.pf-tab-chevron {
+  display: none;
+}
+
+/* Resumo: corta com reticências em vez de esticar a aba. */
+.pf-tab-summary {
+  max-width: 240px;
+  overflow: hidden;
+  color: var(--r1-text-subtle);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pf-tab-dot,
+.pf-tab-summary .pf-pulse-dot {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: 1px;
+}
+
+.pf-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--r1-text-subtle);
+}
+
+/* Evolução atrasada: o mesmo vermelho da bolinha pulsante. */
+.pf-tab-summary--alert {
+  color: var(--r1-danger);
+  font-weight: 700;
+}
+
+/* Estado do acesso do paciente (aba Área do Paciente). */
+.pf-tab-summary--success .pf-tab-dot {
+  background: var(--r1-success);
+}
+
+.pf-tab-summary--warning .pf-tab-dot {
+  background: var(--r1-warning);
+}
+
+/* Aba aberta, preenchida na cor da clínica. Só no computador: no
+   celular a lista é um índice e a parte aberta ocupa a tela. */
+@media (min-width: 1025px) {
+  .pf-tab[aria-selected='true'] {
+    background: var(--r1-accent);
+    color: var(--r1-accent-contrast);
+  }
+
+  .pf-tab[aria-selected='true']:hover {
+    background: var(--r1-accent-strong);
+  }
+
+  .pf-tab[aria-selected='true'] .pf-tab-icon {
+    background: color-mix(in srgb, var(--r1-accent-contrast) 18%, transparent);
+    color: inherit;
+  }
+
+  .pf-tab[aria-selected='true'] .pf-tab-count {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--r1-accent-contrast) 22%, transparent);
+  }
+
+  .pf-tab[aria-selected='true'] .pf-tab-summary {
+    color: color-mix(in srgb, var(--r1-accent-contrast) 90%, transparent);
+  }
+
+  .pf-tab[aria-selected='true'] .pf-pulse-dot,
+  .pf-tab[aria-selected='true'] .pf-tab-dot {
+    outline: 1.5px solid currentColor;
+  }
+}
+
+/* "Voltar à ficha" e o nome da parte no topo: só no celular, com uma
+   parte aberta (bloco ≤1024px abaixo). */
+.pf-screen button.hub-back.pf-back-section,
+.pf-topbar-section {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  /* Índice: as partes em lista, número à direita e seta. */
+  .pf-tabs {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .pf-tab {
+    flex: 0 0 auto;
+    gap: 12px;
+    width: 100%;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--r1-border-subtle);
+    border-radius: 0;
+  }
+
+  .pf-tab:last-child {
+    border-bottom: none;
+  }
+
+  .pf-tab-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .pf-tab-text {
+    flex: 1 1 auto;
+  }
+
+  .pf-tab-label .pf-tab-count {
+    display: none;
+  }
+
+  .pf-tab-count--end {
+    display: inline-block;
+    flex: none;
+    min-width: 28px;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  .pf-tab-chevron {
+    display: block;
+    flex: none;
+    color: var(--r1-text-subtle);
+  }
+
+  .pf-tab-summary {
+    max-width: none;
+  }
+
+  /* Parte aberta ocupa a tela: sai o índice (nome, ações e lista), a
+     faixa de baixo vira "Voltar à ficha" e o topo diz qual parte é. */
+  .pf-screen:not(.is-section-open) .pf-panel,
+  .pf-screen.is-section-open .pf-identity,
+  .pf-screen.is-section-open .pf-tabs-frame,
+  .pf-screen.is-section-open button.hub-back.pf-back-list,
+  .pf-screen.is-section-open .pf-topbar-ficha {
+    display: none;
+  }
+
+  .pf-screen.is-section-open button.hub-back.pf-back-section {
+    display: flex;
+  }
+
+  .pf-screen.is-section-open .pf-topbar-section {
+    display: inline;
+  }
 }
 
 /* Bolinha vermelha pulsante — avisa evolução pendente mesmo com a aba

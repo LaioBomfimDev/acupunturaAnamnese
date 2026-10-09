@@ -23,7 +23,9 @@ import { paginateReportBody } from './report/reportPagination';
 import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../utils/reportUtils';
 import { PatientEvolutionTimeline } from './PatientEvolutionTimeline';
 import { HubBackButton } from './HubNav';
+import { TOOL_GLYPHS } from './ui/hubGlyphs';
 import { getStatusLabel } from '../utils/agenda';
+import { buildProfileTabSummaries } from '../utils/patientProfileTabs';
 
 // Área do Paciente (acesso + formulários): só a administração abre, então
 // carrega à parte e não pesa na ficha de quem não vê a aba.
@@ -46,6 +48,13 @@ const PatientPortalTab = lazy(() => import('./patientForms/PatientPortalTab')
 // os registros ali dentro: agora é um resumo + atalho pra
 // PatientEvolutionTimeline, que mostra o texto integral (é isso que
 // serve de prova pra fiscalização) com opção de corrigir/imprimir.
+//
+// Abas com resumo (09/10/2026, escolha da administradora entre três
+// prévias): cada aba leva ícone, número e uma linha com o que importa
+// (utils/patientProfileTabs.js). No computador é uma faixa só (opção A);
+// no celular e no tablet a ficha abre como índice e cada parte ocupa a
+// tela, com "Voltar à ficha" (opção C). O estado `sectionOpen` vale em
+// qualquer largura; quem decide o que aparece é o CSS.
 // ============================================================
 
 function Field({ label, value, wide = false }) {
@@ -89,6 +98,36 @@ const TABS = [
   // Só aparece para clinic_admin (filtro no tablist): acesso do paciente e formulários.
   { id: 'portal', label: 'Área do Paciente' },
 ];
+
+// Ícone de cada aba (traço de 24px, herda currentColor). Agendamentos e
+// Evolução usam o mesmo desenho da tela inicial e da barra de baixo.
+const TAB_GLYPHS = {
+  cadastro: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="11" r="2.2" />
+      <path d="M5.8 16.5a3.4 3.4 0 0 1 6.4 0" />
+      <path d="M14.5 10h4M14.5 13.5h3" />
+    </>
+  ),
+  matriculas: (
+    <>
+      <circle cx="6" cy="12" r="2.6" />
+      <circle cx="18" cy="6" r="2.6" />
+      <circle cx="18" cy="18" r="2.6" />
+      <path d="m8.4 10.8 7.2-3.6M8.4 13.2l7.2 3.6" />
+    </>
+  ),
+  agenda: TOOL_GLYPHS.agenda,
+  evolucao: TOOL_GLYPHS.evolucao,
+  anexos: <path d="M20 11.5 12.2 19.3a5 5 0 0 1-7.1-7.1l8.3-8.3a3.3 3.3 0 0 1 4.7 4.7l-8.2 8.2a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4" />,
+  portal: (
+    <>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.4" />
+      <path d="M10.5 18.5h3" />
+    </>
+  ),
+};
 
 function buildEditForm(p) {
   return {
@@ -141,6 +180,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [notice, setNotice] = useState(null);
   const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
   const [activeTab, setActiveTab] = useState('cadastro');
+  const [sectionOpen, setSectionOpen] = useState(false);
+  const [portalStatus, setPortalStatus] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [deleteRequestOpen, setDeleteRequestOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -149,6 +190,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const printMeasureRef = useRef(null);
   const printHeaderMeasureRef = useRef(null);
   const printFooterMeasureRef = useRef(null);
+  const screenRef = useRef(null);
+  const tabsRef = useRef(null);
+  const pendingScrollRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +223,45 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     // não podem ser sobrescritos por uma nova referência do mesmo prop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patient.id]);
+
+  // Resumo da aba "Área do Paciente": o estado do acesso vem à parte e só
+  // para a administração (a única que vê a aba). Import tardio, como a
+  // própria aba: o serviço do portal não pesa na ficha de quem não a vê.
+  useEffect(() => {
+    if (!isClinicAdmin) return undefined;
+    let cancelled = false;
+    setPortalStatus(null);
+    Promise.all([import('../services/patientPortalService'), import('../utils/patientForms')])
+      .then(([portal, forms]) => portal.getPatientAccess(patient.id).then(access => forms.accessStatus(access)))
+      .then(status => { if (!cancelled) setPortalStatus(status); })
+      .catch(() => {
+        // Sem o estado, a aba diz só "Código e formulários"; a aba aberta
+        // mostra o erro de verdade.
+      });
+    return () => { cancelled = true; };
+  }, [patient.id, isClinicAdmin]);
+
+  // Celular e tablet: entrar numa parte ou voltar ao índice troca a tela
+  // inteira, então a página volta ao topo. No computador a faixa de abas
+  // continua à vista (o CSS decide) e a página não pula.
+  useEffect(() => {
+    const move = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    if (!move) return;
+    if (move === 'open' && tabsRef.current?.getClientRects().length) return;
+    screenRef.current?.scrollIntoView({ block: 'start' });
+  });
+
+  function openSection(tabId) {
+    setActiveTab(tabId);
+    setSectionOpen(true);
+    pendingScrollRef.current = 'open';
+  }
+
+  function closeSection() {
+    setSectionOpen(false);
+    pendingScrollRef.current = 'close';
+  }
 
   function shareLabel(share) {
     const person = members.find(m => m.id === share.to_user_id);
@@ -491,6 +574,17 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   }, null);
   const cycleRemaining = evolutions.length >= 10 ? 0 : 10 - evolutions.length;
   const hasPending = pendingEvolutions.length > 0;
+  const tabSummaries = buildProfileTabSummaries({
+    enrollments,
+    shares,
+    appointments,
+    evolutions,
+    pendingEvolutionsCount: pendingEvolutions.length,
+    attachments,
+    portalStatus,
+  });
+  const visibleTabs = TABS.filter(tab => tab.id !== 'portal' || isClinicAdmin);
+  const activeTabLabel = TABS.find(tab => tab.id === activeTab)?.label;
 
   function handlePrintCadastro() {
     const html = printSourceRef.current?.innerHTML || '';
@@ -569,13 +663,21 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   );
 
   return (
-    <div className="hub-screen">
+    <div ref={screenRef} className={`hub-screen pf-screen${sectionOpen ? ' is-section-open' : ''}`}>
       <header className="hub-topbar no-print">
         <div className="hub-brand">
           <h1>{full?.name || patient.name}</h1>
-          <p>Ficha do paciente</p>
+          {/* Celular com uma parte aberta: o título diz qual (o topo só diz onde a pessoa está). */}
+          <p>
+            <span className="pf-topbar-ficha">Ficha do paciente</span>
+            {sectionOpen && <span className="pf-topbar-section">{activeTabLabel}</span>}
+          </p>
         </div>
-        <HubBackButton nested label="Voltar à lista" onClick={onBack} />
+        <HubBackButton nested label="Voltar à lista" onClick={onBack} className="topbar-button pf-back-list" />
+        {/* Só no celular e no tablet, com uma parte aberta: volta ao índice da ficha. */}
+        {sectionOpen && (
+          <HubBackButton nested label="Voltar à ficha" onClick={closeSection} className="topbar-button pf-back-section" />
+        )}
       </header>
 
       <main className="hub-body clinic-patients no-print">
@@ -619,7 +721,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     {full?.suspended_at ? '✓ Suspenso — reativar' : 'Suspender paciente'}
                   </button>
                   <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir</button>
-                  <button type="button" className="cp-btn cp-btn--sm" onClick={() => { setActiveTab('cadastro'); startEdit(); }}>Editar cadastro</button>
+                  <button type="button" className="cp-btn cp-btn--sm" onClick={() => { openSection('cadastro'); startEdit(); }}>Editar cadastro</button>
                   <button
                     type="button"
                     className="cp-btn cp-btn--sm cp-btn--danger"
@@ -675,24 +777,49 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
               </form>
             )}
 
-            <div className="pf-tabs" role="tablist">
-              {TABS.filter(tab => tab.id !== 'portal' || isClinicAdmin).map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  className="pf-tab"
-                  aria-selected={activeTab === tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                  {tab.id === 'matriculas' && <span className="pf-tab-count">{enrollments.length}</span>}
-                  {tab.id === 'agenda' && <span className="pf-tab-count">{appointments.length}</span>}
-                  {tab.id === 'evolucao' && <span className="pf-tab-count">{evolutions.length}</span>}
-                  {tab.id === 'anexos' && <span className="pf-tab-count">{attachments.length}</span>}
-                  {tab.id === 'evolucao' && hasPending && <span className="pf-pulse-dot" title="Há evolução pendente" />}
-                </button>
-              ))}
+            {/* Computador: faixa (opção A). Celular e tablet: índice em lista,
+                com o número à direita e a seta (opção C). Mesmos botões. */}
+            <div className="pf-tabs-frame">
+              <div className="pf-tabs" role="tablist" aria-label="Partes da ficha" ref={tabsRef}>
+                {visibleTabs.map(tab => {
+                  const info = tabSummaries[tab.id];
+                  const hasCount = info.count !== null;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      className="pf-tab"
+                      aria-selected={activeTab === tab.id}
+                      onClick={() => openSection(tab.id)}
+                    >
+                      <span className="pf-tab-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          {TAB_GLYPHS[tab.id]}
+                        </svg>
+                      </span>
+                      <span className="pf-tab-text">
+                        <span className="pf-tab-label">
+                          {tab.label}
+                          {hasCount && <span className="pf-tab-count">{info.count}</span>}
+                        </span>
+                        <span className={`pf-tab-summary${info.tone ? ` pf-tab-summary--${info.tone}` : ''}`}>
+                          {info.tone === 'alert' && <span className="pf-pulse-dot" />}
+                          {info.tone && info.tone !== 'alert' && <span className="pf-tab-dot" />}
+                          {info.dots.map((color, index) => (
+                            <span key={index} className="pf-tab-dot" style={{ background: color }} />
+                          ))}
+                          {info.summary}
+                        </span>
+                      </span>
+                      {hasCount && <span className="pf-tab-count pf-tab-count--end">{info.count}</span>}
+                      <svg className="pf-tab-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="m9 6 6 6-6 6" />
+                      </svg>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* ================= CADASTRO ================= */}
@@ -1042,7 +1169,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   <PatientPortalTab
                     patient={full}
                     profile={therapistProfile}
-                    onEditCadastro={() => { setActiveTab('cadastro'); startEdit(); }}
+                    onEditCadastro={() => { openSection('cadastro'); startEdit(); }}
+                    onStatusChange={setPortalStatus}
                   />
                 </Suspense>
               </section>

@@ -2,7 +2,9 @@ import { useRef, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { recordInstrumentApplication, newIdempotencyKey } from '../../services/patientInstrumentService';
 import { INSTRUMENT_NOTE_MAX, riskMessages, scoreInstrument, visibleExtraItems } from '../../utils/instrumentScoring';
-import { appliedAtFromInput, daysAgoLabel, reapplyStatus, todayInputValue } from './instrumentFormat';
+import { appliedAtFromInput, daysAgoLabel, namedInstrument, reapplyStatus, todayInputValue } from './instrumentFormat';
+
+const upperFirst = text => text.charAt(0).toUpperCase() + text.slice(1);
 
 // ============================================================
 // Aplicar uma escala no consultório: a profissional lê as perguntas ou
@@ -101,7 +103,7 @@ export function InstrumentApplyForm({ instrument, patientName, patientId, discip
         </p>
         {reapply.tooSoon && (
           <div className="alert alert-warning">
-            A última aplicação foi {daysAgoLabel(reapply.daysSince)}. O {instrument.shortName} pede pelo menos{' '}
+            A última aplicação foi {daysAgoLabel(reapply.daysSince)}. {upperFirst(namedInstrument(instrument))} pede pelo menos{' '}
             {instrument.reapplyAfterDays} dias entre aplicações para mostrar mudança. Dá para aplicar mesmo assim.
           </div>
         )}

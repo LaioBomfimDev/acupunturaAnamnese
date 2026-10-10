@@ -68,12 +68,15 @@ function answersForScore(instrument, target) {
 // ---- definição -----------------------------------------------------------
 
 test('cada instrumento tem faixas cobrindo a escala inteira, sem buraco nem sobreposição', () => {
-  assert.ok(instruments.CLINICAL_INSTRUMENTS.length >= 2);
+  assert.ok(instruments.CLINICAL_INSTRUMENTS.length >= 3);
   for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
     assert.deepEqual(scoring.validateInstrumentDefinition(instrument), [], instrument.id);
-    for (let score = instrument.scoring.min; score <= instrument.scoring.max; score += 1) {
-      const matches = instrument.bands.filter(band => score >= band.min && score <= band.max);
-      assert.equal(matches.length, 1, `${instrument.id}: ${score} pontos em ${matches.length} faixas`);
+    // Uma régua por nota: a escala inteira ou cada subescala (DASS-21).
+    for (const view of format.scoreViews(instrument)) {
+      for (let score = view.scoring.min; score <= view.scoring.max; score += 1) {
+        const matches = view.bands.filter(band => score >= band.min && score <= band.max);
+        assert.equal(matches.length, 1, `${instrument.id}/${view.id}: ${score} pontos em ${matches.length} faixas`);
+      }
     }
   }
 });
@@ -92,9 +95,9 @@ test('o validador pega faixa com buraco e máximo errado', () => {
   assert.ok(problems.some(problem => problem.includes('máximo')), problems.join('; '));
 });
 
-test('PHQ-9 e GAD-7 só na Psicologia, em conferência até a psicóloga aprovar', () => {
+test('escalas só na Psicologia, em conferência até a psicóloga aprovar', () => {
   const psi = instruments.instrumentsForDiscipline('psicologia').map(instrument => instrument.id);
-  assert.deepEqual(psi, ['phq9', 'gad7']);
+  assert.deepEqual(psi, ['phq9', 'gad7', 'dass21']);
   assert.deepEqual(instruments.instrumentsForDiscipline('nutricao'), []);
   for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
     assert.equal(instrument.review.status, instruments.INSTRUMENT_REVIEW_STATUS.PENDING, instrument.id);
@@ -682,4 +685,151 @@ test('envio respondido: "Ver resultado" abre a aplicação gravada por aquele en
   assert.match(result, /listInstrumentApplications\(\{ patientId: request\.patient_id, discipline: request\.discipline \}\)/, 'quem vê continua decidido no banco');
   assert.match(result, /findRequestApplication\(applications, request\)/);
   assert.match(await src('services/patientPortalService.js'), /kind,instrument_id,instrument_version,discipline,/);
+});
+
+// ---- lote 1: DASS-21 (10/10/2026) ----------------------------------------
+// Três notas (depressão, ansiedade, estresse), cada uma soma 7 perguntas e
+// multiplica por 2; faixas do manual (Lovibond, 1995). Texto da tradução
+// de Vignola e Tucci do site oficial (domínio público). Respostas da
+// validação (4), nunca uma quinta inventada (escolha de 10/10/2026).
+
+test('DASS-21: 21 perguntas da tradução oficial, 4 respostas e cada pergunta numa subescala só', () => {
+  const dass = instruments.DASS21;
+  assert.equal(dass.items.length, 21);
+  assert.equal(dass.items[0].text, 'Achei difícil me acalmar');
+  assert.equal(dass.items[20].text, 'Senti que a vida não tinha sentido');
+  for (const item of dass.items) {
+    assert.deepEqual(item.options.map(option => option.value), [0, 1, 2, 3], item.id);
+  }
+  // Chave de correção do manual.
+  const byId = Object.fromEntries(dass.scoring.subscales.map(sub => [sub.id, sub.items]));
+  assert.deepEqual(byId.depressao, ['q3', 'q5', 'q10', 'q13', 'q16', 'q17', 'q21']);
+  assert.deepEqual(byId.ansiedade, ['q2', 'q4', 'q7', 'q9', 'q15', 'q19', 'q20']);
+  assert.deepEqual(byId.estresse, ['q1', 'q6', 'q8', 'q11', 'q12', 'q14', 'q18']);
+  assert.equal(dass.scoring.multiplier, 2);
+  assert.ok(dass.items.every(item => !item.risk), 'a DASS-21 não tem item de risco: nada inventado');
+  assert.match(dass.license, /domínio público/);
+
+  const broken = { ...dass, scoring: { ...dass.scoring, subscales: dass.scoring.subscales.slice(0, 2) } };
+  assert.ok(scoring.validateInstrumentDefinition(broken).some(problem => problem.includes('q1: está em 0 subescalas')));
+});
+
+test('DASS-21: cada nota soma a subescala, multiplica por 2 e cai na faixa do manual', () => {
+  const dass = instruments.DASS21;
+  const answers = Object.fromEntries(dass.items.map(item => [item.id, 0]));
+  // Depressão: 1+1+1+1+1+1+1 = 7 → 14 (moderada, 14 a 20).
+  for (const id of ['q3', 'q5', 'q10', 'q13', 'q16', 'q17', 'q21']) answers[id] = 1;
+  // Ansiedade: 4 → 8 (leve, 8 a 9).
+  answers.q2 = 2;
+  answers.q4 = 2;
+  // Estresse: 17 → 34 (extremamente grave, a partir de 34).
+  Object.assign(answers, { q1: 3, q6: 3, q8: 3, q11: 3, q12: 3, q14: 2, q18: 0 });
+
+  const result = scoring.scoreInstrument(dass, answers);
+  assert.equal(result.complete, true);
+  assert.equal(result.score, null, 'não existe nota única na DASS-21');
+  assert.deepEqual(result.subscales.map(sub => [sub.id, sub.score, sub.band.id]), [
+    ['depressao', 14, 'moderada'],
+    ['ansiedade', 8, 'leve'],
+    ['estresse', 34, 'extremamente_grave'],
+  ]);
+
+  // Limites das faixas, já multiplicados por 2.
+  const bandAt = (subscaleId, score) => scoring.bandIn(
+    dass.scoring.subscales.find(sub => sub.id === subscaleId).bands, score,
+  ).id;
+  assert.equal(bandAt('depressao', 8), 'normal');
+  assert.equal(bandAt('depressao', 10), 'leve');
+  assert.equal(bandAt('depressao', 28), 'extremamente_grave');
+  assert.equal(bandAt('ansiedade', 6), 'normal');
+  assert.equal(bandAt('ansiedade', 20), 'extremamente_grave');
+  assert.equal(bandAt('estresse', 14), 'normal');
+  assert.equal(bandAt('estresse', 26), 'grave');
+
+  // Pela metade: subescala completa já tem nota; a escala ainda não salva.
+  const partial = scoring.scoreInstrument(dass, { q3: 1, q5: 1, q10: 1, q13: 1, q16: 1, q17: 1, q21: 1 });
+  assert.equal(partial.complete, false);
+  assert.equal(partial.subscales[0].score, 14);
+  assert.equal(partial.subscales[1].score, null);
+  assert.throws(() => scoring.buildApplicationPayload(dass, { q1: 0 }), /Responda as 21 perguntas/);
+
+  // O que vai cifrado: as três notas com a faixa de cada uma.
+  const payload = scoring.buildApplicationPayload(dass, answers);
+  assert.deepEqual(payload.result.subscales.map(sub => [sub.label, sub.score, sub.bandLabel]), [
+    ['Depressão', 14, 'Moderada'],
+    ['Ansiedade', 8, 'Leve'],
+    ['Estresse', 34, 'Extremamente grave'],
+  ]);
+  assert.equal(payload.result.score, null);
+  assert.deepEqual(payload.result.riskItems, []);
+  // PHQ-9 continua sem subescalas no que é gravado.
+  assert.equal('subscales' in scoring.buildApplicationPayload(instruments.PHQ9, fill(instruments.PHQ9, 1)).result, false);
+});
+
+test('DASS-21 na tela: três notas no cartão, no gráfico, no histórico e na janela do resultado', async () => {
+  const dass = instruments.DASS21;
+  const views = format.scoreViews(dass);
+  assert.deepEqual(views.map(view => [view.id, view.short, view.scoring.max]), [
+    ['depressao', 'D', 42], ['ansiedade', 'A', 42], ['estresse', 'E', 42],
+  ]);
+  assert.equal(format.scoreViews(instruments.PHQ9).length, 1);
+  // "a DASS-21" (escala), "o PHQ-9" (questionário): nada de "O DASS-21 pede".
+  assert.equal(format.namedInstrument(dass), 'a DASS-21');
+  assert.equal(format.namedInstrument(dass, 'de'), 'da DASS-21');
+  assert.equal(format.namedInstrument(instruments.PHQ9, 'de'), 'do PHQ-9');
+  assert.match(await src('components/instruments/InstrumentApplyForm.jsx'), /\{upperFirst\(namedInstrument\(instrument\)\)\} pede pelo menos/);
+
+  const answers = Object.fromEntries(dass.items.map(item => [item.id, 1]));
+  const payload = scoring.buildApplicationPayload(dass, answers);
+  const app = { id: 'a1', appliedAt: '2026-10-10T12:00:00Z', result: payload.result, answers: payload.answers, source: 'consultorio' };
+  assert.equal(format.validApplications([app]).length, 1, 'aplicação sem nota única continua válida');
+  assert.deepEqual(views.map(view => view.read(app.result).score), [14, 14, 14]);
+  assert.equal(format.viewApplications([app], views[2])[0].result.score, 14);
+  assert.match(
+    format.savedNotice(dass, { payload }).text,
+    /^DASS-21 salvo: depressão 14 pontos \(moderada\), ansiedade 14 pontos \(moderada\), estresse 14 pontos \(normal\)\.$/,
+  );
+
+  const { InstrumentApplicationDialog } = await server.ssrLoadModule('/src/components/instruments/InstrumentApplicationDialog.jsx');
+  const html = renderToStaticMarkup(React.createElement(InstrumentApplicationDialog, {
+    application: { ...app, appliedByName: 'Denise N.' },
+    instrument: dass,
+    canVoid: false,
+    onClose: () => {},
+  }));
+  for (const label of ['Depressão', 'Ansiedade', 'Estresse']) assert.match(html, new RegExp(`>${label}<`));
+  assert.match(html, /multiplica por 2, como no manual/);
+  assert.doesNotMatch(html, /Soma das 21 perguntas/);
+
+  // Faixas estreitas da ansiedade (Leve = 8 a 9 numa régua de 0 a 42):
+  // os nomes não podem ficar um em cima do outro.
+  const chart = renderToStaticMarkup(React.createElement(TrendChart, {
+    instrument: { ...dass, shortName: 'DASS-21 · Ansiedade', scoring: views[1].scoring, bands: views[1].bands },
+    applications: format.viewApplications([app], views[1]),
+  }));
+  const labelYs = [...chart.matchAll(/class="instrument-band-label" x="[\d.]+" y="([\d.]+)"/g)].map(match => Number(match[1])).sort((a, b) => a - b);
+  assert.equal(labelYs.length, 5);
+  for (let index = 1; index < labelYs.length; index += 1) {
+    assert.ok(labelYs[index] - labelYs[index - 1] >= 11.99, `nomes das faixas colados: ${labelYs.join(', ')}`);
+  }
+  // Números do eixo: 8 e 10 ficavam a ~8 px um do outro; um sai, o máximo fica.
+  const tickYs = [...chart.matchAll(/class="instrument-axis-label" x="[\d.]+" y="([\d.]+)"[^>]*>(\d+)</g)]
+    .map(match => ({ y: Number(match[1]), value: Number(match[2]) }))
+    .sort((a, b) => a.y - b.y);
+  assert.ok(tickYs.some(tick => tick.value === 42), 'o máximo sempre aparece');
+  for (let index = 1; index < tickYs.length; index += 1) {
+    assert.ok(tickYs[index].y - tickYs[index - 1].y >= 10.99, `números do eixo colados: ${tickYs.map(tick => tick.value).join(', ')}`);
+  }
+
+  const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
+  assert.match(panel, /const views = scoreViews\(instrument\);/);
+  assert.match(panel, /className="instrument-chart-tabs" role="group"/, 'um gráfico por vez, com botões');
+  assert.match(panel, /aria-pressed=\{chartView\.id === view\.id\}/);
+  assert.match(panel, /views\.map\(view => `\$\{view\.short\} \$\{view\.read\(app\.result\)\.score \?\? '—'\}`\)\.join\(' · '\)/);
+
+  // Em casa: 21 perguntas obrigatórias, sem aviso de risco.
+  const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
+  const questions = portal.buildPortalQuestions(dass);
+  assert.equal(questions.filter(question => question.type === 'single' && question.required).length, 21);
+  assert.equal(questions.filter(question => question.riskNotice).length, 0);
 });

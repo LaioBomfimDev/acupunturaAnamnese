@@ -48,6 +48,7 @@ export const PHQ9 = {
   id: 'phq9',
   version: 1,
   shortName: 'PHQ-9',
+  article: 'o',
   name: 'Questionário sobre a Saúde do Paciente (PHQ-9)',
   measures: 'sintomas depressivos nas últimas 2 semanas',
   disciplines: ['psicologia'],
@@ -103,6 +104,7 @@ export const GAD7 = {
   id: 'gad7',
   version: 1,
   shortName: 'GAD-7',
+  article: 'o',
   name: 'Escala de Transtorno de Ansiedade Generalizada (GAD-7)',
   measures: 'sintomas de ansiedade nas últimas 2 semanas',
   disciplines: ['psicologia'],
@@ -138,8 +140,120 @@ export const GAD7 = {
   },
 };
 
+// DASS-21: texto da tradução brasileira de Vignola e Tucci publicada no
+// site oficial da escala (domínio público). Três subescalas de 7
+// perguntas; cada soma é multiplicada por 2 para usar as faixas do manual.
+const DASS_OPTIONS = [
+  { value: 0, label: 'Não se aplicou de maneira alguma' },
+  { value: 1, label: 'Aplicou-se em algum grau, ou por pouco de tempo' },
+  { value: 2, label: 'Aplicou-se em um grau considerável, ou por uma boa parte do tempo' },
+  { value: 3, label: 'Aplicou-se muito, ou na maioria do tempo' },
+];
+
+export const DASS21 = {
+  id: 'dass21',
+  version: 1,
+  shortName: 'DASS-21',
+  // "a DASS-21": é uma escala (o PHQ-9 e o GAD-7 são questionários).
+  article: 'a',
+  name: 'Escala de Depressão, Ansiedade e Estresse (DASS-21)',
+  measures: 'sintomas de depressão, ansiedade e estresse na última semana',
+  disciplines: ['psicologia'],
+  population: 'Adultos',
+  minutes: 5,
+  reapplyAfterDays: 7,
+  // Na folha: "circule o número apropriado 0, 1, 2 ou 3". Na tela, marca-se a opção.
+  instructions: 'Por favor, leia cuidadosamente cada uma das afirmações abaixo e marque a opção que indique o quanto ela se aplicou a você durante a última semana.',
+  items: [
+    { id: 'q1', text: 'Achei difícil me acalmar' },
+    { id: 'q2', text: 'Senti minha boca seca' },
+    { id: 'q3', text: 'Não consegui vivenciar nenhum sentimento positivo' },
+    { id: 'q4', text: 'Tive dificuldade em respirar em alguns momentos (ex. respiração ofegante, falta de ar, sem ter feito nenhum esforço físico)' },
+    { id: 'q5', text: 'Achei difícil ter iniciativa para fazer as coisas' },
+    { id: 'q6', text: 'Tive a tendência de reagir de forma exagerada às situações' },
+    { id: 'q7', text: 'Senti tremores (ex. nas mãos)' },
+    { id: 'q8', text: 'Senti que estava sempre nervoso' },
+    { id: 'q9', text: 'Preocupei-me com situações em que eu pudesse entrar em pânico e parecesse ridículo (a)' },
+    { id: 'q10', text: 'Senti que não tinha nada a desejar' },
+    { id: 'q11', text: 'Senti-me agitado' },
+    { id: 'q12', text: 'Achei difícil relaxar' },
+    { id: 'q13', text: 'Senti-me depressivo (a) e sem ânimo' },
+    { id: 'q14', text: 'Fui intolerante com as coisas que me impediam de continuar o que eu estava fazendo' },
+    { id: 'q15', text: 'Senti que ia entrar em pânico' },
+    { id: 'q16', text: 'Não consegui me entusiasmar com nada' },
+    { id: 'q17', text: 'Senti que não tinha valor como pessoa' },
+    { id: 'q18', text: 'Senti que estava um pouco emotivo/sensível demais' },
+    { id: 'q19', text: 'Sabia que meu coração estava alterado mesmo não tendo feito nenhum esforço físico (ex. aumento da frequência cardíaca, disritmia cardíaca)' },
+    { id: 'q20', text: 'Senti medo sem motivo' },
+    { id: 'q21', text: 'Senti que a vida não tinha sentido' },
+  ].map(item => ({ ...item, options: DASS_OPTIONS })),
+  extraItems: [],
+  scoring: {
+    method: 'subscales',
+    multiplier: 2,
+    subscales: [
+      {
+        id: 'depressao',
+        label: 'Depressão',
+        short: 'D',
+        items: ['q3', 'q5', 'q10', 'q13', 'q16', 'q17', 'q21'],
+        min: 0,
+        max: 42,
+        bands: [
+          { id: 'normal', label: 'Normal', min: 0, max: 9 },
+          { id: 'leve', label: 'Leve', min: 10, max: 13 },
+          { id: 'moderada', label: 'Moderada', min: 14, max: 20 },
+          { id: 'grave', label: 'Grave', min: 21, max: 27 },
+          { id: 'extremamente_grave', label: 'Extremamente grave', min: 28, max: 42 },
+        ],
+      },
+      {
+        id: 'ansiedade',
+        label: 'Ansiedade',
+        short: 'A',
+        items: ['q2', 'q4', 'q7', 'q9', 'q15', 'q19', 'q20'],
+        min: 0,
+        max: 42,
+        bands: [
+          { id: 'normal', label: 'Normal', min: 0, max: 7 },
+          { id: 'leve', label: 'Leve', min: 8, max: 9 },
+          { id: 'moderada', label: 'Moderada', min: 10, max: 14 },
+          { id: 'grave', label: 'Grave', min: 15, max: 19 },
+          { id: 'extremamente_grave', label: 'Extremamente grave', min: 20, max: 42 },
+        ],
+      },
+      {
+        id: 'estresse',
+        label: 'Estresse',
+        short: 'E',
+        items: ['q1', 'q6', 'q8', 'q11', 'q12', 'q14', 'q18'],
+        min: 0,
+        max: 42,
+        bands: [
+          { id: 'normal', label: 'Normal', min: 0, max: 14 },
+          { id: 'leve', label: 'Leve', min: 15, max: 18 },
+          { id: 'moderada', label: 'Moderada', min: 19, max: 25 },
+          { id: 'grave', label: 'Grave', min: 26, max: 33 },
+          { id: 'extremamente_grave', label: 'Extremamente grave', min: 34, max: 42 },
+        ],
+      },
+    ],
+  },
+  bands: [],
+  reading: 'São três notas independentes: cada uma soma 7 perguntas e multiplica por 2, como no manual da escala. A faixa é a do instrumento e não substitui a avaliação clínica. A escala pergunta sobre a última semana.',
+  sources: [
+    'Lovibond SH, Lovibond PF. Manual for the Depression Anxiety Stress Scales. 2ª ed. Sydney: Psychology Foundation; 1995.',
+    'Vignola RCB, Tucci AM. Adaptation and validation of the depression, anxiety and stress scale (DASS) to Brazilian Portuguese. J Affect Disord. 2014;155:104-9.',
+  ],
+  license: 'DASS: domínio público. Uso livre, sem necessidade de permissão (site oficial da escala, UNSW); tradução brasileira de Vignola e Tucci publicada no mesmo site.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Faixas do manual original (Lovibond, 1995), aplicadas à soma de cada subescala multiplicada por 2. Na instrução, "circule o número 0, 1, 2 ou 3" virou "marque a opção" para a tela. A psicóloga responsável confere o texto, as faixas e se usa as normas da validação brasileira (Vignola, 2014).',
+  },
+};
+
 /** Instrumentos em uso, na ordem em que aparecem na tela. */
-export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7];
+export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7, DASS21];
 
 /**
  * Versões antigas, para ler aplicações feitas antes de uma mudança.

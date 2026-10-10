@@ -18,12 +18,13 @@ type Item = {
   showWhen?: string;
 };
 type Band = { id: string; label: string; min: number; max: number };
+type Subscale = { id: string; label: string; short?: string; items: string[]; min: number; max: number; bands: Band[] };
 export type Instrument = {
   id: string;
   version: number;
   items?: Item[];
   extraItems?: Item[];
-  scoring: { method: string; min: number; max: number };
+  scoring: { method: string; min?: number; max?: number; multiplier?: number; subscales?: Subscale[] };
   bands: Band[];
 };
 type Answers = Record<string, unknown>;
@@ -38,9 +39,26 @@ function isValidAnswer(item: Item, value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && optionValues(item).includes(value);
 }
 
-export function bandForScore(instrument: Instrument, score: unknown): Band | null {
+export function bandIn(bands: Band[] | undefined, score: unknown): Band | null {
   if (typeof score !== 'number' || !Number.isFinite(score)) return null;
-  return instrument.bands.find(band => score >= band.min && score <= band.max) || null;
+  return (bands || []).find(band => score >= band.min && score <= band.max) || null;
+}
+
+export function bandForScore(instrument: Instrument, score: unknown): Band | null {
+  return bandIn(instrument.bands, score);
+}
+
+function scoreSubscales(instrument: Instrument, answers: Answers) {
+  const items = instrument.items || [];
+  const multiplier = instrument.scoring.multiplier || 1;
+  return (instrument.scoring.subscales || []).map(subscale => {
+    const subItems = subscale.items.map(id => items.find(item => item.id === id));
+    const complete = subItems.length > 0 && subItems.every(item => item && isValidAnswer(item, answers?.[item.id]));
+    const score = complete
+      ? subItems.reduce((total, item) => total + (answers[(item as Item).id] as number), 0) * multiplier
+      : null;
+    return { id: subscale.id, label: subscale.label, score, band: complete ? bandIn(subscale.bands, score) : null };
+  });
 }
 
 export function scoreInstrument(instrument: Instrument, answers: Answers = {}) {
@@ -58,8 +76,9 @@ export function scoreInstrument(instrument: Instrument, answers: Answers = {}) {
   }
 
   const complete = items.length > 0 && answered === items.length;
+  const bySubscale = instrument.scoring.method === 'subscales';
   let score: number | null = null;
-  if (complete) {
+  if (complete && !bySubscale) {
     if (instrument.scoring.method === 'sum_times_2') score = sum * 2;
     else if (instrument.scoring.method === 'mean') score = sum / items.length;
     else score = sum;
@@ -70,7 +89,8 @@ export function scoreInstrument(instrument: Instrument, answers: Answers = {}) {
     total: items.length,
     complete,
     score,
-    band: complete ? bandForScore(instrument, score) : null,
+    band: complete && !bySubscale ? bandForScore(instrument, score) : null,
+    ...(bySubscale ? { subscales: scoreSubscales(instrument, answers) } : {}),
     riskItems,
   };
 }
@@ -112,6 +132,15 @@ export function buildApplicationPayload(instrument: Instrument, answers: Answers
       score: result.score,
       bandId: result.band?.id || null,
       bandLabel: result.band?.label || null,
+      ...(result.subscales ? {
+        subscales: result.subscales.map(subscale => ({
+          id: subscale.id,
+          label: subscale.label,
+          score: subscale.score,
+          bandId: subscale.band?.id || null,
+          bandLabel: subscale.band?.label || null,
+        })),
+      } : {}),
       riskItems: result.riskItems,
     },
     ...(trimmedNote ? { note: trimmedNote } : {}),

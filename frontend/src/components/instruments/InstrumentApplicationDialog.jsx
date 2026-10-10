@@ -3,7 +3,7 @@ import { useDismiss } from '../../hooks/useDismiss';
 import { DismissPrompt } from '../ui/DismissPrompt';
 import { voidInstrumentApplication } from '../../services/patientInstrumentService';
 import { riskMessages } from '../../utils/instrumentScoring';
-import { formatInstrumentDate, pointsLabel } from './instrumentFormat';
+import { formatInstrumentDate, namedInstrument, pointsLabel, scoreViews } from './instrumentFormat';
 
 // ============================================================
 // Uma aplicação aberta: resultado, respostas e observação.
@@ -28,6 +28,7 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
   const dismiss = useDismiss({ onClose, busy: saving, guardUnsaved: true });
 
   const result = application.result || {};
+  const views = scoreViews(instrument);
   const risks = riskMessages(instrument, result.riskItems || [], { source: application.source });
   const extraItems = (instrument.extraItems || []).filter(item => application.answers[item.id] !== undefined);
   const titleId = `instrument-application-${application.id}`;
@@ -73,8 +74,25 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
             )}
 
             <div className="instrument-result">
-              <span className="instrument-score">{typeof result.score === 'number' ? pointsLabel(result.score) : '—'}</span>
-              <span>Faixa do instrumento: <b>{result.bandLabel || '—'}</b></span>
+              {views.length === 1 ? (
+                <>
+                  <span className="instrument-score">{typeof result.score === 'number' ? pointsLabel(result.score) : '—'}</span>
+                  <span>Faixa do instrumento: <b>{result.bandLabel || '—'}</b></span>
+                </>
+              ) : (
+                <ul className="instrument-subscales" aria-label={`Notas ${namedInstrument(instrument, 'de')}`}>
+                  {views.map(view => {
+                    const value = view.read(result);
+                    return (
+                      <li key={view.id}>
+                        <span className="instrument-subscale-label">{view.label}</span>
+                        <span className="instrument-subscale-score">{value.score == null ? '—' : pointsLabel(value.score)}</span>
+                        <span>Faixa: <b>{value.bandLabel || '—'}</b></span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
               <span className="small">
                 {application.source === 'area_do_paciente'
                   ? `Respondida pelo paciente na Área do Paciente em ${formatInstrumentDate(application.appliedAt)} (enviada por ${application.appliedByName}).`
@@ -100,8 +118,13 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
                 );
               })}
             </ol>
-            {typeof result.score === 'number' && (
+            {views.length === 1 && typeof result.score === 'number' && (
               <p className="small instrument-sum">Soma das {instrument.items.length} perguntas: {pointsLabel(result.score)}.</p>
+            )}
+            {views.length > 1 && (
+              <p className="small instrument-sum">
+                Cada nota soma as {views[0].itemCount} perguntas da subescala e multiplica por {instrument.scoring.multiplier || 1}, como no manual.
+              </p>
             )}
 
             {extraItems.map(item => (

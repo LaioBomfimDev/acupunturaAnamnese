@@ -506,6 +506,629 @@ export const CLINICAL_INSTRUMENTS: ServerInstrument[] = [
         "max": 21
       }
     ]
+  },
+  {
+    "id": "dass21",
+    "version": 1,
+    "shortName": "DASS-21",
+    "name": "Escala de Depressão, Ansiedade e Estresse (DASS-21)",
+    "instructions": "Por favor, leia cuidadosamente cada uma das afirmações abaixo e marque a opção que indique o quanto ela se aplicou a você durante a última semana.",
+    "items": [
+      {
+        "id": "q1",
+        "text": "Achei difícil me acalmar",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "Senti minha boca seca",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "Não consegui vivenciar nenhum sentimento positivo",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "Tive dificuldade em respirar em alguns momentos (ex. respiração ofegante, falta de ar, sem ter feito nenhum esforço físico)",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "Achei difícil ter iniciativa para fazer as coisas",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q6",
+        "text": "Tive a tendência de reagir de forma exagerada às situações",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q7",
+        "text": "Senti tremores (ex. nas mãos)",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q8",
+        "text": "Senti que estava sempre nervoso",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q9",
+        "text": "Preocupei-me com situações em que eu pudesse entrar em pânico e parecesse ridículo (a)",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "Senti que não tinha nada a desejar",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q11",
+        "text": "Senti-me agitado",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q12",
+        "text": "Achei difícil relaxar",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q13",
+        "text": "Senti-me depressivo (a) e sem ânimo",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q14",
+        "text": "Fui intolerante com as coisas que me impediam de continuar o que eu estava fazendo",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q15",
+        "text": "Senti que ia entrar em pânico",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q16",
+        "text": "Não consegui me entusiasmar com nada",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q17",
+        "text": "Senti que não tinha valor como pessoa",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q18",
+        "text": "Senti que estava um pouco emotivo/sensível demais",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q19",
+        "text": "Sabia que meu coração estava alterado mesmo não tendo feito nenhum esforço físico (ex. aumento da frequência cardíaca, disritmia cardíaca)",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q20",
+        "text": "Senti medo sem motivo",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      },
+      {
+        "id": "q21",
+        "text": "Senti que a vida não tinha sentido",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não se aplicou de maneira alguma"
+          },
+          {
+            "value": 1,
+            "label": "Aplicou-se em algum grau, ou por pouco de tempo"
+          },
+          {
+            "value": 2,
+            "label": "Aplicou-se em um grau considerável, ou por uma boa parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Aplicou-se muito, ou na maioria do tempo"
+          }
+        ]
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "subscales",
+      "multiplier": 2,
+      "subscales": [
+        {
+          "id": "depressao",
+          "label": "Depressão",
+          "short": "D",
+          "items": [
+            "q3",
+            "q5",
+            "q10",
+            "q13",
+            "q16",
+            "q17",
+            "q21"
+          ],
+          "min": 0,
+          "max": 42,
+          "bands": [
+            {
+              "id": "normal",
+              "label": "Normal",
+              "min": 0,
+              "max": 9
+            },
+            {
+              "id": "leve",
+              "label": "Leve",
+              "min": 10,
+              "max": 13
+            },
+            {
+              "id": "moderada",
+              "label": "Moderada",
+              "min": 14,
+              "max": 20
+            },
+            {
+              "id": "grave",
+              "label": "Grave",
+              "min": 21,
+              "max": 27
+            },
+            {
+              "id": "extremamente_grave",
+              "label": "Extremamente grave",
+              "min": 28,
+              "max": 42
+            }
+          ]
+        },
+        {
+          "id": "ansiedade",
+          "label": "Ansiedade",
+          "short": "A",
+          "items": [
+            "q2",
+            "q4",
+            "q7",
+            "q9",
+            "q15",
+            "q19",
+            "q20"
+          ],
+          "min": 0,
+          "max": 42,
+          "bands": [
+            {
+              "id": "normal",
+              "label": "Normal",
+              "min": 0,
+              "max": 7
+            },
+            {
+              "id": "leve",
+              "label": "Leve",
+              "min": 8,
+              "max": 9
+            },
+            {
+              "id": "moderada",
+              "label": "Moderada",
+              "min": 10,
+              "max": 14
+            },
+            {
+              "id": "grave",
+              "label": "Grave",
+              "min": 15,
+              "max": 19
+            },
+            {
+              "id": "extremamente_grave",
+              "label": "Extremamente grave",
+              "min": 20,
+              "max": 42
+            }
+          ]
+        },
+        {
+          "id": "estresse",
+          "label": "Estresse",
+          "short": "E",
+          "items": [
+            "q1",
+            "q6",
+            "q8",
+            "q11",
+            "q12",
+            "q14",
+            "q18"
+          ],
+          "min": 0,
+          "max": 42,
+          "bands": [
+            {
+              "id": "normal",
+              "label": "Normal",
+              "min": 0,
+              "max": 14
+            },
+            {
+              "id": "leve",
+              "label": "Leve",
+              "min": 15,
+              "max": 18
+            },
+            {
+              "id": "moderada",
+              "label": "Moderada",
+              "min": 19,
+              "max": 25
+            },
+            {
+              "id": "grave",
+              "label": "Grave",
+              "min": 26,
+              "max": 33
+            },
+            {
+              "id": "extremamente_grave",
+              "label": "Extremamente grave",
+              "min": 34,
+              "max": 42
+            }
+          ]
+        }
+      ]
+    },
+    "bands": []
   }
 ];
 

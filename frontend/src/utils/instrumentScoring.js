@@ -12,10 +12,31 @@ function isValidAnswer(item, value) {
   return typeof value === 'number' && Number.isFinite(value) && optionValues(item).includes(value);
 }
 
+/** Faixa da lista em que a nota cai; null fora dela. */
+export function bandIn(bands, score) {
+  if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+  return (bands || []).find(band => score >= band.min && score <= band.max) || null;
+}
+
 /** Faixa em que a nota cai; null fora da escala. */
 export function bandForScore(instrument, score) {
-  if (typeof score !== 'number' || !Number.isFinite(score)) return null;
-  return instrument.bands.find(band => score >= band.min && score <= band.max) || null;
+  return bandIn(instrument.bands, score);
+}
+
+/**
+ * Subescalas (`scoring.method: 'subscales'`, ex.: DASS-21): cada uma soma
+ * as próprias perguntas, multiplica por `scoring.multiplier` e cai nas
+ * próprias faixas. Nota só com todas as perguntas da subescala respondidas.
+ */
+function scoreSubscales(instrument, answers) {
+  const items = instrument.items || [];
+  const multiplier = instrument.scoring.multiplier || 1;
+  return (instrument.scoring.subscales || []).map(subscale => {
+    const subItems = subscale.items.map(id => items.find(item => item.id === id));
+    const complete = subItems.length > 0 && subItems.every(item => item && isValidAnswer(item, answers?.[item.id]));
+    const score = complete ? subItems.reduce((total, item) => total + answers[item.id], 0) * multiplier : null;
+    return { id: subscale.id, label: subscale.label, score, band: complete ? bandIn(subscale.bands, score) : null };
+  });
 }
 
 /**
@@ -38,8 +59,9 @@ export function scoreInstrument(instrument, answers = {}) {
   }
 
   const complete = items.length > 0 && answered === items.length;
+  const bySubscale = instrument.scoring.method === 'subscales';
   let score = null;
-  if (complete) {
+  if (complete && !bySubscale) {
     if (instrument.scoring.method === 'sum_times_2') score = sum * 2;
     else if (instrument.scoring.method === 'mean') score = sum / items.length;
     else score = sum;
@@ -50,7 +72,8 @@ export function scoreInstrument(instrument, answers = {}) {
     total: items.length,
     complete,
     score,
-    band: complete ? bandForScore(instrument, score) : null,
+    band: complete && !bySubscale ? bandForScore(instrument, score) : null,
+    ...(bySubscale ? { subscales: scoreSubscales(instrument, answers) } : {}),
     riskItems,
   };
 }
@@ -112,6 +135,15 @@ export function buildApplicationPayload(instrument, answers, note = '') {
       score: result.score,
       bandId: result.band?.id || null,
       bandLabel: result.band?.label || null,
+      ...(result.subscales ? {
+        subscales: result.subscales.map(subscale => ({
+          id: subscale.id,
+          label: subscale.label,
+          score: subscale.score,
+          bandId: subscale.band?.id || null,
+          bandLabel: subscale.band?.label || null,
+        })),
+      } : {}),
       riskItems: result.riskItems,
     },
     ...(trimmedNote ? { note: trimmedNote } : {}),
@@ -141,26 +173,56 @@ export function validateInstrumentDefinition(instrument) {
     }
   }
 
-  if (instrument.scoring?.method === 'sum') {
-    const minSum = items.reduce((total, item) => total + Math.min(...optionValues(item)), 0);
-    const maxSum = items.reduce((total, item) => total + Math.max(...optionValues(item)), 0);
-    if (minSum !== instrument.scoring.min) problems.push(`mínimo declarado ${instrument.scoring.min}, soma dá ${minSum}`);
-    if (maxSum !== instrument.scoring.max) problems.push(`máximo declarado ${instrument.scoring.max}, soma dá ${maxSum}`);
-  }
+  const rangeOf = (list, factor = 1) => ({
+    min: list.reduce((total, item) => total + Math.min(...optionValues(item)), 0) * factor,
+    max: list.reduce((total, item) => total + Math.max(...optionValues(item)), 0) * factor,
+  });
 
-  const bands = [...(instrument.bands || [])].sort((a, b) => a.min - b.min);
-  if (!bands.length) problems.push('sem faixas');
-  if (bands.length) {
-    if (bands[0].min !== instrument.scoring.min) problems.push('a primeira faixa não começa no mínimo');
-    if (bands[bands.length - 1].max !== instrument.scoring.max) problems.push('a última faixa não termina no máximo');
-    for (let index = 1; index < bands.length; index += 1) {
-      if (bands[index].min !== bands[index - 1].max + 1) {
-        problems.push(`buraco ou sobreposição entre ${bands[index - 1].id} e ${bands[index].id}`);
-      }
+  if (instrument.scoring?.method === 'subscales') {
+    const multiplier = instrument.scoring.multiplier || 1;
+    const subscales = instrument.scoring.subscales || [];
+    if (!subscales.length) problems.push('sem subescalas');
+    const seen = new Map();
+    for (const subscale of subscales) {
+      const subItems = subscale.items.map(id => items.find(item => item.id === id));
+      if (subItems.some(item => !item)) problems.push(`${subscale.id}: pergunta que não existe`);
+      for (const id of subscale.items) seen.set(id, (seen.get(id) || 0) + 1);
+      const range = rangeOf(subItems.filter(Boolean), multiplier);
+      if (range.min !== subscale.min) problems.push(`${subscale.id}: mínimo declarado ${subscale.min}, soma dá ${range.min}`);
+      if (range.max !== subscale.max) problems.push(`${subscale.id}: máximo declarado ${subscale.max}, soma dá ${range.max}`);
+      checkBands(subscale.bands, subscale.min, subscale.max, `${subscale.id}: `, problems);
     }
-    const bandIds = bands.map(band => band.id);
-    if (new Set(bandIds).size !== bandIds.length) problems.push('ids de faixa repetidos');
+    for (const item of items) {
+      const count = seen.get(item.id) || 0;
+      if (count !== 1) problems.push(`${item.id}: está em ${count} subescalas`);
+    }
+    return problems;
   }
 
+  if (instrument.scoring?.method === 'sum') {
+    const range = rangeOf(items);
+    if (range.min !== instrument.scoring.min) problems.push(`mínimo declarado ${instrument.scoring.min}, soma dá ${range.min}`);
+    if (range.max !== instrument.scoring.max) problems.push(`máximo declarado ${instrument.scoring.max}, soma dá ${range.max}`);
+  }
+
+  checkBands(instrument.bands, instrument.scoring?.min, instrument.scoring?.max, '', problems);
   return problems;
+}
+
+/** Faixas cobrindo [min, max] sem buraco nem sobreposição, ids únicos. */
+function checkBands(list, min, max, prefix, problems) {
+  const bands = [...(list || [])].sort((a, b) => a.min - b.min);
+  if (!bands.length) {
+    problems.push(`${prefix}sem faixas`);
+    return;
+  }
+  if (bands[0].min !== min) problems.push(`${prefix}a primeira faixa não começa no mínimo`);
+  if (bands[bands.length - 1].max !== max) problems.push(`${prefix}a última faixa não termina no máximo`);
+  for (let index = 1; index < bands.length; index += 1) {
+    if (bands[index].min !== bands[index - 1].max + 1) {
+      problems.push(`${prefix}buraco ou sobreposição entre ${bands[index - 1].id} e ${bands[index].id}`);
+    }
+  }
+  const bandIds = bands.map(band => band.id);
+  if (new Set(bandIds).size !== bandIds.length) problems.push(`${prefix}ids de faixa repetidos`);
 }

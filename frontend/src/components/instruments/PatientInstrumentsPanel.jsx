@@ -13,7 +13,17 @@ import { InstrumentApplyForm } from './InstrumentApplyForm';
 import { InstrumentApplicationDialog } from './InstrumentApplicationDialog';
 import { InstrumentPortalBox } from './InstrumentPortalBox';
 import { InstrumentTrendChart } from './InstrumentTrendChart';
-import { differenceLabel, formatInstrumentDate, pointsLabel, reapplyStatus, savedNotice, validApplications } from './instrumentFormat';
+import {
+  differenceLabel,
+  formatInstrumentDate,
+  namedInstrument,
+  pointsLabel,
+  reapplyStatus,
+  savedNotice,
+  scoreViews,
+  validApplications,
+  viewApplications,
+} from './instrumentFormat';
 import '../../styles/instruments.css';
 
 // ============================================================
@@ -66,6 +76,12 @@ function InstrumentCard({
     : [];
   const pending = instrument.review?.status !== INSTRUMENT_REVIEW_STATUS.APPROVED;
   const reapply = reapplyStatus(latest?.appliedAt, instrument.reapplyAfterDays);
+  // Uma nota (PHQ-9, GAD-7) ou uma por subescala (DASS-21). Com várias,
+  // o gráfico mostra uma por vez e os botões trocam.
+  const views = scoreViews(instrument);
+  const single = views.length === 1;
+  const [chartViewId, setChartViewId] = useState(views[0].id);
+  const chartView = views.find(view => view.id === chartViewId) || views[0];
 
   return (
     <article className="instrument-card">
@@ -86,10 +102,29 @@ function InstrumentCard({
 
       {latest ? (
         <div className="instrument-latest">
-          <span className="instrument-score">{pointsLabel(latest.result.score)}</span>
-          <span>Faixa do instrumento: <b>{latest.result.bandLabel}</b></span>
+          {single ? (
+            <>
+              <span className="instrument-score">{pointsLabel(latest.result.score)}</span>
+              <span>Faixa do instrumento: <b>{latest.result.bandLabel}</b></span>
+            </>
+          ) : (
+            <ul className="instrument-subscales" aria-label={`Notas ${namedInstrument(instrument, 'de')}`}>
+              {views.map(view => {
+                const now = view.read(latest.result);
+                const before = previous ? view.read(previous.result) : null;
+                return (
+                  <li key={view.id}>
+                    <span className="instrument-subscale-label">{view.label}</span>
+                    <span className="instrument-subscale-score">{now.score == null ? '—' : pointsLabel(now.score)}</span>
+                    <span>Faixa: <b>{now.bandLabel || '—'}</b></span>
+                    {before && <span className="small">{differenceLabel(now.score, before.score)}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           <span className="small">
-            Última aplicação em {formatInstrumentDate(latest.appliedAt)}. {differenceLabel(latest.result.score, previous?.result?.score)}
+            Última aplicação em {formatInstrumentDate(latest.appliedAt)}. {single ? differenceLabel(latest.result.score, previous?.result?.score) : ''}
             {' '}
             {reapply.tooSoon
               ? `Para medir mudança, reaplicar a partir de ${formatInstrumentDate(reapply.availableFrom)}.`
@@ -138,17 +173,45 @@ function InstrumentCard({
         onChanged={onPortalChanged}
       />
 
-      <InstrumentTrendChart instrument={instrument} applications={applications} />
+      {single ? (
+        <InstrumentTrendChart instrument={instrument} applications={applications} />
+      ) : valid.length > 0 && (
+        <div className="instrument-chart-switch">
+          <div className="instrument-chart-tabs" role="group" aria-label={`Gráfico ${namedInstrument(instrument, 'de')}`}>
+            {views.map(view => (
+              <button
+                key={view.id}
+                type="button"
+                aria-pressed={chartView.id === view.id}
+                onClick={() => setChartViewId(view.id)}
+              >
+                {view.label}
+              </button>
+            ))}
+          </div>
+          <InstrumentTrendChart
+            key={chartView.id}
+            instrument={{ ...instrument, shortName: `${instrument.shortName} · ${chartView.label}`, scoring: chartView.scoring, bands: chartView.bands }}
+            applications={viewApplications(applications, chartView)}
+          />
+        </div>
+      )}
 
       {applications.length > 0 && (
-        <ul className="instrument-history" aria-label={`Aplicações do ${instrument.shortName}`}>
+        <ul className="instrument-history" aria-label={`Aplicações ${namedInstrument(instrument, 'de')}`}>
           {applications.map(app => (
             <li key={app.id} className={app.voidedAt ? 'is-voided' : ''}>
               <span className="instrument-history-date">{formatInstrumentDate(app.appliedAt)}</span>
               <span className="instrument-history-score">
-                {typeof app.result?.score === 'number' ? pointsLabel(app.result.score) : '—'}
+                {single
+                  ? (typeof app.result?.score === 'number' ? pointsLabel(app.result.score) : '—')
+                  : views.map(view => `${view.short} ${view.read(app.result).score ?? '—'}`).join(' · ')}
               </span>
-              <span className="instrument-history-band">{app.result?.bandLabel || '—'}</span>
+              <span className="instrument-history-band">
+                {single
+                  ? (app.result?.bandLabel || '—')
+                  : views.map(view => view.read(app.result).bandLabel || '—').join(' · ')}
+              </span>
               <span className="small instrument-history-author">
                 {app.source === 'area_do_paciente'
                   ? 'Respondida em casa'

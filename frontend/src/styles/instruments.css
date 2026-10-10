@@ -92,6 +92,93 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Escala com subescalas (DASS-21): uma nota por subescala, lado a lado,
+   uma embaixo da outra quando a largura acaba. */
+.instrument-subscales {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instrument-subscales li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm, 8px);
+  background: var(--r1-surface);
+}
+
+.instrument-subscales .small {
+  flex-basis: auto;
+}
+
+.instrument-subscale-label {
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.instrument-subscale-score {
+  color: var(--r1-text);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Escala com várias notas: um gráfico por vez, botões para trocar. */
+.instrument-chart-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.instrument-chart-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+}
+
+.instrument-chart-tabs button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.instrument-chart-tabs button:hover {
+  background: var(--r1-accent-wash);
+}
+
+.instrument-chart-tabs button[aria-pressed='true'],
+.instrument-chart-tabs button[aria-pressed='true']:hover {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.instrument-chart-tabs button:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 2px;
+}
+
 .instrument-risk {
   font-weight: 600;
 }

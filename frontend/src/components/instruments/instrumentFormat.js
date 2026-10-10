@@ -9,6 +9,13 @@ export function formatInstrumentDate(value, { short = false } = {}) {
     : { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+/** "o PHQ-9" / "a DASS-21"; com `de`: "do PHQ-9" / "da DASS-21". */
+export function namedInstrument(instrument, preposition = null) {
+  const feminine = instrument?.article === 'a';
+  if (preposition === 'de') return `${feminine ? 'da' : 'do'} ${instrument?.shortName || ''}`;
+  return `${feminine ? 'a' : 'o'} ${instrument?.shortName || ''}`;
+}
+
 /** "1 ponto" / "12 pontos". */
 export function pointsLabel(score) {
   return `${score} ${Math.abs(score) === 1 ? 'ponto' : 'pontos'}`;
@@ -76,16 +83,63 @@ export function differenceLabel(current, previous) {
 
 /** Aplicações válidas (não anuladas, com nota), da mais recente para a mais antiga. */
 export function validApplications(applications) {
-  return applications.filter(app => !app.voidedAt && typeof app.result?.score === 'number');
+  return applications.filter(app => !app.voidedAt && (
+    typeof app.result?.score === 'number' || Array.isArray(app.result?.subscales)
+  ));
+}
+
+/**
+ * As notas que a escala mostra: uma só (PHQ-9, GAD-7) ou uma por
+ * subescala (DASS-21). Cada visão lê do resultado gravado a nota e a
+ * faixa dela, e traz as faixas e a régua (`scoring.min/max`) do gráfico.
+ */
+export function scoreViews(instrument) {
+  if (instrument?.scoring?.method === 'subscales') {
+    return (instrument.scoring.subscales || []).map(subscale => ({
+      id: subscale.id,
+      label: subscale.label,
+      short: subscale.short || subscale.label.slice(0, 1),
+      itemCount: subscale.items.length,
+      scoring: { min: subscale.min, max: subscale.max },
+      bands: subscale.bands,
+      read: result => {
+        const found = (result?.subscales || []).find(item => item.id === subscale.id);
+        return { score: typeof found?.score === 'number' ? found.score : null, bandLabel: found?.bandLabel || null };
+      },
+    }));
+  }
+  return [{
+    id: 'total',
+    label: null,
+    short: null,
+    itemCount: (instrument?.items || []).length,
+    scoring: instrument?.scoring,
+    bands: instrument?.bands || [],
+    read: result => ({
+      score: typeof result?.score === 'number' ? result.score : null,
+      bandLabel: result?.bandLabel || null,
+    }),
+  }];
+}
+
+/** As aplicações vistas por uma visão: `result.score`/`bandLabel` passam a ser os dela. */
+export function viewApplications(applications, view) {
+  return applications.map(app => ({ ...app, result: { ...app.result, ...view.read(app.result) } }));
 }
 
 /** Recado depois de salvar: o resultado em uma frase, e o risco junto. */
 export function savedNotice(instrument, saved) {
   if (saved?.replayed) return { text: 'Esta aplicação já estava salva.', risk: false };
   const result = saved?.payload?.result || {};
-  const base = typeof result.score === 'number'
-    ? `${instrument.shortName} salvo: ${pointsLabel(result.score)}, faixa ${result.bandLabel}.`
-    : `${instrument.shortName} salvo.`;
+  let base = `${instrument.shortName} salvo.`;
+  if (Array.isArray(result.subscales)) {
+    const parts = result.subscales
+      .filter(subscale => typeof subscale.score === 'number')
+      .map(subscale => `${subscale.label.toLowerCase()} ${pointsLabel(subscale.score)} (${String(subscale.bandLabel || '').toLowerCase()})`);
+    if (parts.length) base = `${instrument.shortName} salvo: ${parts.join(', ')}.`;
+  } else if (typeof result.score === 'number') {
+    base = `${instrument.shortName} salvo: ${pointsLabel(result.score)}, faixa ${result.bandLabel}.`;
+  }
   return { text: base, risk: (result.riskItems || []).length > 0 };
 }
 

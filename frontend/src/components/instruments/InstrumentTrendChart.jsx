@@ -46,6 +46,49 @@ function useMeasuredWidth() {
   return [measureRef, width];
 }
 
+// Faixa estreita (ex.: "Leve" da ansiedade na DASS-21, 8 a 9 pontos numa
+// régua de 0 a 42) deixava os nomes um em cima do outro. Afasta só o que
+// colide, mantendo a ordem e o limite do gráfico.
+const LABEL_GAP = 12;
+const TICK_GAP = 11;
+
+function spreadLabels(centers, low, high) {
+  const order = centers.map((value, index) => ({ value, index })).sort((a, b) => b.value - a.value);
+  const placed = [];
+  let previous = null;
+  for (const { value, index } of order) {
+    let position = Math.min(value, high);
+    if (previous !== null && previous - position < LABEL_GAP) position = previous - LABEL_GAP;
+    placed[index] = position;
+    previous = position;
+  }
+  // Passou do topo: empurra de volta para baixo, de cima para baixo.
+  const fromTop = placed.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value);
+  let above = null;
+  for (const { value, index } of fromTop) {
+    let position = Math.max(value, low);
+    if (above !== null && position - above < LABEL_GAP) position = above + LABEL_GAP;
+    placed[index] = position;
+    above = position;
+  }
+  return placed;
+}
+
+/** Números do eixo que cabem sem encostar no anterior; o máximo sempre aparece. */
+function visibleTicks(values, y) {
+  const kept = [];
+  for (const value of [...values].sort((a, b) => a - b)) {
+    const last = kept[kept.length - 1];
+    if (last === undefined || y(last) - y(value) >= TICK_GAP) kept.push(value);
+  }
+  const top = values[values.length - 1];
+  if (kept[kept.length - 1] !== top) {
+    if (kept.length && y(kept[kept.length - 1]) - y(top) < TICK_GAP) kept.pop();
+    kept.push(top);
+  }
+  return new Set(kept);
+}
+
 export function InstrumentTrendChart({ instrument, applications }) {
   const [figureRef, measuredWidth] = useMeasuredWidth();
   const points = scoredApplications(applications);
@@ -73,14 +116,23 @@ export function InstrumentTrendChart({ instrument, applications }) {
     ? `${instrument.shortName}: ${lastCoord.point.result.score} pontos em ${formatInstrumentDate(lastCoord.point.appliedAt)}.`
     : `${instrument.shortName}: de ${coords[0].point.result.score} pontos em ${formatInstrumentDate(coords[0].point.appliedAt)} para ${lastCoord.point.result.score} pontos em ${formatInstrumentDate(lastCoord.point.appliedAt)}.`;
 
+  const bandEdges = instrument.bands.map(band => {
+    const lower = band.min === min ? min : band.min - 0.5;
+    const upper = band.max === max ? max : band.max + 0.5;
+    return { top: y(upper), bottom: y(lower) };
+  });
+  const labelY = spreadLabels(
+    bandEdges.map(edge => (edge.top + edge.bottom) / 2),
+    PAD.top + 6,
+    PAD.top + PLOT_H - 6,
+  );
+  const ticks = visibleTicks([...instrument.bands.map(band => band.min), max], y);
+
   return (
     <figure className="instrument-chart" ref={figureRef}>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`Evolução da nota. ${description}`}>
         {instrument.bands.map((band, index) => {
-          const lower = band.min === min ? min : band.min - 0.5;
-          const upper = band.max === max ? max : band.max + 0.5;
-          const top = y(upper);
-          const bottom = y(lower);
+          const { top, bottom } = bandEdges[index];
           return (
             <g key={band.id}>
               <rect
@@ -91,13 +143,15 @@ export function InstrumentTrendChart({ instrument, applications }) {
                 height={Math.max(0, bottom - top)}
               />
               {!compact && (
-                <text className="instrument-band-label" x={PAD.left + PLOT_W + 10} y={(top + bottom) / 2} dominantBaseline="middle">
+                <text className="instrument-band-label" x={PAD.left + PLOT_W + 10} y={labelY[index]} dominantBaseline="middle">
                   {band.label}
                 </text>
               )}
-              <text className="instrument-axis-label" x={PAD.left - 8} y={bottom} textAnchor="end" dominantBaseline="middle">
-                {band.min}
-              </text>
+              {ticks.has(band.min) && (
+                <text className="instrument-axis-label" x={PAD.left - 8} y={bottom} textAnchor="end" dominantBaseline="middle">
+                  {band.min}
+                </text>
+              )}
             </g>
           );
         })}
@@ -113,15 +167,13 @@ export function InstrumentTrendChart({ instrument, applications }) {
         )}
 
         {/* Celular: nome da faixa dentro do gráfico, por cima da linha, com contorno do fundo. */}
-        {compact && instrument.bands.map(band => {
-          const lower = band.min === min ? min : band.min - 0.5;
-          const upper = band.max === max ? max : band.max + 0.5;
+        {compact && instrument.bands.map((band, index) => {
           return (
             <text
               key={band.id}
               className="instrument-band-label is-inside"
               x={PAD.left + 6}
-              y={(y(upper) + y(lower)) / 2}
+              y={labelY[index]}
               dominantBaseline="middle"
             >
               {band.label}

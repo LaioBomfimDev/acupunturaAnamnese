@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FolderTabs } from '../ui/FolderTabs';
 import { SearchSelect } from '../ui/SearchSelect';
 import { isDeleteConfirmationValid } from '../../utils/patientUi';
 import {
   FORM_STATUS,
   assignmentStatus,
   buildResponsesCsv,
+  formsTabSummary,
   markingShare,
   mergeQuestionColumns,
   safeFileName,
+  sendsTabSummary,
 } from '../../utils/patientForms';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import {
@@ -293,20 +296,26 @@ export function Importaveis({ profile }) {
 
   return (
     <section>
-      <div className="gt-period-bar">
-        <div className="gt-segmented" role="group" aria-label="Parte da aba Importáveis">
-          {VIEWS.map(item => (
-            <button key={item.id} type="button" aria-pressed={view === item.id} onClick={() => setView(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-        {view === 'forms' && (
+      {/* Abas de pasta (opção C, 10/10/2026): número grande do que tem em
+          cada parte, contado da mesma lista que a parte mostra. */}
+      <FolderTabs
+        label="Parte da aba Importáveis"
+        value={view}
+        onChange={setView}
+        options={VIEWS.map(item => {
+          const summary = item.id === 'forms' ? formsTabSummary(forms) : sendsTabSummary(assignments);
+          const loadingThis = item.id === 'forms' ? formsLoading : assignLoading;
+          return { ...item, number: loadingThis ? null : summary.count, hint: loadingThis ? 'carregando…' : summary.hint };
+        })}
+      />
+
+      {view === 'forms' && (
+        <div className="gt-period-bar">
           <button type="button" className="gt-btn gt-btn--primary" onClick={() => setEditing({ form: null })}>
             + Novo formulário
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {view === 'forms' && (
         <>

@@ -6,9 +6,13 @@
 // (SECTIONS) e só diz aqui em que grupo cada uma entra — a ordem do
 // menu é a ordem dos grupos. Fica fora da impressão: a aba Documentos
 // imprime a folha timbrada de dentro da Gestão.
+//
+// `counts` (opção B, 10/10/2026): id da aba → { text, tone }, o mesmo
+// número do quadro do Resumo, à direita do nome. Aba sem número fica só
+// com o nome.
 // ============================================================
 
-export function GestaoNav({ label, sections, groups, icons, active, onSelect }) {
+export function GestaoNav({ label, sections, groups, icons, active, onSelect, counts = null }) {
   const byId = new Map(sections.map(item => [item.id, item]));
 
   return (
@@ -29,7 +33,12 @@ export function GestaoNav({ label, sections, groups, icons, active, onSelect }) 
                   {icons[id]}
                 </svg>
               </span>
-              {byId.get(id).label}
+              <span className="gt-nav-text">{byId.get(id).label}</span>
+              {counts?.[id]?.text && (
+                <span className={`gt-nav-count${counts[id].tone ? ` gt-nav-count--${counts[id].tone}` : ''}`}>
+                  {counts[id].text}
+                </span>
+              )}
             </button>
           ))}
         </div>

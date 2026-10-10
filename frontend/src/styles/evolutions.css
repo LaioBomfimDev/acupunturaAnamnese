@@ -471,40 +471,6 @@
   display: none;
 }
 
-.evs-mode {
-  display: inline-flex;
-  gap: 4px;
-  margin-bottom: 22px;
-  padding: 5px;
-  border: 1px solid var(--r1-accent-line, color-mix(in srgb, var(--r1-accent) 48%, transparent));
-  border-radius: 999px;
-  background: var(--r1-surface);
-}
-
-.evs-mode-btn {
-  min-height: 46px;
-  padding: 10px 28px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--r1-accent);
-  font: inherit;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--r1-dur-fast) var(--r1-ease), color var(--r1-dur-fast) var(--r1-ease);
-}
-
-.evs-mode-btn:hover {
-  background: var(--r1-accent-wash);
-}
-
-.evs-mode-btn[aria-pressed='true'] {
-  background: var(--r1-accent);
-  color: var(--r1-accent-contrast);
-}
-
-.evs-mode-btn:focus-visible,
 .evs-review-arrow:focus-visible,
 .evs-review-segmented button:focus-visible,
 .evs-review-stat:focus-visible,
@@ -962,16 +928,6 @@
 
 /* Celular e tablet: o mesmo corte da navegação de baixo (hub.css). */
 @media (max-width: 1024px) {
-  .evs-mode {
-    display: flex;
-  }
-
-  .evs-mode-btn {
-    flex: 1;
-    padding: 10px 12px;
-    font-size: 15px;
-  }
-
   .evs-review-toolbar {
     padding: 16px;
   }

@@ -166,3 +166,28 @@ export function filterQueue(items, {
     return true;
   });
 }
+
+/**
+ * Número da aba "Escrever evoluções" (abas de pasta, opção C de
+ * 10/10/2026): quantos atendimentos a pessoa ainda pode evoluir e quantos
+ * deles são de hoje. Atendimento de colega (cadeado) não conta: "na sua
+ * fila" é o que dá para escrever agora.
+ */
+export function writeTabSummary(items, { done = new Set(), isWritable = () => true, now = new Date() } = {}) {
+  const hoje = startOfLocalDay(now);
+  const amanha = new Date(hoje);
+  amanha.setDate(amanha.getDate() + 1);
+  const pending = (items || []).filter(item => !done.has(item.appointment_id) && isWritable(item));
+  const today = pending.filter(item => {
+    const start = new Date(item.starts_at);
+    return start >= hoje && start < amanha;
+  }).length;
+  return { pending: pending.length, today };
+}
+
+export function writeTabHint({ pending, today }) {
+  if (!pending) return 'Nenhuma pendência sua';
+  const fila = 'na sua fila';
+  if (!today) return fila;
+  return `${fila} · ${today} de hoje`;
+}

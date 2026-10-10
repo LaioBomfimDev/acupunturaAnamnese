@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { listAppointmentsAwaitingEvolution } from '../../services/appointmentService';
+import { listAppointments, listAppointmentsAwaitingEvolution } from '../../services/appointmentService';
+import { listEvolutionReviewRows } from '../../services/patientEvolutionService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { listClinicMembers, shortName } from '../../services/clinicMembersService';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
@@ -15,13 +16,22 @@ import {
   onlyEvolutionDisciplines,
   sortQueue,
   toActiveAppointment,
+  writeTabHint,
+  writeTabSummary,
 } from '../../utils/evolutionQueue';
 import { COMPLETED_APPOINTMENT_LABEL, canChooseProfessional, toEvolutionQueueItem } from '../../utils/completedAppointment';
-import { canSeeTeamEvolutions } from '../../utils/evolutionReview';
+import {
+  buildEvolutionReview,
+  canSeeTeamEvolutions,
+  evolutionReviewStats,
+  reviewTabHint,
+} from '../../utils/evolutionReview';
+import { surveyPeriodRange } from '../../utils/gestaoSurveys';
 import { EvolutionRecordPanel } from './EvolutionRecordPanel';
 import { EvolutionsReview } from './EvolutionsReview';
 import { RegisterCompletedDialog } from '../panels/agenda/RegisterCompletedDialog';
 import { PanelLoading } from '../ui/PanelLoading';
+import { FolderTabs } from '../ui/FolderTabs';
 import { SearchSelect } from '../ui/SearchSelect';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { EVOLUCOES_HELP, EVOLUCOES_REVIEW_HELP } from '../../data/screenHelp';
@@ -221,10 +231,39 @@ export function EvolutionsScreen({ profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
+  // Número da aba "Ver evoluções": os dois números da conferência no mês
+  // corrente (concluídos e falta evoluir), com o mesmo cálculo dela.
+  // Recarrega depois de cada evolução salva aqui, para não ficar atrás.
+  const [monthStats, setMonthStats] = useState(null);
+  const [monthStatsToken, setMonthStatsToken] = useState(0);
+  const teamView = canSeeTeamEvolutions(profile);
+  useEffect(() => {
+    let cancelled = false;
+    const now = new Date();
+    const range = surveyPeriodRange('month', now);
+    Promise.all([
+      listAppointments({ from: range.start.toISOString(), to: new Date(range.end.getTime() - 1).toISOString() }),
+      listEvolutionReviewRows({ from: range.start.toISOString(), to: range.end.toISOString() }),
+    ]).then(([appointments, evolutions]) => {
+      if (cancelled) return;
+      const rows = buildEvolutionReview(appointments, evolutions, {
+        now,
+        onlyProfessionalId: teamView ? null : profile?.id,
+      });
+      setMonthStats(evolutionReviewStats(rows));
+    }).catch(() => {
+      // Sem o número a aba continua funcionando; a conferência mostra o
+      // erro de verdade quando abrir.
+      if (!cancelled) setMonthStats(null);
+    });
+    return () => { cancelled = true; };
+  }, [profile?.id, teamView, monthStatsToken]);
+
   const doneIds = useMemo(() => new Set(done.keys()), [done]);
   const current = items.find(item => item.appointment_id === currentId) || null;
   const hasTeamItems = items.some(item => item.professional_id !== profile?.id);
   const pendingCount = items.filter(item => !done.has(item.appointment_id)).length;
+  const writeSummary = writeTabSummary(items, { done: doneIds, isWritable });
   const areasNaFila = DISCIPLINES.filter(discipline => items.some(item => item.discipline === discipline.id));
 
   function patientOf(item) {
@@ -266,6 +305,7 @@ export function EvolutionsScreen({ profile }) {
 
     const next = nextQueueItem(items, savedId, nextDoneIds, isWritable);
     if (next) setCurrentId(next.appointment_id);
+    setMonthStatsToken(token => token + 1);
     window.scrollTo({ top: 0 });
   }
 
@@ -281,6 +321,7 @@ export function EvolutionsScreen({ profile }) {
     const item = toEvolutionQueueItem(created, name);
     setItems(prev => [item, ...prev.filter(entry => entry.appointment_id !== item.appointment_id)]);
     setRegistering(false);
+    setMonthStatsToken(token => token + 1);
     setSituacao('todos');
     setArea('');
     setAtendimento('todos');
@@ -371,19 +412,16 @@ export function EvolutionsScreen({ profile }) {
           : <ScreenHelp topic={EVOLUCOES_REVIEW_HELP} />}
       </header>
 
-      <div className="evs-mode" role="group" aria-label="O que fazer em Evoluções">
-        {MODES.map(option => (
-          <button
-            key={option.id}
-            type="button"
-            className="evs-mode-btn"
-            aria-pressed={mode === option.id}
-            onClick={() => setMode(option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      {/* Abas de pasta (opção C, 10/10/2026): cada uma diz quanto tem do
+          outro lado — a fila de quem escreve e os dois números do mês. */}
+      <FolderTabs
+        label="O que fazer em Evoluções"
+        value={mode}
+        onChange={setMode}
+        options={MODES.map(option => (option.id === 'escrever'
+          ? { ...option, number: writeSummary.pending, hint: writeTabHint(writeSummary), alert: writeSummary.pending > 0 }
+          : { ...option, number: monthStats?.total ?? null, hint: monthStats ? reviewTabHint(monthStats) : 'conferência do período' }))}
+      />
 
       {mode === 'ver' && <EvolutionsReview profile={profile} patients={patients} members={members} />}
 

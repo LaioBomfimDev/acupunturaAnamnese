@@ -116,7 +116,9 @@ test('Gestão: menu agrupado na ordem combinada, toda aba num grupo só', () => 
 
   // Dois botões grandes (08/10/2026): Gestão (dia a dia) e Configurações
   // (o que se ajusta uma vez só). Cada lado mostra só os próprios grupos.
+  // Resumo (opção B, 10/10/2026): a entrada do lado Gestão, antes de tudo.
   assert.deepEqual(groups, [
+    { side: 'gestao', label: 'Visão geral', ids: ['resumo'] },
     { side: 'gestao', label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
     { side: 'gestao', label: 'Área do Paciente', ids: ['importaveis'] },
     { side: 'gestao', label: 'Equipe', ids: ['profissionais', 'acessos'] },

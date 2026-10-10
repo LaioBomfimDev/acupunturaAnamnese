@@ -26,6 +26,7 @@ import { DisciplineAnamnese } from './anamnese/DisciplineAnamnese';
 import { DisciplineRelatorio } from './anamnese/DisciplineRelatorio';
 import { getDisciplineArea } from './areas/disciplineAreas';
 import { buildAnamneseRoute, summarizeRoute } from '../utils/formRoute';
+import { routeAttention, sortAttention } from '../utils/areaAttention';
 
 const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
@@ -406,6 +407,22 @@ export function DisciplineWorkspace({
     },
     ...areaTabs.map(tab => ({ tab: tab.name, status: routeStatus(tab.route(session[tab.sessionKey])) })),
   ];
+  // "Pede atenção" do menu (opção C, 10/10/2026): a anamnese incompleta,
+  // ou o percurso ainda por escolher. Espera a sessão carregar.
+  const attention = selectedPatient && saveStatus !== 'loading'
+    ? sortAttention(routeAttention(
+      session.intakeProfile
+        ? buildAnamneseRoute({ ...config, sections: getProfileSections(config, session.intakeProfile) }, session)
+        : null,
+      {
+        id: 'anamnese',
+        tab: TABS.ANAMNESE,
+        partLabel: 'da anamnese',
+        chooseHint: 'Escolha o percurso da anamnese',
+        chooseTab: TABS.PAINEL,
+      },
+    ))
+    : [];
   // Mescla o legado (session.evolucoes) com os registros novos vindos de
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
@@ -506,6 +523,7 @@ export function DisciplineWorkspace({
         patientTab={TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
         onSignOut={handleSignOut}
+        attention={attention}
       />
 
       <main className="main psi-main forms-scope">

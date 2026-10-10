@@ -183,7 +183,9 @@ function InstrumentCard({
   );
 }
 
-export function PatientInstrumentsPanel({ patient, discipline, currentUserId, clinicName = '' }) {
+// `onApplicationsLoaded`: avisa a área depois de cada carga (abriu, aplicou,
+// marcou "Vi o alerta"), para o "Pede atenção" do menu reconferir o risco.
+export function PatientInstrumentsPanel({ patient, discipline, currentUserId, clinicName = '', onApplicationsLoaded = null }) {
   const instruments = instrumentsForDiscipline(discipline);
   const patientId = patient?.id || null;
   const topRef = useRef(null);
@@ -198,6 +200,8 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId, cl
   const [notice, setNotice] = useState(null);
   const [reloadToken, setReloadToken] = useState(0);
   const recipients = useInstrumentRecipients(patientId, discipline);
+  const loadedRef = useRef(onApplicationsLoaded);
+  useEffect(() => { loadedRef.current = onApplicationsLoaded; });
   // Administração que não atende: lê tudo, mas aplicar e marcar o alerta
   // ficam com quem atende. Sem a leitura (banco antigo), a aba segue como era.
   const readOnly = Boolean(recipients.info) && !recipients.info.viewerAttends;
@@ -231,6 +235,7 @@ export function PatientInstrumentsPanel({ patient, discipline, currentUserId, cl
         setApplications(rows);
         setRequests(sent);
         setError('');
+        loadedRef.current?.();
       })
       .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => {

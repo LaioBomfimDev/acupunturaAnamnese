@@ -45,6 +45,27 @@ const MEU_CADASTRO_HELP = {
 
 /** Gestão da instituição (RelatoriosGestao) — só a administração abre. */
 export const GESTAO_HELP = {
+  resumo: {
+    title: 'Resumo',
+    summary: 'A entrada da Gestão: um quadro por aba, com o número que mais importa em cada uma, para saber o que pede atenção antes de abrir.',
+    actions: [
+      'Clicar num quadro abre a aba dele. No celular e no tablet, “Voltar ao Resumo”, embaixo, traz de volta para cá.',
+      'O menu à esquerda repete o mesmo número ao lado do nome de cada aba.',
+    ],
+    reading: [
+      'Indicadores: atendimentos do mês com status Agendado ou Atendido (faltas e cancelamentos ficam de fora).',
+      'Faltosos: “Não compareceu” e “Cancelado pelo paciente” dos últimos 30 dias; embaixo, quantos foram sem aviso.',
+      'Retornos: pacientes há mais de 30 dias sem nova marcação. Pesquisa de satisfação: nota média das respondidas no mês e quantas aguardam resposta.',
+      'Importáveis: envios feitos (cancelado não conta), com quantos já foram respondidos. Profissionais: equipe e quem atende na Agenda. Acessos: entradas no sistema hoje.',
+      'Vermelho = falta sem aviso. Âmbar = retorno atrasado. Um traço no lugar do número = não deu para carregar aquele quadro agora; os outros seguem valendo.',
+    ],
+    access: [
+      'Só a administração da instituição vê a Gestão.',
+    ],
+    notes: [
+      'Os números são de quando a Gestão abriu. Dentro de cada aba dá para mudar período, profissional e os demais filtros.',
+    ],
+  },
   faltosos: {
     title: 'Faltosos',
     summary: 'Atendimentos do período marcados na Agenda como “Não compareceu” (sem aviso) ou “Cancelado pelo paciente” (com aviso).',
@@ -148,7 +169,8 @@ export const GESTAO_HELP = {
       '“Exportar planilha”: com um formulário escolhido no filtro, baixa todos os respondidos dele, um paciente por linha.',
     ],
     reading: [
-      'Números do topo: Enviados, Aguardando (ainda não abriu), Respondendo (com a porcentagem), Atrasados (passou do prazo sem enviar) e Respondidos. Clique para filtrar.',
+      'As duas abas trazem o número na frente: em “Formulários”, os publicados e os rascunhos (arquivado não conta); em “Envios e respostas”, os envios feitos (cancelado não conta) e quantos já foram respondidos.',
+    'Números do topo: Enviados, Aguardando (ainda não abriu), Respondendo (com a porcentagem), Atrasados (passou do prazo sem enviar) e Respondidos. Clique para filtrar.',
       '“De marcar” no editor mostra quanto do formulário é de marcar; a meta combinada é 80% a 90%.',
       '“Ver o que já respondeu” aparece enquanto o paciente ainda não enviou: são as respostas salvas até agora.',
     ],
@@ -275,6 +297,7 @@ export const EVOLUCOES_HELP = {
     'Ícone vermelho = falta evoluir. Verde = evoluído agora, nesta tela. Cadeado = atendimento de outro profissional.',
     'A fila vem do mais recente para o mais antigo, separada por dia, com a hora do atendimento na frente do nome. A seta marca o atendimento aberto ao lado.',
     'Selo ao lado do nome: Atendido, Não compareceu ou Cancelado pelo paciente.',
+    'As duas abas do topo trazem o número na frente: em “Escrever evoluções”, quantos atendimentos seus faltam evoluir (e quantos são de hoje); em “Ver evoluções”, quantos atendimentos foram concluídos no mês e quantos ainda faltam evoluir.',
   ],
   access: [
     'Cada profissional só escreve a evolução dos próprios atendimentos, nas áreas liberadas para ele.',
@@ -303,6 +326,7 @@ export const EVOLUCOES_REVIEW_HELP = {
   ],
   reading: [
     '“Atendimentos concluídos” conta os marcados na Agenda como Atendido, Não compareceu ou Cancelado pelo paciente; embaixo, quantos já foram evoluídos.',
+    'O número grande da aba “Ver evoluções”, no topo, é sempre do mês atual, mesmo quando você escolhe outro período aqui.',
     '“Falta evoluir” mostra quantos ainda não têm evolução e há quantos dias está o mais antigo.',
     'Na lista, selo verde “Evoluído” com o dia e a hora em que foi escrita (e quantas vezes foi corrigida, se foi). Selo vermelho “Falta evoluir”, com há quantos dias foi o atendimento.',
     '“Atendimento lançado depois” = o atendimento entrou na Agenda depois de acontecer, como pelo “Registrar atendimento já realizado”.',

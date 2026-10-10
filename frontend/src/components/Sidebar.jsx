@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ATTENTION_TONE_LABELS, attentionTonesByTab } from '../utils/areaAttention';
 import '../styles/shell.css';
 
 const NAV_GROUPS = [
@@ -315,8 +316,8 @@ function NavIcon({ name }) {
  * sidebar" — no telefone o que importa é começar, ver o paciente e
  * registrar a evolução.
  */
-function pickBottomTabs(navGroups, patientTab) {
-  const all = navGroups.flatMap(group => group.tabs);
+function pickBottomTabs(navGroups, patientTab, soonTabs = []) {
+  const all = navGroups.flatMap(group => group.tabs).filter(tab => !soonTabs.includes(tab));
   const preferred = ['Tela inicial', patientTab, 'Evolução'].filter(tab => all.includes(tab));
   const rest = all.filter(tab => !preferred.includes(tab));
   return [...preferred, ...rest].slice(0, 3);
@@ -350,12 +351,21 @@ export function Sidebar({
   patientTab = 'Painel',
   tabsWithoutPatient = ['Tela inicial', 'Biblioteca', 'Documentos'],
   onSignOut,
+  // "Pede atenção" (opção C, 10/10/2026): [{ id, tone, title, hint, tab }]
+  // montado pela área (utils/areaAttention.js). Abas ainda sem conteúdo
+  // (`soonTabs`) saem dos grupos e ficam fechadas em "Em breve".
+  attention = [],
+  soonTabs = [],
 }) {
   // A gaveta mora aqui, e não no App, porque três shells diferentes
   // (MTC, Psicologia, disciplina genérica) montam esta mesma sidebar.
   // Colocar o botão em um deles deixaria os outros dois sem navegação
   // no telefone.
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [soonOpen, setSoonOpen] = useState(false);
+  const showAttention = !isSuperAdmin && Boolean(selectedPatient) && attention.length > 0;
+  const tabTones = showAttention ? attentionTonesByTab(attention) : {};
+  const soonVisible = soonOpen || soonTabs.includes(activeTab);
 
   // Enquanto a gaveta está aberta, a página atrás não rola: rolar o
   // conteúdo escondido é o defeito clássico de menu off-canvas.
@@ -386,9 +396,32 @@ export function Sidebar({
     setDrawerOpen(false);
   }
 
+  // Um item do menu da área; o ponto colorido repete o tom do "Pede atenção".
+  function renderTab(tab, extraClass = '') {
+    const disabled = !selectedPatient && !tabsWithoutPatient.includes(tab);
+    const tone = tabTones[tab];
+    return (
+      <button
+        key={tab}
+        className={`${activeTab === tab ? 'active' : ''}${disabled ? ' disabled' : ''}${extraClass}`}
+        onClick={() => selectTab(tab)}
+        disabled={disabled}
+        aria-current={activeTab === tab ? 'page' : undefined}
+      >
+        <NavIcon name={tab} />
+        <span className="nav-label">{tab}</span>
+        {tone && (
+          <span className={`nav-tone nav-tone--${tone}`}>
+            <span className="sr-only">{ATTENTION_TONE_LABELS[tone]}</span>
+          </span>
+        )}
+      </button>
+    );
+  }
+
   const bottomTabs = isSuperAdmin
     ? SUPER_ADMIN_SECTIONS.slice(0, 3).map(section => section.id)
-    : pickBottomTabs(navGroups, patientTab);
+    : pickBottomTabs(navGroups, patientTab, soonTabs);
 
   return (
     <>
@@ -404,7 +437,9 @@ export function Sidebar({
         </svg>
       </button>
 
-      {drawerOpen && (
+      {/* Áreas de atendimento: no celular o Menu é uma página inteira
+          (opção C), sem fundo escurecido. O SuperAdm segue com a gaveta. */}
+      {drawerOpen && isSuperAdmin && (
         <div
           className="shell-scrim no-print"
           role="presentation"
@@ -487,6 +522,31 @@ export function Sidebar({
         </div>
       ) : null}
 
+      {showAttention && (
+        <section className="sidebar-attention" aria-labelledby="sidebar-attention-title">
+          <h2 id="sidebar-attention-title" className="sidebar-attention-title">
+            Pede atenção <span>{attention.length}</span>
+          </h2>
+          {attention.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className={`sidebar-attention-item sidebar-attention-item--${item.tone}`}
+              onClick={() => selectTab(item.tab)}
+            >
+              <i aria-hidden="true" />
+              <span className="sidebar-attention-text">
+                <b>{item.title}</b>
+                {item.hint && <small>{item.hint}</small>}
+              </span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="m9 5 7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+        </section>
+      )}
+
       <nav className={`nav${isSuperAdmin ? ' nav-super-admin' : ''}`}>
         {isSuperAdmin ? (
           <div className="nav-group">
@@ -506,26 +566,36 @@ export function Sidebar({
               </button>
             ))}
           </div>
-        ) : navGroups.map(group => (
-          <div className="nav-group" key={group.title || 'inicio'}>
-            {group.title ? <span className="nav-group-title">{group.title}</span> : null}
-            {group.tabs.map(tab => {
-              const disabled = !selectedPatient && !tabsWithoutPatient.includes(tab);
+        ) : (
+          <>
+            {navGroups.map(group => {
+              const tabs = group.tabs.filter(tab => !soonTabs.includes(tab));
+              if (!tabs.length) return null;
               return (
-                <button
-                  key={tab}
-                  className={`${activeTab === tab ? 'active' : ''}${disabled ? ' disabled' : ''}`}
-                  onClick={() => selectTab(tab)}
-                  disabled={disabled}
-                  aria-current={activeTab === tab ? 'page' : undefined}
-                >
-                  <NavIcon name={tab} />
-                  <span className="nav-label">{tab}</span>
-                </button>
+                <div className="nav-group" key={group.title || 'inicio'}>
+                  {group.title ? <span className="nav-group-title">{group.title}</span> : null}
+                  {tabs.map(tab => renderTab(tab))}
+                </div>
               );
             })}
-          </div>
-        ))}
+            {soonTabs.length > 0 && (
+              <div className="nav-group nav-group--soon">
+                <button
+                  type="button"
+                  className="nav-soon-toggle"
+                  aria-expanded={soonVisible}
+                  onClick={() => setSoonOpen(open => !open)}
+                >
+                  Em breve ({soonTabs.length})
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                    <path d={soonVisible ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
+                  </svg>
+                </button>
+                {soonVisible && soonTabs.map(tab => renderTab(tab, ' nav-soon-item'))}
+              </div>
+            )}
+          </>
+        )}
       </nav>
 
       {/* Saída no fim da gaveta, só no telefone (shell.css): lá o topo
@@ -551,7 +621,7 @@ export function Sidebar({
             ? SUPER_ADMIN_SECTIONS.find(item => item.id === tab)
             : null;
           const label = section ? section.label : tab;
-          const current = isSuperAdmin ? superAdminSection === tab : activeTab === tab;
+          const current = !drawerOpen && (isSuperAdmin ? superAdminSection === tab : activeTab === tab);
           const disabled = !isSuperAdmin && !selectedPatient && !tabsWithoutPatient.includes(tab);
 
           return (
@@ -571,9 +641,10 @@ export function Sidebar({
 
         <button
           type="button"
-          className="shell-tab"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Abrir menu de navegação"
+          className={`shell-tab${drawerOpen ? ' shell-tab--active' : ''}`}
+          onClick={() => setDrawerOpen(open => !open)}
+          aria-label={drawerOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
+          aria-expanded={drawerOpen}
         >
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
             <path d="M4 7h16M4 12h16M4 17h16" />

@@ -11,7 +11,8 @@
 
 .gt--rail {
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  /* 256px (era 236): cabe o número à direita do nome (opção B). */
+  grid-template-columns: 256px minmax(0, 1fr);
   gap: 26px;
   align-items: start;
 }
@@ -149,6 +150,152 @@
 .gt-nav-item:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* Número da aba à direita do nome (opção B, 10/10/2026): o mesmo do
+   quadro do Resumo. Vermelho = falta sem aviso, âmbar = retorno atrasado. */
+.gt-nav-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.gt-nav-count {
+  flex: none;
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text-subtle);
+}
+
+.gt-nav-count--danger {
+  color: var(--r1-danger);
+}
+
+.gt-nav-count--warning {
+  color: var(--r1-warning);
+}
+
+.gt-nav-item[aria-current='page'] .gt-nav-count {
+  color: var(--r1-accent-contrast);
+}
+
+/* ---------- Resumo (GestaoResumo.jsx) ----------
+   Um quadro por aba do lado Gestão; o quadro inteiro abre a aba. */
+.gt-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.gt-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 170px;
+  padding: 16px 18px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease), transform var(--r1-dur-fast) var(--r1-ease);
+}
+
+.gt-tile:hover {
+  border-color: var(--r1-accent);
+}
+
+.gt-tile:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.gt-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.gt-tile-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gt-tile-name small {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.gt-tile-name b {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.gt-tile-value {
+  margin-top: 8px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-tile-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--r1-text-subtle);
+}
+
+.gt-tile-line i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.gt-tile--danger .gt-tile-line {
+  color: var(--r1-danger);
+  font-weight: 600;
+}
+
+.gt-tile--warning .gt-tile-line {
+  color: var(--r1-warning);
+  font-weight: 600;
+}
+
+/* Documentos timbrados não tem número: a linha vira o texto principal. */
+.gt-tile--text .gt-tile-line {
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.gt-tile-go {
+  margin-top: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--r1-accent);
+}
+
+/* "Voltar ao Resumo": só no celular e no tablet (bloco ≤1024px abaixo). */
+.gt button.hub-back.gt-back-summary {
+  display: none;
 }
 
 .gt-head {
@@ -1658,4 +1805,57 @@
 
 .gt-profile .gt-custom-actions {
   margin-top: 0;
+}
+
+/* Celular e tablet, lado Gestão (opção B, 10/10/2026): o Resumo é o
+   índice. A faixa de abas some; a aba aberta ocupa a tela e volta pelo
+   "Voltar ao Resumo" (faixa acima da barra de baixo). Configurações
+   segue com a faixa de abas. */
+@media (max-width: 1024px) {
+  .gt--index .gt-nav {
+    display: none;
+  }
+
+  .gt--index button.hub-back.gt-back-summary {
+    display: flex;
+  }
+
+  .gt-resumo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .gt-tile {
+    min-height: 0;
+    gap: 3px;
+    padding: 12px 13px;
+  }
+
+  .gt-tile-head .gt-nav-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .gt-tile-name small,
+  .gt-tile-go {
+    display: none;
+  }
+
+  .gt-tile-name b {
+    font-size: 13px;
+  }
+
+  .gt-tile-value {
+    margin-top: 4px;
+    font-size: 26px;
+  }
+
+  .gt-tile-line {
+    font-size: 11.5px;
+  }
+
+  .gt-tile--text .gt-tile-line {
+    margin-top: 4px;
+    font-size: 13.5px;
+  }
 }

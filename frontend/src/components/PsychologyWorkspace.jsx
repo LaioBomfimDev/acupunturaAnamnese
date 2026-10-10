@@ -22,7 +22,16 @@ import {
   createEmptyPsychologySession,
   normalizePsychologySession,
 } from '../data/psychologyAnamnese';
-import { PSYCHOLOGY_INFORMANT_OPTIONS } from '../data/psychologyIntakeProfiles';
+import {
+  PSYCHOLOGY_INFORMANT_OPTIONS,
+  getPsychologyIntakeProfile,
+  getPsychologyProfileSections,
+} from '../data/psychologyIntakeProfiles';
+import { PSYCHOLOGY_ROUTE_SPEC } from '../data/psychologyRouteSpec';
+import { getInstrument } from '../data/clinicalInstruments';
+import { listMyInstrumentRiskAlerts } from '../services/patientInstrumentService';
+import { buildAnamneseRoute } from '../utils/formRoute';
+import { openQuestionsAttention, riskAttention, routeAttention, sortAttention } from '../utils/areaAttention';
 import { getSuggestedContextModules } from '../data/psychologyContextModules';
 import { getDiscipline, resolveUserDisciplines } from '../data/disciplines';
 import { PsychologyAnamnese } from './psychology/PsychologyAnamnese';
@@ -98,6 +107,19 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatient?.id]);
   const [session, setSession] = useState(createEmptyPsychologySession);
+  // Alertas de risco ainda não vistos (os mesmos da tela inicial), para o
+  // "Pede atenção" do menu. null = não deu para conferir. Recarrega quando
+  // a aba Escalas termina de carregar (marcou "Vi o alerta", aplicou).
+  const [riskAlerts, setRiskAlerts] = useState([]);
+  const [riskAlertsToken, setRiskAlertsToken] = useState(0);
+  useEffect(() => {
+    if (!selectedPatient?.id) return undefined;
+    let cancelled = false;
+    listMyInstrumentRiskAlerts()
+      .then(rows => { if (!cancelled) setRiskAlerts(rows); })
+      .catch(() => { if (!cancelled) setRiskAlerts(null); });
+    return () => { cancelled = true; };
+  }, [selectedPatient?.id, riskAlertsToken]);
   // Evolução vinculada ao atendimento (patient_evolutions) vive fora do
   // registro clínico deste workspace — ver supabase/migrations/20260903.
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
@@ -468,6 +490,30 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
   const showAssistantRail = effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && Boolean(selectedPatient);
+  // "Pede atenção" (opção C, 10/10/2026). Enquanto a sessão carrega, só o
+  // risco entra: a anamnese vazia daria um "faltam" falso por um instante.
+  const sessionReady = saveStatus !== 'loading';
+  const anamneseRoute = getPsychologyIntakeProfile(session.intakeProfile)
+    ? buildAnamneseRoute({ ...PSYCHOLOGY_ROUTE_SPEC, sections: getPsychologyProfileSections(session.intakeProfile) }, session)
+    : null;
+  const attention = selectedPatient
+    ? sortAttention(
+      riskAttention(riskAlerts, {
+        patientId: selectedPatient.id,
+        discipline: 'psicologia',
+        tab: PSYCHOLOGY_TABS.ESCALAS,
+        instrumentLabel: id => getInstrument(id)?.shortName || id,
+      }),
+      sessionReady ? openQuestionsAttention(session.complementaryQuestions, { tab: PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES }) : [],
+      sessionReady ? routeAttention(anamneseRoute, {
+        id: 'anamnese',
+        tab: PSYCHOLOGY_TABS.ANAMNESE,
+        partLabel: 'da anamnese',
+        chooseHint: 'Escolha o percurso da anamnese',
+        chooseTab: PSYCHOLOGY_TABS.PAINEL,
+      }) : [],
+    )
+    : [];
   const now = new Date();
   const dateLabel = now.toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
@@ -541,6 +587,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
               discipline="psicologia"
               currentUserId={profile?.id}
               clinicName={clinicName}
+              onApplicationsLoaded={() => setRiskAlertsToken(token => token + 1)}
             />
           </Suspense>
         );
@@ -594,6 +641,8 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         patientTab={PSYCHOLOGY_TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
         onSignOut={handleSignOut}
+        attention={attention}
+        soonTabs={PSYCHOLOGY_PLACEHOLDER_TABS}
       />
 
       <main className="main psi-main forms-scope">

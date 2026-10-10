@@ -185,3 +185,16 @@ export function canGoBackEvolutionReview(range) {
 export function isBeforeEvolutionReview(range) {
   return Boolean(range) && range.end.getTime() <= EVOLUTION_REVIEW_START.getTime();
 }
+
+/**
+ * Linha de baixo da aba "Ver evoluções" (abas de pasta, 10/10/2026): o
+ * número grande é o total de atendimentos concluídos no mês; aqui vai o
+ * mês e quanto falta evoluir — os mesmos dois números da conferência.
+ */
+export function reviewTabHint(stats, now = new Date()) {
+  const mes = new Date(now).toLocaleDateString('pt-BR', { month: 'long' });
+  const total = stats?.total || 0;
+  const pending = stats?.pending || 0;
+  const base = `${total === 1 ? 'concluído' : 'concluídos'} em ${mes}`;
+  return pending ? `${base} · ${pending} falta evoluir` : `${base} · tudo evoluído`;
+}

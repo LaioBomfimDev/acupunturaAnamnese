@@ -557,3 +557,31 @@ export function safeFileName(text) {
     .toLowerCase()
     .slice(0, 60) || 'formulario';
 }
+
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+
+/**
+ * Números das abas de pasta de Importáveis (10/10/2026). Formulários:
+ * os que estão em uso (publicados + rascunhos; arquivado não conta).
+ * Envios: tudo que não foi cancelado, igual ao "Enviados" da aba.
+ */
+export function formsTabSummary(forms) {
+  const list = Array.isArray(forms) ? forms : [];
+  const published = list.filter(form => form.status === 'published').length;
+  const drafts = list.filter(form => form.status === 'draft').length;
+  const parts = [plural(published, 'publicado', 'publicados')];
+  if (drafts) parts.push(plural(drafts, 'rascunho', 'rascunhos'));
+  return { count: published + drafts, hint: parts.join(' · ') };
+}
+
+export function sendsTabSummary(assignments, now = new Date()) {
+  const list = (Array.isArray(assignments) ? assignments : []).filter(item => item.status !== 'cancelled');
+  const answered = list.filter(item => assignmentStatus(item, now).id === 'submitted').length;
+  const waiting = list.length - answered;
+  if (!list.length) return { count: 0, hint: 'nada enviado ainda', waiting: 0 };
+  return {
+    count: list.length,
+    waiting,
+    hint: `${plural(answered, 'respondido', 'respondidos')} · ${waiting} aguardando`,
+  };
+}

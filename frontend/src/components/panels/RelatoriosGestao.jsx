@@ -32,6 +32,10 @@ import { SearchSelect } from '../ui/SearchSelect';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { GESTAO_HELP } from '../../data/screenHelp';
 import { GestaoNav, GestaoSectionHead } from './GestaoNav';
+import { GestaoResumo } from './GestaoResumo';
+import { HubBackButton } from '../HubNav';
+import { loadGestaoSummary } from '../../services/gestaoSummaryService';
+import { summaryDisplay } from '../../utils/gestaoSummary';
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { PersonalizarClinica } from './PersonalizarClinica';
 import { MeuCadastro } from './MeuCadastro';
@@ -62,6 +66,7 @@ const Importaveis = lazy(() => import('../patientForms/Importaveis')
 // ============================================================
 
 const SECTIONS = [
+  { id: 'resumo', label: 'Resumo' },
   { id: 'indicadores', label: 'Indicadores' },
   { id: 'faltosos', label: 'Faltosos' },
   { id: 'retornos', label: 'Retornos' },
@@ -85,8 +90,10 @@ const SIDES = [
 
 // Ordem do menu (2026-09-30): primeiro o panorama, depois o que pede ação
 // com paciente e a equipe. Área do Paciente (2026-10-06): formulários que
-// o paciente responde online.
+// o paciente responde online. Resumo (opção B, 10/10/2026): a entrada,
+// um quadro com número por aba; no celular é o índice da Gestão.
 const SECTION_GROUPS = [
+  { side: 'gestao', label: 'Visão geral', ids: ['resumo'] },
   { side: 'gestao', label: 'Atendimentos', ids: ['indicadores', 'faltosos', 'retornos', 'pesquisa'] },
   { side: 'gestao', label: 'Área do Paciente', ids: ['importaveis'] },
   { side: 'gestao', label: 'Equipe', ids: ['profissionais', 'acessos'] },
@@ -100,6 +107,9 @@ function sideOf(sectionId) {
 }
 
 const TAB_ICONS = {
+  resumo: (
+    <><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></>
+  ),
   faltosos: (
     <><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5.5" /><path d="M12 16.5h.01" /></>
   ),
@@ -305,6 +315,24 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
     const firstOfSide = SECTION_GROUPS.find(group => group.side === nextSide).ids[0];
     setSection(lastSectionBySide.current[nextSide] || firstOfSide);
   }
+  // Números do Resumo e do menu (opção B): carregados uma vez, ao abrir a
+  // Gestão. Cada quadro que falha fica com traço; os outros seguem.
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    loadGestaoSummary()
+      .then(result => { if (!cancelled) setSummary(result); })
+      .catch(() => { if (!cancelled) setSummary(null); })
+      .finally(() => { if (!cancelled) setSummaryLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  const navCounts = useMemo(() => {
+    if (!summary || side !== 'gestao') return null;
+    return Object.fromEntries(Object.entries(summary)
+      .filter(([, tile]) => tile.value != null || tile.display)
+      .map(([id, tile]) => [id, { text: summaryDisplay(tile), tone: tile.tone }]));
+  }, [summary, side]);
   const [range, setRange] = useState(defaultRange);
   const [professionalId, setProfessionalId] = useState('');
   const [statusFilter, setStatusFilter] = useState(''); // '' | 'no_show' | 'excused'
@@ -823,7 +851,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
   }
 
   return (
-    <div className="gt gt--rail">
+    <div className={`gt gt--rail${side === 'gestao' ? ' gt--index' : ''}`}>
       {/* Os dois botões grandes ocupam a largura toda, acima do menu. */}
       <div className="gt-sides no-print" role="group" aria-label="Gestão ou configurações">
         {SIDES.map(option => (
@@ -848,6 +876,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
         icons={TAB_ICONS}
         active={section}
         onSelect={setSection}
+        counts={navCounts}
       />
 
       <div className="gt-main">
@@ -856,6 +885,23 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
               mais num parágrafo aberto no topo. */}
           <ScreenHelp topic={GESTAO_HELP[section]} />
         </GestaoSectionHead>
+
+        {/* Só no celular e no tablet (gestao.css): o Resumo é o índice e a
+            aba aberta volta para ele pela faixa de baixo. */}
+        {side === 'gestao' && section !== 'resumo' && (
+          <HubBackButton nested label="Voltar ao Resumo" onClick={() => setSection('resumo')} className="topbar-button gt-back-summary" />
+        )}
+
+        {section === 'resumo' && (
+          <GestaoResumo
+            sections={SECTIONS}
+            groups={sideGroups}
+            icons={TAB_ICONS}
+            summary={summary}
+            loading={summaryLoading}
+            onOpen={setSection}
+          />
+        )}
 
         {section === 'faltosos' && (
           <section>

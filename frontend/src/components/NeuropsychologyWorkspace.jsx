@@ -22,6 +22,8 @@ import {
 import { PSI_NEURO_RECORD_TYPE } from '../data/psychologyAnamnese';
 import { PsychologyNeuroAssessment } from './psychology/PsychologyNeuroAssessment';
 import { PsychologyNeuroReport } from './psychology/PsychologyNeuroReport';
+import { buildNeuroAssessmentRoute } from '../utils/formRoute';
+import { routeAttention, sortAttention } from '../utils/areaAttention';
 
 const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
@@ -329,6 +331,13 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
         patientTab={TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
         onSignOut={handleSignOut}
+        attention={selectedPatient && saveStatus !== 'loading'
+          ? sortAttention(routeAttention(buildNeuroAssessmentRoute(neuroEvaluation), {
+            id: 'avaliacao',
+            tab: TABS.AVALIACAO,
+            partLabel: 'da avaliação',
+          }))
+          : []}
       />
 
       <main className="main psi-main forms-scope">

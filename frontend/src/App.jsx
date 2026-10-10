@@ -3,7 +3,9 @@ import { createInitialState, getPatientAge, serializeTongueAi, useClinicState } 
 import { useAuth } from './hooks/AuthContext';
 import { usePatient } from './hooks/PatientContext';
 import { useSessionPersistence } from './hooks/useSessionPersistence';
-import { analyze, assistantSynthesis } from './utils/analyzer';
+import { analyze, assistantSynthesis, getClinicalSexContext } from './utils/analyzer';
+import { buildAcupunturaAnamneseRoute } from './utils/formRoute';
+import { routeAttention, sortAttention } from './utils/areaAttention';
 import { mergeEvolutionHistory } from './utils/evolutionHistory';
 import { listPatientEvolutions } from './services/patientEvolutionService';
 import { listAppointmentsAwaitingEvolution } from './services/appointmentService';
@@ -721,6 +723,12 @@ export default function App() {
         lastVisit={lastVisit}
         hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
         onSignOut={handleSignOut}
+        attention={!isSuperAdmin && selectedPatient && saveStatus !== 'loading'
+          ? sortAttention(routeAttention(
+            buildAcupunturaAnamneseRoute(state, selectedMap, getClinicalSexContext(state.sexo)),
+            { id: 'anamnese', tab: 'Anamnese', partLabel: 'da anamnese' },
+          ))
+          : []}
       />
 
       {/* forms-scope: kit visual das fichas (styles/forms.css). O SuperAdm

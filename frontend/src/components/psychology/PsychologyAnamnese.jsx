@@ -26,6 +26,7 @@ import {
   PSYCHOLOGY_CONTEXT_MODULES_INTRO,
   isContextModuleOpen,
 } from '../../data/psychologyContextModules';
+import { PSYCHOLOGY_ROUTE_SPEC } from '../../data/psychologyRouteSpec';
 
 // ============================================================
 // Painel: Anamnese clínica de Psicologia (só o formulário).
@@ -273,20 +274,6 @@ function PsychologyAxes({ axes, notes, onNoteChange }) {
     </div>
   );
 }
-
-// Vocabulário da Psicologia no formato do roteiro (mesmos títulos da tela).
-const PSYCHOLOGY_ROUTE_SPEC = {
-  textFields: PSYCHOLOGY_TEXT_FIELDS,
-  contextTitle: 'Contexto específico (abrir conforme o caso)',
-  contextModules: PSYCHOLOGY_CONTEXT_MODULES,
-  checklistsTitle: 'Sinais organizados (proposta a validar)',
-  checklistSections: PSYCHOLOGY_CHECKLIST_SECTIONS,
-  riskTitle: 'Sinais de risco (sempre conferir)',
-  riskGroup: PSYCHOLOGY_RISK_GROUP,
-  riskItems: PSYCHOLOGY_RISK_ITEMS,
-  axesTitle: 'Eixos de avaliação e formulação',
-  axes: PSYCHOLOGY_AXES,
-};
 
 export function PsychologyAnamnese({
   session,

@@ -1129,6 +1129,555 @@ export const CLINICAL_INSTRUMENTS: ServerInstrument[] = [
       ]
     },
     "bands": []
+  },
+  {
+    "id": "pcl5",
+    "version": 1,
+    "shortName": "PCL-5",
+    "name": "Lista de Verificação do TEPT para o DSM-5 (PCL-5)",
+    "instructions": "Abaixo há uma lista de problemas que as pessoas às vezes apresentam em resposta a uma experiência muito estressante. Por favor, leia cuidadosamente cada problema e marque a opção que indica o quanto você tem sido incomodado por este problema no último mês. No último mês, quanto você foi incomodado por:",
+    "items": [
+      {
+        "id": "q1",
+        "text": "Lembranças indesejáveis, perturbadoras e repetitivas da experiência estressante?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "Sonhos perturbadores e repetitivos com a experiência estressante?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "De repente, sentindo ou agindo como se a experiência estressante estivesse, de fato, acontecendo de novo (como se você estivesse revivendo-a, de verdade, lá no passado)?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "Sentir-se muito chateado quando algo lembra você da experiência estressante?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "Ter reações físicas intensas quando algo lembra você da experiência estressante (por exemplo, coração apertado, dificuldades para respirar, suor excessivo)?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q6",
+        "text": "Evitar lembranças, pensamentos, ou sentimentos relacionados à experiência estressante?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q7",
+        "text": "Evitar lembranças externas da experiência estressante (por exemplo, pessoas, lugares, conversas, atividades, objetos ou situações)?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q8",
+        "text": "Não conseguir se lembrar de partes importantes da experiência estressante?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q9",
+        "text": "Ter crenças negativas intensas sobre você, outras pessoas ou o mundo (por exemplo, ter pensamentos tais como: “Eu sou ruim”, “existe algo seriamente errado comigo”, “ninguém é confiável”, “o mundo todo é perigoso”)?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "Culpar a si mesmo ou aos outros pela experiência estressante ou pelo que aconteceu depois dela?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q11",
+        "text": "Ter sentimentos negativos intensos como medo, pavor, raiva, culpa ou vergonha?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q12",
+        "text": "Perder o interesse em atividades que você costumava apreciar?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q13",
+        "text": "Sentir-se distante ou isolado das outras pessoas?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q14",
+        "text": "Dificuldades para vivenciar sentimentos positivos (por exemplo, ser incapaz de sentir felicidade ou sentimentos amorosos por pessoas próximas a você)?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q15",
+        "text": "Comportamento irritado, explosões de raiva ou agir agressivamente?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q16",
+        "text": "Correr muitos riscos ou fazer coisas que podem lhe causar algum mal?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q17",
+        "text": "Ficar “super” alerta, vigilante ou de sobreaviso?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q18",
+        "text": "Sentir-se apreensivo ou assustado facilmente?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q19",
+        "text": "Ter dificuldades para se concentrar?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      },
+      {
+        "id": "q20",
+        "text": "Problemas para adormecer ou continuar dormindo?",
+        "options": [
+          {
+            "value": 0,
+            "label": "De modo nenhum"
+          },
+          {
+            "value": 1,
+            "label": "Um pouco"
+          },
+          {
+            "value": 2,
+            "label": "Moderadamente"
+          },
+          {
+            "value": 3,
+            "label": "Muito"
+          },
+          {
+            "value": 4,
+            "label": "Extremamente"
+          }
+        ]
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "sum",
+      "min": 0,
+      "max": 80
+    },
+    "bands": [
+      {
+        "id": "abaixo_corte",
+        "label": "Abaixo do ponto de corte",
+        "min": 0,
+        "max": 35
+      },
+      {
+        "id": "corte_ou_acima",
+        "label": "No ponto de corte ou acima",
+        "min": 36,
+        "max": 80
+      }
+    ]
   }
 ];
 

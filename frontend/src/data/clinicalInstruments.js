@@ -252,8 +252,75 @@ export const DASS21 = {
   },
 };
 
+// PCL-5: forma "sem Critério A" (Anexo 1) da versão brasileira de Osório
+// e colaboradores (2017), publicada em acesso aberto (CC BY 4.0). O
+// instrumento original é de domínio público (National Center for PTSD).
+// Não tem faixas de gravidade: só um ponto de corte para rastreio.
+const PCL5_OPTIONS = [
+  { value: 0, label: 'De modo nenhum' },
+  { value: 1, label: 'Um pouco' },
+  { value: 2, label: 'Moderadamente' },
+  { value: 3, label: 'Muito' },
+  { value: 4, label: 'Extremamente' },
+];
+
+export const PCL5 = {
+  id: 'pcl5',
+  version: 1,
+  shortName: 'PCL-5',
+  // "a PCL-5": Lista de Verificação do TEPT.
+  article: 'a',
+  name: 'Lista de Verificação do TEPT para o DSM-5 (PCL-5)',
+  measures: 'sintomas de estresse pós-traumático no último mês',
+  disciplines: ['psicologia'],
+  population: 'Adultos que passaram por uma experiência muito estressante',
+  minutes: 7,
+  reapplyAfterDays: 30,
+  // Na folha: "circule um dos números à direita". Na tela, marca-se a opção.
+  instructions: 'Abaixo há uma lista de problemas que as pessoas às vezes apresentam em resposta a uma experiência muito estressante. Por favor, leia cuidadosamente cada problema e marque a opção que indica o quanto você tem sido incomodado por este problema no último mês. No último mês, quanto você foi incomodado por:',
+  items: [
+    { id: 'q1', text: 'Lembranças indesejáveis, perturbadoras e repetitivas da experiência estressante?' },
+    { id: 'q2', text: 'Sonhos perturbadores e repetitivos com a experiência estressante?' },
+    { id: 'q3', text: 'De repente, sentindo ou agindo como se a experiência estressante estivesse, de fato, acontecendo de novo (como se você estivesse revivendo-a, de verdade, lá no passado)?' },
+    { id: 'q4', text: 'Sentir-se muito chateado quando algo lembra você da experiência estressante?' },
+    { id: 'q5', text: 'Ter reações físicas intensas quando algo lembra você da experiência estressante (por exemplo, coração apertado, dificuldades para respirar, suor excessivo)?' },
+    { id: 'q6', text: 'Evitar lembranças, pensamentos, ou sentimentos relacionados à experiência estressante?' },
+    { id: 'q7', text: 'Evitar lembranças externas da experiência estressante (por exemplo, pessoas, lugares, conversas, atividades, objetos ou situações)?' },
+    { id: 'q8', text: 'Não conseguir se lembrar de partes importantes da experiência estressante?' },
+    { id: 'q9', text: 'Ter crenças negativas intensas sobre você, outras pessoas ou o mundo (por exemplo, ter pensamentos tais como: “Eu sou ruim”, “existe algo seriamente errado comigo”, “ninguém é confiável”, “o mundo todo é perigoso”)?' },
+    { id: 'q10', text: 'Culpar a si mesmo ou aos outros pela experiência estressante ou pelo que aconteceu depois dela?' },
+    { id: 'q11', text: 'Ter sentimentos negativos intensos como medo, pavor, raiva, culpa ou vergonha?' },
+    { id: 'q12', text: 'Perder o interesse em atividades que você costumava apreciar?' },
+    { id: 'q13', text: 'Sentir-se distante ou isolado das outras pessoas?' },
+    { id: 'q14', text: 'Dificuldades para vivenciar sentimentos positivos (por exemplo, ser incapaz de sentir felicidade ou sentimentos amorosos por pessoas próximas a você)?' },
+    { id: 'q15', text: 'Comportamento irritado, explosões de raiva ou agir agressivamente?' },
+    { id: 'q16', text: 'Correr muitos riscos ou fazer coisas que podem lhe causar algum mal?' },
+    { id: 'q17', text: 'Ficar “super” alerta, vigilante ou de sobreaviso?' },
+    { id: 'q18', text: 'Sentir-se apreensivo ou assustado facilmente?' },
+    { id: 'q19', text: 'Ter dificuldades para se concentrar?' },
+    { id: 'q20', text: 'Problemas para adormecer ou continuar dormindo?' },
+  ].map(item => ({ ...item, options: PCL5_OPTIONS })),
+  extraItems: [],
+  scoring: { method: 'sum', min: 0, max: 80 },
+  bands: [
+    { id: 'abaixo_corte', label: 'Abaixo do ponto de corte', min: 0, max: 35 },
+    { id: 'corte_ou_acima', label: 'No ponto de corte ou acima', min: 36, max: 80 },
+  ],
+  reading: 'A nota soma as 20 perguntas (0 a 80). O PCL-5 não tem faixas de gravidade: o ponto de corte separa quem pede investigação mais cuidadosa de estresse pós-traumático, e não substitui a avaliação clínica. Pergunta sobre o último mês.',
+  sources: [
+    'Weathers FW, Litz BT, Keane TM, Palmieri PA, Marx BP, Schnurr PP. The PTSD Checklist for DSM-5 (PCL-5). National Center for PTSD; 2013.',
+    'Osório FL et al. Posttraumatic Stress Disorder Checklist for DSM-5 (PCL-5): transcultural adaptation of the Brazilian version. Arch Clin Psychiatry. 2017;44(1):10-9.',
+    'Pereira-Lima K et al. Psychometric properties and diagnostic utility of a Brazilian version of the PCL-5. Eur J Psychotraumatol. 2019;10(1):1581020.',
+  ],
+  license: 'PCL-5: domínio público (National Center for PTSD). Uso livre. Tradução brasileira de Osório e colaboradores (2017), em acesso aberto (CC BY 4.0), de uso livre segundo os autores.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Ponto de corte 36 da validação brasileira (Pereira-Lima, 2019, amostra pequena); o material original sugere 31 a 33. Forma "sem Critério A": o evento traumático é avaliado pela profissional. Na instrução, "circule um dos números" virou "marque a opção". O item 16 (correr riscos ou fazer coisas que podem causar mal) não gera alerta de risco: a psicóloga decide se deve gerar.',
+  },
+};
+
 /** Instrumentos em uso, na ordem em que aparecem na tela. */
-export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7, DASS21];
+export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7, DASS21, PCL5];
 
 /**
  * Versões antigas, para ler aplicações feitas antes de uma mudança.

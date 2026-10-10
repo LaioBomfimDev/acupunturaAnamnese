@@ -97,7 +97,7 @@ test('o validador pega faixa com buraco e máximo errado', () => {
 
 test('escalas só na Psicologia, em conferência até a psicóloga aprovar', () => {
   const psi = instruments.instrumentsForDiscipline('psicologia').map(instrument => instrument.id);
-  assert.deepEqual(psi, ['phq9', 'gad7', 'dass21']);
+  assert.deepEqual(psi, ['phq9', 'gad7', 'dass21', 'pcl5']);
   assert.deepEqual(instruments.instrumentsForDiscipline('nutricao'), []);
   for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
     assert.equal(instrument.review.status, instruments.INSTRUMENT_REVIEW_STATUS.PENDING, instrument.id);
@@ -832,4 +832,45 @@ test('DASS-21 na tela: três notas no cartão, no gráfico, no histórico e na j
   const questions = portal.buildPortalQuestions(dass);
   assert.equal(questions.filter(question => question.type === 'single' && question.required).length, 21);
   assert.equal(questions.filter(question => question.riskNotice).length, 0);
+});
+
+// ---- lote 1: PCL-5 (10/10/2026) -------------------------------------------
+// Forma "sem Critério A" da versão brasileira de Osório (2017), CC BY 4.0;
+// original de domínio público (National Center for PTSD). Cinco respostas
+// da validação (0 a 4), nota de 0 a 80 e só um ponto de corte.
+
+test('PCL-5: 20 perguntas da versão brasileira, 5 respostas de 0 a 4 e nota de 0 a 80', () => {
+  const pcl = instruments.PCL5;
+  assert.equal(pcl.items.length, 20);
+  assert.equal(pcl.items[0].text, 'Lembranças indesejáveis, perturbadoras e repetitivas da experiência estressante?');
+  assert.equal(pcl.items[19].text, 'Problemas para adormecer ou continuar dormindo?');
+  for (const item of pcl.items) {
+    assert.deepEqual(item.options.map(option => [option.value, option.label]), [
+      [0, 'De modo nenhum'], [1, 'Um pouco'], [2, 'Moderadamente'], [3, 'Muito'], [4, 'Extremamente'],
+    ], item.id);
+  }
+  assert.deepEqual(pcl.scoring, { method: 'sum', min: 0, max: 80 });
+  assert.match(pcl.license, /domínio público/);
+  assert.match(pcl.instructions, /no último mês/);
+  // O item 16 não vira alerta sozinho: a psicóloga decide (está na nota de conferência).
+  assert.ok(pcl.items.every(item => !item.risk));
+  assert.match(pcl.review.note, /item 16/);
+});
+
+test('PCL-5: ponto de corte da validação brasileira (36) e nenhuma faixa de gravidade inventada', () => {
+  const pcl = instruments.PCL5;
+  assert.equal(pcl.bands.length, 2);
+  assert.equal(scoring.bandForScore(pcl, 35).id, 'abaixo_corte');
+  assert.equal(scoring.bandForScore(pcl, 36).id, 'corte_ou_acima');
+  assert.equal(scoring.bandForScore(pcl, 80).id, 'corte_ou_acima');
+  assert.match(pcl.review.note, /36/);
+  assert.match(pcl.review.note, /31 a 33/);
+
+  assert.equal(scoring.scoreInstrument(pcl, fill(pcl, 4)).score, 80);
+  assert.equal(scoring.scoreInstrument(pcl, fill(pcl, 0)).score, 0);
+  const payload = scoring.buildApplicationPayload(pcl, { ...fill(pcl, 1), q1: 4, q2: 4, q3: 4, q4: 4, q5: 3, q6: 3 });
+  assert.deepEqual([payload.result.score, payload.result.bandId], [36, 'corte_ou_acima']);
+  assert.equal('subscales' in payload.result, false);
+  assert.equal(format.scoreViews(pcl).length, 1);
+  assert.equal(format.namedInstrument(pcl), 'a PCL-5');
 });

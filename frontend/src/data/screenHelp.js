@@ -183,7 +183,7 @@ export const GESTAO_HELP = {
       'As respostas são salvas sozinhas enquanto o paciente responde: ele pode parar e continuar depois. Passar do prazo não trava o formulário.',
       'Editar um formulário já enviado não muda o que o paciente recebeu: cada envio guarda a versão daquele dia.',
       'Escala ou questionário publicado com direito autoral não entra com as perguntas copiadas: só o que a clínica criou.',
-      'Escala enviada para casa (PHQ-9, GAD-7, DASS-21) tem “Ver resultado” no envio respondido: abre as notas, as faixas e as respostas para a administração e para quem atende o paciente na área.',
+      'Escala enviada para casa (aba Escalas) tem “Ver resultado” no envio respondido: abre as notas, as faixas e as respostas para a administração e para quem atende o paciente na área.',
       'Antes de enviar uma escala, a tela mostra para quem vão a nota e o alerta de risco e pede o “Responsável” do paciente na área da escala. Quem você escolher fica como responsável na ficha, aba Matrículas.',
     ],
   },

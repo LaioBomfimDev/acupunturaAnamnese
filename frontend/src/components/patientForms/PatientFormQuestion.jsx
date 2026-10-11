@@ -45,13 +45,18 @@ export function PatientFormQuestion({ question, answers, onChange, number = null
     const options = optionsOf(question);
     const pills = question.type === 'yes_no';
     const withOther = question.type === 'single' && question.allowOther;
+    // Escala com sombreado na folha (ASRS-6): os dois tons fazem parte do instrumento.
+    const shadeClass = option => {
+      if (!Array.isArray(question.shading?.dark)) return '';
+      return question.shading.dark.includes(option) ? ' pq-option--shade-dark' : ' pq-option--shade-light';
+    };
     return (
       <fieldset className="pq-question" data-missing={missing || undefined}>
         <Heading as="legend" question={question} number={number} />
         {help}
         <div className={pills ? 'pq-pills' : 'pq-options'}>
           {options.map(option => (
-            <label key={option} className="pq-option">
+            <label key={option} className={`pq-option${shadeClass(option)}`}>
               <input
                 type="radio"
                 name={id}

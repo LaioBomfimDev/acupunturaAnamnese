@@ -23,6 +23,7 @@ type PortalQuestion = {
   required?: boolean;
   options?: string[];
   riskNotice?: { values: string[] };
+  shading?: { dark: string[] };
 };
 
 export function buildPortalQuestions(instrument: ServerInstrument): PortalQuestion[] {
@@ -38,6 +39,12 @@ export function buildPortalQuestions(instrument: ServerInstrument): PortalQuesti
       const fromValue = item.risk.fromValue;
       question.riskNotice = {
         values: (item.options || []).filter(option => option.value >= fromValue).map(option => option.label || ''),
+      };
+    }
+    if (item.shadeFrom != null) {
+      const shadeFrom = item.shadeFrom;
+      question.shading = {
+        dark: (item.options || []).filter(option => option.value >= shadeFrom).map(option => option.label || ''),
       };
     }
     return question;

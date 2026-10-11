@@ -508,6 +508,161 @@ export const CLINICAL_INSTRUMENTS: ServerInstrument[] = [
     ]
   },
   {
+    "id": "phq4",
+    "version": 1,
+    "shortName": "PHQ-4",
+    "name": "Questionário de Saúde do Paciente para ansiedade e depressão (PHQ-4)",
+    "instructions": "Durante as últimas 2 semanas, com que frequência você foi incomodado(a) pelos problemas abaixo?",
+    "items": [
+      {
+        "id": "q1",
+        "text": "Sentir-se nervoso(a), ansioso(a) ou muito tenso(a).",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nenhuma vez"
+          },
+          {
+            "value": 1,
+            "label": "Vários dias"
+          },
+          {
+            "value": 2,
+            "label": "Mais da metade dos dias"
+          },
+          {
+            "value": 3,
+            "label": "Quase todos os dias"
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "Não ser capaz de impedir ou de controlar as preocupações.",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nenhuma vez"
+          },
+          {
+            "value": 1,
+            "label": "Vários dias"
+          },
+          {
+            "value": 2,
+            "label": "Mais da metade dos dias"
+          },
+          {
+            "value": 3,
+            "label": "Quase todos os dias"
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "Se sentir “para baixo”, deprimido(a) ou sem perspectiva.",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nenhuma vez"
+          },
+          {
+            "value": 1,
+            "label": "Vários dias"
+          },
+          {
+            "value": 2,
+            "label": "Mais da metade dos dias"
+          },
+          {
+            "value": 3,
+            "label": "Quase todos os dias"
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "Pouco interesse ou pouco prazer em fazer as coisas.",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nenhuma vez"
+          },
+          {
+            "value": 1,
+            "label": "Vários dias"
+          },
+          {
+            "value": 2,
+            "label": "Mais da metade dos dias"
+          },
+          {
+            "value": 3,
+            "label": "Quase todos os dias"
+          }
+        ]
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "subscales",
+      "multiplier": 1,
+      "subscales": [
+        {
+          "id": "ansiedade",
+          "label": "Ansiedade (GAD-2)",
+          "short": "A",
+          "items": [
+            "q1",
+            "q2"
+          ],
+          "min": 0,
+          "max": 6,
+          "bands": [
+            {
+              "id": "abaixo_corte",
+              "label": "Abaixo do ponto de corte",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "id": "corte_ou_acima",
+              "label": "No ponto de corte ou acima",
+              "min": 3,
+              "max": 6
+            }
+          ]
+        },
+        {
+          "id": "depressao",
+          "label": "Depressão (PHQ-2)",
+          "short": "D",
+          "items": [
+            "q3",
+            "q4"
+          ],
+          "min": 0,
+          "max": 6,
+          "bands": [
+            {
+              "id": "abaixo_corte",
+              "label": "Abaixo do ponto de corte",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "id": "corte_ou_acima",
+              "label": "No ponto de corte ou acima",
+              "min": 3,
+              "max": 6
+            }
+          ]
+        }
+      ]
+    },
+    "bands": []
+  },
+  {
     "id": "dass21",
     "version": 1,
     "shortName": "DASS-21",
@@ -1131,6 +1286,307 @@ export const CLINICAL_INSTRUMENTS: ServerInstrument[] = [
     "bands": []
   },
   {
+    "id": "k10",
+    "version": 1,
+    "shortName": "K10",
+    "name": "Escala de Sofrimento Psíquico de Kessler (K10)",
+    "instructions": "As questões seguintes perguntam sobre como você tem se sentido durante os últimos 30 dias. Para cada questão, por favor, marque a opção que melhor descreve com que frequência você se sentiu assim. Durante os últimos 30 dias, com que frequência você se sentiu...",
+    "items": [
+      {
+        "id": "q1",
+        "text": "...exausto (a) sem um bom motivo?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "...nervoso (a)?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "...tão nervoso (a) que nada podia acalmá-lo (a)?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "...sem esperança?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "...inquieto (a) ou agitado (a)?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q6",
+        "text": "...tão inquieto (a) que você não conseguia ficar parado (a)?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q7",
+        "text": "...deprimido (a)?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q8",
+        "text": "...tão deprimido (a) que nada conseguia animá-lo (a)?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q9",
+        "text": "Durante os últimos 30 dias, com que frequência você sentiu que tudo era um esforço?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "...sem valor?",
+        "options": [
+          {
+            "value": 5,
+            "label": "O tempo todo"
+          },
+          {
+            "value": 4,
+            "label": "A maior parte do tempo"
+          },
+          {
+            "value": 3,
+            "label": "Parte do tempo"
+          },
+          {
+            "value": 2,
+            "label": "Um pouco"
+          },
+          {
+            "value": 1,
+            "label": "Nunca"
+          }
+        ]
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "sum",
+      "min": 10,
+      "max": 50
+    },
+    "bands": [
+      {
+        "id": "baixo",
+        "label": "Baixo",
+        "min": 10,
+        "max": 15
+      },
+      {
+        "id": "moderado",
+        "label": "Moderado",
+        "min": 16,
+        "max": 21
+      },
+      {
+        "id": "alto",
+        "label": "Alto",
+        "min": 22,
+        "max": 29
+      },
+      {
+        "id": "muito_alto",
+        "label": "Muito alto",
+        "min": 30,
+        "max": 50
+      }
+    ]
+  },
+  {
     "id": "pcl5",
     "version": 1,
     "shortName": "PCL-5",
@@ -1678,6 +2134,757 @@ export const CLINICAL_INSTRUMENTS: ServerInstrument[] = [
         "max": 80
       }
     ]
+  },
+  {
+    "id": "phq15",
+    "version": 1,
+    "shortName": "PHQ-15",
+    "name": "Questionário de Saúde do Paciente: sintomas físicos (PHQ-15)",
+    "instructions": "Durante as últimas 4 semanas, o quanto você foi incomodado/a por qualquer um dos problemas abaixo?",
+    "items": [
+      {
+        "id": "q1",
+        "text": "Dor de estômago",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "Dor nas costas",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "Dor nos braços, nas pernas ou nas juntas (joelhos, quadril, etc.)",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "Cólicas menstruais ou outros problemas com sua menstruação (se não se aplica a você, marque “Não fui incomodado/a”)",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "Dor ou problemas durante a relação sexual",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q6",
+        "text": "Dores de cabeça",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q7",
+        "text": "Dor no peito",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q8",
+        "text": "Tontura",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q9",
+        "text": "Desmaios",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "Sentir seu coração bater mais forte ou disparar",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q11",
+        "text": "Falta de ar",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q12",
+        "text": "Prisão de ventre, intestino solto ou diarreia",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q13",
+        "text": "Enjoo, gases ou indigestão",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q14",
+        "text": "Se sentir cansado/a ou com pouca energia",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      },
+      {
+        "id": "q15",
+        "text": "Dificuldade para pegar no sono ou permanecer dormindo, ou dormir mais do que de costume",
+        "options": [
+          {
+            "value": 0,
+            "label": "Não fui incomodado/a"
+          },
+          {
+            "value": 1,
+            "label": "Pouco incomodado/a"
+          },
+          {
+            "value": 2,
+            "label": "Muito incomodado/a"
+          }
+        ]
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "sum",
+      "min": 0,
+      "max": 30
+    },
+    "bands": [
+      {
+        "id": "minima",
+        "label": "Mínima",
+        "min": 0,
+        "max": 4
+      },
+      {
+        "id": "baixa",
+        "label": "Baixa",
+        "min": 5,
+        "max": 9
+      },
+      {
+        "id": "media",
+        "label": "Média",
+        "min": 10,
+        "max": 14
+      },
+      {
+        "id": "alta",
+        "label": "Alta",
+        "min": 15,
+        "max": 30
+      }
+    ]
+  },
+  {
+    "id": "asrs6",
+    "version": 1,
+    "shortName": "ASRS-6",
+    "name": "Escala de Autoavaliação de TDAH em Adultos, 6 perguntas (ASRS-V1.1)",
+    "instructions": "Assinale a alternativa que melhor descreve a forma como você tem se sentido e comportado nos últimos 6 meses.",
+    "items": [
+      {
+        "id": "q1",
+        "text": "Com que frequência você sente dificuldade para finalizar os últimos detalhes de uma tarefa, depois de já ter feito as partes mais complicadas?",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nunca"
+          },
+          {
+            "value": 1,
+            "label": "Raramente"
+          },
+          {
+            "value": 2,
+            "label": "Algumas vezes"
+          },
+          {
+            "value": 3,
+            "label": "Frequentemente"
+          },
+          {
+            "value": 4,
+            "label": "Muito frequentemente"
+          }
+        ],
+        "shadeFrom": 2
+      },
+      {
+        "id": "q2",
+        "text": "Com que frequência você sente dificuldade para manter as coisas em ordem quando precisa realizar uma tarefa que exige organização?",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nunca"
+          },
+          {
+            "value": 1,
+            "label": "Raramente"
+          },
+          {
+            "value": 2,
+            "label": "Algumas vezes"
+          },
+          {
+            "value": 3,
+            "label": "Frequentemente"
+          },
+          {
+            "value": 4,
+            "label": "Muito frequentemente"
+          }
+        ],
+        "shadeFrom": 2
+      },
+      {
+        "id": "q3",
+        "text": "Com que frequência você tem problemas para se lembrar de compromissos ou obrigações?",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nunca"
+          },
+          {
+            "value": 1,
+            "label": "Raramente"
+          },
+          {
+            "value": 2,
+            "label": "Algumas vezes"
+          },
+          {
+            "value": 3,
+            "label": "Frequentemente"
+          },
+          {
+            "value": 4,
+            "label": "Muito frequentemente"
+          }
+        ],
+        "shadeFrom": 2
+      },
+      {
+        "id": "q4",
+        "text": "Quando precisa realizar uma tarefa que exige muita concentração, com que frequência você evita ou atrasa o seu início?",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nunca"
+          },
+          {
+            "value": 1,
+            "label": "Raramente"
+          },
+          {
+            "value": 2,
+            "label": "Algumas vezes"
+          },
+          {
+            "value": 3,
+            "label": "Frequentemente"
+          },
+          {
+            "value": 4,
+            "label": "Muito frequentemente"
+          }
+        ],
+        "shadeFrom": 3
+      },
+      {
+        "id": "q5",
+        "text": "Com que frequência você fica se mexendo na cadeira ou balançando as mãos ou os pés quando precisa ficar sentado(a) durante um longo período de tempo?",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nunca"
+          },
+          {
+            "value": 1,
+            "label": "Raramente"
+          },
+          {
+            "value": 2,
+            "label": "Algumas vezes"
+          },
+          {
+            "value": 3,
+            "label": "Frequentemente"
+          },
+          {
+            "value": 4,
+            "label": "Muito frequentemente"
+          }
+        ],
+        "shadeFrom": 3
+      },
+      {
+        "id": "q6",
+        "text": "Com que frequência você se sente excessivamente ativo(a) e compelido(a) a fazer coisas, como se fosse conduzido(a) por um motor?",
+        "options": [
+          {
+            "value": 0,
+            "label": "Nunca"
+          },
+          {
+            "value": 1,
+            "label": "Raramente"
+          },
+          {
+            "value": 2,
+            "label": "Algumas vezes"
+          },
+          {
+            "value": 3,
+            "label": "Frequentemente"
+          },
+          {
+            "value": 4,
+            "label": "Muito frequentemente"
+          }
+        ],
+        "shadeFrom": 3
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "sum",
+      "min": 0,
+      "max": 24
+    },
+    "bands": [
+      {
+        "id": "negativo_baixo",
+        "label": "Negativo baixo",
+        "min": 0,
+        "max": 9
+      },
+      {
+        "id": "negativo_alto",
+        "label": "Negativo alto",
+        "min": 10,
+        "max": 13
+      },
+      {
+        "id": "positivo_baixo",
+        "label": "Positivo baixo",
+        "min": 14,
+        "max": 17
+      },
+      {
+        "id": "positivo_alto",
+        "label": "Positivo alto",
+        "min": 18,
+        "max": 24
+      }
+    ]
+  },
+  {
+    "id": "rosenberg",
+    "version": 1,
+    "shortName": "Rosenberg",
+    "name": "Escala de Autoestima de Rosenberg (EPM/Rosenberg)",
+    "instructions": "Leia cada frase e marque o quanto você concorda ou discorda dela.",
+    "items": [
+      {
+        "id": "q1",
+        "text": "De uma forma geral (apesar de tudo), estou satisfeito(a) comigo mesmo(a).",
+        "options": [
+          {
+            "value": 3,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 2,
+            "label": "Concordo"
+          },
+          {
+            "value": 1,
+            "label": "Discordo"
+          },
+          {
+            "value": 0,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "Às vezes, eu acho que eu não sirvo para nada (desqualificado(a) ou inferior em relação aos outros).",
+        "options": [
+          {
+            "value": 0,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 1,
+            "label": "Concordo"
+          },
+          {
+            "value": 2,
+            "label": "Discordo"
+          },
+          {
+            "value": 3,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "Eu sinto que eu tenho um tanto (um número) de boas qualidades.",
+        "options": [
+          {
+            "value": 3,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 2,
+            "label": "Concordo"
+          },
+          {
+            "value": 1,
+            "label": "Discordo"
+          },
+          {
+            "value": 0,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "Eu sou capaz de fazer coisas tão bem quanto a maioria das outras pessoas (desde que me ensinadas).",
+        "options": [
+          {
+            "value": 3,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 2,
+            "label": "Concordo"
+          },
+          {
+            "value": 1,
+            "label": "Discordo"
+          },
+          {
+            "value": 0,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "Não sinto satisfação nas coisas que realizei. Eu sinto que não tenho muito do que me orgulhar.",
+        "options": [
+          {
+            "value": 0,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 1,
+            "label": "Concordo"
+          },
+          {
+            "value": 2,
+            "label": "Discordo"
+          },
+          {
+            "value": 3,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q6",
+        "text": "Às vezes, eu realmente me sinto inútil (incapaz de fazer as coisas).",
+        "options": [
+          {
+            "value": 0,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 1,
+            "label": "Concordo"
+          },
+          {
+            "value": 2,
+            "label": "Discordo"
+          },
+          {
+            "value": 3,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q7",
+        "text": "Eu sinto que sou uma pessoa de valor, pelo menos num plano igual (num mesmo nível) às outras pessoas.",
+        "options": [
+          {
+            "value": 3,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 2,
+            "label": "Concordo"
+          },
+          {
+            "value": 1,
+            "label": "Discordo"
+          },
+          {
+            "value": 0,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q8",
+        "text": "Não me dou o devido valor. Gostaria de ter mais respeito por mim mesmo(a).",
+        "options": [
+          {
+            "value": 0,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 1,
+            "label": "Concordo"
+          },
+          {
+            "value": 2,
+            "label": "Discordo"
+          },
+          {
+            "value": 3,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q9",
+        "text": "Quase sempre eu estou inclinado(a) a achar que sou um(a) fracassado(a).",
+        "options": [
+          {
+            "value": 0,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 1,
+            "label": "Concordo"
+          },
+          {
+            "value": 2,
+            "label": "Discordo"
+          },
+          {
+            "value": 3,
+            "label": "Discordo plenamente"
+          }
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "Eu tenho uma atitude positiva (pensamentos, atos e sentimentos positivos) em relação a mim mesmo(a).",
+        "options": [
+          {
+            "value": 3,
+            "label": "Concordo plenamente"
+          },
+          {
+            "value": 2,
+            "label": "Concordo"
+          },
+          {
+            "value": 1,
+            "label": "Discordo"
+          },
+          {
+            "value": 0,
+            "label": "Discordo plenamente"
+          }
+        ]
+      }
+    ],
+    "extraItems": [],
+    "scoring": {
+      "method": "sum",
+      "min": 0,
+      "max": 30
+    },
+    "bands": [],
+    "noBands": true
   }
 ];
 

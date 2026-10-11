@@ -699,3 +699,14 @@
   width: 100%;
   min-width: 0;
 }
+
+/* Sombreado da folha (ASRS-6): os autores exigem os dois tons também na
+   tela. Cinza neutro, para não parecer aviso (âmbar) nem risco
+   (vermelho); a opção marcada fica com a cor da clínica por cima. */
+.forms-scope .panel .instrument-options .tag.instrument-option--shade-light:not(.active) {
+  background: color-mix(in srgb, var(--r1-ink) 4%, var(--r1-surface));
+}
+
+.forms-scope .panel .instrument-options .tag.instrument-option--shade-dark:not(.active) {
+  background: color-mix(in srgb, var(--r1-ink) 13%, var(--r1-surface));
+}

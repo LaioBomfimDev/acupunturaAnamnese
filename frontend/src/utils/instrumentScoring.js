@@ -152,8 +152,9 @@ export function buildApplicationPayload(instrument, answers, note = '') {
 
 /**
  * Confere a definição: faixas cobrindo a escala inteira sem buraco nem
- * sobreposição, máximo igual à soma dos maiores pontos, ids únicos e
- * item de risco dentro das opções. Devolve a lista de problemas.
+ * sobreposição (ou nenhuma, com `noBands`), máximo igual à soma dos
+ * maiores pontos, ids únicos, item de risco dentro das opções e sombreado
+ * com opção nos dois tons. Devolve a lista de problemas.
  */
 export function validateInstrumentDefinition(instrument) {
   const problems = [];
@@ -170,6 +171,11 @@ export function validateInstrumentDefinition(instrument) {
     if (new Set(values).size !== values.length) problems.push(`${item.id}: pontos de opção repetidos`);
     if (item.risk && !values.some(value => value >= item.risk.fromValue)) {
       problems.push(`${item.id}: risco fora das opções`);
+    }
+    // Sombreado da folha (ASRS-6): precisa de opção nos dois tons.
+    if (item.shadeFrom != null
+      && !(values.some(value => value >= item.shadeFrom) && values.some(value => value < item.shadeFrom))) {
+      problems.push(`${item.id}: sombreado sem opção nos dois tons`);
     }
   }
 
@@ -203,6 +209,12 @@ export function validateInstrumentDefinition(instrument) {
     const range = rangeOf(items);
     if (range.min !== instrument.scoring.min) problems.push(`mínimo declarado ${instrument.scoring.min}, soma dá ${range.min}`);
     if (range.max !== instrument.scoring.max) problems.push(`máximo declarado ${instrument.scoring.max}, soma dá ${range.max}`);
+  }
+
+  // Escala sem ponto de corte clínico (Rosenberg): só a nota, nenhuma faixa.
+  if (instrument.noBands) {
+    if ((instrument.bands || []).length) problems.push('noBands com faixas declaradas');
+    return problems;
   }
 
   checkBands(instrument.bands, instrument.scoring?.min, instrument.scoring?.max, '', problems);

@@ -71,6 +71,11 @@ test('cada instrumento tem faixas cobrindo a escala inteira, sem buraco nem sobr
   assert.ok(instruments.CLINICAL_INSTRUMENTS.length >= 3);
   for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
     assert.deepEqual(scoring.validateInstrumentDefinition(instrument), [], instrument.id);
+    // Escala sem ponto de corte clínico (Rosenberg): nenhuma faixa, nem inventada.
+    if (instrument.noBands) {
+      assert.deepEqual(instrument.bands, [], instrument.id);
+      continue;
+    }
     // Uma régua por nota: a escala inteira ou cada subescala (DASS-21).
     for (const view of format.scoreViews(instrument)) {
       for (let score = view.scoring.min; score <= view.scoring.max; score += 1) {
@@ -97,7 +102,7 @@ test('o validador pega faixa com buraco e máximo errado', () => {
 
 test('escalas só na Psicologia, em conferência até a psicóloga aprovar', () => {
   const psi = instruments.instrumentsForDiscipline('psicologia').map(instrument => instrument.id);
-  assert.deepEqual(psi, ['phq9', 'gad7', 'dass21', 'pcl5']);
+  assert.deepEqual(psi, ['phq9', 'gad7', 'phq4', 'dass21', 'k10', 'pcl5', 'phq15', 'asrs6', 'rosenberg']);
   assert.deepEqual(instruments.instrumentsForDiscipline('nutricao'), []);
   for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
     assert.equal(instrument.review.status, instruments.INSTRUMENT_REVIEW_STATUS.PENDING, instrument.id);
@@ -873,4 +878,199 @@ test('PCL-5: ponto de corte da validação brasileira (36) e nenhuma faixa de gr
   assert.equal('subscales' in payload.result, false);
   assert.equal(format.scoreViews(pcl).length, 1);
   assert.equal(format.namedInstrument(pcl), 'a PCL-5');
+});
+
+// ---- lote 1, segunda leva: PHQ-4, K10, PHQ-15, ASRS-6 e Rosenberg ----------
+
+// Nota exata numa escala de 10 a 50 (K10): todos em "Nunca" e o resto distribuído.
+function k10Answers(target) {
+  const answers = fill(instruments.K10, 1);
+  let left = target - 10;
+  for (const item of instruments.K10.items) {
+    const add = Math.min(4, left);
+    answers[item.id] += add;
+    left -= add;
+  }
+  assert.equal(left, 0, `não deu para montar ${target} pontos`);
+  return answers;
+}
+
+test('licença: texto brasileiro liberado também para uso comercial, nunca artigo CC BY-NC', async () => {
+  for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
+    assert.doesNotMatch(instrument.license, /BY-NC/, instrument.id);
+  }
+  const source = await src('data/clinicalInstruments.js');
+  assert.match(source, /Artigo CC BY-NC não\r?\n\/\/ basta\./);
+});
+
+test('PHQ-4: duas perguntas do GAD-7 e duas do PHQ-9, na ordem do formulário, e duas notas com corte 3', () => {
+  const phq4 = instruments.PHQ4;
+  const { GAD7, PHQ9 } = instruments;
+  assert.deepEqual(phq4.items.map(item => item.text), [
+    GAD7.items[0].text, GAD7.items[1].text, PHQ9.items[1].text, PHQ9.items[0].text,
+  ]);
+  for (const item of phq4.items) assert.deepEqual(item.options, PHQ9.items[0].options, item.id);
+  assert.equal(phq4.scoring.method, 'subscales');
+  assert.deepEqual(phq4.scoring.subscales.map(sub => [sub.id, sub.items]), [
+    ['ansiedade', ['q1', 'q2']],
+    ['depressao', ['q3', 'q4']],
+  ]);
+
+  const result = scoring.scoreInstrument(phq4, { q1: 2, q2: 1, q3: 0, q4: 2 });
+  assert.equal(result.score, null, 'sem nota total: duas notas');
+  assert.deepEqual(result.subscales.map(sub => [sub.id, sub.score, sub.band.id]), [
+    ['ansiedade', 3, 'corte_ou_acima'],
+    ['depressao', 2, 'abaixo_corte'],
+  ]);
+  const payload = scoring.buildApplicationPayload(phq4, { q1: 2, q2: 1, q3: 0, q4: 2 });
+  assert.equal(
+    format.savedNotice(phq4, { payload }).text,
+    'PHQ-4 salvo: ansiedade (GAD-2) 3 pontos (no ponto de corte ou acima), depressão (PHQ-2) 2 pontos (abaixo do ponto de corte).',
+  );
+  assert.equal(format.scoreViews(phq4).length, 2);
+  assert.match(phq4.review.note, /nota total/);
+});
+
+test('K10: tradução brasileira oficial, opções na ordem da folha e nota de 10 a 50', () => {
+  const k10 = instruments.K10;
+  assert.equal(k10.items.length, 10);
+  assert.equal(k10.items[0].text, '...exausto (a) sem um bom motivo?');
+  assert.equal(k10.items[8].text, 'Durante os últimos 30 dias, com que frequência você sentiu que tudo era um esforço?');
+  for (const item of k10.items) {
+    assert.deepEqual(item.options.map(option => [option.value, option.label]), [
+      [5, 'O tempo todo'], [4, 'A maior parte do tempo'], [3, 'Parte do tempo'], [2, 'Um pouco'], [1, 'Nunca'],
+    ], item.id);
+  }
+  assert.deepEqual(k10.scoring, { method: 'sum', min: 10, max: 50 });
+  assert.match(k10.instructions, /marque a opção/);
+  // O que o paciente lê: instrução, perguntas e respostas (a nota de conferência cita o original).
+  assert.doesNotMatch(JSON.stringify([k10.instructions, k10.items]), /circule|freqü/);
+  assert.equal(scoring.scoreInstrument(k10, fill(k10, 1)).score, 10);
+  assert.equal(scoring.scoreInstrument(k10, fill(k10, 5)).score, 50);
+  assert.equal(scoring.scoreInstrument(k10, fill(k10, 0)).score, null, 'zero não é resposta do K10');
+  for (const [score, band] of [[15, 'baixo'], [16, 'moderado'], [21, 'moderado'], [22, 'alto'], [29, 'alto'], [30, 'muito_alto']]) {
+    assert.equal(scoring.scoreInstrument(k10, k10Answers(score)).band.id, band, `${score} pontos`);
+  }
+  assert.match(k10.license, /Kessler/);
+  assert.match(k10.review.note, /Andrews e Slade/);
+  assert.equal(format.namedInstrument(k10), 'a K10');
+});
+
+test('PHQ-15: texto do PHQ brasileiro oficial, três respostas e nenhuma pergunta presa ao sexo do cadastro', () => {
+  const phq15 = instruments.PHQ15;
+  assert.equal(phq15.items.length, 15);
+  for (const item of phq15.items) {
+    assert.deepEqual(item.options.map(option => [option.value, option.label]), [
+      [0, 'Não fui incomodado/a'], [1, 'Pouco incomodado/a'], [2, 'Muito incomodado/a'],
+    ], item.id);
+  }
+  assert.ok(phq15.items.every(item => !/somente para mulheres/i.test(item.text)));
+  assert.match(phq15.items[3].text, /se não se aplica a você, marque “Não fui incomodado\/a”/);
+  assert.deepEqual(phq15.scoring, { method: 'sum', min: 0, max: 30 });
+  assert.equal(scoring.scoreInstrument(phq15, fill(phq15, 2)).score, 30);
+  for (const [score, band] of [[4, 'minima'], [5, 'baixa'], [9, 'baixa'], [10, 'media'], [14, 'media'], [15, 'alta']]) {
+    assert.equal(scoring.bandForScore(phq15, score).id, band, `${score} pontos`);
+  }
+  assert.ok(phq15.items.every(item => !item.risk));
+  assert.match(phq15.license, /Pfizer/);
+});
+
+test('ASRS-6: tradução brasileira oficial, nota de 0 a 24 com corte 14 e os dois tons de sombreado', async () => {
+  const asrs = instruments.ASRS6;
+  assert.equal(asrs.items.length, 6);
+  for (const item of asrs.items) {
+    assert.deepEqual(item.options.map(option => [option.value, option.label]), [
+      [0, 'Nunca'], [1, 'Raramente'], [2, 'Algumas vezes'], [3, 'Frequentemente'], [4, 'Muito frequentemente'],
+    ], item.id);
+  }
+  assert.deepEqual(asrs.items.map(item => item.shadeFrom), [2, 2, 2, 3, 3, 3]);
+  assert.deepEqual(asrs.scoring, { method: 'sum', min: 0, max: 24 });
+  assert.equal(scoring.scoreInstrument(asrs, fill(asrs, 4)).score, 24);
+  for (const [score, band] of [[9, 'negativo_baixo'], [10, 'negativo_alto'], [13, 'negativo_alto'], [14, 'positivo_baixo'], [17, 'positivo_baixo'], [18, 'positivo_alto']]) {
+    assert.equal(scoring.bandForScore(asrs, score).id, band, `${score} pontos`);
+  }
+  assert.match(asrs.license, /sombreado/);
+  assert.match(asrs.review.note, /2024/);
+
+  const broken = { ...asrs, items: asrs.items.map(item => ({ ...item, shadeFrom: 9 })) };
+  assert.ok(scoring.validateInstrumentDefinition(broken).some(problem => problem.includes('sombreado')));
+
+  // Área do Paciente: o servidor e a tela mandam os mesmos tons.
+  const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
+  const questions = portal.buildPortalQuestions(asrs);
+  assert.deepEqual(questions.find(question => question.id === 'q1').shading.dark, ['Algumas vezes', 'Frequentemente', 'Muito frequentemente']);
+  assert.deepEqual(questions.find(question => question.id === 'q4').shading.dark, ['Frequentemente', 'Muito frequentemente']);
+  assert.ok(portal.buildPortalQuestions(instruments.PHQ9).every(question => !question.shading));
+
+  const { PatientFormQuestion } = await server.ssrLoadModule('/src/components/patientForms/PatientFormQuestion.jsx');
+  const q1 = renderToStaticMarkup(React.createElement(PatientFormQuestion, {
+    question: questions.find(question => question.id === 'q1'), answers: {}, onChange: () => {},
+  }));
+  assert.equal((q1.match(/pq-option pq-option--shade-dark/g) || []).length, 3);
+  assert.equal((q1.match(/pq-option pq-option--shade-light/g) || []).length, 2);
+  const plain = renderToStaticMarkup(React.createElement(PatientFormQuestion, {
+    question: portal.buildPortalQuestions(instruments.PHQ9).find(question => question.id === 'q1'), answers: {}, onChange: () => {},
+  }));
+  assert.doesNotMatch(plain, /shade/);
+
+  // Consultório: os mesmos tons nos botões do formulário.
+  const form = renderToStaticMarkup(React.createElement(ApplyForm, {
+    instrument: asrs,
+    patientName: 'Paciente Teste',
+    patientId: '00000000-0000-0000-0000-000000000001',
+    discipline: 'psicologia',
+    onCancel: () => {},
+    onSaved: () => {},
+  }));
+  assert.equal((form.match(/instrument-option--shade-dark/g) || []).length, 3 * 3 + 3 * 2);
+  assert.equal((form.match(/instrument-option--shade-light/g) || []).length, 3 * 2 + 3 * 3);
+
+  // Cinza neutro: nem âmbar (aviso) nem vermelho (risco).
+  for (const [file, selector] of [['styles/patientForms.css', 'pq-option--shade-'], ['styles/instruments.css', 'instrument-option--shade-']]) {
+    const css = await src(file);
+    const rules = css.split('}').filter(rule => rule.includes(selector));
+    assert.equal(rules.length, 2, file);
+    for (const rule of rules) assert.doesNotMatch(rule, /danger|warning|amber|red-|#[0-9a-f]{3,6}/i, file);
+  }
+});
+
+test('Rosenberg: versão EPM/Rosenberg, metade das frases invertida e nenhuma faixa inventada', () => {
+  const ros = instruments.ROSENBERG;
+  assert.equal(ros.items.length, 10);
+  assert.equal(ros.items[0].text, 'De uma forma geral (apesar de tudo), estou satisfeito(a) comigo mesmo(a).');
+  const labels = ['Concordo plenamente', 'Concordo', 'Discordo', 'Discordo plenamente'];
+  for (const item of ros.items) {
+    assert.deepEqual(item.options.map(option => option.label), labels, item.id);
+    const reversed = ['q2', 'q5', 'q6', 'q8', 'q9'].includes(item.id);
+    assert.deepEqual(item.options.map(option => option.value), reversed ? [0, 1, 2, 3] : [3, 2, 1, 0], item.id);
+  }
+  const best = Object.fromEntries(ros.items.map(item => [item.id, Math.max(...item.options.map(option => option.value))]));
+  assert.equal(scoring.scoreInstrument(ros, best).score, 30, 'mais pontos, mais autoestima');
+  const allAgree = Object.fromEntries(ros.items.map(item => [item.id, item.options[0].value]));
+  assert.equal(scoring.scoreInstrument(ros, allAgree).score, 15, 'concordar com tudo empata as frases invertidas');
+
+  assert.equal(ros.noBands, true);
+  assert.deepEqual(ros.bands, []);
+  assert.ok(scoring.validateInstrumentDefinition({ ...ros, bands: [{ id: 'x', label: 'X', min: 0, max: 30 }] })
+    .some(problem => problem.includes('noBands')));
+  const payload = scoring.buildApplicationPayload(ros, best);
+  assert.deepEqual([payload.result.score, payload.result.bandId, payload.result.bandLabel], [30, null, null]);
+  assert.equal(format.savedNotice(ros, { payload }).text, 'Rosenberg salvo: 30 pontos.');
+  assert.match(ros.license, /domínio público/);
+  assert.match(ros.license, /CC BY 4\.0/);
+  assert.match(ros.review.note, /instrução/);
+
+  const apps = [
+    { id: 'b', appliedAt: '2026-10-06T12:00:00Z', result: { score: 22, bandLabel: null } },
+    { id: 'a', appliedAt: '2026-09-01T12:00:00Z', result: { score: 18, bandLabel: null } },
+  ];
+  const html = renderToStaticMarkup(React.createElement(TrendChart, { instrument: ros, applications: apps }));
+  for (const tick of ['0', '15', '30']) assert.match(html, new RegExp(`class="instrument-axis-label"[^>]*>${tick}<`), `régua ${tick}`);
+  assert.doesNotMatch(html, /instrument-band-label/);
+  assert.doesNotMatch(html, /faixa/);
+});
+
+test('Rosenberg na tela: o cartão diz que não há faixa, em vez de mostrar faixa vazia', async () => {
+  const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
+  assert.match(panel, /instrument\.noBands\r?\n\s*\? <span>Sem faixas clínicas: compare com as aplicações anteriores\.<\/span>/);
 });

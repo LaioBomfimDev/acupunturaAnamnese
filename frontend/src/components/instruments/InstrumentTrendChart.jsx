@@ -126,7 +126,11 @@ export function InstrumentTrendChart({ instrument, applications }) {
     PAD.top + 6,
     PAD.top + PLOT_H - 6,
   );
-  const ticks = visibleTicks([...instrument.bands.map(band => band.min), max], y);
+  // Sem faixas (Rosenberg): a régua marca o começo, o meio e o fim da escala.
+  const tickBase = instrument.bands.length
+    ? instrument.bands.map(band => band.min)
+    : [min, Math.round((min + max) / 2)];
+  const ticks = visibleTicks([...tickBase, max], y);
 
   return (
     <figure className="instrument-chart" ref={figureRef}>
@@ -155,6 +159,16 @@ export function InstrumentTrendChart({ instrument, applications }) {
             </g>
           );
         })}
+        {!instrument.bands.length && (
+          <>
+            <rect className="instrument-band instrument-band-0" x={PAD.left} y={y(max)} width={PLOT_W} height={Math.max(0, y(min) - y(max))} />
+            {tickBase.filter(value => ticks.has(value)).map(value => (
+              <text key={value} className="instrument-axis-label" x={PAD.left - 8} y={y(value)} textAnchor="end" dominantBaseline="middle">
+                {value}
+              </text>
+            ))}
+          </>
+        )}
         <text className="instrument-axis-label" x={PAD.left - 8} y={y(max)} textAnchor="end" dominantBaseline="middle">
           {max}
         </text>
@@ -183,7 +197,8 @@ export function InstrumentTrendChart({ instrument, applications }) {
 
         {coords.map(({ point, cx, cy }, index) => {
           const isLast = index === coords.length - 1;
-          const label = `${formatInstrumentDate(point.appliedAt)}: ${point.result.score} pontos, faixa ${point.result.bandLabel || 'sem faixa'}`;
+          const bandText = instrument.bands.length ? `, faixa ${point.result.bandLabel || 'sem faixa'}` : '';
+          const label = `${formatInstrumentDate(point.appliedAt)}: ${point.result.score} pontos${bandText}`;
           return (
             <g key={point.id} className="instrument-point-group">
               <title>{label}</title>

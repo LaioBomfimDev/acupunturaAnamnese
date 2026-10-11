@@ -15,6 +15,13 @@ const upperFirst = text => text.charAt(0).toUpperCase() + text.slice(1);
 // salvamento falhar e for tentado de novo.
 // ============================================================
 
+// Escala com sombreado na folha (ASRS-6): os dois tons fazem parte do
+// instrumento e aparecem também aqui.
+function shadeClass(item, option) {
+  if (item.shadeFrom == null) return '';
+  return option.value >= item.shadeFrom ? ' instrument-option--shade-dark' : ' instrument-option--shade-light';
+}
+
 function OptionGroup({ item, value, onChange, labelledBy }) {
   return (
     <div className="checkgrid instrument-options" role="radiogroup" aria-labelledby={labelledBy}>
@@ -26,7 +33,7 @@ function OptionGroup({ item, value, onChange, labelledBy }) {
             type="button"
             role="radio"
             aria-checked={selected}
-            className={`tag${selected ? ' active' : ''}`}
+            className={`tag${selected ? ' active' : ''}${shadeClass(item, option)}`}
             onClick={() => onChange(selected ? undefined : option.value)}
           >
             {option.label}

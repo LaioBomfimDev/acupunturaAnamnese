@@ -31,6 +31,7 @@ export function serverView(instrument) {
       text: item.text,
       options: item.options.map(option => ({ value: option.value, label: option.label })),
       ...(item.risk ? { risk: { fromValue: item.risk.fromValue, message: item.risk.message, homeMessage: item.risk.homeMessage } } : {}),
+      ...(item.shadeFrom != null ? { shadeFrom: item.shadeFrom } : {}),
     })),
     extraItems: (instrument.extraItems || []).map(item => ({
       id: item.id,
@@ -40,6 +41,7 @@ export function serverView(instrument) {
     })),
     scoring: { ...instrument.scoring },
     bands: instrument.bands.map(band => ({ id: band.id, label: band.label, min: band.min, max: band.max })),
+    ...(instrument.noBands ? { noBands: true } : {}),
   };
 }
 

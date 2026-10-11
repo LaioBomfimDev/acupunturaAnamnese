@@ -10,8 +10,11 @@
 // antiga fica em INSTRUMENT_HISTORY, para o histórico continuar lendo a
 // aplicação do jeito que ela foi feita.
 //
-// Só entram com as perguntas completas instrumentos de uso livre. Escala
-// com direito autoral entra só com nome, faixa e escore (AGENTS.md §7).
+// Só entram com as perguntas completas instrumentos de uso livre, com
+// texto brasileiro liberado também para uso comercial: tradução oficial
+// publicada pelo detentor ou artigo com licença CC BY. Artigo CC BY-NC não
+// basta. Escala com direito autoral entra só com nome, faixa e escore
+// (AGENTS.md §7).
 // Gate humano: até a psicóloga responsável conferir texto e faixas, o
 // instrumento fica `review.status: 'em_conferencia'` e a tela mostra isso.
 // ============================================================
@@ -319,8 +322,304 @@ export const PCL5 = {
   },
 };
 
+// PHQ-4: as duas primeiras perguntas do GAD-7 e do PHQ-9, na ordem do
+// formulário de Kroenke (2009), com o mesmo texto brasileiro oficial da
+// Pfizer. Duas notas de 0 a 6, cada uma com o corte 3 que diz qual escala
+// completa aplicar depois.
+export const PHQ4 = {
+  id: 'phq4',
+  version: 1,
+  shortName: 'PHQ-4',
+  article: 'o',
+  name: 'Questionário de Saúde do Paciente para ansiedade e depressão (PHQ-4)',
+  measures: 'rastreio rápido de ansiedade e depressão nas últimas 2 semanas',
+  disciplines: ['psicologia'],
+  population: 'Adultos',
+  minutes: 1,
+  reapplyAfterDays: 14,
+  instructions: 'Durante as últimas 2 semanas, com que frequência você foi incomodado(a) pelos problemas abaixo?',
+  items: [
+    { id: 'q1', text: GAD7.items[0].text },
+    { id: 'q2', text: GAD7.items[1].text },
+    { id: 'q3', text: PHQ9.items[1].text },
+    { id: 'q4', text: PHQ9.items[0].text },
+  ].map(item => ({ ...item, options: FREQUENCY_OPTIONS })),
+  extraItems: [],
+  scoring: {
+    method: 'subscales',
+    multiplier: 1,
+    subscales: [
+      {
+        id: 'ansiedade',
+        label: 'Ansiedade (GAD-2)',
+        short: 'A',
+        items: ['q1', 'q2'],
+        min: 0,
+        max: 6,
+        bands: [
+          { id: 'abaixo_corte', label: 'Abaixo do ponto de corte', min: 0, max: 2 },
+          { id: 'corte_ou_acima', label: 'No ponto de corte ou acima', min: 3, max: 6 },
+        ],
+      },
+      {
+        id: 'depressao',
+        label: 'Depressão (PHQ-2)',
+        short: 'D',
+        items: ['q3', 'q4'],
+        min: 0,
+        max: 6,
+        bands: [
+          { id: 'abaixo_corte', label: 'Abaixo do ponto de corte', min: 0, max: 2 },
+          { id: 'corte_ou_acima', label: 'No ponto de corte ou acima', min: 3, max: 6 },
+        ],
+      },
+    ],
+  },
+  bands: [],
+  reading: 'São duas notas de 0 a 6: ansiedade (duas perguntas do GAD-7) e depressão (duas do PHQ-9). Nota 3 ou mais pede a escala completa (GAD-7 ou PHQ-9). É um rastreio rápido e não substitui a avaliação clínica.',
+  sources: [
+    'Kroenke K, Spitzer RL, Williams JBW, Löwe B. An ultra-brief screening scale for anxiety and depression: the PHQ-4. Psychosomatics. 2009;50(6):613-21.',
+    'Löwe B et al. A 4-item measure of depression and anxiety: validation and standardization of the PHQ-4 in the general population. J Affect Disord. 2010;122(1-2):86-95.',
+  ],
+  license: 'PHQ © Pfizer Inc. Uso livre: segundo o site oficial, não é preciso permissão para reproduzir, traduzir, exibir ou distribuir. Texto da tradução brasileira oficial do PHQ-9 e do GAD-7.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Montado com as perguntas do PHQ-9 e do GAD-7 já cadastrados, na ordem do formulário original. O PHQ-4 também tem nota total (0 a 12; faixas 0-2, 3-5, 6-8 e 9-12), que não aparece aqui: a tela mostra as duas notas com o corte 3 de cada uma. A psicóloga responsável confere se quer a nota total também.',
+  },
+};
+
+// K10: tradução brasileira oficial publicada pelo autor (Harvard), feita
+// para o comitê da CIDI por Wang, Gorenstein, Andrade (USP) e Viana (UFES).
+// As opções seguem a ordem da folha (de "O tempo todo" a "Nunca").
+const K10_OPTIONS = [
+  { value: 5, label: 'O tempo todo' },
+  { value: 4, label: 'A maior parte do tempo' },
+  { value: 3, label: 'Parte do tempo' },
+  { value: 2, label: 'Um pouco' },
+  { value: 1, label: 'Nunca' },
+];
+
+export const K10 = {
+  id: 'k10',
+  version: 1,
+  shortName: 'K10',
+  // "a K10": escala de sofrimento psíquico.
+  article: 'a',
+  name: 'Escala de Sofrimento Psíquico de Kessler (K10)',
+  measures: 'sofrimento psíquico nos últimos 30 dias',
+  disciplines: ['psicologia'],
+  population: 'Adultos',
+  minutes: 3,
+  reapplyAfterDays: 30,
+  // Na folha: "circule o número". Na tela, marca-se a opção.
+  instructions: 'As questões seguintes perguntam sobre como você tem se sentido durante os últimos 30 dias. Para cada questão, por favor, marque a opção que melhor descreve com que frequência você se sentiu assim. Durante os últimos 30 dias, com que frequência você se sentiu...',
+  items: [
+    { id: 'q1', text: '...exausto (a) sem um bom motivo?' },
+    { id: 'q2', text: '...nervoso (a)?' },
+    { id: 'q3', text: '...tão nervoso (a) que nada podia acalmá-lo (a)?' },
+    { id: 'q4', text: '...sem esperança?' },
+    { id: 'q5', text: '...inquieto (a) ou agitado (a)?' },
+    { id: 'q6', text: '...tão inquieto (a) que você não conseguia ficar parado (a)?' },
+    { id: 'q7', text: '...deprimido (a)?' },
+    { id: 'q8', text: '...tão deprimido (a) que nada conseguia animá-lo (a)?' },
+    { id: 'q9', text: 'Durante os últimos 30 dias, com que frequência você sentiu que tudo era um esforço?' },
+    { id: 'q10', text: '...sem valor?' },
+  ].map(item => ({ ...item, options: K10_OPTIONS })),
+  extraItems: [],
+  scoring: { method: 'sum', min: 10, max: 50 },
+  bands: [
+    { id: 'baixo', label: 'Baixo', min: 10, max: 15 },
+    { id: 'moderado', label: 'Moderado', min: 16, max: 21 },
+    { id: 'alto', label: 'Alto', min: 22, max: 29 },
+    { id: 'muito_alto', label: 'Muito alto', min: 30, max: 50 },
+  ],
+  reading: 'A nota soma as 10 perguntas (10 a 50): "Nunca" vale 1 e "O tempo todo" vale 5. Quanto maior, mais sofrimento psíquico no último mês. A faixa é a do instrumento e não substitui a avaliação clínica.',
+  sources: [
+    'Kessler RC et al. Short screening scales to monitor population prevalences and trends in non-specific psychological distress. Psychol Med. 2002;32(6):959-76.',
+    'Kessler RC et al. Screening for serious mental illness in the general population. Arch Gen Psychiatry. 2003;60(2):184-9.',
+    'Andrews G, Slade T. Interpreting scores on the Kessler Psychological Distress Scale (K10). Aust N Z J Public Health. 2001;25(6):494-7.',
+  ],
+  license: 'K10 © Ronald C. Kessler, PhD. All rights reserved. Uso livre, sem necessidade de permissão, citando o artigo de 2003 e o copyright (site oficial, Harvard). Tradução brasileira publicada no mesmo site para uso sem restrição.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Faixas de Andrews e Slade (2001), de uma pesquisa australiana; não há corte brasileiro na fonte usada. Kessler pontua de 0 a 4 por pergunta (0 a 40); aqui vale 1 a 5 (10 a 50) para usar essas faixas, com a mesma ordem entre pacientes. Na instrução, "circule o número" virou "marque a opção"; a grafia de "freqüência" foi atualizada. As perguntas extras da folha (K10+, sobre dias sem conseguir trabalhar e consultas) ficaram de fora: não entram na nota. A psicóloga responsável confere o texto e as faixas.',
+  },
+};
+
+// PHQ-15: as 13 queixas físicas da pergunta 1 do PHQ brasileiro oficial
+// (Pfizer) mais cansaço e sono, como no PHQ-15 de Kroenke (2002), todas
+// com as três respostas da pergunta 1.
+const PHQ15_OPTIONS = [
+  { value: 0, label: 'Não fui incomodado/a' },
+  { value: 1, label: 'Pouco incomodado/a' },
+  { value: 2, label: 'Muito incomodado/a' },
+];
+
+export const PHQ15 = {
+  id: 'phq15',
+  version: 1,
+  shortName: 'PHQ-15',
+  article: 'o',
+  name: 'Questionário de Saúde do Paciente: sintomas físicos (PHQ-15)',
+  measures: 'incômodo com sintomas físicos nas últimas 4 semanas',
+  disciplines: ['psicologia'],
+  population: 'Adolescentes e adultos',
+  minutes: 4,
+  reapplyAfterDays: 28,
+  instructions: 'Durante as últimas 4 semanas, o quanto você foi incomodado/a por qualquer um dos problemas abaixo?',
+  items: [
+    { id: 'q1', text: 'Dor de estômago' },
+    { id: 'q2', text: 'Dor nas costas' },
+    { id: 'q3', text: 'Dor nos braços, nas pernas ou nas juntas (joelhos, quadril, etc.)' },
+    // Na folha: "(somente para mulheres)". Aqui ninguém é tratado pelo sexo
+    // do cadastro (AGENTS.md §8): quem não menstrua marca a primeira opção,
+    // que vale zero, como o item omitido do original.
+    { id: 'q4', text: 'Cólicas menstruais ou outros problemas com sua menstruação (se não se aplica a você, marque “Não fui incomodado/a”)' },
+    { id: 'q5', text: 'Dor ou problemas durante a relação sexual' },
+    { id: 'q6', text: 'Dores de cabeça' },
+    { id: 'q7', text: 'Dor no peito' },
+    { id: 'q8', text: 'Tontura' },
+    { id: 'q9', text: 'Desmaios' },
+    { id: 'q10', text: 'Sentir seu coração bater mais forte ou disparar' },
+    { id: 'q11', text: 'Falta de ar' },
+    { id: 'q12', text: 'Prisão de ventre, intestino solto ou diarreia' },
+    { id: 'q13', text: 'Enjoo, gases ou indigestão' },
+    { id: 'q14', text: 'Se sentir cansado/a ou com pouca energia' },
+    { id: 'q15', text: 'Dificuldade para pegar no sono ou permanecer dormindo, ou dormir mais do que de costume' },
+  ].map(item => ({ ...item, options: PHQ15_OPTIONS })),
+  extraItems: [],
+  scoring: { method: 'sum', min: 0, max: 30 },
+  bands: [
+    { id: 'minima', label: 'Mínima', min: 0, max: 4 },
+    { id: 'baixa', label: 'Baixa', min: 5, max: 9 },
+    { id: 'media', label: 'Média', min: 10, max: 14 },
+    { id: 'alta', label: 'Alta', min: 15, max: 30 },
+  ],
+  reading: 'A nota soma as 15 perguntas (0 a 30) e mostra o quanto os sintomas físicos incomodaram no último mês. Não diz a causa dos sintomas: queixa física pede avaliação médica. A faixa é a do instrumento e não substitui a avaliação clínica.',
+  sources: [
+    'Kroenke K, Spitzer RL, Williams JBW. The PHQ-15: validity of a new measure for evaluating the severity of somatic symptoms. Psychosom Med. 2002;64(2):258-66.',
+  ],
+  license: 'PHQ © Pfizer Inc. Uso livre: segundo o site oficial, não é preciso permissão para reproduzir, traduzir, exibir ou distribuir. Texto da tradução brasileira oficial do PHQ completo.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'O site oficial não tem o PHQ-15 avulso em português: as 13 queixas vêm da pergunta 1 do PHQ brasileiro oficial, e cansaço e sono vêm das perguntas do PHQ-9 do mesmo PHQ, com as três respostas da pergunta 1, como no PHQ-15 original. No item das cólicas, "(somente para mulheres)" virou a orientação de marcar "Não fui incomodado/a" quando não se aplica (vale zero, como o item omitido). Grafia de "diarréia" e "enjôo" atualizada. Faixas de Kroenke (2002). A psicóloga responsável confere o texto e as faixas.',
+  },
+};
+
+// ASRS-6: tradução brasileira oficial publicada pelos autores (Harvard),
+// feita por Maria Carmen Viana. Uso livre, inclusive comercial, desde que
+// a escala não seja alterada: todas as respostas, a regra de pontos e os
+// dois tons de sombreado. `shadeFrom` = a partir de qual resposta a
+// pergunta fica na área escura da folha (as outras ficam na área clara).
+const ASRS_OPTIONS = [
+  { value: 0, label: 'Nunca' },
+  { value: 1, label: 'Raramente' },
+  { value: 2, label: 'Algumas vezes' },
+  { value: 3, label: 'Frequentemente' },
+  { value: 4, label: 'Muito frequentemente' },
+];
+
+export const ASRS6 = {
+  id: 'asrs6',
+  version: 1,
+  shortName: 'ASRS-6',
+  article: 'a',
+  name: 'Escala de Autoavaliação de TDAH em Adultos, 6 perguntas (ASRS-V1.1)',
+  measures: 'rastreio de sintomas de TDAH nos últimos 6 meses',
+  disciplines: ['psicologia'],
+  population: 'Adultos (18 anos ou mais)',
+  minutes: 3,
+  reapplyAfterDays: 180,
+  // A folha pede para entregar o papel na próxima consulta; na tela não há papel.
+  instructions: 'Assinale a alternativa que melhor descreve a forma como você tem se sentido e comportado nos últimos 6 meses.',
+  items: [
+    { id: 'q1', shadeFrom: 2, text: 'Com que frequência você sente dificuldade para finalizar os últimos detalhes de uma tarefa, depois de já ter feito as partes mais complicadas?' },
+    { id: 'q2', shadeFrom: 2, text: 'Com que frequência você sente dificuldade para manter as coisas em ordem quando precisa realizar uma tarefa que exige organização?' },
+    { id: 'q3', shadeFrom: 2, text: 'Com que frequência você tem problemas para se lembrar de compromissos ou obrigações?' },
+    { id: 'q4', shadeFrom: 3, text: 'Quando precisa realizar uma tarefa que exige muita concentração, com que frequência você evita ou atrasa o seu início?' },
+    { id: 'q5', shadeFrom: 3, text: 'Com que frequência você fica se mexendo na cadeira ou balançando as mãos ou os pés quando precisa ficar sentado(a) durante um longo período de tempo?' },
+    { id: 'q6', shadeFrom: 3, text: 'Com que frequência você se sente excessivamente ativo(a) e compelido(a) a fazer coisas, como se fosse conduzido(a) por um motor?' },
+  ].map(item => ({ ...item, options: ASRS_OPTIONS })),
+  extraItems: [],
+  scoring: { method: 'sum', min: 0, max: 24 },
+  bands: [
+    { id: 'negativo_baixo', label: 'Negativo baixo', min: 0, max: 9 },
+    { id: 'negativo_alto', label: 'Negativo alto', min: 10, max: 13 },
+    { id: 'positivo_baixo', label: 'Positivo baixo', min: 14, max: 17 },
+    { id: 'positivo_alto', label: 'Positivo alto', min: 18, max: 24 },
+  ],
+  reading: 'A nota soma as 6 perguntas (0 a 24): "Nunca" vale 0 e "Muito frequentemente" vale 4. Nota 14 ou mais é rastreio positivo e pede avaliação clínica de TDAH. É um rastreio, não um diagnóstico. Pergunta sobre os últimos 6 meses.',
+  sources: [
+    'Kessler RC et al. The World Health Organization Adult ADHD Self-Report Scale (ASRS): a short screening scale for use in the general population. Psychol Med. 2005;35(2):245-56.',
+    'Kessler RC et al. Validity of the World Health Organization Adult ADHD Self-Report Scale (ASRS) Screener in a representative sample of health plan members. Int J Methods Psychiatr Res. 2007;16(2):52-65.',
+    'ASRS v1.1 Scoring update. National Comorbidity Survey, Harvard Medical School; 2024.',
+  ],
+  license: 'ASRS-V1.1 © New York University and Ronald C. Kessler, PhD. All rights reserved. Uso livre da tela de 6 perguntas, inclusive comercial, sem necessidade de permissão, citando Kessler (2005) e o copyright, sem alterar respostas, regra de pontos nem os dois tons de sombreado (site oficial, Harvard). Tradução brasileira oficial publicada no mesmo site.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Pontuação de 0 a 24 com corte 14 e quatro faixas, da atualização oficial de 2024. A folha brasileira ainda traz a regra antiga: contar as respostas na área escura, com 4 ou mais como positivo; o sombreado continua na tela, como os autores exigem. Na instrução saiu o pedido de entregar a folha na próxima consulta, e a grafia de "freqüência" foi atualizada. A psicóloga responsável confere o texto e qual regra quer ver.',
+  },
+};
+
+// Rosenberg: versão brasileira EPM/Rosenberg de Dini, Quaresma e Ferreira
+// (2004), na Revista Brasileira de Cirurgia Plástica (CC BY 4.0). A escala
+// original é de domínio público. Metade das frases é invertida: o ponto de
+// cada opção vem na própria pergunta. Não tem faixas clínicas.
+const agreement = values => [
+  { value: values[0], label: 'Concordo plenamente' },
+  { value: values[1], label: 'Concordo' },
+  { value: values[2], label: 'Discordo' },
+  { value: values[3], label: 'Discordo plenamente' },
+];
+const ROSENBERG_POSITIVE = agreement([3, 2, 1, 0]);
+const ROSENBERG_REVERSED = agreement([0, 1, 2, 3]);
+
+export const ROSENBERG = {
+  id: 'rosenberg',
+  version: 1,
+  shortName: 'Rosenberg',
+  // "a Rosenberg": a escala de autoestima.
+  article: 'a',
+  name: 'Escala de Autoestima de Rosenberg (EPM/Rosenberg)',
+  measures: 'autoestima global',
+  disciplines: ['psicologia'],
+  population: 'Adolescentes e adultos',
+  minutes: 3,
+  reapplyAfterDays: 30,
+  // A fonte traz só as frases e as opções: a instrução é nossa.
+  instructions: 'Leia cada frase e marque o quanto você concorda ou discorda dela.',
+  items: [
+    { id: 'q1', options: ROSENBERG_POSITIVE, text: 'De uma forma geral (apesar de tudo), estou satisfeito(a) comigo mesmo(a).' },
+    { id: 'q2', options: ROSENBERG_REVERSED, text: 'Às vezes, eu acho que eu não sirvo para nada (desqualificado(a) ou inferior em relação aos outros).' },
+    { id: 'q3', options: ROSENBERG_POSITIVE, text: 'Eu sinto que eu tenho um tanto (um número) de boas qualidades.' },
+    { id: 'q4', options: ROSENBERG_POSITIVE, text: 'Eu sou capaz de fazer coisas tão bem quanto a maioria das outras pessoas (desde que me ensinadas).' },
+    { id: 'q5', options: ROSENBERG_REVERSED, text: 'Não sinto satisfação nas coisas que realizei. Eu sinto que não tenho muito do que me orgulhar.' },
+    { id: 'q6', options: ROSENBERG_REVERSED, text: 'Às vezes, eu realmente me sinto inútil (incapaz de fazer as coisas).' },
+    { id: 'q7', options: ROSENBERG_POSITIVE, text: 'Eu sinto que sou uma pessoa de valor, pelo menos num plano igual (num mesmo nível) às outras pessoas.' },
+    { id: 'q8', options: ROSENBERG_REVERSED, text: 'Não me dou o devido valor. Gostaria de ter mais respeito por mim mesmo(a).' },
+    { id: 'q9', options: ROSENBERG_REVERSED, text: 'Quase sempre eu estou inclinado(a) a achar que sou um(a) fracassado(a).' },
+    { id: 'q10', options: ROSENBERG_POSITIVE, text: 'Eu tenho uma atitude positiva (pensamentos, atos e sentimentos positivos) em relação a mim mesmo(a).' },
+  ],
+  extraItems: [],
+  scoring: { method: 'sum', min: 0, max: 30 },
+  // Sem faixa: a escala não tem ponto de corte clínico. A tela mostra só a
+  // nota e a comparação com as aplicações anteriores.
+  noBands: true,
+  bands: [],
+  reading: 'A nota soma as 10 frases (0 a 30): quanto maior, maior a autoestima. As frases 2, 5, 6, 8 e 9 contam ao contrário. A escala não tem faixas nem ponto de corte clínico: compare com as aplicações anteriores do mesmo paciente.',
+  sources: [
+    'Rosenberg M. Society and the adolescent self-image. Princeton: Princeton University Press; 1965.',
+    'Dini GM, Quaresma MR, Ferreira LM. Adaptação cultural e validação da versão brasileira da escala de auto-estima de Rosenberg. Rev Soc Bras Cir Plást. 2004;19(1):41-52.',
+  ],
+  license: 'Escala de Rosenberg: domínio público. Uso livre, inclusive de traduções, com a citação acadêmica de costume (Departamento de Sociologia da Universidade de Maryland). Versão brasileira de Dini, Quaresma e Ferreira (2004), em revista de acesso aberto com licença CC BY 4.0.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Pontuação no sentido original (mais pontos, mais autoestima). A versão EPM/Rosenberg pontua ao contrário (mais pontos, menos autoestima); a informação é a mesma. A fonte não traz instrução para o paciente: a frase da tela foi escrita por nós. Sem faixas: as normas brasileiras por idade (Hutz e Zanon, 2011) usam outra tradução e outra pontuação. A psicóloga responsável confere o texto e se quer alguma referência de comparação.',
+  },
+};
+
 /** Instrumentos em uso, na ordem em que aparecem na tela. */
-export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7, DASS21, PCL5];
+export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7, PHQ4, DASS21, K10, PCL5, PHQ15, ASRS6, ROSENBERG];
 
 /**
  * Versões antigas, para ler aplicações feitas antes de uma mudança.

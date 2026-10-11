@@ -105,7 +105,9 @@ function InstrumentCard({
           {single ? (
             <>
               <span className="instrument-score">{pointsLabel(latest.result.score)}</span>
-              <span>Faixa do instrumento: <b>{latest.result.bandLabel}</b></span>
+              {instrument.noBands
+                ? <span>Sem faixas clínicas: compare com as aplicações anteriores.</span>
+                : <span>Faixa do instrumento: <b>{latest.result.bandLabel}</b></span>}
             </>
           ) : (
             <ul className="instrument-subscales" aria-label={`Notas ${namedInstrument(instrument, 'de')}`}>

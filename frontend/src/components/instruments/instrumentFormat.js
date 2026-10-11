@@ -127,6 +127,9 @@ export function viewApplications(applications, view) {
   return applications.map(app => ({ ...app, result: { ...app.result, ...view.read(app.result) } }));
 }
 
+// "Ansiedade (GAD-2)" vira "ansiedade (GAD-2)": a sigla continua maiúscula.
+const lowerFirst = text => String(text || '').charAt(0).toLowerCase() + String(text || '').slice(1);
+
 /** Recado depois de salvar: o resultado em uma frase, e o risco junto. */
 export function savedNotice(instrument, saved) {
   if (saved?.replayed) return { text: 'Esta aplicação já estava salva.', risk: false };
@@ -135,10 +138,12 @@ export function savedNotice(instrument, saved) {
   if (Array.isArray(result.subscales)) {
     const parts = result.subscales
       .filter(subscale => typeof subscale.score === 'number')
-      .map(subscale => `${subscale.label.toLowerCase()} ${pointsLabel(subscale.score)} (${String(subscale.bandLabel || '').toLowerCase()})`);
+      .map(subscale => `${lowerFirst(subscale.label)} ${pointsLabel(subscale.score)} (${String(subscale.bandLabel || '').toLowerCase()})`);
     if (parts.length) base = `${instrument.shortName} salvo: ${parts.join(', ')}.`;
   } else if (typeof result.score === 'number') {
-    base = `${instrument.shortName} salvo: ${pointsLabel(result.score)}, faixa ${result.bandLabel}.`;
+    base = result.bandLabel
+      ? `${instrument.shortName} salvo: ${pointsLabel(result.score)}, faixa ${result.bandLabel}.`
+      : `${instrument.shortName} salvo: ${pointsLabel(result.score)}.`;
   }
   return { text: base, risk: (result.riskItems || []).length > 0 };
 }

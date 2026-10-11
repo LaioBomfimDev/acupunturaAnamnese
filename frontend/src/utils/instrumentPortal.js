@@ -5,7 +5,9 @@
 // do formulário do paciente: uma parte com as instruções, cada item como
 // escolha única obrigatória e a pergunta extra como opcional. O item de
 // risco leva `riskNotice`: a tela do paciente mostra o CVV e o SAMU na
-// hora em que uma dessas opções é marcada.
+// hora em que uma dessas opções é marcada. Item com sombreado na folha
+// (ASRS-6) leva `shading.dark`: as opções da área escura; as outras ficam
+// no tom claro.
 //
 // O paciente responde com o rótulo da opção; aqui o rótulo vira ponto
 // pela definição da escala. Espelho em
@@ -31,6 +33,11 @@ export function buildPortalQuestions(instrument) {
     if (item.risk) {
       question.riskNotice = {
         values: item.options.filter(option => option.value >= item.risk.fromValue).map(option => option.label),
+      };
+    }
+    if (item.shadeFrom != null) {
+      question.shading = {
+        dark: item.options.filter(option => option.value >= item.shadeFrom).map(option => option.label),
       };
     }
     return question;

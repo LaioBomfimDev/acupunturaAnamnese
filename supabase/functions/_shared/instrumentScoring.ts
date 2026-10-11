@@ -16,6 +16,8 @@ type Item = {
   options?: Option[];
   risk?: { fromValue: number; message?: string; homeMessage?: string } | null;
   showWhen?: string;
+  // Sombreado da folha (ASRS-6): a partir deste ponto a opção fica na área escura.
+  shadeFrom?: number;
 };
 type Band = { id: string; label: string; min: number; max: number };
 type Subscale = { id: string; label: string; short?: string; items: string[]; min: number; max: number; bands: Band[] };
@@ -26,6 +28,8 @@ export type Instrument = {
   extraItems?: Item[];
   scoring: { method: string; min?: number; max?: number; multiplier?: number; subscales?: Subscale[] };
   bands: Band[];
+  // Sem ponto de corte clínico (Rosenberg): só a nota, faixa sempre nula.
+  noBands?: boolean;
 };
 type Answers = Record<string, unknown>;
 

@@ -103,10 +103,12 @@ export function clinicAccentStyle(color) {
 export const PUBLIC_LINK_COLOR_COLUMNS = {
   confirmation: 'confirmation_link_color',
   survey: 'survey_link_color',
+  portal: 'portal_link_color',
 };
 
 /**
- * Cor que o paciente vê no link (`confirmation` ou `survey`). Sem
+ * Cor que o paciente vê no link (`confirmation`, `survey` ou `portal`,
+ * a Área do Paciente). Sem
  * escolha da instituição, segue a cor do sistema. Nunca a cor pessoal
  * de quem mandou o link: a página não tem sessão, é da instituição.
  */

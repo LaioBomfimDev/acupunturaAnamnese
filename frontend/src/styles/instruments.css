@@ -556,31 +556,278 @@
   gap: 12px;
 }
 
+/* Cabeçalho: ícone na cor da tela, nome da escala e o que ela mede. */
+.instrument-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.instrument-dialog-title small {
+  display: block;
+  margin-top: 2px;
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.instrument-dialog-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.instrument-glyph {
+  flex: 0 0 auto;
+}
+
+/* Quando, de onde veio e quem mandou. */
+.instrument-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instrument-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+}
+
+.instrument-meta .instrument-glyph {
+  color: var(--r1-text-subtle);
+}
+
+/* Nota: cartão na cor da tela, régua das faixas embaixo. */
+.instrument-scores .instrument-subscales {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 10px;
+}
+
+.instrument-scores .instrument-subscales li {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.instrument-score-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+}
+
+.instrument-score-card-title {
+  margin: 0;
+  color: var(--r1-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.instrument-score-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.instrument-score-value {
+  color: var(--r1-accent-strong);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-scores--many .instrument-score-value {
+  font-size: 26px;
+}
+
+.instrument-score-unit {
+  color: var(--r1-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.instrument-band-chip {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-accent-strong);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.instrument-meter {
+  display: grid;
+  gap: 4px;
+}
+
+.instrument-meter-track {
+  position: relative;
+  display: flex;
+  gap: 3px;
+  height: 10px;
+}
+
+.instrument-meter-band {
+  flex-basis: 0;
+  min-width: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--r1-accent) 20%, var(--r1-surface));
+}
+
+.instrument-meter-band.is-active {
+  background: var(--r1-accent);
+}
+
+.instrument-meter-marker {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--r1-surface);
+  border-radius: 999px;
+  background: var(--r1-accent-strong);
+  box-shadow: 0 0 0 1px var(--r1-accent-line);
+  transform: translate(-50%, -50%);
+}
+
+.instrument-meter-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--r1-text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-meter-caption {
+  margin: 0;
+}
+
+/* Aviso (anulada, risco) com ícone ao lado do texto. */
+.instrument-dialog-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.instrument-dialog-alert .instrument-glyph {
+  margin-top: 1px;
+}
+
+/* Respostas: número na cor da tela e os pontos em bolinhas. */
+.instrument-answers {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.instrument-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  color: var(--r1-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.instrument-section-count {
+  margin-left: auto;
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
 .instrument-answer-list {
   display: grid;
   gap: 0;
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
 }
 
 .instrument-answer-list li {
-  padding: 6px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--r1-border-subtle);
 }
 
-.instrument-answer-list li > span:first-child {
-  display: block;
+.instrument-answer-number {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-answer-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.instrument-answer-question {
+  color: var(--r1-text);
 }
 
 .instrument-answer {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 8px;
+  align-items: center;
+  gap: 2px 10px;
 }
 
 .instrument-answer .small {
   font-variant-numeric: tabular-nums;
+}
+
+.instrument-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.instrument-dot {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--r1-accent-line);
+  border-radius: 999px;
+}
+
+.instrument-dot.is-on {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent);
 }
 
 .instrument-sum {
@@ -588,8 +835,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-.instrument-extra-answer,
+.instrument-extra-answer {
+  margin: 0;
+}
+
 .instrument-note-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 0;
 }
 
@@ -619,6 +872,14 @@
   .instrument-dialog {
     width: 100%;
     border-radius: var(--r1-radius-md) var(--r1-radius-md) 0 0;
+  }
+
+  .instrument-score-card {
+    padding: 12px;
+  }
+
+  .instrument-score-value {
+    font-size: 30px;
   }
 }
 

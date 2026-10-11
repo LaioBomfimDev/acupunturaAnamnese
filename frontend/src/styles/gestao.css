@@ -1629,6 +1629,48 @@
   text-transform: uppercase;
 }
 
+/* Área do Paciente: um item da lista do paciente. */
+.gt-link-preview-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.gt-link-preview-form > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.gt-link-preview-form > span small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.gt-link-preview-form i {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--link-accent) 26%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--link-accent) 10%, #fff);
+  color: var(--link-shade);
+}
+
+.gt-link-color-head h4 small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--r1-text-muted);
+}
+
 .gt-link-preview-button {
   margin-top: 4px;
   padding: 9px 12px;

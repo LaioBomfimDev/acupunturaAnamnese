@@ -31,13 +31,15 @@ import { PersonalAccentPicker } from './PersonalAccentPicker';
 // Links para o paciente (2026-10-01): confirmação de agendamento e
 // pesquisa de satisfação têm cor própria, escolhida aqui
 // (clinic_admin_update_link_colors). A paleta mostra a cor que o
-// paciente vê hoje; ao salvar, as duas são gravadas explícitas, para o
-// link não mudar junto quando a cor do sistema trocar.
+// paciente vê hoje; ao salvar, as cores são gravadas explícitas, para o
+// link não mudar junto quando a cor do sistema trocar. A Área do
+// Paciente (formulários e escalas) entrou na mesma escolha em 10/10/2026.
 // ============================================================
 
 const LINK_KINDS = [
-  { id: 'confirmation', title: 'Confirmação de agendamento' },
-  { id: 'survey', title: 'Pesquisa de satisfação' },
+  { id: 'confirmation', title: 'Confirmação de agendamento', subtitle: 'link pelo WhatsApp' },
+  { id: 'survey', title: 'Pesquisa de satisfação', subtitle: 'link pelo WhatsApp' },
+  { id: 'portal', title: 'Área do Paciente', subtitle: 'formulários e escalas', label: 'Cor da Área do Paciente' },
 ];
 
 export function PersonalizarClinica({ profile }) {
@@ -53,8 +55,9 @@ export function PersonalizarClinica({ profile }) {
   const initialLinks = {
     confirmation: getClinicLinkColor(clinic, 'confirmation') || initialBrand,
     survey: getClinicLinkColor(clinic, 'survey') || initialBrand,
+    portal: getClinicLinkColor(clinic, 'portal') || initialBrand,
   };
-  const linksFollowBrand = !clinic?.confirmation_link_color || !clinic?.survey_link_color;
+  const linksFollowBrand = !clinic?.confirmation_link_color || !clinic?.survey_link_color || !clinic?.portal_link_color;
 
   const [brandColor, setBrandColor] = useState(initialBrand);
   const [personalAllowed, setPersonalAllowed] = useState(initialPersonalAllowed);
@@ -110,6 +113,7 @@ export function PersonalizarClinica({ profile }) {
         await updateClinicLinkColors({
           confirmationColor: linkColors.confirmation,
           surveyColor: linkColors.survey,
+          portalColor: linkColors.portal,
         });
       }
       await refreshProfile();
@@ -308,8 +312,9 @@ export function PersonalizarClinica({ profile }) {
             <h3>Cor dos links enviados ao paciente</h3>
           </header>
           <p className="gt-custom-help">
-            A página que o paciente abre pelo link do WhatsApp. Cada link tem a sua cor,
-            separada da cor da tela.
+            A página que o paciente abre pelo link do WhatsApp, e a Área do Paciente, onde ele responde
+            os formulários e as escalas. Cada uma tem a sua cor, separada da cor da tela; sem escolha,
+            segue a cor do sistema.
           </p>
           <div className="gt-link-colors">
             {LINK_KINDS.map(kind => {
@@ -317,14 +322,14 @@ export function PersonalizarClinica({ profile }) {
               return (
                 <section key={kind.id} className="gt-link-color">
                   <div className="gt-link-color-head">
-                    <h4>{kind.title}</h4>
+                    <h4>{kind.title}{kind.subtitle && <small>{kind.subtitle}</small>}</h4>
                     <span>{colorLabel(CLINIC_LINK_COLORS, color)}</span>
                   </div>
                   <ColorPresets
                     options={CLINIC_LINK_COLORS}
                     value={color}
                     onChange={value => setLinkColors(current => ({ ...current, [kind.id]: value }))}
-                    label={`Cor do link de ${kind.title.toLowerCase()}`}
+                    label={kind.label || `Cor do link de ${kind.title.toLowerCase()}`}
                   />
                   <LinkPagePreview
                     palette={buildReportAccentPalette(color)}

@@ -227,7 +227,7 @@ export const GESTAO_HELP = {
       'Decidir quem escolhe a cor da tela: cor fixa para toda a equipe, ou cada profissional escolhe a sua (a da instituição vira o padrão de quem não escolher).',
       'Usar uma cor diferente no papel timbrado, se quiser.',
       'Enviar o logo (PNG, JPG, WEBP ou SVG) e, se quiser, usá-lo como marca d’água no fundo dos relatórios.',
-      'Em “Cor dos links enviados ao paciente”, escolher uma cor para a Confirmação de agendamento e outra para a Pesquisa de satisfação.',
+      'Em “Cor dos links enviados ao paciente”, escolher uma cor para a Confirmação de agendamento, uma para a Pesquisa de satisfação e uma para a Área do Paciente, onde o paciente responde os formulários e as escalas.',
       'Gravar em “Salvar personalização”, ou voltar ao que estava em “Desfazer”.',
     ],
     reading: [

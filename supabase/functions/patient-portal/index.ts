@@ -92,7 +92,7 @@ const SENT_WINDOW_DAYS = 30;
 async function loadHome(supabaseAdmin: Admin, session: Session) {
   const sentSince = new Date(Date.now() - SENT_WINDOW_DAYS * 86_400_000).toISOString();
   const [{ data: clinic }, { data: patient }, { data: forms, error }, { data: sent }] = await Promise.all([
-    supabaseAdmin.from('clinics').select('name,brand_color').eq('id', session.clinicId).maybeSingle(),
+    supabaseAdmin.from('clinics').select('name,brand_color,portal_link_color').eq('id', session.clinicId).maybeSingle(),
     supabaseAdmin.from('patients').select('name,nome_social').eq('id', session.patientId).maybeSingle(),
     supabaseAdmin
       .from('patient_form_assignments')
@@ -117,7 +117,9 @@ async function loadHome(supabaseAdmin: Admin, session: Session) {
   const name = String(patient?.nome_social || patient?.name || '').trim();
   return {
     clinicName: clinic?.name || null,
-    clinicColor: clinic?.brand_color || null,
+    // Cor que a instituição escolheu para a Área do Paciente (Gestão →
+    // Personalizar); sem escolha, a cor do sistema.
+    clinicColor: clinic?.portal_link_color || clinic?.brand_color || null,
     patientFirstName: name.split(/\s+/)[0] || null,
     forms: (forms || []).map(item => ({
       id: item.id,

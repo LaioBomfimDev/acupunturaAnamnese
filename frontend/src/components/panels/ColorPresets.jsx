@@ -24,6 +24,7 @@ export function AppColorPreview({ palette, title }) {
 // Miniatura da página que o paciente abre pelo link, com os textos reais
 // de ConfirmAppointmentPage / SurveyPage. kind = 'confirmation' | 'survey'.
 export function LinkPagePreview({ palette, kind, clinicName }) {
+  if (kind === 'portal') return <PortalPagePreview palette={palette} clinicName={clinicName} />;
   const survey = kind === 'survey';
   return (
     <div
@@ -56,6 +57,31 @@ export function LinkPagePreview({ palette, kind, clinicName }) {
       <span className="gt-link-preview-button">
         {survey ? 'Enviar avaliação' : 'Confirmar presença'}
       </span>
+    </div>
+  );
+}
+
+// Área do Paciente: a lista do que a clínica mandou, com o botão de
+// responder, como o paciente vê depois de entrar.
+function PortalPagePreview({ palette, clinicName }) {
+  return (
+    <div
+      className="gt-custom-preview gt-link-preview"
+      style={{ '--link-accent': palette.accent, '--link-shade': palette.shade }}
+      aria-hidden="true"
+    >
+      <span className="gt-link-preview-clinic">{clinicName}</span>
+      <b>Olá! Estes são os seus formulários</b>
+      <span className="gt-link-preview-form">
+        <i>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="5" y="4" width="14" height="17" rx="2" />
+            <path d="M9 4.5V3h6v1.5M8.5 10h7M8.5 13.5h7M8.5 17h4" />
+          </svg>
+        </i>
+        <span>Questionário PHQ-9<small>Responder até 15/10</small></span>
+      </span>
+      <span className="gt-link-preview-button">Responder</span>
     </div>
   );
 }

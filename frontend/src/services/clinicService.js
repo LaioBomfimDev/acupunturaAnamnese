@@ -286,13 +286,18 @@ export async function updateClinicAppearance({ brandColor, letterheadColor = nul
 
 // Cor de cada link enviado ao paciente, pelo clinic_admin (mesma aba).
 // null = o link segue a cor do sistema. Lidas pelas Edge Functions
-// confirm-appointment e satisfaction-survey, nunca pela cor pessoal.
-export async function updateClinicLinkColors({ confirmationColor = null, surveyColor = null }) {
+// confirm-appointment, satisfaction-survey e patient-portal (Área do
+// Paciente), nunca pela cor pessoal.
+export async function updateClinicLinkColors({ confirmationColor = null, surveyColor = null, portalColor = null }) {
   const { error } = await supabase.rpc('clinic_admin_update_link_colors', {
     p_confirmation_color: confirmationColor || null,
     p_survey_color: surveyColor || null,
+    p_portal_color: portalColor || null,
   });
   if (error) {
+    if (/p_portal_color/i.test(error.message || '')) {
+      throw new Error('A cor da Área do Paciente ainda não está disponível no banco (migração 20261013 pendente).');
+    }
     if (isMissingClinicSchemaError(error) || /clinic_admin_update_link_colors/i.test(error.message || '')) {
       throw new Error('A cor dos links ainda não está disponível no banco (migração 20261001 pendente).');
     }
@@ -340,9 +345,18 @@ export async function getClinicForProfile(profile) {
       const BASE_COLUMNS = 'id,name,legal_name,cnpj,address,phone,email,brand_color,created_at,updated_at';
       let { data, error } = await supabase
         .from('clinics')
-        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed,confirmation_link_color,survey_link_color`)
+        .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed,confirmation_link_color,survey_link_color,portal_link_color`)
         .eq('id', profile.clinic_id)
         .maybeSingle();
+      // Banco ainda sem a cor da Área do Paciente (20261013): refaz só sem
+      // ela — a Área do Paciente segue a cor do sistema, igual antes.
+      if (error && /portal_link_color/i.test(error.message || '')) {
+        ({ data, error } = await supabase
+          .from('clinics')
+          .select(`${BASE_COLUMNS},logo_url,logo_watermark,letterhead_color,personal_accent_allowed,confirmation_link_color,survey_link_color`)
+          .eq('id', profile.clinic_id)
+          .maybeSingle());
+      }
       // Banco ainda sem a cor dos links (20261001): refaz sem ela — os
       // links seguem a cor do sistema, igual antes.
       if (error && /_link_color/i.test(error.message || '')) {

@@ -18,6 +18,7 @@ import {
   formatInstrumentDate,
   namedInstrument,
   pointsLabel,
+  formatScore,
   reapplyStatus,
   savedNotice,
   scoreViews,
@@ -118,7 +119,7 @@ function InstrumentCard({
                   <li key={view.id}>
                     <span className="instrument-subscale-label">{view.label}</span>
                     <span className="instrument-subscale-score">{now.score == null ? '—' : pointsLabel(now.score)}</span>
-                    <span>Faixa: <b>{now.bandLabel || '—'}</b></span>
+                    {view.bands.length > 0 && <span>Faixa: <b>{now.bandLabel || '—'}</b></span>}
                     {before && <span className="small">{differenceLabel(now.score, before.score)}</span>}
                   </li>
                 );
@@ -207,7 +208,7 @@ function InstrumentCard({
               <span className="instrument-history-score">
                 {single
                   ? (typeof app.result?.score === 'number' ? pointsLabel(app.result.score) : '—')
-                  : views.map(view => `${view.short} ${view.read(app.result).score ?? '—'}`).join(' · ')}
+                  : views.map(view => `${view.short} ${formatScore(view.read(app.result).score)}`).join(' · ')}
               </span>
               <span className="instrument-history-band">
                 {single

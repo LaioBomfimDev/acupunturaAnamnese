@@ -77,8 +77,19 @@ test('cada instrumento tem faixas cobrindo a escala inteira, sem buraco nem sobr
       continue;
     }
     // Uma régua por nota: a escala inteira ou cada subescala (DASS-21).
+    // Nota por média anda de 0,01 em 0,01 (`scoring.step`).
     for (const view of format.scoreViews(instrument)) {
-      for (let score = view.scoring.min; score <= view.scoring.max; score += 1) {
+      // Na média por subescala (Autocompaixão) só o total tem faixa; nas
+      // outras escalas toda nota tem.
+      if (!view.bands.length) {
+        assert.equal(instrument.scoring.method, 'subscale_means', `${instrument.id}/${view.id}: nota sem faixa`);
+        assert.notEqual(view.id, 'total', `${instrument.id}: o total precisa de faixa`);
+        continue;
+      }
+      const step = view.scoring.step || 1;
+      const steps = Math.round((view.scoring.max - view.scoring.min) / step);
+      for (let index = 0; index <= steps; index += 1) {
+        const score = Math.round((view.scoring.min + index * step) * 100) / 100;
         const matches = view.bands.filter(band => score >= band.min && score <= band.max);
         assert.equal(matches.length, 1, `${instrument.id}/${view.id}: ${score} pontos em ${matches.length} faixas`);
       }
@@ -102,7 +113,7 @@ test('o validador pega faixa com buraco e máximo errado', () => {
 
 test('escalas só na Psicologia, em conferência até a psicóloga aprovar', () => {
   const psi = instruments.instrumentsForDiscipline('psicologia').map(instrument => instrument.id);
-  assert.deepEqual(psi, ['phq9', 'gad7', 'phq4', 'dass21', 'k10', 'pcl5', 'phq15', 'asrs6', 'rosenberg']);
+  assert.deepEqual(psi, ['phq9', 'phq8', 'gad7', 'phq4', 'dass21', 'k10', 'k6', 'pcl5', 'phq15', 'asrs6', 'rosenberg', 'scs', 'scssf']);
   assert.deepEqual(instruments.instrumentsForDiscipline('nutricao'), []);
   for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
     assert.equal(instrument.review.status, instruments.INSTRUMENT_REVIEW_STATUS.PENDING, instrument.id);
@@ -830,7 +841,7 @@ test('DASS-21 na tela: três notas no cartão, no gráfico, no histórico e na j
   assert.match(panel, /const views = scoreViews\(instrument\);/);
   assert.match(panel, /className="instrument-chart-tabs" role="group"/, 'um gráfico por vez, com botões');
   assert.match(panel, /aria-pressed=\{chartView\.id === view\.id\}/);
-  assert.match(panel, /views\.map\(view => `\$\{view\.short\} \$\{view\.read\(app\.result\)\.score \?\? '—'\}`\)\.join\(' · '\)/);
+  assert.match(panel, /views\.map\(view => `\$\{view\.short\} \$\{formatScore\(view\.read\(app\.result\)\.score\)\}`\)\.join\(' · '\)/);
 
   // Em casa: 21 perguntas obrigatórias, sem aviso de risco.
   const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
@@ -1073,4 +1084,186 @@ test('Rosenberg: versão EPM/Rosenberg, metade das frases invertida e nenhuma fa
 test('Rosenberg na tela: o cartão diz que não há faixa, em vez de mostrar faixa vazia', async () => {
   const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
   assert.match(panel, /instrument\.noBands\r?\n\s*\? <span>Sem faixas clínicas: compare com as aplicações anteriores\.<\/span>/);
+});
+
+// ---- lote 3: PHQ-8, K6 e Escala de Autocompaixão (completa e reduzida) ----
+
+test('nota com vírgula: inteira fica igual, média sai com duas casas', () => {
+  assert.equal(format.formatScore(12), '12');
+  assert.equal(format.formatScore(3.46), '3,46');
+  assert.equal(format.formatScore(2.5), '2,5');
+  assert.equal(format.formatScore(null), '—');
+  assert.equal(format.pointsLabel(2.5), '2,5 pontos');
+  assert.equal(format.differenceLabel(3.46, 3.25), 'Subiu 0,21 pontos em relação à anterior.');
+  assert.equal(format.differenceLabel(3.1, 3.1), 'Igual à aplicação anterior.');
+});
+
+test('servidor e tela dão a mesma nota com todas as perguntas respondidas, inclusive as médias', async () => {
+  const back = await import(pathToFileURL(path.resolve(root, '../supabase/functions/_shared/instrumentScoring.ts')).href);
+  let seed = 20261012;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  for (const instrument of instruments.CLINICAL_INSTRUMENTS) {
+    for (let n = 0; n < 150; n += 1) {
+      const answers = {};
+      for (const item of instrument.items) {
+        answers[item.id] = item.options[Math.floor(random() * item.options.length)].value;
+      }
+      const front = scoring.scoreInstrument(instrument, answers);
+      assert.equal(front.complete, true, instrument.id);
+      assert.deepEqual(back.scoreInstrument(instrument, answers), front, `${instrument.id} ${JSON.stringify(answers)}`);
+      assert.deepEqual(back.buildApplicationPayload(instrument, answers), scoring.buildApplicationPayload(instrument, answers), instrument.id);
+    }
+  }
+});
+
+test('PHQ-8: as 8 primeiras perguntas do PHQ-9 brasileiro, sem item de risco, e faixas até 24', () => {
+  const phq8 = instruments.PHQ8;
+  assert.deepEqual(phq8.items.map(item => item.text), instruments.PHQ9.items.slice(0, 8).map(item => item.text));
+  assert.ok(phq8.items.every(item => !item.risk), 'o PHQ-8 não rastreia risco');
+  for (const item of phq8.items) assert.deepEqual(item.options, instruments.PHQ9.items[0].options, item.id);
+  assert.deepEqual(phq8.extraItems.map(item => item.id), ['dificuldade']);
+  assert.deepEqual(phq8.scoring, { method: 'sum', min: 0, max: 24 });
+  assert.equal(scoring.scoreInstrument(phq8, fill(phq8, 3)).score, 24);
+  for (const [score, band] of [[4, 'minima'], [5, 'leve'], [10, 'moderada'], [15, 'moderadamente_grave'], [19, 'moderadamente_grave'], [20, 'grave'], [24, 'grave']]) {
+    assert.equal(scoring.bandForScore(phq8, score).id, band, `${score} pontos`);
+  }
+  assert.match(phq8.reading, /não rastreia risco/);
+  assert.match(phq8.reading, /use o PHQ-9/);
+  assert.equal(instruments.PHQ9.items[8].risk.fromValue, 1, 'o PHQ-9 continua com o item 9 de risco');
+});
+
+test('K6: as seis perguntas do K10 brasileiro oficial que formam o K6, de 0 a 4 cada', () => {
+  const k6 = instruments.K6;
+  const k10 = id => instruments.K10.items.find(item => item.id === id).text;
+  assert.deepEqual(k6.items.map(item => item.text), [k10('q2'), k10('q4'), k10('q5'), k10('q8'), k10('q9'), k10('q10')]);
+  for (const item of k6.items) {
+    assert.deepEqual(item.options.map(option => [option.value, option.label]), [
+      [4, 'O tempo todo'], [3, 'A maior parte do tempo'], [2, 'Parte do tempo'], [1, 'Um pouco'], [0, 'Nunca'],
+    ], item.id);
+  }
+  assert.deepEqual(k6.scoring, { method: 'sum', min: 0, max: 24 });
+  assert.equal(scoring.scoreInstrument(k6, fill(k6, 4)).score, 24);
+  for (const [score, band] of [[4, 'baixo'], [5, 'moderado'], [12, 'moderado'], [13, 'grave']]) {
+    assert.equal(scoring.bandForScore(k6, score).id, band, `${score} pontos`);
+  }
+  assert.match(k6.license, /Kessler/);
+});
+
+test('Autocompaixão: 26 frases da versão brasileira oficial, seis subescalas e erros de digitação corrigidos', () => {
+  const scs = instruments.SCS;
+  assert.equal(scs.items.length, 26);
+  assert.equal(scs.items[0].text, 'Sou realmente crítico e severo com meus próprios erros e defeitos.');
+  assert.match(scs.items[7].text, /costumo ser duro comigo mesmo/);
+  assert.match(scs.items[10].text, /de que não gosto na minha personalidade/);
+  assert.match(scs.items[13].text, /tento ver a situação de forma equilibrada/);
+  assert.doesNotMatch(JSON.stringify(scs.items), /costume ser|gusto|tent over/);
+  for (const item of scs.items) {
+    assert.deepEqual(item.options.map(option => option.value), [1, 2, 3, 4, 5], item.id);
+  }
+  // Chave de codificação da versão brasileira.
+  const key = Object.fromEntries(scs.scoring.subscales.map(sub => [sub.id, [sub.items.map(id => Number(id.slice(1))), Boolean(sub.reverseInTotal)]]));
+  assert.deepEqual(key, {
+    bondade: [[5, 12, 19, 23, 26], false],
+    autocritica: [[1, 8, 11, 16, 21], true],
+    humanidade: [[3, 7, 10, 15], false],
+    isolamento: [[4, 13, 18, 25], true],
+    mindfulness: [[9, 14, 17, 22], false],
+    sobreidentificacao: [[2, 6, 20, 24], true],
+  });
+  assert.match(scs.license, /qualquer finalidade/);
+  assert.match(scs.review.note, /masculino/);
+});
+
+test('Autocompaixão: subescala é média sem inverter, total é a média das seis com as negativas invertidas', () => {
+  const scs = instruments.SCS;
+  // Bondade 4, autocrítica 2, humanidade 3, isolamento 1, mindfulness 5, sobre-identificação 4.
+  const values = { bondade: 4, autocritica: 2, humanidade: 3, isolamento: 1, mindfulness: 5, sobreidentificacao: 4 };
+  const answers = {};
+  for (const sub of scs.scoring.subscales) for (const id of sub.items) answers[id] = values[sub.id];
+  const result = scoring.scoreInstrument(scs, answers);
+  assert.deepEqual(result.subscales.map(sub => [sub.id, sub.score]), Object.entries(values));
+  // (4 + (6-2) + 3 + (6-1) + 5 + (6-4)) / 6 = 23/6 = 3,8333 → 3,83.
+  assert.equal(result.score, 3.83);
+  assert.equal(result.band.id, 'alta');
+
+  // Arredonda só o total: bondade 3,8 (média de 4,4,4,4,3) entra sem arredondar.
+  const mixed = { ...fill(scs, 3), q5: 4, q12: 4, q19: 4, q23: 4, q26: 3 };
+  const mixedResult = scoring.scoreInstrument(scs, mixed);
+  assert.equal(mixedResult.subscales.find(sub => sub.id === 'bondade').score, 3.8);
+  assert.equal(mixedResult.score, 3.13, '(3,8 + 3 + 3 + 3 + 3 + 3) / 6 = 3,1333');
+
+  for (const [score, band] of [[2.49, 'baixa'], [2.5, 'moderada'], [3.5, 'moderada'], [3.51, 'alta'], [1, 'baixa'], [5, 'alta']]) {
+    assert.equal(scoring.bandForScore(scs, score).id, band, `${score}`);
+  }
+  const payload = scoring.buildApplicationPayload(scs, answers);
+  assert.equal(payload.result.score, 3.83);
+  assert.equal(payload.result.bandLabel, 'Alta');
+  assert.equal(payload.result.subscales.length, 6);
+  assert.ok(payload.result.subscales.every(sub => sub.bandId === null), 'subescala sem faixa');
+  assert.equal(format.savedNotice(scs, { payload }).text, 'Autocompaixão salvo: 3,83 pontos, faixa Alta.');
+
+  const views = format.scoreViews(scs);
+  assert.deepEqual(views.map(view => view.id), ['total', 'bondade', 'autocritica', 'humanidade', 'isolamento', 'mindfulness', 'sobreidentificacao']);
+  assert.equal(views[0].read(payload.result).score, 3.83);
+  assert.equal(views[2].read(payload.result).score, 2);
+  assert.equal(format.scoringSummary(scs, payload.result), 'Cada subescala é a média das suas perguntas. O total é a média das subescalas, com as negativas invertidas.');
+});
+
+test('validador da nota por média pega régua errada e buraco entre faixas decimais', () => {
+  const scs = instruments.SCS;
+  const wrongMin = {
+    ...scs,
+    scoring: { ...scs.scoring, subscales: scs.scoring.subscales.map((sub, index) => (index === 0 ? { ...sub, min: 0 } : sub)) },
+  };
+  assert.ok(scoring.validateInstrumentDefinition(wrongMin).some(problem => problem.includes('bondade: mínimo')));
+  const gap = { ...scs, bands: [{ id: 'a', label: 'A', min: 1, max: 2.49 }, { id: 'b', label: 'B', min: 2.6, max: 5 }] };
+  assert.ok(scoring.validateInstrumentDefinition(gap).some(problem => problem.includes('buraco')));
+  const noTotalBand = { ...scs, bands: [] };
+  assert.ok(scoring.validateInstrumentDefinition(noTotalBand).some(problem => problem.includes('sem faixas')));
+});
+
+test('Autocompaixão forma reduzida: 12 frases da completa, negativas invertidas na própria opção, nota por média', () => {
+  const sf = instruments.SCSSF;
+  const full = id => instruments.SCS.items.find(item => item.id === id).text;
+  assert.deepEqual(sf.items.map(item => item.text), [
+    full('q6'), full('q26'), full('q14'), full('q13'), full('q15'), full('q12'),
+    full('q9'), full('q25'), full('q2'), full('q10'), full('q1'), full('q11'),
+  ]);
+  const reversed = sf.items.filter(item => item.options[0].value === 5).map(item => item.id);
+  assert.deepEqual(reversed, ['q1', 'q4', 'q8', 'q9', 'q11', 'q12'], 'autocrítica, isolamento e sobre-identificação');
+  assert.ok(sf.items.every(item => item.options[0].label === '1 – Quase nunca'));
+  assert.deepEqual(sf.scoring, { method: 'mean', decimals: 2, step: 0.01, min: 1, max: 5 });
+
+  const allAlways = Object.fromEntries(sf.items.map(item => [item.id, item.options[4].value]));
+  assert.equal(scoring.scoreInstrument(sf, allAlways).score, 3, 'quase sempre em tudo empata positivas e negativas');
+  const kind = Object.fromEntries(sf.items.map(item => [item.id, 5]));
+  assert.equal(scoring.scoreInstrument(sf, kind).score, 5);
+  const oneOff = { ...kind, q1: 4 };
+  assert.equal(scoring.scoreInstrument(sf, oneOff).score, 4.92, '59/12 = 4,9167');
+  assert.equal(format.scoringSummary(sf, scoring.scoreInstrument(sf, oneOff)), 'Média das 12 perguntas: 4,92.');
+  assert.equal(format.scoreViews(sf).length, 1, 'a forma reduzida mostra só o total');
+  assert.match(sf.review.note, /não há validação brasileira própria/);
+});
+
+test('gráfico da nota por média: faixas no meio passo e números com vírgula', () => {
+  const scs = instruments.SCS;
+  const [total] = format.scoreViews(scs);
+  const apps = [
+    { id: 'b', appliedAt: '2026-10-06T12:00:00Z', result: { score: 3.46, bandLabel: 'Moderada' } },
+    { id: 'a', appliedAt: '2026-09-01T12:00:00Z', result: { score: 2.21, bandLabel: 'Baixa' } },
+  ];
+  const html = renderToStaticMarkup(React.createElement(TrendChart, {
+    instrument: { ...scs, scoring: total.scoring, bands: total.bands },
+    applications: format.viewApplications(apps, total),
+  }));
+  assert.match(html, /de 2,21 pontos em 01\/09\/2026 para 3,46 pontos em 06\/10\/2026/);
+  assert.match(html, />3,46</);
+  assert.match(html, />2,5</);
+  assert.doesNotMatch(html, />3\.46<|>2\.5</, 'sem ponto decimal em inglês');
+  for (const band of scs.bands) assert.match(html, new RegExp(`>${band.label}<`));
+});
+
+test('cartão: subescala sem faixa (Autocompaixão) não mostra "Faixa: —"', async () => {
+  const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
+  assert.match(panel, /\{view\.bands\.length > 0 && <span>Faixa: <b>\{now\.bandLabel \|\| '—'\}<\/b><\/span>\}/);
 });

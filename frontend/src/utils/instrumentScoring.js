@@ -24,19 +24,55 @@ export function bandForScore(instrument, score) {
 }
 
 /**
- * Subescalas (`scoring.method: 'subscales'`, ex.: DASS-21): cada uma soma
- * as próprias perguntas, multiplica por `scoring.multiplier` e cai nas
- * próprias faixas. Nota só com todas as perguntas da subescala respondidas.
+ * Nota por média (`mean`, `subscale_means`): arredondada nas casas que a
+ * fonte publica (`scoring.decimals`, 2 se não disser), para a tela, o
+ * banco e a faixa usarem o mesmo número.
+ */
+function roundScore(instrument, value) {
+  const factor = 10 ** (instrument.scoring.decimals ?? 2);
+  return Math.round(value * factor) / factor;
+}
+
+function mean(values) {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+/**
+ * Subescalas. `subscales` (DASS-21): cada uma soma as próprias perguntas,
+ * multiplica por `scoring.multiplier` e cai nas próprias faixas.
+ * `subscale_means` (Escala de Autocompaixão): cada uma é a média das
+ * próprias perguntas, sem inverter, como a fonte manda mostrar. Nota só com
+ * todas as perguntas da subescala respondidas.
  */
 function scoreSubscales(instrument, answers) {
   const items = instrument.items || [];
+  const byMeans = instrument.scoring.method === 'subscale_means';
   const multiplier = instrument.scoring.multiplier || 1;
   return (instrument.scoring.subscales || []).map(subscale => {
     const subItems = subscale.items.map(id => items.find(item => item.id === id));
     const complete = subItems.length > 0 && subItems.every(item => item && isValidAnswer(item, answers?.[item.id]));
-    const score = complete ? subItems.reduce((total, item) => total + answers[item.id], 0) * multiplier : null;
+    let score = null;
+    if (complete) {
+      const values = subItems.map(item => answers[item.id]);
+      score = byMeans
+        ? roundScore(instrument, mean(values))
+        : values.reduce((total, value) => total + value, 0) * multiplier;
+    }
     return { id: subscale.id, label: subscale.label, score, band: complete ? bandIn(subscale.bands, score) : null };
   });
+}
+
+/**
+ * Total de `subscale_means`: a média das médias das subescalas, com as
+ * negativas (`reverseInTotal`) invertidas na própria régua (1 a 5 vira 5 a
+ * 1). Usa as médias sem arredondar; arredonda só o total.
+ */
+function totalOfSubscaleMeans(instrument, answers) {
+  const parts = (instrument.scoring.subscales || []).map(subscale => {
+    const value = mean(subscale.items.map(id => answers[id]));
+    return subscale.reverseInTotal ? subscale.min + subscale.max - value : value;
+  });
+  return roundScore(instrument, mean(parts));
 }
 
 /**
@@ -59,11 +95,14 @@ export function scoreInstrument(instrument, answers = {}) {
   }
 
   const complete = items.length > 0 && answered === items.length;
-  const bySubscale = instrument.scoring.method === 'subscales';
+  const method = instrument.scoring.method;
+  const bySubscale = method === 'subscales';
+  const withSubscales = bySubscale || method === 'subscale_means';
   let score = null;
   if (complete && !bySubscale) {
-    if (instrument.scoring.method === 'sum_times_2') score = sum * 2;
-    else if (instrument.scoring.method === 'mean') score = sum / items.length;
+    if (method === 'sum_times_2') score = sum * 2;
+    else if (method === 'mean') score = roundScore(instrument, sum / items.length);
+    else if (method === 'subscale_means') score = totalOfSubscaleMeans(instrument, answers);
     else score = sum;
   }
 
@@ -73,7 +112,7 @@ export function scoreInstrument(instrument, answers = {}) {
     complete,
     score,
     band: complete && !bySubscale ? bandForScore(instrument, score) : null,
-    ...(bySubscale ? { subscales: scoreSubscales(instrument, answers) } : {}),
+    ...(withSubscales ? { subscales: scoreSubscales(instrument, answers) } : {}),
     riskItems,
   };
 }
@@ -184,7 +223,10 @@ export function validateInstrumentDefinition(instrument) {
     max: list.reduce((total, item) => total + Math.max(...optionValues(item)), 0) * factor,
   });
 
-  if (instrument.scoring?.method === 'subscales') {
+  const method = instrument.scoring?.method;
+  const step = instrument.scoring?.step || 1;
+  if (method === 'subscales' || method === 'subscale_means') {
+    const byMeans = method === 'subscale_means';
     const multiplier = instrument.scoring.multiplier || 1;
     const subscales = instrument.scoring.subscales || [];
     if (!subscales.length) problems.push('sem subescalas');
@@ -193,22 +235,34 @@ export function validateInstrumentDefinition(instrument) {
       const subItems = subscale.items.map(id => items.find(item => item.id === id));
       if (subItems.some(item => !item)) problems.push(`${subscale.id}: pergunta que não existe`);
       for (const id of subscale.items) seen.set(id, (seen.get(id) || 0) + 1);
-      const range = rangeOf(subItems.filter(Boolean), multiplier);
-      if (range.min !== subscale.min) problems.push(`${subscale.id}: mínimo declarado ${subscale.min}, soma dá ${range.min}`);
-      if (range.max !== subscale.max) problems.push(`${subscale.id}: máximo declarado ${subscale.max}, soma dá ${range.max}`);
-      checkBands(subscale.bands, subscale.min, subscale.max, `${subscale.id}: `, problems);
+      const found = subItems.filter(Boolean);
+      const sums = rangeOf(found, byMeans ? 1 : multiplier);
+      const range = byMeans ? { min: sums.min / found.length, max: sums.max / found.length } : sums;
+      if (range.min !== subscale.min) problems.push(`${subscale.id}: mínimo declarado ${subscale.min}, cálculo dá ${range.min}`);
+      if (range.max !== subscale.max) problems.push(`${subscale.id}: máximo declarado ${subscale.max}, cálculo dá ${range.max}`);
+      // Na média por subescala a faixa é opcional (a Autocompaixão só tem
+      // faixa no total); quando existe, cobre a régua inteira.
+      if (!byMeans || (subscale.bands || []).length) {
+        checkBands(subscale.bands, subscale.min, subscale.max, `${subscale.id}: `, problems, step);
+      }
     }
     for (const item of items) {
       const count = seen.get(item.id) || 0;
       if (count !== 1) problems.push(`${item.id}: está em ${count} subescalas`);
     }
-    return problems;
+    if (!byMeans) return problems;
+    // Total: média das subescalas, todas na mesma régua (inverter não muda a régua).
+    const totalMin = mean(subscales.map(subscale => subscale.min));
+    const totalMax = mean(subscales.map(subscale => subscale.max));
+    if (totalMin !== instrument.scoring.min) problems.push(`mínimo declarado ${instrument.scoring.min}, cálculo dá ${totalMin}`);
+    if (totalMax !== instrument.scoring.max) problems.push(`máximo declarado ${instrument.scoring.max}, cálculo dá ${totalMax}`);
   }
 
-  if (instrument.scoring?.method === 'sum') {
+  if (method === 'sum' || method === 'mean') {
     const range = rangeOf(items);
-    if (range.min !== instrument.scoring.min) problems.push(`mínimo declarado ${instrument.scoring.min}, soma dá ${range.min}`);
-    if (range.max !== instrument.scoring.max) problems.push(`máximo declarado ${instrument.scoring.max}, soma dá ${range.max}`);
+    const divisor = method === 'mean' ? items.length : 1;
+    if (range.min / divisor !== instrument.scoring.min) problems.push(`mínimo declarado ${instrument.scoring.min}, cálculo dá ${range.min / divisor}`);
+    if (range.max / divisor !== instrument.scoring.max) problems.push(`máximo declarado ${instrument.scoring.max}, cálculo dá ${range.max / divisor}`);
   }
 
   // Escala sem ponto de corte clínico (Rosenberg): só a nota, nenhuma faixa.
@@ -217,12 +271,15 @@ export function validateInstrumentDefinition(instrument) {
     return problems;
   }
 
-  checkBands(instrument.bands, instrument.scoring?.min, instrument.scoring?.max, '', problems);
+  checkBands(instrument.bands, instrument.scoring?.min, instrument.scoring?.max, '', problems, step);
   return problems;
 }
 
-/** Faixas cobrindo [min, max] sem buraco nem sobreposição, ids únicos. */
-function checkBands(list, min, max, prefix, problems) {
+/**
+ * Faixas cobrindo [min, max] sem buraco nem sobreposição, ids únicos.
+ * `step` = a menor diferença entre duas notas (1; 0,01 na nota por média).
+ */
+function checkBands(list, min, max, prefix, problems, step = 1) {
   const bands = [...(list || [])].sort((a, b) => a.min - b.min);
   if (!bands.length) {
     problems.push(`${prefix}sem faixas`);
@@ -231,7 +288,7 @@ function checkBands(list, min, max, prefix, problems) {
   if (bands[0].min !== min) problems.push(`${prefix}a primeira faixa não começa no mínimo`);
   if (bands[bands.length - 1].max !== max) problems.push(`${prefix}a última faixa não termina no máximo`);
   for (let index = 1; index < bands.length; index += 1) {
-    if (bands[index].min !== bands[index - 1].max + 1) {
+    if (Math.abs(bands[index].min - (bands[index - 1].max + step)) > 1e-9) {
       problems.push(`${prefix}buraco ou sobreposição entre ${bands[index - 1].id} e ${bands[index].id}`);
     }
   }

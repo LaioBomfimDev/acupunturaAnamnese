@@ -8,7 +8,7 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
-import { formatInstrumentDate, validApplications } from './instrumentFormat';
+import { formatInstrumentDate, formatScore, pointsLabel, validApplications } from './instrumentFormat';
 
 // O desenho usa a largura real do cartão (1 unidade = 1 px): assim o
 // texto fica legível no celular em vez de encolher junto com o SVG.
@@ -113,12 +113,14 @@ export function InstrumentTrendChart({ instrument, applications }) {
   const lastCoord = coords[coords.length - 1];
   const showAllDates = coords.length <= 6;
   const description = coords.length === 1
-    ? `${instrument.shortName}: ${lastCoord.point.result.score} pontos em ${formatInstrumentDate(lastCoord.point.appliedAt)}.`
-    : `${instrument.shortName}: de ${coords[0].point.result.score} pontos em ${formatInstrumentDate(coords[0].point.appliedAt)} para ${lastCoord.point.result.score} pontos em ${formatInstrumentDate(lastCoord.point.appliedAt)}.`;
+    ? `${instrument.shortName}: ${pointsLabel(lastCoord.point.result.score)} em ${formatInstrumentDate(lastCoord.point.appliedAt)}.`
+    : `${instrument.shortName}: de ${pointsLabel(coords[0].point.result.score)} em ${formatInstrumentDate(coords[0].point.appliedAt)} para ${pointsLabel(lastCoord.point.result.score)} em ${formatInstrumentDate(lastCoord.point.appliedAt)}.`;
 
+  // Meio passo entre faixas vizinhas: 0,5 na nota inteira, 0,005 na média.
+  const half = (instrument.scoring.step || 1) / 2;
   const bandEdges = instrument.bands.map(band => {
-    const lower = band.min === min ? min : band.min - 0.5;
-    const upper = band.max === max ? max : band.max + 0.5;
+    const lower = band.min === min ? min : band.min - half;
+    const upper = band.max === max ? max : band.max + half;
     return { top: y(upper), bottom: y(lower) };
   });
   const labelY = spreadLabels(
@@ -153,7 +155,7 @@ export function InstrumentTrendChart({ instrument, applications }) {
               )}
               {ticks.has(band.min) && (
                 <text className="instrument-axis-label" x={PAD.left - 8} y={bottom} textAnchor="end" dominantBaseline="middle">
-                  {band.min}
+                  {formatScore(band.min)}
                 </text>
               )}
             </g>
@@ -164,13 +166,13 @@ export function InstrumentTrendChart({ instrument, applications }) {
             <rect className="instrument-band instrument-band-0" x={PAD.left} y={y(max)} width={PLOT_W} height={Math.max(0, y(min) - y(max))} />
             {tickBase.filter(value => ticks.has(value)).map(value => (
               <text key={value} className="instrument-axis-label" x={PAD.left - 8} y={y(value)} textAnchor="end" dominantBaseline="middle">
-                {value}
+                {formatScore(value)}
               </text>
             ))}
           </>
         )}
         <text className="instrument-axis-label" x={PAD.left - 8} y={y(max)} textAnchor="end" dominantBaseline="middle">
-          {max}
+          {formatScore(max)}
         </text>
 
         {coords.length > 1 && (
@@ -198,7 +200,7 @@ export function InstrumentTrendChart({ instrument, applications }) {
         {coords.map(({ point, cx, cy }, index) => {
           const isLast = index === coords.length - 1;
           const bandText = instrument.bands.length ? `, faixa ${point.result.bandLabel || 'sem faixa'}` : '';
-          const label = `${formatInstrumentDate(point.appliedAt)}: ${point.result.score} pontos${bandText}`;
+          const label = `${formatInstrumentDate(point.appliedAt)}: ${pointsLabel(point.result.score)}${bandText}`;
           return (
             <g key={point.id} className="instrument-point-group">
               <title>{label}</title>
@@ -206,7 +208,7 @@ export function InstrumentTrendChart({ instrument, applications }) {
               <circle className={`instrument-point${isLast ? ' is-last' : ''}`} cx={cx} cy={cy} r="5" />
               {isLast && (
                 <text className="instrument-point-label" x={cx} y={cy - 12} textAnchor="middle">
-                  {point.result.score}
+                  {formatScore(point.result.score)}
                 </text>
               )}
               {(showAllDates || index === 0 || isLast) && (

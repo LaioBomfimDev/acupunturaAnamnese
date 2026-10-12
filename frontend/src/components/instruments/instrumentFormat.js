@@ -16,9 +16,15 @@ export function namedInstrument(instrument, preposition = null) {
   return `${feminine ? 'a' : 'o'} ${instrument?.shortName || ''}`;
 }
 
-/** "1 ponto" / "12 pontos". */
+/** Nota como se escreve no Brasil: "12", "3,46" (nota por média). */
+export function formatScore(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
+  return Number.isInteger(value) ? String(value) : value.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
+/** "1 ponto" / "12 pontos" / "3,46 pontos". */
 export function pointsLabel(score) {
-  return `${score} ${Math.abs(score) === 1 ? 'ponto' : 'pontos'}`;
+  return `${formatScore(score)} ${Math.abs(score) === 1 ? 'ponto' : 'pontos'}`;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -75,7 +81,8 @@ export function appliedAtFromInput(value, now = new Date()) {
 
 export function differenceLabel(current, previous) {
   if (typeof current !== 'number' || typeof previous !== 'number') return '';
-  const delta = current - previous;
+  // Arredonda: 3,46 - 3,25 não pode virar 0,20999.
+  const delta = Math.round((current - previous) * 100) / 100;
   if (delta === 0) return 'Igual à aplicação anterior.';
   const size = Math.abs(delta);
   return `${delta > 0 ? 'Subiu' : 'Desceu'} ${pointsLabel(size)} em relação à anterior.`;
@@ -94,19 +101,35 @@ export function validApplications(applications) {
  * faixa dela, e traz as faixas e a régua (`scoring.min/max`) do gráfico.
  */
 export function scoreViews(instrument) {
-  if (instrument?.scoring?.method === 'subscales') {
-    return (instrument.scoring.subscales || []).map(subscale => ({
-      id: subscale.id,
-      label: subscale.label,
-      short: subscale.short || subscale.label.slice(0, 1),
-      itemCount: subscale.items.length,
-      scoring: { min: subscale.min, max: subscale.max },
-      bands: subscale.bands,
-      read: result => {
-        const found = (result?.subscales || []).find(item => item.id === subscale.id);
-        return { score: typeof found?.score === 'number' ? found.score : null, bandLabel: found?.bandLabel || null };
-      },
-    }));
+  const method = instrument?.scoring?.method;
+  const step = instrument?.scoring?.step || 1;
+  const subscaleViews = () => (instrument.scoring.subscales || []).map(subscale => ({
+    id: subscale.id,
+    label: subscale.label,
+    short: subscale.short || subscale.label.slice(0, 1),
+    itemCount: subscale.items.length,
+    scoring: { min: subscale.min, max: subscale.max, step },
+    bands: subscale.bands || [],
+    read: result => {
+      const found = (result?.subscales || []).find(item => item.id === subscale.id);
+      return { score: typeof found?.score === 'number' ? found.score : null, bandLabel: found?.bandLabel || null };
+    },
+  }));
+  if (method === 'subscales') return subscaleViews();
+  // Média por subescala (Autocompaixão): o total primeiro, depois as seis.
+  if (method === 'subscale_means') {
+    return [{
+      id: 'total',
+      label: 'Total',
+      short: 'T',
+      itemCount: (instrument.items || []).length,
+      scoring: { min: instrument.scoring.min, max: instrument.scoring.max, step },
+      bands: instrument.bands || [],
+      read: result => ({
+        score: typeof result?.score === 'number' ? result.score : null,
+        bandLabel: result?.bandLabel || null,
+      }),
+    }, ...subscaleViews()];
   }
   return [{
     id: 'total',
@@ -135,7 +158,9 @@ export function savedNotice(instrument, saved) {
   if (saved?.replayed) return { text: 'Esta aplicação já estava salva.', risk: false };
   const result = saved?.payload?.result || {};
   let base = `${instrument.shortName} salvo.`;
-  if (Array.isArray(result.subscales)) {
+  // Com nota total (Autocompaixão), o recado fala do total; sem total
+  // (DASS-21, PHQ-4), de cada subescala.
+  if (Array.isArray(result.subscales) && typeof result.score !== 'number') {
     const parts = result.subscales
       .filter(subscale => typeof subscale.score === 'number')
       .map(subscale => `${lowerFirst(subscale.label)} ${pointsLabel(subscale.score)} (${String(subscale.bandLabel || '').toLowerCase()})`);
@@ -146,6 +171,25 @@ export function savedNotice(instrument, saved) {
       : `${instrument.shortName} salvo: ${pointsLabel(result.score)}.`;
   }
   return { text: base, risk: (result.riskItems || []).length > 0 };
+}
+
+/** Como a nota foi calculada, em uma frase (janela do resultado). */
+export function scoringSummary(instrument, result) {
+  const method = instrument?.scoring?.method;
+  const count = (instrument?.items || []).length;
+  if (method === 'subscale_means') {
+    return 'Cada subescala é a média das suas perguntas. O total é a média das subescalas, com as negativas invertidas.';
+  }
+  if (method === 'subscales') {
+    const subscaleItems = instrument.scoring.subscales?.[0]?.items.length || 0;
+    const multiplier = instrument.scoring.multiplier || 1;
+    return multiplier > 1
+      ? `Cada nota soma as ${subscaleItems} perguntas da subescala e multiplica por ${multiplier}, como no manual.`
+      : `Cada nota soma as ${subscaleItems} perguntas da subescala.`;
+  }
+  if (typeof result?.score !== 'number') return '';
+  if (method === 'mean') return `Média das ${count} perguntas: ${formatScore(result.score)}.`;
+  return `Soma das ${count} perguntas: ${pointsLabel(result.score)}.`;
 }
 
 // Envio para a Área do Paciente (etapa 2).

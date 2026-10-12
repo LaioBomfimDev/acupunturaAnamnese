@@ -618,8 +618,227 @@ export const ROSENBERG = {
   },
 };
 
+// PHQ-8: o PHQ-9 sem a pergunta 9 (pensamentos de morte ou de se ferir),
+// com o mesmo texto brasileiro oficial da Pfizer. Não rastreia risco.
+export const PHQ8 = {
+  id: 'phq8',
+  version: 1,
+  shortName: 'PHQ-8',
+  article: 'o',
+  name: 'Questionário sobre a Saúde do Paciente, 8 perguntas (PHQ-8)',
+  measures: 'sintomas depressivos nas últimas 2 semanas, sem a pergunta sobre pensamentos de morte',
+  disciplines: ['psicologia'],
+  population: 'Adolescentes e adultos',
+  minutes: 4,
+  reapplyAfterDays: 14,
+  instructions: PHQ9.instructions,
+  items: PHQ9.items.slice(0, 8).map(({ risk, ...item }) => item),
+  extraItems: [DIFFICULTY_ITEM],
+  scoring: { method: 'sum', min: 0, max: 24 },
+  bands: [
+    { id: 'minima', label: 'Mínima', min: 0, max: 4 },
+    { id: 'leve', label: 'Leve', min: 5, max: 9 },
+    { id: 'moderada', label: 'Moderada', min: 10, max: 14 },
+    { id: 'moderadamente_grave', label: 'Moderadamente grave', min: 15, max: 19 },
+    { id: 'grave', label: 'Grave', min: 20, max: 24 },
+  ],
+  reading: 'É o PHQ-9 sem a pergunta 9, sobre pensamentos de morte ou de se ferir: não rastreia risco. Para avaliar risco, use o PHQ-9. A nota soma as 8 perguntas (0 a 24); a faixa é a do instrumento e não substitui a avaliação clínica.',
+  sources: [
+    'Kroenke K, Strine TW, Spitzer RL, Williams JBW, Berry JT, Mokdad AH. The PHQ-8 as a measure of current depression in the general population. J Affect Disord. 2009;114(1-3):163-73.',
+  ],
+  license: 'PHQ © Pfizer Inc. Uso livre: segundo o site oficial, não é preciso permissão para reproduzir, traduzir, exibir ou distribuir. Texto da tradução brasileira oficial do PHQ-9.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'O site oficial só tem o PHQ-8 em inglês: aqui são as 8 primeiras perguntas do PHQ-9 brasileiro oficial, como no original. Faixas de Kroenke (2009), as mesmas do PHQ-9 até 24. A psicóloga responsável decide quando usar o PHQ-8 em vez do PHQ-9.',
+  },
+};
+
+// K6: as 6 perguntas do K10 que formam o K6, com o texto da tradução
+// brasileira oficial do K10 (Harvard). Pontuação de Kessler: 0 a 4 por
+// pergunta, 0 a 24 no total.
+const K6_OPTIONS = [
+  { value: 4, label: 'O tempo todo' },
+  { value: 3, label: 'A maior parte do tempo' },
+  { value: 2, label: 'Parte do tempo' },
+  { value: 1, label: 'Um pouco' },
+  { value: 0, label: 'Nunca' },
+];
+const k10Text = id => K10.items.find(item => item.id === id).text;
+
+export const K6 = {
+  id: 'k6',
+  version: 1,
+  shortName: 'K6',
+  article: 'a',
+  name: 'Escala de Sofrimento Psíquico de Kessler, 6 perguntas (K6)',
+  measures: 'sofrimento psíquico nos últimos 30 dias',
+  disciplines: ['psicologia'],
+  population: 'Adultos',
+  minutes: 2,
+  reapplyAfterDays: 30,
+  instructions: K10.instructions,
+  items: [
+    { id: 'q1', text: k10Text('q2') },
+    { id: 'q2', text: k10Text('q4') },
+    { id: 'q3', text: k10Text('q5') },
+    { id: 'q4', text: k10Text('q8') },
+    { id: 'q5', text: k10Text('q9') },
+    { id: 'q6', text: k10Text('q10') },
+  ].map(item => ({ ...item, options: K6_OPTIONS })),
+  extraItems: [],
+  scoring: { method: 'sum', min: 0, max: 24 },
+  bands: [
+    { id: 'baixo', label: 'Baixo', min: 0, max: 4 },
+    { id: 'moderado', label: 'Moderado', min: 5, max: 12 },
+    { id: 'grave', label: 'Grave', min: 13, max: 24 },
+  ],
+  reading: 'A nota soma as 6 perguntas (0 a 24): "Nunca" vale 0 e "O tempo todo" vale 4. 13 ou mais aponta sofrimento psíquico grave e pede avaliação; de 5 a 12, moderado. A faixa é a do instrumento e não substitui a avaliação clínica.',
+  sources: [
+    'Kessler RC et al. Screening for serious mental illness in the general population. Arch Gen Psychiatry. 2003;60(2):184-9.',
+    'Prochaska JJ, Sung HY, Max W, Shi Y, Ong M. Validity study of the K6 scale as a measure of moderate mental distress based on mental health treatment need and utilization. Int J Methods Psychiatr Res. 2012;21(2):88-97.',
+  ],
+  license: 'K6 © Ronald C. Kessler, PhD. All rights reserved. Uso livre, sem necessidade de permissão, citando o artigo de 2003 e o copyright (site oficial, Harvard). O K6 é o K10 sem quatro perguntas; texto da tradução brasileira oficial do K10, publicada no mesmo site para uso sem restrição.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: 'Pontuação de 0 a 4 de Kessler (2003), com corte 13 para sofrimento grave; a faixa moderada (5 a 12) vem de Prochaska (2012). As perguntas são as do K10 brasileiro oficial que formam o K6 (nervoso, sem esperança, inquieto, tão deprimido que nada animava, tudo um esforço, sem valor). A psicóloga responsável confere o texto e as faixas.',
+  },
+};
+
+// Escala de Autocompaixão: tradução brasileira de Souza e Hutz publicada no
+// site oficial da autora, que libera o uso "para qualquer finalidade".
+// Respostas de 1 a 5; cada subescala é a média das suas perguntas, e o
+// total é a média das seis, com as três negativas invertidas.
+const SCS_OPTIONS = [
+  { value: 1, label: '1 – Quase nunca' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+  { value: 5, label: '5 – Quase sempre' },
+];
+// A faixa da autora é uma régua informal, não uma norma clínica.
+const SCS_BANDS = [
+  { id: 'baixa', label: 'Baixa', min: 1, max: 2.49 },
+  { id: 'moderada', label: 'Moderada', min: 2.5, max: 3.5 },
+  { id: 'alta', label: 'Alta', min: 3.51, max: 5 },
+];
+const SCS_TEXTS = {
+  q1: 'Sou realmente crítico e severo com meus próprios erros e defeitos.',
+  q2: 'Quando fico “pra baixo”, não consigo parar de pensar em tudo que está errado comigo.',
+  q3: 'Quando as coisas vão mal para mim, vejo as dificuldades como parte da vida e que acontecem com todo mundo.',
+  q4: 'Quando penso nos meus defeitos, eu me sinto realmente isolado do resto do mundo.',
+  q5: 'Tento ser amável comigo quando me sinto emocionalmente mal.',
+  q6: 'Quando eu falho em algo importante para mim, fico totalmente consumido por sentimentos de incompetência.',
+  q7: 'Quando me sinto realmente mal, lembro que há outras pessoas no mundo se sentindo como eu.',
+  q8: 'Quando as coisas estão realmente difíceis, costumo ser duro comigo mesmo.',
+  q9: 'Quando algo me deixa aborrecido, tento buscar equilíbrio emocional.',
+  q10: 'Quando percebo que fui inadequado, tento lembrar que a maioria das pessoas também passa por isso.',
+  q11: 'Sou intolerante e impaciente com os aspectos de que não gosto na minha personalidade.',
+  q12: 'Quando estou passando por um momento realmente difícil, eu me dou o apoio e o cuidado de que preciso.',
+  q13: 'Quando fico “pra baixo”, sinto que a maioria das pessoas é mais feliz do que eu.',
+  q14: 'Quando algo doloroso acontece, tento ver a situação de forma equilibrada.',
+  q15: 'Tento entender meus defeitos como parte da condição humana.',
+  q16: 'Quando vejo características que eu não gosto em mim, sou duro comigo mesmo.',
+  q17: 'Quando eu falho em algo importante para mim, tento ver as coisas por outro ângulo.',
+  q18: 'Quando passo por dificuldades emocionais, costumo pensar que as coisas são mais fáceis para as outras pessoas.',
+  q19: 'Sou bondoso comigo quando estou passando por algum sofrimento.',
+  q20: 'Quando algo me deixa incomodado, sou completamente tomado por sentimentos negativos.',
+  q21: 'Costumo ser um pouco insensível comigo quando estou sofrendo.',
+  q22: 'Quando fico “pra baixo”, tento aceitar e entender meus sentimentos.',
+  q23: 'Sou compreensivo com meus próprios erros e defeitos.',
+  q24: 'Quando algo doloroso acontece comigo, costumo reagir de forma exagerada.',
+  q25: 'Quando eu falho em algo importante para mim, costumo me sentir muito sozinho nessa situação.',
+  q26: 'Tento ser compreensivo e paciente com os aspectos da minha personalidade dos quais não gosto.',
+};
+const SCS_SOURCE_NOTE = 'Texto da versão brasileira (Souza e Hutz, 2016) como está no site oficial, todo no masculino, com três erros de digitação corrigidos (“costume ser”, “não gusto”, “tent over”).';
+
+export const SCS = {
+  id: 'scs',
+  version: 1,
+  shortName: 'Autocompaixão',
+  article: 'a',
+  name: 'Escala de Autocompaixão (SCS)',
+  measures: 'como a pessoa costuma lidar consigo mesma em momentos difíceis',
+  disciplines: ['psicologia'],
+  population: 'A partir de 14 anos',
+  minutes: 7,
+  reapplyAfterDays: 30,
+  // Na folha: "À esquerda de cada item, indique". Na tela, marca-se a opção.
+  instructions: 'Como eu geralmente lido comigo em momentos difíceis. Por favor, leia com cuidado antes de responder. Para cada item, indique com que frequência você se comporta da forma descrita, de 1 (quase nunca) a 5 (quase sempre).',
+  items: Object.entries(SCS_TEXTS).map(([id, text]) => ({ id, text, options: SCS_OPTIONS })),
+  extraItems: [],
+  scoring: {
+    method: 'subscale_means',
+    decimals: 2,
+    step: 0.01,
+    min: 1,
+    max: 5,
+    subscales: [
+      { id: 'bondade', label: 'Bondade consigo', short: 'BC', items: ['q5', 'q12', 'q19', 'q23', 'q26'], min: 1, max: 5, bands: [] },
+      { id: 'autocritica', label: 'Autocrítica severa', short: 'AS', items: ['q1', 'q8', 'q11', 'q16', 'q21'], min: 1, max: 5, bands: [], reverseInTotal: true },
+      { id: 'humanidade', label: 'Senso de humanidade', short: 'SH', items: ['q3', 'q7', 'q10', 'q15'], min: 1, max: 5, bands: [] },
+      { id: 'isolamento', label: 'Isolamento', short: 'IS', items: ['q4', 'q13', 'q18', 'q25'], min: 1, max: 5, bands: [], reverseInTotal: true },
+      { id: 'mindfulness', label: 'Mindfulness', short: 'MF', items: ['q9', 'q14', 'q17', 'q22'], min: 1, max: 5, bands: [] },
+      { id: 'sobreidentificacao', label: 'Sobre-identificação', short: 'SI', items: ['q2', 'q6', 'q20', 'q24'], min: 1, max: 5, bands: [], reverseInTotal: true },
+    ],
+  },
+  bands: SCS_BANDS,
+  reading: 'Notas de 1 a 5, por média. Cada subescala é a média das suas perguntas: nas três negativas (autocrítica severa, isolamento e sobre-identificação), nota alta é menos autocompaixão. O total é a média das seis, com as negativas invertidas: quanto maior, mais autocompaixão. A faixa do total é uma régua informal da autora, sem norma clínica: compare com as aplicações anteriores.',
+  sources: [
+    'Neff KD. Development and validation of a scale to measure self-compassion. Self and Identity. 2003;2:223-50.',
+    'Souza LK, Hutz CS. Escala de Autocompaixão. In: Hutz CS, organizador. Avaliação em Psicologia Positiva. São Paulo: CETEPP; 2016. p. 171-3.',
+  ],
+  license: 'Uso livre: Kristin Neff permite usar a Escala de Autocompaixão "para qualquer finalidade", inclusive clínica, citando Neff (2003). Versão brasileira de Souza e Hutz publicada no site oficial da autora.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: `${SCS_SOURCE_NOTE} Na instrução, "à esquerda de cada item" virou "para cada item". Faixas do total pela régua informal da autora (1 a 2,49 baixa; 2,5 a 3,5 moderada; 3,51 a 5 alta), que ela mesma diz não ser norma clínica. A psicóloga responsável confere o texto e se quer a forma neutra de gênero.`,
+  },
+};
+
+// Forma reduzida (Raes e colaboradores, 2011): 12 das 26 perguntas, duas por
+// subescala. A autora recomenda só o total (subescalas de 2 perguntas são
+// pouco confiáveis); como as seis têm o mesmo tamanho, o total é a média
+// das 12 com as negativas invertidas, que vêm invertidas na própria opção.
+const SCS_REVERSED = SCS_OPTIONS.map(option => ({ ...option, value: 6 - option.value }));
+const SCS_SF_ITEMS = [
+  ['q1', 'q6', true], ['q2', 'q26', false], ['q3', 'q14', false], ['q4', 'q13', true],
+  ['q5', 'q15', false], ['q6', 'q12', false], ['q7', 'q9', false], ['q8', 'q25', true],
+  ['q9', 'q2', true], ['q10', 'q10', false], ['q11', 'q1', true], ['q12', 'q11', true],
+];
+
+export const SCSSF = {
+  id: 'scssf',
+  version: 1,
+  shortName: 'Autocompaixão (12)',
+  article: 'a',
+  name: 'Escala de Autocompaixão, forma reduzida (SCS-SF)',
+  measures: 'como a pessoa costuma lidar consigo mesma em momentos difíceis',
+  disciplines: ['psicologia'],
+  population: 'A partir de 14 anos',
+  minutes: 3,
+  reapplyAfterDays: 14,
+  instructions: SCS.instructions,
+  items: SCS_SF_ITEMS.map(([id, from, reversed]) => ({
+    id,
+    text: SCS_TEXTS[from],
+    options: reversed ? SCS_REVERSED : SCS_OPTIONS,
+  })),
+  extraItems: [],
+  scoring: { method: 'mean', decimals: 2, step: 0.01, min: 1, max: 5 },
+  bands: SCS_BANDS,
+  reading: 'Uma nota de 1 a 5: a média das 12 perguntas, com as frases negativas contando ao contrário. Quanto maior, mais autocompaixão. A faixa é uma régua informal da autora, sem norma clínica: compare com as aplicações anteriores. Para ver as seis subescalas, use a escala completa.',
+  sources: [
+    'Raes F, Pommier E, Neff KD, Van Gucht D. Construction and factorial validation of a short form of the Self-Compassion Scale. Clin Psychol Psychother. 2011;18(3):250-5.',
+    'Souza LK, Hutz CS. Escala de Autocompaixão. In: Hutz CS, organizador. Avaliação em Psicologia Positiva. São Paulo: CETEPP; 2016. p. 171-3.',
+  ],
+  license: 'Uso livre: Kristin Neff permite usar a forma reduzida "para qualquer finalidade", inclusive clínica, citando Raes e colaboradores (2011). Perguntas da versão brasileira da escala completa, publicada no site oficial da autora.',
+  review: {
+    status: INSTRUMENT_REVIEW_STATUS.PENDING,
+    note: `Montada com as 12 perguntas da forma reduzida original tiradas da versão brasileira completa; não há validação brasileira própria da forma reduzida na fonte usada. ${SCS_SOURCE_NOTE} Faixas pela régua informal da autora. A psicóloga responsável confere se usa a forma reduzida.`,
+  },
+};
+
 /** Instrumentos em uso, na ordem em que aparecem na tela. */
-export const CLINICAL_INSTRUMENTS = [PHQ9, GAD7, PHQ4, DASS21, K10, PCL5, PHQ15, ASRS6, ROSENBERG];
+export const CLINICAL_INSTRUMENTS = [PHQ9, PHQ8, GAD7, PHQ4, DASS21, K10, K6, PCL5, PHQ15, ASRS6, ROSENBERG, SCS, SCSSF];
 
 /**
  * Versões antigas, para ler aplicações feitas antes de uma mudança.

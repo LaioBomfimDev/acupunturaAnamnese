@@ -20,13 +20,32 @@ type Item = {
   shadeFrom?: number;
 };
 type Band = { id: string; label: string; min: number; max: number };
-type Subscale = { id: string; label: string; short?: string; items: string[]; min: number; max: number; bands: Band[] };
+type Subscale = {
+  id: string;
+  label: string;
+  short?: string;
+  items: string[];
+  min: number;
+  max: number;
+  bands: Band[];
+  // Subescala negativa que entra invertida no total (`subscale_means`).
+  reverseInTotal?: boolean;
+};
 export type Instrument = {
   id: string;
   version: number;
   items?: Item[];
   extraItems?: Item[];
-  scoring: { method: string; min?: number; max?: number; multiplier?: number; subscales?: Subscale[] };
+  scoring: {
+    method: string;
+    min?: number;
+    max?: number;
+    multiplier?: number;
+    subscales?: Subscale[];
+    // Nota por média: casas decimais e menor diferença entre duas notas.
+    decimals?: number;
+    step?: number;
+  };
   bands: Band[];
   // Sem ponto de corte clínico (Rosenberg): só a nota, faixa sempre nula.
   noBands?: boolean;
@@ -52,17 +71,39 @@ export function bandForScore(instrument: Instrument, score: unknown): Band | nul
   return bandIn(instrument.bands, score);
 }
 
+function roundScore(instrument: Instrument, value: number): number {
+  const factor = 10 ** (instrument.scoring.decimals ?? 2);
+  return Math.round(value * factor) / factor;
+}
+
+function mean(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
 function scoreSubscales(instrument: Instrument, answers: Answers) {
   const items = instrument.items || [];
+  const byMeans = instrument.scoring.method === 'subscale_means';
   const multiplier = instrument.scoring.multiplier || 1;
   return (instrument.scoring.subscales || []).map(subscale => {
     const subItems = subscale.items.map(id => items.find(item => item.id === id));
     const complete = subItems.length > 0 && subItems.every(item => item && isValidAnswer(item, answers?.[item.id]));
-    const score = complete
-      ? subItems.reduce((total, item) => total + (answers[(item as Item).id] as number), 0) * multiplier
-      : null;
+    let score: number | null = null;
+    if (complete) {
+      const values = subItems.map(item => answers[(item as Item).id] as number);
+      score = byMeans
+        ? roundScore(instrument, mean(values))
+        : values.reduce((total, value) => total + value, 0) * multiplier;
+    }
     return { id: subscale.id, label: subscale.label, score, band: complete ? bandIn(subscale.bands, score) : null };
   });
+}
+
+function totalOfSubscaleMeans(instrument: Instrument, answers: Answers): number {
+  const parts = (instrument.scoring.subscales || []).map(subscale => {
+    const value = mean(subscale.items.map(id => answers[id] as number));
+    return subscale.reverseInTotal ? subscale.min + subscale.max - value : value;
+  });
+  return roundScore(instrument, mean(parts));
 }
 
 export function scoreInstrument(instrument: Instrument, answers: Answers = {}) {
@@ -80,11 +121,14 @@ export function scoreInstrument(instrument: Instrument, answers: Answers = {}) {
   }
 
   const complete = items.length > 0 && answered === items.length;
-  const bySubscale = instrument.scoring.method === 'subscales';
+  const method = instrument.scoring.method;
+  const bySubscale = method === 'subscales';
+  const withSubscales = bySubscale || method === 'subscale_means';
   let score: number | null = null;
   if (complete && !bySubscale) {
-    if (instrument.scoring.method === 'sum_times_2') score = sum * 2;
-    else if (instrument.scoring.method === 'mean') score = sum / items.length;
+    if (method === 'sum_times_2') score = sum * 2;
+    else if (method === 'mean') score = roundScore(instrument, sum / items.length);
+    else if (method === 'subscale_means') score = totalOfSubscaleMeans(instrument, answers);
     else score = sum;
   }
 
@@ -94,7 +138,7 @@ export function scoreInstrument(instrument: Instrument, answers: Answers = {}) {
     complete,
     score,
     band: complete && !bySubscale ? bandForScore(instrument, score) : null,
-    ...(bySubscale ? { subscales: scoreSubscales(instrument, answers) } : {}),
+    ...(withSubscales ? { subscales: scoreSubscales(instrument, answers) } : {}),
     riskItems,
   };
 }

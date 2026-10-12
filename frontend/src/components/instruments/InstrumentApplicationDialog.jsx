@@ -3,7 +3,7 @@ import { useDismiss } from '../../hooks/useDismiss';
 import { DismissPrompt } from '../ui/DismissPrompt';
 import { voidInstrumentApplication } from '../../services/patientInstrumentService';
 import { riskMessages } from '../../utils/instrumentScoring';
-import { formatInstrumentDate, namedInstrument, pointsLabel, scoreViews } from './instrumentFormat';
+import { formatInstrumentDate, formatScore, namedInstrument, pointsLabel, scoreViews, scoringSummary } from './instrumentFormat';
 
 // ============================================================
 // Uma aplicação aberta: resultado, respostas e observação.
@@ -97,7 +97,7 @@ function optionMax(item) {
 }
 
 function bandRange(band) {
-  return band.min === band.max ? pointsLabel(band.min) : `${band.min} a ${band.max} pontos`;
+  return band.min === band.max ? pointsLabel(band.min) : `${formatScore(band.min)} a ${formatScore(band.max)} pontos`;
 }
 
 /**
@@ -115,7 +115,7 @@ export function BandMeter({ view, score, bandLabel }) {
   const marker = typeof score === 'number' ? Math.min(100, Math.max(0, ((score - min) / span) * 100)) : null;
   const description = active
     ? `${pointsLabel(score)} de ${max}, faixa ${active.label} (${bandRange(active)})`
-    : `Escala de ${min} a ${max} pontos`;
+    : `Escala de ${formatScore(min)} a ${formatScore(max)} pontos`;
 
   return (
     <div className="instrument-meter">
@@ -124,15 +124,15 @@ export function BandMeter({ view, score, bandLabel }) {
           <span
             key={band.id}
             className={`instrument-meter-band${band === active ? ' is-active' : ''}`}
-            style={{ flexGrow: band.max - band.min + 1 }}
+            style={{ flexGrow: band.max - band.min + (view.scoring?.step || 1) }}
             title={`${band.label}: ${bandRange(band)}`}
           />
         ))}
         {marker !== null && <span className="instrument-meter-marker" style={{ left: `${marker}%` }} />}
       </div>
       <div className="instrument-meter-scale" aria-hidden="true">
-        <span>{min}</span>
-        <span>{max}</span>
+        <span>{formatScore(min)}</span>
+        <span>{formatScore(max)}</span>
       </div>
       {active && bandLabel && (
         <p className="small instrument-meter-caption">
@@ -155,7 +155,7 @@ function ScoreBlock({ view, result }) {
     <section className="instrument-score-card" aria-label={view.label ? `Nota de ${lowerFirst(view.label)}` : 'Nota'}>
       {view.label && <h3 className="instrument-score-card-title">{view.label}</h3>}
       <div className="instrument-score-line">
-        <span className="instrument-score-value">{value.score == null ? '—' : value.score}</span>
+        <span className="instrument-score-value">{formatScore(value.score)}</span>
         <span className="instrument-score-unit">
           {value.score == null ? '' : Math.abs(value.score) === 1 ? 'ponto' : 'pontos'}
           {typeof max === 'number' && value.score != null ? ` de ${max}` : ''}
@@ -296,15 +296,8 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
                   );
                 })}
               </ol>
-              {views.length === 1 && typeof result.score === 'number' && (
-                <p className="small instrument-sum">Soma das {instrument.items.length} perguntas: {pointsLabel(result.score)}.</p>
-              )}
-              {views.length > 1 && (
-                <p className="small instrument-sum">
-                  {(instrument.scoring.multiplier || 1) > 1
-                    ? `Cada nota soma as ${views[0].itemCount} perguntas da subescala e multiplica por ${instrument.scoring.multiplier}, como no manual.`
-                    : `Cada nota soma as ${views[0].itemCount} perguntas da subescala.`}
-                </p>
+              {scoringSummary(instrument, result) && (
+                <p className="small instrument-sum">{scoringSummary(instrument, result)}</p>
               )}
             </section>
 

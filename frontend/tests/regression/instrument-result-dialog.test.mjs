@@ -143,3 +143,17 @@ test('Rosenberg: sem faixa clínica, a janela diz isso e não desenha régua', (
   assert.doesNotMatch(html, /instrument-meter-track/);
   assert.match(html, /Soma das 10 perguntas: 15 pontos\./);
 });
+
+test('Autocompaixão: total e as seis subescalas, nota com vírgula e a frase de como foi calculada', () => {
+  const scs = instruments.SCS;
+  const answers = { ...Object.fromEntries(scs.items.map(item => [item.id, 3])), q5: 4, q12: 4, q19: 4, q23: 4, q26: 3 };
+  const html = render(scs, application(scs, answers, { source: 'consultorio', appliedByName: 'Denise N.' }));
+  assert.equal((html.match(/class="instrument-score-card"/g) || []).length, 7);
+  assert.match(html, /aria-label="Nota de total"/);
+  assert.match(html, /class="instrument-score-value">3,13</);
+  assert.match(html, /class="instrument-score-value">3,8</);
+  assert.equal((html.match(/class="instrument-meter-track"/g) || []).length, 1, 'só o total tem régua');
+  assert.equal((html.match(/>Sem faixas clínicas</g) || []).length, 6);
+  assert.match(html, /Cada subescala é a média das suas perguntas\. O total é a média das subescalas, com as negativas invertidas\./);
+  assert.doesNotMatch(html, /3\.13|Soma das/);
+});

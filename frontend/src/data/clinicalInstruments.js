@@ -632,7 +632,8 @@ export const PHQ8 = {
   minutes: 4,
   reapplyAfterDays: 14,
   instructions: PHQ9.instructions,
-  items: PHQ9.items.slice(0, 8).map(({ risk, ...item }) => item),
+  // As perguntas 1 a 8 não têm item de risco: copia só texto e opções.
+  items: PHQ9.items.slice(0, 8).map(item => ({ id: item.id, text: item.text, options: item.options })),
   extraItems: [DIFFICULTY_ITEM],
   scoring: { method: 'sum', min: 0, max: 24 },
   bands: [

@@ -16,6 +16,8 @@ import {
 // mudaram — `undefined` apaga a resposta.
 // ============================================================
 
+const OPTION_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+
 function Heading({ as: Tag, question, number, htmlFor }) {
   return (
     <Tag className={Tag === 'legend' ? undefined : 'pq-question-label'} htmlFor={htmlFor}>
@@ -55,7 +57,7 @@ export function PatientFormQuestion({ question, answers, onChange, number = null
         <Heading as="legend" question={question} number={number} />
         {help}
         <div className={pills ? 'pq-pills' : 'pq-options'}>
-          {options.map(option => (
+          {options.map((option, index) => (
             <label key={option} className={`pq-option${shadeClass(option)}`}>
               <input
                 type="radio"
@@ -65,6 +67,10 @@ export function PatientFormQuestion({ question, answers, onChange, number = null
                 disabled={disabled}
                 onChange={() => onChange({ [question.id]: option, [otherKey]: undefined })}
               />
+              {/* Escala: a, b, c... na frente de cada resposta, como no consultório. */}
+              {question.lettered && !pills && (
+                <span className="pq-option-letter" aria-hidden="true">{OPTION_LETTERS[index]})</span>
+              )}
               {option}
             </label>
           ))}

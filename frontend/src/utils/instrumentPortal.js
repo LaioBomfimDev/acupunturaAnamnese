@@ -28,6 +28,7 @@ export function buildPortalQuestions(instrument) {
       type: 'single',
       label: item.text,
       required: true,
+      lettered: true,
       options: item.options.map(option => option.label),
     };
     if (item.risk) {
@@ -48,6 +49,7 @@ export function buildPortalQuestions(instrument) {
     label: item.text,
     help: EXTRA_ITEM_HELP,
     required: false,
+    lettered: true,
     options: item.options.map(option => option.label),
   }));
   return [

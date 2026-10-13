@@ -22,10 +22,15 @@ function shadeClass(item, option) {
   return option.value >= item.shadeFrom ? ' instrument-option--shade-dark' : ' instrument-option--shade-light';
 }
 
+// Respostas em lista, uma por linha, com a letra na frente (a, b, c...):
+// mais fácil de ler em voz alta e de achar no tablet. A letra é só
+// visual; o leitor de tela lê a resposta.
+export const OPTION_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+
 function OptionGroup({ item, value, onChange, labelledBy }) {
   return (
-    <div className="checkgrid instrument-options" role="radiogroup" aria-labelledby={labelledBy}>
-      {item.options.map(option => {
+    <div className="instrument-options" role="radiogroup" aria-labelledby={labelledBy}>
+      {item.options.map((option, index) => {
         const selected = value === option.value;
         return (
           <button
@@ -33,10 +38,11 @@ function OptionGroup({ item, value, onChange, labelledBy }) {
             type="button"
             role="radio"
             aria-checked={selected}
-            className={`tag${selected ? ' active' : ''}${shadeClass(item, option)}`}
+            className={`tag instrument-option${selected ? ' active' : ''}${shadeClass(item, option)}`}
             onClick={() => onChange(selected ? undefined : option.value)}
           >
-            {option.label}
+            <span className="instrument-option-letter" aria-hidden="true">{OPTION_LETTERS[index]})</span>
+            <span className="instrument-option-label">{option.label}</span>
           </button>
         );
       })}

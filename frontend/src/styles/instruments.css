@@ -1090,16 +1090,37 @@
   border-bottom: 0;
 }
 
+/* Respostas em lista: uma por linha, a letra na frente, a linha inteira
+   clicável. Alvo de toque confortável no tablet do consultório. */
 .instrument-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  gap: 6px;
+  /* Linha curta para ler: no computador a lista não estica até a borda. */
+  max-width: 560px;
 }
 
-/* Alvo de toque confortável no tablet do consultório. */
 .forms-scope .panel .instrument-options .tag {
-  min-height: 40px;
-  padding: 8px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.instrument-option-letter {
+  flex: none;
+  min-width: 1.5em;
+  font-weight: 700;
+  color: var(--r1-text-subtle);
+}
+
+.forms-scope .panel .instrument-options .tag.active .instrument-option-letter {
+  color: inherit;
 }
 
 .instrument-apply-meta {

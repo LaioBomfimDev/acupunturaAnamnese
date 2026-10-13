@@ -1268,3 +1268,52 @@ test('cartão: subescala sem faixa (Autocompaixão) não mostra "Faixa: —"', a
   const panel = await src('components/instruments/PatientInstrumentsPanel.jsx');
   assert.match(panel, /\{view\.bands\.length > 0 && <span>Faixa: <b>\{now\.bandLabel \|\| '—'\}<\/b><\/span>\}/);
 });
+
+// ---- respostas em lista com letra (13/10/2026, pedido da administradora) ----
+
+test('consultório: cada resposta numa linha, com a letra na frente, e a linha inteira clicável', async () => {
+  const html = renderToStaticMarkup(React.createElement(ApplyForm, {
+    instrument: instruments.PHQ9,
+    patientName: 'Paciente Teste',
+    patientId: '00000000-0000-0000-0000-000000000001',
+    discipline: 'psicologia',
+    onCancel: () => {},
+    onSaved: () => {},
+  }));
+  assert.equal((html.match(/class="instrument-option-letter" aria-hidden="true">/g) || []).length, 9 * 4,
+    '9 perguntas com 4 respostas; a de dificuldade só aparece com algum problema marcado');
+  const firstGroup = html.slice(html.indexOf('role="radiogroup"'), html.indexOf('</div>', html.indexOf('role="radiogroup"')));
+  assert.deepEqual(
+    [...firstGroup.matchAll(/instrument-option-letter" aria-hidden="true">([a-z])\)</g)].map(match => match[1]),
+    ['a', 'b', 'c', 'd'],
+  );
+  assert.match(firstGroup, /role="radio" aria-checked="false" class="tag instrument-option"><span class="instrument-option-letter" aria-hidden="true">a\)<\/span><span class="instrument-option-label">Nenhuma vez<\/span><\/button>/);
+  assert.doesNotMatch(html, /checkgrid instrument-options/, 'sem as pílulas soltas lado a lado');
+
+  const css = await src('styles/instruments.css');
+  const block = css.slice(css.indexOf('.instrument-options {'), css.indexOf('}', css.indexOf('.instrument-options {')));
+  assert.match(block, /display: grid/);
+  assert.doesNotMatch(block, /flex-wrap/);
+  const form = await src('components/instruments/InstrumentApplyForm.jsx');
+  assert.match(form, /export const OPTION_LETTERS = 'abcdefghijklmnopqrstuvwxyz';/);
+});
+
+test('Área do Paciente: escala com a mesma letra; formulário da clínica sem letra', async () => {
+  const portal = await server.ssrLoadModule('/src/utils/instrumentPortal.js');
+  const questions = portal.buildPortalQuestions(instruments.PHQ9);
+  assert.ok(questions.filter(question => question.type === 'single').every(question => question.lettered === true));
+  const { PatientFormQuestion } = await server.ssrLoadModule('/src/components/patientForms/PatientFormQuestion.jsx');
+  const lettered = renderToStaticMarkup(React.createElement(PatientFormQuestion, {
+    question: questions.find(question => question.id === 'q1'), answers: {}, onChange: () => {},
+  }));
+  assert.deepEqual(
+    [...lettered.matchAll(/class="pq-option-letter" aria-hidden="true">([a-z])\)</g)].map(match => match[1]),
+    ['a', 'b', 'c', 'd'],
+  );
+  const plain = renderToStaticMarkup(React.createElement(PatientFormQuestion, {
+    question: { id: 'x', type: 'single', label: 'Como soube da clínica?', options: ['Indicação', 'Internet'] },
+    answers: {},
+    onChange: () => {},
+  }));
+  assert.doesNotMatch(plain, /pq-option-letter/);
+});

@@ -185,6 +185,15 @@
   background: color-mix(in srgb, var(--r1-ink) 13%, var(--r1-surface));
 }
 
+/* Escala: a letra na frente de cada resposta (a, b, c...). */
+.pq-option-letter {
+  flex: none;
+  min-width: 1.4em;
+  margin-left: -4px;
+  font-weight: 700;
+  color: var(--r1-text-subtle);
+}
+
 .pq-option:has(input:checked) {
   border-color: var(--r1-accent);
   background: var(--r1-accent-wash);

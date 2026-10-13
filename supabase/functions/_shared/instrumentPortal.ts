@@ -21,6 +21,8 @@ type PortalQuestion = {
   label: string;
   help?: string;
   required?: boolean;
+  // Escala: respostas com a, b, c... na frente, como no consultório.
+  lettered?: boolean;
   options?: string[];
   riskNotice?: { values: string[] };
   shading?: { dark: string[] };
@@ -33,6 +35,7 @@ export function buildPortalQuestions(instrument: ServerInstrument): PortalQuesti
       type: 'single',
       label: item.text || '',
       required: true,
+      lettered: true,
       options: (item.options || []).map(option => option.label || ''),
     };
     if (item.risk) {
@@ -55,6 +58,7 @@ export function buildPortalQuestions(instrument: ServerInstrument): PortalQuesti
     label: item.text || '',
     help: EXTRA_ITEM_HELP,
     required: false,
+    lettered: true,
     options: (item.options || []).map(option => option.label || ''),
   }));
   return [

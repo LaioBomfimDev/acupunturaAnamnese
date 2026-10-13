@@ -88,11 +88,67 @@ export function differenceLabel(current, previous) {
   return `${delta > 0 ? 'Subiu' : 'Desceu'} ${pointsLabel(size)} em relação à anterior.`;
 }
 
+/**
+ * Mudança da nota para a aplicação anterior, para o selo do cartão
+ * fechado: `{ direction: 'up' | 'down' | 'same', size, label }`, ou null
+ * sem as duas notas. Subir não é piorar em toda escala (no Rosenberg,
+ * subir é melhorar): o selo diz só a direção, numa cor neutra.
+ */
+export function scoreTrend(current, previous) {
+  if (typeof current !== 'number' || typeof previous !== 'number') return null;
+  const delta = Math.round((current - previous) * 100) / 100;
+  if (delta === 0) return { direction: 'same', size: 0, label: 'Igual à aplicação anterior' };
+  const size = Math.abs(delta);
+  return {
+    direction: delta > 0 ? 'up' : 'down',
+    size,
+    label: `${delta > 0 ? 'Subiu' : 'Desceu'} ${pointsLabel(size)} em relação à anterior`,
+  };
+}
+
 /** Aplicações válidas (não anuladas, com nota), da mais recente para a mais antiga. */
 export function validApplications(applications) {
   return applications.filter(app => !app.voidedAt && (
     typeof app.result?.score === 'number' || Array.isArray(app.result?.subscales)
   ));
+}
+
+/**
+ * Datas de uma escala para o cartão fechado: a primeira aplicação válida,
+ * as reaplicações (da mais antiga para a mais nova) e quantas são ao todo.
+ * Anuladas ficam de fora, como no gráfico.
+ */
+export function applicationDates(applications) {
+  const dates = validApplications(applications)
+    .map(app => app.appliedAt)
+    .filter(value => value && !Number.isNaN(new Date(value).getTime()))
+    .sort((a, b) => new Date(a) - new Date(b));
+  return { first: dates[0] || null, reapplied: dates.slice(1), count: dates.length };
+}
+
+/**
+ * Ordem dos cartões na aba: primeiro as escalas já aplicadas ao paciente,
+ * da aplicação mais recente para a mais antiga; depois as que ainda não
+ * foram aplicadas, na ordem do catálogo.
+ */
+export function orderInstrumentsForPatient(instruments, applications) {
+  const latestOf = new Map();
+  for (const app of validApplications(applications)) {
+    const at = new Date(app.appliedAt).getTime();
+    if (Number.isNaN(at)) continue;
+    if (!latestOf.has(app.instrumentId) || at > latestOf.get(app.instrumentId)) latestOf.set(app.instrumentId, at);
+  }
+  const applied = instruments
+    .filter(instrument => latestOf.has(instrument.id))
+    .sort((a, b) => latestOf.get(b.id) - latestOf.get(a.id));
+  const notApplied = instruments.filter(instrument => !latestOf.has(instrument.id));
+  return { applied, notApplied };
+}
+
+/** Posição da faixa na régua (0 = a mais baixa), para o tom do selo; -1 sem faixa. */
+export function bandIndexOf(bands, bandLabel) {
+  if (!Array.isArray(bands) || !bandLabel) return -1;
+  return bands.findIndex(band => band.label === bandLabel);
 }
 
 /**

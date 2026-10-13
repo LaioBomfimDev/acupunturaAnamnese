@@ -1242,6 +1242,25 @@
   }
 }
 
+/* Com a sétima aba (Escalas, 13/10/2026, para quem também vê a Área do
+   Paciente): 4 + 3 no notebook, em vez de 3 + 3 + 1 com a última
+   sozinha, e faixa única só quando as sete cabem (~1.530px). Só no
+   computador: no celular e no tablet a ficha é o índice em lista. */
+@media (min-width: 1025px) {
+  @container pf-tabs (min-width: 900px) {
+    .pf-tabs:has(> .pf-tab:nth-child(7)) {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @container pf-tabs (min-width: 1540px) {
+    .pf-tabs:has(> .pf-tab:nth-child(7)) {
+      display: flex;
+    }
+  }
+}
+
 .pf-tab {
   display: flex;
   flex: 1 1 auto;

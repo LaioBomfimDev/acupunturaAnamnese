@@ -15,6 +15,7 @@ import { PatientStart } from './components/PatientStart';
 import { HomeConsole } from './components/HomeConsole';
 import { HubBackButton, HubDock } from './components/HubNav';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
+import { canSeeScales } from './utils/instrumentAccess';
 import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
@@ -48,6 +49,7 @@ const AssistantFoodLinks = lazyPanel(() => import('./components/panels/Assistant
 const RelatoriosGestao = lazyPanel(() => import('./components/panels/RelatoriosGestao'), 'RelatoriosGestao');
 const GestaoProfissional = lazyPanel(() => import('./components/panels/GestaoProfissional'), 'GestaoProfissional');
 const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
+const ScalesScreen = lazyPanel(() => import('./components/instruments/ScalesScreen'), 'ScalesScreen');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
 // entre logins — sair limpa a chave.
@@ -78,13 +80,12 @@ export default function App() {
     signOut,
     changeTemporaryPassword,
   } = useAuth();
-  const { selectedPatient, patients, selectPatient } = usePatient();
+  const { selectedPatient } = usePatient();
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
   const [hubAgendaShowBirthdays, setHubAgendaShowBirthdays] = useState(false);
   const [hubGestaoInitialSection, setHubGestaoInitialSection] = useState(null);
   // Por onde o workspace da área abre (null = tela de escolha do paciente).
   // 'escalas' = alerta de risco da tela inicial, com a paciente já escolhida.
-  const [workspaceEntryView, setWorkspaceEntryView] = useState(null);
   const [activeTab, setActiveTab] = useState('Tela inicial');
   const [activeDiscipline, setActiveDiscipline] = useState(() => sessionStorage.getItem(DISCIPLINE_STORAGE_KEY) || null);
   const [showClinicPatients, setShowClinicPatients] = useState(false);
@@ -92,6 +93,10 @@ export default function App() {
   const [showHubAgenda, setShowHubAgenda] = useState(false);
   const [showHubGestao, setShowHubGestao] = useState(false);
   const [showHubEvolutions, setShowHubEvolutions] = useState(false);
+  // Escalas no menu principal (13/10/2026). O paciente vem do alerta de
+  // risco ("Ver resultado"); sem ele, a tela abre na lista.
+  const [showHubScales, setShowHubScales] = useState(false);
+  const [hubScalesPatient, setHubScalesPatient] = useState(null);
   const [pendingEvolutionsCount, setPendingEvolutionsCount] = useState(0);
   const [superAdminSection, setSuperAdminSection] = useState('manage');
   const [now, setNow] = useState(() => new Date());
@@ -299,7 +304,7 @@ export default function App() {
       : isClinicAdmin
         ? (attendsPatients ? 'admin-professional' : 'admin')
         : 'professional';
-    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions) {
+    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions && !showHubScales) {
       return (
         <Suspense fallback={<PanelLoading />}>
           <HomeConsole
@@ -321,6 +326,9 @@ export default function App() {
             // tarefa de recepção.
             onOpenPendingEvolutions={isReceptionist ? undefined : () => setShowHubEvolutions(true)}
             onOpenBirthdays={(isClinicAdmin || isReceptionist) ? () => { setHubAgendaShowBirthdays(true); setShowHubAgenda(true); } : undefined}
+            // Escalas: administração e quem atende numa área com escala; a
+            // recepção não (utils/instrumentAccess.js).
+            onOpenScales={canSeeScales(profile) ? () => { setHubScalesPatient(null); setShowHubScales(true); } : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
             onOpenInstrumentAlert={openInstrumentAlert}
           />
@@ -416,6 +424,31 @@ export default function App() {
         </div>
       );
     }
+    // Escalas direto do hub (13/10/2026): os resultados de cada paciente,
+    // fora das áreas. A mesma peça da ficha e da Psicologia (acordeão).
+    if (showHubScales) {
+      return (
+        <div className="hub-screen">
+          {/* --titled: o corpo já tem o título "Escalas" com o "Como funciona". */}
+          <header className="hub-topbar hub-topbar--titled">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
+              <p>Escalas</p>
+            </div>
+            <HubBackButton
+              label="Voltar às áreas"
+              onClick={() => { setShowHubScales(false); setHubScalesPatient(null); }}
+            />
+          </header>
+          <main className="hub-body hub-body--full">
+            <Suspense fallback={<PanelLoading />}>
+              <ScalesScreen key={hubScalesPatient?.id || 'lista'} profile={profile} initialPatient={hubScalesPatient} />
+            </Suspense>
+          </main>
+          {renderHubDock('escalas')}
+        </div>
+      );
+    }
     // Documentos timbrados direto do hub: utilitário da instituição inteira,
     // não exige escolher área nem ter paciente selecionado. Só profissional
     // e recepção chegam aqui — o admin usa a aba Documentos da Gestão.
@@ -488,7 +521,6 @@ export default function App() {
           therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
           onSwitchDiscipline={handleSwitchDiscipline}
           onSignOut={handleSignOut}
-          entryView={workspaceEntryView}
         />
       </Suspense>
     );
@@ -636,21 +668,19 @@ export default function App() {
     setSelectedMap(testSelectedMap);
   }
 
-  function handleSelectDiscipline(disciplineId, entryView = null) {
+  function handleSelectDiscipline(disciplineId) {
     if (!canEnterDiscipline(profile, disciplineId)) return;
     sessionStorage.setItem(DISCIPLINE_STORAGE_KEY, disciplineId);
     setActiveDiscipline(disciplineId);
     setActiveTab('Tela inicial');
-    setWorkspaceEntryView(entryView);
   }
 
-  // "Ver resultado" no alerta de risco das escalas: escolhe a paciente e
-  // abre a área direto na aba Escalas. Sem a paciente na lista, abre só a área.
-  function openInstrumentAlert({ patientId, discipline }) {
-    if (!canEnterDiscipline(profile, discipline)) return;
-    const patient = patients.find(item => item.id === patientId) || null;
-    if (patient) selectPatient(patient);
-    handleSelectDiscipline(discipline, patient ? 'escalas' : null);
+  // "Ver resultado" no alerta de risco das escalas: abre a tela Escalas do
+  // menu principal já com a paciente escolhida (13/10/2026; antes abria a
+  // Psicologia, que a administração sem a área nem conseguia abrir).
+  function openInstrumentAlert({ patientId, patientName }) {
+    setHubScalesPatient(patientId ? { id: patientId, name: patientName || 'Paciente' } : null);
+    setShowHubScales(true);
   }
 
   function handleSwitchDiscipline() {
@@ -658,7 +688,6 @@ export default function App() {
     sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
     setActiveDiscipline(null);
     setActiveTab('Tela inicial');
-    setWorkspaceEntryView(null);
   }
 
   // Troca de tela pela barra de baixo do hub (celular): uma tela por vez,
@@ -671,6 +700,8 @@ export default function App() {
     setShowHubDocuments(screen === 'documentos');
     setShowHubGestao(screen === 'gestao');
     setHubGestaoInitialSection(null);
+    setShowHubScales(screen === 'escalas');
+    setHubScalesPatient(null);
     setShowClinicPatients(screen === 'pacientes');
   }
 

@@ -641,13 +641,14 @@ test('telas da etapa 2: alerta na tela inicial, envio pela aba e pela ficha, Con
     assert.match(service, new RegExp(`supabase\\.rpc\\('${rpc}'`), rpc);
   }
 
-  // Alerta da tela inicial leva direto às Escalas da paciente.
+  // Alerta da tela inicial leva direto às Escalas da paciente: desde
+  // 13/10/2026, a tela Escalas do menu principal, que a administração sem
+  // a área também abre (antes era a aba dentro da Psicologia).
   const app = await src('App.jsx');
   assert.match(app, /onOpenInstrumentAlert=\{openInstrumentAlert\}/);
-  assert.match(app, /if \(patient\) selectPatient\(patient\);\r?\n\s*handleSelectDiscipline\(discipline, patient \? 'escalas' : null\);/);
-  assert.match(app, /entryView=\{workspaceEntryView\}/);
-  const workspace = await src('components/PsychologyWorkspace.jsx');
-  assert.match(workspace, /entryView === 'escalas' && selectedPatient \? PSYCHOLOGY_TABS\.ESCALAS : PSYCHOLOGY_TABS\.HOME/);
+  assert.match(app, /setHubScalesPatient\(patientId \? \{ id: patientId, name: patientName \|\| 'Paciente' \} : null\);\r?\n\s*setShowHubScales\(true\);/);
+  assert.match(app, /<ScalesScreen key=\{hubScalesPatient\?\.id \|\| 'lista'\} profile=\{profile\} initialPatient=\{hubScalesPatient\} \/>/);
+  assert.doesNotMatch(app, /workspaceEntryView/, 'a Psicologia não abre mais direto nas Escalas pelo alerta');
   assert.match(alerts, /onClick=\{\(\) => onOpen\(alert\)\}>\r?\n\s*Ver resultado/);
 
   const gestao = await src('components/panels/RelatoriosGestao.jsx');

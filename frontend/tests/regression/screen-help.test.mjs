@@ -54,6 +54,7 @@ function everyTopic() {
     ...Object.entries(help.GESTAO_PROFISSIONAL_HELP).map(([id, topic]) => [`Gestão pessoal/${id}`, topic]),
     ['Evoluções', help.EVOLUCOES_HELP],
     ['Ver evoluções', help.EVOLUCOES_REVIEW_HELP],
+    ['Escalas', help.ESCALAS_HELP],
     ['Pacientes', help.PACIENTES_HELP],
     ...Object.entries(help.AGENDA_HELP).map(([id, topic]) => [`Agenda/${id}`, topic]),
     ...Object.entries(help.HOME_HELP).map(([id, topic]) => [`Tela inicial/${id}`, topic]),
@@ -147,6 +148,7 @@ test('curadoria não usa o botão de ajuda: explicação fica aberta na tela', a
 const SCREENS = [
   ['components/evolutions/EvolutionsScreen.jsx', 'EVOLUCOES_HELP'],
   ['components/ClinicPatientsPanel.jsx', 'PACIENTES_HELP'],
+  ['components/instruments/ScalesScreen.jsx', 'ESCALAS_HELP'],
   ['components/panels/agenda/ScheduleEditor.jsx', 'AGENDA_HELP.horarios'],
   ['components/panels/agenda/HolidaysEditor.jsx', 'AGENDA_HELP.feriados'],
   ['components/panels/agenda/AgendaSettingsEditor.jsx', 'AGENDA_HELP.configurar'],

@@ -168,6 +168,7 @@ export function HomeConsole({
   profile, therapistName, variant,
   onSelect, onSignOut,
   onOpenAgenda, onOpenPendingEvolutions, onOpenGestao, onOpenClinicPatients, onOpenDocuments, onOpenBirthdays,
+  onOpenScales = null,
   pendingEvolutionsCount = 0,
   onOpenInstrumentAlert = null,
 }) {
@@ -241,6 +242,21 @@ export function HomeConsole({
     return () => { cancelled = true; };
   }, [variant, profile?.id, isFrontDeskView]);
 
+  const mobileShortcuts = [
+    onOpenScales && {
+      id: 'escalas',
+      title: 'Escalas',
+      text: 'Resultados das escalas de cada paciente, com as datas de aplicação e o gráfico da evolução.',
+      onClick: onOpenScales,
+    },
+    variant === 'professional' && onOpenDocuments && {
+      id: 'documentos',
+      title: 'Documentos timbrados',
+      text: 'Envie um Word (.docx) e receba o documento no papel timbrado da instituição.',
+      onClick: onOpenDocuments,
+    },
+  ].filter(Boolean);
+
   const areasLabel = copy.areasLabel || (attendable.length === 1 ? 'Sua área' : 'Suas áreas');
   // Profissional não tem números: no celular as áreas dele (o "Atender")
   // entram no cartão do dia, logo abaixo da pergunta.
@@ -312,6 +328,14 @@ export function HomeConsole({
                 title="Pacientes da instituição"
                 description="Cadastro central, matrículas por área e ficha completa de cada paciente."
                 onClick={onOpenClinicPatients}
+              />
+            )}
+            {onOpenScales && (
+              <NavItem
+                icon="escalas"
+                title="Escalas"
+                description="Resultados das escalas de cada paciente, com as datas de aplicação e o gráfico da evolução."
+                onClick={onOpenScales}
               />
             )}
             {onOpenDocuments && (
@@ -394,20 +418,23 @@ export function HomeConsole({
         {!areasInHero && areasSection}
 
         {/* Só no celular: a barra de baixo leva no máximo cinco destinos
-            (HubNav, MAX_DOCK_ITEMS) e, para o profissional, Documentos
-            timbrados fica de fora; aqui ele continua a um toque. */}
-        {variant === 'professional' && onOpenDocuments && (
+            (HubNav, MAX_DOCK_ITEMS). Escalas (13/10/2026) e, para o
+            profissional, Documentos timbrados ficam de fora dela; aqui
+            continuam a um toque. */}
+        {mobileShortcuts.length > 0 && (
           <div className="hc-mobile-only">
             <p className="hc-section-label">{copy.navLabel}</p>
             <div className="hc-row-list">
-              <button type="button" className="hc-row-item" onClick={onOpenDocuments}>
-                <span className="hc-row-icon"><Icon id="documentos" /></span>
-                <span className="hc-row-text">
-                  <b>Documentos timbrados</b>
-                  <p>Envie um Word (.docx) e receba o documento no papel timbrado da instituição.</p>
-                </span>
-                <span className="hc-row-cta">Abrir →</span>
-              </button>
+              {mobileShortcuts.map(item => (
+                <button key={item.id} type="button" className="hc-row-item" onClick={item.onClick}>
+                  <span className="hc-row-icon"><Icon id={item.id} /></span>
+                  <span className="hc-row-text">
+                    <b>{item.title}</b>
+                    <p>{item.text}</p>
+                  </span>
+                  <span className="hc-row-cta">Abrir →</span>
+                </button>
+              ))}
             </div>
           </div>
         )}

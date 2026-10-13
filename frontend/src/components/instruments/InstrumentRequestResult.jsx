@@ -92,7 +92,7 @@ export function InstrumentRequestResult({ request, currentUserId = null, onClose
       )}
       {!state.loading && !state.error && (
         <p>
-          Não achamos o resultado deste envio. Confira a aba Escalas do paciente na {area}.
+          Não achamos o resultado deste envio. Confira em Escalas, no menu principal, ou na aba Escalas da ficha do paciente ({area}).
         </p>
       )}
     </MessageDialog>

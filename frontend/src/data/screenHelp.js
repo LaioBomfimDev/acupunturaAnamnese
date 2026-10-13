@@ -313,6 +313,36 @@ export const EVOLUCOES_HELP = {
   ],
 };
 
+/** Escalas, no menu principal (components/instruments/ScalesScreen.jsx). */
+export const ESCALAS_HELP = {
+  title: 'Escalas',
+  summary: 'As escalas de cada paciente (PHQ-9, GAD-7, DASS-21 e as outras da Psicologia): a última nota, a faixa, as datas e o gráfico da evolução.',
+  actions: [
+    'Escolher o paciente na lista, à esquerda, ou buscar pelo nome. A lista mostra quem tem matrícula na Psicologia; a busca procura em todos os pacientes.',
+    'Cada escala abre e fecha com um clique. “Abrir todas” e “Fechar todas” ficam no topo, ao lado dos números do paciente.',
+    'Com a escala aberta: “Aplicar agora”, no atendimento, ou “Enviar para responder em casa”, pela Área do Paciente.',
+    '“Abrir”, numa aplicação da lista, mostra as respostas, a nota e a régua das faixas. Quem aplicou pode anular, com o motivo.',
+  ],
+  reading: [
+    'Fechada, a escala já mostra a última nota, a faixa, a seta de subiu (▲) ou desceu (▼) desde a aplicação anterior e a linha pequena da evolução.',
+    'Embaixo, as datas: “Aplicada em” é a primeira aplicação, “Reaplicada em” são as seguintes, e depois quando dá para reaplicar. “Já pode reaplicar” fica na cor da tela.',
+    'Primeiro vêm as escalas já aplicadas ao paciente, da mais recente para a mais antiga; depois, as que ainda não foram aplicadas.',
+    'O tom do selo da faixa sobe junto com a faixa do instrumento, na cor da instituição. Vermelho só aparece em alerta de risco.',
+    'No gráfico, cada bolinha é uma aplicação, com a nota em cima; a última pulsa e traz a nota numa caixinha. Aplicações anuladas ficam de fora.',
+    'Subir não é piorar em toda escala: no Rosenberg, nota maior é autoestima maior. A seta diz só a direção.',
+  ],
+  access: [
+    'Veem as escalas de um paciente quem atende esse paciente na área (atendimento na Agenda ou responsável da matrícula) e a administração.',
+    'Aplicar e marcar “Vi o alerta” ficam com quem atende. A administração que não atende vê só para leitura.',
+    'A recepção não usa esta tela.',
+  ],
+  notes: [
+    'A faixa é a do instrumento e não é diagnóstico. As escalas ficam “Em conferência” até a psicóloga responsável aprovar.',
+    'Alerta de risco ainda não visto fica no topo desta tela e dentro da escala, mesmo fechada, até alguém que atende marcar “Vi o alerta”.',
+    'As mesmas escalas aparecem na aba Escalas da ficha do paciente e dentro da Psicologia.',
+  ],
+};
+
 /** Evoluções > "Ver evoluções" (components/evolutions/EvolutionsReview.jsx). */
 export const EVOLUCOES_REVIEW_HELP = {
   title: 'Ver evoluções',

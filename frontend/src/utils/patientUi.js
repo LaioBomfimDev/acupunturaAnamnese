@@ -26,6 +26,18 @@ export function formatAge(patient) {
   return formatBirthDate(patient?.birth_date);
 }
 
+/** "34 anos", pela idade gravada ou pela data de nascimento; sem as duas, nada. */
+export function patientAgeLabel(patient, now = new Date()) {
+  if (patient?.age !== undefined && patient?.age !== null && patient?.age !== '') return `${patient.age} anos`;
+  if (!patient?.birth_date) return null;
+  const birth = new Date(`${patient.birth_date}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  let years = now.getFullYear() - birth.getFullYear();
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) years -= 1;
+  if (years < 0) return null;
+  return years === 1 ? '1 ano' : `${years} anos`;
+}
+
 export function getInitials(name) {
   return String(name || '?')
     .trim()

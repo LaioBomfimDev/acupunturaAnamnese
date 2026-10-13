@@ -27,11 +27,18 @@ import { HubBackButton } from './HubNav';
 import { TOOL_GLYPHS } from './ui/hubGlyphs';
 import { getStatusLabel } from '../utils/agenda';
 import { buildProfileTabSummaries } from '../utils/patientProfileTabs';
+import { scaleDisciplinesFor } from '../utils/instrumentAccess';
 
 // Área do Paciente (acesso + formulários): só a administração abre, então
 // carrega à parte e não pesa na ficha de quem não vê a aba.
 const PatientPortalTab = lazy(() => import('./patientForms/PatientPortalTab')
   .then(module => ({ default: module.PatientPortalTab })));
+
+// Escalas (13/10/2026): a mesma peça da tela Escalas do menu principal.
+// Só a administração e quem atende numa área com escala veem a aba, então
+// também carrega à parte.
+const PatientInstrumentsPanel = lazy(() => import('./instruments/PatientInstrumentsPanel')
+  .then(module => ({ default: module.PatientInstrumentsPanel })));
 
 // ============================================================
 // Ficha do paciente (Fase 5) — página própria, aberta ao clicar num
@@ -98,6 +105,8 @@ const TABS = [
   { id: 'anexos', label: 'Anexos' },
   // Só aparece para clinic_admin (filtro no tablist): acesso do paciente e formulários.
   { id: 'portal', label: 'Área do Paciente' },
+  // Administração e quem atende numa área com escala (utils/instrumentAccess.js).
+  { id: 'escalas', label: 'Escalas' },
 ];
 
 // Ícone de cada aba (traço de 24px, herda currentColor). Agendamentos e
@@ -128,6 +137,7 @@ const TAB_GLYPHS = {
       <path d="M10.5 18.5h3" />
     </>
   ),
+  escalas: TOOL_GLYPHS.escalas,
 };
 
 function buildEditForm(p) {
@@ -183,6 +193,10 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [activeTab, setActiveTab] = useState('cadastro');
   const [sectionOpen, setSectionOpen] = useState(false);
   const [portalStatus, setPortalStatus] = useState(null);
+  // Resumo da aba Escalas: { status: 'loading' | 'ready' | 'denied' | 'error', applications }.
+  const [scalesState, setScalesState] = useState({ status: 'loading', applications: [] });
+  const scaleDisciplines = scaleDisciplinesFor(therapistProfile);
+  const scaleDisciplinesKey = scaleDisciplines.join(',');
   const [showTimeline, setShowTimeline] = useState(false);
   const [deleteRequestOpen, setDeleteRequestOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -241,6 +255,27 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       });
     return () => { cancelled = true; };
   }, [patient.id, isClinicAdmin]);
+
+  // Resumo da aba Escalas: as aplicações das áreas com escala, lidas com a
+  // mesma RPC da aba (o banco decide quem lê). Import tardio, como a aba.
+  useEffect(() => {
+    if (!scaleDisciplinesKey) return undefined;
+    let cancelled = false;
+    setScalesState({ status: 'loading', applications: [] });
+    const disciplines = scaleDisciplinesKey.split(',');
+    import('../services/patientInstrumentService')
+      .then(service => Promise.all(disciplines.map(discipline => (
+        service.listInstrumentApplications({ patientId: patient.id, discipline })
+          .then(rows => rows.map(row => ({ ...row, discipline })))
+      ))))
+      .then(lists => { if (!cancelled) setScalesState({ status: 'ready', applications: lists.flat() }); })
+      .catch(err => {
+        if (cancelled) return;
+        const denied = /não está em atendimento nesta área/.test(String(err?.message || ''));
+        setScalesState({ status: denied ? 'denied' : 'error', applications: [] });
+      });
+    return () => { cancelled = true; };
+  }, [patient.id, scaleDisciplinesKey]);
 
   // Celular e tablet: entrar numa parte ou voltar ao índice troca a tela
   // inteira, então a página volta ao topo. No computador a faixa de abas
@@ -608,8 +643,10 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     pendingEvolutionsCount: pendingEvolutions.length,
     attachments,
     portalStatus,
+    scales: scalesState,
   });
-  const visibleTabs = TABS.filter(tab => tab.id !== 'portal' || isClinicAdmin);
+  const visibleTabs = TABS.filter(tab => tab.id !== 'portal' || isClinicAdmin)
+    .filter(tab => tab.id !== 'escalas' || scaleDisciplines.length > 0);
   const activeTabLabel = TABS.find(tab => tab.id === activeTab)?.label;
 
   function handlePrintCadastro() {
@@ -1207,6 +1244,31 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     onStatusChange={setPortalStatus}
                     onEnrollmentsChanged={refreshEnrollments}
                   />
+                </Suspense>
+              </section>
+            )}
+
+            {/* ================= ESCALAS ================= */}
+            {scaleDisciplines.length > 0 && activeTab === 'escalas' && (
+              <section className="pf-panel forms-scope pf-scales">
+                <Suspense fallback={<p className="small">Carregando escalas…</p>}>
+                  {scaleDisciplines.map(discipline => (
+                    <PatientInstrumentsPanel
+                      key={discipline}
+                      patient={full}
+                      discipline={discipline}
+                      currentUserId={therapistProfile?.id}
+                      clinicName={clinicName}
+                      title={scaleDisciplines.length > 1 ? `Escalas · ${getDiscipline(discipline)?.label || discipline}` : 'Escalas'}
+                      onApplicationsLoaded={rows => setScalesState(current => ({
+                        status: 'ready',
+                        applications: [
+                          ...current.applications.filter(app => app.discipline !== discipline),
+                          ...rows.map(row => ({ ...row, discipline })),
+                        ],
+                      }))}
+                    />
+                  ))}
                 </Suspense>
               </section>
             )}

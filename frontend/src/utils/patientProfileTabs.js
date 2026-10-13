@@ -47,6 +47,32 @@ function plural(count, one, many) {
 }
 
 /**
+ * Resumo da aba Escalas (13/10/2026). `scales` é o que a ficha leu com a
+ * mesma RPC da aba: { status: 'loading' | 'ready' | 'denied' | 'error',
+ * applications }. O número é quantas escalas diferentes o paciente já
+ * respondeu (anuladas fora); alerta de risco ainda não visto vira 'alert',
+ * o mesmo ponto pulsante da evolução atrasada. Sem leitura, a aba diz com
+ * quem as escalas ficam, sem número; sem resposta ainda, não afirma nada.
+ */
+export function buildScalesTabSummary(scales) {
+  const status = scales?.status || 'loading';
+  if (status === 'denied') {
+    return { count: null, summary: 'Com quem atende e a administração', tone: null, dots: [] };
+  }
+  if (status !== 'ready') return { count: null, summary: 'Notas, datas e gráfico', tone: null, dots: [] };
+  const valid = (scales.applications || []).filter(app => !app.voidedAt && (
+    typeof app.result?.score === 'number' || Array.isArray(app.result?.subscales)
+  ));
+  const instruments = new Set(valid.map(app => app.instrumentId));
+  const unseen = valid.filter(app => app.hasRisk && !app.riskAcknowledgedAt).length;
+  const lastAt = latest(valid, 'appliedAt');
+  let summary = 'Nenhuma aplicada';
+  if (unseen > 0) summary = unseen === 1 ? 'Alerta de risco não visto' : `${unseen} alertas de risco não vistos`;
+  else if (lastAt) summary = `${plural(valid.length, 'aplicação', 'aplicações')} · última ${dayMonth(lastAt)}`;
+  return { count: instruments.size, summary, tone: unseen > 0 ? 'alert' : null, dots: [] };
+}
+
+/**
  * Número e resumo de cada aba. `tone` muda a cor da linha: 'alert' é
  * evolução atrasada (vermelho, a mesma bolinha pulsante de antes);
  * 'success' / 'warning' / 'neutral' é o estado do acesso do paciente.
@@ -60,6 +86,7 @@ export function buildProfileTabSummaries({
   pendingEvolutionsCount = 0,
   attachments = [],
   portalStatus = null,
+  scales = null,
   now = new Date(),
 } = {}) {
   const enrolledLabels = enrollments.map(e => getDiscipline(e.discipline)?.label || e.discipline);
@@ -110,5 +137,6 @@ export function buildProfileTabSummaries({
       tone: portalStatus?.tone || null,
       dots: [],
     },
+    escalas: buildScalesTabSummary(scales),
   };
 }

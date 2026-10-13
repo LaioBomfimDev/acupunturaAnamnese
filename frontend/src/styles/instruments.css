@@ -7,12 +7,12 @@
 
 .instrument-panel {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .instrument-list {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .instrument-blocked {
@@ -25,41 +25,507 @@
   margin: 0;
 }
 
-.instrument-card {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--r1-border);
-  border-radius: var(--r1-radius-md);
-  background: var(--r1-surface);
-}
+/* ---------- resumo do paciente (topo da aba) ---------- */
 
-.instrument-card-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px 16px;
-}
-
-.instrument-card-head > div {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.instrument-card-head h3 {
+.instrument-overview {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 17px;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px 18px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-lg);
+  background: color-mix(in srgb, var(--r1-accent) 7%, var(--r1-surface));
 }
 
-.instrument-card-head p {
+.instrument-overview-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 32px;
   margin: 0;
+}
+
+.instrument-overview-stats div {
+  min-width: 0;
+}
+
+.instrument-overview-stats dt {
+  color: var(--r1-text-subtle);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.instrument-overview-stats dd {
+  margin: 3px 0 0;
+  color: var(--r1-accent-strong);
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.instrument-overview-stats dd small {
+  color: var(--r1-text-subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.instrument-overview-stats dd.is-date {
+  color: var(--r1-text);
+  font-size: 19px;
+}
+
+.instrument-group {
+  display: grid;
+  gap: 10px;
+}
+
+.instrument-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  color: var(--r1-text-subtle);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.instrument-group-title span {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+/* ---------- cartão em acordeão (13/10/2026) ---------- */
+
+.instrument-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  transition:
+    border-color var(--r1-dur) var(--r1-ease),
+    box-shadow var(--r1-dur) var(--r1-ease),
+    transform var(--r1-dur) var(--r1-ease);
+  animation: instrument-rise 420ms var(--r1-ease) backwards;
+}
+
+/* Entram uma a uma, de cima para baixo. */
+.instrument-list > .instrument-card:nth-child(2) { animation-delay: 40ms; }
+.instrument-list > .instrument-card:nth-child(3) { animation-delay: 80ms; }
+.instrument-list > .instrument-card:nth-child(4) { animation-delay: 120ms; }
+.instrument-list > .instrument-card:nth-child(5) { animation-delay: 160ms; }
+.instrument-list > .instrument-card:nth-child(6) { animation-delay: 200ms; }
+.instrument-list > .instrument-card:nth-child(n + 7) { animation-delay: 240ms; }
+
+/* Faixa na cor da tela na borda esquerda: aparece ao passar o mouse e fica na aberta. */
+.instrument-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--r1-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--r1-dur) var(--r1-ease);
+}
+
+.instrument-card:hover {
+  border-color: var(--r1-accent-line);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.instrument-card:hover::before,
+.instrument-card.is-open::before {
+  transform: scaleY(1);
+}
+
+.instrument-card.is-open {
+  border-color: var(--r1-accent-line);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.instrument-card.is-empty::before {
+  background: var(--r1-border);
+}
+
+.instrument-card.has-risk {
+  border-color: var(--r1-danger-border);
+}
+
+.instrument-card.has-risk::before {
+  background: var(--r1-danger);
+  transform: scaleY(1);
+}
+
+.instrument-acc-heading {
+  margin: 0;
+  font: inherit;
+}
+
+.instrument-acc-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto 26px;
+  grid-template-areas:
+    'title result spark chevron'
+    'dates dates dates dates';
+  align-items: center;
+  gap: 12px 18px;
+  width: 100%;
+  padding: 16px 18px 14px 22px;
+  border: 0;
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.instrument-acc-toggle:hover {
+  background: color-mix(in srgb, var(--r1-accent) 4%, var(--r1-surface));
+}
+
+.instrument-card.is-open .instrument-acc-toggle {
+  background: color-mix(in srgb, var(--r1-accent) 7%, var(--r1-surface));
+}
+
+.instrument-acc-toggle:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: -3px;
+}
+
+.instrument-acc-title {
+  grid-area: title;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.instrument-acc-name {
+  color: var(--r1-text);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.instrument-acc-full {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--r1-text-subtle);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instrument-acc-result {
+  grid-area: result;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+.instrument-acc-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--r1-accent-strong);
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.instrument-acc-score small {
+  color: var(--r1-text-subtle);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.instrument-acc-empty {
+  color: var(--r1-text-subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.instrument-acc-subscales {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.instrument-acc-subscale {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 10px;
+  background: var(--r1-surface);
+}
+
+.instrument-acc-subscale-label {
+  color: var(--r1-text-subtle);
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.instrument-acc-subscale b {
+  color: var(--r1-accent-strong);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-spark {
+  grid-area: spark;
+  display: block;
+  overflow: visible;
+}
+
+.instrument-spark polyline {
+  fill: none;
+  stroke: var(--r1-accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  animation: instrument-draw 800ms var(--r1-ease) 200ms backwards;
+}
+
+.instrument-spark circle {
+  fill: var(--r1-accent);
+  stroke: var(--r1-surface);
+  stroke-width: 1.6;
+}
+
+.instrument-acc-chevron {
+  grid-area: chevron;
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--r1-accent-wash);
+  transition:
+    transform var(--r1-dur) var(--r1-ease),
+    background-color var(--r1-dur) var(--r1-ease);
+}
+
+.instrument-acc-chevron::before {
+  content: '';
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--r1-accent-strong);
+  border-bottom: 2px solid var(--r1-accent-strong);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.instrument-card.is-open .instrument-acc-chevron {
+  background: var(--r1-accent);
+  transform: rotate(180deg);
+}
+
+.instrument-card.is-open .instrument-acc-chevron::before {
+  border-color: var(--r1-accent-contrast);
+}
+
+/* Datas à vista com a escala fechada. */
+.instrument-acc-dates {
+  grid-area: dates;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--r1-border-subtle);
+}
+
+.instrument-acc-date,
+.instrument-acc-count {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.instrument-acc-date b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.instrument-acc-date .instrument-glyph {
+  flex: 0 0 auto;
+  color: var(--r1-accent-strong);
+}
+
+.instrument-acc-more {
+  color: var(--r1-text-subtle);
+  font-weight: 600;
+}
+
+.instrument-acc-count {
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-weight: 700;
+}
+
+.instrument-acc-next.is-ready {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.instrument-acc-next.is-ready .instrument-glyph {
+  color: inherit;
+}
+
+.instrument-acc-home {
+  border: 1px dashed var(--r1-accent-line);
+  background: var(--r1-surface);
+}
+
+/* Selo da faixa: tom da clínica que sobe com a faixa; a mais alta, cheia. */
+.instrument-band-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--r1-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.instrument-band-tag.is-compact {
+  padding: 1px 8px;
+  font-size: 11.5px;
+}
+
+.instrument-band-tag.is-plain {
+  border-color: var(--r1-border-subtle);
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+}
+
+.instrument-tone-0 {
+  border-color: color-mix(in srgb, var(--r1-accent) 24%, var(--r1-surface));
+  background: color-mix(in srgb, var(--r1-accent) 9%, var(--r1-surface));
+}
+
+.instrument-tone-1 {
+  border-color: color-mix(in srgb, var(--r1-accent) 34%, var(--r1-surface));
+  background: color-mix(in srgb, var(--r1-accent) 17%, var(--r1-surface));
+}
+
+.instrument-tone-2 {
+  border-color: color-mix(in srgb, var(--r1-accent) 46%, var(--r1-surface));
+  background: color-mix(in srgb, var(--r1-accent) 26%, var(--r1-surface));
+}
+
+.instrument-tone-3 {
+  border-color: color-mix(in srgb, var(--r1-accent) 60%, var(--r1-surface));
+  background: color-mix(in srgb, var(--r1-accent) 36%, var(--r1-surface));
+}
+
+.instrument-tone-4 {
+  border-color: var(--r1-accent-strong);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.instrument-trend {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Corpo: abre e fecha deslizando (linha do grid de 0 até o conteúdo). */
+.instrument-acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows calc(var(--r1-dur) * 1.5) var(--r1-ease);
+}
+
+.instrument-card.is-open .instrument-acc-panel {
+  grid-template-rows: 1fr;
+}
+
+.instrument-acc-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.instrument-acc-body {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 4px 22px 22px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity calc(var(--r1-dur) * 1.5) var(--r1-ease),
+    transform calc(var(--r1-dur) * 1.5) var(--r1-ease);
+}
+
+.instrument-card.is-open .instrument-acc-body {
+  opacity: 1;
+  transform: none;
+}
+
+.instrument-acc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 16px;
+}
+
+.instrument-acc-actions .instrument-portal {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+/* Alerta de risco à vista também com a escala fechada. */
+.instrument-card > .instrument-risk-unseen {
+  margin: 0 18px 14px 22px;
 }
 
 .instrument-review-badge {
@@ -72,24 +538,47 @@
   font-weight: 600;
 }
 
-.instrument-latest,
-.instrument-result {
+.instrument-latest {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.instrument-latest-main {
+  display: grid;
+  gap: 12px;
+}
+
+.instrument-latest-score {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 14px;
+  gap: 6px 18px;
+  font-weight: 600;
 }
 
-.instrument-latest .small,
-.instrument-result .small {
-  flex-basis: 100%;
+.instrument-latest-note {
+  color: var(--r1-text);
 }
 
 .instrument-score {
-  color: var(--r1-text);
-  font-size: 24px;
-  font-weight: 700;
+  color: var(--r1-accent-strong);
+  font-size: 44px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.instrument-score small {
+  color: var(--r1-text-subtle);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 /* Escala com subescalas (DASS-21): uma nota por subescala, lado a lado,
@@ -126,9 +615,9 @@
 }
 
 .instrument-subscale-score {
-  color: var(--r1-text);
-  font-size: 20px;
-  font-weight: 700;
+  color: var(--r1-accent-strong);
+  font-size: 22px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
@@ -277,6 +766,10 @@
 .instrument-chart {
   margin: 0;
   min-width: 0;
+  padding: 12px 10px 6px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
 }
 
 .instrument-chart svg {
@@ -284,17 +777,18 @@
   width: 100%;
   height: auto;
   max-width: 100%;
+  overflow: visible;
 }
 
 .instrument-chart figcaption {
-  margin-top: 4px;
+  margin: 4px 6px 0;
 }
 
-.instrument-band-0 { fill: color-mix(in srgb, var(--r1-accent) 4%, var(--r1-surface)); }
-.instrument-band-1 { fill: color-mix(in srgb, var(--r1-accent) 9%, var(--r1-surface)); }
-.instrument-band-2 { fill: color-mix(in srgb, var(--r1-accent) 14%, var(--r1-surface)); }
-.instrument-band-3 { fill: color-mix(in srgb, var(--r1-accent) 19%, var(--r1-surface)); }
-.instrument-band-4 { fill: color-mix(in srgb, var(--r1-accent) 24%, var(--r1-surface)); }
+.instrument-band-0 { fill: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-surface)); }
+.instrument-band-1 { fill: color-mix(in srgb, var(--r1-accent) 12%, var(--r1-surface)); }
+.instrument-band-2 { fill: color-mix(in srgb, var(--r1-accent) 18%, var(--r1-surface)); }
+.instrument-band-3 { fill: color-mix(in srgb, var(--r1-accent) 25%, var(--r1-surface)); }
+.instrument-band-4 { fill: color-mix(in srgb, var(--r1-accent) 32%, var(--r1-surface)); }
 
 .instrument-band {
   stroke: var(--r1-surface);
@@ -302,42 +796,83 @@
 }
 
 .instrument-band-label,
+.instrument-axis-label,
+.instrument-date-label {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
 .instrument-axis-label {
   fill: var(--r1-text-subtle);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .instrument-band-label {
   fill: var(--r1-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.instrument-date-label {
+  fill: var(--r1-text);
+  font-weight: 600;
+}
+
+.instrument-date-label.is-last {
+  fill: var(--r1-accent-strong);
+  font-weight: 800;
 }
 
 /* Celular: o nome da faixa entra no gráfico, sem disputar com a linha. */
 .instrument-band-label.is-inside {
-  fill: var(--r1-text-subtle);
+  fill: var(--r1-text);
   font-size: 10.5px;
+  font-weight: 700;
   paint-order: stroke;
   stroke: var(--r1-surface);
   stroke-width: 3px;
   stroke-linejoin: round;
 }
 
+.instrument-area-stop-top {
+  stop-color: var(--r1-accent);
+  stop-opacity: 0.3;
+}
+
+.instrument-area-stop-bottom {
+  stop-color: var(--r1-accent);
+  stop-opacity: 0;
+}
+
 .instrument-line {
   fill: none;
-  stroke: var(--r1-accent);
-  stroke-width: 2;
+  stroke: var(--r1-accent-strong);
+  stroke-width: 3;
   stroke-linejoin: round;
   stroke-linecap: round;
+  stroke-dasharray: 1;
 }
 
 .instrument-point {
-  fill: var(--r1-accent);
-  stroke: var(--r1-surface);
-  stroke-width: 2;
+  fill: var(--r1-surface);
+  stroke: var(--r1-accent);
+  stroke-width: 3;
+  transition: stroke-width var(--r1-dur-fast) var(--r1-ease);
 }
 
 .instrument-point.is-last {
-  fill: var(--r1-accent-strong);
+  fill: var(--r1-accent);
+  stroke: var(--r1-surface);
+  stroke-width: 3;
+}
+
+/* Halo que pulsa em volta da última nota. */
+.instrument-point-halo {
+  fill: var(--r1-accent);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: instrument-halo 2.4s var(--r1-ease) 1.1s infinite;
 }
 
 .instrument-point-hit {
@@ -345,25 +880,53 @@
 }
 
 .instrument-point-group:hover .instrument-point {
-  stroke: var(--r1-accent-line);
-  stroke-width: 4;
+  stroke-width: 4.5;
 }
 
-.instrument-point-label {
+.instrument-point-value {
   fill: var(--r1-text);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--r1-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.instrument-point-pill rect {
+  fill: var(--r1-accent);
+}
+
+.instrument-point-pill text {
+  fill: var(--r1-accent-contrast);
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ao abrir: a linha se desenha, a área aparece e as bolinhas entram uma a uma. */
+.instrument-card.is-open .instrument-line {
+  animation: instrument-draw 900ms var(--r1-ease) 120ms backwards;
+}
+
+.instrument-card.is-open .instrument-area {
+  animation: instrument-fade 700ms var(--r1-ease) 450ms backwards;
+}
+
+.instrument-card.is-open .instrument-point-group {
+  animation: instrument-pop 420ms var(--r1-ease) backwards;
+  animation-delay: calc(var(--instrument-i, 0) * 90ms + 200ms);
 }
 
 /* ---------- lista de aplicações (versão em texto do gráfico) ---------- */
 
 .instrument-history {
   display: grid;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--r1-border-subtle);
 }
 
 .instrument-history li {
@@ -372,8 +935,18 @@
   align-items: center;
   gap: 4px 14px;
   min-width: 0;
-  padding: 8px 0;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  transition: background-color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.instrument-history li:hover {
+  background: var(--r1-accent-wash);
+}
+
+.instrument-history li.is-latest {
+  background: color-mix(in srgb, var(--r1-accent) 7%, var(--r1-surface));
 }
 
 .instrument-history-date,
@@ -383,11 +956,14 @@
 
 .instrument-history-date {
   min-width: 6.5em;
+  color: var(--r1-text);
+  font-weight: 700;
 }
 
 .instrument-history-score {
   min-width: 5.5em;
-  font-weight: 700;
+  color: var(--r1-accent-strong);
+  font-weight: 800;
 }
 
 .instrument-history-band {
@@ -395,10 +971,23 @@
   min-width: 0;
 }
 
+.instrument-history-author {
+  color: var(--r1-text-subtle);
+}
+
 .instrument-history li.is-voided .instrument-history-score,
 .instrument-history li.is-voided .instrument-history-band {
   text-decoration: line-through;
   color: var(--r1-text-subtle);
+}
+
+.instrument-latest-tag {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 11.5px;
+  font-weight: 700;
 }
 
 .instrument-voided-tag {
@@ -420,6 +1009,49 @@
 .instrument-about ul {
   margin: 6px 0;
   padding-left: 18px;
+}
+
+/* ---------- movimento ---------- */
+
+@keyframes instrument-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes instrument-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes instrument-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes instrument-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes instrument-halo {
+  0% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
 }
 
 /* ---------- aplicar ---------- */
@@ -856,11 +1488,34 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .instrument-card {
-    padding: 12px;
+  .instrument-acc-toggle {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'title chevron'
+      'result spark'
+      'dates dates';
+    gap: 10px 12px;
+    padding: 14px 14px 12px 18px;
   }
 
-  .instrument-card-head .primary-button {
+  .instrument-acc-result,
+  .instrument-acc-subscales {
+    justify-content: flex-start;
+  }
+
+  .instrument-acc-body {
+    padding: 4px 14px 16px 18px;
+  }
+
+  .instrument-card > .instrument-risk-unseen {
+    margin: 0 14px 12px 18px;
+  }
+
+  .instrument-overview-stats {
+    gap: 10px 22px;
+  }
+
+  .instrument-acc-actions .primary-button {
     width: 100%;
   }
 
@@ -885,7 +1540,26 @@
 
 @media (prefers-reduced-motion: reduce) {
   .instrument-point-group:hover .instrument-point {
-    stroke-width: 2;
+    stroke-width: 3;
+  }
+
+  /* Menos movimento: abre e fecha na hora, sem desenho, sem pulso. */
+  .instrument-card,
+  .instrument-card::before,
+  .instrument-acc-panel,
+  .instrument-acc-body,
+  .instrument-acc-chevron,
+  .instrument-point {
+    transition: none;
+  }
+
+  .instrument-card,
+  .instrument-spark polyline,
+  .instrument-card.is-open .instrument-line,
+  .instrument-card.is-open .instrument-area,
+  .instrument-card.is-open .instrument-point-group,
+  .instrument-point-halo {
+    animation: none;
   }
 }
 
@@ -970,4 +1644,353 @@
 
 .forms-scope .panel .instrument-options .tag.instrument-option--shade-dark:not(.active) {
   background: color-mix(in srgb, var(--r1-ink) 13%, var(--r1-surface));
+}
+
+/* ---------- tela Escalas (menu principal, 13/10/2026) ----------
+   Lista de pacientes à esquerda e escalas do paciente à direita. No
+   celular e no tablet a lista é a tela; o paciente aberto ocupa a tela,
+   com "Voltar à lista" na faixa de baixo (hub.css). */
+
+.scales-screen {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.scales-screen > .screen-title-row {
+  margin-bottom: 0;
+}
+
+.scales-areas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-self: start;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+}
+
+.scales-areas button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scales-areas button[aria-pressed="true"] {
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.scales-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.scales-patients {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  max-height: calc(84 * var(--vh));
+  padding: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.scales-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-field-bg);
+  color: var(--r1-text-subtle);
+  transition:
+    border-color var(--r1-dur-fast) var(--r1-ease),
+    box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.scales-search:focus-within {
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.scales-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.scales-list-note {
+  margin: 0;
+  color: var(--r1-text-subtle);
+  line-height: 1.45;
+}
+
+.scales-list-error {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.scales-patient-list {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 2px 2px 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.scales-patient {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r1-radius-md);
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--r1-dur-fast) var(--r1-ease),
+    border-color var(--r1-dur-fast) var(--r1-ease);
+}
+
+.scales-patient:hover {
+  border-color: var(--r1-accent-line);
+  background: var(--r1-accent-wash);
+}
+
+.scales-patient:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 1px;
+}
+
+.scales-patient[aria-current="true"] {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.scales-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scales-patient[aria-current="true"] .scales-avatar {
+  background: var(--r1-accent-contrast);
+  color: var(--r1-accent-strong);
+}
+
+.scales-patient-text {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 1px;
+  min-width: 0;
+}
+
+.scales-patient-text b,
+.scales-patient-text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scales-patient-text b {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.scales-patient-text span {
+  color: var(--r1-text-subtle);
+  font-size: 12px;
+}
+
+.scales-patient[aria-current="true"] .scales-patient-text span {
+  color: color-mix(in srgb, var(--r1-accent-contrast) 85%, var(--r1-accent));
+}
+
+.scales-mine-tag {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.scales-patient[aria-current="true"] .scales-mine-tag {
+  background: var(--r1-accent-contrast);
+  color: var(--r1-accent-strong);
+}
+
+.scales-patient-arrow {
+  flex: 0 0 auto;
+  color: var(--r1-text-subtle);
+  font-size: 20px;
+  line-height: 1;
+  transition: transform var(--r1-dur-fast) var(--r1-ease);
+}
+
+.scales-patient:hover .scales-patient-arrow {
+  transform: translateX(2px);
+}
+
+.scales-patient[aria-current="true"] .scales-patient-arrow {
+  color: inherit;
+}
+
+.scales-detail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.scales-patient-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  animation: instrument-rise 360ms var(--r1-ease) backwards;
+}
+
+.scales-patient-head > div {
+  min-width: 0;
+}
+
+.scales-avatar.is-large {
+  width: 52px;
+  height: 52px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 18px;
+}
+
+.scales-patient-head h3 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scales-patient-head p {
+  margin: 3px 0 0;
+  color: var(--r1-text-subtle);
+}
+
+.scales-panel {
+  min-width: 0;
+}
+
+.scales-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 52px 24px;
+  border: 1px dashed var(--r1-accent-line);
+  border-radius: var(--r1-radius-lg);
+  background: color-mix(in srgb, var(--r1-accent) 4%, var(--r1-surface));
+  color: var(--r1-text);
+  text-align: center;
+}
+
+.scales-empty svg {
+  color: var(--r1-accent);
+}
+
+.scales-empty h3 {
+  margin: 4px 0 0;
+  font-size: 19px;
+}
+
+.scales-empty p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--r1-text-subtle);
+  line-height: 1.5;
+}
+
+/* No computador a lista fica sempre à vista: "Voltar à lista" é do celular. */
+@media (min-width: 1025px) {
+  .scales-screen button.scales-back {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .scales-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scales-patients {
+    position: static;
+    max-height: none;
+    box-shadow: none;
+  }
+
+  .scales-layout.has-patient .scales-patients,
+  .scales-layout:not(.has-patient) .scales-detail {
+    display: none;
+  }
+
+  .scales-patient-head {
+    padding: 14px;
+  }
+
+  .scales-patient-head h3 {
+    font-size: 19px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scales-patient-head {
+    animation: none;
+  }
 }

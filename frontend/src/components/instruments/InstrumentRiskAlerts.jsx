@@ -19,7 +19,9 @@ const AREA_LABELS = {
   acupuntura: 'Acupuntura',
 };
 
-export function InstrumentRiskAlerts({ onOpen = null }) {
+// `onSeen`: avisa quem montou que um alerta foi marcado (a tela Escalas
+// recarrega o paciente aberto).
+export function InstrumentRiskAlerts({ onOpen = null, onSeen = null }) {
   const [alerts, setAlerts] = useState([]);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -40,6 +42,7 @@ export function InstrumentRiskAlerts({ onOpen = null }) {
     try {
       await acknowledgeInstrumentRisk(alert.applicationId);
       setAlerts(current => current.filter(item => item.applicationId !== alert.applicationId));
+      onSeen?.(alert);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -62,7 +65,7 @@ export function InstrumentRiskAlerts({ onOpen = null }) {
                 <b>{alert.patientName}</b>{' '}
                 {alert.source === 'area_do_paciente' ? 'respondeu em casa' : 'respondeu'} o {instrument?.shortName || 'questionário'} em{' '}
                 {formatInstrumentDate(alert.appliedAt)} com resposta positiva no item de risco. Avalie o risco o quanto antes;
-                o resultado está em {area} → Escalas.
+                o resultado está em Escalas, no menu principal ({area}).
               </p>
               <div className="instrument-actions">
                 {onOpen && (

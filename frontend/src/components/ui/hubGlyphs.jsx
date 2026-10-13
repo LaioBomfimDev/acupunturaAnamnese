@@ -40,6 +40,14 @@ export const TOOL_GLYPHS = {
       <path d="M15 14.5c2.8.4 4.8 1.9 5.5 4" />
     </>
   ),
+  // Prancheta com a linha da evolução: as escalas do paciente.
+  escalas: (
+    <>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4.5V3h6v1.5" />
+      <path d="m8.5 15.5 2.5-2.8 2.2 1.8 2.8-3.8" />
+    </>
+  ),
   documentos: (
     <>
       <path d="M12 3v10" />

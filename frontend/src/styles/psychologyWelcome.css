@@ -1,0 +1,466 @@
+/* ============================================================
+   Boas-vindas da Psicologia (PsychologyPathChooser)
+
+   16/10/2026, prévias A + C escolhidas pela administradora: faixa do
+   paciente na cor da tela (A), três atalhos com os números da anamnese
+   (C) e os percursos em cartões grandes (A). Só tokens: a cor é a da
+   clínica ou a pessoal liberada por ela (--r1-accent*). O menu lateral
+   não muda.
+   ============================================================ */
+
+.psi-welcome {
+  display: grid;
+  gap: 16px;
+}
+
+/* Topo da área nesta tela: linha na cor da tela sob o título (prévia C). */
+.psi-main:has(.psi-welcome) .app-topbar {
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--r1-accent);
+}
+
+.psi-main:has(.psi-welcome) .app-eyebrow {
+  color: var(--r1-accent-strong) !important;
+}
+
+/* ---------- faixa do paciente (A) ---------- */
+
+.psi-welcome-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 26px 28px;
+  border-radius: var(--r1-radius-lg);
+  background: linear-gradient(125deg, var(--r1-accent-strong) 0%, var(--r1-accent) 100%);
+  color: var(--r1-text-on-inverse);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--r1-accent-strong) 24%, transparent);
+}
+
+/* Dois círculos claros, só desenho: profundidade sem imagem. */
+.psi-welcome-hero::before,
+.psi-welcome-hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.psi-welcome-hero::before {
+  top: -120px;
+  right: -60px;
+  width: 320px;
+  height: 320px;
+  border: 44px solid rgba(255, 255, 255, 0.07);
+}
+
+.psi-welcome-hero::after {
+  right: 240px;
+  bottom: -140px;
+  width: 240px;
+  height: 240px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.psi-welcome-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.psi-welcome-who {
+  flex: 1;
+  min-width: 0;
+}
+
+.psi-welcome-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.forms-scope .psi-welcome-who h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--r1-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--r1-text-on-inverse);
+}
+
+.psi-welcome-meta {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--r1-text-on-inverse-muted);
+}
+
+.psi-welcome-current {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.psi-welcome-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Botão claro sobre a faixa: preenchido com a cor ele sumiria no fundo. */
+.forms-scope .psi-welcome-go {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-accent-strong);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  transition: transform var(--r1-dur-fast) var(--r1-ease), box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.forms-scope .psi-welcome-go:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.forms-scope .psi-welcome-go:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 2px;
+}
+
+/* ---------- três atalhos (C) ---------- */
+
+.psi-welcome-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.forms-scope .psi-welcome-tile {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease), box-shadow var(--r1-dur-fast) var(--r1-ease);
+}
+
+.forms-scope .psi-welcome-tile:hover {
+  border-color: var(--r1-accent-line);
+  box-shadow: var(--r1-shadow-md);
+}
+
+.forms-scope .psi-welcome-tile:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.psi-welcome-tile-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.psi-welcome-tile-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.psi-welcome-tile-value small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.psi-welcome-bar {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--r1-accent-wash);
+}
+
+.psi-welcome-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--r1-accent);
+}
+
+.psi-welcome-tile-link {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--r1-accent-strong);
+}
+
+/* ---------- percursos (A) ---------- */
+
+.psi-welcome-body {
+  padding: 22px 24px 24px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.psi-welcome-body-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+}
+
+.forms-scope .psi-welcome-body h3 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  color: var(--r1-text);
+}
+
+.psi-welcome-text {
+  max-width: 70ch;
+  margin: 0;
+  font-size: 14px;
+  color: var(--r1-text-muted);
+}
+
+.psi-welcome-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+}
+
+.forms-scope .psi-welcome-card {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 6px;
+  padding: 20px;
+  border: 1.5px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--r1-dur-fast) var(--r1-ease), box-shadow var(--r1-dur-fast) var(--r1-ease), transform var(--r1-dur-fast) var(--r1-ease);
+}
+
+.forms-scope .psi-welcome-card:hover:not(:disabled) {
+  border-color: var(--r1-accent);
+  box-shadow: var(--r1-shadow-md);
+  transform: translateY(-2px);
+}
+
+.forms-scope .psi-welcome-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.forms-scope .psi-welcome-card.in-use {
+  border-color: var(--r1-accent);
+  background: color-mix(in srgb, var(--r1-accent) 5%, var(--r1-surface));
+  box-shadow: inset 0 0 0 1px var(--r1-accent);
+}
+
+.forms-scope .psi-welcome-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.psi-welcome-art {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 6px;
+  border-radius: 20px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.psi-welcome-art svg {
+  width: 38px;
+  height: 38px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.psi-welcome-num {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--r1-text-subtle);
+}
+
+.psi-welcome-badge {
+  position: absolute;
+  top: 16px;
+  right: 52px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.psi-welcome-card--profile .psi-welcome-badge {
+  right: 16px;
+}
+
+.forms-scope .psi-welcome-card b {
+  padding-right: 70px;
+  font-size: 17px;
+}
+
+.forms-scope .psi-welcome-card small {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.psi-welcome-cta {
+  margin-top: 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--r1-accent-strong);
+}
+
+.psi-welcome-step {
+  display: grid;
+  gap: 12px;
+}
+
+.forms-scope .psi-welcome-step h4 {
+  margin: 2px 0 4px;
+  font-size: 17px;
+  color: var(--r1-text);
+}
+
+.forms-scope .psi-welcome-back {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--r1-accent-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forms-scope .psi-welcome-go,
+  .forms-scope .psi-welcome-tile,
+  .forms-scope .psi-welcome-card {
+    transition: none;
+  }
+
+  .forms-scope .psi-welcome-go:hover,
+  .forms-scope .psi-welcome-card:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ---------- celular e tablet (mesmo corte da barra de baixo) ---------- */
+
+@media (max-width: 1024px) {
+  .psi-welcome-hero {
+    flex-wrap: wrap;
+    gap: 14px 16px;
+    padding: 20px 18px;
+  }
+
+  .psi-welcome-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 18px;
+  }
+
+  .forms-scope .psi-welcome-who h2 {
+    font-size: 23px;
+  }
+
+  .psi-welcome-current {
+    flex-basis: 100%;
+    justify-items: start;
+  }
+
+  .forms-scope .psi-welcome-go {
+    width: 100%;
+  }
+
+  /* Atalhos compactos: número e nome numa linha, o link à direita. */
+  .psi-welcome-tiles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .forms-scope .psi-welcome-tile {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 12px 14px;
+  }
+
+  .psi-welcome-tile-label,
+  .psi-welcome-tile-value {
+    grid-column: 1;
+  }
+
+  .psi-welcome-tile-value {
+    font-size: 22px;
+  }
+
+  .psi-welcome-bar {
+    grid-column: 1 / -1;
+  }
+
+  .psi-welcome-tile-link {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .psi-welcome-body {
+    padding: 18px 16px;
+  }
+}

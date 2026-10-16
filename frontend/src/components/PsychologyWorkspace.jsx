@@ -725,6 +725,8 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
+            route={anamneseRoute}
+            onOpenTab={handleTabChange}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
             fixedPath={anamnesePath}
           />
@@ -740,6 +742,8 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
+            route={anamneseRoute}
+            onOpenTab={handleTabChange}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );
@@ -788,6 +792,8 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             selectedPatient={selectedPatient}
             patientAge={patientAge}
             onSelectIntakeProfile={selectIntakeProfile}
+            route={anamneseRoute}
+            onOpenTab={handleTabChange}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );

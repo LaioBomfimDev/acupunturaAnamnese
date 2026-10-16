@@ -579,7 +579,6 @@ export default function App() {
       return (
         <PatientStart
           onSelectPatient={() => setActiveTab('Painel')}
-          onSignOut={signOut}
           therapistName={therapistFirstName}
           hasMultipleDisciplines={!isSuperAdmin && resolveUserDisciplines(profile).length > 1}
           onSwitchDiscipline={handleSwitchDiscipline}
@@ -801,7 +800,6 @@ export default function App() {
                 hasPendingChanges={hasPendingChanges}
               />
             )}
-            <button className="topbar-button app-signout" onClick={handleSignOut}>Sair</button>
           </div>
         </div>
         )}

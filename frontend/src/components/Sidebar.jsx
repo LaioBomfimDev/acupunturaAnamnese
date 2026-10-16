@@ -604,9 +604,9 @@ export function Sidebar({
         )}
       </nav>
 
-      {/* Saída no fim da gaveta, só no telefone (shell.css): lá o topo
-          da área fica só com "onde estou" e o salvamento, e o "Sair" do
-          cabeçalho (.app-signout) some. Continua havendo uma saída só. */}
+      {/* Única saída da conta nas áreas: no pé da lateral, em qualquer
+          largura (16/10/2026), como no menu da tela inicial. O "Sair" do
+          canto de cima parecia "sair desta tela" e saiu. */}
       {onSignOut && (
         <button
           type="button"

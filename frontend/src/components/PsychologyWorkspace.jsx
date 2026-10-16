@@ -678,7 +678,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
               hasPatient={Boolean(selectedPatient)}
               hasPendingChanges={hasPending}
             />
-            <button type="button" className="topbar-button app-signout" onClick={handleSignOut}>Sair</button>
           </div>
         </div>
 

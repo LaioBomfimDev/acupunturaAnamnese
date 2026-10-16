@@ -23,10 +23,6 @@
   max-width: 60ch;
 }
 
-.patient-start .home-meta:empty {
-  display: none;
-}
-
 .home-screen.patient-start .start-workspace {
   padding: 24px;
 }

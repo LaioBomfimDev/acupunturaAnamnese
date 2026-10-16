@@ -29,7 +29,7 @@ function PencilIcon() {
 // nesta disciplina (pode nunca ter passado por aqui — o cadastro é da
 // clínica inteira), a matrícula é criada aqui, best-effort, antes de
 // abrir a anamnese.
-export function PatientStart({ onSelectPatient, onSignOut, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline, profile, isClinicAdmin = false }) {
+export function PatientStart({ onSelectPatient, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline, profile, isClinicAdmin = false }) {
   const { patients, selectedPatient, loading, error, selectPatient, refreshPatients } = usePatient();
   const [query, setQuery] = useState('');
   const [editTarget, setEditTarget] = useState(null);
@@ -91,10 +91,8 @@ export function PatientStart({ onSelectPatient, onSignOut, therapistName, initia
           <h2>Iniciar atendimento</h2>
           <p className="patient-start-description">Selecione um paciente para iniciar ou retomar o atendimento.</p>
         </div>
-        <div className="home-meta">
-          {/* app-signout: no celular a saída mora no Menu (gaveta da Sidebar). */}
-          {onSignOut && <button type="button" className="quiet-button app-signout" onClick={onSignOut}>Sair</button>}
-        </div>
+        {/* Sem "Sair" aqui (16/10/2026): a saída da conta mora no pé da
+            lateral da área (Sidebar), em qualquer largura. */}
       </header>
 
       <div className="home-grid">

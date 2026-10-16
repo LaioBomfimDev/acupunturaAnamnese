@@ -361,7 +361,6 @@ export function NeuropsychologyWorkspace({ profile, therapistName, onSwitchDisci
               hasPatient={Boolean(selectedPatient)}
               hasPendingChanges={hasPending}
             />
-            <button type="button" className="topbar-button app-signout" onClick={handleSignOut}>Sair</button>
           </div>
         </div>
 

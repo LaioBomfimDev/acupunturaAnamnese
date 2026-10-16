@@ -20,8 +20,7 @@
 .shell-menu,
 .shell-scrim,
 .shell-tabs,
-.shell-drawer-close,
-.sidebar-signout {
+.shell-drawer-close {
   display: none;
 }
 
@@ -367,6 +366,58 @@
   color: var(--r1-text);
 }
 
+/* "Sair" da conta no pé da lateral também no computador (16/10/2026):
+   no canto de cima, à direita, ele parecia "sair desta tela". Mesmo
+   lugar e mesmo jeito do menu da tela inicial (.hc-signout, console.css):
+   texto discreto, colado embaixo, com um fio em cima. A lateral é flex
+   em coluna (App.css), então margin-top: auto o empurra para o fim; com
+   paciente aberto o menu passa da altura do notebook, e o sticky deixa
+   o "Sair" à vista sem rolar a lateral (fundo da própria lateral, para
+   o menu passar por baixo). */
+@media (min-width: 1025px) {
+  .sidebar-signout {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--r1-tap);
+    margin-top: auto;
+    padding: 12px 10px 16px;
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    background: inherit;
+    color: inherit;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .sidebar--clinical .sidebar-signout {
+    border-top-color: var(--r1-border-subtle);
+    color: var(--r1-text-subtle);
+  }
+
+  .sidebar--clinical .sidebar-signout:hover {
+    color: var(--r1-text);
+  }
+
+  .sidebar-signout:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--r1-focus-ring);
+  }
+
+  /* O sticky para na borda de dentro do padding da lateral: sem o padding
+     de baixo, o "Sair" encosta no fim da janela e o menu não aparece numa
+     faixa por baixo dele (o respiro passa para dentro do botão). */
+  .sidebar:has(> .sidebar-signout) {
+    padding-bottom: 0;
+  }
+}
+
 /* ============================================================
    ≤ 1024px — a sidebar vira gaveta
    ============================================================ */
@@ -559,11 +610,11 @@
   /* Navegação no polegar (opção C, 04/10/2026): no celular e no tablet
      o topo da área só diz onde a pessoa está e mostra o salvamento. O ☰
      flutuante repetia o "Menu" da barra de baixo; "Voltar à tela
-     principal" e "Sair" já moram na gaveta (topo e fim dela).
+     principal" e "Sair" já moram na gaveta (topo e fim dela). O "Sair"
+     do topo saiu de vez em 16/10/2026, em qualquer largura.
      .main + classe vence .forms-scope .topbar-button (mesmo peso, este
      arquivo vem depois na cascata). */
   .shell-menu,
-  .main .app-signout,
   .main .app-specialty-switch,
   .main .home-specialty-switcher-banner {
     display: none;

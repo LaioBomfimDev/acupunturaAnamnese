@@ -166,10 +166,10 @@ test('celular: topo sem voltar, faixa acima da barra, abaixo das janelas', async
   assert.ok(dockZ < dialog && stripZ < dialog, 'barra e faixa não podem cobrir as janelas da Agenda');
 });
 
-test('áreas de atendimento no celular: sem ☰ flutuante, voltar e sair dentro do Menu', async () => {
+test('áreas de atendimento: sem ☰ flutuante, voltar no Menu e "Sair" só no pé da lateral', async () => {
   const shell = await read('styles/shell.css');
   const phone = mediaBlock(shell, '≤ 1024px — barra inferior (celular e tablet)', '@media print');
-  assert.match(phone, /\.shell-menu,\s*\.main \.app-signout,\s*\.main \.app-specialty-switch,\s*\.main \.home-specialty-switcher-banner \{\s*display: none;/);
+  assert.match(phone, /\.shell-menu,\s*\.main \.app-specialty-switch,\s*\.main \.home-specialty-switcher-banner \{\s*display: none;/);
   assert.match(phone, /\.sidebar-signout \{\s*display: flex;/);
   // Bug achado junto: .forms-scope .mini-clock (forms.css) vencia o
   // .mini-clock daqui e o relógio ficava no topo das áreas no telefone.
@@ -177,24 +177,37 @@ test('áreas de atendimento no celular: sem ☰ flutuante, voltar e sair dentro 
   const forms = await read('styles/forms.css');
   assert.match(forms, /\.forms-scope \.mini-clock \{[^}]*display: grid;/, 'se a regra das fichas mudar, rever o peso acima');
   assert.doesNotMatch(phone, /padding-left: calc\(var\(--r1-tap\)/, 'sem ☰ flutuante não há o que desviar no topo');
-  assert.match(shell, /\.shell-drawer-close,\s*\.sidebar-signout \{\s*display: none;/, 'saída da gaveta escondida fora do celular');
+
+  // 16/10/2026: o "Sair" do canto de cima, à direita, parecia "sair desta
+  // tela", não "sair da conta". A saída da conta mora no pé da lateral
+  // também no computador, como no menu da tela inicial (.hc-signout).
+  assert.doesNotMatch(shell, /\.shell-drawer-close,\s*\.sidebar-signout \{\s*display: none;/, 'saída da lateral não fica escondida no computador');
+  const desktop = mediaBlock(shell, '"Sair" da conta no pé da lateral também no computador', '≤ 1024px — a sidebar vira gaveta');
+  assert.match(desktop, /@media \(min-width: 1025px\) \{\s*\.sidebar-signout \{[^}]*position: sticky;[^}]*bottom: 0;[^}]*display: flex;[^}]*margin-top: auto;[^}]*background: inherit;/, 'no computador, no pé da lateral e à vista mesmo com o menu comprido');
+  // O sticky para na borda de dentro do padding: sem tirar o padding de
+  // baixo, o menu aparecia numa faixa de 20px por baixo do "Sair".
+  assert.match(desktop, /\.sidebar:has\(> \.sidebar-signout\) \{\s*padding-bottom: 0;/);
+  assert.match(shell, /@media print \{[^}]*\.sidebar-signout \{\s*display: none !important;/, 'nada disso no papel');
 
   const sidebar = await read('components/Sidebar.jsx');
   assert.match(sidebar, /className="sidebar-signout no-print"/);
   assert.match(sidebar, /onClick=\{\(\) => \{ setDrawerOpen\(false\); onSignOut\(\); \}\}/);
+  // Depois da navegação: no fim da lateral, não no meio do menu.
+  assert.ok(sidebar.indexOf('className="sidebar-signout no-print"') > sidebar.indexOf('</nav>'), 'Sair vem depois da navegação');
 
   for (const file of ['App.jsx', 'components/PsychologyWorkspace.jsx', 'components/NeuropsychologyWorkspace.jsx', 'components/DisciplineWorkspace.jsx']) {
     const source = await read(file);
     const sidebarProps = source.match(/<Sidebar\b[\s\S]*?\/>/);
     assert.ok(sidebarProps, `${file} monta a Sidebar`);
-    assert.match(sidebarProps[0], /onSignOut=\{handleSignOut\}/, `${file}: a saída da gaveta passa pela confirmação de alterações`);
-    assert.match(source, /className="topbar-button app-signout"[^>]*>Sair<\/button>/, `${file}: "Sair" do topo some no celular`);
+    assert.match(sidebarProps[0], /onSignOut=\{handleSignOut\}/, `${file}: a saída da lateral passa pela confirmação de alterações`);
+    assert.doesNotMatch(source, />Sair<\/button>/, `${file}: sem "Sair" no topo da área`);
+    assert.doesNotMatch(source, /app-signout/, `${file}: sem "Sair" no topo da área`);
   }
 
   const app = await read('App.jsx');
   assert.match(app, /className="active-specialty-badge app-specialty-switch"/);
   const start = await read('components/PatientStart.jsx');
-  assert.match(start, /className="quiet-button app-signout"/);
+  assert.doesNotMatch(start, />Sair<\/button>|onSignOut/, 'seletor de paciente sem "Sair" próprio');
 });
 
 // Tela inicial no celular (opção B, 05/10/2026): o menu escuro ocupava a

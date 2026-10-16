@@ -35,20 +35,22 @@ function renderStart(props = {}) {
     React.createElement(patientStart.PatientStart, { therapistName: 'Profissional de teste', ...props })));
 }
 
-test('seletor não duplica saída quando a área já fornece o cabeçalho', async () => {
-  assert.doesNotMatch(renderStart(), />Sair<\/button>/);
-  for (const file of ['PsychologyWorkspace.jsx', 'NeuropsychologyWorkspace.jsx', 'DisciplineWorkspace.jsx']) {
-    const source = await readFile(path.join(root, 'src/components', file), 'utf8');
+// 16/10/2026: a saída da conta mora só no pé da lateral da área (Sidebar),
+// em qualquer largura. O seletor e o topo da área não têm "Sair" próprio.
+test('seletor não tem saída própria: a da conta fica no pé da lateral', async () => {
+  assert.doesNotMatch(renderStart({ onSignOut: () => {} }), />Sair<\/button>/);
+  for (const file of ['App.jsx', 'components/PsychologyWorkspace.jsx', 'components/NeuropsychologyWorkspace.jsx', 'components/DisciplineWorkspace.jsx']) {
+    const source = await readFile(path.join(root, 'src', file), 'utf8');
     const selector = source.match(/<PatientStart\b[\s\S]*?\/>/);
     assert.ok(selector, `${file} mantém o seletor`);
     assert.doesNotMatch(selector[0], /onSignOut=/, `${file} não duplica a saída`);
-    assert.equal((source.match(/>Sair<\/button>/g) || []).length, 1, `${file} mantém uma saída no cabeçalho`);
+    assert.doesNotMatch(source, />Sair<\/button>/, `${file}: sem "Sair" no topo`);
+    assert.match(source.match(/<Sidebar\b[\s\S]*?\/>/)?.[0] || '', /onSignOut=\{handleSignOut\}/, `${file}: a saída vai pela lateral`);
   }
 });
 
-test('entrada sem cabeçalho mantém uma saída e uma troca de especialidade', () => {
-  const html = renderStart({ onSignOut: () => {}, hasMultipleDisciplines: true, onSwitchDiscipline: () => {} });
-  assert.equal((html.match(/>Sair<\/button>/g) || []).length, 1);
+test('entrada mantém uma troca de especialidade', () => {
+  const html = renderStart({ hasMultipleDisciplines: true, onSwitchDiscipline: () => {} });
   // 25/09/2026: a troca virou "Voltar à tela principal" (sem citar áreas).
   assert.equal((html.match(/>\s*Voltar à tela principal\s*</g) || []).length, 1);
   assert.doesNotMatch(html, /Mudar Especialidade|Trocar Especialidade|Alternar para Psicologia/);

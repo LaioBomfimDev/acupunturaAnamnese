@@ -343,6 +343,34 @@ export const ESCALAS_HELP = {
   ],
 };
 
+/** Psicologia > Entrevistas (components/interviews/PatientInterviewsPanel.jsx). */
+export const ENTREVISTAS_HELP = {
+  title: 'Entrevistas',
+  summary: 'Os roteiros de entrevista da clínica com quem convive com o paciente (familiar, pessoa próxima, professora). Não têm nota: a leitura é da profissional, pergunta por pergunta.',
+  actions: [
+    'Cada entrevista abre e fecha com um clique.',
+    '“Responder no consultório”: você conversa com a pessoa e marca as respostas, parte por parte. Na identificação vão o nome e o vínculo de quem está respondendo.',
+    '“Enviar link para responder”: diga para quem é o link e por quantos dias ele vale; depois, “Copiar link” ou “Enviar pelo WhatsApp”. Um link por pessoa: se a mãe e o pai vão responder, crie dois.',
+    'Na lista, “Ver respostas” abre a entrevista respondida; “Copiar link” e “Cancelar link” valem enquanto o link espera resposta.',
+    'Em “Ver respostas”: “Imprimir / salvar PDF” e “Baixar Word” saem no papel timbrado da instituição. Quem registrou, ou a administração, pode anular, com o motivo.',
+  ],
+  reading: [
+    'Fechada, a entrevista mostra quantas respostas tem, a data da última e quantos links ainda esperam resposta.',
+    'Na lista, o ícone de envio é resposta pelo link e o de pessoa é resposta no consultório.',
+    'Em “Ver respostas”, “Frequentemente” e “Quase sempre” ficam na cor da tela e “Não sei observar”, em cinza. O botão “Só Frequentemente e Quase sempre” esconde o resto para a leitura; não soma nem classifica.',
+  ],
+  access: [
+    'Veem e registram as entrevistas de um paciente quem atende esse paciente nesta área (atendimento na Agenda ou responsável da matrícula) e a administração.',
+    'A pessoa que recebe o link vê só aquela entrevista e o primeiro nome do paciente, nunca o prontuário. Depois de enviar, o link não abre mais as respostas.',
+    'A recepção não usa esta aba.',
+  ],
+  notes: [
+    'O link vale até a data escolhida. Vencido ou cancelado, ele não abre mais: crie outro.',
+    'Entrevista respondida não se edita: se foi registrada errado, anule e registre de novo.',
+    'As respostas são uma fonte entre outras: valem junto com a entrevista do próprio paciente, a observação clínica e os instrumentos padronizados.',
+  ],
+};
+
 /** Evoluções > "Ver evoluções" (components/evolutions/EvolutionsReview.jsx). */
 export const EVOLUCOES_REVIEW_HELP = {
   title: 'Ver evoluções',

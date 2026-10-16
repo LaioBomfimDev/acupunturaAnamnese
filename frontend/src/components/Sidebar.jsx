@@ -50,6 +50,12 @@ const NAV_ICONS = {
       <path d="M9 10h6M9 14h6M9 18h4" />
     </>
   ),
+  'Entrevistas': (
+    <>
+      <path d="M4 5.5h11a2 2 0 0 1 2 2V13a2 2 0 0 1-2 2H9l-4 3.5V15H4a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2z" />
+      <path d="M19 9h1a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-1V21l-3.5-2.5H12" />
+    </>
+  ),
   'Perguntas complementares': (
     <>
       <circle cx="7" cy="7" r="3" />

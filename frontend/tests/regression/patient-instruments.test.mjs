@@ -340,7 +340,8 @@ test('aba Escalas no grupo Avaliação da Psicologia, funcional e com a discipli
   assert.ok(!anamnese.PSYCHOLOGY_PLACEHOLDER_TABS.includes('Escalas'));
 
   const workspace = await src('components/PsychologyWorkspace.jsx');
-  assert.match(workspace, /title: 'Avaliação',\r?\n\s+tabs: \[\r?\n\s+PSYCHOLOGY_TABS\.ANAMNESE,\r?\n\s+PSYCHOLOGY_TABS\.PERGUNTAS_COMPLEMENTARES,\r?\n\s+PSYCHOLOGY_TABS\.ESCALAS,/);
+  // Entrevistas (16/10/2026) entra logo depois da Anamnese.
+  assert.match(workspace, /title: 'Avaliação',\r?\n\s+tabs: \[\r?\n\s+PSYCHOLOGY_TABS\.ANAMNESE,\r?\n\s+PSYCHOLOGY_TABS\.ENTREVISTAS,\r?\n\s+PSYCHOLOGY_TABS\.PERGUNTAS_COMPLEMENTARES,\r?\n\s+PSYCHOLOGY_TABS\.ESCALAS,/);
   assert.match(workspace, /case PSYCHOLOGY_TABS\.ESCALAS:[\s\S]*?<PatientInstrumentsPanel[\s\S]*?discipline="psicologia"/);
 
   const sidebar = await src('components/Sidebar.jsx');

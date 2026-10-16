@@ -18,6 +18,7 @@ import { SurveyPage } from './SurveyPage.jsx'
 import { ConfirmAppointmentPage } from './ConfirmAppointmentPage.jsx'
 import { PublicAgendaPage } from './PublicAgendaPage.jsx'
 import { PatientPortalPage } from './PatientPortalPage.jsx'
+import { InterviewLinkPage } from './InterviewLinkPage.jsx'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { AuthProvider } from './hooks/AuthContext'
 import { PatientProvider } from './hooks/PatientContext'
@@ -25,15 +26,17 @@ import { installGlobalErrorTelemetry } from './services/telemetry'
 
 installGlobalErrorTelemetry()
 
-// Pesquisa de satisfação, confirmação de agendamento, agenda pública e
-// Área do Paciente: links públicos, sem login. Curto-circuita ANTES de
-// montar AuthProvider/PatientProvider — quem abre esses links não tem
-// conta no sistema (o paciente entra pela Edge Function patient-portal).
+// Pesquisa de satisfação, confirmação de agendamento, agenda pública,
+// Área do Paciente e link de entrevista: links públicos, sem login.
+// Curto-circuita ANTES de montar AuthProvider/PatientProvider — quem abre
+// esses links não tem conta no sistema (o paciente entra pela Edge
+// Function patient-portal; quem responde a entrevista, por interview-link).
 const path = window.location.pathname
 const isPublicSurveyRoute = path === '/pesquisa-satisfacao'
 const isPublicConfirmRoute = path === '/confirmar-agendamento'
 const isPublicAgendaRoute = path === '/agenda-publica'
 const isPublicPatientPortalRoute = path === '/area-do-paciente'
+const isPublicInterviewRoute = path === '/entrevista'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -45,6 +48,8 @@ createRoot(document.getElementById('root')).render(
       <PublicAgendaPage />
     ) : isPublicPatientPortalRoute ? (
       <PatientPortalPage />
+    ) : isPublicInterviewRoute ? (
+      <InterviewLinkPage />
     ) : (
       <AuthProvider>
         <PatientProvider>

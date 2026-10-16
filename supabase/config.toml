@@ -24,3 +24,9 @@ verify_jwt = false
 # limites persistentes ficam dentro do handler (patient-portal/index.ts).
 [functions.patient-portal]
 verify_jwt = false
+
+# Link de entrevista: quem convive com o paciente responde sem conta. O
+# token do link e os limites persistentes ficam dentro do handler
+# (interview-link/index.ts).
+[functions.interview-link]
+verify_jwt = false

@@ -46,6 +46,8 @@ const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
 const PatientInstrumentsPanel = lazy(() => import('./instruments/PatientInstrumentsPanel')
   .then(module => ({ default: module.PatientInstrumentsPanel })));
+const PatientInterviewsPanel = lazy(() => import('./interviews/PatientInterviewsPanel')
+  .then(module => ({ default: module.PatientInterviewsPanel })));
 
 // ============================================================
 // Workspace de Psicologia — SHELL (Plano C, Rodada 1).
@@ -69,6 +71,7 @@ const PSYCHOLOGY_NAV_GROUPS = [
     title: 'Avaliação',
     tabs: [
       PSYCHOLOGY_TABS.ANAMNESE,
+      PSYCHOLOGY_TABS.ENTREVISTAS,
       PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES,
       PSYCHOLOGY_TABS.ESCALAS,
     ],
@@ -576,6 +579,17 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onQuestionsChange={handleComplementaryQuestionsChange}
             onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
           />
+        );
+      case PSYCHOLOGY_TABS.ENTREVISTAS:
+        return (
+          <Suspense fallback={<div className="empty-state">Carregando entrevistas...</div>}>
+            <PatientInterviewsPanel
+              patient={selectedPatient}
+              discipline="psicologia"
+              profile={profile}
+              clinicName={clinicName}
+            />
+          </Suspense>
         );
       case PSYCHOLOGY_TABS.ESCALAS:
         return (

@@ -59,6 +59,7 @@ export const PSYCHOLOGY_TABS = {
   HOME: 'Tela inicial',
   PAINEL: 'Painel',
   ANAMNESE: 'Anamnese',
+  ENTREVISTAS: 'Entrevistas',
   PERGUNTAS_COMPLEMENTARES: 'Perguntas complementares',
   ESCALAS: 'Escalas',
   SINTESE: 'Síntese do caso',

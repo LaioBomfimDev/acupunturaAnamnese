@@ -38,6 +38,8 @@ export function PatientFormRunner({
   serverMissing = [],
   preview = false,
   disabled = false,
+  submitLabel = 'Enviar respostas',
+  submittingLabel = 'Enviando…',
 }) {
   const topRef = useRef(null);
   const [pageIndex, setPageIndex] = useState(0);
@@ -54,12 +56,15 @@ export function PatientFormRunner({
     }))
     .filter(page => page.visible.length > 0), [questions, answers, byId]);
 
+  // Entrevista da clínica traz o número do roteiro (`number`) e deixa a
+  // identificação sem número (`unnumbered`); formulário comum conta 1, 2...
   const numbers = useMemo(() => {
     const map = new Map();
     let count = 0;
     for (const page of pages) {
       for (const question of page.visible) {
-        if (isAnswerable(question)) map.set(question.id, ++count);
+        if (!isAnswerable(question) || question.unnumbered) continue;
+        map.set(question.id, question.number || ++count);
       }
     }
     return map;
@@ -156,7 +161,7 @@ export function PatientFormRunner({
           )}
           {isLast ? (
             <button type="button" className="pq-btn pq-btn--primary" onClick={handleSubmit} disabled={submitting || disabled}>
-              {submitting ? 'Enviando…' : 'Enviar respostas'}
+              {submitting ? submittingLabel : submitLabel}
             </button>
           ) : (
             <button type="button" className="pq-btn pq-btn--primary" onClick={() => goTo(safeIndex + 1)} disabled={submitting}>

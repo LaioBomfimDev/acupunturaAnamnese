@@ -15,6 +15,10 @@
     {
       "source": "/area-do-paciente",
       "destination": "/index.html"
+    },
+    {
+      "source": "/entrevista",
+      "destination": "/index.html"
     }
   ],
   "headers": [

@@ -191,7 +191,14 @@ test('configuração versionada libera JWT só para as functions deliberadamente
     config,
     /\[functions\.patient-portal\][\s\S]*?verify_jwt\s*=\s*false/,
   );
-  assert.equal(publicFunctionOverrides.length, 5);
+  // Link de entrevista (16/10/2026): quem convive com o paciente responde
+  // sem conta; token de 192 bits (o banco só vê o SHA-256), origem e
+  // limites dentro do handler. Revisada em clinical-interviews.test.mjs.
+  assert.match(
+    config,
+    /\[functions\.interview-link\][\s\S]*?verify_jwt\s*=\s*false/,
+  );
+  assert.equal(publicFunctionOverrides.length, 6);
 });
 
 test('fonte visual registra somente eventos operacionais sanitizados', async () => {

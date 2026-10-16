@@ -77,7 +77,9 @@ test('tela: banco recusando por não atender vira "Ficha de quem atende", não e
   assert.match(indicator, /no_access: \{ text: 'Ficha de quem atende', tone: 'idle', clickable: false \}/);
 
   const psi = await read('src/components/PsychologyWorkspace.jsx');
-  assert.match(psi, /if \(noAccess && !TABS_WITHOUT_RECORD\.includes\(effectiveTab\)\) \{\r?\n\s+return <PsychologyNoAccess/);
+  // Acima do aviso, só o "Responder em casa" (home-anamnese): a administração
+  // envia a anamnese mesmo sem atender; a ficha continua de quem atende.
+  assert.match(psi, /if \(noAccess && !TABS_WITHOUT_RECORD\.includes\(effectiveTab\)\) \{\r?\n\s+return \(\r?\n\s+<>\r?\n\s+\{homeBox\}\r?\n\s+<PsychologyNoAccess/);
   // Escalas e entrevistas seguem abrindo para a administração.
   assert.match(psi, /const TABS_WITHOUT_RECORD = \[[\s\S]*?PSYCHOLOGY_TABS\.ESCALAS,[\s\S]*?\.\.\.Object\.keys\(PSYCHOLOGY_INTERVIEW_TABS\),/);
 });

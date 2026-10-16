@@ -14,6 +14,8 @@ import '../../styles/patientForms.css';
 // respostas decifradas (portal_admin_read_answers), mostra pergunta →
 // resposta na ordem do formulário e sai em papel timbrado (imprimir /
 // salvar PDF) ou em Word — o que a clínica fazia redigitando.
+// A anamnese respondida em casa usa a mesma janela na ficha da área,
+// com as respostas que a RPC da área já trouxe (`answers`).
 // ============================================================
 
 const DEFAULT_ACCENT = '#0E2A4A';
@@ -40,8 +42,9 @@ function buildRows(questions, answers) {
   return rows.filter((row, index) => row.kind !== 'section' || rows[index + 1]?.kind === 'answer');
 }
 
-export function FormResponseDialog({ assignment, patient, profile, onClose }) {
-  const [answers, setAnswers] = useState(null);
+export function FormResponseDialog({ assignment, patient, profile, answers: providedAnswers = null, onClose }) {
+  const [loadedAnswers, setAnswers] = useState(null);
+  const answers = providedAnswers || loadedAnswers;
   const [loadError, setLoadError] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
@@ -54,12 +57,13 @@ export function FormResponseDialog({ assignment, patient, profile, onClose }) {
   const footerRef = useRef(null);
 
   useEffect(() => {
+    if (providedAnswers) return undefined;
     let cancelled = false;
     readAssignmentAnswers([assignment.id])
       .then(map => { if (!cancelled) setAnswers(map.get(assignment.id) || {}); })
       .catch(err => { if (!cancelled) setLoadError(err.message); });
     return () => { cancelled = true; };
-  }, [assignment.id]);
+  }, [assignment.id, providedAnswers]);
 
   const patientName = patient?.name || 'Paciente';
   const status = assignmentStatus(assignment);

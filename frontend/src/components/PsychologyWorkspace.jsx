@@ -34,6 +34,15 @@ import {
 import { PSYCHOLOGY_ROUTE_SPEC } from '../data/psychologyRouteSpec';
 import { getInstrument } from '../data/clinicalInstruments';
 import { listMyInstrumentRiskAlerts } from '../services/patientInstrumentService';
+import { listHomeAnamneseRequests } from '../services/homeAnamneseService';
+import { homeAnamneseForPath } from '../data/homeAnamneses';
+import {
+  answeredHomeRequests,
+  applyHomeAnswer,
+  applyHomeAnswers,
+  pendingHomeAnswers,
+  requestsOfAnamnese,
+} from '../utils/homeAnamnese';
 import { buildAnamneseRoute } from '../utils/formRoute';
 import { openQuestionsAttention, riskAttention, routeAttention, sortAttention } from '../utils/areaAttention';
 import { getSuggestedContextModules } from '../data/psychologyContextModules';
@@ -53,6 +62,8 @@ const PatientInstrumentsPanel = lazy(() => import('./instruments/PatientInstrume
   .then(module => ({ default: module.PatientInstrumentsPanel })));
 const PatientInterviewsPanel = lazy(() => import('./interviews/PatientInterviewsPanel')
   .then(module => ({ default: module.PatientInterviewsPanel })));
+const HomeAnamneseBox = lazy(() => import('./psychology/HomeAnamneseBox')
+  .then(module => ({ default: module.HomeAnamneseBox })));
 
 // ============================================================
 // Workspace de Psicologia — SHELL (Plano C, Rodada 1).
@@ -149,6 +160,22 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       .catch(() => { if (!cancelled) setRiskAlerts(null); });
     return () => { cancelled = true; };
   }, [selectedPatient?.id, riskAlertsToken]);
+  // Anamneses enviadas para responder em casa (Área do Paciente). Guarda
+  // o paciente junto: troca de paciente nunca mostra envio do anterior.
+  const [homeState, setHomeState] = useState({ patientId: null, rows: [], error: '' });
+  const [homeToken, setHomeToken] = useState(0);
+  useEffect(() => {
+    const patientId = selectedPatient?.id;
+    if (!patientId) return undefined;
+    let cancelled = false;
+    listHomeAnamneseRequests({ patientId, discipline: 'psicologia' })
+      .then(rows => { if (!cancelled) setHomeState({ patientId, rows, error: '' }); })
+      .catch(err => { if (!cancelled) setHomeState({ patientId, rows: [], error: err.message }); });
+    return () => { cancelled = true; };
+  }, [selectedPatient?.id, homeToken]);
+  const homeCurrent = homeState.patientId === selectedPatient?.id;
+  const homeRequests = homeCurrent ? homeState.rows : [];
+  const homeLoadError = homeCurrent ? homeState.error : '';
   // Evolução vinculada ao atendimento (patient_evolutions) vive fora do
   // registro clínico deste workspace — ver supabase/migrations/20260903.
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
@@ -440,6 +467,22 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     });
   }
 
+  // Resposta de casa → ficha: só quando a profissional clica (utils/homeAnamnese).
+  function latestHomeAnswerFor(path) {
+    const definition = homeAnamneseForPath(path);
+    return definition ? answeredHomeRequests(requestsOfAnamnese(homeRequests, definition.id))[0] || null : null;
+  }
+
+  function bringHomeAnswer(fieldId) {
+    const request = latestHomeAnswerFor(getPsychologyIntakeProfile(session.intakeProfile)?.path);
+    if (!request) return;
+    setSession(prev => applyHomeAnswer(prev, request, fieldId));
+  }
+
+  function importHomeAnswers(request, fieldIds) {
+    setSession(prev => applyHomeAnswers(prev, request, fieldIds));
+  }
+
   function handleAxisNote(axisId, value) {
     setSession(prev => ({ ...prev, axisNotes: { ...prev.axisNotes, [axisId]: value } }));
   }
@@ -585,9 +628,41 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       return <PsychologyPlaceholder tab={effectiveTab} />;
     }
 
+    // Anamnese infantil / adulto: "Responder em casa" no topo (envio,
+    // situação, respostas). Trazer para a ficha só com a ficha aberta.
+    const anamnesePath = anamnesePathOfTab(effectiveTab);
+    const homeDefinition = anamnesePath ? homeAnamneseForPath(anamnesePath) : null;
+    const homeBox = homeDefinition && !(noAccess && homeLoadError) ? (
+      <Suspense fallback={null}>
+        <HomeAnamneseBox
+          key={`${selectedPatient?.id}:${homeDefinition.id}`}
+          definition={homeDefinition}
+          patient={selectedPatient}
+          requests={requestsOfAnamnese(homeRequests, homeDefinition.id)}
+          loadError={homeLoadError}
+          session={session}
+          canImport={showingAnamneseForm}
+          importHint={noAccess
+            ? 'A ficha é de quem atende: é essa profissional quem traz as respostas para a ficha dela.'
+            : currentProfile
+              ? `A ficha está com a ${currentProfile.label}: as respostas desta anamnese não entram nela.`
+              : 'Escolha o percurso abaixo para trazer as respostas para a ficha.'}
+          profile={profile}
+          clinicName={clinicName}
+          onImport={importHomeAnswers}
+          onChanged={() => setHomeToken(token => token + 1)}
+        />
+      </Suspense>
+    ) : null;
+
     // Ficha de quem atende: no lugar de "Erro ao carregar a ficha".
     if (noAccess && !TABS_WITHOUT_RECORD.includes(effectiveTab)) {
-      return <PsychologyNoAccess patientName={selectedPatient?.name} onOpen={handleTabChange} />;
+      return (
+        <>
+          {homeBox}
+          <PsychologyNoAccess patientName={selectedPatient?.name} onOpen={handleTabChange} />
+        </>
+      );
     }
 
     const interviewSlot = PSYCHOLOGY_INTERVIEW_TABS[effectiveTab];
@@ -609,11 +684,14 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
     // Anamnese infantil / adulto: o formulário quando o percurso é este;
     // sem percurso, a escolha já neste percurso; no outro percurso, avisa
     // e deixa trocar (os campos já preenchidos não se apagam).
-    const anamnesePath = anamnesePathOfTab(effectiveTab);
     if (anamnesePath) {
       if (showingAnamneseForm) {
+        const latestHome = latestHomeAnswerFor(anamnesePath);
         return (
           <PsychologyAnamnese
+            homeBox={homeBox}
+            homeAnswers={latestHome ? pendingHomeAnswers(session, latestHome) : {}}
+            onUseHomeAnswer={bringHomeAnswer}
             session={session}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
             onUpdateField={updateFieldValue}
@@ -630,6 +708,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       }
       return (
         <>
+          {homeBox}
           {currentProfile && (
             <div className="alert alert-info psi-other-path" role="status">
               Esta paciente está com a <b>{currentProfile.label}</b>.

@@ -19,6 +19,15 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-10-16 - CHECK de tipo de envio deixava passar escala sem instrumento
+
+- Sintoma: nenhum em produção (as RPCs sempre gravam `instrument_id`); achado ao validar `20261016c_home_anamnese.sql` com ROLLBACK: um envio `kind = 'anamnese'` sem modelo foi aceito pelo banco.
+- Causa: `patient_form_assignments_kind_check` (20261011) testava `instrument_id ~ '...'` sem `IS NOT NULL`; num CHECK, expressão desconhecida (NULL) não reprova a linha. O mesmo valia para escala sem `instrument_id`/`discipline`.
+- Correção: a 20261016c recria o CHECK com `IS NOT NULL` nas colunas obrigatórias de cada tipo (escala e anamnese) e FK do modelo de anamnese.
+- Regra nova: CHECK com um ramo por tipo exige `IS NOT NULL` explícito nas colunas obrigatórias.
+- Teste obrigatório: `frontend/tests/regression/home-anamnese.test.mjs` (e os cenários 31/33b da validação com ROLLBACK).
+- Regra destilada em: `AGENTS.md` §9.
+
 ### 2026-10-16 - "Erro ao carregar a ficha" para quem não cadastrou o paciente
 
 - Sintoma: na Psicologia, a administradora abria qualquer paciente e via "Erro ao carregar a ficha"; a anamnese não abria nem salvava.

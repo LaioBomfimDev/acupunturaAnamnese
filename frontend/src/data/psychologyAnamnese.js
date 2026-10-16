@@ -353,6 +353,10 @@ export function createEmptyPsychologySession() {
     // permanecem editáveis e seguem para a IA/relatório como dados clínicos.
     complementaryQuestions: [],
     hypothesisReviews: [],
+    // Anamnese respondida em casa (Área do Paciente): por envio, quando
+    // e quais campos a profissional trouxe para a ficha
+    // ({ [envio]: { at, submittedAt, fields: [...] } }). utils/homeAnamnese.js
+    homeImports: {},
     // Registros de sessão (aba Evolução) e rascunhos de documento
     // (aba Relatório), guardados no mesmo registro da anamnese.
     evolucoes: [],
@@ -394,6 +398,9 @@ export function normalizePsychologySession(raw) {
         .slice(0, 60)
       : [],
     hypothesisReviews: Array.isArray(raw.hypothesisReviews) ? raw.hypothesisReviews : [],
+    homeImports: raw.homeImports && typeof raw.homeImports === 'object' && !Array.isArray(raw.homeImports)
+      ? { ...raw.homeImports }
+      : {},
     evolucoes: Array.isArray(raw.evolucoes) ? raw.evolucoes : [],
     relatorio: { ...empty.relatorio, ...(raw.relatorio || {}) },
   };

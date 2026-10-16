@@ -27,6 +27,8 @@ import {
   isContextModuleOpen,
 } from '../../data/psychologyContextModules';
 import { PSYCHOLOGY_ROUTE_SPEC } from '../../data/psychologyRouteSpec';
+import { formatHomeDate } from '../../utils/homeAnamnese';
+import '../../styles/homeAnamnese.css';
 
 // ============================================================
 // Painel: Anamnese clínica de Psicologia (só o formulário).
@@ -94,6 +96,25 @@ function InformantControl({ fieldId, current, history, onChange, onArchive }) {
   );
 }
 
+// Resposta que veio de casa (Área do Paciente) e ainda não está no campo:
+// a profissional lê aqui e decide trazer. Nada entra sozinho.
+function HomeAnswerNote({ fieldId, answer, onUse }) {
+  if (!answer || !onUse) return null;
+  return (
+    <div className="psi-home-answer">
+      <p className="psi-home-answer-head">
+        <b>Respondido em casa</b>
+        {answer.submittedAt ? ` em ${formatHomeDate(answer.submittedAt)}` : ''}
+        {answer.informantLabel ? ` · ${answer.informantLabel}` : ''}
+      </p>
+      <p className="psi-home-answer-text">{answer.text}</p>
+      <button type="button" className="tag" onClick={() => onUse(fieldId)}>
+        {answer.fieldEmpty ? 'Trazer para o campo' : 'Acrescentar ao campo'}
+      </button>
+    </div>
+  );
+}
+
 function PsychologyFieldBlock({
   field,
   session,
@@ -104,6 +125,8 @@ function PsychologyFieldBlock({
   onArchiveResponse,
   mergeWords,
   onAddWord,
+  homeAnswer = null,
+  onUseHomeAnswer,
 }) {
   return (
     <div className="psi-field">
@@ -115,6 +138,7 @@ function PsychologyFieldBlock({
         textarea={field.textarea}
         guide={<QuestionGuide questions={field.questionGuide} />}
       />
+      <HomeAnswerNote fieldId={field.id} answer={homeAnswer} onUse={onUseHomeAnswer} />
       <QuickWordChips
         words={mergeWords ? mergeWords(field.id, field.quickWords) : field.quickWords}
         onPick={word => onQuickWord(field.id, word)}
@@ -287,6 +311,9 @@ export function PsychologyAnamnese({
   onChooseProfile,
   onFillTestAnswers,
   onToggleContextModule,
+  homeBox = null,
+  homeAnswers = {},
+  onUseHomeAnswer,
 }) {
   const riskSelected = hasPsychologyRiskSelected(session.selectedMap);
   const profile = getPsychologyIntakeProfile(session.intakeProfile);
@@ -302,6 +329,7 @@ export function PsychologyAnamnese({
       <div className="panel">
         <div className="panel-title">{profile?.label || 'Anamnese clínica — escolha o perfil'}</div>
         <div className="panel-body">
+          {homeBox}
           {!profile ? (
             <div className="box psi-profile-required">
               <h3>Defina primeiro o tipo de anamnese</h3>
@@ -357,6 +385,8 @@ export function PsychologyAnamnese({
               onArchiveResponse={onArchiveResponse}
               mergeWords={mergeWords}
               onAddWord={addWord}
+              homeAnswer={homeAnswers[field.id]}
+              onUseHomeAnswer={onUseHomeAnswer}
             />
           ))}
 
@@ -375,6 +405,8 @@ export function PsychologyAnamnese({
                   onArchiveResponse={onArchiveResponse}
                   mergeWords={mergeWords}
                   onAddWord={addWord}
+                  homeAnswer={homeAnswers[field.id]}
+                  onUseHomeAnswer={onUseHomeAnswer}
                 />
               ))}
             </div>

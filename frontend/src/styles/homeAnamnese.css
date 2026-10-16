@@ -1,0 +1,150 @@
+/* ============================================================
+   Anamnese respondida em casa (16/10/2026)
+
+   Quadro "Responder em casa" no topo da Anamnese infantil/adulto e a
+   resposta de casa junto de cada campo da ficha. Só tokens; cor da
+   clínica só no botão principal (vem de .primary-button). A resposta de
+   casa fica num tom neutro: é o relato de quem respondeu, não texto da
+   profissional, e nunca usa vermelho (risco) nem âmbar (validação).
+   ============================================================ */
+
+.home-anamnese {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.home-anamnese-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.home-anamnese-title {
+  flex: 1 1 18em;
+  min-width: 0;
+}
+
+.home-anamnese-title .app-eyebrow,
+.home-anamnese-title .small,
+.home-anamnese-row .small {
+  margin: 0;
+}
+
+.home-anamnese-title .small {
+  color: var(--r1-text-subtle);
+}
+
+.home-anamnese-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.home-anamnese-row > .small {
+  flex: 1 1 18em;
+  min-width: 0;
+}
+
+.home-anamnese-send {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+
+.home-anamnese-date {
+  max-width: 220px;
+}
+
+.home-anamnese-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-anamnese-note,
+.home-anamnese-notice {
+  margin: 0;
+  color: var(--r1-text-subtle);
+}
+
+.home-anamnese-row .home-anamnese-note {
+  flex-basis: 100%;
+}
+
+.home-anamnese-older summary {
+  cursor: pointer;
+  color: var(--r1-text-subtle);
+  font-size: 13px;
+}
+
+.home-anamnese-older ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-anamnese-older li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+
+/* A janela de respostas é a da Área do Paciente (z-index 60, feita para o
+   hub). Dentro da área, a barra de baixo do celular fica em 105: a janela
+   sobe para a camada das janelas das escalas, senão "Imprimir" fica
+   escondido atrás da barra. */
+.home-anamnese .pq-overlay {
+  z-index: 220;
+}
+
+/* ---------- resposta de casa junto do campo ---------- */
+
+.psi-home-answer {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--r1-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+}
+
+.psi-home-answer-head {
+  margin: 0;
+  color: var(--r1-text-subtle);
+  font-size: 12.5px;
+}
+
+.psi-home-answer-head b {
+  color: var(--r1-text);
+}
+
+.psi-home-answer-text {
+  margin: 0;
+  color: var(--r1-text);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.psi-home-answer .tag {
+  justify-self: start;
+}

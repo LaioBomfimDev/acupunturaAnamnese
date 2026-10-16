@@ -54,7 +54,9 @@ export function AssignmentList({
           const status = assignmentStatus(assignment);
           const open = assignment.status === 'pending' || assignment.status === 'in_progress';
           const isInstrument = assignment.kind === 'instrument';
-          const hasAnswers = !isInstrument && (assignment.status === 'submitted' || assignment.status === 'in_progress');
+          // Anamnese de casa: até o paciente enviar, o rascunho é dele (20261016c).
+          const isAnamnese = assignment.kind === 'anamnese';
+          const hasAnswers = !isInstrument && (assignment.status === 'submitted' || (!isAnamnese && assignment.status === 'in_progress'));
           const hasResult = isInstrument && assignment.status === 'submitted';
           const name = patientName ? patientName(assignment.patient_id) : '';
           const selected = selectedIds?.has(assignment.id) || false;
@@ -63,6 +65,7 @@ export function AssignmentList({
             assignment.due_date ? `prazo ${formatDueDate(assignment.due_date)}` : 'sem prazo',
             assignment.submitted_at ? `respondido em ${day(assignment.submitted_at)}` : null,
             isInstrument ? 'escala' : null,
+            isAnamnese ? 'anamnese' : null,
           ].filter(Boolean).join(' · ');
 
           return (

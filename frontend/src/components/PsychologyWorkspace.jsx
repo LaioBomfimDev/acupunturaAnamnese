@@ -103,6 +103,11 @@ const PSYCHOLOGY_NAV_GROUPS = [
   { title: 'Apoio', tabs: [PSYCHOLOGY_TABS.BIBLIOTECA] },
 ];
 
+// Boas-vindas (Painel): os mesmos itens dos grupos Infantil, Adulto e
+// Avaliação do menu, em cartões (pedido de 16/10/2026).
+const PSYCHOLOGY_WELCOME_GROUPS = PSYCHOLOGY_NAV_GROUPS
+  .filter(group => ['Infantil', 'Adulto', 'Avaliação'].includes(group.title));
+
 const TABS_WITHOUT_PATIENT = [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.BIBLIOTECA, PSYCHOLOGY_TABS.DOCUMENTOS];
 
 // Abas que não dependem da ficha da área (anamnese): abrem também para
@@ -727,6 +732,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onSelectIntakeProfile={selectIntakeProfile}
             route={anamneseRoute}
             onOpenTab={handleTabChange}
+            menuGroups={PSYCHOLOGY_WELCOME_GROUPS}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
             fixedPath={anamnesePath}
           />
@@ -744,6 +750,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onSelectIntakeProfile={selectIntakeProfile}
             route={anamneseRoute}
             onOpenTab={handleTabChange}
+            menuGroups={PSYCHOLOGY_WELCOME_GROUPS}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );
@@ -794,6 +801,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onSelectIntakeProfile={selectIntakeProfile}
             route={anamneseRoute}
             onOpenTab={handleTabChange}
+            menuGroups={PSYCHOLOGY_WELCOME_GROUPS}
             onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
           />
         );

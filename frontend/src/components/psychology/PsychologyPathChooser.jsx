@@ -5,17 +5,27 @@ import {
   getPsychologyProfilesForPath,
   isPsychologyPathEligible,
 } from '../../data/psychologyIntakeProfiles';
-import { PSYCHOLOGY_TABS } from '../../data/psychologyAnamnese';
+import {
+  PSYCHOLOGY_INTERVIEW_TABS,
+  PSYCHOLOGY_TABS,
+  anamnesePathOfTab,
+} from '../../data/psychologyAnamnese';
+import { INTERVIEW_SLOTS, interviewsForSlot } from '../../data/clinicalInterviews';
+import { CLINICAL_INSTRUMENTS } from '../../data/clinicalInstruments';
 import { summarizeRoute } from '../../utils/formRoute';
 import { getInitials } from '../../utils/patientUi';
+import { NavIcon } from '../Sidebar';
 import '../../styles/psychologyWelcome.css';
 
 // ============================================================
 // Boas-vindas da Psicologia (Painel) e escolha do percurso.
 // Visual de 16/10/2026 (prévias A + C escolhidas pela administradora):
 // faixa do paciente na cor da tela (A), três atalhos com os números da
-// anamnese (C, a mesma conta do "Pede atenção" do menu) e os percursos
-// em cartões grandes (A).
+// anamnese (C, a mesma conta do "Pede atenção" do menu) e cartões
+// grandes (A). Os cartões são os mesmos itens dos grupos Infantil, Adulto
+// e Avaliação do menu (`menuGroups`, vindos da própria lista do menu,
+// com os mesmos ícones): anamnese escolhe o percurso aqui; os demais
+// abrem a parte.
 // `fixedPath` (16/10/2026): aberto pela aba "Anamnese infantil" ou
 // "Anamnese adulto" do menu, já começa na escolha daquele percurso.
 // ============================================================
@@ -23,21 +33,13 @@ import '../../styles/psychologyWelcome.css';
 const PATH_TEXT = 'Escolha o percurso deste atendimento. Anamnese e avaliação são registros separados, '
   + 'mas permanecem vinculados ao mesmo paciente.';
 
-function PathGlyph({ path }) {
-  return path === 'infantojuvenil' ? (
-    <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      <circle cx="24" cy="14" r="6" />
-      <path d="M14 40c0-7 4-12 10-12s10 5 10 12" />
-      <path d="M17 26l-5-4M31 26l5-4" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      <circle cx="24" cy="12" r="6.5" />
-      <path d="M12 42c0-9 5.5-15 12-15s12 6 12 15" />
-      <path d="M24 27v15" />
-    </svg>
-  );
-}
+// Sem a lista do menu, só as duas anamneses (como antes).
+const DEFAULT_GROUPS = [
+  { title: null, tabs: [PSYCHOLOGY_TABS.ANAMNESE_INFANTIL, PSYCHOLOGY_TABS.ANAMNESE_ADULTO] },
+];
+
+const PSYCHOLOGY_SCALE_COUNT = CLINICAL_INSTRUMENTS
+  .filter(instrument => (instrument.disciplines || []).includes('psicologia')).length;
 
 function ageLabel(age) {
   const text = String(age ?? '').trim();
@@ -52,6 +54,27 @@ function profileDescription(profile) {
 
 function plural(count, one, many) {
   return count === 1 ? one : many;
+}
+
+/** Linha de baixo do cartão de cada item do menu que não é anamnese. */
+function tabDescription(tab, session) {
+  const slot = PSYCHOLOGY_INTERVIEW_TABS[tab];
+  if (slot) {
+    const respondent = INTERVIEW_SLOTS[slot]?.respondent;
+    const waiting = interviewsForSlot('psicologia', slot).length === 0;
+    return [respondent ? `Quem responde: ${respondent}.` : '', waiting ? 'Aguardando o modelo da clínica.' : '']
+      .filter(Boolean).join(' ');
+  }
+  if (tab === PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES) {
+    const questions = Array.isArray(session?.complementaryQuestions) ? session.complementaryQuestions : [];
+    if (!questions.length) return 'Nenhuma pergunta ainda.';
+    const answered = questions.filter(item => String(item.answer || '').trim()).length;
+    return `${answered} de ${questions.length} ${plural(questions.length, 'respondida', 'respondidas')}.`;
+  }
+  if (tab === PSYCHOLOGY_TABS.ESCALAS) {
+    return `${PSYCHOLOGY_SCALE_COUNT} ${plural(PSYCHOLOGY_SCALE_COUNT, 'escala', 'escalas')} para aplicar no consultório ou enviar para casa.`;
+  }
+  return '';
 }
 
 // Os três atalhos (prévia C): anamnese pelo roteiro, partes completas e
@@ -116,15 +139,59 @@ export function PsychologyPathChooser({
   fixedPath = null,
   route = null,
   onOpenTab,
+  menuGroups = null,
 }) {
   const [intakePath, setIntakePath] = useState(fixedPath);
   const currentProfile = getPsychologyIntakeProfile(session?.intakeProfile);
   const fixedLabel = PSYCHOLOGY_WELCOME_PATHS.find(path => path.id === fixedPath)?.label || '';
   const name = selectedPatient?.name || 'Paciente';
   const meta = [ageLabel(patientAge), 'Psicologia'].filter(Boolean).join(' · ');
+  const groups = Array.isArray(menuGroups) && menuGroups.length ? menuGroups : DEFAULT_GROUPS;
+  const numbers = new Map(groups.flatMap(group => group.tabs)
+    .map((tab, index) => [tab, String(index + 1).padStart(2, '0')]));
 
-  function choosePath(path) {
-    setIntakePath(path.id);
+  function renderCard(tab) {
+    const number = numbers.get(tab);
+    const pathId = anamnesePathOfTab(tab);
+    const path = pathId ? PSYCHOLOGY_WELCOME_PATHS.find(item => item.id === pathId) : null;
+
+    if (path) {
+      const eligible = isPsychologyPathEligible(path.id, patientAge);
+      const inUse = currentProfile?.path === path.id;
+      return (
+        <button
+          key={tab}
+          type="button"
+          className={`psi-welcome-card${inUse ? ' in-use' : ''}`}
+          disabled={!eligible}
+          onClick={() => setIntakePath(path.id)}
+        >
+          <span className="psi-welcome-art"><NavIcon name={tab} /></span>
+          <span className="psi-welcome-num" aria-hidden="true">{number}</span>
+          {inUse && <span className="psi-welcome-badge">Em uso</span>}
+          <b>{path.label}</b>
+          <small>{path.description}</small>
+          {eligible ? (
+            <span className="psi-welcome-cta">Escolher →</span>
+          ) : (
+            <span className="psi-path-warning">
+              {patientAge <= 17 ? 'Disponível a partir de 18 anos.' : 'Disponível até 17 anos.'}
+            </span>
+          )}
+        </button>
+      );
+    }
+
+    const description = tabDescription(tab, session);
+    return (
+      <button key={tab} type="button" className="psi-welcome-card" onClick={() => onOpenTab?.(tab)}>
+        <span className="psi-welcome-art"><NavIcon name={tab} /></span>
+        <span className="psi-welcome-num" aria-hidden="true">{number}</span>
+        <b>{tab}</b>
+        {description && <small>{description}</small>}
+        <span className="psi-welcome-cta">Abrir →</span>
+      </button>
+    );
   }
 
   return (
@@ -164,33 +231,19 @@ export function PsychologyPathChooser({
         </div>
 
         {!intakePath ? (
-          <div className="psi-welcome-grid" aria-label="Percursos de Psicologia">
-            {PSYCHOLOGY_WELCOME_PATHS.map((path, index) => {
-              const eligible = isPsychologyPathEligible(path.id, patientAge);
-              const inUse = currentProfile?.path === path.id;
-              return (
-                <button
-                  key={path.id}
-                  type="button"
-                  className={`psi-welcome-card${inUse ? ' in-use' : ''}`}
-                  disabled={!eligible}
-                  onClick={() => choosePath(path)}
-                >
-                  <span className="psi-welcome-art"><PathGlyph path={path.id} /></span>
-                  <span className="psi-welcome-num" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                  {inUse && <span className="psi-welcome-badge">Em uso</span>}
-                  <b>{path.label}</b>
-                  <small>{path.description}</small>
-                  {eligible ? (
-                    <span className="psi-welcome-cta">Escolher →</span>
-                  ) : (
-                    <span className="psi-path-warning">
-                      {patientAge <= 17 ? 'Disponível a partir de 18 anos.' : 'Disponível até 17 anos.'}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="psi-welcome-groups" aria-label="Percursos e partes da Psicologia">
+            {groups.map(group => (
+              <section
+                key={group.title || 'percursos'}
+                className={`psi-welcome-group${group.tabs.length > 2 ? ' psi-welcome-group--wide' : ''}`}
+                aria-label={group.title || 'Percursos de Psicologia'}
+              >
+                {group.title && <p className="psi-welcome-group-title">{group.title}</p>}
+                <div className="psi-welcome-grid">
+                  {group.tabs.map(renderCard)}
+                </div>
+              </section>
+            ))}
           </div>
         ) : (
           <div className="psi-welcome-step">

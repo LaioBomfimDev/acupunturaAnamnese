@@ -91,6 +91,46 @@ test('aba Anamnese adulto sem percurso: título da aba, sem atalhos, já na segu
   assert.doesNotMatch(html, /psi-welcome-back/, 'na aba do percurso não há "Voltar"');
 });
 
+// Pedido de 16/10/2026: no Painel, os mesmos botões do menu (Infantil,
+// Adulto e Avaliação), em cartões iguais aos das anamneses e com os
+// mesmos ícones. A lista vem do próprio menu (menuGroups).
+test('cartões com os mesmos itens dos grupos do menu', async () => {
+  const anamnese = await server.ssrLoadModule('/src/data/psychologyAnamnese.js');
+  const T = anamnese.PSYCHOLOGY_TABS;
+  const menuGroups = [
+    { title: 'Infantil', tabs: [T.ANAMNESE_INFANTIL, T.ENTREVISTA_PAIS] },
+    { title: 'Adulto', tabs: [T.ANAMNESE_ADULTO, T.ENTREVISTA_FAMILIAR] },
+    { title: 'Avaliação', tabs: [T.ENTREVISTA_RASTREIO, T.PERGUNTAS_COMPLEMENTARES, T.ESCALAS] },
+  ];
+  const html = render({
+    session: { intakeProfile: null, fields: {}, complementaryQuestions: [] },
+    route: null,
+    menuGroups,
+  });
+  const groups = [...html.matchAll(/<p class="psi-welcome-group-title">([^<]+)<\/p>/g)].map(m => m[1]);
+  assert.deepEqual(groups, ['Infantil', 'Adulto', 'Avaliação']);
+  const titles = [...html.matchAll(/class="psi-welcome-card[^"]*"[^>]*>[\s\S]*?<b>([^<]+)<\/b>/g)].map(m => m[1]);
+  assert.deepEqual(titles, [
+    'Anamnese infantil', 'Entrevista pais e professores',
+    'Anamnese adulto', 'Entrevista familiar / laboral',
+    'Entrevista de rastreio', 'Perguntas complementares', 'Escalas',
+  ]);
+  assert.equal((html.match(/class="nav-icon"/g) || []).length, 7, 'o mesmo ícone do menu em cada cartão');
+  assert.equal((html.match(/>Escolher →</g) || []).length, 2, 'anamnese escolhe o percurso aqui');
+  assert.equal((html.match(/>Abrir →</g) || []).length, 5, 'os demais abrem a parte');
+  assert.match(html, /Quem responde: Familiares, pessoas próximas e colegas de trabalho\./);
+  assert.match(html, /Quem responde: O próprio paciente\. Aguardando o modelo da clínica\./);
+  assert.match(html, /Nenhuma pergunta ainda\./);
+  assert.match(html, /\d+ escalas para aplicar no consultório ou enviar para casa\./);
+  assert.match(html, /class="psi-welcome-group psi-welcome-group--wide" aria-label="Avaliação"/);
+
+  const workspace = await readFile(path.join(root, 'src/components/PsychologyWorkspace.jsx'), 'utf8');
+  assert.match(workspace, /const PSYCHOLOGY_WELCOME_GROUPS = PSYCHOLOGY_NAV_GROUPS\r?\n\s+\.filter\(group => \['Infantil', 'Adulto', 'Avaliação'\]\.includes\(group\.title\)\);/,
+    'os cartões saem da lista do menu, nunca de uma cópia');
+  const sidebar = await readFile(path.join(root, 'src/components/Sidebar.jsx'), 'utf8');
+  assert.match(sidebar, /export function NavIcon\(\{ name \}\)/);
+});
+
 test('cor da tela, nunca cor fixa; a área passa a navegação e a conta do menu', async () => {
   const css = await readFile(path.join(root, 'src/styles/psychologyWelcome.css'), 'utf8');
   assert.match(css, /\.psi-welcome-hero \{[^}]*background: linear-gradient\(125deg, var\(--r1-accent-strong\) 0%, var\(--r1-accent\) 100%\);/);
@@ -102,5 +142,6 @@ test('cor da tela, nunca cor fixa; a área passa a navegação e a conta do menu
   for (const block of choosers) {
     assert.match(block, /route=\{anamneseRoute\}/, 'mesmo roteiro do "Pede atenção"');
     assert.match(block, /onOpenTab=\{handleTabChange\}/);
+    assert.match(block, /menuGroups=\{PSYCHOLOGY_WELCOME_GROUPS\}/);
   }
 });

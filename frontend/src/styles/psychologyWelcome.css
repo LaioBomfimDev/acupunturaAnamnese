@@ -257,9 +257,38 @@
   color: var(--r1-text-muted);
 }
 
+/* Grupos do menu (Infantil, Adulto, Avaliação): os dois primeiros lado a
+   lado, o de três itens na largura toda. */
+.psi-welcome-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.psi-welcome-group {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.psi-welcome-group--wide,
+.psi-welcome-group:only-child {
+  grid-column: 1 / -1;
+}
+
+.psi-welcome-group-title {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--r1-accent-strong);
+}
+
 .psi-welcome-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
   gap: 14px;
 }
 
@@ -313,14 +342,11 @@
   color: var(--r1-accent-strong);
 }
 
+/* Mesmo ícone do item no menu (NavIcon), em tamanho de cartão. */
 .psi-welcome-art svg {
-  width: 38px;
-  height: 38px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.7;
 }
 
 .psi-welcome-num {
@@ -349,8 +375,12 @@
 }
 
 .forms-scope .psi-welcome-card b {
-  padding-right: 70px;
   font-size: 17px;
+}
+
+/* Sem ícone, o título divide a linha com o selo "Em uso". */
+.forms-scope .psi-welcome-card--profile b {
+  padding-right: 70px;
 }
 
 .forms-scope .psi-welcome-card small {
@@ -462,5 +492,59 @@
 
   .psi-welcome-body {
     padding: 18px 16px;
+  }
+
+  .psi-welcome-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Cartões compactos: ícone pequeno à esquerda, texto à direita, sem número. */
+  .forms-scope .psi-welcome-card:not(.psi-welcome-card--profile) {
+    grid-template-columns: 48px minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 2px;
+    padding: 14px 16px;
+  }
+
+  .psi-welcome-card:not(.psi-welcome-card--profile) .psi-welcome-art {
+    grid-row: 1 / span 3;
+    align-self: start;
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    border-radius: 14px;
+  }
+
+  .psi-welcome-art svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .psi-welcome-card:not(.psi-welcome-card--profile) .psi-welcome-num {
+    display: none;
+  }
+
+  .forms-scope .psi-welcome-card:not(.psi-welcome-card--profile) > b,
+  .forms-scope .psi-welcome-card:not(.psi-welcome-card--profile) > small,
+  .psi-welcome-card:not(.psi-welcome-card--profile) > .psi-welcome-cta,
+  .psi-welcome-card:not(.psi-welcome-card--profile) > .psi-path-warning {
+    grid-column: 2;
+  }
+
+  .forms-scope .psi-welcome-card b {
+    font-size: 16px;
+  }
+
+  .psi-welcome-card .psi-welcome-cta {
+    margin-top: 4px;
+  }
+
+  .psi-welcome-card:not(.psi-welcome-card--profile) .psi-welcome-badge {
+    top: 12px;
+    right: 12px;
+  }
+
+  .forms-scope .psi-welcome-card.in-use b {
+    padding-right: 70px;
   }
 }

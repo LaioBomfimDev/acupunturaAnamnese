@@ -321,7 +321,7 @@ const NAV_ICONS = {
   ),
 };
 
-function NavIcon({ name }) {
+export function NavIcon({ name }) {
   const glyph = NAV_ICONS[name];
   if (!glyph) return null;
   return (

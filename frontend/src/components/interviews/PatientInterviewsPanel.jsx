@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import { Panel } from '../ui/Panel';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { ENTREVISTAS_HELP } from '../../data/screenHelp';
-import { interviewItemCount, interviewsForDiscipline } from '../../data/clinicalInterviews';
+import { INTERVIEW_SLOTS, interviewItemCount, interviewsForSlot } from '../../data/clinicalInterviews';
 import {
   cancelInterviewLink,
   getInterviewLink,
@@ -207,8 +207,11 @@ function InterviewCard({ interview, responses, patient, discipline, clinicName, 
   );
 }
 
-export function PatientInterviewsPanel({ patient, discipline, profile, clinicName = '', title = 'Entrevistas' }) {
-  const interviews = interviewsForDiscipline(discipline);
+// `slot`: um lugar do menu (pais e professores, familiar / laboral,
+// rastreio). Lugar sem entrevista ainda mostra que espera o modelo.
+export function PatientInterviewsPanel({ patient, discipline, profile, clinicName = '', slot = null, title = 'Entrevistas' }) {
+  const interviews = interviewsForSlot(discipline, slot);
+  const slotInfo = slot ? INTERVIEW_SLOTS[slot] : null;
   const patientId = patient?.id || null;
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -235,8 +238,11 @@ export function PatientInterviewsPanel({ patient, discipline, profile, clinicNam
     setOpenIds(new Set());
   }
 
+  // Lugar sem entrevista não busca nada no banco.
+  const hasInterviews = interviews.length > 0;
+
   useEffect(() => {
-    if (!patientId) return undefined;
+    if (!patientId || !hasInterviews) return undefined;
     let cancelled = false;
     listPatientInterviews({ patientId, discipline })
       .then(rows => {
@@ -251,7 +257,7 @@ export function PatientInterviewsPanel({ patient, discipline, profile, clinicNam
         setLoadedOnce(true);
       });
     return () => { cancelled = true; };
-  }, [patientId, discipline, reloadToken]);
+  }, [patientId, discipline, hasInterviews, reloadToken]);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -273,6 +279,26 @@ export function PatientInterviewsPanel({ patient, discipline, profile, clinicNam
   }
 
   if (!patientId) return null;
+
+  if (!interviews.length) {
+    return (
+      <Panel title={title}>
+        <div className="instrument-panel interview-panel">
+          <div className="interview-waiting">
+            <span className="instrument-dialog-icon"><InterviewGlyph name="interview" size={20} /></span>
+            <div>
+              <p className="interview-waiting-title">Aguardando o modelo da clínica</p>
+              <p className="small">
+                Quando a clínica mandar o roteiro desta entrevista, ele entra aqui igual ao modelo, para responder
+                no consultório ou mandar por link.
+                {slotInfo?.respondent ? ` Quem responde: ${slotInfo.respondent.toLowerCase()}.` : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Panel>
+    );
+  }
 
   const valid = responses.filter(item => item.status === 'submitted' && !item.voidedAt);
   const openLinks = responses.filter(item => isOpenLink(item));

@@ -19,6 +19,16 @@ Modelo de entrada:
 
 ## Incidentes registrados
 
+### 2026-10-16 - "Erro ao carregar a ficha" para quem não cadastrou o paciente
+
+- Sintoma: na Psicologia, a administradora abria qualquer paciente e via "Erro ao carregar a ficha"; a anamnese não abria nem salvava.
+- Causa: `get_latest_clinical_record` e `upsert_versioned_clinical_record` (desde `20260723_clinical_data_hardening.sql`) só abriam a ficha da área para quem cadastrou o paciente (`patients.therapist_id = auth.uid()`). Na clínica multidisciplinar o cadastro é da instituição: além da administração, quem atende um paciente cadastrado por outra pessoa (a Denise num paciente que a Karen cadastrou) recebia o mesmo erro. A tela tratava a recusa como falha de carga.
+- Diagnóstico: as duas RPCs chamadas como cada perfil real em transação com ROLLBACK; Karen recusada nos 24 pacientes da Denise, aceita nos 11 dela.
+- Correção: `supabase/migrations/20261016b_clinical_record_attending_access.sql` (cópia das últimas versões, só a conferência muda): também abre para quem atende o paciente na área (`can_use_patient_instruments`), cada um com a própria ficha (`clinical_records.therapist_id = auth.uid()`); a administração que não atende segue de fora e a tela mostra "Ficha de quem atende" (`utils/clinicalRecordAccess.js`, estado `no_access`). Validada com ROLLBACK (11 cenários).
+- Regra nova: ficha clínica da área abre para quem cadastrou ou atende o paciente na área; recusa por não atender é aviso, nunca "Erro ao carregar".
+- Teste obrigatório: `frontend/tests/regression/clinical-record-attending-access.test.mjs`.
+- Regra destilada em: `AGENTS.md` §9.
+
 ### 2026-09-29 - Paciente de Neuropsicologia fora de "Falta evoluir"
 
 - Sintoma: paciente atendida no dia pela neuropsicóloga não aparecia na fila da tela Evoluções; a sessão acabava registrada nas "Sessões" de dentro da Avaliação neuropsicológica, fora do controle de pendências.

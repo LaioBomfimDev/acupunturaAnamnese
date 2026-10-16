@@ -50,10 +50,39 @@ const NAV_ICONS = {
       <path d="M9 10h6M9 14h6M9 18h4" />
     </>
   ),
-  'Entrevistas': (
+  // Psicologia (16/10/2026): anamnese e entrevista de cada percurso.
+  'Anamnese infantil': (
+    <>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V2h6v2" />
+      <circle cx="12" cy="11" r="2.2" />
+      <path d="M8.5 17.5a3.5 3.5 0 0 1 7 0" />
+    </>
+  ),
+  'Anamnese adulto': (
+    <>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V2h6v2" />
+      <path d="M9 10h6M9 14h6M9 18h4" />
+    </>
+  ),
+  'Entrevista pais e professores': (
+    <>
+      <circle cx="8" cy="7" r="2.6" />
+      <circle cx="16.5" cy="9" r="2" />
+      <path d="M3.5 19a4.5 4.5 0 0 1 9 0M13 19a3.5 3.5 0 0 1 7 0" />
+    </>
+  ),
+  'Entrevista familiar / laboral': (
     <>
       <path d="M4 5.5h11a2 2 0 0 1 2 2V13a2 2 0 0 1-2 2H9l-4 3.5V15H4a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2z" />
       <path d="M19 9h1a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-1V21l-3.5-2.5H12" />
+    </>
+  ),
+  'Entrevista de rastreio': (
+    <>
+      <circle cx="10.5" cy="10.5" r="6" />
+      <path d="m15 15 5.5 5.5M8 10.5h5M10.5 8v5" />
     </>
   ),
   'Perguntas complementares': (
@@ -322,9 +351,11 @@ function NavIcon({ name }) {
  * sidebar" — no telefone o que importa é começar, ver o paciente e
  * registrar a evolução.
  */
-function pickBottomTabs(navGroups, patientTab, soonTabs = []) {
+function pickBottomTabs(navGroups, patientTab, soonTabs = [], bottomTab = null) {
   const all = navGroups.flatMap(group => group.tabs).filter(tab => !soonTabs.includes(tab));
-  const preferred = ['Tela inicial', patientTab, 'Evolução'].filter(tab => all.includes(tab));
+  // `bottomTab`: a área diz qual aba vale o terceiro lugar (a Psicologia
+  // manda a anamnese do percurso da paciente, infantil ou adulto).
+  const preferred = ['Tela inicial', patientTab, bottomTab, 'Evolução'].filter(tab => tab && all.includes(tab));
   const rest = all.filter(tab => !preferred.includes(tab));
   return [...preferred, ...rest].slice(0, 3);
 }
@@ -362,6 +393,7 @@ export function Sidebar({
   // (`soonTabs`) saem dos grupos e ficam fechadas em "Em breve".
   attention = [],
   soonTabs = [],
+  bottomTab = null,
 }) {
   // A gaveta mora aqui, e não no App, porque três shells diferentes
   // (MTC, Psicologia, disciplina genérica) montam esta mesma sidebar.
@@ -427,7 +459,7 @@ export function Sidebar({
 
   const bottomTabs = isSuperAdmin
     ? SUPER_ADMIN_SECTIONS.slice(0, 3).map(section => section.id)
-    : pickBottomTabs(navGroups, patientTab, soonTabs);
+    : pickBottomTabs(navGroups, patientTab, soonTabs, bottomTab);
 
   return (
     <>

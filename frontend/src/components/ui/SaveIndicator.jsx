@@ -14,10 +14,12 @@ export function SaveIndicator({ status, lastSavedAt, onSave, hasPatient, hasPend
     saved: { text: 'Salvo', tone: 'saved', clickable: false },
     error: { text: 'Erro ao salvar', tone: 'error', clickable: true },
     load_error: { text: 'Erro ao carregar a ficha', tone: 'error', clickable: false },
+    // Não atende o paciente nesta área: a ficha é de quem atende (não é erro).
+    no_access: { text: 'Ficha de quem atende', tone: 'idle', clickable: false },
   };
 
   const cfg = hasPendingChanges
-    && !['loading', 'saving', 'error', 'load_error'].includes(status)
+    && !['loading', 'saving', 'error', 'load_error', 'no_access'].includes(status)
     ? configs.dirty
     : configs[status] || configs.idle;
 
@@ -28,7 +30,9 @@ export function SaveIndicator({ status, lastSavedAt, onSave, hasPatient, hasPend
       disabled={!cfg.clickable}
       title={status === 'load_error'
         ? 'Reabra o paciente antes de editar ou salvar.'
-        : lastSavedAt
+        : status === 'no_access'
+          ? 'Você não atende este paciente nesta área: a ficha é de quem atende.'
+          : lastSavedAt
           ? `Último salvamento: ${lastSavedAt.toLocaleTimeString('pt-BR')}`
           : 'Ainda não salvo'}
     >

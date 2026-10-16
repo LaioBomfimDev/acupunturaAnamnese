@@ -62,7 +62,9 @@ test('entrada concentra seleção e contagem na lista e identifica a busca', () 
   assert.match(html, /<p class="patient-start-greeting">/);
   assert.match(html, /<label class="patient-start-search"><span>Buscar paciente<\/span><input[^>]*type="search"/);
   assert.match(html, /role="status">0 pacientes</);
-  assert.match(html, /Cadastre o primeiro em Pacientes da instituição/);
+  // Cadastrar sem sair da área (16/10/2026): a mesma ficha de Pacientes.
+  assert.match(html, /Cadastre o primeiro em “Cadastrar paciente”/);
+  assert.match(html, /<button type="button" class="primary-button patient-start-create">\+ Cadastrar paciente<\/button>/);
 });
 
 test('cartão inicia atendimento e expõe edição de cadastro por ícone', () => {

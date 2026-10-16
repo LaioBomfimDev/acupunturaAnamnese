@@ -58,8 +58,14 @@ export const PSI_NEURO_RECORD_TYPE = 'psi_neuro_avaliacao';
 export const PSYCHOLOGY_TABS = {
   HOME: 'Tela inicial',
   PAINEL: 'Painel',
+  // "Anamnese" não aparece no menu (16/10/2026): leva à anamnese do
+  // percurso da paciente, infantil ou adulto (anamneseTabForProfile).
   ANAMNESE: 'Anamnese',
-  ENTREVISTAS: 'Entrevistas',
+  ANAMNESE_INFANTIL: 'Anamnese infantil',
+  ANAMNESE_ADULTO: 'Anamnese adulto',
+  ENTREVISTA_PAIS: 'Entrevista pais e professores',
+  ENTREVISTA_FAMILIAR: 'Entrevista familiar / laboral',
+  ENTREVISTA_RASTREIO: 'Entrevista de rastreio',
   PERGUNTAS_COMPLEMENTARES: 'Perguntas complementares',
   ESCALAS: 'Escalas',
   SINTESE: 'Síntese do caso',
@@ -92,6 +98,27 @@ export const PSYCHOLOGY_MODALITIES = [
     available: true,
   },
 ];
+
+// Aba da anamnese de cada percurso do Painel (psychologyIntakeProfiles).
+export const PSYCHOLOGY_ANAMNESE_TABS = {
+  infantojuvenil: PSYCHOLOGY_TABS.ANAMNESE_INFANTIL,
+  adulto: PSYCHOLOGY_TABS.ANAMNESE_ADULTO,
+};
+
+export function anamnesePathOfTab(tab) {
+  return Object.keys(PSYCHOLOGY_ANAMNESE_TABS).find(path => PSYCHOLOGY_ANAMNESE_TABS[path] === tab) || null;
+}
+
+export function isPsychologyAnamneseTab(tab) {
+  return tab === PSYCHOLOGY_TABS.ANAMNESE || Boolean(anamnesePathOfTab(tab));
+}
+
+// Entrevista de cada aba (slot em data/clinicalInterviews.js).
+export const PSYCHOLOGY_INTERVIEW_TABS = {
+  [PSYCHOLOGY_TABS.ENTREVISTA_PAIS]: 'pais_professores',
+  [PSYCHOLOGY_TABS.ENTREVISTA_FAMILIAR]: 'familiar_laboral',
+  [PSYCHOLOGY_TABS.ENTREVISTA_RASTREIO]: 'rastreio',
+};
 
 export function getPsychologyModality(id) {
   return PSYCHOLOGY_MODALITIES.find(item => item.id === id) || null;

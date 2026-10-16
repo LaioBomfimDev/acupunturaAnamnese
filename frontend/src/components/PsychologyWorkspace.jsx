@@ -9,6 +9,7 @@ import {
   getLatestRecord,
   upsertVersionedClinicalRecord,
 } from '../services/clinicalRecordService';
+import { isNotAttendingError } from '../utils/clinicalRecordAccess';
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { mergeEvolutionHistory } from '../utils/evolutionHistory';
@@ -16,8 +17,11 @@ import {
   PSI_ANAMNESE_RECORD_TYPE,
   PSYCHOLOGY_CONTENT_STATUS,
   PSYCHOLOGY_DRAFT_NOTICE,
+  PSYCHOLOGY_ANAMNESE_TABS,
+  PSYCHOLOGY_INTERVIEW_TABS,
   PSYCHOLOGY_PLACEHOLDER_TABS,
   PSYCHOLOGY_TABS,
+  anamnesePathOfTab,
   appendQuickWord,
   createEmptyPsychologySession,
   normalizePsychologySession,
@@ -41,6 +45,7 @@ import { PsychologyPlaceholder } from './psychology/PsychologyPlaceholder';
 import { PsychologyPathChooser } from './psychology/PsychologyPathChooser';
 import { PsychologyHypotheses } from './psychology/PsychologyHypotheses';
 import { PsychologyComplementaryQuestions } from './psychology/PsychologyComplementaryQuestions';
+import { PsychologyNoAccess } from './psychology/PsychologyNoAccess';
 
 const DocumentosTimbrados = lazy(() => import('./panels/DocumentosTimbrados')
   .then(module => ({ default: module.DocumentosTimbrados })));
@@ -65,13 +70,18 @@ const PatientInterviewsPanel = lazy(() => import('./interviews/PatientInterviews
 
 // Grupos da sidebar (Plano C). Abas teóricas são placeholders na
 // Rodada 1 (ver PSYCHOLOGY_PLACEHOLDER_TABS).
+// Menu da anamnese (16/10/2026, pedido da administradora): Infantil e
+// Adulto, cada um com a sua anamnese e a sua entrevista; rastreio,
+// perguntas complementares e escalas fora dos dois. Entrevista sem
+// modelo da clínica ainda aparece e diz que espera o modelo.
 const PSYCHOLOGY_NAV_GROUPS = [
   { title: null, tabs: [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.PAINEL] },
+  { title: 'Infantil', tabs: [PSYCHOLOGY_TABS.ANAMNESE_INFANTIL, PSYCHOLOGY_TABS.ENTREVISTA_PAIS] },
+  { title: 'Adulto', tabs: [PSYCHOLOGY_TABS.ANAMNESE_ADULTO, PSYCHOLOGY_TABS.ENTREVISTA_FAMILIAR] },
   {
     title: 'Avaliação',
     tabs: [
-      PSYCHOLOGY_TABS.ANAMNESE,
-      PSYCHOLOGY_TABS.ENTREVISTAS,
+      PSYCHOLOGY_TABS.ENTREVISTA_RASTREIO,
       PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES,
       PSYCHOLOGY_TABS.ESCALAS,
     ],
@@ -83,6 +93,24 @@ const PSYCHOLOGY_NAV_GROUPS = [
 ];
 
 const TABS_WITHOUT_PATIENT = [PSYCHOLOGY_TABS.HOME, PSYCHOLOGY_TABS.BIBLIOTECA, PSYCHOLOGY_TABS.DOCUMENTOS];
+
+// Abas que não dependem da ficha da área (anamnese): abrem também para
+// quem não atende o paciente (a administração vê entrevistas e escalas).
+const TABS_WITHOUT_RECORD = [
+  PSYCHOLOGY_TABS.HOME,
+  PSYCHOLOGY_TABS.ESCALAS,
+  PSYCHOLOGY_TABS.DOCUMENTOS,
+  PSYCHOLOGY_TABS.BIBLIOTECA,
+  ...Object.keys(PSYCHOLOGY_INTERVIEW_TABS),
+];
+
+// Anamnese do percurso escolhido no Painel; sem percurso, pela idade.
+function anamneseTabFor(profileId, age) {
+  const profile = getPsychologyIntakeProfile(profileId);
+  if (profile) return PSYCHOLOGY_ANAMNESE_TABS[profile.path];
+  const years = Number.parseInt(age, 10);
+  return Number.isFinite(years) && years <= 17 ? PSYCHOLOGY_TABS.ANAMNESE_INFANTIL : PSYCHOLOGY_TABS.ANAMNESE_ADULTO;
+}
 
 export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
   const { selectedPatient, activeAppointment } = usePatient();
@@ -183,6 +211,10 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       .catch(err => {
         if (cancelled || patientIdRef.current !== patientId) return;
         loadBlockedRef.current = true;
+        if (isNotAttendingError(err)) {
+          setSaveStatus('no_access');
+          return;
+        }
         setSaveStatus('load_error');
         console.error('Erro ao carregar prontuários de psicologia:', {
           name: err?.name || 'Error',
@@ -284,11 +316,12 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       setActiveTab(PSYCHOLOGY_TABS.HOME);
       return;
     }
-    if ([PSYCHOLOGY_TABS.ANAMNESE, PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES].includes(tab)) {
-      if (!session.intakeProfile) {
-        setActiveTab(PSYCHOLOGY_TABS.PAINEL);
-        return;
-      }
+    // "Anamnese" (atalhos de dentro das abas) vai para a do percurso.
+    const anamneseTab = anamneseTabFor(session.intakeProfile, getPatientAge(selectedPatient));
+    if (tab === PSYCHOLOGY_TABS.ANAMNESE
+      || (tab === PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES && !session.intakeProfile)) {
+      setActiveTab(anamneseTab);
+      return;
     }
     setActiveTab(tab);
   }
@@ -343,7 +376,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       relatorio: prev.relatorio,
       responseHistory: prev.responseHistory,
     }));
-    setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
+    setActiveTab(anamneseTabFor(sessionPatch.intakeProfile || session.intakeProfile, getPatientAge(selectedPatient)));
   }
 
   // Abrir/fechar módulo de contexto. Fechar não apaga: o texto continua em
@@ -370,7 +403,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         ...prev.contextModules,
       },
     }));
-    setActiveTab(PSYCHOLOGY_TABS.ANAMNESE);
+    setActiveTab(anamneseTabFor(profileId, getPatientAge(selectedPatient)));
   }
 
   function updateFieldInformant(fieldId, informant) {
@@ -490,10 +523,17 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
   // Mescla o legado (session.evolucoes) com os registros novos vindos de
   // patient_evolutions — ver utils/evolutionHistory.
   const evolucoes = mergeEvolutionHistory(session.evolucoes, patientEvolutionRecords);
-  const showAssistantRail = effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && Boolean(selectedPatient);
+  // Sem atender o paciente nesta área, a anamnese não abre (ficha de quem atende).
+  const noAccess = saveStatus === 'no_access';
+  const currentProfile = getPsychologyIntakeProfile(session.intakeProfile);
+  const anamneseTab = anamneseTabFor(session.intakeProfile, patientAge);
+  // A anamnese em si (formulário) só aparece na aba do percurso escolhido.
+  const showingAnamneseForm = Boolean(selectedPatient) && !noAccess
+    && Boolean(currentProfile) && anamnesePathOfTab(effectiveTab) === currentProfile.path;
+  const showAssistantRail = showingAnamneseForm;
   // "Pede atenção" (opção C, 10/10/2026). Enquanto a sessão carrega, só o
   // risco entra: a anamnese vazia daria um "faltam" falso por um instante.
-  const sessionReady = saveStatus !== 'loading';
+  const sessionReady = saveStatus !== 'loading' && saveStatus !== 'no_access' && saveStatus !== 'load_error';
   const anamneseRoute = getPsychologyIntakeProfile(session.intakeProfile)
     ? buildAnamneseRoute({ ...PSYCHOLOGY_ROUTE_SPEC, sections: getPsychologyProfileSections(session.intakeProfile) }, session)
     : null;
@@ -508,7 +548,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       sessionReady ? openQuestionsAttention(session.complementaryQuestions, { tab: PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES }) : [],
       sessionReady ? routeAttention(anamneseRoute, {
         id: 'anamnese',
-        tab: PSYCHOLOGY_TABS.ANAMNESE,
+        tab: anamneseTab,
         partLabel: 'da anamnese',
         chooseHint: 'Escolha o percurso da anamnese',
         chooseTab: PSYCHOLOGY_TABS.PAINEL,
@@ -545,18 +585,33 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
       return <PsychologyPlaceholder tab={effectiveTab} />;
     }
 
-    switch (effectiveTab) {
-      case PSYCHOLOGY_TABS.PAINEL:
-        return (
-          <PsychologyPathChooser
-            session={session}
-            selectedPatient={selectedPatient}
-            patientAge={patientAge}
-            onSelectIntakeProfile={selectIntakeProfile}
-            onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
+    // Ficha de quem atende: no lugar de "Erro ao carregar a ficha".
+    if (noAccess && !TABS_WITHOUT_RECORD.includes(effectiveTab)) {
+      return <PsychologyNoAccess patientName={selectedPatient?.name} onOpen={handleTabChange} />;
+    }
+
+    const interviewSlot = PSYCHOLOGY_INTERVIEW_TABS[effectiveTab];
+    if (interviewSlot) {
+      return (
+        <Suspense fallback={<div className="empty-state">Carregando entrevistas...</div>}>
+          <PatientInterviewsPanel
+            patient={selectedPatient}
+            discipline="psicologia"
+            profile={profile}
+            clinicName={clinicName}
+            slot={interviewSlot}
+            title={effectiveTab}
           />
-        );
-      case PSYCHOLOGY_TABS.ANAMNESE:
+        </Suspense>
+      );
+    }
+
+    // Anamnese infantil / adulto: o formulário quando o percurso é este;
+    // sem percurso, a escolha já neste percurso; no outro percurso, avisa
+    // e deixa trocar (os campos já preenchidos não se apagam).
+    const anamnesePath = anamnesePathOfTab(effectiveTab);
+    if (anamnesePath) {
+      if (showingAnamneseForm) {
         return (
           <PsychologyAnamnese
             session={session}
@@ -572,6 +627,43 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onToggleContextModule={toggleContextModule}
           />
         );
+      }
+      return (
+        <>
+          {currentProfile && (
+            <div className="alert alert-info psi-other-path" role="status">
+              Esta paciente está com a <b>{currentProfile.label}</b>.
+              {' '}
+              <button type="button" className="quiet-button" onClick={() => setActiveTab(anamneseTab)}>
+                Abrir a {anamneseTab.toLowerCase()}
+              </button>
+              {' '}Para trocar de percurso, escolha abaixo.
+            </div>
+          )}
+          <PsychologyPathChooser
+            key={anamnesePath}
+            session={session}
+            selectedPatient={selectedPatient}
+            patientAge={patientAge}
+            onSelectIntakeProfile={selectIntakeProfile}
+            onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
+            fixedPath={anamnesePath}
+          />
+        </>
+      );
+    }
+
+    switch (effectiveTab) {
+      case PSYCHOLOGY_TABS.PAINEL:
+        return (
+          <PsychologyPathChooser
+            session={session}
+            selectedPatient={selectedPatient}
+            patientAge={patientAge}
+            onSelectIntakeProfile={selectIntakeProfile}
+            onFillTestAnswers={import.meta.env.DEV ? fillTestAnswers : undefined}
+          />
+        );
       case PSYCHOLOGY_TABS.PERGUNTAS_COMPLEMENTARES:
         return (
           <PsychologyComplementaryQuestions
@@ -579,17 +671,6 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
             onQuestionsChange={handleComplementaryQuestionsChange}
             onOpenAnamnese={() => handleTabChange(PSYCHOLOGY_TABS.ANAMNESE)}
           />
-        );
-      case PSYCHOLOGY_TABS.ENTREVISTAS:
-        return (
-          <Suspense fallback={<div className="empty-state">Carregando entrevistas...</div>}>
-            <PatientInterviewsPanel
-              patient={selectedPatient}
-              discipline="psicologia"
-              profile={profile}
-              clinicName={clinicName}
-            />
-          </Suspense>
         );
       case PSYCHOLOGY_TABS.ESCALAS:
         return (
@@ -655,6 +736,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
         onSignOut={handleSignOut}
         attention={attention}
         soonTabs={PSYCHOLOGY_PLACEHOLDER_TABS}
+        bottomTab={anamneseTab}
       />
 
       <main className="main psi-main forms-scope">
@@ -681,7 +763,7 @@ export function PsychologyWorkspace({ profile, therapistName, onSwitchDiscipline
           </div>
         </div>
 
-        {effectiveTab === PSYCHOLOGY_TABS.ANAMNESE && (
+        {showingAnamneseForm && (
           <div className="alert psi-draft-banner">
             <b>Vocabulário em validação.</b> {PSYCHOLOGY_DRAFT_NOTICE}
           </div>

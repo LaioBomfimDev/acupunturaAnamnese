@@ -10,6 +10,7 @@ import {
   getLatestRecord,
   upsertVersionedClinicalRecord,
 } from '../services/clinicalRecordService';
+import { isNotAttendingError } from '../utils/clinicalRecordAccess';
 import { createClinicalSaveQueue } from '../services/clinicalSaveQueue';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { mergeEvolutionHistory } from '../utils/evolutionHistory';
@@ -221,6 +222,11 @@ export function DisciplineWorkspace({
         // Leitura falhou: bloqueia escrita para não sobrescrever um
         // prontuário que não chegou a ser carregado.
         loadBlockedRef.current = true;
+        // Não atende o paciente nesta área: ficha de quem atende, não falha.
+        if (isNotAttendingError(err)) {
+          setSaveStatus('no_access');
+          return;
+        }
         setSaveStatus('load_error');
         console.error(`Erro ao carregar prontuário de ${disciplineId}:`, {
           name: err?.name || 'Error',

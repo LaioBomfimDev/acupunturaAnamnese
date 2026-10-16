@@ -159,3 +159,17 @@
     align-items: stretch;
   }
 }
+
+/* "Cadastrar paciente" (16/10/2026): ao lado da busca no computador,
+   linha inteira no celular e no tablet. */
+.patient-start-create {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@media (max-width: 1024px) {
+  .patient-start-create {
+    width: 100%;
+    margin-left: 0;
+  }
+}

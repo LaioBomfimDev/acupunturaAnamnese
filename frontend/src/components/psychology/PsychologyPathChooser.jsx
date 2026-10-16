@@ -7,22 +7,26 @@ import {
   isPsychologyPathEligible,
 } from '../../data/psychologyIntakeProfiles';
 
+// `fixedPath` (16/10/2026): aberto pela aba "Anamnese infantil" ou
+// "Anamnese adulto" do menu, já começa na escolha daquele percurso.
 export function PsychologyPathChooser({
   session,
   selectedPatient,
   patientAge,
   onSelectIntakeProfile,
   onFillTestAnswers,
+  fixedPath = null,
 }) {
-  const [intakePath, setIntakePath] = useState(null);
+  const [intakePath, setIntakePath] = useState(fixedPath);
   const currentProfile = getPsychologyIntakeProfile(session?.intakeProfile);
+  const fixedLabel = PSYCHOLOGY_WELCOME_PATHS.find(path => path.id === fixedPath)?.label || '';
 
   function choosePath(path) {
     setIntakePath(path.id);
   }
 
   return (
-    <Panel title="Boas-vindas — Psicologia">
+    <Panel title={fixedPath ? fixedLabel : 'Boas-vindas — Psicologia'}>
       <div className="psi-path-hero">
         <p className="app-eyebrow">Paciente selecionado</p>
         <h2>{selectedPatient?.name || 'Paciente'}</h2>
@@ -65,7 +69,7 @@ export function PsychologyPathChooser({
         </div>
       ) : (
         <div className="psi-path-step">
-          <button type="button" className="tag" onClick={() => setIntakePath(null)}>← Voltar</button>
+          {!fixedPath && <button type="button" className="tag" onClick={() => setIntakePath(null)}>← Voltar</button>}
           <div>
             <p className="app-eyebrow">Segunda etapa</p>
             <h3>{intakePath === 'infantojuvenil' ? 'Escolha a anamnese infantil' : 'Escolha a anamnese adulta'}</h3>

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
 import { enrollPatientInitial } from '../services/clinicPatientsService';
+import { NewPatientForm } from './NewPatientForm';
 import { formatPatientCount, formatAge, getInitials } from '../utils/patientUi';
 import '../styles/patientStart.css';
 
@@ -19,11 +20,11 @@ function PencilIcon() {
   );
 }
 
-// Cadastro de paciente novo saiu daqui (2026-09-10): passou a existir só
-// na aba central "Pacientes da instituição" (ClinicPatientsPanel). Este
-// componente só SELECIONA um paciente já cadastrado — de toda a clínica,
-// não só os que este profissional criou — pra retomar/iniciar o
-// atendimento nesta disciplina.
+// Seleciona um paciente da clínica inteira (não só os que este
+// profissional criou) para retomar/iniciar o atendimento nesta área.
+// "Cadastrar paciente" (16/10/2026, pedido da administradora) abre aqui
+// mesmo a ficha da instituição (NewPatientForm, a mesma de Pacientes da
+// instituição): o paciente nasce matriculado nesta área e já abre.
 //
 // initialDiscipline: se o paciente escolhido ainda não tem matrícula
 // nesta disciplina (pode nunca ter passado por aqui — o cadastro é da
@@ -33,6 +34,7 @@ export function PatientStart({ onSelectPatient, therapistName, initialDiscipline
   const { patients, selectedPatient, loading, error, selectPatient, refreshPatients } = usePatient();
   const [query, setQuery] = useState('');
   const [editTarget, setEditTarget] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   const filteredPatients = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -49,6 +51,13 @@ export function PatientStart({ onSelectPatient, therapistName, initialDiscipline
     if (!alreadyEnrolled) {
       await enrollPatientInitial(patient.id, initialDiscipline);
     }
+    onSelectPatient?.(patient);
+  }
+
+  async function handleCreated({ patient }) {
+    setCreating(false);
+    await refreshPatients?.();
+    selectPatient(patient);
     onSelectPatient?.(patient);
   }
 
@@ -112,48 +121,61 @@ export function PatientStart({ onSelectPatient, therapistName, initialDiscipline
             </button>
           )}
 
-          <section className="start-panel">
-            <div className="start-panel-head">
-              <div>
-                <h2>Selecionar paciente</h2>
-                <span className="patient-list-count" role="status">
-                  {loading ? 'Carregando pacientes...' : query.trim()
-                    ? `${formatPatientCount(filteredPatients.length)} de ${patients.length} na lista`
-                    : formatPatientCount(patients.length)}
-                </span>
-              </div>
-              <label className="patient-start-search">
-                <span>Buscar paciente</span>
-                <input
-                  className="patient-search"
-                  type="search"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Buscar por nome"
-                />
-              </label>
-            </div>
-
-            {loading ? (
-              <div className="empty-state">Carregando pacientes...</div>
-            ) : filteredPatients.length === 0 ? (
-              <div className="empty-state">
-                {query.trim() ? 'Nenhum paciente encontrado. Tente outro nome.' : 'Nenhum paciente cadastrado. Cadastre o primeiro em Pacientes da instituição.'}
-              </div>
-            ) : (
-              <div className="patient-list">
-                {filteredPatients.map(patient => (
-                  <PatientListCard
-                    key={patient.id}
-                    patient={patient}
-                    isActive={selectedPatient?.id === patient.id}
-                    onSelect={handleSelect}
-                    onEdit={handleEditRequest}
+          {creating ? (
+            <section className="start-panel patient-start-create-panel">
+              <NewPatientForm
+                initialDiscipline={initialDiscipline}
+                onCancel={() => setCreating(false)}
+                onCreated={handleCreated}
+              />
+            </section>
+          ) : (
+            <section className="start-panel">
+              <div className="start-panel-head">
+                <div>
+                  <h2>Selecionar paciente</h2>
+                  <span className="patient-list-count" role="status">
+                    {loading ? 'Carregando pacientes...' : query.trim()
+                      ? `${formatPatientCount(filteredPatients.length)} de ${patients.length} na lista`
+                      : formatPatientCount(patients.length)}
+                  </span>
+                </div>
+                <button type="button" className="primary-button patient-start-create" onClick={() => setCreating(true)}>
+                  + Cadastrar paciente
+                </button>
+                <label className="patient-start-search">
+                  <span>Buscar paciente</span>
+                  <input
+                    className="patient-search"
+                    type="search"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder="Buscar por nome"
                   />
-                ))}
+                </label>
               </div>
-            )}
-          </section>
+
+              {loading ? (
+                <div className="empty-state">Carregando pacientes...</div>
+              ) : filteredPatients.length === 0 ? (
+                <div className="empty-state">
+                  {query.trim() ? 'Nenhum paciente encontrado. Tente outro nome.' : 'Nenhum paciente cadastrado. Cadastre o primeiro em “Cadastrar paciente”.'}
+                </div>
+              ) : (
+                <div className="patient-list">
+                  {filteredPatients.map(patient => (
+                    <PatientListCard
+                      key={patient.id}
+                      patient={patient}
+                      isActive={selectedPatient?.id === patient.id}
+                      onSelect={handleSelect}
+                      onEdit={handleEditRequest}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
           {error && <div className="inline-error">{error}</div>}
         </section>
       </div>

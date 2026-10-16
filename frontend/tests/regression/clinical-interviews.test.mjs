@@ -262,14 +262,26 @@ test('Edge Function do link: só o hash vai ao banco, respostas limpas e limite 
   assert.match(source, /readClinicalJsonBody\(req, MAX_BODY_BYTES\)/);
 });
 
-test('aba Entrevistas na Psicologia, logo depois da Anamnese', async () => {
+test('cada entrevista no seu lugar do menu da Psicologia (Infantil, Adulto, Avaliação)', async () => {
   const data = await read('src/data/psychologyAnamnese.js');
   const workspace = await read('src/components/PsychologyWorkspace.jsx');
-  assert.match(data, /ENTREVISTAS: 'Entrevistas'/);
-  assert.match(workspace, /PSYCHOLOGY_TABS\.ANAMNESE,\r?\n\s+PSYCHOLOGY_TABS\.ENTREVISTAS,/);
-  assert.match(workspace, /case PSYCHOLOGY_TABS\.ENTREVISTAS:[\s\S]*?<PatientInterviewsPanel/);
+  assert.match(data, /ENTREVISTA_PAIS: 'Entrevista pais e professores'/);
+  assert.match(data, /ENTREVISTA_FAMILIAR: 'Entrevista familiar \/ laboral'/);
+  assert.match(data, /ENTREVISTA_RASTREIO: 'Entrevista de rastreio'/);
+  assert.match(workspace, /\{ title: 'Infantil', tabs: \[PSYCHOLOGY_TABS\.ANAMNESE_INFANTIL, PSYCHOLOGY_TABS\.ENTREVISTA_PAIS\] \}/);
+  assert.match(workspace, /\{ title: 'Adulto', tabs: \[PSYCHOLOGY_TABS\.ANAMNESE_ADULTO, PSYCHOLOGY_TABS\.ENTREVISTA_FAMILIAR\] \}/);
+  assert.match(workspace, /const interviewSlot = PSYCHOLOGY_INTERVIEW_TABS\[effectiveTab\];[\s\S]*?<PatientInterviewsPanel[\s\S]*?slot=\{interviewSlot\}/);
+  // A entrevista ecológica entra em familiar / laboral; os outros lugares esperam o modelo.
+  assert.equal(interview().slot, 'familiar_laboral');
+  assert.deepEqual(Object.keys(catalog.INTERVIEW_SLOTS), ['pais_professores', 'familiar_laboral', 'rastreio']);
+  assert.equal(catalog.interviewsForSlot('psicologia', 'pais_professores').length, 0);
+  assert.equal(catalog.interviewsForSlot('psicologia', 'familiar_laboral').length, 1);
+  const panel = await read('src/components/interviews/PatientInterviewsPanel.jsx');
+  assert.match(panel, /Aguardando o modelo da clínica/);
   const sidebar = await read('src/components/Sidebar.jsx');
-  assert.match(sidebar, /'Entrevistas': \(/, 'ícone no menu');
+  for (const tab of ['Anamnese infantil', 'Anamnese adulto', 'Entrevista pais e professores', 'Entrevista familiar / laboral', 'Entrevista de rastreio']) {
+    assert.ok(sidebar.includes(`'${tab}': (`), `ícone de ${tab}`);
+  }
 });
 
 test('respostas saem no papel timbrado, com a fonte do corpo no palco invisível', async () => {

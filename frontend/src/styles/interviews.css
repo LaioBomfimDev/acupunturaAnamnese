@@ -334,3 +334,41 @@
     flex: 1 1 100%;
   }
 }
+
+/* ---------- lugar sem entrevista ainda ---------- */
+
+.interview-waiting {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.interview-waiting p {
+  margin: 0;
+}
+
+.interview-waiting-title {
+  color: var(--r1-text);
+  font-weight: 700;
+}
+
+/* ---------- Psicologia: ficha de quem atende ---------- */
+
+.psi-no-access {
+  display: grid;
+  gap: 10px;
+}
+
+.psi-no-access p {
+  margin: 0;
+}
+
+.psi-no-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

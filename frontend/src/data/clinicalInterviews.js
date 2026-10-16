@@ -37,6 +37,7 @@ const ECOLOGICA_ADULTO_HETERORRELATO = {
   title: 'Entrevista Ecológica de Funcionamento Neurocomportamental em Adultos — Heterorrelato',
   shortName: 'Entrevista ecológica — adultos (heterorrelato)',
   group: 'Familiar / laboral — adulto',
+  slot: 'familiar_laboral',
   audience: 'adulto',
   respondent: 'informante',
   respondentLabel: 'Familiar ou pessoa próxima',
@@ -238,6 +239,18 @@ const ECOLOGICA_ADULTO_HETERORRELATO = {
 };
 
 export const CLINICAL_INTERVIEWS = [ECOLOGICA_ADULTO_HETERORRELATO];
+
+// Lugar de cada entrevista no menu da Psicologia (16/10/2026). Lugar sem
+// entrevista ainda aparece vazio, esperando o modelo da clínica.
+export const INTERVIEW_SLOTS = {
+  pais_professores: { label: 'Entrevista pais e professores', audience: 'infantil', respondent: 'Pais, responsáveis e professores' },
+  familiar_laboral: { label: 'Entrevista familiar / laboral', audience: 'adulto', respondent: 'Familiares, pessoas próximas e colegas de trabalho' },
+  rastreio: { label: 'Entrevista de rastreio', audience: null, respondent: 'O próprio paciente' },
+};
+
+export function interviewsForSlot(discipline, slot) {
+  return interviewsForDiscipline(discipline).filter(interview => !slot || interview.slot === slot);
+}
 
 export function getInterview(id) {
   return CLINICAL_INTERVIEWS.find(interview => interview.id === id) || null;

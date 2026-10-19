@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
 import { enrollPatientInitial } from '../services/clinicPatientsService';
 import { NewPatientForm } from './NewPatientForm';
-import { formatPatientCount, formatAge, getInitials } from '../utils/patientUi';
+import { DEFAULT_PATIENT_SORT, PATIENT_SORT_OPTIONS, formatPatientCount, formatAge, getInitials, sortPatients } from '../utils/patientUi';
 import '../styles/patientStart.css';
 
 const ClinicPatientProfile = lazy(() => import('./ClinicPatientProfile').then(m => ({ default: m.ClinicPatientProfile })));
@@ -33,17 +33,17 @@ function PencilIcon() {
 export function PatientStart({ onSelectPatient, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline, profile, isClinicAdmin = false }) {
   const { patients, selectedPatient, loading, error, selectPatient, refreshPatients } = usePatient();
   const [query, setQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState(DEFAULT_PATIENT_SORT);
   const [editTarget, setEditTarget] = useState(null);
   const [creating, setCreating] = useState(false);
 
   const filteredPatients = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return patients;
-    return patients.filter(patient => {
-      const name = patient.name?.toLowerCase() || '';
-      return name.includes(term);
-    });
-  }, [patients, query]);
+    const found = term
+      ? patients.filter(patient => (patient.name?.toLowerCase() || '').includes(term))
+      : patients;
+    return sortPatients(found, sortOrder);
+  }, [patients, query, sortOrder]);
 
   async function handleSelect(patient) {
     selectPatient(patient);
@@ -152,6 +152,14 @@ export function PatientStart({ onSelectPatient, therapistName, initialDiscipline
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Buscar por nome"
                   />
+                </label>
+                <label className="patient-start-sort">
+                  <span>Ordenar por</span>
+                  <select value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+                    {PATIENT_SORT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
                 </label>
               </div>
 

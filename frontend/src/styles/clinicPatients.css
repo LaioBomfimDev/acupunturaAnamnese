@@ -605,6 +605,47 @@
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
+.cp-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.cp-sort select {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.cp-sort select:focus-visible {
+  outline: none;
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+@media (max-width: 640px) {
+  .cp-sort {
+    flex: 1 1 100%;
+  }
+
+  .cp-sort select {
+    flex: 1;
+  }
+}
+
 .cp-count {
   flex-shrink: 0;
   padding: 4px 10px;

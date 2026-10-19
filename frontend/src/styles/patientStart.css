@@ -61,6 +61,37 @@
   min-height: 44px;
 }
 
+/* "Ordenar por" (18/10/2026): ao lado da busca, abre em Nome (A a Z). */
+.patient-start-sort {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 220px);
+  color: #53657a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.patient-start-sort select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r1-radius-md);
+  background: white;
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.patient-start-sort select:focus-visible {
+  outline: none;
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
 /* Paciente ativo: precisa saltar aos olhos — é o que diz "retomar" ou
    "trocar de paciente" numa tela que também lista os outros 51. Antes
    era uma linha de texto cinza de 13px, fácil de não ver. */
@@ -150,14 +181,6 @@
   .home-screen.patient-start .start-workspace {
     padding: 16px;
   }
-
-  .patient-start-search {
-    width: 100%;
-  }
-
-  .patient-start .start-panel-head {
-    align-items: stretch;
-  }
 }
 
 /* "Cadastrar paciente" (16/10/2026): ao lado da busca no computador,
@@ -171,5 +194,16 @@
   .patient-start-create {
     width: 100%;
     margin-left: 0;
+  }
+
+  /* Tablet é celular grande: busca e ordem com a largura toda, nunca
+     centralizadas uma embaixo da outra. */
+  .patient-start .start-panel-head {
+    align-items: stretch;
+  }
+
+  .patient-start-search,
+  .patient-start-sort {
+    width: 100%;
   }
 }

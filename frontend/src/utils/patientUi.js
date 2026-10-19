@@ -2,6 +2,44 @@ export function formatPatientCount(count) {
   return `${count} ${count === 1 ? 'paciente' : 'pacientes'}`;
 }
 
+// Ordem das listas de pacientes ("Selecionar paciente" de cada área e
+// Pacientes da instituição, 18/10/2026, pedido da administradora). Abre em
+// A a Z; o banco devolve por cadastro, mais recente primeiro.
+export const PATIENT_SORT_OPTIONS = [
+  { value: 'name_asc', label: 'Nome (A a Z)' },
+  { value: 'name_desc', label: 'Nome (Z a A)' },
+  { value: 'recent', label: 'Cadastro mais recente' },
+];
+
+export const DEFAULT_PATIENT_SORT = 'name_asc';
+
+// "Ágata" junto de "Agata", maiúscula igual a minúscula, "Ana 2" antes de "Ana 10".
+const nameCollator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
+
+function patientNameKey(patient) {
+  return String(patient?.name || '').trim();
+}
+
+function createdAtTime(patient) {
+  const time = Date.parse(patient?.created_at || '');
+  return Number.isNaN(time) ? -Infinity : time;
+}
+
+/** Cópia ordenada; nunca mexe na lista recebida. Sem nome vai para o fim. */
+export function sortPatients(patients, order = DEFAULT_PATIENT_SORT) {
+  const list = [...(patients || [])];
+  if (order === 'recent') {
+    return list.sort((a, b) => createdAtTime(b) - createdAtTime(a));
+  }
+  const direction = order === 'name_desc' ? -1 : 1;
+  return list.sort((a, b) => {
+    const nameA = patientNameKey(a);
+    const nameB = patientNameKey(b);
+    if (!nameA || !nameB) return (nameA ? 0 : 1) - (nameB ? 0 : 1);
+    return direction * nameCollator.compare(nameA, nameB);
+  });
+}
+
 /**
  * Confirmação por digitação ("excluir"/"DELETE") pra qualquer exclusão
  * definitiva no sistema — não é só de paciente (nome ficou genérico de

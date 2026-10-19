@@ -12,7 +12,7 @@ import {
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { formatAge, formatPatientCount, getInitials } from '../utils/patientUi';
+import { DEFAULT_PATIENT_SORT, PATIENT_SORT_OPTIONS, formatAge, formatPatientCount, getInitials, sortPatients } from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
@@ -90,6 +90,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [query, setQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState(DEFAULT_PATIENT_SORT);
   const [sharesByPatient, setSharesByPatient] = useState({});
   const [members, setMembers] = useState([]);
   const [shareTarget, setShareTarget] = useState(null);
@@ -205,9 +206,11 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return patients;
-    return patients.filter(patient => (patient.name || '').toLowerCase().includes(term));
-  }, [patients, query]);
+    const found = term
+      ? patients.filter(patient => (patient.name || '').toLowerCase().includes(term))
+      : patients;
+    return sortPatients(found, sortOrder);
+  }, [patients, query, sortOrder]);
 
   // Só pra sinalizar no card "Ver lista" — cadastro sem matrícula fica
   // sem área nenhuma até alguém entrar e matricular pela ficha.
@@ -354,6 +357,14 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
                 onChange={e => setQuery(e.target.value)}
               />
             </div>
+            <label className="cp-sort">
+              <span>Ordenar por</span>
+              <select value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+                {PATIENT_SORT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
             <span className="cp-count">
               {loading ? 'Carregando…' : formatPatientCount(filtered.length)}
             </span>

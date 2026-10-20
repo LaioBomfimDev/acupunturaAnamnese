@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { clinicAccentStyle, describeAppointmentWhen } from './utils/appointmentConfirmation';
-import { formatClock, ONLINE_ROOM_WINDOWS } from './utils/onlineConsultation';
+import { dailyErrorMessage, formatClock, ONLINE_ROOM_WINDOWS } from './utils/onlineConsultation';
 import { RECORDING_TERM, TELECONSULTATION_TERM } from './data/onlineConsentTerms';
 import {
   joinConsultation,
@@ -354,6 +354,10 @@ export function OnlineConsultationPage() {
   async function handleJoin() {
     setJoining(true);
     setJoinError('');
+    // Erro que o Daily manda pelo evento 'error' (ex.: conta sem forma de
+    // pagamento): sem ouvir o evento, a tela só dizia "Tente de novo".
+    let dailyError = '';
+    let joined = false;
     try {
       const invite = await joinConsultation(token);
       const { default: DailyIframe } = await import('@daily-co/daily-js');
@@ -389,7 +393,16 @@ export function OnlineConsultationPage() {
         setNow(Date.now());
         setPhase('left');
       });
+      frame.on('error', event => {
+        dailyError = event?.errorMsg || 'error';
+        if (!joined) return;
+        frame.destroy();
+        frameRef.current = null;
+        setPhase('entry');
+        setJoinError(dailyErrorMessage(dailyError, 'patient'));
+      });
       await frame.join({ url: invite.roomUrl, token: invite.token, startVideoOff: !camOn, startAudioOff: !micOn });
+      joined = true;
     } catch (err) {
       frameRef.current?.destroy();
       frameRef.current = null;
@@ -397,7 +410,9 @@ export function OnlineConsultationPage() {
         setPhase('consent');
       } else {
         setPhase('entry');
-        setJoinError(err?.message || 'Não foi possível entrar agora. Tente de novo.');
+        setJoinError(dailyError || err?.errorMsg
+          ? dailyErrorMessage(dailyError || err.errorMsg, 'patient')
+          : err?.message || 'Não foi possível entrar agora. Tente de novo.');
       }
     } finally {
       setJoining(false);

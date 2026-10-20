@@ -131,6 +131,24 @@ test('janela da sala: paciente 15 min antes até 1 h depois; quem atende 30 min 
   assert.equal(opensAtLabel(patient, 'patient'), `A sala abre às ${formatClock(patient.opensAt)}, 15 minutos antes do horário.`);
 });
 
+// Achado de 20/10/2026, no primeiro teste real: a conta do Daily sem forma de
+// pagamento recusa toda chamada (errorMsg 'account-missing-payment-method'),
+// a página do paciente não ouvia o evento 'error' e só dizia "Tente de novo".
+test('erro do Daily vira mensagem clara para quem atende e para o paciente', async () => {
+  const { dailyErrorMessage } = await load('src/utils/onlineConsultation.js');
+  assert.match(dailyErrorMessage('account-missing-payment-method', 'professional'), /sem forma de pagamento.*Billing/);
+  assert.equal(dailyErrorMessage('account-missing-payment-method', 'patient'), 'A sala online da clínica ainda não foi liberada. Avise a clínica.');
+  assert.doesNotMatch(dailyErrorMessage('account-missing-payment-method', 'patient'), /pagamento|Daily/, 'paciente não vê assunto de cobrança');
+  assert.equal(dailyErrorMessage('meeting-token-expired', 'patient'), 'O horário desta sala acabou.');
+  assert.equal(dailyErrorMessage('', 'professional'), 'A chamada não abriu.');
+
+  const page = await read('src/OnlineConsultationPage.jsx');
+  assert.match(page, /frame\.on\('error', event => \{/, 'a página do paciente ouve o erro do Daily');
+  assert.match(page, /dailyErrorMessage\(dailyError \|\| err\.errorMsg, 'patient'\)/);
+  const hook = await read('src/hooks/useDailyCall.js');
+  assert.match(hook, /setError\(dailyErrorMessage\(dailyError, 'professional'\)\)/);
+});
+
 // ---------- termos ----------
 
 test('termos: versão no formato do banco, os três pontos da prévia A e a pergunta da gravação', async () => {

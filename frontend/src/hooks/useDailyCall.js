@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { dailyErrorMessage } from '../utils/onlineConsultation';
 
 // ============================================================
 // Chamada do Daily no modo "peças" (call object), para a sala de quem
@@ -72,6 +73,7 @@ export function useDailyCall() {
   const join = useCallback(async ({ url, token }) => {
     setPhase('joining');
     setError('');
+    let dailyError = '';
     try {
       const { default: Daily } = await import('@daily-co/daily-js');
       destroy();
@@ -83,7 +85,8 @@ export function useDailyCall() {
         setState(EMPTY);
       });
       call.on('error', event => {
-        setError(event?.errorMsg ? `A chamada caiu (${event.errorMsg}).` : 'A chamada caiu.');
+        dailyError = event?.errorMsg || 'error';
+        setError(dailyErrorMessage(dailyError, 'professional'));
         setPhase('error');
       });
       call.on('camera-error', () => {
@@ -95,7 +98,9 @@ export function useDailyCall() {
       refresh();
     } catch (err) {
       destroy();
-      setError(err?.message || 'Não foi possível entrar na sala.');
+      setError(dailyError || err?.errorMsg
+        ? dailyErrorMessage(dailyError || err.errorMsg, 'professional')
+        : err?.message || 'Não foi possível entrar na sala.');
       setPhase('error');
     }
   }, [destroy, refresh]);

@@ -90,6 +90,25 @@ export function opensAtLabel(window, who) {
   return `A sala abre às ${formatClock(window.opensAt)}, ${minutes} minutos antes do horário.`;
 }
 
+/**
+ * Erro que o Daily devolve ao entrar (errorMsg do evento 'error') em
+ * linguagem de gente. Achado de 20/10/2026: conta do Daily sem forma de
+ * pagamento recusa toda chamada, e a tela só dizia "Tente de novo".
+ */
+export function dailyErrorMessage(errorMsg, who) {
+  const code = String(errorMsg || '').trim();
+  if (code === 'account-missing-payment-method') {
+    return who === 'professional'
+      ? 'O Daily recusou a chamada: a conta do Daily está sem forma de pagamento. Cadastre um cartão em Billing, no painel do Daily (os minutos grátis continuam valendo).'
+      : 'A sala online da clínica ainda não foi liberada. Avise a clínica.';
+  }
+  if (/exp|eject/i.test(code)) {
+    return 'O horário desta sala acabou.';
+  }
+  if (who === 'professional') return code ? `A chamada não abriu (${code}).` : 'A chamada não abriu.';
+  return 'Não foi possível entrar agora. Tente de novo.';
+}
+
 function dayLabel(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');

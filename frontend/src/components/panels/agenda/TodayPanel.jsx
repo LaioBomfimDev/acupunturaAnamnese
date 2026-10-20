@@ -126,9 +126,21 @@ export function TodayPanel({
   onStatus,
   onStart,
   canStart,
+  onEnterRoom = null,
+  canEnterRoom = null,
 }) {
   const { aAtender, atendidos, ausentes, resumo, bloqueios } = queue;
   const cardProps = { patientName, patientPending, professionalName, showProfessional, onOpen };
+
+  // Atendimento online com sala do sistema: "Entrar na sala online" vira
+  // a ação principal; as outras continuam ao lado.
+  function withRoom(appointment, actions) {
+    if (!onEnterRoom || !canEnterRoom?.(appointment)) return actions;
+    return [
+      { label: 'Entrar na sala online', primary: true, disabled: false, onClick: () => onEnterRoom(appointment) },
+      ...actions.map(action => ({ ...action, primary: false })),
+    ];
+  }
 
   return (
     <div className="agh">
@@ -165,7 +177,7 @@ export function TodayPanel({
                 item={item}
                 tone="next"
                 {...cardProps}
-                actions={canStart(item.appointment)
+                actions={withRoom(item.appointment, canStart(item.appointment)
                   ? [
                     { label: 'Iniciar atendimento', primary: true, disabled: saving, onClick: () => onStart(item.appointment) },
                     { label: 'Atendido', disabled: saving, onClick: () => onStatus(item.appointment, 'attended') },
@@ -173,7 +185,7 @@ export function TodayPanel({
                   : [
                     { label: 'Atendido', primary: true, disabled: saving, onClick: () => onStatus(item.appointment, 'attended') },
                     { label: 'Não compareceu', disabled: saving, onClick: () => onStatus(item.appointment, 'no_show') },
-                  ]}
+                  ])}
               />
             ))}
           </Bloco>

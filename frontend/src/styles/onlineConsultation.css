@@ -1,0 +1,261 @@
+/* ============================================================
+   Consulta online — página do paciente (prévia A, 20/10/2026).
+   Veste o mesmo cartão da confirmação (.cf-* de confirmPage.css), na
+   cor do link da clínica. Mobile-first: o link abre no celular.
+   ============================================================ */
+
+.oc-small {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--r1-text-subtle);
+}
+
+/* ---------- Câmera e som ---------- */
+
+.oc-preview-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.oc-preview {
+  position: relative;
+  overflow: hidden;
+  height: 180px;
+  border-radius: 14px;
+  background: #141a1c;
+}
+
+.oc-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Espelhada, como um espelho: é assim que a pessoa espera se ver. */
+  transform: scaleX(-1);
+}
+
+.oc-preview video.is-off {
+  visibility: hidden;
+}
+
+.oc-preview-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.oc-preview-label {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.oc-problem {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-warning-bg);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--r1-text);
+}
+
+.oc-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oc-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 10px;
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oc-toggle[aria-pressed='false'] {
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+}
+
+.oc-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+/* ---------- Termo ---------- */
+
+.oc-consent {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.oc-consent .cf-head {
+  margin-bottom: 2px;
+}
+
+.oc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 12px;
+}
+
+.oc-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.oc-section h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.oc-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--r1-text-muted);
+}
+
+.oc-bullets {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--r1-text-muted);
+}
+
+.oc-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oc-check input,
+.oc-option input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--r1-accent);
+}
+
+.oc-choice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.oc-choice legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.oc-choice-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oc-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oc-option.is-on {
+  border-color: var(--r1-accent);
+  background: var(--cf-accent-wash);
+}
+
+.oc-term summary {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--r1-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.oc-term summary::-webkit-details-marker {
+  display: none;
+}
+
+.oc-term[open] summary {
+  margin-bottom: 6px;
+}
+
+.oc-term p {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--r1-text-muted);
+}
+
+.oc-again {
+  margin-top: 16px;
+}
+
+/* ---------- Sala pronta do Daily ---------- */
+
+.oc-call {
+  position: fixed;
+  inset: 0;
+  background: #0b1614;
+}

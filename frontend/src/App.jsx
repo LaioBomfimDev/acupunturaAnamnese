@@ -16,6 +16,7 @@ import { HomeConsole } from './components/HomeConsole';
 import { HubBackButton, HubDock } from './components/HubNav';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
 import { canSeeScales } from './utils/instrumentAccess';
+import { consumePendingScreenRequest, listenScreenRequests } from './utils/appNavigationBridge';
 import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
@@ -244,6 +245,40 @@ export default function App() {
 
     lastAutoSaveSnapshotRef.current = snapshot;
   }, [selectedPatient?.id, state, selectedMap, tongueAiMeta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pedidos da sala online, que abre em aba própria: "Ver escalas" e "Ir
+  // para Evoluções" trocam a tela aqui (utils/appNavigationBridge.js).
+  // Dentro de uma área, sai dela antes, com a mesma pergunta de
+  // alterações não salvas da troca de área.
+  const bridgeStateRef = useRef({ activeDiscipline: null, hasPendingChanges: false });
+  useLayoutEffect(() => {
+    bridgeStateRef.current = { activeDiscipline, hasPendingChanges };
+  });
+  useEffect(() => {
+    function openRequestedScreen(request) {
+      const current = bridgeStateRef.current;
+      if (current.activeDiscipline) {
+        if (current.hasPendingChanges && !window.confirm('Existem alterações ainda não salvas. Deseja trocar de tela mesmo assim?')) return;
+        sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
+        setActiveDiscipline(null);
+        setActiveTab('Tela inicial');
+      }
+      setShowHubAgenda(false);
+      setHubAgendaShowBirthdays(false);
+      setShowHubDocuments(false);
+      setShowHubGestao(false);
+      setHubGestaoInitialSection(null);
+      setShowClinicPatients(false);
+      setShowHubEvolutions(request.screen === 'evolucao');
+      setShowHubScales(request.screen === 'escalas');
+      setHubScalesPatient(request.screen === 'escalas' && request.patientId
+        ? { id: request.patientId, name: request.patientName || 'Paciente' }
+        : null);
+    }
+    const pending = consumePendingScreenRequest();
+    if (pending) queueMicrotask(() => openRequestedScreen(pending));
+    return listenScreenRequests(openRequestedScreen);
+  }, []);
 
   if (loading) {
     return <PanelLoading />;

@@ -198,7 +198,14 @@ test('configuração versionada libera JWT só para as functions deliberadamente
     config,
     /\[functions\.interview-link\][\s\S]*?verify_jwt\s*=\s*false/,
   );
-  assert.equal(publicFunctionOverrides.length, 6);
+  // Consulta online (20/10/2026): o paciente entra pelo link do
+  // agendamento, sem conta; o lado de quem atende valida o JWT e os
+  // bloqueios dentro do handler. Revisada em online-consultation.test.mjs.
+  assert.match(
+    config,
+    /\[functions\.online-consultation\][\s\S]*?verify_jwt\s*=\s*false/,
+  );
+  assert.equal(publicFunctionOverrides.length, 7);
 });
 
 test('fonte visual registra somente eventos operacionais sanitizados', async () => {

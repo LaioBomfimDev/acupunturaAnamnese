@@ -387,6 +387,7 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
         <a href="#agcfg-serie">{fixedLabel} × {oneOffLabel}</a>
         <a href="#agcfg-cores">Cores</a>
         <a href="#agcfg-padroes">Padrões</a>
+        <a href="#agcfg-online">Atendimento online</a>
       </nav>
 
       <div id="agcfg-cancelado">
@@ -639,6 +640,28 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
         )}
       </fieldset>
 
+      <fieldset className="agcfg-section" id="agcfg-online">
+        <legend className="agcfg-legend">Atendimento online</legend>
+        <label className="agj-check agcfg-toggle">
+          <input
+            type="checkbox"
+            checked={draft.onlineRoom}
+            onChange={e => change({ onlineRoom: e.target.checked })}
+          />
+          <span>
+            <b>Atendimento online pela sala do sistema.</b> Na Psicologia, o atendimento marcado
+            como Online ganha &quot;Entrar na sala online&quot; na Agenda, e o link de confirmação
+            leva o paciente para a sala no horário. Antes da primeira consulta, o paciente responde
+            o termo do atendimento online e diz se autoriza gravar.
+          </span>
+        </label>
+        <p className="agcfg-help">
+          Antes de ligar: confira o texto dos termos com a psicóloga responsável e peça para
+          colocarem a chave do Daily no servidor. Desligado, a Agenda segue como hoje e o online
+          continua pelo aplicativo de vídeo que vocês já usam.
+        </p>
+      </fieldset>
+
       <div className="agcfg-bar">
         <span className="agcfg-bar-status" role="status">
           {savedNote || (dirty ? 'Alterações não salvas.' : 'Tudo salvo.')}
@@ -646,7 +669,8 @@ export function AgendaSettingsEditor({ settings, available = true, onSaved, onBa
         <button
           type="button"
           className="ag-btn"
-          onClick={() => change(normalizeAgendaSettings(null))}
+          // A sala online não é visual: restaurar o visual não a desliga.
+          onClick={() => change({ ...normalizeAgendaSettings(null), onlineRoom: draft.onlineRoom })}
           disabled={saving}
           title="Volta tudo ao padrão do sistema nesta tela. Só vale depois de salvar."
         >

@@ -30,3 +30,9 @@ verify_jwt = false
 # (interview-link/index.ts).
 [functions.interview-link]
 verify_jwt = false
+
+# Consulta online: o paciente entra pelo link do agendamento, sem conta.
+# O lado de quem atende valida o JWT e os bloqueios de conta dentro do
+# handler (online-consultation/index.ts).
+[functions.online-consultation]
+verify_jwt = false

@@ -313,6 +313,32 @@ export const EVOLUCOES_HELP = {
   ],
 };
 
+/** Sala online de quem atende (components/online/OnlineRoomPage.jsx). */
+export const SALA_ONLINE_HELP = {
+  title: 'Sala online',
+  summary: 'A consulta por vídeo de um atendimento online da Psicologia, com o que mudou desde a última evolução ao lado.',
+  actions: [
+    '“Entrar na sala” liga a câmera e o microfone e abre a chamada. Os botões embaixo do vídeo ligam e desligam o microfone, a câmera e o compartilhamento de tela.',
+    '“Antes da sessão”: a data da sua última evolução com este paciente, as escalas respondidas desde então e os alertas de risco ainda não vistos. “Ver escalas” e “Evoluções anteriores” abrem a tela na aba do sistema.',
+    '“Link do paciente”: copiar ou mandar no WhatsApp o link pessoal do paciente. É o mesmo da confirmação.',
+    '“Encerrar consulta” sai da chamada. Depois, “Marcar como Atendido” e “Ir para Evoluções” para escrever a evolução.',
+  ],
+  reading: [
+    'Em “Escalas desde então”, cada linha traz a nota, a faixa e se subiu (▲) ou desceu (▼) desde a aplicação anterior.',
+    'Bolinha vermelha em “Pede atenção” é risco de escala que ainda ninguém marcou como visto.',
+    '“Gravação” mostra se o paciente aceitou o termo do atendimento online e se autorizou gravar.',
+  ],
+  access: [
+    'Só quem atende este horário entra na sala. O paciente entra pelo link dele, depois de aceitar o termo do atendimento online.',
+    'A sala só existe para atendimento online da Psicologia, com “Atendimento online pela sala do sistema” ligado em Configurar agenda.',
+  ],
+  notes: [
+    'A sala abre 30 minutos antes do horário para você e 15 minutos antes para o paciente.',
+    'Nada desta sala é gravado por enquanto. A gravação com transcrição chega numa próxima etapa e depende da autorização do paciente.',
+    'A sala abre numa aba própria: é só nela que o navegador libera câmera e microfone.',
+  ],
+};
+
 /** Escalas, no menu principal (components/instruments/ScalesScreen.jsx). */
 export const ESCALAS_HELP = {
   title: 'Escalas',

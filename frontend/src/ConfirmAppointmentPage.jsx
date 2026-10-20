@@ -5,6 +5,7 @@ import {
   clinicAccentStyle,
   describeAppointmentWhen,
 } from './utils/appointmentConfirmation';
+import { onlineConsultationHref } from './utils/onlineConsultation';
 import { IconPin, IconVideo } from './components/panels/agenda/AgendaIcons';
 import {
   IconBuilding,
@@ -153,6 +154,18 @@ export function ConfirmAppointmentPage() {
                 </li>
               ))}
             </ul>
+
+            {/* Consulta online pela sala do sistema: o mesmo link leva à
+                sala no horário (a página da sala diz quando ela abre). */}
+            {appointment.onlineRoom && (
+              <a className="cf-online" href={onlineConsultationHref(token)}>
+                <span className="cf-detail-icon"><IconVideo width="18" height="18" /></span>
+                <span className="cf-online-text">
+                  <strong>Entrar na consulta</strong>
+                  <span>No horário, toque aqui para entrar na sala online.</span>
+                </span>
+              </a>
+            )}
 
             {errorMessage && <div className="cf-error" role="alert">{errorMessage}</div>}
 

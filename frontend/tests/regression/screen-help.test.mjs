@@ -56,6 +56,7 @@ function everyTopic() {
     ['Ver evoluções', help.EVOLUCOES_REVIEW_HELP],
     ['Escalas', help.ESCALAS_HELP],
     ['Entrevistas', help.ENTREVISTAS_HELP],
+    ['Sala online', help.SALA_ONLINE_HELP],
     ['Pacientes', help.PACIENTES_HELP],
     ...Object.entries(help.AGENDA_HELP).map(([id, topic]) => [`Agenda/${id}`, topic]),
     ...Object.entries(help.HOME_HELP).map(([id, topic]) => [`Tela inicial/${id}`, topic]),

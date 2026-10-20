@@ -19,11 +19,19 @@
     {
       "source": "/entrevista",
       "destination": "/index.html"
+    },
+    {
+      "source": "/consulta-online",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sala-online",
+      "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!consulta-online|sala-online).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -44,6 +52,64 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        }
+      ]
+    },
+    {
+      "source": "/consulta-online",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net https://*.pluot.blue wss:; media-src 'self' blob: mediastream:; worker-src 'self' blob:; frame-src https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=*, microphone=*, display-capture=*, autoplay=*, fullscreen=*, geolocation=(), payment=(), usb=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        }
+      ]
+    },
+    {
+      "source": "/sala-online",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.daily.co https://*.dailywebrtc.com https://*.dailywebrtc.net https://*.pluot.blue wss:; media-src 'self' blob: mediastream:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(self), display-capture=(self), autoplay=(self), geolocation=(), payment=(), usb=()"
         },
         {
           "key": "Strict-Transport-Security",

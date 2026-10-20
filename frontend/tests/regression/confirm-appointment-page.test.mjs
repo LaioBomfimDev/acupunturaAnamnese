@@ -130,13 +130,17 @@ test('Edge Function devolve modalidade, término e endereço só pra presencial'
   assert.match(select, /\bmodality\b/);
   assert.match(select, /\bends_at\b/);
   // confirmation_link_color: cor do link escolhida em Personalizar (2026-10-01).
-  assert.match(select, /clinics\(name,address,brand_color,confirmation_link_color\)/);
+  // agenda_settings (20/10/2026): só para saber se a sala online está ligada.
+  assert.match(select, /clinics\(name,address,brand_color,confirmation_link_color,agenda_settings\)/);
 
   // \r?\n: checkout no Windows traz o .ts em CRLF.
   const view = source.match(/function toPublicView[\s\S]*?\r?\n}\r?\n/)?.[0] || '';
   assert.ok(view, 'toPublicView não encontrada no código da function');
   assert.match(view, /modality === 'online' \? 'online' : 'presencial'/);
   assert.match(view, /clinicAddress: modality === 'presencial' && clinicAddress \? clinicAddress : null/);
+  // Da configuração da agenda sai só o sim/não da sala, nunca o resto.
+  assert.match(view, /onlineRoom: isOnlineRoomAppointment\(appointment, appointment\.clinics\?\.agenda_settings\)/);
+  assert.doesNotMatch(view, /agendaSettings:|agenda_settings:/);
 });
 
 test('mensagem de WhatsApp não manda endereço pra consulta online', async () => {

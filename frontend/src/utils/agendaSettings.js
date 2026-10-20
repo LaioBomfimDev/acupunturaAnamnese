@@ -125,6 +125,10 @@ export const AGENDA_SETTINGS_DEFAULTS = Object.freeze({
   fallbackDayStartHour: 7,
   fallbackDayEndHour: 20,
   fallbackSlotMinutes: 60,
+  // Sala de vídeo do sistema para atendimento online (Psicologia). Nasce
+  // desligada: liga quando a clínica aprovar o termo e tiver a chave do
+  // Daily (utils/onlineConsultation.js).
+  onlineRoom: false,
 });
 
 // "Cancelado" (cancelar pacote) e "Cancelado pelo paciente" são o mesmo
@@ -226,6 +230,7 @@ export function normalizeAgendaSettings(raw) {
     fallbackDayStartHour: startHour,
     fallbackDayEndHour: endHour,
     fallbackSlotMinutes: pickNumber(SLOT_OPTIONS, source.fallbackSlotMinutes, defaults.fallbackSlotMinutes),
+    onlineRoom: source.onlineRoom === true,
   };
 }
 

@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/inter'
 import './styles/tokens.css'
@@ -24,6 +24,13 @@ import { AuthProvider } from './hooks/AuthContext'
 import { PatientProvider } from './hooks/PatientContext'
 import { installGlobalErrorTelemetry } from './services/telemetry'
 
+// Consulta online (20/10/2026): página do paciente e sala de quem atende
+// carregam à parte, com o vídeo do Daily, só quando alguém abre a sala.
+// eslint-disable-next-line react-refresh/only-export-components
+const OnlineConsultationPage = lazy(() => import('./OnlineConsultationPage.jsx'))
+// eslint-disable-next-line react-refresh/only-export-components
+const OnlineRoomPage = lazy(() => import('./components/online/OnlineRoomPage.jsx'))
+
 installGlobalErrorTelemetry()
 
 // Pesquisa de satisfação, confirmação de agendamento, agenda pública,
@@ -37,10 +44,24 @@ const isPublicConfirmRoute = path === '/confirmar-agendamento'
 const isPublicAgendaRoute = path === '/agenda-publica'
 const isPublicPatientPortalRoute = path === '/area-do-paciente'
 const isPublicInterviewRoute = path === '/entrevista'
+const isPublicOnlineConsultationRoute = path === '/consulta-online'
+// Sala de quem atende: com login (AuthProvider), mas em página própria,
+// porque só /consulta-online e /sala-online liberam câmera e microfone.
+const isOnlineRoomRoute = path === '/sala-online'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {isPublicSurveyRoute ? (
+    {isPublicOnlineConsultationRoute ? (
+      <Suspense fallback={null}>
+        <OnlineConsultationPage />
+      </Suspense>
+    ) : isOnlineRoomRoute ? (
+      <AuthProvider>
+        <Suspense fallback={null}>
+          <OnlineRoomPage />
+        </Suspense>
+      </AuthProvider>
+    ) : isPublicSurveyRoute ? (
       <SurveyPage />
     ) : isPublicConfirmRoute ? (
       <ConfirmAppointmentPage />

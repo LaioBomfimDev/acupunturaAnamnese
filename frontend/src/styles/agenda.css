@@ -409,6 +409,16 @@
   margin-top: 3px;
 }
 
+/* Sala online do sistema (atendimento online da Psicologia). */
+.ag-online-enter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
 .ag-chip-btn {
   display: inline-flex;
   align-items: center;

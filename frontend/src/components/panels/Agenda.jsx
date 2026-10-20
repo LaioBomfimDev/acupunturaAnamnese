@@ -61,8 +61,9 @@ import { SearchSelect } from '../ui/SearchSelect';
 import {
   IconToday, IconCalendarDay, IconCalendarWeek, IconCalendarMonth, IconHourglass, IconPencilNote,
   IconShare, IconClockCalendar, IconFlagCalendar, IconFilterTag, IconCheckCircle, IconToggle,
-  IconCake, IconCheck, IconCalendarCheck, IconSliders, IconCopy,
+  IconCake, IconCheck, IconCalendarCheck, IconSliders, IconCopy, IconVideo,
 } from './agenda/AgendaIcons';
+import { canEnterOnlineRoom, onlineRoomHref } from '../../utils/onlineConsultation';
 import { AgendaToolsMenu } from './agenda/AgendaToolsMenu';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaSettingsEditor from './agenda/AgendaSettingsEditor';
@@ -1207,6 +1208,17 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     return patients.some(item => item.id === appointment.patient_id);
   }
 
+  // Sala online do sistema (Psicologia, 20/10/2026): abre em aba própria,
+  // a única onde o navegador libera câmera e microfone. Nome fixo por
+  // atendimento: clicar de novo volta para a mesma aba.
+  function canEnterRoom(appointment) {
+    return canEnterOnlineRoom(appointment, profile, agendaSettings);
+  }
+
+  function enterOnlineRoom(appointment) {
+    window.open(onlineRoomHref(appointment.id), `sala-online-${appointment.id}`);
+  }
+
   function startAppointment(appointment) {
     const patient = patients.find(item => item.id === appointment.patient_id);
     if (!patient) {
@@ -1596,6 +1608,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             onStatus={handleStatus}
             onStart={startAppointment}
             canStart={canStart}
+            onEnterRoom={enterOnlineRoom}
+            canEnterRoom={canEnterRoom}
           />
         )}
 
@@ -1609,6 +1623,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
             clinicName={profile?.clinic?.name || profile?.clinic_name}
             clinicAddress={profile?.clinic?.address}
             professionalId={agendaOf === ALL_PROFESSIONALS ? '' : agendaOf}
+            agendaSettings={agendaSettings}
           />
         )}
 
@@ -1891,6 +1906,17 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                     Confirmado
                   </button>
                 </div>
+              )}
+
+              {canEnterRoom(selectedAppointment) && (
+                <button
+                  type="button"
+                  className="ag-btn ag-btn--primary ag-online-enter"
+                  onClick={() => enterOnlineRoom(selectedAppointment)}
+                >
+                  <IconVideo />
+                  Entrar na sala online
+                </button>
               )}
 
               {seriesKindOf(selectedAppointment) && (

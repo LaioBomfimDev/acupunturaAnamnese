@@ -1,6 +1,7 @@
 import { createCorsContext, createServiceClient } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
+import { isOnlineRoomAppointment } from '../_shared/onlineConsultation.ts';
 
 // ============================================================
 // Confirmação de agendamento — link pessoal, sem WhatsApp pago
@@ -33,9 +34,9 @@ function isValidToken(token) {
 // created_by) — profiles(full_name) sem hint fica ambíguo pro PostgREST
 // e a query falha inteira. profiles!professional_id desambigua.
 const APPOINTMENT_PUBLIC_SELECT =
-  'id,starts_at,ends_at,room,modality,discipline,status,confirmed_at,clinic_id,' +
+  'id,kind,starts_at,ends_at,room,modality,discipline,status,confirmed_at,clinic_id,' +
   'patients(name),profiles!professional_id(full_name),' +
-  'clinics(name,address,brand_color,confirmation_link_color)';
+  'clinics(name,address,brand_color,confirmation_link_color,agenda_settings)';
 
 async function loadAppointment(supabaseAdmin, token) {
   const { data, error } = await supabaseAdmin
@@ -73,6 +74,10 @@ function toPublicView(appointment) {
     room: appointment.room,
     confirmed: Boolean(appointment.confirmed_at),
     confirmable: CONFIRMABLE_STATUSES.includes(appointment.status),
+    // Consulta online pela sala do sistema: a página oferece "Entrar na
+    // consulta" (a sala mesmo é a function online-consultation). Só o
+    // sim/não sai daqui, nunca a configuração da agenda.
+    onlineRoom: isOnlineRoomAppointment(appointment, appointment.clinics?.agenda_settings),
   };
 }
 

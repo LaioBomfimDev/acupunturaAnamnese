@@ -6,6 +6,7 @@ import {
 } from '../../../services/appointmentService';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../../utils/whatsapp';
 import { shortName } from '../../../services/clinicMembersService';
+import { isOnlineRoomAppointment } from '../../../utils/onlineConsultation';
 
 // ============================================================
 // Fila de confirmação
@@ -48,6 +49,7 @@ export function PendingConfirmationView({
   clinicName = '',
   clinicAddress = '',
   professionalId = '',
+  agendaSettings = null,
 }) {
   const [days, setDays] = useState(7);
   const [items, setItems] = useState([]);
@@ -133,6 +135,10 @@ export function PendingConfirmationView({
     const confirmacao = `Por favor, confirme sua presença aqui: ${link}`;
 
     const paragrafos = [saudacao, confirmacao];
+    // Sala online do sistema: o mesmo link leva para a consulta no horário.
+    if (isOnlineRoomAppointment(appointment, agendaSettings)) {
+      paragrafos.push('Sua consulta é online, por vídeo. No horário, abra este mesmo link e toque em “Entrar na consulta”.');
+    }
     // Online não vai até a clínica: mandar o endereço só confunde.
     if (clinicAddress && appointment.modality !== 'online') paragrafos.push(`Nosso endereço: ${clinicAddress}.`);
     paragrafos.push('Obrigado(a)!');

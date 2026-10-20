@@ -56,7 +56,8 @@ test('cada link usa a própria cor; sem escolha segue a cor do sistema', () => {
 
 test('Edge Functions leem a cor do próprio link, com a cor do sistema de reserva', async () => {
   const confirm = await readRepo('supabase/functions/confirm-appointment/index.ts');
-  assert.match(confirm, /clinics\(name,address,brand_color,confirmation_link_color\)/);
+  // agenda_settings (20/10/2026): só para saber se a sala online está ligada.
+  assert.match(confirm, /clinics\(name,address,brand_color,confirmation_link_color,agenda_settings\)/);
   assert.match(confirm, /clinicColor:\s*appointment\.clinics\?\.confirmation_link_color \|\| appointment\.clinics\?\.brand_color \|\| null/);
   assert.doesNotMatch(confirm, /survey_link_color|accent_color/);
 

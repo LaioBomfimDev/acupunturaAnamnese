@@ -18,15 +18,20 @@ import { shortName } from '../../services/clinicMembersService';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../utils/whatsapp';
 import { requestAppScreen } from '../../utils/appNavigationBridge';
 import { formatInstrumentDate } from '../instruments/instrumentFormat';
+import { InstrumentApplicationDialog } from '../instruments/InstrumentApplicationDialog';
 import { sparkPoints } from '../../utils/beforeSession';
 import {
+  CONSULT_MINUTES,
+  CONSULT_PARTICIPANT_MINUTES,
   consentRows,
+  DAILY_DASHBOARD_URL,
   formatClock,
   formatMinutes,
   onlineConsultationHref,
   ONLINE_ROOM_WINDOWS,
   usageSummary,
 } from '../../utils/onlineConsultation';
+import '../../styles/instruments.css';
 import '../../styles/onlineRoom.css';
 
 // ============================================================
@@ -189,7 +194,7 @@ function ReappliedDates({ card }) {
   );
 }
 
-function ScalesTab({ data }) {
+function ScalesTab({ data, onOpen }) {
   if (!data) return <p className="osr-muted">Carregando…</p>;
   if (data.scales.error) return <p className="osr-muted">— Não deu para carregar as escalas.</p>;
   if (!data.scales.cards.length) return <p className="osr-muted">Nenhuma escala aplicada ainda.</p>;
@@ -234,6 +239,25 @@ function ScalesTab({ data }) {
                   {card.reapplyFrom ? <>Reaplicar a partir de <b>{card.reapplyFrom}</b></> : 'Já pode reaplicar'}
                 </li>
               </ul>
+              <button type="button" className="osr-answers-btn" onClick={() => onOpen(card.entries[0])}>
+                Ver perguntas e respostas<span aria-hidden="true">→</span>
+              </button>
+              {card.entries.length > 1 && (
+                <div className="osr-older">
+                  <span>Outras aplicações:</span>
+                  {card.entries.slice(1).map(entry => (
+                    <button
+                      key={entry.application.id}
+                      type="button"
+                      className="osr-older-btn"
+                      onClick={() => onOpen(entry)}
+                      aria-label={`Ver as respostas de ${entry.date}`}
+                    >
+                      {entry.date}
+                    </button>
+                  ))}
+                </div>
+              )}
             </article>
           </li>
         );
@@ -293,6 +317,8 @@ function EvolutionsTab({ evolutions }) {
 
 function QuickPanel({ data, evolutions, patient, openScreen }) {
   const [tab, setTab] = useState('resumo');
+  // Aplicação aberta na janela de respostas (a mesma da tela Escalas, só leitura).
+  const [opened, setOpened] = useState(null);
   const tabRefs = useRef({});
   const openScales = () => openScreen({ screen: 'escalas', patientId: patient.id, patientName: patient.name });
   const openEvolutions = () => openScreen({ screen: 'evolucao' });
@@ -337,7 +363,7 @@ function QuickPanel({ data, evolutions, patient, openScreen }) {
 
       <div className="osr-panel" role="tabpanel" id={`osr-panel-${tab}`} aria-labelledby={`osr-tab-${tab}`}>
         {tab === 'resumo' && <SummaryTab data={data} onTab={setTab} openScales={openScales} />}
-        {tab === 'escalas' && <ScalesTab data={data} />}
+        {tab === 'escalas' && <ScalesTab data={data} onOpen={setOpened} />}
         {tab === 'evolucoes' && <EvolutionsTab evolutions={evolutions} />}
       </div>
 
@@ -350,6 +376,16 @@ function QuickPanel({ data, evolutions, patient, openScreen }) {
         <button type="button" className="osr-shortcut osr-panel-foot" onClick={openEvolutions} title="Abre na aba do sistema">
           Abrir a tela Evoluções<span aria-hidden="true">→</span>
         </button>
+      )}
+
+      {opened && (
+        <InstrumentApplicationDialog
+          application={opened.application}
+          instrument={opened.instrument}
+          canVoid={false}
+          placement="side"
+          onClose={() => setOpened(null)}
+        />
       )}
     </aside>
   );
@@ -657,7 +693,7 @@ function UsageCard({ appointmentId, callPhase }) {
             <span className={`osr-meter-fill${summary.near || summary.over ? ' is-near' : ''}`} style={{ width: `${summary.percent}%` }} />
           </div>
           <p className="osr-line">
-            ≈ {consults(summary.consultsUsed)} de 50 min
+            ≈ {consults(summary.consultsUsed)} de {CONSULT_MINUTES} min
             {summary.over ? ' · acabaram os minutos grátis' : ` · cabem mais ~${summary.consultsLeft} grátis`}
           </p>
           {summary.over ? (
@@ -668,12 +704,15 @@ function UsageCard({ appointmentId, callPhase }) {
             <p className="osr-warn" role="status">Perto do fim dos minutos grátis do mês.</p>
           ) : null}
           <p className="osr-note">
-            Cada pessoa na chamada conta: 50 min a dois são 100 min. Conta feita pelas chamadas desde {summary.since};
-            a fatura do Daily é a referência.
+            Cada pessoa na chamada conta: {CONSULT_MINUTES} min a dois são {CONSULT_PARTICIPANT_MINUTES} min. Conta feita
+            pelas chamadas desde {summary.since}; a fatura do Daily é a referência.
           </p>
           {usage.failed && <p className="osr-note">Não deu para atualizar agora; os números são das {formatClock(usage.at)}.</p>}
         </>
       )}
+      <a className="osr-daily-link" href={DAILY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
+        Ver uso e fatura no painel do Daily<span aria-hidden="true">↗</span>
+      </a>
       <div className="osr-usage-foot">
         <small>{usage?.at ? `Atualizado às ${formatClock(usage.at)}` : ''}</small>
         <button type="button" className="osr-mini" onClick={refresh} disabled={refreshing} aria-busy={refreshing}>

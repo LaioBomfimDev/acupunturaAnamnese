@@ -142,6 +142,13 @@ export function scaleCards(applications, now = new Date()) {
       source: SOURCE_LABELS[latest.source] || '',
       reapplyFrom: reapply.tooSoon ? formatInstrumentDate(reapply.availableFrom) : '',
       appliedAt: latest.appliedAt,
+      // Cada aplicação com a versão da escala em que foi respondida, para
+      // abrir as perguntas e as respostas na janela da tela Escalas.
+      entries: list.map(application => ({
+        application,
+        instrument: getInstrument(instrumentId, application.instrumentVersion) || instrument,
+        date: formatInstrumentDate(application.appliedAt),
+      })),
     });
   }
   return cards.sort((a, b) => Date.parse(b.appliedAt) - Date.parse(a.appliedAt));

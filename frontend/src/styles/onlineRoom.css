@@ -172,6 +172,8 @@
 /* ---------- Consulta rápida (esquerda) ---------- */
 
 .osr-before {
+  /* A janela de respostas das escalas abre por cima desta coluna. */
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -512,6 +514,50 @@
   color: var(--r1-text-subtle);
 }
 
+.osr-answers-btn {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: 10px;
+  background: var(--r1-surface);
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osr-answers-btn:hover,
+.osr-older-btn:hover {
+  background: var(--r1-accent-wash);
+}
+
+.osr-older {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+.osr-older-btn {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* Aba Evoluções: só leitura, a mais nova aberta. */
 
 .osr-evolution {
@@ -753,7 +799,9 @@
 .osr-scale:focus-visible,
 .osr-tab:focus-visible,
 .osr-evolution-head:focus-visible,
-.osr-mini:focus-visible {
+.osr-mini:focus-visible,
+.osr-answers-btn:focus-visible,
+.osr-older-btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
@@ -946,6 +994,30 @@
 
 .osr-meter-fill.is-near {
   background: var(--r1-warning);
+}
+
+.osr-daily-link {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: 10px;
+  color: var(--r1-accent);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.osr-daily-link:hover {
+  background: var(--r1-accent-wash);
+}
+
+.osr-daily-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
 
 .osr-usage-foot {

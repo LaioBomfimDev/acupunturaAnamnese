@@ -70,7 +70,9 @@ test('tela e Edge Function usam as mesmas regras da sala', async () => {
   assert.deepEqual({ ...back.ONLINE_CONSENT_TERM_VERSIONS }, { ...terms.ONLINE_CONSENT_TERM_VERSIONS });
   assert.equal(back.DAILY_FREE_PARTICIPANT_MINUTES, front.DAILY_FREE_PARTICIPANT_MINUTES);
   assert.equal(back.CONSULT_PARTICIPANT_MINUTES, front.CONSULT_PARTICIPANT_MINUTES);
-  assert.equal(front.DAILY_FREE_PARTICIPANT_MINUTES / front.CONSULT_PARTICIPANT_MINUTES, 100, '100 consultas de 50 min a dois por mês');
+  assert.equal(front.CONSULT_MINUTES, 60, 'a consulta ocupa a hora inteira');
+  assert.equal(front.CONSULT_PARTICIPANT_MINUTES, 120, '60 min a dois');
+  assert.equal(Math.floor(front.DAILY_FREE_PARTICIPANT_MINUTES / front.CONSULT_PARTICIPANT_MINUTES), 83, '83 consultas grátis por mês');
 
   for (const settings of [ON, { onlineRoom: false }, {}, null]) {
     for (const appointment of [
@@ -503,6 +505,31 @@ test('aba Escalas: nota, faixa, seta, linha pequena, datas e quando reaplicar', 
   assert.equal(dass.total, null, 'DASS-21 não tem total');
   assert.equal(dass.parts.length, 3, 'uma nota por subescala');
   assert.equal(dass.spark, null, 'sem linha de uma subescala com cara de total');
+
+  // Cada aplicação abre na janela de respostas, da mais nova para a mais antiga.
+  assert.deepEqual(gadCard.entries.map(entry => entry.application.id), ['g3', 'g2', 'g1']);
+  assert.equal(gadCard.entries[0].instrument.id, 'gad7');
+  assert.equal(gadCard.entries[0].date, '12/10/2026');
+});
+
+test('escalas na sala: perguntas e respostas na janela da tela Escalas, só sobre a coluna da esquerda', async () => {
+  const room = await read('src/components/online/OnlineRoomPage.jsx');
+  assert.match(room, /Ver perguntas e respostas/);
+  assert.match(room, /Outras aplicações:/);
+  assert.match(room, /<InstrumentApplicationDialog[\s\S]*?canVoid=\{false\}[\s\S]*?placement="side"/, 'na sala só se lê: sem anular');
+
+  const dialog = await read('src/components/instruments/InstrumentApplicationDialog.jsx');
+  assert.match(dialog, /placement = 'screen'/, 'fora da sala, a janela continua a de sempre');
+  assert.match(dialog, /instrument-dialog-overlay--side/);
+
+  const css = await read('src/styles/instruments.css');
+  assert.match(
+    css,
+    /@media \(min-width: 1025px\) \{\r?\n\s*\.instrument-dialog-overlay--side \{\r?\n\s*position: absolute;/,
+    'no computador cobre só a coluna; no celular segue a folha de baixo',
+  );
+  const roomCss = await read('src/styles/onlineRoom.css');
+  assert.match(roomCss, /\.osr-before \{\r?\n\s*\/\*[^*]*\*\/\r?\n\s*position: relative;/, 'a coluna segura a janela');
 });
 
 test('aba Evoluções: da mais nova para a mais antiga, com os rótulos do formulário', async () => {
@@ -534,13 +561,13 @@ test('aba Evoluções: da mais nova para a mais antiga, com os rótulos do formu
 
 test('minutos do mês: quanto foi, quanto falta e o aviso perto do fim', async () => {
   const { usageSummary, formatMinutes, USAGE_WARNING_SHARE } = await load('src/utils/onlineConsultation.js');
-  const base = { freeMinutes: 10_000, consultMinutes: 100, periodStart: '2026-10-01T00:00:00.000Z' };
+  const base = { freeMinutes: 10_000, consultMinutes: 120, periodStart: '2026-10-01T00:00:00.000Z' };
   const low = usageSummary({ ...base, participantMinutes: 1240 });
   assert.equal(low.used, 1240);
   assert.equal(low.left, 8760);
   assert.equal(low.percent, 12);
-  assert.equal(low.consultsUsed, 12);
-  assert.equal(low.consultsLeft, 87);
+  assert.equal(low.consultsUsed, 10, '1.240 min ÷ 120');
+  assert.equal(low.consultsLeft, 73, '8.760 min ÷ 120');
   assert.equal(low.since, '01/10/2026');
   assert.equal(low.near, false);
   assert.equal(low.over, false);
@@ -605,6 +632,11 @@ test('Edge Function: minutos do mês só para quem atende, sem dado de paciente'
   assert.match(room, /role="meter"/);
   assert.match(room, /const USAGE_REFRESH_MS = 5 \* 60_000/);
   assert.match(room, /a fatura do Daily é a referência/);
+  assert.match(room, /de \{CONSULT_MINUTES\} min/, 'o texto sai da mesma conta, nunca "50 min" escrito à mão');
+  assert.doesNotMatch(room, /50 min/);
+  assert.match(room, /href=\{DAILY_DASHBOARD_URL\} target="_blank" rel="noopener noreferrer"/);
+  const { DAILY_DASHBOARD_URL } = await load('src/utils/onlineConsultation.js');
+  assert.equal(DAILY_DASHBOARD_URL, 'https://dashboard.daily.co/');
 });
 
 // ---------- ponte entre abas ----------

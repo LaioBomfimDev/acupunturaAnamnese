@@ -178,7 +178,11 @@ function PointDots({ value, max }) {
   );
 }
 
-export function InstrumentApplicationDialog({ application, instrument, canVoid, onClose, onVoided }) {
+// `placement="side"` (sala online, 21/10/2026): a janela cobre só a coluna
+// em que foi aberta, sem escurecer o resto da página, para não tapar o
+// vídeo. No celular e no tablet continua a folha de baixo de sempre.
+export function InstrumentApplicationDialog({ application, instrument, canVoid, onClose, onVoided, placement = 'screen' }) {
+  const side = placement === 'side';
   const [voiding, setVoiding] = useState(false);
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
@@ -208,11 +212,11 @@ export function InstrumentApplicationDialog({ application, instrument, canVoid, 
   }
 
   return (
-    <div className="instrument-dialog-overlay" {...dismiss.backdropProps}>
+    <div className={`instrument-dialog-overlay${side ? ' instrument-dialog-overlay--side' : ''}`} {...dismiss.backdropProps}>
       <div
         className="instrument-dialog forms-scope"
         role="dialog"
-        aria-modal="true"
+        aria-modal={side ? undefined : 'true'}
         aria-labelledby={titleId}
         {...dismiss.panelProps}
       >

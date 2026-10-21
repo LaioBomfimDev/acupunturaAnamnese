@@ -1180,6 +1180,27 @@
   margin: 0;
 }
 
+/* Na sala online, a janela cobre só a coluna em que abriu (o pai é
+   position: relative) e deixa o vídeo à vista. Só no computador: no
+   celular e no tablet segue a folha de baixo. */
+@media (min-width: 1025px) {
+  .instrument-dialog-overlay--side {
+    position: absolute;
+    z-index: 5;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: transparent;
+  }
+
+  .instrument-dialog-overlay--side .instrument-dialog {
+    width: 100%;
+    max-height: none;
+    border: 1px solid var(--r1-accent-line);
+    box-shadow: var(--r1-shadow-md);
+  }
+}
+
 .instrument-dialog-head {
   display: flex;
   align-items: center;

@@ -20,9 +20,14 @@ export const ONLINE_ROOM_WINDOWS = Object.freeze({
 export const ONLINE_ROOM_STATUSES = ['scheduled', 'ready', 'attended'];
 
 // Minutos grátis por mês no Daily (participante-minuto) e quanto gasta uma
-// consulta típica: 50 minutos com 2 pessoas = 100.
+// consulta: 60 minutos com 2 pessoas = 120 (21/10/2026: a sessão ocupa a
+// hora inteira, não 50 minutos).
 export const DAILY_FREE_PARTICIPANT_MINUTES = 10_000;
-export const CONSULT_PARTICIPANT_MINUTES = 100;
+export const CONSULT_MINUTES = 60;
+export const CONSULT_PARTICIPANT_MINUTES = CONSULT_MINUTES * 2;
+
+// Painel da conta no Daily, onde fica o uso e a fatura de verdade.
+export const DAILY_DASHBOARD_URL = 'https://dashboard.daily.co/';
 // A partir daqui o contador avisa que está perto do fim dos minutos grátis.
 export const USAGE_WARNING_SHARE = 0.8;
 
@@ -118,7 +123,7 @@ export function dailyErrorMessage(errorMsg, who) {
 
 /**
  * Contador de uso do Daily no mês (pedido de 21/10/2026): quanto já foi,
- * quanto falta dos minutos grátis e quantas consultas de 50 min isso dá.
+ * quanto falta dos minutos grátis e quantas consultas de 60 min isso dá.
  */
 export function usageSummary(usage) {
   if (!usage || !Number.isFinite(Number(usage.participantMinutes))) return null;

@@ -320,6 +320,7 @@ export const SALA_ONLINE_HELP = {
   actions: [
     '“Entrar na sala” liga a câmera e o microfone e abre a chamada. Os botões embaixo do vídeo ligam e desligam o microfone, a câmera e o compartilhamento de tela; o último põe o vídeo em tela cheia, e Esc ou o mesmo botão volta para a sala.',
     'À esquerda, três abas: “Resumo” (sua última evolução, as escalas desde então e o que pede atenção), “Escalas” (cada escala com a nota, a faixa, a linha pequena e as datas) e “Evoluções” (as evoluções deste paciente, só para ler). Abrem ali mesmo, sem sair da chamada.',
+    'Em “Escalas”, “Ver perguntas e respostas” abre a última aplicação com cada pergunta, a resposta e os pontos, por cima da coluna da esquerda, sem cobrir o vídeo. “Outras aplicações” abre as anteriores. Esc ou × fecha.',
     '“Abrir a tela Escalas” e “Abrir a tela Evoluções”, no pé das abas, abrem a tela na aba do sistema.',
     '“Link do paciente”: copiar ou mandar no WhatsApp o link pessoal do paciente. É o mesmo da confirmação.',
     '“Encerrar consulta” sai da chamada. Depois, “Marcar como Atendido” e “Escrever a evolução”, que abre a tela Evoluções.',
@@ -328,7 +329,7 @@ export const SALA_ONLINE_HELP = {
     'Nas escalas, ▲ subiu e ▼ desceu desde a aplicação anterior: só a direção, porque subir não é piorar em toda escala.',
     'Bolinha vermelha em “Pede atenção” é risco de escala que ainda ninguém marcou como visto.',
     '“Gravação” mostra, com um visto, se o paciente aceitou o termo do atendimento online e se autorizou gravar.',
-    '“Minutos do mês” conta o uso do Daily no mês: cada pessoa na chamada conta, então 50 minutos a dois são 100. A barra mostra quanto dos 10.000 minutos grátis já foi, e o aviso aparece perto do fim. A fatura do Daily é a referência.',
+    '“Minutos do mês” conta o uso do Daily no mês: cada pessoa na chamada conta, então uma consulta de 60 minutos a dois gasta 120. A barra mostra quanto dos 10.000 minutos grátis já foi, e o aviso aparece perto do fim. A fatura do Daily é a referência: “Ver uso e fatura no painel do Daily” abre a conta de vocês no Daily.',
   ],
   access: [
     'Só quem atende este horário entra na sala. O paciente entra pelo link dele, depois de aceitar o termo do atendimento online.',

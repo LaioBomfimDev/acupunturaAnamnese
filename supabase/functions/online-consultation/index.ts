@@ -7,8 +7,10 @@ import {
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { createCorrelationId, logOperationalEvent } from '../_shared/observability.ts';
-import { createMeetingToken, ensureRoom, readDailyConfig, roomNameFor } from '../_shared/dailyRooms.ts';
+import { createMeetingToken, ensureRoom, monthUsage, readDailyConfig, roomNameFor } from '../_shared/dailyRooms.ts';
 import {
+  CONSULT_PARTICIPANT_MINUTES,
+  DAILY_FREE_PARTICIPANT_MINUTES,
   firstName,
   isOnlineRoomAppointment,
   latestConsents,
@@ -284,6 +286,21 @@ async function handleProfessional(req: Request, supabaseAdmin: Admin, body: Reco
   const state = appointmentState(appointment, 'professional');
   const action = String(body.action || '');
 
+  // Uso do mês na conta do Daily, para quem atende não ser pega de surpresa
+  // pela cobrança (pedido de 21/10/2026). Só números da conta, nada de
+  // paciente.
+  if (action === 'staff_usage') {
+    const config = readDailyConfig();
+    if (!config) return jsonResponse({ error: 'A sala online ainda não foi configurada: falta a chave do Daily no servidor.' }, 503);
+    const usage = await monthUsage(config);
+    return jsonResponse({
+      ...usage,
+      periodStart: iso(usage.periodStart),
+      freeMinutes: DAILY_FREE_PARTICIPANT_MINUTES,
+      consultMinutes: CONSULT_PARTICIPANT_MINUTES,
+    });
+  }
+
   if (action === 'staff_open') {
     const consents = state === 'unavailable' ? latestConsents([]) : await loadConsents(supabaseAdmin, appointment.patient_id);
     return jsonResponse({
@@ -341,7 +358,7 @@ Deno.serve(async (req) => {
     if (!body) return jsonResponse({ error: 'Pedido inválido.' }, 400);
     action = String(body.action || '');
 
-    if (action === 'staff_open' || action === 'staff_join') {
+    if (action === 'staff_open' || action === 'staff_join' || action === 'staff_usage') {
       return await handleProfessional(req, supabaseAdmin, body, jsonResponse);
     }
     if (action === 'open' || action === 'consent' || action === 'join') {

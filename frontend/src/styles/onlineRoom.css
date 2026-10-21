@@ -1,7 +1,9 @@
 /* ============================================================
-   Sala online de quem atende (prévia C, 20/10/2026).
-   Computador: "Antes da sessão" | vídeo | gravação, link e "Ao
-   encerrar". Celular e tablet (até 1024px): uma coluna, vídeo primeiro.
+   Sala online de quem atende (prévia C, 20/10/2026; abas e cartões da
+   prévia A, 21/10/2026).
+   Computador: consulta rápida (Resumo, Escalas, Evoluções) | vídeo |
+   gravação, link, "Ao encerrar" e minutos do mês. Celular e tablet (até
+   1024px): uma coluna, vídeo primeiro.
    Ação e seleção na cor da tela (--r1-accent); vermelho só para risco.
    ============================================================ */
 
@@ -145,7 +147,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr) 320px;
+  grid-template-columns: 340px minmax(0, 1fr) 316px;
   grid-template-areas: 'before stage side';
   gap: 14px;
 }
@@ -167,23 +169,75 @@
   overflow-y: auto;
 }
 
-/* ---------- Antes da sessão ---------- */
+/* ---------- Consulta rápida (esquerda) ---------- */
 
 .osr-before {
   display: flex;
   flex-direction: column;
-  gap: 14px;
   min-height: 0;
-  overflow-y: auto;
-  padding: 16px;
+  overflow: hidden;
   border: 1px solid var(--r1-border-subtle);
   border-radius: 14px;
   background: var(--r1-surface);
 }
 
-.osr-before h2,
+.osr-tabs {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 12px 12px 0;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--r1-surface-sunken);
+}
+
+.osr-tab {
+  min-height: 38px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--r1-text-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.osr-tab:hover {
+  color: var(--r1-accent);
+}
+
+.osr-tab.is-active {
+  background: var(--r1-surface);
+  color: var(--r1-accent);
+  font-weight: 700;
+  box-shadow: var(--r1-shadow-sm);
+}
+
+.osr-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+}
+
+.osr-panel-foot {
+  flex: 0 0 auto;
+  margin: 0 12px 12px;
+}
+
 .osr-card h2 {
-  font-size: 16px;
+  flex: 1;
+  min-width: 0;
+  font-size: 15.5px;
   font-weight: 700;
 }
 
@@ -318,9 +372,222 @@
   cursor: pointer;
 }
 
+.osr-shortcut:hover {
+  background: var(--r1-accent-wash);
+}
+
 .osr-hint {
   font-size: 12px;
+  line-height: 1.45;
   color: var(--r1-text-subtle);
+}
+
+/* Aba Escalas: o cartão fechado da tela Escalas, em pequeno. */
+
+.osr-scale-cards,
+.osr-scale-parts,
+.osr-scale-meta,
+.osr-evolutions,
+.osr-checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.osr-scale-cards,
+.osr-evolutions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.osr-scale-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 12px;
+  background: var(--r1-surface);
+}
+
+.osr-scale-card.is-latest {
+  border-color: var(--r1-accent-line);
+  background: color-mix(in srgb, var(--r1-accent) 5%, var(--r1-surface));
+}
+
+.osr-scale-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.osr-scale-card-name {
+  min-width: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.osr-scale-card-score {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.osr-scale-card-score b {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.osr-scale-card-score small {
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+}
+
+.osr-band {
+  padding: 2px 9px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--r1-text-muted);
+  white-space: nowrap;
+}
+
+.osr-scale-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.osr-scale-parts li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.osr-scale-parts li span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.osr-scale-parts b {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.osr-spark {
+  display: block;
+  width: 100%;
+  height: 40px;
+}
+
+.osr-spark polyline {
+  fill: none;
+  stroke: var(--r1-accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.osr-scale-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--r1-text-muted);
+}
+
+.osr-scale-meta .is-ready {
+  font-weight: 700;
+  color: var(--r1-accent);
+}
+
+.osr-scale-meta-note {
+  color: var(--r1-text-subtle);
+}
+
+/* Aba Evoluções: só leitura, a mais nova aberta. */
+
+.osr-evolution {
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 12px;
+  background: var(--r1-surface);
+}
+
+.osr-evolution.is-open {
+  border-color: var(--r1-accent-line);
+  background: color-mix(in srgb, var(--r1-accent) 5%, var(--r1-surface));
+}
+
+.osr-evolution-head {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.osr-evolution-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.osr-evolution-title b {
+  font-size: 14px;
+}
+
+.osr-evolution-title small {
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+.osr-chevron {
+  font-size: 18px;
+  color: var(--r1-text-subtle);
+  transition: transform 0.15s ease;
+}
+
+.osr-evolution.is-open .osr-chevron {
+  transform: rotate(90deg);
+}
+
+.osr-evolution-body {
+  margin: 0;
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.osr-evolution-body dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--r1-text-subtle);
+}
+
+.osr-evolution-body dd {
+  margin: 2px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Vídeo ---------- */
@@ -483,7 +750,10 @@
 .osr-join:focus-visible,
 .osr-btn:focus-visible,
 .osr-shortcut:focus-visible,
-.osr-scale:focus-visible {
+.osr-scale:focus-visible,
+.osr-tab:focus-visible,
+.osr-evolution-head:focus-visible,
+.osr-mini:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--r1-focus-ring);
 }
@@ -528,14 +798,70 @@
 .osr-card-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 }
 
-.osr-row {
+.osr-card-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent);
+}
+
+.osr-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--r1-text-subtle);
+}
+
+.osr-checks {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.osr-checks li {
+  display: flex;
   align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.osr-check {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--r1-border);
+  border-radius: 50%;
+}
+
+.osr-checks .is-ok .osr-check {
+  border-color: var(--r1-success);
+  background: var(--r1-success);
+  color: #ffffff;
+}
+
+.osr-link-box {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--r1-surface-sunken);
+  font-size: 12.5px;
+  color: var(--r1-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.osr-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -561,8 +887,102 @@
   cursor: not-allowed;
 }
 
-.osr-btn--accent:not(:disabled):hover {
+.osr-btn:not(:disabled):hover {
   background: var(--r1-accent-wash);
+}
+
+.osr-btn--primary {
+  min-height: 46px;
+  border-color: var(--r1-accent);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.osr-btn--primary:not(:disabled):hover {
+  border-color: var(--r1-accent-strong);
+  background: var(--r1-accent-strong);
+}
+
+/* Botão do WhatsApp no verde do próprio WhatsApp. */
+.osr-btn--whatsapp {
+  border-color: #1f7a4a;
+  background: #1f7a4a;
+  color: #ffffff;
+}
+
+.osr-btn--whatsapp:not(:disabled):hover {
+  border-color: #17613a;
+  background: #17613a;
+}
+
+/* Minutos do mês no Daily */
+
+.osr-usage-numbers {
+  font-size: 13px;
+  color: var(--r1-text-muted);
+}
+
+.osr-usage-numbers b {
+  font-size: 18px;
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.osr-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  overflow: hidden;
+}
+
+.osr-meter-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: var(--r1-accent);
+  transition: width 0.4s ease;
+}
+
+.osr-meter-fill.is-near {
+  background: var(--r1-warning);
+}
+
+.osr-usage-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.osr-usage-foot small {
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+.osr-mini {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: 8px;
+  background: var(--r1-surface);
+  color: var(--r1-accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osr-mini:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osr-meter-fill,
+  .osr-chevron {
+    transition: none;
+  }
 }
 
 .osr-btn--end {
@@ -655,7 +1075,8 @@
   }
 
   .osr-before,
-  .osr-side {
+  .osr-side,
+  .osr-panel {
     overflow: visible;
   }
 }

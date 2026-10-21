@@ -12,7 +12,8 @@
 //     leitura direta, e apagado na exclusão de paciente;
 //   * sala só da profissional do atendimento, com os bloqueios de conta;
 //   * nada gravado no Daily (sem gravação em nuvem, sem chat);
-//   * evolução continua só na tela Evoluções.
+//   * evolução continua só na tela Evoluções (na sala, só leitura);
+//   * minutos do mês no Daily contados no servidor, sem dado de paciente.
 // ============================================================
 
 import assert from 'node:assert/strict';
@@ -67,6 +68,9 @@ test('tela e Edge Function usam as mesmas regras da sala', async () => {
   assert.deepEqual(JSON.parse(JSON.stringify(back.ONLINE_ROOM_WINDOWS)), JSON.parse(JSON.stringify(front.ONLINE_ROOM_WINDOWS)));
   assert.deepEqual(back.ONLINE_ROOM_STATUSES, front.ONLINE_ROOM_STATUSES);
   assert.deepEqual({ ...back.ONLINE_CONSENT_TERM_VERSIONS }, { ...terms.ONLINE_CONSENT_TERM_VERSIONS });
+  assert.equal(back.DAILY_FREE_PARTICIPANT_MINUTES, front.DAILY_FREE_PARTICIPANT_MINUTES);
+  assert.equal(back.CONSULT_PARTICIPANT_MINUTES, front.CONSULT_PARTICIPANT_MINUTES);
+  assert.equal(front.DAILY_FREE_PARTICIPANT_MINUTES / front.CONSULT_PARTICIPANT_MINUTES, 100, '100 consultas de 50 min a dois por mês');
 
   for (const settings of [ON, { onlineRoom: false }, {}, null]) {
     for (const appointment of [
@@ -373,18 +377,33 @@ test('Configurar agenda: sala nasce desligada e restaurar o visual não a deslig
   assert.match(editor, /change\(\{ \.\.\.normalizeAgendaSettings\(null\), onlineRoom: draft\.onlineRoom \}\)/);
 });
 
-test('sala de quem atende: evolução fica na tela Evoluções e "Antes da sessão" não lê texto clínico', async () => {
+test('sala de quem atende: evolução só para ler; escrever e corrigir ficam na tela Evoluções', async () => {
   const room = await read('src/components/online/OnlineRoomPage.jsx');
-  assert.doesNotMatch(room, /insertPatientEvolution|EvolutionsScreen|EvolutionForm/, 'nenhum formulário de evolução na sala');
+  assert.doesNotMatch(room, /insertPatientEvolution|updatePatientEvolution|EvolutionsScreen|EvolutionForm|<textarea/, 'nenhum formulário de evolução na sala');
   assert.match(room, /openScreen\(\{ screen: 'evolucao' \}\)/);
-  assert.match(room, /Ir para Evoluções/);
-  assert.match(room, /Antes da sessão/);
+  assert.match(room, /Escrever a evolução →/);
+  assert.match(room, /Só leitura\. Corrigir e escrever continuam na tela Evoluções\./);
   assert.match(room, /Nada desta sala é gravado|nada desta sala é gravado/);
 
   const service = await read('src/services/onlineConsultationService.js');
-  assert.match(service, /\.select\('id,atendimento_em'\)/, 'só a data da evolução');
-  assert.doesNotMatch(service, /conteudo|listPatientEvolutions/);
+  assert.match(service, /\.select\('id,atendimento_em'\)/, 'o Resumo lê só a data da evolução');
+  assert.match(service, /listPatientEvolutions\(patientId, discipline\)/, 'a aba usa a mesma RPC do histórico da tela Evoluções');
+  assert.doesNotMatch(service, /insertPatientEvolution|updatePatientEvolution|conteudo_encrypted/);
   assert.match(service, /Promise\.allSettled/, 'cada parte falha sozinha');
+});
+
+test('consulta rápida: abas Resumo, Escalas e Evoluções na própria sala', async () => {
+  const room = await read('src/components/online/OnlineRoomPage.jsx');
+  assert.match(room, /const PANEL_TABS = \['resumo', 'escalas', 'evolucoes'\]/);
+  assert.match(room, /role="tablist"/);
+  assert.match(room, /role="tab"/);
+  assert.match(room, /aria-selected=\{tab === id\}/);
+  assert.match(room, /role="tabpanel"/);
+  assert.match(room, /`Escalas · \$\{scaleCount\}`/);
+  assert.match(room, /`Evoluções · \$\{evolutionCount\}`/);
+  assert.match(room, /Abrir a tela Escalas, com o gráfico/);
+  assert.match(room, /Abrir a tela Evoluções/);
+  assert.match(room, /onClick=\{\(\) => onTab\('escalas'\)\}/, 'atalhos do Resumo trocam de aba em vez de sair da sala');
 });
 
 test('"Antes da sessão": escalas desde a última evolução, com direção, e risco não visto', async () => {
@@ -420,6 +439,172 @@ test('"Antes da sessão": escalas desde a última evolução, com direção, e r
   ], 'pac');
   assert.equal(risks.length, 1, 'só o paciente desta sala');
   assert.match(risks[0].label, /^Risco no PHQ-9 ainda não visto/);
+});
+
+test('aba Escalas: nota, faixa, seta, linha pequena, datas e quando reaplicar', async () => {
+  const { scaleCards, sparkPoints } = await load('src/utils/beforeSession.js');
+  const gad = (id, appliedAt, score, extra = {}) => ({
+    id,
+    instrumentId: 'gad7',
+    instrumentVersion: 1,
+    appliedAt,
+    source: 'consultorio',
+    result: { score, bandLabel: score >= 10 ? 'Moderada' : 'Leve' },
+    voidedAt: null,
+    ...extra,
+  });
+  const now = new Date('2026-10-20T15:00:00Z');
+  const cards = scaleCards([
+    gad('g1', '2026-09-28T15:00:00Z', 14),
+    gad('g2', '2026-10-05T15:00:00Z', 12),
+    gad('g3', '2026-10-12T15:00:00Z', 9),
+    gad('g4', '2026-10-13T15:00:00Z', 1, { voidedAt: '2026-10-13T16:00:00Z' }),
+    {
+      id: 'r1',
+      instrumentId: 'rosenberg',
+      instrumentVersion: 1,
+      appliedAt: '2026-10-11T15:00:00Z',
+      source: 'area_do_paciente',
+      result: { score: 20, bandLabel: null },
+      voidedAt: null,
+    },
+  ], now);
+  assert.deepEqual(cards.map(card => card.id), ['gad7', 'rosenberg'], 'da aplicação mais nova para a mais antiga');
+  const [gadCard, rosenberg] = cards;
+  assert.equal(gadCard.total.text, '9');
+  assert.equal(gadCard.total.bandLabel, 'Leve');
+  assert.equal(gadCard.trend, '▼ desceu');
+  assert.equal(gadCard.count, 3, 'anulada fica de fora');
+  assert.equal(gadCard.first, '28/09/2026');
+  assert.deepEqual(gadCard.reapplied, ['05/10/2026', '12/10/2026']);
+  assert.equal(gadCard.source, 'Consultório');
+  assert.deepEqual(gadCard.spark.values, [14, 12, 9]);
+  assert.equal(sparkPoints(gadCard.spark).split(' ').length, 3);
+  assert.equal(sparkPoints({ values: [5], min: 0, max: 21 }), '', 'uma aplicação só não tem linha');
+  assert.equal(gadCard.reapplyFrom, '26/10/2026', 'GAD-7 reaplica em 14 dias');
+  assert.equal(rosenberg.noBands, true, 'Rosenberg sem faixa inventada');
+  assert.equal(rosenberg.reapplyFrom === '' || /\d{2}\/\d{2}\/\d{4}/.test(rosenberg.reapplyFrom), true);
+
+  const [dass] = scaleCards([{
+    id: 'd1',
+    instrumentId: 'dass21',
+    instrumentVersion: 1,
+    appliedAt: '2026-10-10T15:00:00Z',
+    source: 'consultorio',
+    result: {
+      subscales: [
+        { id: 'depressao', score: 14, bandLabel: 'Moderada' },
+        { id: 'ansiedade', score: 8, bandLabel: 'Leve' },
+        { id: 'estresse', score: 12, bandLabel: 'Normal' },
+      ],
+    },
+    voidedAt: null,
+  }], now);
+  assert.equal(dass.total, null, 'DASS-21 não tem total');
+  assert.equal(dass.parts.length, 3, 'uma nota por subescala');
+  assert.equal(dass.spark, null, 'sem linha de uma subescala com cara de total');
+});
+
+test('aba Evoluções: da mais nova para a mais antiga, com os rótulos do formulário', async () => {
+  const { evolutionEntries } = await load('src/utils/beforeSession.js');
+  const entries = evolutionEntries([
+    {
+      id: 'e1',
+      attendance_status: 'attended',
+      atendimento_em: '2026-10-06T15:00:00Z',
+      conteudo: JSON.stringify({ temas: 'Sono irregular', intervencoes: '', proximosPassos: 'Reaplicar o K10' }),
+    },
+    {
+      id: 'e2',
+      attendance_status: 'no_show',
+      atendimento_em: '2026-10-13T15:00:00Z',
+      conteudo: JSON.stringify({ observacao: 'Avisou pelo WhatsApp' }),
+    },
+  ]);
+  assert.deepEqual(entries.map(entry => entry.id), ['e2', 'e1']);
+  assert.equal(entries[0].absent, true);
+  assert.equal(entries[0].status, 'Não compareceu');
+  assert.equal(entries[0].note, 'Avisou pelo WhatsApp', 'falta mostra a observação');
+  assert.deepEqual(
+    entries[1].fields.map(field => field.label),
+    ['Temas trabalhados na sessão', 'Próximos passos'],
+    'campo vazio não aparece',
+  );
+});
+
+test('minutos do mês: quanto foi, quanto falta e o aviso perto do fim', async () => {
+  const { usageSummary, formatMinutes, USAGE_WARNING_SHARE } = await load('src/utils/onlineConsultation.js');
+  const base = { freeMinutes: 10_000, consultMinutes: 100, periodStart: '2026-10-01T00:00:00.000Z' };
+  const low = usageSummary({ ...base, participantMinutes: 1240 });
+  assert.equal(low.used, 1240);
+  assert.equal(low.left, 8760);
+  assert.equal(low.percent, 12);
+  assert.equal(low.consultsUsed, 12);
+  assert.equal(low.consultsLeft, 87);
+  assert.equal(low.since, '01/10/2026');
+  assert.equal(low.near, false);
+  assert.equal(low.over, false);
+  assert.equal(formatMinutes(1240), '1.240 min');
+
+  assert.equal(USAGE_WARNING_SHARE, 0.8);
+  assert.equal(usageSummary({ ...base, participantMinutes: 8000 }).near, true, 'aviso a partir de 80%');
+  const over = usageSummary({ ...base, participantMinutes: 10_500 });
+  assert.equal(over.over, true);
+  assert.equal(over.near, false);
+  assert.equal(over.percent, 100, 'a barra não passa do fim');
+  assert.equal(over.left, 0);
+  assert.equal(over.consultsLeft, 0);
+  assert.equal(usageSummary(null), null);
+  assert.equal(usageSummary({ participantMinutes: 'x' }), null);
+});
+
+test('minutos do mês: contados no servidor, página a página, com quem ainda está na chamada', async () => {
+  const { monthUsage } = await loadRepo('supabase/functions/_shared/dailyRooms.ts');
+  const now = Date.UTC(2026, 9, 21, 15, 0, 0);
+  const calls = [];
+  const pages = [
+    Array.from({ length: 100 }, (_, index) => ({
+      id: `m${index}`,
+      ongoing: false,
+      participants: [{ duration: 3000, join_time: 1 }, { duration: 61, join_time: 1 }],
+    })),
+    [{ id: 'live', ongoing: true, participants: [{ duration: null, join_time: now / 1000 - 600 }] }],
+  ];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async url => {
+    calls.push(String(url));
+    const data = pages[calls.length - 1] || [];
+    return { status: 200, json: async () => ({ total_count: 101, data }) };
+  };
+  try {
+    const usage = await monthUsage({ apiKey: 'teste' }, now);
+    assert.equal(usage.meetings, 101);
+    assert.equal(usage.participantMinutes, 100 * (50 + 2) + 10, 'minuto começado conta inteiro; quem está na chamada conta até agora');
+    assert.equal(usage.ongoing, true);
+    assert.equal(usage.periodStart, Date.UTC(2026, 9, 1));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  assert.equal(calls.length, 2);
+  assert.match(calls[0], /\/meetings\?timeframe_start=\d+&timeframe_end=\d+&limit=100$/);
+  assert.match(calls[1], /starting_after=m99/, 'segunda página a partir da última chamada');
+});
+
+test('Edge Function: minutos do mês só para quem atende, sem dado de paciente', async () => {
+  const source = await readRepo('supabase/functions/online-consultation/index.ts');
+  const staff = source.match(/async function handleProfessional[\s\S]*?\r?\n}\r?\n/)?.[0] || '';
+  const usageAt = staff.indexOf("action === 'staff_usage'");
+  assert.ok(usageAt > 0, 'staff_usage');
+  assert.ok(staff.indexOf('appointment.professional_id !== caller.user.id') < usageAt, 'só depois de conferir que o atendimento é dela');
+  const usageBlock = staff.slice(usageAt).split(/\r?\n  }\r?\n/)[0];
+  assert.match(usageBlock, /monthUsage\(config\)/);
+  assert.doesNotMatch(usageBlock, /patient|paciente/i);
+  assert.match(source, /action === 'staff_open' \|\| action === 'staff_join' \|\| action === 'staff_usage'/);
+
+  const room = await read('src/components/online/OnlineRoomPage.jsx');
+  assert.match(room, /role="meter"/);
+  assert.match(room, /const USAGE_REFRESH_MS = 5 \* 60_000/);
+  assert.match(room, /a fatura do Daily é a referência/);
 });
 
 // ---------- ponte entre abas ----------

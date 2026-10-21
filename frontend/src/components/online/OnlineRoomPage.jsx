@@ -7,7 +7,9 @@ import { SALA_ONLINE_HELP } from '../../data/screenHelp';
 import { getDiscipline } from '../../data/disciplines';
 import {
   loadBeforeSession,
+  loadDailyUsage,
   loadPatientLinkInfo,
+  loadSessionEvolutions,
   joinOnlineRoom,
   openOnlineRoom,
 } from '../../services/onlineConsultationService';
@@ -16,32 +18,37 @@ import { shortName } from '../../services/clinicMembersService';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../utils/whatsapp';
 import { requestAppScreen } from '../../utils/appNavigationBridge';
 import { formatInstrumentDate } from '../instruments/instrumentFormat';
+import { sparkPoints } from '../../utils/beforeSession';
 import {
+  consentRows,
   formatClock,
+  formatMinutes,
   onlineConsultationHref,
   ONLINE_ROOM_WINDOWS,
-  recordingConsentLabel,
-  teleconsentLabel,
+  usageSummary,
 } from '../../utils/onlineConsultation';
 import '../../styles/onlineRoom.css';
 
 // ============================================================
 // Sala online de quem atende (/sala-online?agendamento=…), prévia C
-// escolhida em 20/10/2026: "Antes da sessão" à esquerda, o vídeo no
-// meio e, à direita, gravação, link do paciente e "Ao encerrar". No
-// celular e no tablet, uma coluna: vídeo, "Antes da sessão" e o resto.
+// escolhida em 20/10/2026 e abas da prévia A de 21/10/2026: consulta
+// rápida à esquerda (Resumo, Escalas e Evoluções, abertas ali mesmo), o
+// vídeo no meio e, à direita, gravação, link do paciente, "Ao encerrar"
+// e os minutos do mês no Daily. No celular e no tablet, uma coluna:
+// vídeo, consulta rápida e o resto.
 //
 // Abre em aba própria (só aqui o navegador libera câmera e microfone).
-// A evolução continua só na tela Evoluções: daqui, "Ir para Evoluções"
-// abre a tela na aba do sistema (utils/appNavigationBridge.js).
-// Quem entra é decidido pela Edge Function online-consultation.
+// A evolução continua só na tela Evoluções: aqui ela é só leitura, e
+// "Escrever a evolução" abre a tela na aba do sistema
+// (utils/appNavigationBridge.js). Quem entra é decidido pela Edge
+// Function online-consultation.
 // ============================================================
 
 function appointmentIdFromUrl() {
   return new URLSearchParams(window.location.search).get('agendamento') || '';
 }
 
-function Icon({ name }) {
+function Icon({ name, size = 19 }) {
   const paths = {
     mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
     micOff: <><path d="m3 3 18 18" /><path d="M9 9v2a3 3 0 0 0 5 2.2M15 9.3V6a3 3 0 0 0-5.7-1.3" /><path d="M5 11a7 7 0 0 0 11.3 5.5M19 11a7 7 0 0 1-.6 2.7M12 18v3" /></>,
@@ -51,9 +58,13 @@ function Icon({ name }) {
     expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
     collapse: <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />,
     video: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" /></>,
+    link: <><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></>,
+    flag: <path d="M5 21V4M5 4h11l-2 4 2 4H5" />,
+    gauge: <><path d="M4 18a8 8 0 1 1 16 0" /><path d="m12 18 4-6" /></>,
+    check: <path d="M20 6 9 17l-5-5" />,
   };
   return (
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={name === 'check' ? 3.2 : 2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {paths[name]}
     </svg>
   );
@@ -87,17 +98,14 @@ function TrackAudio({ track }) {
 }
 
 // ---------------------------------------------------------------
-// Antes da sessão
+// Consulta rápida (esquerda): Resumo, Escalas e Evoluções
 // ---------------------------------------------------------------
 
-function BeforeSession({ data, patient, openScreen }) {
-  const openScales = () => openScreen({ screen: 'escalas', patientId: patient.id, patientName: patient.name });
-  const openEvolutions = () => openScreen({ screen: 'evolucao' });
+const PANEL_TABS = ['resumo', 'escalas', 'evolucoes'];
 
+function SummaryTab({ data, onTab, openScales }) {
   return (
-    <aside className="osr-before" aria-labelledby="osr-before-title">
-      <h2 id="osr-before-title">Antes da sessão</h2>
-
+    <>
       <div className="osr-block">
         <span className="osr-label">Última evolução</span>
         {!data ? (
@@ -125,7 +133,7 @@ function BeforeSession({ data, patient, openScreen }) {
           <ul className="osr-scales">
             {data.scales.rows.map(row => (
               <li key={row.id}>
-                <button type="button" className="osr-scale" onClick={openScales} title={row.trendLabel || undefined}>
+                <button type="button" className="osr-scale" onClick={() => onTab('escalas')} title={row.trendLabel || undefined}>
                   <span className="osr-scale-name"><b>{row.name}</b><small>{row.when}</small></span>
                   <span className="osr-scale-score">
                     <b>{row.score}{row.bandLabel ? ` · ${row.bandLabel}` : ''}</b>
@@ -150,7 +158,7 @@ function BeforeSession({ data, patient, openScreen }) {
           <ul className="osr-attention">
             {data.attention.rows.map(row => (
               <li key={row.id}>
-                <button type="button" className="osr-attention-item" onClick={openScales}>
+                <button type="button" className="osr-attention-item" onClick={openScales} title="Abre a tela Escalas na aba do sistema">
                   <span className="osr-dot osr-dot--risk" aria-hidden="true" />
                   {row.label}
                 </button>
@@ -161,10 +169,188 @@ function BeforeSession({ data, patient, openScreen }) {
       </div>
 
       <div className="osr-shortcuts">
-        <button type="button" className="osr-shortcut" onClick={openScales}>Ver escalas<span aria-hidden="true">→</span></button>
-        <button type="button" className="osr-shortcut" onClick={openEvolutions}>Evoluções anteriores<span aria-hidden="true">→</span></button>
+        <button type="button" className="osr-shortcut" onClick={() => onTab('escalas')}>Ver escalas<span aria-hidden="true">→</span></button>
+        <button type="button" className="osr-shortcut" onClick={() => onTab('evolucoes')}>Evoluções anteriores<span aria-hidden="true">→</span></button>
       </div>
-      <p className="osr-hint">Os atalhos abrem a tela na aba do sistema.</p>
+    </>
+  );
+}
+
+function ReappliedDates({ card }) {
+  if (!card.reapplied.length) return null;
+  return (
+    <>
+      {' · Reaplicada em '}
+      {card.reapplied.map((date, index) => (
+        <span key={`${date}-${index}`}>{index > 0 ? ', ' : ''}<b>{date}</b></span>
+      ))}
+      {card.hiddenReapplied > 0 ? ` (+${card.hiddenReapplied} antes)` : ''}
+    </>
+  );
+}
+
+function ScalesTab({ data }) {
+  if (!data) return <p className="osr-muted">Carregando…</p>;
+  if (data.scales.error) return <p className="osr-muted">— Não deu para carregar as escalas.</p>;
+  if (!data.scales.cards.length) return <p className="osr-muted">Nenhuma escala aplicada ainda.</p>;
+  return (
+    <ul className="osr-scale-cards">
+      {data.scales.cards.map((card, index) => {
+        const points = sparkPoints(card.spark);
+        return (
+          <li key={card.id}>
+            <article className={`osr-scale-card${index === 0 ? ' is-latest' : ''}`}>
+              <div className="osr-scale-card-head">
+                <b className="osr-scale-card-name">{card.name}</b>
+                {card.total && (
+                  <span className="osr-scale-card-score">
+                    <b>{card.total.text}</b>
+                    {card.total.bandLabel && <span className="osr-band">{card.total.bandLabel}</span>}
+                    {card.trend && <small title={card.trendLabel || undefined}>{card.trend}</small>}
+                  </span>
+                )}
+              </div>
+              {card.parts.length > 0 && (
+                <ul className="osr-scale-parts">
+                  {card.parts.map(part => (
+                    <li key={part.id}>
+                      <span>{part.label}</span>
+                      <b>{part.text}</b>
+                      {part.bandLabel && <span className="osr-band">{part.bandLabel}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {points && (
+                <svg className="osr-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline points={points} vectorEffect="non-scaling-stroke" />
+                </svg>
+              )}
+              <ul className="osr-scale-meta">
+                <li>Aplicada em <b>{card.first}</b><ReappliedDates card={card} /></li>
+                <li>{card.count === 1 ? '1 aplicação' : `${card.count} aplicações`}{card.source ? ` · ${card.source}` : ''}</li>
+                {card.noBands && <li className="osr-scale-meta-note">Sem faixas clínicas: compare com as aplicações anteriores.</li>}
+                <li className={card.reapplyFrom ? '' : 'is-ready'}>
+                  {card.reapplyFrom ? <>Reaplicar a partir de <b>{card.reapplyFrom}</b></> : 'Já pode reaplicar'}
+                </li>
+              </ul>
+            </article>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function EvolutionsTab({ evolutions }) {
+  // null = a mais nova aberta; '' = todas fechadas.
+  const [openId, setOpenId] = useState(null);
+  if (!evolutions) return <p className="osr-muted">Carregando…</p>;
+  if (evolutions.error) return <p className="osr-muted">— Não deu para carregar as evoluções aqui. Veja na tela Evoluções.</p>;
+  if (!evolutions.rows.length) return <p className="osr-muted">Nenhuma evolução registrada ainda.</p>;
+  const current = openId ?? evolutions.rows[0].id;
+  return (
+    <>
+      <ul className="osr-evolutions">
+        {evolutions.rows.map(entry => {
+          const open = entry.id === current;
+          const fields = entry.absent
+            ? [{ key: 'observacao', label: 'Observação', value: entry.note || 'Sem observação.' }]
+            : entry.fields;
+          return (
+            <li key={entry.id}>
+              <article className={`osr-evolution${open ? ' is-open' : ''}`}>
+                <button
+                  type="button"
+                  className="osr-evolution-head"
+                  aria-expanded={open}
+                  onClick={() => setOpenId(open ? '' : entry.id)}
+                >
+                  <span className="osr-evolution-title"><b>{entry.date}</b><small>{entry.status}</small></span>
+                  <span className="osr-chevron" aria-hidden="true">›</span>
+                </button>
+                {open && (fields.length ? (
+                  <dl className="osr-evolution-body">
+                    {fields.map(field => (
+                      <div key={field.key}>
+                        <dt>{field.label}</dt>
+                        <dd>{field.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="osr-muted osr-evolution-body">Sem texto registrado.</p>
+                ))}
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="osr-hint">Só leitura. Corrigir e escrever continuam na tela Evoluções.</p>
+    </>
+  );
+}
+
+function QuickPanel({ data, evolutions, patient, openScreen }) {
+  const [tab, setTab] = useState('resumo');
+  const tabRefs = useRef({});
+  const openScales = () => openScreen({ screen: 'escalas', patientId: patient.id, patientName: patient.name });
+  const openEvolutions = () => openScreen({ screen: 'evolucao' });
+
+  const scaleCount = data && !data.scales.error ? data.scales.cards.length : 0;
+  const evolutionCount = evolutions && !evolutions.error ? evolutions.rows.length : 0;
+  const labels = {
+    resumo: 'Resumo',
+    escalas: scaleCount ? `Escalas · ${scaleCount}` : 'Escalas',
+    evolucoes: evolutionCount ? `Evoluções · ${evolutionCount}` : 'Evoluções',
+  };
+
+  function onTabKey(event) {
+    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const next = PANEL_TABS[(PANEL_TABS.indexOf(tab) + step + PANEL_TABS.length) % PANEL_TABS.length];
+    setTab(next);
+    tabRefs.current[next]?.focus();
+  }
+
+  return (
+    <aside className="osr-before" aria-label="Consulta rápida">
+      <div className="osr-tabs" role="tablist" aria-label="O que ver" onKeyDown={onTabKey}>
+        {PANEL_TABS.map(id => (
+          <button
+            key={id}
+            ref={element => { tabRefs.current[id] = element; }}
+            type="button"
+            role="tab"
+            id={`osr-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`osr-panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
+            className={`osr-tab${tab === id ? ' is-active' : ''}`}
+            onClick={() => setTab(id)}
+          >
+            {labels[id]}
+          </button>
+        ))}
+      </div>
+
+      <div className="osr-panel" role="tabpanel" id={`osr-panel-${tab}`} aria-labelledby={`osr-tab-${tab}`}>
+        {tab === 'resumo' && <SummaryTab data={data} onTab={setTab} openScales={openScales} />}
+        {tab === 'escalas' && <ScalesTab data={data} />}
+        {tab === 'evolucoes' && <EvolutionsTab evolutions={evolutions} />}
+      </div>
+
+      {tab === 'escalas' && (
+        <button type="button" className="osr-shortcut osr-panel-foot" onClick={openScales} title="Abre na aba do sistema">
+          Abrir a tela Escalas, com o gráfico<span aria-hidden="true">→</span>
+        </button>
+      )}
+      {tab === 'evolucoes' && (
+        <button type="button" className="osr-shortcut osr-panel-foot" onClick={openEvolutions} title="Abre na aba do sistema">
+          Abrir a tela Evoluções<span aria-hidden="true">→</span>
+        </button>
+      )}
     </aside>
   );
 }
@@ -297,29 +483,42 @@ function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }
 // Coluna da direita
 // ---------------------------------------------------------------
 
+function CardHead({ id, icon, title, chip = null }) {
+  return (
+    <div className="osr-card-head">
+      <span className="osr-card-icon"><Icon name={icon} size={18} /></span>
+      <h2 id={id}>{title}</h2>
+      {chip && <span className="osr-chip">{chip}</span>}
+    </div>
+  );
+}
+
 function RecordingCard({ info }) {
   return (
     <section className="osr-card" aria-labelledby="osr-rec-title">
-      <div className="osr-card-head">
-        <h2 id="osr-rec-title">Gravação</h2>
-        <span className="osr-chip">Em breve</span>
-      </div>
-      <p className="osr-line">{teleconsentLabel(info.consents?.teleatendimento, info.needsConsent)}</p>
-      <p className="osr-line">{recordingConsentLabel(info.consents?.gravacao_sessao)}</p>
-      <p className="osr-muted">A gravação com transcrição chega na próxima etapa. Por enquanto, nada desta sala é gravado.</p>
+      <CardHead id="osr-rec-title" icon="mic" title="Gravação" chip="Em breve" />
+      <ul className="osr-checks">
+        {consentRows(info.consents, info.needsConsent).map(row => (
+          <li key={row.key} className={row.ok ? 'is-ok' : ''}>
+            <span className="osr-check" aria-hidden="true">{row.ok && <Icon name="check" size={12} />}</span>
+            <span><b>{row.title}</b> · {row.detail}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="osr-note">A gravação com transcrição chega na próxima etapa. Por enquanto, nada desta sala é gravado.</p>
     </section>
   );
 }
 
 function PatientLinkCard({ appointmentId, info, professionalName }) {
-  const [link, setLink] = useState({ token: '', phone: '' });
+  const [link, setLink] = useState({ token: '', phone: '', loaded: false, failed: false });
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     loadPatientLinkInfo(appointmentId, info.patient.id)
-      .then(result => { if (!cancelled) setLink(result); })
-      .catch(() => {});
+      .then(result => { if (!cancelled) setLink({ ...result, loaded: true, failed: false }); })
+      .catch(() => { if (!cancelled) setLink({ token: '', phone: '', loaded: true, failed: true }); });
     return () => { cancelled = true; };
   }, [appointmentId, info.patient.id]);
 
@@ -329,6 +528,9 @@ function PatientLinkCard({ appointmentId, info, professionalName }) {
     ? `Olá, ${firstName}! Sua consulta online com ${professionalName} é às ${formatClock(info.startsAt)}. Entre por aqui: ${href}`
     : '';
   const whatsapp = href && isLikelyValidWhatsAppPhone(link.phone) ? buildWhatsAppLink({ phone: link.phone, message }) : '';
+  const linkText = href
+    ? href.replace(/^https?:\/\//, '')
+    : !link.loaded ? 'Carregando o link…' : link.failed ? 'Não deu para carregar o link.' : 'Este atendimento ainda não tem link.';
 
   async function copy() {
     if (!href) return;
@@ -343,16 +545,17 @@ function PatientLinkCard({ appointmentId, info, professionalName }) {
 
   return (
     <section className="osr-card" aria-labelledby="osr-link-title">
-      <h2 id="osr-link-title">Link do paciente</h2>
-      <p className="osr-muted">É o mesmo link da confirmação: no horário, ele leva para a sala.</p>
-      <div className="osr-row">
+      <CardHead id="osr-link-title" icon="link" title="Link do paciente" />
+      <p className="osr-link-box" title={href || undefined}>{linkText}</p>
+      <div className="osr-pair">
         <button type="button" className="osr-btn" onClick={copy} disabled={!href}>{copied ? 'Link copiado' : 'Copiar link'}</button>
         {whatsapp ? (
-          <a className="osr-btn" href={whatsapp} target="_blank" rel="noopener noreferrer">Enviar no WhatsApp</a>
+          <a className="osr-btn osr-btn--whatsapp" href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Enviar no WhatsApp">WhatsApp</a>
         ) : (
-          <button type="button" className="osr-btn" disabled title="Cadastro sem telefone válido">Enviar no WhatsApp</button>
+          <button type="button" className="osr-btn osr-btn--whatsapp" disabled title="Cadastro sem telefone válido" aria-label="Enviar no WhatsApp">WhatsApp</button>
         )}
       </div>
+      <p className="osr-note">É o mesmo link da confirmação: no horário, ele leva para a sala.</p>
     </section>
   );
 }
@@ -377,15 +580,104 @@ function FinishCard({ appointmentId, status, onStatus, openScreen }) {
 
   return (
     <section className="osr-card" aria-labelledby="osr-finish-title">
-      <h2 id="osr-finish-title">Ao encerrar</h2>
-      <p className="osr-muted">Marque o status e escreva a evolução na tela Evoluções.</p>
+      <CardHead id="osr-finish-title" icon="flag" title="Ao encerrar" />
       {error && <p className="osr-warn" role="alert">{error}</p>}
-      <div className="osr-row">
-        <button type="button" className="osr-btn osr-btn--accent" onClick={markAttended} disabled={attended || saving} aria-busy={saving}>
-          {attended ? 'Atendido ✓' : saving ? 'Marcando…' : 'Marcar como Atendido'}
-        </button>
-        <button type="button" className="osr-link" onClick={() => openScreen({ screen: 'evolucao' })}>
-          Ir para Evoluções →
+      <button type="button" className="osr-btn osr-btn--primary" onClick={markAttended} disabled={attended || saving} aria-busy={saving}>
+        {attended ? 'Atendido ✓' : saving ? 'Marcando…' : 'Marcar como Atendido'}
+      </button>
+      <button type="button" className="osr-btn" onClick={() => openScreen({ screen: 'evolucao' })} title="Abre a tela Evoluções na aba do sistema">
+        Escrever a evolução →
+      </button>
+    </section>
+  );
+}
+
+// Minutos do mês no Daily (pedido de 21/10/2026): como um contador de uso,
+// para ninguém ser pego de surpresa quando os minutos grátis acabarem.
+// Atualiza ao abrir, a cada 5 minutos e logo depois de sair da chamada.
+const USAGE_REFRESH_MS = 5 * 60_000;
+const USAGE_AFTER_LEAVE_MS = 5_000;
+
+function UsageCard({ appointmentId, callPhase }) {
+  const [usage, setUsage] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await loadDailyUsage(appointmentId);
+      setUsage({ data, at: Date.now(), failed: false });
+    } catch {
+      setUsage(previous => ({ ...(previous || {}), failed: true }));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [appointmentId]);
+
+  useEffect(() => {
+    const first = setTimeout(refresh, 0);
+    const timer = setInterval(refresh, USAGE_REFRESH_MS);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [refresh]);
+
+  // O Daily fecha a conta da chamada logo depois que a pessoa sai.
+  useEffect(() => {
+    if (callPhase !== 'left') return undefined;
+    const timer = setTimeout(refresh, USAGE_AFTER_LEAVE_MS);
+    return () => clearTimeout(timer);
+  }, [callPhase, refresh]);
+
+  const summary = usageSummary(usage?.data);
+  const consults = count => (count === 1 ? '1 consulta' : `${count} consultas`);
+
+  return (
+    <section className="osr-card osr-usage" aria-labelledby="osr-usage-title">
+      <CardHead id="osr-usage-title" icon="gauge" title="Minutos do mês" chip={summary ? `${summary.percent}%` : null} />
+      {!usage ? (
+        <p className="osr-muted">Carregando…</p>
+      ) : !summary ? (
+        <p className="osr-muted">— Não deu para ler o uso agora.</p>
+      ) : (
+        <>
+          <p className="osr-usage-numbers">
+            <b>{formatMinutes(summary.used)}</b> de {formatMinutes(summary.free)} grátis
+          </p>
+          <div
+            className="osr-meter"
+            role="meter"
+            aria-label="Minutos grátis usados no mês"
+            aria-valuemin={0}
+            aria-valuemax={summary.free}
+            aria-valuenow={Math.min(summary.used, summary.free)}
+            aria-valuetext={`${summary.percent}% dos minutos grátis usados`}
+          >
+            <span className={`osr-meter-fill${summary.near || summary.over ? ' is-near' : ''}`} style={{ width: `${summary.percent}%` }} />
+          </div>
+          <p className="osr-line">
+            ≈ {consults(summary.consultsUsed)} de 50 min
+            {summary.over ? ' · acabaram os minutos grátis' : ` · cabem mais ~${summary.consultsLeft} grátis`}
+          </p>
+          {summary.over ? (
+            <p className="osr-warn" role="status">
+              Os minutos grátis do mês acabaram: o Daily cobra cerca de US$ 0,004 por minuto de cada pessoa na chamada.
+            </p>
+          ) : summary.near ? (
+            <p className="osr-warn" role="status">Perto do fim dos minutos grátis do mês.</p>
+          ) : null}
+          <p className="osr-note">
+            Cada pessoa na chamada conta: 50 min a dois são 100 min. Conta feita pelas chamadas desde {summary.since};
+            a fatura do Daily é a referência.
+          </p>
+          {usage.failed && <p className="osr-note">Não deu para atualizar agora; os números são das {formatClock(usage.at)}.</p>}
+        </>
+      )}
+      <div className="osr-usage-foot">
+        <small>{usage?.at ? `Atualizado às ${formatClock(usage.at)}` : ''}</small>
+        <button type="button" className="osr-mini" onClick={refresh} disabled={refreshing} aria-busy={refreshing}>
+          {refreshing ? 'Atualizando…' : 'Atualizar'}
         </button>
       </div>
     </section>
@@ -400,6 +692,7 @@ function OnlineRoom({ appointmentId, profile }) {
   const [info, setInfo] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [before, setBefore] = useState(null);
+  const [evolutions, setEvolutions] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [joining, setJoining] = useState(false);
   const [navNote, setNavNote] = useState('');
@@ -428,6 +721,10 @@ function OnlineRoom({ appointmentId, profile }) {
     let cancelled = false;
     loadBeforeSession({ patientId: info.patient.id, professionalId: profile.id })
       .then(data => { if (!cancelled) setBefore(data); });
+    // O texto das evoluções só aparece quando a aba Evoluções abre.
+    loadSessionEvolutions({ patientId: info.patient.id })
+      .then(rows => { if (!cancelled) setEvolutions({ rows }); })
+      .catch(() => { if (!cancelled) setEvolutions({ error: true }); });
     return () => { cancelled = true; };
   }, [info?.patient?.id, profile?.id]);
 
@@ -519,7 +816,7 @@ function OnlineRoom({ appointmentId, profile }) {
           onJoin={handleJoin}
           joining={joining || call.phase === 'joining'}
         />
-        <BeforeSession data={before} patient={info.patient} openScreen={openScreen} />
+        <QuickPanel data={before} evolutions={evolutions} patient={info.patient} openScreen={openScreen} />
         <div className="osr-side">
           <RecordingCard info={info} />
           <PatientLinkCard appointmentId={appointmentId} info={info} professionalName={professionalName} />
@@ -529,6 +826,7 @@ function OnlineRoom({ appointmentId, profile }) {
             onStatus={status => setInfo(previous => ({ ...previous, status }))}
             openScreen={openScreen}
           />
+          <UsageCard appointmentId={appointmentId} callPhase={call.phase} />
         </div>
       </div>
     </div>

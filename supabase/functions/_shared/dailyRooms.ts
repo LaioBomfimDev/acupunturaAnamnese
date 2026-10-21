@@ -91,6 +91,52 @@ export async function ensureRoom(config: DailyConfig, name: string, expiresAtMs:
   return String(created.body.url);
 }
 
+/**
+ * Uso do mês na conta do Daily, em participante-minuto (é assim que ele
+ * cobra): soma o tempo de cada pessoa em cada chamada desde o dia 1º (UTC).
+ * Conta feita aqui, a partir da lista de chamadas; a fatura do Daily é a
+ * referência final.
+ */
+export async function monthUsage(config: DailyConfig, now = Date.now()) {
+  const today = new Date(now);
+  const periodStart = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1);
+  const MAX_PAGES = 10;
+  const PAGE_SIZE = 100;
+  let participantMinutes = 0;
+  let meetings = 0;
+  let ongoing = false;
+  let cursor = '';
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const query = new URLSearchParams({
+      timeframe_start: String(Math.floor(periodStart / 1000)),
+      timeframe_end: String(Math.ceil(now / 1000)),
+      limit: String(PAGE_SIZE),
+    });
+    if (cursor) query.set('starting_after', cursor);
+    const result = await dailyFetch(config, `/meetings?${query}`);
+    if (result.status !== 200 || !Array.isArray(result.body?.data)) throw new Error('daily_usage_failed');
+    const list = result.body.data;
+    for (const meeting of list) {
+      meetings += 1;
+      if (meeting?.ongoing) ongoing = true;
+      for (const participant of meeting?.participants || []) {
+        // Quem ainda está na chamada não tem duração fechada: conta da
+        // entrada até agora.
+        const joinedAt = Number(participant?.join_time) || 0;
+        const seconds = Number(participant?.duration)
+          || (meeting?.ongoing && joinedAt > 0 ? Math.max(0, now / 1000 - joinedAt) : 0);
+        if (seconds > 0) participantMinutes += Math.ceil(seconds / 60);
+      }
+    }
+    if (list.length < PAGE_SIZE) break;
+    cursor = String(list[list.length - 1]?.id || '');
+    if (!cursor) break;
+  }
+
+  return { participantMinutes, meetings, ongoing, periodStart };
+}
+
 /** Convite para entrar na sala, que vale só dentro da janela do atendimento. */
 export async function createMeetingToken(config: DailyConfig, options: {
   roomName: string;

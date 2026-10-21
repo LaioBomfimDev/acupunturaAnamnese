@@ -316,17 +316,19 @@ export const EVOLUCOES_HELP = {
 /** Sala online de quem atende (components/online/OnlineRoomPage.jsx). */
 export const SALA_ONLINE_HELP = {
   title: 'Sala online',
-  summary: 'A consulta por vídeo de um atendimento online da Psicologia, com o que mudou desde a última evolução ao lado.',
+  summary: 'A consulta por vídeo de um atendimento online da Psicologia, com as escalas e as evoluções do paciente ao lado para consulta rápida.',
   actions: [
-    '“Entrar na sala” liga a câmera e o microfone e abre a chamada. Os botões embaixo do vídeo ligam e desligam o microfone, a câmera e o compartilhamento de tela.',
-    '“Antes da sessão”: a data da sua última evolução com este paciente, as escalas respondidas desde então e os alertas de risco ainda não vistos. “Ver escalas” e “Evoluções anteriores” abrem a tela na aba do sistema.',
+    '“Entrar na sala” liga a câmera e o microfone e abre a chamada. Os botões embaixo do vídeo ligam e desligam o microfone, a câmera e o compartilhamento de tela; o último põe o vídeo em tela cheia, e Esc ou o mesmo botão volta para a sala.',
+    'À esquerda, três abas: “Resumo” (sua última evolução, as escalas desde então e o que pede atenção), “Escalas” (cada escala com a nota, a faixa, a linha pequena e as datas) e “Evoluções” (as evoluções deste paciente, só para ler). Abrem ali mesmo, sem sair da chamada.',
+    '“Abrir a tela Escalas” e “Abrir a tela Evoluções”, no pé das abas, abrem a tela na aba do sistema.',
     '“Link do paciente”: copiar ou mandar no WhatsApp o link pessoal do paciente. É o mesmo da confirmação.',
-    '“Encerrar consulta” sai da chamada. Depois, “Marcar como Atendido” e “Ir para Evoluções” para escrever a evolução.',
+    '“Encerrar consulta” sai da chamada. Depois, “Marcar como Atendido” e “Escrever a evolução”, que abre a tela Evoluções.',
   ],
   reading: [
-    'Em “Escalas desde então”, cada linha traz a nota, a faixa e se subiu (▲) ou desceu (▼) desde a aplicação anterior.',
+    'Nas escalas, ▲ subiu e ▼ desceu desde a aplicação anterior: só a direção, porque subir não é piorar em toda escala.',
     'Bolinha vermelha em “Pede atenção” é risco de escala que ainda ninguém marcou como visto.',
-    '“Gravação” mostra se o paciente aceitou o termo do atendimento online e se autorizou gravar.',
+    '“Gravação” mostra, com um visto, se o paciente aceitou o termo do atendimento online e se autorizou gravar.',
+    '“Minutos do mês” conta o uso do Daily no mês: cada pessoa na chamada conta, então 50 minutos a dois são 100. A barra mostra quanto dos 10.000 minutos grátis já foi, e o aviso aparece perto do fim. A fatura do Daily é a referência.',
   ],
   access: [
     'Só quem atende este horário entra na sala. O paciente entra pelo link dele, depois de aceitar o termo do atendimento online.',
@@ -334,6 +336,7 @@ export const SALA_ONLINE_HELP = {
   ],
   notes: [
     'A sala abre 30 minutos antes do horário para você e 15 minutos antes para o paciente.',
+    'Evolução aqui é só leitura: escrever e corrigir continuam na tela Evoluções.',
     'Nada desta sala é gravado por enquanto. A gravação com transcrição chega numa próxima etapa e depende da autorização do paciente.',
     'A sala abre numa aba própria: é só nela que o navegador libera câmera e microfone.',
   ],

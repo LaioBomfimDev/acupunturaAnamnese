@@ -9,7 +9,8 @@
 import { supabase } from '../lib/supabase';
 import { callOnlineConsultation } from './onlineConsultationPublic';
 import { listInstrumentApplications, listMyInstrumentRiskAlerts } from './patientInstrumentService';
-import { riskAttention, summarizeScalesSince } from '../utils/beforeSession';
+import { listPatientEvolutions } from './patientEvolutionService';
+import { evolutionEntries, riskAttention, scaleCards, summarizeScalesSince } from '../utils/beforeSession';
 
 export function openOnlineRoom(appointmentId) {
   return callOnlineConsultation({ action: 'staff_open', appointmentId });
@@ -17,6 +18,11 @@ export function openOnlineRoom(appointmentId) {
 
 export function joinOnlineRoom(appointmentId) {
   return callOnlineConsultation({ action: 'staff_join', appointmentId });
+}
+
+/** Uso do mês na conta do Daily (participante-minuto). */
+export function loadDailyUsage(appointmentId) {
+  return callOnlineConsultation({ action: 'staff_usage', appointmentId });
 }
 
 /** Link pessoal do paciente (o mesmo da confirmação) e o telefone para o WhatsApp. */
@@ -32,9 +38,9 @@ export async function loadPatientLinkInfo(appointmentId, patientId) {
 }
 
 /**
- * "Antes da sessão": a própria evolução mais nova deste paciente na
- * Psicologia, as escalas respondidas desde ela e os alertas de risco
- * ainda não vistos. Cada parte falha sozinha (o quadro mostra traço).
+ * Resumo e aba Escalas: a própria evolução mais nova deste paciente na
+ * Psicologia (só a data), as escalas e os alertas de risco ainda não
+ * vistos. Cada parte falha sozinha (o quadro mostra traço).
  */
 export async function loadBeforeSession({ patientId, professionalId, discipline = 'psicologia' }) {
   const [evolution, applications, alerts] = await Promise.allSettled([
@@ -57,10 +63,19 @@ export async function loadBeforeSession({ patientId, professionalId, discipline 
   return {
     lastEvolution: evolutionOk ? { at: lastEvolutionAt } : { error: true },
     scales: applications.status === 'fulfilled'
-      ? { rows: summarizeScalesSince(applications.value, lastEvolutionAt) }
+      ? { rows: summarizeScalesSince(applications.value, lastEvolutionAt), cards: scaleCards(applications.value) }
       : { error: true },
     attention: alerts.status === 'fulfilled'
       ? { rows: riskAttention(alerts.value, patientId) }
       : { error: true },
   };
+}
+
+/**
+ * Aba Evoluções: só carrega quando a aba abre. As mesmas evoluções do
+ * histórico da tela Evoluções (mesma RPC, mesmo acesso), só para ler:
+ * escrever e corrigir ficam na tela Evoluções.
+ */
+export async function loadSessionEvolutions({ patientId, discipline = 'psicologia' }) {
+  return evolutionEntries(await listPatientEvolutions(patientId, discipline));
 }

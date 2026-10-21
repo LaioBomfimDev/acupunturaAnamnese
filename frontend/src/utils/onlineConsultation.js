@@ -19,6 +19,13 @@ export const ONLINE_ROOM_WINDOWS = Object.freeze({
 // marcado antes de terminar).
 export const ONLINE_ROOM_STATUSES = ['scheduled', 'ready', 'attended'];
 
+// Minutos grátis por mês no Daily (participante-minuto) e quanto gasta uma
+// consulta típica: 50 minutos com 2 pessoas = 100.
+export const DAILY_FREE_PARTICIPANT_MINUTES = 10_000;
+export const CONSULT_PARTICIPANT_MINUTES = 100;
+// A partir daqui o contador avisa que está perto do fim dos minutos grátis.
+export const USAGE_WARNING_SHARE = 0.8;
+
 // Página do paciente (pública, link do agendamento) e sala de quem atende
 // (com login). As duas abrem em página própria: só nelas o navegador
 // libera câmera e microfone (vercel.json).
@@ -107,6 +114,61 @@ export function dailyErrorMessage(errorMsg, who) {
   }
   if (who === 'professional') return code ? `A chamada não abriu (${code}).` : 'A chamada não abriu.';
   return 'Não foi possível entrar agora. Tente de novo.';
+}
+
+/**
+ * Contador de uso do Daily no mês (pedido de 21/10/2026): quanto já foi,
+ * quanto falta dos minutos grátis e quantas consultas de 50 min isso dá.
+ */
+export function usageSummary(usage) {
+  if (!usage || !Number.isFinite(Number(usage.participantMinutes))) return null;
+  const used = Math.max(0, Math.round(Number(usage.participantMinutes)));
+  const free = Number(usage.freeMinutes) || DAILY_FREE_PARTICIPANT_MINUTES;
+  const perConsult = Number(usage.consultMinutes) || CONSULT_PARTICIPANT_MINUTES;
+  const left = Math.max(0, free - used);
+  const share = free > 0 ? used / free : 1;
+  return {
+    used,
+    free,
+    left,
+    percent: Math.min(100, Math.round(share * 100)),
+    over: used > free,
+    near: share >= USAGE_WARNING_SHARE && used <= free,
+    consultsUsed: Math.floor(used / perConsult),
+    consultsLeft: Math.floor(left / perConsult),
+    since: usage.periodStart ? new Date(usage.periodStart).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '',
+  };
+}
+
+export function formatMinutes(value) {
+  return `${Number(value || 0).toLocaleString('pt-BR')} min`;
+}
+
+/** Linhas do cartão de consentimento: o que foi aceito, recusado ou falta responder. */
+export function consentRows(consents, needsConsent) {
+  const tele = consents?.teleatendimento;
+  const recording = consents?.gravacao_sessao;
+  const teleOk = !needsConsent && tele?.decision === 'accepted';
+  return [
+    {
+      key: 'teleatendimento',
+      ok: teleOk,
+      title: 'Atendimento online',
+      detail: teleOk ? `termo aceito em ${dayLabel(tele.decidedAt)}` : 'termo ainda não aceito',
+    },
+    {
+      key: 'gravacao_sessao',
+      ok: recording?.decision === 'accepted',
+      title: 'Gravação',
+      detail: !recording
+        ? 'ainda sem resposta'
+        : recording.decision === 'accepted'
+          ? `autorizada em ${dayLabel(recording.decidedAt)}`
+          : recording.decision === 'revoked'
+            ? `autorização retirada em ${dayLabel(recording.decidedAt)}`
+            : `não autorizada (${dayLabel(recording.decidedAt)})`,
+    },
+  ];
 }
 
 function dayLabel(value) {

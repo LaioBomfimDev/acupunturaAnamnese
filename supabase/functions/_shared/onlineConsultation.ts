@@ -19,6 +19,11 @@ export const ONLINE_ROOM_WINDOWS = {
 // pode ter marcado antes de terminar.
 export const ONLINE_ROOM_STATUSES = ['scheduled', 'ready', 'attended'];
 
+// Minutos grátis por mês no Daily (participante-minuto) e quanto gasta uma
+// consulta típica: 50 minutos com 2 pessoas = 100.
+export const DAILY_FREE_PARTICIPANT_MINUTES = 10_000;
+export const CONSULT_PARTICIPANT_MINUTES = 100;
+
 // Versão de cada termo que o paciente aceita. Mudou o texto do termo:
 // sobe a versão aqui e na tela, e o paciente responde de novo.
 export const ONLINE_CONSENT_TERM_VERSIONS = {

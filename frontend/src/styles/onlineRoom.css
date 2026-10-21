@@ -336,6 +336,24 @@
   color: #ffffff;
 }
 
+/* Tela cheia: a do navegador (:fullscreen) ou, no iPhone, cobrindo a janela. */
+.osr-stage:fullscreen,
+.osr-stage.is-covering {
+  border-radius: 0;
+}
+
+.osr-stage.is-covering {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.osr-stage:fullscreen .osr-self,
+.osr-stage.is-covering .osr-self {
+  width: 240px;
+  height: 140px;
+}
+
 .osr-stage-main {
   position: relative;
   flex: 1;

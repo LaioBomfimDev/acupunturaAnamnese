@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../hooks/AuthContext';
 import { useDailyCall } from '../../hooks/useDailyCall';
+import { useDismiss } from '../../hooks/useDismiss';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { SALA_ONLINE_HELP } from '../../data/screenHelp';
 import { getDiscipline } from '../../data/disciplines';
@@ -47,6 +48,8 @@ function Icon({ name }) {
     camera: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" /></>,
     cameraOff: <><path d="m3 3 18 18" /><path d="M16 16H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1M10 6h4a2 2 0 0 1 2 2v3l5-3v9" /></>,
     screen: <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></>,
+    expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
+    collapse: <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />,
     video: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" /></>,
   };
   return (
@@ -170,11 +173,48 @@ function BeforeSession({ data, patient, openScreen }) {
 // Vídeo
 // ---------------------------------------------------------------
 
+// Tela cheia do vídeo (pedido de 21/10/2026): a do navegador quando existe;
+// no iPhone, que não tem tela cheia para um bloco da página, o vídeo cobre
+// a janela. Sair (botão ou Esc) volta para a sala como estava.
+function useStageFullscreen() {
+  const stageRef = useRef(null);
+  const [native, setNative] = useState(false);
+  const [covering, setCovering] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setNative(document.fullscreenElement === stageRef.current && Boolean(stageRef.current));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  useDismiss({ open: covering, onClose: () => setCovering(false) });
+
+  const toggle = useCallback(() => {
+    const stage = stageRef.current;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+      return;
+    }
+    if (covering) {
+      setCovering(false);
+      return;
+    }
+    if (stage?.requestFullscreen) {
+      stage.requestFullscreen().catch(() => setCovering(true));
+    } else {
+      setCovering(true);
+    }
+  }, [covering]);
+
+  return { stageRef, expanded: native || covering, covering, toggle };
+}
+
 function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }) {
   const remote = call.remotes[0] || null;
   const mainTrack = remote?.screen || remote?.video || null;
   const localTrack = call.local?.screen || call.local?.video || null;
   const firstName = String(patientName || '').split(' ')[0] || 'o paciente';
+  const { stageRef, expanded, covering, toggle: toggleFullscreen } = useStageFullscreen();
 
   if (call.phase !== 'joined') {
     return (
@@ -205,7 +245,11 @@ function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }
   }
 
   return (
-    <section className="osr-stage" aria-label="Vídeo">
+    <section
+      ref={stageRef}
+      className={`osr-stage${covering ? ' is-covering' : ''}`}
+      aria-label="Vídeo"
+    >
       {call.remotes.map(item => item.audio && <TrackAudio key={item.sessionId} track={item.audio} />)}
       <div className="osr-stage-main">
         {mainTrack ? (
@@ -233,6 +277,16 @@ function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }
         </button>
         <button type="button" className={`osr-control${call.sharing ? ' is-on' : ''}`} aria-pressed={call.sharing} aria-label={call.sharing ? 'Parar de compartilhar a tela' : 'Compartilhar tela'} onClick={call.toggleShare}>
           <Icon name="screen" />
+        </button>
+        <button
+          type="button"
+          className="osr-control osr-control--expand"
+          aria-pressed={expanded}
+          aria-label={expanded ? 'Sair da tela cheia' : 'Tela cheia'}
+          title={expanded ? 'Sair da tela cheia' : 'Tela cheia'}
+          onClick={toggleFullscreen}
+        >
+          <Icon name={expanded ? 'collapse' : 'expand'} />
         </button>
       </div>
     </section>

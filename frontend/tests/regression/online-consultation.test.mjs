@@ -149,6 +149,17 @@ test('erro do Daily vira mensagem clara para quem atende e para o paciente', asy
   assert.match(hook, /setError\(dailyErrorMessage\(dailyError, 'professional'\)\)/);
 });
 
+test('sala de quem atende: tela cheia do vídeo, com volta para a sala como estava', async () => {
+  const room = await read('src/components/online/OnlineRoomPage.jsx');
+  assert.match(room, /stage\.requestFullscreen\(\)/, 'tela cheia do navegador');
+  assert.match(room, /document\.exitFullscreen\(\)/);
+  assert.match(room, /addEventListener\('fullscreenchange'/, 'Esc do navegador devolve o botão ao estado certo');
+  assert.match(room, /useDismiss\(\{ open: covering, onClose: \(\) => setCovering\(false\) \}\)/, 'no iPhone, o vídeo cobre a janela e sai com Esc');
+  assert.match(room, /aria-label=\{expanded \? 'Sair da tela cheia' : 'Tela cheia'\}/);
+  const css = await read('src/styles/onlineRoom.css');
+  assert.match(css, /\.osr-stage\.is-covering \{\r?\n\s*position: fixed;/);
+});
+
 // ---------- termos ----------
 
 test('termos: versão no formato do banco, os três pontos da prévia A e a pergunta da gravação', async () => {

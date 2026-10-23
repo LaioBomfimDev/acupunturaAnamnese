@@ -434,7 +434,11 @@ function useStageFullscreen() {
 function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }) {
   const remote = call.remotes[0] || null;
   const mainTrack = remote?.screen || remote?.video || null;
-  const localTrack = call.local?.screen || call.local?.video || null;
+  // Paciente mostrando a tela: o rosto dela vai para o quadro pequeno.
+  const peerTrack = remote?.screen ? remote.video : null;
+  // O quadro "Você" mostra sempre a câmera, nunca a própria tela
+  // compartilhada (23/10/2026: virava um espelho sem fim).
+  const localTrack = call.local?.video || null;
   const firstName = String(patientName || '').split(' ')[0] || 'o paciente';
   const { stageRef, expanded, covering, toggle: toggleFullscreen } = useStageFullscreen();
 
@@ -484,12 +488,30 @@ function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }
             </p>
           </div>
         )}
-        {remote && <span className="osr-name">{patientName}{!remote.micOn ? ' · microfone desligado' : ''}</span>}
+        {remote && (
+          <span className="osr-name">
+            {patientName}{remote.screen ? ' · compartilhando a tela' : ''}{!remote.micOn ? ' · microfone desligado' : ''}
+          </span>
+        )}
       </div>
+      {peerTrack && (
+        <div className="osr-self osr-self--peer">
+          <TrackVideo track={peerTrack} className="osr-video" />
+          <span className="osr-self-label">{firstName}</span>
+        </div>
+      )}
       <div className="osr-self">
-        {localTrack ? <TrackVideo track={localTrack} mirror={!call.local?.screen} className="osr-video" /> : <span className="osr-avatar">Você</span>}
+        {localTrack ? <TrackVideo track={localTrack} mirror className="osr-video" /> : <span className="osr-avatar">Você</span>}
         <span className="osr-self-label">Você</span>
       </div>
+      {call.sharing && (
+        <div className="osr-sharing" role="status">
+          <Icon name="screen" size={16} />
+          <span>Você está compartilhando a tela</span>
+          <button type="button" onClick={call.toggleShare}>Parar</button>
+        </div>
+      )}
+      {call.shareError && <p className="osr-share-error" role="alert">{call.shareError}</p>}
       <div className="osr-controls">
         <button type="button" className={`osr-control${call.micOn ? '' : ' is-off'}`} aria-pressed={call.micOn} aria-label={call.micOn ? 'Desligar microfone' : 'Ligar microfone'} onClick={call.toggleMic}>
           <Icon name={call.micOn ? 'mic' : 'micOff'} />
@@ -497,9 +519,18 @@ function VideoStage({ call, patientName, windowState, opensAt, onJoin, joining }
         <button type="button" className={`osr-control${call.camOn ? '' : ' is-off'}`} aria-pressed={call.camOn} aria-label={call.camOn ? 'Desligar câmera' : 'Ligar câmera'} onClick={call.toggleCam}>
           <Icon name={call.camOn ? 'camera' : 'cameraOff'} />
         </button>
-        <button type="button" className={`osr-control${call.sharing ? ' is-on' : ''}`} aria-pressed={call.sharing} aria-label={call.sharing ? 'Parar de compartilhar a tela' : 'Compartilhar tela'} onClick={call.toggleShare}>
-          <Icon name="screen" />
-        </button>
+        {call.canShare && (
+          <button
+            type="button"
+            className={`osr-control${call.sharing ? ' is-on' : ''}`}
+            aria-pressed={call.sharing}
+            aria-label={call.sharing ? 'Parar de compartilhar a tela' : 'Compartilhar tela'}
+            title={call.sharing ? 'Parar de compartilhar a tela' : 'Compartilhar tela'}
+            onClick={call.toggleShare}
+          >
+            <Icon name="screen" />
+          </button>
+        )}
         <button
           type="button"
           className="osr-control osr-control--expand"

@@ -754,6 +754,67 @@
   object-fit: cover;
 }
 
+/* Paciente mostrando a tela: o rosto dela fica no quadro da esquerda. */
+.osr-self--peer {
+  right: auto;
+  left: 16px;
+}
+
+/* Compartilhando a tela: o aviso fica no vídeo, com o "Parar" à mão. */
+.osr-sharing {
+  position: absolute;
+  left: 50%;
+  /* Acima da barra de botões e do nome do paciente. */
+  bottom: 128px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 6px 6px 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.osr-sharing span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.osr-sharing button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #141a1c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.osr-sharing button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.osr-share-error {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 128px;
+  padding: 8px 12px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: 10px;
+  background: var(--r1-warning-bg);
+  color: var(--r1-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .osr-self-label {
   position: absolute;
   left: 8px;
@@ -1144,6 +1205,11 @@
     height: 144px;
     right: 10px;
     top: 10px;
+  }
+
+  .osr-self--peer {
+    right: auto;
+    left: 10px;
   }
 
   .osr-before,

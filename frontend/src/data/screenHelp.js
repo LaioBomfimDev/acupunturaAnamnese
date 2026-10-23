@@ -340,6 +340,7 @@ export const SALA_ONLINE_HELP = {
     'Evolução aqui é só leitura: escrever e corrigir continuam na tela Evoluções.',
     'Nada desta sala é gravado por enquanto. A gravação com transcrição chega numa próxima etapa e depende da autorização do paciente.',
     'A sala abre numa aba própria: é só nela que o navegador libera câmera e microfone.',
+    'Compartilhar tela: a aba da própria sala não aparece para escolher (senão o paciente veria a sala dentro da sala). Enquanto compartilha, o aviso “Você está compartilhando a tela” fica no vídeo com o “Parar”, e o quadro “Você” continua mostrando a sua câmera. No celular e no tablet o navegador não compartilha tela, então o botão não aparece. No Mac, o navegador precisa estar liberado em Ajustes do Sistema → Privacidade e Segurança → Gravação de Tela.',
   ],
 };
 

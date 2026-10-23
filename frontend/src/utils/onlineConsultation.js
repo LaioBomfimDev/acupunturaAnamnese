@@ -122,6 +122,23 @@ export function dailyErrorMessage(errorMsg, who) {
 }
 
 /**
+ * Erro ao compartilhar a tela (evento 'nonfatal-error' do Daily, tipo
+ * 'screen-share-error'). Achado de 23/10/2026: o erro não aparecia em lugar
+ * nenhum e o botão parecia quebrado. No Mac, o bloqueio costuma ser do
+ * sistema (Gravação de Tela), não do navegador.
+ */
+export function screenShareErrorMessage(errorMsg) {
+  const text = String(errorMsg || '');
+  if (/system/i.test(text)) {
+    return 'O computador não deixou compartilhar a tela. No Mac, libere o navegador em Ajustes do Sistema → Privacidade e Segurança → Gravação de Tela e abra o navegador de novo.';
+  }
+  if (/denied|notallowed|permission/i.test(text)) {
+    return 'O navegador não deixou compartilhar a tela. Confira a permissão de compartilhar tela do navegador e tente de novo.';
+  }
+  return 'Não deu para compartilhar a tela agora. Tente de novo.';
+}
+
+/**
  * Contador de uso do Daily no mês (pedido de 21/10/2026): quanto já foi,
  * quanto falta dos minutos grátis e quantas consultas de 60 min isso dá.
  */

@@ -166,6 +166,40 @@ test('sala de quem atende: tela cheia do vídeo, com volta para a sala como esta
   assert.match(css, /\.osr-stage\.is-covering \{\r?\n\s*position: fixed;/);
 });
 
+test('compartilhar tela: botão segue o navegador, erro aparece e a sala não vira espelho', async () => {
+  const hook = await load('src/hooks/useDailyCall.js');
+  assert.equal(hook.isSharingScreen({ tracks: { screenVideo: { state: 'playable' } } }), true);
+  assert.equal(hook.isSharingScreen({ tracks: { screenVideo: { state: 'sendable' } } }), true);
+  assert.equal(hook.isSharingScreen({ tracks: { screenVideo: { state: 'off' } } }), false, 'parou pela barra do navegador');
+  assert.equal(hook.isSharingScreen({ tracks: { screenVideo: { state: 'blocked' } } }), false);
+  assert.equal(hook.isSharingScreen(null), false);
+  assert.equal(
+    hook.SCREEN_SHARE_OPTIONS.displayMediaOptions.selfBrowserSurface,
+    'exclude',
+    'a aba da própria sala não aparece para escolher',
+  );
+
+  const source = await read('src/hooks/useDailyCall.js');
+  for (const event of ['local-screen-share-started', 'local-screen-share-stopped', 'local-screen-share-canceled']) {
+    assert.match(source, new RegExp(`'${event}'`), event);
+  }
+  assert.match(source, /call\.on\('nonfatal-error'[\s\S]*?screen-share-error[\s\S]*?setShareError\(screenShareErrorMessage/);
+  assert.match(source, /supportedBrowser\?\.\(\)\?\.supportsScreenShare/, 'celular sem compartilhar não ganha o botão');
+
+  const { screenShareErrorMessage } = await load('src/utils/onlineConsultation.js');
+  assert.match(screenShareErrorMessage('Permission denied by system'), /Gravação de Tela/, 'no Mac, a trava é do sistema');
+  assert.match(screenShareErrorMessage('NotAllowedError: Permission denied'), /navegador não deixou/);
+  assert.match(screenShareErrorMessage('qualquer'), /Tente de novo/);
+
+  const room = await read('src/components/online/OnlineRoomPage.jsx');
+  assert.match(room, /const localTrack = call\.local\?\.video \|\| null;/, 'o quadro "Você" é sempre a câmera');
+  assert.doesNotMatch(room, /call\.local\?\.screen/);
+  assert.match(room, /\{call\.canShare && \(/);
+  assert.match(room, /Você está compartilhando a tela/);
+  assert.match(room, /\{call\.shareError && <p className="osr-share-error" role="alert">/);
+  assert.match(room, /const peerTrack = remote\?\.screen \? remote\.video : null;/, 'paciente mostrando a tela continua com o rosto à vista');
+});
+
 // ---------- termos ----------
 
 test('termos: versão no formato do banco, os três pontos da prévia A e a pergunta da gravação', async () => {

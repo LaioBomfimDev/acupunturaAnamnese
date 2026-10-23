@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { dailyErrorMessage } from '../utils/onlineConsultation';
+import { dailyErrorMessage, screenShareErrorMessage } from '../utils/onlineConsultation';
 
 // ============================================================
 // Chamada do Daily no modo "peças" (call object), para a sala de quem
@@ -10,7 +10,13 @@ import { dailyErrorMessage } from '../utils/onlineConsultation';
 // em vez de eval (CSP de /sala-online em vercel.json).
 // ============================================================
 
-const EMPTY = Object.freeze({ local: null, remotes: [], micOn: false, camOn: false, sharing: false });
+const EMPTY = Object.freeze({
+  local: null,
+  remotes: [],
+  micOn: false,
+  camOn: false,
+  sharing: false,
+});
 
 const CALL_EVENTS = [
   'joined-meeting',
@@ -19,12 +25,36 @@ const CALL_EVENTS = [
   'participant-left',
   'track-started',
   'track-stopped',
+  // Compartilhar tela (23/10/2026): o botão segue o que o navegador fez,
+  // inclusive quando a pessoa para pela barra "Parar de compartilhar" ou
+  // fecha a janela de escolha sem escolher.
+  'local-screen-share-started',
+  'local-screen-share-stopped',
+  'local-screen-share-canceled',
 ];
+
+// Estados em que a tela própria está saindo (ou começando a sair).
+const SHARING_STATES = ['loading', 'sendable', 'playable', 'interrupted'];
+
+// Na janela de escolha, a aba da própria sala fica de fora: compartilhar
+// a sala dentro da sala vira um espelho sem fim para o paciente.
+export const SCREEN_SHARE_OPTIONS = Object.freeze({
+  displayMediaOptions: {
+    audio: false,
+    selfBrowserSurface: 'exclude',
+    surfaceSwitching: 'include',
+  },
+});
 
 function playableTrack(participant, kind) {
   const track = participant?.tracks?.[kind];
   if (!track || track.state !== 'playable') return null;
   return track.persistentTrack || track.track || null;
+}
+
+export function isSharingScreen(participant) {
+  const state = participant?.tracks?.screenVideo?.state;
+  return state ? SHARING_STATES.includes(state) : Boolean(participant?.screen);
 }
 
 function snapshot(call) {
@@ -43,12 +73,11 @@ function snapshot(call) {
     local: local ? {
       sessionId: local.session_id,
       video: playableTrack(local, 'video'),
-      screen: playableTrack(local, 'screenVideo'),
     } : null,
     remotes,
     micOn: Boolean(local?.audio),
     camOn: Boolean(local?.video),
-    sharing: Boolean(local?.screen),
+    sharing: isSharingScreen(local),
   };
 }
 
@@ -57,6 +86,9 @@ export function useDailyCall() {
   // idle | joining | joined | left | error
   const [phase, setPhase] = useState('idle');
   const [error, setError] = useState('');
+  const [shareError, setShareError] = useState('');
+  // Celular e tablet não compartilham tela pelo navegador: o botão some.
+  const [canShare, setCanShare] = useState(false);
   const [state, setState] = useState(EMPTY);
   const [joinedAt, setJoinedAt] = useState(null);
 
@@ -73,13 +105,16 @@ export function useDailyCall() {
   const join = useCallback(async ({ url, token }) => {
     setPhase('joining');
     setError('');
+    setShareError('');
     let dailyError = '';
     try {
       const { default: Daily } = await import('@daily-co/daily-js');
+      setCanShare(Boolean(Daily.supportedBrowser?.()?.supportsScreenShare));
       destroy();
       const call = Daily.createCallObject({ dailyConfig: { avoidEval: true } });
       callRef.current = call;
       CALL_EVENTS.forEach(name => call.on(name, refresh));
+      call.on('local-screen-share-started', () => setShareError(''));
       call.on('left-meeting', () => {
         setPhase('left');
         setState(EMPTY);
@@ -88,6 +123,14 @@ export function useDailyCall() {
         dailyError = event?.errorMsg || 'error';
         setError(dailyErrorMessage(dailyError, 'professional'));
         setPhase('error');
+      });
+      // Erro que não derruba a chamada: o de compartilhar tela aparecia em
+      // lugar nenhum, e o botão parecia não fazer nada.
+      call.on('nonfatal-error', event => {
+        if (event?.type === 'screen-share-error') {
+          setShareError(screenShareErrorMessage(event.errorMsg));
+          refresh();
+        }
       });
       call.on('camera-error', () => {
         setError('Não deu para usar a câmera ou o microfone. Libere os dois nas permissões do navegador.');
@@ -110,6 +153,7 @@ export function useDailyCall() {
     if (call) await call.leave().catch(() => {});
     destroy();
     setState(EMPTY);
+    setShareError('');
     setPhase('left');
   }, [destroy]);
 
@@ -130,11 +174,24 @@ export function useDailyCall() {
   const toggleShare = useCallback(() => {
     const call = callRef.current;
     if (!call) return;
-    if (call.participants()?.local?.screen) call.stopScreenShare();
-    else call.startScreenShare();
+    setShareError('');
+    if (isSharingScreen(call.participants()?.local)) call.stopScreenShare();
+    else call.startScreenShare(SCREEN_SHARE_OPTIONS);
   }, []);
 
   useEffect(() => destroy, [destroy]);
 
-  return { phase, error, ...state, joinedAt, join, leave, toggleMic, toggleCam, toggleShare };
+  return {
+    phase,
+    error,
+    shareError,
+    canShare,
+    ...state,
+    joinedAt,
+    join,
+    leave,
+    toggleMic,
+    toggleCam,
+    toggleShare,
+  };
 }

@@ -2250,6 +2250,18 @@
 
 /* ---------- detalhe do agendamento ---------- */
 
+/* Pacote do Financeiro ("sessão 3 de 10"): só informação, sem dinheiro. */
+.ag-detail-package {
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--r1-accent-strong);
+}
+
 .ag-detail-series {
   margin: 0;
   padding: 6px 9px;

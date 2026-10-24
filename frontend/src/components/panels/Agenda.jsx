@@ -29,6 +29,7 @@ import {
   createSeries,
   deleteAppointment,
   deleteAppointments,
+  getAppointmentPackageInfo,
   listAppointments,
   listSeriesFrom,
   rescheduleAppointment,
@@ -64,6 +65,7 @@ import {
   IconCake, IconCheck, IconCalendarCheck, IconSliders, IconCopy, IconVideo,
 } from './agenda/AgendaIcons';
 import { canEnterOnlineRoom, onlineRoomHref } from '../../utils/onlineConsultation';
+import { packageSessionLabel } from '../../utils/finance';
 import { AgendaToolsMenu } from './agenda/AgendaToolsMenu';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaSettingsEditor from './agenda/AgendaSettingsEditor';
@@ -235,6 +237,21 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
   // Agendamento aberto no painel lateral (detalhe/ações).
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  // Pacote do Financeiro do atendimento aberto ("sessão 3 de 10"), sem
+  // dinheiro. Relido quando o status muda: virar Atendido gasta a sessão.
+  const packageKey = selectedAppointment && selectedAppointment.kind !== 'block' && selectedAppointment.patient_id
+    ? `${selectedAppointment.id}|${selectedAppointment.status}`
+    : '';
+  const [packageInfo, setPackageInfo] = useState(null);
+  useEffect(() => {
+    if (!packageKey) return undefined;
+    let cancelled = false;
+    getAppointmentPackageInfo(packageKey.split('|')[0])
+      .then(info => { if (!cancelled) setPackageInfo({ key: packageKey, info }); })
+      .catch(() => { if (!cancelled) setPackageInfo({ key: packageKey, info: null }); });
+    return () => { cancelled = true; };
+  }, [packageKey]);
+  const selectedPackage = packageInfo?.key === packageKey ? packageInfo.info : null;
   // Agendamento em modo "mover": o próximo toque num horário remarca.
   const [moving, setMoving] = useState(null);
 
@@ -1870,6 +1887,10 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                   professionalName(selectedAppointment.professional_id),
                 ].filter(Boolean).join(' · ')}
               </p>
+
+              {selectedPackage && (
+                <p className="ag-detail-package">{packageSessionLabel(selectedPackage)}</p>
+              )}
 
               {selectedAppointment.is_exception && (
                 <p className="ag-item-exception">

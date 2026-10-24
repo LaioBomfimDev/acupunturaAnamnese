@@ -845,6 +845,36 @@ export async function rescheduleAppointment(id, {
  * `starts_at` atual em mãos e calcula o novo término; a função não
  * busca a linha antes de gravar, então não tem como derivar sozinha.
  */
+/**
+ * Pacote do Financeiro em que este atendimento entra, sem dinheiro
+ * (20261024_appointment_package_info.sql): nome, tipo, a sessão que ele
+ * gastou (só depois de Atendido), previstas e feitas. A equipe toda lê;
+ * valor e pagamento continuam só na tela Financeiro.
+ *
+ * Sem pacote devolve null. Erro também vira null: é uma linha de
+ * informação no detalhe, e a falta dela não muda o que dá pra fazer.
+ */
+export async function getAppointmentPackageInfo(id, { runtime } = {}) {
+  if (!id) return null;
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    rpc: runtime?.rpc || ((fn, args) => supabase.rpc(fn, args)),
+  };
+  const user = await client.getAuthenticatedUser();
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) return null;
+
+  const { data, error } = await client.rpc('appointment_package_info', { p_appointment: id });
+  if (error || !data?.length) return null;
+  const row = data[0];
+  return {
+    name: row.pacote,
+    kind: row.tipo,
+    session: row.sessao ?? null,
+    planned: row.previstas,
+    done: row.feitas,
+  };
+}
+
 export async function updateAppointmentDetails(id, {
   discipline,
   appointmentType,

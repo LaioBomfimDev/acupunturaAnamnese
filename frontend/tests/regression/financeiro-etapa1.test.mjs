@@ -302,6 +302,46 @@ test('Agenda: excluir atendimento pago explica o motivo antes do erro de evoluç
   assert.ok(payment > 0 && payment < evolution, 'o teste do pagamento vem antes do 23503 da evolução');
 });
 
+// ---------- Agenda: "sessão 3 de 10" (24/10/2026) ----------
+
+test('Agenda: linha do pacote diz a sessão gasta, ou quantas foram feitas antes de acontecer', () => {
+  assert.equal(finance.packageSessionLabel({ name: 'Pacote de 10 sessões', kind: 'counted', session: 3, planned: 10, done: 3 }), 'Pacote de 10 sessões: sessão 3 de 10');
+  assert.equal(finance.packageSessionLabel({ name: 'Avaliação neuropsicológica', kind: 'closed', session: 4, planned: 8, done: 4 }), 'Avaliação neuropsicológica: sessão 4 de 8 previstas');
+  assert.equal(finance.packageSessionLabel({ name: 'Avaliação neuropsicológica', kind: 'closed', session: 9, planned: 8, done: 9 }), 'Avaliação neuropsicológica: sessão 9 (passou das 8 previstas)');
+  assert.equal(finance.packageSessionLabel({ name: 'Pacote de 10 sessões', kind: 'counted', session: null, planned: 10, done: 4 }), 'Pacote de 10 sessões: 4 de 10 sessões feitas');
+  assert.equal(finance.packageSessionLabel(null), '');
+});
+
+test('Agenda: a função do pacote não devolve dinheiro, é da clínica e segue a regra do gatilho', async () => {
+  const info = await read('../supabase/migrations/20261024_appointment_package_info.sql');
+  const returns = info.match(/RETURNS TABLE \(([\s\S]*?)\)\r?\nLANGUAGE/);
+  assert.ok(returns, 'RETURNS TABLE');
+  assert.doesNotMatch(returns[1], /cents|price|valor|amount|pago|paid/i, 'nenhum valor em dinheiro sai daqui');
+  assert.match(info, /NOT public\.can_manage_agenda\(v_appt\.clinic_id\)/);
+  assert.match(info, /v_appt\.status IN \('cancelled', 'no_show', 'excused'\)/);
+  // Mesma escolha de pacote que finance_charge_appointment.
+  for (const rule of [
+    /p\.status = 'active'/,
+    /p\.sold_on <= v_day/,
+    /\(p\.professional_id IS NULL OR p\.professional_id = v_appt\.professional_id\)/,
+    /\(cardinality\(p\.appointment_types\) = 0 OR v_appt\.appointment_type = ANY \(p\.appointment_types\)\)/,
+    /ORDER BY p\.sold_on, p\.created_at/,
+  ]) {
+    assert.match(info, rule);
+    assert.match(sqlFunction('finance_charge_appointment'), rule);
+  }
+  assert.match(info, /REVOKE ALL ON FUNCTION public\.appointment_package_info\(UUID\) FROM PUBLIC, anon;/);
+});
+
+test('Agenda: detalhe relê o pacote quando o status muda', async () => {
+  const agenda = await read('src/components/panels/Agenda.jsx');
+  assert.match(agenda, /`\$\{selectedAppointment\.id\}\|\$\{selectedAppointment\.status\}`/);
+  assert.match(agenda, /getAppointmentPackageInfo\(packageKey\.split\('\|'\)\[0\]\)/);
+  assert.match(agenda, /<p className="ag-detail-package">\{packageSessionLabel\(selectedPackage\)\}<\/p>/);
+  const service = await read('src/services/appointmentService.js');
+  assert.match(service, /rpc\('appointment_package_info', \{ p_appointment: id \}\)/);
+});
+
 test('visual: ação na cor da clínica, nada de petróleo fixo nem altura crua da janela', async () => {
   const css = await read('src/styles/financeiro.css');
   assert.doesNotMatch(css, /--r1-(navy|gold)-|--r1-surface-inverse|#0f4c49/i);

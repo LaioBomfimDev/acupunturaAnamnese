@@ -236,6 +236,22 @@ export function simulateClosedPackage({ totalCents, planned, changeAfter = null,
   return shares;
 }
 
+/**
+ * Linha do pacote no detalhe da Agenda (sem dinheiro). Atendido: a sessão
+ * que ele gastou. Ainda por vir: quantas já foram feitas, porque o número
+ * só existe depois que acontece (falta não gasta sessão).
+ */
+export function packageSessionLabel(info) {
+  if (!info) return '';
+  const closed = info.kind === 'closed';
+  if (info.session != null) {
+    if (closed && info.session > info.planned) return `${info.name}: sessão ${info.session} (passou das ${info.planned} previstas)`;
+    return `${info.name}: sessão ${info.session} de ${info.planned}${closed ? ' previstas' : ''}`;
+  }
+  const noun = info.planned === 1 ? 'sessão feita' : 'sessões feitas';
+  return `${info.name}: ${info.done} de ${info.planned} ${closed ? `${info.planned === 1 ? 'prevista' : 'previstas'} já feitas` : noun}`;
+}
+
 /** Pacote de sessões contadas: valor por sessão e quanto fica abaixo do avulso. */
 export function packageSizeInfo({ totalCents, sessions, singleCents }) {
   const perSession = sessions > 0 ? Math.round(totalCents / sessions) : null;

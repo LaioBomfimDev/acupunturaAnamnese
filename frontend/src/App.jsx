@@ -51,6 +51,7 @@ const RelatoriosGestao = lazyPanel(() => import('./components/panels/RelatoriosG
 const GestaoProfissional = lazyPanel(() => import('./components/panels/GestaoProfissional'), 'GestaoProfissional');
 const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
 const ScalesScreen = lazyPanel(() => import('./components/instruments/ScalesScreen'), 'ScalesScreen');
+const FinanceiroScreen = lazyPanel(() => import('./components/financeiro/FinanceiroScreen'), 'FinanceiroScreen');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
 // entre logins — sair limpa a chave.
@@ -97,6 +98,8 @@ export default function App() {
   // Escalas no menu principal (13/10/2026). O paciente vem do alerta de
   // risco ("Ver resultado"); sem ele, a tela abre na lista.
   const [showHubScales, setShowHubScales] = useState(false);
+  // Financeiro (23/10/2026): só a administração da instituição.
+  const [showHubFinance, setShowHubFinance] = useState(false);
   const [hubScalesPatient, setHubScalesPatient] = useState(null);
   const [pendingEvolutionsCount, setPendingEvolutionsCount] = useState(0);
   const [superAdminSection, setSuperAdminSection] = useState('manage');
@@ -268,6 +271,7 @@ export default function App() {
       setShowHubDocuments(false);
       setShowHubGestao(false);
       setHubGestaoInitialSection(null);
+      setShowHubFinance(false);
       setShowClinicPatients(false);
       setShowHubEvolutions(request.screen === 'evolucao');
       setShowHubScales(request.screen === 'escalas');
@@ -339,7 +343,7 @@ export default function App() {
       : isClinicAdmin
         ? (attendsPatients ? 'admin-professional' : 'admin')
         : 'professional';
-    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions && !showHubScales) {
+    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions && !showHubScales && !showHubFinance) {
       return (
         <Suspense fallback={<PanelLoading />}>
           <HomeConsole
@@ -364,6 +368,8 @@ export default function App() {
             // Escalas: administração e quem atende numa área com escala; a
             // recepção não (utils/instrumentAccess.js).
             onOpenScales={canSeeScales(profile) ? () => { setHubScalesPatient(null); setShowHubScales(true); } : undefined}
+            // Financeiro: só a administração (a RLS do banco também barra o resto).
+            onOpenFinance={isClinicAdmin ? () => setShowHubFinance(true) : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
             onOpenInstrumentAlert={openInstrumentAlert}
           />
@@ -481,6 +487,27 @@ export default function App() {
             </Suspense>
           </main>
           {renderHubDock('escalas')}
+        </div>
+      );
+    }
+    // Financeiro direto do hub (23/10/2026): menu à esquerda como a
+    // Gestão, abrindo no Resumo. Só a administração chega aqui.
+    if (showHubFinance && isClinicAdmin) {
+      return (
+        <div className="hub-screen">
+          <header className="hub-topbar">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
+              <p>Financeiro</p>
+            </div>
+            <HubBackButton label="Voltar às áreas" onClick={() => setShowHubFinance(false)} />
+          </header>
+          <main className="hub-body">
+            <Suspense fallback={<PanelLoading />}>
+              <FinanceiroScreen profile={profile} />
+            </Suspense>
+          </main>
+          {renderHubDock('financeiro')}
         </div>
       );
     }
@@ -736,6 +763,7 @@ export default function App() {
     setHubGestaoInitialSection(null);
     setShowHubScales(screen === 'escalas');
     setHubScalesPatient(null);
+    setShowHubFinance(screen === 'financeiro');
     setShowClinicPatients(screen === 'pacientes');
   }
 

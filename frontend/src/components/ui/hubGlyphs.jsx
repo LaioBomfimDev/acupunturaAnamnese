@@ -48,6 +48,15 @@ export const TOOL_GLYPHS = {
       <path d="m8.5 15.5 2.5-2.8 2.2 1.8 2.8-3.8" />
     </>
   ),
+  // Carteira com moeda: o Financeiro da instituição.
+  financeiro: (
+    <>
+      <rect x="3" y="6" width="18" height="14" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M16 15h2" />
+      <path d="M7 6V4.5h10V6" />
+    </>
+  ),
   documentos: (
     <>
       <path d="M12 3v10" />

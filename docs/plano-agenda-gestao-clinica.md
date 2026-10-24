@@ -268,6 +268,16 @@ API/portal do convênio fica pendente até a usuária confirmar qual
 operadora/site — normalmente cada uma tem endpoint e cadastro próprios,
 não existe uma API única (padrão TISS/ANS).
 
+**Atualização 2026-10-23 — etapa 1 feita (opção C).** Tela Financeiro no
+menu principal, só administração: valores por área × tipo com valor
+próprio por profissional, valor gravado no atendimento quando vira
+Atendido, a receber, pacotes (sessões contadas e valor fechado com
+sessões previstas), saídas, saídas fixas, pessoas sem login e repasse
+por profissional (%, valor por atendimento, salário ou nenhum). Falta
+não cobra. Migração `20261023_financeiro_etapa1.sql` (substitui o
+esboço de 20260908). Regras em AGENTS.md §7. Etapa 2: nota/recibo,
+recepção, profissional vendo o próprio repasse e convênio.
+
 ### Fase 7 — Mobile completo
 
 - Migrar as telas legadas por lotes, junto com a migração de tokens do

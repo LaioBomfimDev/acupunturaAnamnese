@@ -169,6 +169,7 @@ export function HomeConsole({
   onSelect, onSignOut,
   onOpenAgenda, onOpenPendingEvolutions, onOpenGestao, onOpenClinicPatients, onOpenDocuments, onOpenBirthdays,
   onOpenScales = null,
+  onOpenFinance = null,
   pendingEvolutionsCount = 0,
   onOpenInstrumentAlert = null,
 }) {
@@ -243,6 +244,12 @@ export function HomeConsole({
   }, [variant, profile?.id, isFrontDeskView]);
 
   const mobileShortcuts = [
+    onOpenFinance && {
+      id: 'financeiro',
+      title: 'Financeiro',
+      text: 'A receber, recebidos, pacotes, a pagar e repasses; valores e saídas fixas na Configuração.',
+      onClick: onOpenFinance,
+    },
     onOpenScales && {
       id: 'escalas',
       title: 'Escalas',
@@ -320,6 +327,14 @@ export function HomeConsole({
                   ? 'Indicadores, faltosos, retornos, pesquisa de satisfação, equipe, personalização e documentos timbrados.'
                   : 'Cor da sua tela e os seus dados de cadastro.'}
                 onClick={() => onOpenGestao()}
+              />
+            )}
+            {onOpenFinance && (
+              <NavItem
+                icon="financeiro"
+                title="Financeiro"
+                description="A receber, recebidos, pacotes, a pagar e repasses da equipe."
+                onClick={onOpenFinance}
               />
             )}
             {onOpenClinicPatients && (

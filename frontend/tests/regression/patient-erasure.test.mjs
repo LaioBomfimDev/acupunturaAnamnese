@@ -44,6 +44,13 @@ const KEPT_ON_PURPOSE = {
     'é a própria solicitação: append-only, FK RESTRICT, registro de que a exclusão aconteceu',
   satisfaction_surveys:
     'PENDENTE desde 20260901: decidir com a administradora (a nota entra nos números da Gestão; o comentário livre pode identificar o paciente)',
+  // Financeiro (20261023): registro de dinheiro fica, a contabilidade
+  // precisa do histórico; o cadastro do paciente é anonimizado pela
+  // exclusão e o valor do atendimento guarda a própria cópia (o
+  // agendamento apagado vira appointment_id NULL).
+  appointment_charges: 'registro financeiro: o valor do atendimento fica para a contabilidade, com o paciente anonimizado',
+  patient_packages: 'registro financeiro: pacote vendido fica para a contabilidade, com o paciente anonimizado',
+  finance_receipts: 'registro financeiro: recebimento não se apaga (só anula com motivo), com o paciente anonimizado',
 };
 
 test('exclusão: parte da versão de 20261008 e só acrescenta a Área do Paciente', async () => {

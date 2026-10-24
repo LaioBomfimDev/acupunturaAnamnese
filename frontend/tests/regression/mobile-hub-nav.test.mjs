@@ -113,12 +113,12 @@ test('voltar: mesmo botão no computador, faixa no celular só para tela dentro 
 
 test('todas as telas do hub usam o botão compartilhado e a barra de baixo', async () => {
   const app = await read('App.jsx');
-  for (const screen of ['inicio', 'pacientes', 'agenda', 'evolucao', 'documentos', 'gestao', 'escalas']) {
+  for (const screen of ['inicio', 'pacientes', 'agenda', 'evolucao', 'documentos', 'gestao', 'escalas', 'financeiro']) {
     assert.match(app, new RegExp(`renderHubDock\\('${screen}'\\)`), `tela ${screen} sem a barra de baixo`);
   }
   assert.doesNotMatch(app, /← Voltar/, 'voltar escrito à mão no App');
-  // Agenda, Evoluções, Documentos, Gestão e Escalas (13/10/2026).
-  assert.equal((app.match(/<HubBackButton\s+label="Voltar às áreas"/g) || []).length, 5);
+  // Agenda, Evoluções, Documentos, Gestão, Escalas (13/10/2026) e Financeiro (23/10/2026).
+  assert.equal((app.match(/<HubBackButton\s+label="Voltar às áreas"/g) || []).length, 6);
   // "Abrir agenda" de Evoluções some no celular: a Agenda já está na barra.
   assert.match(app, /className="topbar-button hub-topbar-extra"[\s\S]{0,200}?\}>\s*Abrir agenda/);
   assert.match(app, /className="hub-topbar hub-topbar--titled"/);

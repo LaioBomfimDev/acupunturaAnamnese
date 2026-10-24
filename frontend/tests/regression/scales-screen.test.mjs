@@ -326,7 +326,9 @@ test('App: tela Escalas do hub, com a barra de baixo e a regra de quem vê', asy
   assert.match(source, /onOpenScales=\{canSeeScales\(profile\) \? \(\) => \{ setHubScalesPatient\(null\); setShowHubScales\(true\); \} : undefined\}/);
   assert.match(source, /renderHubDock\('escalas'\)/);
   assert.match(source, /setShowHubScales\(screen === 'escalas'\);/);
-  assert.match(source, /!showHubEvolutions && !showHubScales\) \{/);
+  // Escalas fora da tela inicial; telas que vierem depois (Financeiro,
+  // 23/10/2026) entram na mesma condição.
+  assert.match(source, /!showHubEvolutions && !showHubScales(?: && !\w+)*\) \{/);
 });
 
 test('tela Escalas: lista e paciente; no celular, um de cada vez, com "Voltar à lista"', async () => {

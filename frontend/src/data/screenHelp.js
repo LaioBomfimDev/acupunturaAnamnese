@@ -596,3 +596,167 @@ export const HOME_HELP = {
     ],
   },
 };
+
+/** Financeiro (etapa 1, 23/10/2026) — só a administração abre. */
+export const FINANCEIRO_HELP = {
+  resumo: {
+    title: 'Resumo',
+    summary: 'A entrada do Financeiro: o resultado do mês e um quadro por parte, com o número que mais importa em cada uma.',
+    actions: [
+      'Trocar o mês nas setas ao lado do título.',
+      'Clicar num quadro abre a parte dele. No celular e no tablet, “Voltar ao Resumo”, embaixo, traz de volta para cá.',
+      'Na primeira vez, escolher a data de início das contas e quando o repasse do profissional passa a contar, em “Começar a contar”.',
+    ],
+    reading: [
+      'Resultado = o que entrou no mês menos o que saiu no mês. As barras mostram o que entrou em cada área.',
+      'A receber e A pagar mostram o que está em aberto até hoje, de qualquer mês: o que está em atraso aparece em âmbar.',
+      'Os quadros da Configuração dizem “Pronto” ou “Falta”; o menu à esquerda repete com ✓ ou “falta”.',
+    ],
+    access: [
+      'Só a administração da instituição vê e mexe no Financeiro. Recepção e profissional ficam para a etapa 2.',
+    ],
+    notes: [
+      'O valor de um atendimento é gravado quando ele vira Atendido. Não compareceu, Cancelado pelo paciente e Cancelado não cobram.',
+    ],
+  },
+  areceber: {
+    title: 'A receber',
+    summary: 'Tudo o que o paciente ainda deve: atendimento avulso feito e não pago, parcela de pacote e sessão de pacote paga a cada sessão.',
+    actions: [
+      '“Receber” abre na própria linha: marcar o que está sendo pago, escolher a forma (Pix, Dinheiro, Cartão de débito, Cartão de crédito, Outro) e a data.',
+      '“+ Dividir em outra forma” separa o pagamento, por exemplo parte no Pix e parte em dinheiro.',
+      '“Mudar valor” muda só aquele atendimento (desconto combinado), com motivo. “Sem valor” lista o atendimento que a tabela não sabia cobrar: “Definir valor”.',
+      '“+ Vender pacote” vende um pacote sem sair daqui.',
+    ],
+    reading: [
+      'Atendimento avulso vence no dia em que acontece. Âmbar = passou do dia, com quantos dias.',
+      'Pagamento parcial cobre primeiro o item mais antigo.',
+    ],
+    access: ['Só a administração.'],
+    notes: [
+      'A data do recebimento é hoje ou antes, nunca depois.',
+      'Crédito de paciente aparece quando um atendimento pago deixa de ser Atendido.',
+    ],
+  },
+  recebidos: {
+    title: 'Recebidos',
+    summary: 'Os recebimentos do mês, com a forma de pagamento.',
+    actions: [
+      '“Anular” desfaz um recebimento lançado errado: pede o motivo, e o que ele pagava volta para “A receber”.',
+      '“Mostrar anulados” traz de volta os anulados, riscados, com o motivo.',
+    ],
+    reading: ['Os totais do topo somam cada forma de pagamento no mês.'],
+    access: ['Só a administração.'],
+    notes: ['Nada se apaga e valor recebido não se edita: para corrigir, anule e lance de novo.'],
+  },
+  pacotes: {
+    title: 'Pacotes',
+    summary: 'Pacotes vendidos para cada paciente: sessões contadas (4, 6, 8, 10…) ou valor fechado com sessões previstas, como a avaliação neuropsicológica.',
+    actions: [
+      '“+ Vender pacote”: paciente, modelo (ou preencher na hora), quem atende e como o paciente vai pagar (À vista, Parcelado ou A cada sessão).',
+      '“Mudar previsão”, no pacote de valor fechado: as próximas sessões já usam a conta nova.',
+      '“Encerrar pacote”: cobrar o restante ou dar desconto do restante. “Anular venda” só antes da primeira sessão e do primeiro pagamento.',
+    ],
+    reading: [
+      'A sessão entra no pacote sozinha: mesmo paciente, mesma área e um tipo que o pacote cobre. Falta não gasta sessão.',
+      'Valor fechado: cada sessão vale o que falta do valor ÷ as sessões que faltam na previsão. A última prevista leva o resto.',
+      'Sessões contadas: o pacote fecha sozinho na última sessão.',
+    ],
+    access: ['Só a administração.'],
+    notes: ['Sessão da mesma área já atendida no dia da venda, sem pagamento, entra no pacote.'],
+  },
+  apagar: {
+    title: 'A pagar',
+    summary: 'O que a clínica tem a pagar até o fim do mês: saídas fixas, contas lançadas “a pagar” e o repasse de cada profissional.',
+    actions: [
+      '“Pagar” abre na própria linha: valor, data e forma. Em saída fixa, “Não houve este vencimento” tira a conta daquele dia.',
+      '“Pagar repasse” lança a saída na categoria Repasse de profissionais.',
+      '“+ Lançar saída” lança uma conta avulsa, já paga ou a pagar.',
+    ],
+    reading: [
+      'Âmbar = venceu. “valor muda” = saída fixa sem valor fixo (luz, água): escreva quanto veio.',
+      'Repasse aparece com o que a pessoa tem a receber até agora, somando os meses.',
+    ],
+    access: ['Só a administração.'],
+    notes: ['A data do pagamento é hoje ou antes. Conta futura fica aqui até ser paga.'],
+  },
+  pagas: {
+    title: 'Pagas',
+    summary: 'As saídas pagas no mês, por categoria.',
+    actions: [
+      '“Anular” desfaz uma saída lançada errado, com motivo. Se era saída fixa, o vencimento volta para “A pagar”.',
+      '“Mostrar anuladas” traz de volta as anuladas, riscadas.',
+    ],
+    reading: ['Os totais do topo somam cada categoria no mês.'],
+    access: ['Só a administração.'],
+    notes: ['Nada se apaga: anula e lança de novo.'],
+  },
+  equipe: {
+    title: 'Equipe e repasses',
+    summary: 'Cada pessoa da equipe com o jeito de receber, o que gerou no mês, o que foi pago e o que falta repassar.',
+    actions: [
+      '“Pagar repasse” lança o pagamento já com o valor que falta.',
+      '“Lançar pagamento”, para as pessoas sem login (diarista, técnico de TI).',
+      '“Configurar” leva a “Como cada um recebe”.',
+    ],
+    reading: [
+      'Gerado no mês = soma do valor dos atendimentos da pessoa no mês.',
+      '“Falta repassar” soma todos os meses desde o início do financeiro, menos o que já foi pago.',
+    ],
+    access: ['Só a administração.'],
+    notes: ['Com “Quando o paciente paga”, atendimento ainda não pago não entra no repasse.'],
+  },
+  valores: {
+    title: 'Valores dos atendimentos',
+    summary: 'Quanto custa cada atendimento, por área e por tipo (Anamnese, Avaliação, Devolutiva, Entrevista, Primeira vez, Retorno, Sessão).',
+    actions: [
+      'Em “Valores da instituição”, preencher o valor padrão de cada área e só os tipos que custam diferente.',
+      'Escolher um profissional para dar a ele valores próprios: preencher só o que muda.',
+      'Gravar em “Salvar valores”.',
+    ],
+    reading: [
+      'Campo vazio usa o valor padrão (o texto cinza diz qual). R$ 0 = aquele tipo não é cobrado.',
+      'Ordem de quem vale: tipo do profissional, tipo da instituição, padrão do profissional, padrão da instituição.',
+    ],
+    access: ['Só a administração.'],
+    notes: ['Valor novo vale para os atendimentos que virarem Atendido daqui para frente.'],
+  },
+  modelos: {
+    title: 'Modelos de pacote',
+    summary: 'Os pacotes prontos para vender: sessões contadas ou valor fechado com sessões previstas.',
+    actions: [
+      '“+ Novo modelo”: área, tipo, sessões, valor total, que atendimentos gastam o pacote e em quantas vezes pode parcelar.',
+      'No valor fechado, a simulação mostra quanto vale cada sessão se a previsão mudar.',
+      '“Desativar” tira o modelo da venda sem mexer no que já foi vendido.',
+    ],
+    reading: ['Cada modelo mostra o valor por sessão e quanto fica abaixo do avulso.'],
+    access: ['Só a administração.'],
+    notes: ['A venda guarda os valores do dia: mudar o modelo não muda pacote já vendido.'],
+  },
+  recebimento: {
+    title: 'Como cada um recebe',
+    summary: 'O jeito de receber de cada pessoa da equipe e das pessoas que recebem e não usam o sistema.',
+    actions: [
+      'Escolher entre % do valor do atendimento, Valor fixo por atendimento, Salário fixo mensal ou Não recebe pelo sistema.',
+      '“+ Exceção” muda o % ou o valor numa área ou num tipo.',
+      '“+ Cadastrar pessoa”: diarista, técnico de TI e quem mais recebe sem login.',
+      'Escolher quando o repasse passa a contar: quando o paciente paga ou quando o atendimento acontece.',
+    ],
+    reading: ['Salário e pessoa com valor fixo viram saída fixa e aparecem em “A pagar” no dia.'],
+    access: ['Só a administração. A pessoa cadastrada aqui não ganha login.'],
+    notes: ['Mudança vale para os atendimentos de agora em diante; o repasse do que já foi feito fica como estava.'],
+  },
+  saidasfixas: {
+    title: 'Saídas fixas',
+    summary: 'Contas que se repetem (aluguel, internet, contador) e as categorias de saída.',
+    actions: [
+      '“+ Saída fixa”: descrição, categoria, valor, e se é todo mês, toda semana ou a cada 15 dias.',
+      'Marcar “O valor muda todo mês” para luz e água: o valor é escrito na hora de pagar.',
+      'Clicar numa categoria desativa ou ativa. “+ Nova categoria” cria outra.',
+      '“Conferi as saídas fixas” marca esta parte como pronta.',
+    ],
+    reading: ['Repasse de profissionais e Salários e diárias são do sistema e não desativam.'],
+    access: ['Só a administração.'],
+    notes: ['Saída fixa desativada para de aparecer em “A pagar”; o que já foi pago continua.'],
+  },
+};

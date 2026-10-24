@@ -969,6 +969,11 @@ export async function deleteAppointment(id, { runtime } = {}) {
   if (error) {
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsDeleteMessage(error));
+    // Financeiro (20261023): atendimento com pagamento não se exclui. O
+    // gatilho usa o mesmo código 23503 da evolução, então vem antes.
+    if (/appointment_has_payment/.test(error.message || '')) {
+      throw new Error('Este atendimento tem pagamento registrado no Financeiro. Anule o pagamento lá antes de excluir.');
+    }
     // patient_evolutions.appointment_id é ON DELETE RESTRICT: sessão com
     // evolução não se apaga, porque o prontuário não pode sumir junto.
     if (error.code === '23503') {

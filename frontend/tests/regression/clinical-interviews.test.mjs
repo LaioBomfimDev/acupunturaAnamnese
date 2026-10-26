@@ -47,6 +47,24 @@ const interview = () => catalog.getInterview('ecologica_adulto_heterorrelato');
 
 // ---------- conteúdo: igual ao modelo da clínica ----------
 
+test('entrevista ecológica infantil: 52 de frequência + 8 abertas, alternativa NO e exemplo por parte', () => {
+  const item = catalog.getInterview('ecologica_infantil_heterorrelato');
+  assert.ok(item, 'entrevista infantil no catálogo');
+  assert.equal(item.slot, 'familiar_laboral');
+  assert.equal(item.respondent, 'informante');
+  assert.equal(catalog.interviewItemCount(item), 60);
+  const questions = catalog.buildInterviewQuestions(item);
+  const numbered = questions.filter(question => question.number);
+  assert.equal(numbered.length, 60);
+  assert.deepEqual(numbered.slice(0, 52).map(question => question.type), Array(52).fill('single'));
+  assert.deepEqual(numbered.slice(52).map(question => question.type), Array(8).fill('long_text'));
+  assert.equal(numbered[0].options.at(-1), 'Não observado / não se aplica');
+  assert.equal(questions.filter(question => question.id.startsWith('exemplo_')).length, 9);
+  assert.equal(new Set(questions.map(question => question.id)).size, questions.length, 'ids únicos');
+  // A adulta segue com as alternativas dela.
+  assert.equal(catalog.buildInterviewQuestions(interview()).find(question => question.number).options.at(-1), 'Não sei observar');
+});
+
 test('entrevista ecológica: 48 perguntas em 9 partes, com as 6 alternativas do modelo', () => {
   const item = interview();
   assert.ok(item, 'entrevista no catálogo');
@@ -275,7 +293,10 @@ test('cada entrevista no seu lugar do menu da Psicologia (Infantil, Adulto, Aval
   assert.equal(interview().slot, 'familiar_laboral');
   assert.deepEqual(Object.keys(catalog.INTERVIEW_SLOTS), ['pais_professores', 'familiar_laboral', 'rastreio']);
   assert.equal(catalog.interviewsForSlot('psicologia', 'pais_professores').length, 0);
-  assert.equal(catalog.interviewsForSlot('psicologia', 'familiar_laboral').length, 1);
+  assert.deepEqual(
+    catalog.interviewsForSlot('psicologia', 'familiar_laboral').map(item => item.id),
+    ['ecologica_adulto_heterorrelato', 'ecologica_infantil_heterorrelato'],
+  );
   const panel = await read('src/components/interviews/PatientInterviewsPanel.jsx');
   assert.match(panel, /Aguardando o modelo da clínica/);
   const sidebar = await read('src/components/Sidebar.jsx');

@@ -10,7 +10,7 @@
 
 import {
   INTERVIEW_FREQUENT_ANSWERS,
-  INTERVIEW_UNKNOWN_ANSWER,
+  INTERVIEW_UNKNOWN_ANSWERS,
 } from '../data/clinicalInterviews.js';
 import { firstName, formatAnswer, isAnswerable, isQuestionVisible } from './patientForms.js';
 
@@ -103,7 +103,7 @@ function answerTone(question, value) {
   if (!value) return 'empty';
   if (question.type !== 'single') return 'text';
   if (INTERVIEW_FREQUENT_ANSWERS.includes(value)) return 'frequent';
-  if (value === INTERVIEW_UNKNOWN_ANSWER) return 'unknown';
+  if (INTERVIEW_UNKNOWN_ANSWERS.includes(value)) return 'unknown';
   return 'plain';
 }
 

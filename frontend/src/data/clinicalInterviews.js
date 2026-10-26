@@ -29,6 +29,9 @@ export const INTERVIEW_FREQUENCY_OPTIONS = [
 // Respostas que pedem atenção na leitura (destaque visual, nunca nota).
 export const INTERVIEW_FREQUENT_ANSWERS = ['Frequentemente', 'Quase sempre'];
 export const INTERVIEW_UNKNOWN_ANSWER = 'Não sei observar';
+// A infantil usa "NO" no lugar de "Não sei observar", como no modelo.
+export const INTERVIEW_NOT_OBSERVED_ANSWER = 'Não observado / não se aplica';
+export const INTERVIEW_UNKNOWN_ANSWERS = [INTERVIEW_UNKNOWN_ANSWER, INTERVIEW_NOT_OBSERVED_ANSWER];
 
 const ECOLOGICA_ADULTO_HETERORRELATO = {
   id: 'ecologica_adulto_heterorrelato',
@@ -238,7 +241,185 @@ const ECOLOGICA_ADULTO_HETERORRELATO = {
   },
 };
 
-export const CLINICAL_INTERVIEWS = [ECOLOGICA_ADULTO_HETERORRELATO];
+const ECOLOGICA_INFANTIL_HETERORRELATO = {
+  id: 'ecologica_infantil_heterorrelato',
+  version: 1,
+  discipline: 'psicologia',
+  title: 'Entrevista Ecológica Infantil de Heterorrelato',
+  shortName: 'Entrevista ecológica — crianças (heterorrelato)',
+  group: 'Familiar / laboral — criança',
+  slot: 'familiar_laboral',
+  audience: 'infantil',
+  respondent: 'informante',
+  respondentLabel: 'Pais, responsáveis, professores ou pessoa próxima',
+  source: 'Modelo da clínica, recebido em 26/10/2026',
+  frequencyOptions: ['Nunca', 'Raramente', 'Às vezes', 'Frequentemente', 'Quase sempre', INTERVIEW_NOT_OBSERVED_ANSWER],
+  purpose:
+    'Instrumento clínico complementar à avaliação neuropsicológica. Roteiro clínico estruturado de heterorrelato, '
+    + 'desenvolvido para investigação ecológica e levantamento de informações complementares à avaliação '
+    + 'neuropsicológica infantil.',
+  instructions:
+    'Este questionário tem como objetivo compreender como a criança se comporta, aprende, comunica-se, relaciona-se '
+    + 'e realiza suas atividades no cotidiano. Não existem respostas certas ou erradas. As informações devem refletir '
+    + 'aquilo que o informante realmente observa, evitando interpretações baseadas apenas em expectativas sobre o '
+    + 'comportamento infantil. Considere preferencialmente os últimos seis meses, indicando quando determinado '
+    + 'comportamento está presente desde a primeira infância ou surgiu recentemente. Nunca: o comportamento não é '
+    + 'observado. Raramente: acontece em situações isoladas. Às vezes: acontece ocasionalmente. Frequentemente: '
+    + 'acontece em diversas situações. Quase sempre: é uma característica muito presente no cotidiano. Não observado / '
+    + 'não se aplica: não há oportunidade de observar ou a situação não corresponde à realidade da criança. Sempre que '
+    + 'possível, descreva situações reais que exemplifiquem as respostas.',
+  technicalNote:
+    'Não constitui instrumento psicológico padronizado, escala validada, teste diagnóstico ou medida psicométrica. '
+    + 'As alternativas de frequência organizam o relato, mas não possuem pontos de corte ou interpretação normativa. '
+    + 'Os comportamentos descritos devem ser analisados considerando a idade, o nível de desenvolvimento, a '
+    + 'escolarização, as oportunidades de aprendizagem, o contexto sociocultural, a duração dos sintomas e a presença '
+    + 'de prejuízo funcional. As informações devem ser integradas às entrevistas clínicas, observação comportamental, '
+    + 'história do desenvolvimento, instrumentos validados pertinentes e demais dados obtidos na avaliação '
+    + 'neuropsicológica. O heterorrelato, isoladamente, não confirma nem exclui hipóteses diagnósticas.',
+  // Nome, nascimento e idade da criança, data e profissional vêm do
+  // cadastro e do dia da resposta: quem responde não digita.
+  identification: [
+    { id: 'escolaridade', type: 'short_text', label: 'Escolaridade/Ano escolar' },
+    { id: 'informante', type: 'short_text', label: 'Nome do informante', required: true },
+    { id: 'vinculo', type: 'short_text', label: 'Vínculo com a criança', required: true },
+    { id: 'tempo_convivencia', type: 'short_text', label: 'Tempo de convivência' },
+    { id: 'convivencia', type: 'short_text', label: 'Frequência de contato' },
+  ],
+  sections: [
+    {
+      id: 'atencao',
+      title: '3. Atenção e funções executivas',
+      example: true,
+      items: [
+        'A criança apresenta dificuldade para permanecer concentrada em atividades que exigem esforço mental contínuo?',
+        'Quando recebe instruções com duas ou mais etapas, costuma esquecer parte do que precisa fazer?',
+        'Distrai-se facilmente com conversas, sons, movimentos ou acontecimentos ao redor?',
+        'Precisa que um adulto repita orientações ou acompanhe constantemente a execução de atividades?',
+        'Inicia tarefas, mas frequentemente as abandona antes de concluí-las?',
+        'Apresenta dificuldade para organizar materiais, planejar atividades ou seguir uma sequência de ações?',
+        'Age precipitadamente, responde antes de ouvir toda a pergunta ou tem dificuldade para esperar?',
+        'Demonstra inquietação motora, movimentando mãos, pés ou corpo em situações que exigem permanecer sentada?',
+      ],
+    },
+    {
+      id: 'memoria',
+      title: '4. Memória e aprendizagem',
+      example: true,
+      items: [
+        'Apresenta dificuldade para recordar informações que foram ensinadas ou explicadas recentemente?',
+        'Precisa de muitas repetições para aprender conteúdos ou procedimentos novos?',
+        'Esquece recados, combinados ou acontecimentos relevantes do cotidiano?',
+        'Apresenta dificuldade para utilizar, em outra situação, algo que já aprendeu?',
+        'Necessita de mais tempo ou auxílio que outras crianças da mesma faixa etária para compreender atividades escolares?',
+        'Demonstra dificuldades persistentes em leitura, escrita ou matemática, considerando sua idade e escolaridade?',
+      ],
+    },
+    {
+      id: 'linguagem',
+      title: '5. Linguagem e comunicação',
+      example: true,
+      items: [
+        'Apresenta dificuldade para compreender instruções verbais, principalmente quando são longas ou complexas?',
+        'Precisa que as informações sejam reformuladas com palavras mais simples para compreendê-las?',
+        'Tem dificuldade para organizar verbalmente uma história, explicar acontecimentos ou relatar experiências?',
+        'Apresenta dificuldade para encontrar palavras, nomear objetos ou expressar o que deseja?',
+        'Demonstra dificuldade para compreender ironias, brincadeiras, expressões figuradas ou sentidos implícitos adequados à sua idade?',
+        'Apresenta dificuldades para manter conversas, respeitar turnos de fala ou adaptar sua comunicação à situação?',
+      ],
+    },
+    {
+      id: 'social',
+      title: '6. Interação social e reciprocidade',
+      example: true,
+      items: [
+        'Apresenta dificuldade para iniciar aproximações ou participar de brincadeiras com outras crianças?',
+        'Tem dificuldade para compreender regras sociais, intenções ou sentimentos de outras pessoas?',
+        'Apresenta dificuldade para compartilhar interesses, experiências ou emoções espontaneamente?',
+        'Costuma preferir atividades solitárias mesmo quando existem oportunidades adequadas de interação?',
+        'Apresenta dificuldade para manter amizades ou participar de atividades em grupo?',
+        'Tem dificuldade para adaptar o próprio comportamento quando a brincadeira ou interação exige negociação e flexibilidade?',
+      ],
+    },
+    {
+      id: 'flexibilidade',
+      title: '7. Flexibilidade cognitiva, comportamentos repetitivos e sensorialidade',
+      example: true,
+      items: [
+        'Demonstra sofrimento ou resistência acentuada diante de mudanças inesperadas na rotina?',
+        'Apresenta dificuldade para aceitar maneiras diferentes de realizar uma atividade ou resolver um problema?',
+        'Manifesta interesses muito intensos ou restritos que interferem na participação em outras atividades?',
+        'Apresenta movimentos repetitivos, vocalizações repetidas ou manipulação repetitiva de objetos?',
+        'Demonstra reações incomuns ou intensas diante de sons, luzes, cheiros, texturas, roupas ou alimentos?',
+        'Busca repetidamente determinadas experiências sensoriais, como girar, balançar, tocar objetos ou observar movimentos?',
+      ],
+    },
+    {
+      id: 'regulacao',
+      title: '8. Regulação emocional e comportamental',
+      example: true,
+      items: [
+        'Demonstra preocupação excessiva, medo de errar ou necessidade frequente de confirmação?',
+        'Apresenta irritabilidade, choro ou reações emocionais intensas diante de pequenas frustrações?',
+        'Tem dificuldade para se acalmar ou recuperar o equilíbrio emocional após ficar contrariada?',
+        'Evita atividades ou situações por insegurança, medo de julgamento ou possibilidade de fracasso?',
+        'Demonstra tristeza, desânimo, isolamento ou perda de interesse por atividades anteriormente prazerosas?',
+        'Apresenta comportamentos de oposição, agressividade verbal ou física, ou dificuldade para aceitar limites?',
+      ],
+    },
+    {
+      id: 'autonomia',
+      title: '9. Autonomia e funcionamento adaptativo',
+      example: true,
+      items: [
+        'Necessita de auxílio acima do esperado para sua idade em atividades de higiene, alimentação ou vestuário?',
+        'Apresenta dificuldade para cuidar dos próprios pertences ou cumprir pequenas responsabilidades compatíveis com a idade?',
+        'Necessita de supervisão constante para realizar atividades que já deveria conseguir executar com independência?',
+        'Demonstra dificuldade para reconhecer riscos cotidianos ou adotar comportamentos básicos de segurança adequados à idade?',
+        'Tem dificuldade para lidar com mudanças de ambiente, novas pessoas ou situações cotidianas pouco familiares?',
+        'Apresenta dificuldade para colocar em prática habilidades que demonstra conhecer quando precisa utilizá-las de maneira independente?',
+      ],
+    },
+    {
+      id: 'motora',
+      title: '10. Coordenação motora e habilidades práxicas',
+      example: true,
+      items: [
+        'Apresenta dificuldade para realizar atividades motoras finas, como desenhar, escrever, recortar ou manipular pequenos objetos?',
+        'Demonstra dificuldade em atividades que exigem equilíbrio, coordenação corporal ou planejamento de movimentos?',
+        'Precisa de demonstrações repetidas ou auxílio para aprender sequências motoras, como movimentos de brincadeiras ou atividades de autocuidado?',
+        'Apresenta lentidão, desorganização ou esforço excessivo em tarefas motoras compatíveis com sua faixa etária?',
+      ],
+    },
+    {
+      id: 'sono',
+      title: '11. Sono, rotina e funcionamento geral',
+      example: true,
+      items: [
+        'Apresenta dificuldades persistentes relacionadas ao sono, como demora para adormecer, despertares frequentes ou sonolência diurna?',
+        'Demonstra cansaço, indisposição ou oscilação de rendimento que interfere em suas atividades cotidianas?',
+        'Apresenta dificuldades significativas relacionadas à alimentação, como seletividade intensa ou resistência a determinadas consistências?',
+        'Seu comportamento ou desempenho muda significativamente conforme o ambiente, a pessoa que oferece orientação ou o tipo de atividade?',
+      ],
+    },
+    {
+      id: 'qualitativa',
+      title: '12. Investigação qualitativa complementar',
+      // Perguntas abertas: seguem a numeração do roteiro (53 a 60).
+      openItems: [
+        'Quais são as principais habilidades, facilidades e características positivas da criança?',
+        'Quais comportamentos ou dificuldades mais preocupam o informante atualmente?',
+        'Desde quando essas dificuldades são percebidas? Surgiram gradualmente ou após algum acontecimento específico?',
+        'Em quais ambientes as dificuldades são mais evidentes (casa, escola, ambientes sociais ou outros)? Existem situações em que desaparecem ou diminuem?',
+        'Como a criança reage quando não consegue realizar uma atividade ou precisa enfrentar uma situação desafiadora?',
+        'Quais estratégias costumam ajudar a criança a compreender instruções, organizar atividades ou regular suas emoções?',
+        'De que maneira as dificuldades interferem na aprendizagem, na autonomia, nas relações sociais ou na convivência familiar?',
+        'Existe alguma informação importante sobre o desenvolvimento, a saúde, a história escolar, as relações familiares ou acontecimentos recentes que possa ajudar a compreender o funcionamento da criança?',
+      ],
+    },
+  ],
+};
+
+export const CLINICAL_INTERVIEWS = [ECOLOGICA_ADULTO_HETERORRELATO, ECOLOGICA_INFANTIL_HETERORRELATO];
 
 // Lugar de cada entrevista no menu da Psicologia (16/10/2026). Lugar sem
 // entrevista ainda aparece vazio, esperando o modelo da clínica.
@@ -289,7 +470,7 @@ export function buildInterviewQuestions(interview) {
   let number = 0;
   for (const section of interview.sections) {
     questions.push({ id: `parte_${section.id}`, type: 'section', label: section.title, help: section.subtitle || '' });
-    for (const text of section.items) {
+    for (const text of section.items || []) {
       number += 1;
       questions.push({
         id: interviewItemId(number),
@@ -298,10 +479,25 @@ export function buildInterviewQuestions(interview) {
         help: '',
         required: true,
         showIf: null,
-        options: [...INTERVIEW_FREQUENCY_OPTIONS],
+        options: [...(interview.frequencyOptions || INTERVIEW_FREQUENCY_OPTIONS)],
         allowOther: false,
         lettered: true,
         number,
+      });
+    }
+    for (const text of section.openItems || []) {
+      number += 1;
+      questions.push({ id: interviewItemId(number), type: 'long_text', label: text, help: '', required: false, showIf: null, number });
+    }
+    if (section.example) {
+      questions.push({
+        id: `exemplo_${section.id}`,
+        type: 'long_text',
+        label: 'Exemplo observado e contexto',
+        help: '',
+        required: false,
+        showIf: null,
+        unnumbered: true,
       });
     }
   }
@@ -324,5 +520,6 @@ export function buildInterviewQuestions(interview) {
 
 /** Quantas perguntas do roteiro (as numeradas). */
 export function interviewItemCount(interview) {
-  return (interview?.sections || []).reduce((total, section) => total + section.items.length, 0);
+  return (interview?.sections || [])
+    .reduce((total, section) => total + (section.items || []).length + (section.openItems || []).length, 0);
 }

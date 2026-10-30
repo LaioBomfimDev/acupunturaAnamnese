@@ -10,9 +10,9 @@
 // Segredos (Supabase):
 //  * GCP_SERVICE_ACCOUNT_JSON — JSON inteiro da conta de serviço
 //    (contém client_email, private_key, project_id). NUNCA logar.
-//  * GCP_LOCATION — região obrigatória (ex.: southamerica-east1).
-//  * GCP_ALLOWED_LOCATIONS — allowlist CSV opcional. Sem ela, somente
-//    southamerica-east1 é aceita para manter residência de dados no Brasil.
+//  * GCP_LOCATION — região obrigatória (ex.: us).
+//  * GCP_ALLOWED_LOCATIONS — allowlist CSV opcional. Sem ela, valem as
+//    regiões de DEFAULT_APPROVED_VERTEX_LOCATIONS (vertexReliability.ts).
 //
 // O corpo da requisição (contents/systemInstruction/generationConfig/
 // responseSchema) é IDÊNTICO ao do AI Studio — só muda endpoint + auth.
@@ -26,6 +26,7 @@ import {
   type ReliableFetchRetryEvent,
   resolveVertexLocation,
   VertexConfigurationError,
+  vertexHostFor,
 } from './vertexReliability.ts';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -255,9 +256,7 @@ export async function vertexGenerateContent(
   const sa = getServiceAccount();
   const location = getLocation();
   const token = await getAccessToken(correlationId);
-  const host = location === 'global'
-    ? 'aiplatform.googleapis.com'
-    : `${location}-aiplatform.googleapis.com`;
+  const host = vertexHostFor(location);
   const url = `https://${host}/v1/projects/${sa.project_id}/locations/${location}/publishers/google/models/${model}:generateContent`;
   const timeoutMs = boundedIntegerEnv(
     'VERTEX_REQUEST_TIMEOUT_MS',

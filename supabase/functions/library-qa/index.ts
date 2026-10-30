@@ -20,8 +20,9 @@ import {
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
-import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { GEMINI_MODEL, THINKING_MINIMAL } from '../_shared/aiModels.ts';
 import { usageContextFor } from '../_shared/aiUsage.ts';
+import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
@@ -32,7 +33,7 @@ import {
 } from '../_shared/observability.ts';
 import { scrubClinicalText } from '../_shared/clinicalPayload.ts';
 
-const MODEL_ID = GEMINI_FLASH;
+const MODEL_ID = GEMINI_MODEL;
 
 const OUTPUT_SCHEMA = {
   type: 'OBJECT',
@@ -179,6 +180,8 @@ Deno.serve(async (req) => {
       relevanceQuery: sanitizedQuestion,
     });
 
+    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+    if (budgetResponse) return budgetResponse;
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
@@ -186,10 +189,11 @@ Deno.serve(async (req) => {
         parts: [{ text: `FONTES_APROVADAS (JSON):\n${contextText}\n\nPERGUNTA: ${sanitizedQuestion}` }],
       }],
       generationConfig: {
+        maxOutputTokens: 1536,
         temperature: 0.2,
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: THINKING_MINIMAL,
       },
     }, usageContextFor(supabaseAdmin, 'library-qa', caller));
 

@@ -14,6 +14,7 @@ import { listMyInstrumentRiskAlerts } from './patientInstrumentService';
 import { loadReceivablesData } from './financeiroService';
 import { onlyEvolutionDisciplines } from '../utils/evolutionQueue';
 import { buildReceivables, todayInClinic } from '../utils/finance';
+import { aiAlertFor, summarizeAiUsage } from '../utils/aiUsage';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_MAX_MESSAGES,
@@ -60,11 +61,13 @@ function settledValue(result) {
 export async function loadAttention({ role, now = new Date() }) {
   const clinical = role !== 'reception';
   const admin = role === 'admin';
-  const [risk, evolutions, finance] = await Promise.allSettled([
+  const [risk, evolutions, finance, aiUsage] = await Promise.allSettled([
     clinical ? listMyInstrumentRiskAlerts() : Promise.resolve([]),
     clinical ? listAppointmentsAwaitingEvolution().then(onlyEvolutionDisciplines) : Promise.resolve([]),
     admin ? loadReceivablesData() : Promise.resolve(null),
+    admin ? loadAiUsageMonth() : Promise.resolve(null),
   ]);
+  const aiRows = settledValue(aiUsage);
   const financeData = settledValue(finance);
   const receivables = financeData
     ? buildReceivables({ ...financeData, today: todayInClinic(now) }).items
@@ -75,6 +78,7 @@ export async function loadAttention({ role, now = new Date() }) {
     pendingEvolutions: settledValue(evolutions),
     receivables,
     nearEndPackages: financeData ? packagesNearEnd(financeData) : null,
+    aiAlert: admin ? (aiRows ? aiAlertFor(summarizeAiUsage(aiRows).limitShare) || false : null) : undefined,
   });
 }
 
@@ -90,9 +94,16 @@ export async function loadAiUsageMonth() {
   return data || [];
 }
 
-/** Teto do mês em dólar; null = sem teto. */
-export async function saveAiMonthlyLimit(usd) {
-  const { data, error } = await supabase.rpc('clinic_admin_set_ai_limit', { p_usd: usd });
+/** SuperAdm: uso do mês de todas as instituições (o banco confere o papel). */
+export async function loadAiUsageOverview() {
+  const { data, error } = await supabase.rpc('superadmin_ai_usage_overview');
+  if (error) throw new Error(error.message || 'Não foi possível carregar o uso de IA das instituições.');
+  return data || [];
+}
+
+/** SuperAdm: teto do mês de uma instituição em dólar; null = sem teto. */
+export async function saveClinicAiLimit(clinicId, usd) {
+  const { data, error } = await supabase.rpc('superadmin_set_ai_limit', { p_clinic: clinicId, p_usd: usd });
   if (error) throw new Error(error.message || 'Não foi possível salvar o teto.');
   return data;
 }

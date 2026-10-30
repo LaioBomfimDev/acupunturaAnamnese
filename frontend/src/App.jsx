@@ -329,7 +329,7 @@ function AppScreens() {
   useEffect(() => {
     setAssistantScreen(assistantScreen);
   }, [assistantScreen]);
-  useEffect(() => registerAssistantNavigator(target => {
+  useEffect(() => registerAssistantNavigator((target, section) => {
     const current = bridgeStateRef.current;
     if (current.activeDiscipline) {
       if (current.hasPendingChanges && !window.confirm('Existem alterações ainda não salvas. Deseja trocar de tela mesmo assim?')) return;
@@ -338,6 +338,8 @@ function AppScreens() {
       setActiveTab('Tela inicial');
     }
     openHubScreen(target);
+    // Atalho para uma aba da Gestão (ex.: IA do mês).
+    if (target === 'gestao' && section) setHubGestaoInitialSection(section);
   }), []);
 
   if (loading) {

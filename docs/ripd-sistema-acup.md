@@ -59,7 +59,8 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
    fotos da língua em **bucket privado** (`clinical-tongue-photos`, RLS por terapeuta). Chave
    administrativa e de criptografia **não ficam no frontend**.
 3. **IA (sob demanda):** ao clicar nos botões de IA, o sistema chama Edge Functions (Supabase) que
-   acionam o **Google Cloud Vertex AI (Gemini)** na **região do Brasil (São Paulo)**. Antes de enviar,
+   acionam o **Google Cloud Vertex AI (Gemini)** na **multirregião dos EUA (`us`)** desde 30/10/2026
+   (ver seção 4: o modelo atual não é oferecido em São Paulo). Antes de enviar,
    o **texto é anonimizado no cliente** (mascara nome, CPF, telefone, e-mail, datas, CEP — `utils/anonymize.js`)
    e o **nome do paciente não é enviado**. As funções **não registram** o conteúdo do paciente em log.
 4. **Retenção:** [preencher: prazo de guarda — em regra ≥ 20 anos para prontuário; confirmar com o conselho].
@@ -73,7 +74,13 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 
 ## 4. IA — descrição e salvaguardas
 
-- **Modelo:** Gemini (`gemini-2.5-flash`) via **Vertex AI**, em **São Paulo** (residência de dados no Brasil).
+- **Modelo:** Gemini (`gemini-3.5-flash-lite`) via **Vertex AI**, na **multirregião dos EUA (`us`)**: o
+  processamento fica dentro dos EUA. O `gemini-2.5-flash`, usado até então, foi aposentado pelo Google em
+  20/10/2026 e os modelos que o substituem não são oferecidos em São Paulo (conferido em 30/10/2026).
+  A configuração de São Paulo existia no código desde 07/08/2026, mas o segredo da região nunca foi
+  cadastrado no servidor; antes disso o padrão era `us-central1`. Há, portanto, **transferência
+  internacional** de texto já anonimizado (LGPD art. 33), amparada nas cláusulas do CDPA do Google.
+  [preencher: confirmar com o jurídico a base da transferência internacional.]
 - **Não treinamento:** sob o **CDPA do Google**, os dados enviados **não** treinam modelos do provedor nem
   passam por revisão humana do provedor. (CDPA cobre LGPD; PDF pt-BR arquivado pela clínica.)
 - **Superfícies:** língua (visão), anamnese→marcações, raciocínio clínico, rascunho de relatório/evolução,
@@ -87,7 +94,8 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 
 - Coleta limitada à finalidade clínica; campos sensíveis só quando necessários.
 - Anonimização reduz exposição de identificadores diretos à IA.
-- Processamento no Brasil evita transferência internacional para a parte de IA.
+- A IA processa nos EUA (multirregião `us`), só com texto anonimizado e sob o CDPA; se o Google
+  passar a oferecer um modelo atual em São Paulo, a região volta para o Brasil (`GCP_LOCATION`).
 - Acesso restrito por RLS/perfil; criptografia em repouso para dados sensíveis.
 
 ---
@@ -97,7 +105,7 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 | # | Risco ao titular | Prob. | Impacto | Medidas mitigadoras | Residual |
 |---|---|---|---|---|---|
 | 1 | Acesso indevido a prontuário | Baixa | Alto | RLS, criptografia, perfis, logs, senha forte/troca obrigatória | Baixo |
-| 2 | Vazamento via IA (texto sensível) | Baixa | Alto | Anonimização na origem, nome não enviado, Vertex no Brasil, CDPA não-treino | Baixo |
+| 2 | Vazamento via IA (texto sensível) | Baixa | Alto | Anonimização na origem, nome não enviado, Vertex na multirregião dos EUA, CDPA não-treino | Baixo |
 | 3 | Foto de língua exposta | Baixa | Médio | Bucket privado + RLS, URL assinada sob demanda, EXIF removido | Baixo |
 | 4 | Sugestão de IA tratada como diagnóstico | Média | Alto | Revisão humana obrigatória, avisos na UI e no termo, sem decisão automatizada | Baixo/Médio |
 | 5 | Dados de menores sem consentimento adequado | Média | Alto | §9; consentimento do responsável; minimização | Médio (reduzir com fluxo formal de consentimento) |
@@ -142,7 +150,7 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 
 ## 10. Conclusão e plano de ação
 
-**Avaliação preliminar:** com as salvaguardas implementadas (anonimização, residência no Brasil, CDPA
+**Avaliação preliminar:** com as salvaguardas implementadas (anonimização, processamento de IA restrito aos EUA, CDPA
 não-treino, revisão humana, RLS/criptografia), o risco residual tende a **baixo/médio**, condicionado às
 pendências abaixo.
 

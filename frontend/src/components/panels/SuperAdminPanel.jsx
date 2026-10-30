@@ -28,6 +28,7 @@ import {
 import { ProfessionalCreateForm } from './ProfessionalCreateForm';
 import { ClinicAdminPanel } from './ClinicAdminPanel';
 import { DeployHealthPanel } from './DeployHealthPanel';
+import { AiUsageAdminPanel } from './AiUsageAdminPanel';
 import { MapCoordinateEditor } from './MapCoordinateEditor';
 import { CurationSections, CURATION_SECTIONS } from './CurationSections';
 import { filterManagedProfessionals } from './superAdminFilters';
@@ -514,6 +515,8 @@ export function SuperAdminPanel({ currentUserId, activeSection = 'manage' }) {
         <ClinicAdminPanel />
       ) : activeSection === 'deploy-health' ? (
         <DeployHealthPanel />
+      ) : activeSection === 'ai-usage' ? (
+        <AiUsageAdminPanel />
       ) : CURATION_SECTION_IDS.has(activeSection) ? (
         <CurationSections activeSection={activeSection} actor={SUPER_ADMIN_ACTOR} />
       ) : activeSection === 'maps' ? (

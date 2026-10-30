@@ -8,7 +8,7 @@
 //  * sinais objetivos/subjetivos selecionados (rótulos, sem PII);
 //  * texto livre da anamnese já mascarado.
 //
-// Chama o Gemini flash com raciocínio LEVE (thinkingBudget baixo) e
+// Chama o Gemini flash com raciocínio LEVE (nível de pensamento baixo) e
 // devolve raciocínio estruturado para conferência: interpretação,
 // como separar o diferencial, red flags, contradições e perguntas.
 //
@@ -25,8 +25,9 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
-import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { GEMINI_MODEL, THINKING_LOW } from '../_shared/aiModels.ts';
 import { usageContextFor } from '../_shared/aiUsage.ts';
+import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
@@ -41,7 +42,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = GEMINI_FLASH;
+const MODEL_ID = GEMINI_MODEL;
 const SIGNAL_SCHEMA: ClinicalPayloadSchema = {
   type: 'array',
   maxItems: 64,
@@ -258,6 +259,8 @@ Deno.serve(async (req) => {
       relevanceQuery: reasoningQuery,
     });
 
+    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+    if (budgetResponse) return budgetResponse;
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
@@ -265,11 +268,12 @@ Deno.serve(async (req) => {
         parts: [{ text: `Caso clínico (JSON):\n${caseText}${knowledgeText ? `\n\nCONHECIMENTO CURADO RELEVANTE (base do próprio sistema — fundamente a leitura dos padrões nisto, priorizando sobre conhecimento geral; não invente além dos sinais do caso):\n${knowledgeText}` : ''}\n\nProduza o raciocínio estruturado para conferência profissional.` }],
       }],
       generationConfig: {
+        maxOutputTokens: 4096,
         temperature: 0.3,
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
         // Raciocínio LEVE: orçamento de "thinking" baixo para conter custo/latência.
-        thinkingConfig: { thinkingBudget: 1024 },
+        thinkingConfig: THINKING_LOW,
       },
     }, usageContextFor(supabaseAdmin, 'clinical-reasoning', caller));
 

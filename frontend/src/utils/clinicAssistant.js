@@ -81,8 +81,10 @@ export function packagesNearEnd({ packages = [], charges = [] }) {
  * @param pendingEvolutions atendimentos que esperam evolução
  * @param receivables     itens a receber (utils/finance.js, buildReceivables)
  * @param nearEndPackages pacotes perto do fim (packagesNearEnd)
+ * @param aiAlert         aviso do limite de IA (aiAlertFor): false sem aviso,
+ *                        null quando não deu para conferir
  */
-export function buildAttentionItems({ role, riskAlerts = null, pendingEvolutions = null, receivables = null, nearEndPackages = null }) {
+export function buildAttentionItems({ role, riskAlerts = null, pendingEvolutions = null, receivables = null, nearEndPackages = null, aiAlert = undefined }) {
   const items = [];
   const failed = [];
 
@@ -112,6 +114,19 @@ export function buildAttentionItems({ role, riskAlerts = null, pendingEvolutions
   }
 
   if (role === 'admin') {
+    // Limite de IA do mês (aviso em 50%, 80% e 100%, utils/aiUsage.js).
+    if (aiAlert === null) failed.push('IA do mês');
+    else if (aiAlert) {
+      items.push({
+        id: 'ai',
+        tone: aiAlert.level >= 80 ? 'pending' : 'info',
+        strong: `IA do mês em ${aiAlert.level}%`,
+        text: aiAlert.level >= 100 ? 'do limite: as funções de IA pararam' : 'do limite',
+        target: 'gestao',
+        section: 'ia',
+        targetLabel: 'IA do mês',
+      });
+    }
     if (nearEndPackages === null) failed.push('pacotes');
     else if (nearEndPackages.length) {
       items.push({

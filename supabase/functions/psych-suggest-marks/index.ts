@@ -26,8 +26,9 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
-import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { GEMINI_MODEL, THINKING_MINIMAL } from '../_shared/aiModels.ts';
 import { usageContextFor } from '../_shared/aiUsage.ts';
+import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
@@ -42,7 +43,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = GEMINI_FLASH;
+const MODEL_ID = GEMINI_MODEL;
 const REQUEST_SCHEMA: ClinicalPayloadSchema = {
   type: 'object',
   properties: {
@@ -236,6 +237,8 @@ Deno.serve(async (req) => {
       relevanceQuery: text,
     });
 
+    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+    if (budgetResponse) return budgetResponse;
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
@@ -243,11 +246,12 @@ Deno.serve(async (req) => {
         parts: [{ text: `Texto da anamnese de psicologia:\n"""\n${text}\n"""\n\nAponte os sinais do checklist que este texto embasa, cada um com seu tipo (sustentado/investigar). Risco primeiro, se houver.` }],
       }],
       generationConfig: {
+        maxOutputTokens: 2048,
         temperature: 0.2,
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
         // Tarefa simples e barata — sem raciocínio estendido.
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: THINKING_MINIMAL,
       },
     }, usageContextFor(supabaseAdmin, 'psych-suggest-marks', caller));
 

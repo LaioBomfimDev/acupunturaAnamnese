@@ -69,10 +69,11 @@ export function registerAssistantNavigator(handler) {
   };
 }
 
-export function openScreenFromAssistant(target) {
+/** Abre a tela (e, na Gestão, a aba `section`) pedida por um atalho. */
+export function openScreenFromAssistant(target, section = null) {
   if (!navigator) return;
   setState({ open: false });
-  navigator(target);
+  navigator(target, section);
 }
 
 let attentionLoadedAt = 0;

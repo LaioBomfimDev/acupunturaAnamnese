@@ -11,6 +11,8 @@
 export const AI_PRICES_USD_PER_MILLION = {
   'gemini-2.5-flash': { input: 0.30, output: 2.50 },
   'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },
+  'gemini-3.1-flash-lite': { input: 0.25, output: 1.50 },
+  'gemini-3.5-flash-lite': { input: 0.30, output: 2.50 },
 };
 
 // Nome de cada função de IA como a pessoa conhece.
@@ -63,6 +65,40 @@ export function withLimit(summary, limitUsd) {
     limitReached: limitUsd !== null && summary.totalUsd >= limitUsd,
     limitShare: limitUsd ? Math.min(1, summary.totalUsd / limitUsd) : null,
   };
+}
+
+// Avisos do teto (30/10/2026, pedido da administradora): 50%, 80% e 100%.
+export const AI_ALERT_LEVELS = [
+  { level: 100, share: 1, tone: 'full', text: 'Limite de IA do mês atingido: as funções de IA ficam paradas até o mês virar ou o limite subir.' },
+  { level: 80, share: 0.8, tone: 'high', text: 'A IA do mês já usou 80% do limite.' },
+  { level: 50, share: 0.5, tone: 'half', text: 'A IA do mês já usou metade do limite.' },
+];
+
+/** Aviso que vale para a fração do teto já usada; null abaixo de 50% ou sem teto. */
+export function aiAlertFor(limitShare) {
+  if (limitShare === null || limitShare === undefined) return null;
+  return AI_ALERT_LEVELS.find(alert => limitShare >= alert.share) || null;
+}
+
+/**
+ * Quadro do SuperAdm: as linhas de superadmin_ai_usage_overview juntas
+ * por instituição (cada uma com o resumo de summarizeAiUsage). O uso sem
+ * instituição (o próprio SuperAdm) vem por último.
+ */
+export function summarizeAiOverview(rows = []) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = row.clinica_id || 'sem-instituicao';
+    const group = groups.get(key) || { id: row.clinica_id || null, name: row.clinica || 'Sem instituição (SuperAdm)', rows: [] };
+    group.rows.push(row);
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .map(group => {
+      const summary = summarizeAiUsage(group.rows);
+      return { id: group.id, name: group.name, ...summary, alert: aiAlertFor(summary.limitShare) };
+    })
+    .sort((a, b) => (a.id === null) - (b.id === null) || b.totalUsd - a.totalUsd || a.name.localeCompare(b.name));
 }
 
 /** Dólar com vírgula: "US$ 0,42"; abaixo de um centavo, "menos de US$ 0,01". */

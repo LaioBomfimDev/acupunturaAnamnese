@@ -89,7 +89,7 @@ export async function runAiSmokeCheck({
         maxOutputTokens: 96,
         responseMimeType: 'application/json',
         responseSchema: SMOKE_OUTPUT_SCHEMA,
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: { thinkingLevel: 'MINIMAL' },
       },
     }, null);
 

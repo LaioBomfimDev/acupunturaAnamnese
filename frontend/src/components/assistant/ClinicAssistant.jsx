@@ -105,7 +105,7 @@ function AttentionList({ attention, collapsed, allowed, onToggle }) {
                 return (
                   <li key={item.id}>
                     {canOpen ? (
-                      <button type="button" className="ca-attention-item" onClick={() => openScreenFromAssistant(item.target)}>
+                      <button type="button" className="ca-attention-item" onClick={() => openScreenFromAssistant(item.target, item.section)}>
                         {content}
                       </button>
                     ) : (

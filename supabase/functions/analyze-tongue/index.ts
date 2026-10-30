@@ -28,8 +28,9 @@ import {
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
-import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { GEMINI_MODEL, THINKING_MINIMAL } from '../_shared/aiModels.ts';
 import { usageContextFor } from '../_shared/aiUsage.ts';
+import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import {
@@ -37,7 +38,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = GEMINI_FLASH;
+const MODEL_ID = GEMINI_MODEL;
 const BUCKET = 'clinical-tongue-photos';
 
 // Mantenha em sincronia com tongueAiTagMap em
@@ -225,13 +226,17 @@ Deno.serve(async (req) => {
       callerId: caller.user.id,
     });
 
+    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+    if (budgetResponse) return budgetResponse;
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{ role: 'user', parts }],
       generationConfig: {
+        maxOutputTokens: 2048,
         temperature: 0.4,
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
+        thinkingConfig: THINKING_MINIMAL,
       },
     }, usageContextFor(supabaseAdmin, 'analyze-tongue', caller));
 

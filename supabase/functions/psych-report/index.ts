@@ -7,8 +7,9 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
-import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { GEMINI_MODEL, THINKING_LOW } from '../_shared/aiModels.ts';
 import { usageContextFor } from '../_shared/aiUsage.ts';
+import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
@@ -23,7 +24,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = GEMINI_FLASH;
+const MODEL_ID = GEMINI_MODEL;
 const REQUEST_SCHEMA: ClinicalPayloadSchema = {
   type: 'object',
   properties: {
@@ -200,6 +201,8 @@ Deno.serve(async (req) => {
       relevanceQuery: caseText.slice(0, 4000),
     });
 
+    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+    if (budgetResponse) return budgetResponse;
     const response = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemText }] },
       contents: [{
@@ -207,10 +210,11 @@ Deno.serve(async (req) => {
         parts: [{ text: `Avaliação neuropsicológica estruturada (JSON):\n${caseText}\n\nRedija o rascunho sem acrescentar fatos.` }],
       }],
       generationConfig: {
+        maxOutputTokens: 6144,
         temperature: 0.2,
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
-        thinkingConfig: { thinkingBudget: 1024 },
+        thinkingConfig: THINKING_LOW,
       },
     }, usageContextFor(supabaseAdmin, 'psych-report', caller));
 

@@ -24,8 +24,9 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
-import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { GEMINI_MODEL, THINKING_MINIMAL } from '../_shared/aiModels.ts';
 import { usageContextFor } from '../_shared/aiUsage.ts';
+import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import {
@@ -39,7 +40,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = GEMINI_FLASH;
+const MODEL_ID = GEMINI_MODEL;
 const REPORT_MODES = [
   'Resumo clínico',
   'Relatório profissional',
@@ -286,14 +287,17 @@ Deno.serve(async (req) => {
       ? `Dados do relatório (JSON):\n${payloadText}\n\nRedija o rascunho.`
       : `Sessões do paciente (JSON):\n${payloadText}\n\nRedija o resumo da evolução.`;
 
+    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+    if (budgetResponse) return budgetResponse;
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: userText }] }],
       generationConfig: {
+        maxOutputTokens: 4096,
         temperature: 0.4,
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: THINKING_MINIMAL,
       },
     }, usageContextFor(supabaseAdmin, 'draft-narrative', caller));
 

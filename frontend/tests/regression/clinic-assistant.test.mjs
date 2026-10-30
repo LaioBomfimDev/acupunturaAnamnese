@@ -18,7 +18,7 @@ import path from 'node:path';
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import * as assistant from '../../src/utils/clinicAssistant.js';
-import { AI_PRICES_USD_PER_MILLION, formatUsd, summarizeAiUsage } from '../../src/utils/aiUsage.js';
+import { AI_PRICES_USD_PER_MILLION, aiAlertFor, formatUsd, summarizeAiOverview, summarizeAiUsage } from '../../src/utils/aiUsage.js';
 import { unplacedHelpGroups } from '../../src/utils/assistantHelp.js';
 import { GESTAO_HELP } from '../../src/data/screenHelp.js';
 import { buildAssistantHelpMirror, HELP_MIRROR_TARGET } from '../../scripts/sync-assistant-help.mjs';
@@ -55,6 +55,38 @@ test('preços, telas e limites iguais na tela e na Edge Function', async () => {
   assert.match(rulesTs, new RegExp(`ASSISTANT_MAX_MESSAGE_CHARS = ${assistant.ASSISTANT_MAX_MESSAGE_CHARS};`));
   assert.match(rulesTs, /if \(link === 'financeiro'\) return role === 'admin';/);
   assert.match(rulesTs, /if \(link === 'evolucao' \|\| link === 'escalas'\) return role !== 'reception';/);
+});
+
+test('modelo ativo e "pensamento" por nível: nada de thinkingBudget na família 3', async () => {
+  const modelsTs = await read(`${functionsDir}/_shared/aiModels.ts`);
+  const model = modelsTs.match(/export const GEMINI_MODEL = '([a-z0-9.-]+)';/)[1];
+  assert.equal(model, 'gemini-3.5-flash-lite', 'escolha da administradora em 30/10/2026');
+  assert.ok(AI_PRICES_USD_PER_MILLION[model], 'modelo em uso tem preço');
+
+  const dirs = (await readdir(path.join(root, functionsDir), { withFileTypes: true }))
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name);
+  for (const dir of dirs) {
+    const files = (await readdir(path.join(root, functionsDir, dir))).filter(name => name.endsWith('.ts'));
+    for (const file of files) {
+      const source = await read(`${functionsDir}/${dir}/${file}`);
+      assert.doesNotMatch(source, /thinkingBudget:/, `${dir}/${file}: thinkingBudget dá 400 na família 3`);
+      if (/vertexGenerateContent\(MODEL_ID/.test(source)) {
+        assert.match(source, /thinkingConfig: THINKING_(MINIMAL|LOW),/, `${dir}: nível de pensamento explícito`);
+      }
+    }
+  }
+});
+
+test('região da Vertex: endereço certo para global, multirregião e região única', async () => {
+  const reliability = await import('../../../supabase/functions/_shared/vertexReliability.ts');
+  assert.equal(reliability.vertexHostFor('global'), 'aiplatform.googleapis.com');
+  assert.equal(reliability.vertexHostFor('us'), 'aiplatform.us.rep.googleapis.com');
+  assert.equal(reliability.vertexHostFor('eu'), 'aiplatform.eu.rep.googleapis.com');
+  assert.equal(reliability.vertexHostFor('southamerica-east1'), 'southamerica-east1-aiplatform.googleapis.com');
+  assert.equal(reliability.resolveVertexLocation('us', 'us'), 'us');
+  assert.throws(() => reliability.resolveVertexLocation(null, null), /GCP_LOCATION ausente/);
+  assert.throws(() => reliability.resolveVertexLocation('us', 'southamerica-east1'), /não aprovada/);
 });
 
 test('atalhos por perfil: financeiro só da administração, recepção sem clínico', () => {
@@ -170,22 +202,93 @@ test('registro de uso no banco: sem conteúdo, sem leitura direta, só somado e 
   const month = sql.match(/CREATE OR REPLACE FUNCTION public\.ai_usage_month\([\s\S]*?\r?\n\$\$;/)[0];
   assert.match(month, /NOT public\.is_clinic_admin\(auth\.uid\(\)\)/);
   assert.match(month, /public\.user_clinic_id\(auth\.uid\(\)\)/, 'sempre a instituição de quem pergunta');
-  const limit = sql.match(/CREATE OR REPLACE FUNCTION public\.clinic_admin_set_ai_limit\([\s\S]*?\r?\n\$\$;/)[0];
-  assert.match(limit, /NOT public\.is_clinic_admin\(auth\.uid\(\)\)/);
   assert.match(sql, /'America\/Sao_Paulo'/, 'o mês vira no fuso da clínica');
+
+  // O limite passou a ser do SuperAdm (20261030b): a clínica só vê.
+  const superSql = await read('../supabase/migrations/20261030b_ai_usage_superadmin.sql');
+  assert.match(superSql, /DROP FUNCTION IF EXISTS public\.clinic_admin_set_ai_limit\(NUMERIC\);/);
+  for (const name of ['superadmin_ai_usage_overview', 'superadmin_set_ai_limit']) {
+    const fn = superSql.match(new RegExp('CREATE OR REPLACE FUNCTION public\\.' + name + '\\([\\s\\S]*?\\r?\\n\\$\\$;'))[0];
+    assert.match(fn, /IF NOT public\.is_super_admin\(auth\.uid\(\)\) THEN/, name + ' só para o SuperAdm');
+  }
+});
+
+test('limite do mês em todas as funções de IA, conferido antes do Gemini', async () => {
+  const budget = await read(`${functionsDir}/_shared/aiBudget.ts`);
+  assert.match(budget, /rpc\('ai_usage_totals'/);
+  assert.match(budget, /code: 'ai_limit' \}, 429\)/);
+  assert.match(budget, /if \(!budget\) \{[\s\S]*?503\)/, 'sem conseguir conferir, não chama');
+  assert.match(budget, /if \(!clinicId\) return null;/, 'SuperAdm sem instituição não tem limite');
+
+  const dirs = (await readdir(path.join(root, functionsDir), { withFileTypes: true }))
+    .filter(entry => entry.isDirectory() && entry.name !== '_shared')
+    .map(entry => entry.name);
+  let guarded = 0;
+  for (const dir of dirs) {
+    const source = await read(functionsDir + '/' + dir + '/index.ts').catch(() => '');
+    const call = source.indexOf('vertexGenerateContent(MODEL_ID');
+    if (call < 0) continue;
+    const check = source.lastIndexOf('await enforceAiBudget(supabaseAdmin, caller, jsonResponse)', call);
+    assert.ok(check > 0, dir + ': confere o limite antes do Gemini');
+    assert.match(source.slice(check, call), /if \(budgetResponse\) return budgetResponse;/);
+    guarded += 1;
+  }
+  assert.equal(guarded, 9);
+});
+
+test('avisos do limite em 50%, 80% e 100%, e o quadro do SuperAdm por instituição', () => {
+  assert.equal(aiAlertFor(null), null, 'sem limite, sem aviso');
+  assert.equal(aiAlertFor(0.49), null);
+  assert.equal(aiAlertFor(0.5).level, 50);
+  assert.equal(aiAlertFor(0.85).level, 80);
+  assert.equal(aiAlertFor(1).level, 100);
+
+  const admin = assistant.buildAttentionItems({ role: 'admin', riskAlerts: [], pendingEvolutions: [], receivables: [], nearEndPackages: [], aiAlert: aiAlertFor(0.8) });
+  assert.deepEqual(admin.items.map(item => [item.id, item.tone, item.target, item.section]), [['ai', 'pending', 'gestao', 'ia']]);
+  assert.equal(admin.items[0].strong, 'IA do mês em 80%');
+  const failed = assistant.buildAttentionItems({ role: 'admin', riskAlerts: [], pendingEvolutions: [], receivables: [], nearEndPackages: [], aiAlert: null });
+  assert.deepEqual(failed.failed, ['IA do mês']);
+  const professional = assistant.buildAttentionItems({ role: 'professional', riskAlerts: [], pendingEvolutions: [], aiAlert: aiAlertFor(1) });
+  assert.deepEqual(professional.items, [], 'o aviso de limite é da administração');
+
+  const overview = summarizeAiOverview([
+    { clinica_id: 'a', clinica: 'Clínica A', funcao: 'library-qa', modelo: 'gemini-3.5-flash-lite', chamadas: 4, entrada: 1_000_000, saida: 0, raciocinio: 0, teto_usd: 0.5 },
+    { clinica_id: 'b', clinica: 'Clínica B', funcao: null, modelo: null, chamadas: 0, entrada: 0, saida: 0, raciocinio: 0, teto_usd: 20 },
+    { clinica_id: null, clinica: null, funcao: 'library-qa', modelo: 'gemini-3.5-flash-lite', chamadas: 1, entrada: 10, saida: 0, raciocinio: 0, teto_usd: null },
+  ]);
+  assert.deepEqual(overview.map(item => [item.name, item.calls, item.alert?.level ?? null]), [
+    ['Clínica A', 4, 50],
+    ['Clínica B', 0, null],
+    ['Sem instituição (SuperAdm)', 1, null],
+  ]);
+});
+
+test('assistente lê só os tópicos que importam e o índice de todos', async () => {
+  const retrieval = await import('../../../supabase/functions/_shared/assistantRetrieval.ts');
+  const { ASSISTANT_HELP_TOPICS } = await import('../../../supabase/functions/_shared/assistantHelpCorpus.ts');
+  const picked = retrieval.selectHelpTopics(['Como lanço um pacote?'], 'agenda', 'admin');
+  assert.ok(picked.length <= retrieval.MAX_SELECTED_TOPICS);
+  assert.ok(picked.some(topic => topic.title === 'Financeiro → Pacotes'), 'acha o tópico da pergunta');
+  assert.ok(picked.some(topic => topic.title.startsWith('Agenda')), 'e o da tela onde a pessoa está');
+  assert.ok(JSON.stringify(picked).length < JSON.stringify(ASSISTANT_HELP_TOPICS).length / 3, 'manda bem menos que tudo');
+  assert.equal(retrieval.helpIndex().length, ASSISTANT_HELP_TOPICS.length, 'o índice cobre todos os tópicos');
+
+  const reception = retrieval.selectHelpTopics(['o que tem aqui'], 'inicio', 'reception');
+  assert.ok(reception.every(topic => !topic.id.startsWith('HOME_HELP.') || topic.id === 'HOME_HELP.reception'), 'só a tela inicial do próprio perfil');
+
+  const source = await read(functionsDir + '/clinic-assistant/index.ts');
+  assert.match(source, /INDICE_DA_AJUDA \(JSON\)/);
+  assert.match(source, /selectHelpTopics\(.*screen, role\)/);
 });
 
 test('Edge Function da assistente: acesso, teto antes da IA, só ajuda do sistema, nunca conduta', async () => {
   const source = await read(`${functionsDir}/clinic-assistant/index.ts`);
   assert.match(source, /assertEdgeAccess\(caller\.profile, caller\.claims\)/);
   assert.match(source, /enforceEdgeRateLimit\(/);
-  assert.ok(source.indexOf("rpc('ai_usage_totals'") < source.indexOf('vertexGenerateContent(MODEL_ID'), 'confere o teto antes de chamar');
-  assert.match(source, /code: 'ai_limit'/);
-  assert.match(source, /if \(totalsError \|\| clinicError\)/, 'sem conseguir conferir o teto, não chama');
   assert.match(source, /scrubClinicalText\(text\)/, 'mensagens passam pela limpeza de identificadores');
   assert.match(source, /Nunca dê diagnóstico, conduta, prescrição/);
   assert.match(source, /Nesta versão você NÃO vê pacientes/);
-  assert.match(source, /ASSISTANT_HELP_TOPICS/);
+  assert.match(source, /helpIndex\(\)/);
   assert.doesNotMatch(source, /\.from\('(patients|patient_|clinical_records|appointments|finance_|appointment_charges)/, 'etapa 1 não lê dado de paciente nem financeiro');
   assert.match(source, /links\.includes\(link\)/, 'atalho só da lista do perfil');
   assert.match(source, /role === 'super_admin'\) return null/, 'SuperAdm não é equipe de instituição');
@@ -218,6 +321,18 @@ test('tela: botão minimizado fora da tela inicial, painel fecha como as outras 
   assert.match(css, /body:has\(\.ag-fab\) \.ca-launcher/, 'na Agenda do celular, acima do "+ Novo agendamento"');
   assert.match(css, /@media \(max-width: 1024px\)/);
   assert.doesNotMatch(css, /#[0-9a-f]{3,6}\b/i, 'só tokens');
+});
+
+test('SuperAdm → IA por instituição define o limite; a clínica só vê', async () => {
+  const sidebar = await read('src/components/Sidebar.jsx');
+  assert.match(sidebar, /\{ id: 'ai-usage', label: 'IA por instituição'/);
+  const superPanel = await read('src/components/panels/SuperAdminPanel.jsx');
+  assert.match(superPanel, /activeSection === 'ai-usage' \?/);
+  const panel = await read('src/components/panels/AiUsageAdminPanel.jsx');
+  assert.match(panel, /saveClinicAiLimit\(clinic\.id, value\)/);
+  const usage = await read('src/components/panels/UsoIA.jsx');
+  assert.doesNotMatch(usage, /<form|saveAi/, 'a administração da clínica não muda o limite');
+  assert.match(usage, /aiAlertFor\(summary\.limitShare\)/);
 });
 
 test('Gestão → Configurações → IA do mês com "Como funciona"', async () => {

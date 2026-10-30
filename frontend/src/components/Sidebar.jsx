@@ -15,6 +15,7 @@ const SUPER_ADMIN_SECTIONS = [
   { id: 'create', label: 'Criar profissional', description: 'Cadastro e senha' },
   { id: 'manage', label: 'Gestão e controle', description: 'Usuários e métricas' },
   { id: 'deploy-health', label: 'Saúde do deploy', description: 'Supabase e migrations' },
+  { id: 'ai-usage', label: 'IA por instituição', description: 'Gasto do mês e limite' },
   { id: 'points', label: 'Pontos comuns/ocultos', description: 'Base completa e promoção' },
   { id: 'knowledge', label: 'Alimentação', description: 'Biblioteca Viva' },
   { id: 'pdf-sources', label: 'Fontes PDF', description: 'Pontos não respondidos' },

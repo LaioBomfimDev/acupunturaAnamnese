@@ -602,3 +602,105 @@ body:has(.ca-launcher) #root {
   font: inherit;
   font-size: 14px;
 }
+
+/* ---------- avisos do limite (50%, 80%, 100%) ---------- */
+
+.ca-usage-alert {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+  font-size: 14px;
+  color: var(--r1-text);
+}
+
+.ca-usage-alert--high,
+.ca-usage-alert--full {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+  font-weight: 600;
+}
+
+.ca-usage-bar--half span {
+  background: var(--r1-accent);
+}
+
+.ca-usage-bar--high span {
+  background: var(--r1-warning);
+}
+
+/* ---------- SuperAdm → IA por instituição ---------- */
+
+.ca-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ca-admin-head h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.ca-admin-head p {
+  margin: 0 0 6px;
+  max-width: 760px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--r1-text-subtle);
+}
+
+.ca-admin-total {
+  color: var(--r1-text);
+}
+
+.ca-admin-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+}
+
+.ca-admin-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ca-admin-row-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ca-admin-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text);
+}
+
+.ca-admin-badge--high,
+.ca-admin-badge--full {
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.ca-admin-numbers,
+.ca-admin-functions {
+  margin: 0;
+  font-size: 14px;
+  color: var(--r1-text);
+}
+
+.ca-admin-functions {
+  font-size: 13px;
+  color: var(--r1-text-subtle);
+}

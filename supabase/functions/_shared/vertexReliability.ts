@@ -1,7 +1,22 @@
-export const DEFAULT_APPROVED_VERTEX_LOCATIONS = ['southamerica-east1'] as const;
+// 30/10/2026: o modelo atual (aiModels.ts) não é oferecido em São Paulo;
+// a administradora aprovou a multirregião dos EUA (us), que mantém o
+// processamento dentro dos EUA. São Paulo segue aprovada para voltar
+// assim que houver modelo lá. global fica de fora: sem garantia de país.
+export const DEFAULT_APPROVED_VERTEX_LOCATIONS = ['us', 'southamerica-east1'] as const;
 
 const TRANSIENT_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
-const LOCATION_PATTERN = /^(?:global|[a-z]+(?:-[a-z0-9]+)+[0-9])$/;
+// global, multirregião (us, eu) ou região única (southamerica-east1).
+const LOCATION_PATTERN = /^(?:global|us|eu|[a-z]+(?:-[a-z0-9]+)+[0-9])$/;
+
+/**
+ * Endereço da Vertex para a região: global e multirregião (us, eu, que
+ * mantém o processamento dentro da jurisdição) têm host próprio.
+ */
+export function vertexHostFor(location: string) {
+  if (location === 'global') return 'aiplatform.googleapis.com';
+  if (location === 'us' || location === 'eu') return `aiplatform.${location}.rep.googleapis.com`;
+  return `${location}-aiplatform.googleapis.com`;
+}
 
 export type VertexConfigurationErrorCode =
   | 'location_missing'

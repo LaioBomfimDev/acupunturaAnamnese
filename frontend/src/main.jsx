@@ -13,6 +13,8 @@ import './styles/clinicPatients.css'
 import './styles/appLoading.css'
 // Ajuda "Como funciona" e a pergunta de descartar ao fechar janela.
 import './styles/overlays.css'
+// Assistente da clínica: botão minimizado, painel e cartão da tela inicial.
+import './styles/assistant.css'
 import App from './App.jsx'
 import { SurveyPage } from './SurveyPage.jsx'
 import { ConfirmAppointmentPage } from './ConfirmAppointmentPage.jsx'

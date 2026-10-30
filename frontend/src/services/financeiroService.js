@@ -133,6 +133,20 @@ export async function loadFinanceData() {
   };
 }
 
+/**
+ * Só o que "Sua atenção hoje" da assistente precisa (a receber e pacotes),
+ * sem preparar o financeiro: não cria nada, só lê.
+ */
+export async function loadReceivablesData() {
+  const [packages, installments, charges, receipts] = await Promise.all([
+    fetchAll('patient_packages', '*'),
+    fetchAll('patient_package_installments', 'id,package_id,number,due_on,amount_cents', 'due_on'),
+    fetchAll('appointment_charges', '*', 'service_on'),
+    fetchAll('finance_receipts', '*', 'received_on'),
+  ]);
+  return { packages, installments, charges, receipts };
+}
+
 // ---------- configuração ----------
 
 export async function saveFinanceSettings({ startsOn, payoutBasis, packagesReviewed = null, expensesReviewed = null }) {

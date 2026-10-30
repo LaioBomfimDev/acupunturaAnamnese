@@ -44,6 +44,11 @@ export const AI_SMOKE_FUNCTIONS = [
     functionName: 'psych-reading',
     title: 'IA de psicologia: psych-reading',
   },
+  {
+    id: 'aiSmokeClinicAssistant',
+    functionName: 'clinic-assistant',
+    title: 'Assistente da clínica: clinic-assistant',
+  },
 ];
 
 const SUPABASE_URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim();

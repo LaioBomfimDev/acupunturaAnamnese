@@ -28,6 +28,8 @@ import {
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { usageContextFor } from '../_shared/aiUsage.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import {
@@ -35,7 +37,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = 'gemini-2.5-flash';
+const MODEL_ID = GEMINI_FLASH;
 const BUCKET = 'clinical-tongue-photos';
 
 // Mantenha em sincronia com tongueAiTagMap em
@@ -231,7 +233,7 @@ Deno.serve(async (req) => {
         responseMimeType: 'application/json',
         responseSchema: OUTPUT_SCHEMA,
       },
-    });
+    }, usageContextFor(supabaseAdmin, 'analyze-tongue', caller));
 
     if (!geminiResponse.ok) {
       logOperationalEvent('error', 'vertex_upstream_failed', {

@@ -25,6 +25,8 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { usageContextFor } from '../_shared/aiUsage.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
@@ -39,7 +41,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = 'gemini-2.5-flash';
+const MODEL_ID = GEMINI_FLASH;
 const SIGNAL_SCHEMA: ClinicalPayloadSchema = {
   type: 'array',
   maxItems: 64,
@@ -269,7 +271,7 @@ Deno.serve(async (req) => {
         // Raciocínio LEVE: orçamento de "thinking" baixo para conter custo/latência.
         thinkingConfig: { thinkingBudget: 1024 },
       },
-    });
+    }, usageContextFor(supabaseAdmin, 'clinical-reasoning', caller));
 
     if (!geminiResponse.ok) {
       logOperationalEvent('error', 'vertex_upstream_failed', {

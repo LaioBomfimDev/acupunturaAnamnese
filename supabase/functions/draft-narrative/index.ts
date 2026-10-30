@@ -24,6 +24,8 @@ import {
 } from '../_shared/security.ts';
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { usageContextFor } from '../_shared/aiUsage.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import {
@@ -37,7 +39,7 @@ import {
   logOperationalEvent,
 } from '../_shared/observability.ts';
 
-const MODEL_ID = 'gemini-2.5-flash';
+const MODEL_ID = GEMINI_FLASH;
 const REPORT_MODES = [
   'Resumo clínico',
   'Relatório profissional',
@@ -293,7 +295,7 @@ Deno.serve(async (req) => {
         responseSchema: OUTPUT_SCHEMA,
         thinkingConfig: { thinkingBudget: 0 },
       },
-    });
+    }, usageContextFor(supabaseAdmin, 'draft-narrative', caller));
 
     if (!geminiResponse.ok) {
       logOperationalEvent('error', 'vertex_upstream_failed', {

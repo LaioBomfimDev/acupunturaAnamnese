@@ -20,6 +20,8 @@ import {
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { usageContextFor } from '../_shared/aiUsage.ts';
 import { getActiveInstructions, layerSystemPrompt } from '../_shared/instructions.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
@@ -30,7 +32,7 @@ import {
 } from '../_shared/observability.ts';
 import { scrubClinicalText } from '../_shared/clinicalPayload.ts';
 
-const MODEL_ID = 'gemini-2.5-flash';
+const MODEL_ID = GEMINI_FLASH;
 
 const OUTPUT_SCHEMA = {
   type: 'OBJECT',
@@ -189,7 +191,7 @@ Deno.serve(async (req) => {
         responseSchema: OUTPUT_SCHEMA,
         thinkingConfig: { thinkingBudget: 0 },
       },
-    });
+    }, usageContextFor(supabaseAdmin, 'library-qa', caller));
 
     if (!geminiResponse.ok) {
       console.error('library-qa: Gemini API erro', geminiResponse.status);

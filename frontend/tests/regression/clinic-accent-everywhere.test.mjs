@@ -123,7 +123,7 @@ test('Gestão: menu agrupado na ordem combinada, toda aba num grupo só', () => 
     { side: 'gestao', label: 'Área do Paciente', ids: ['importaveis'] },
     { side: 'gestao', label: 'Equipe', ids: ['profissionais', 'acessos'] },
     { side: 'gestao', label: 'Documentos', ids: ['documentos'] },
-    { side: 'configuracoes', label: 'Instituição', ids: ['personalizar', 'acessopaciente'] },
+    { side: 'configuracoes', label: 'Instituição', ids: ['personalizar', 'acessopaciente', 'ia'] },
     { side: 'configuracoes', label: 'Sua conta', ids: ['cadastro'] },
   ]);
   assert.match(source, /\{ id: 'gestao', label: 'Gestão' \},\r?\n\s*\{ id: 'configuracoes', label: 'Configurações' \}/);

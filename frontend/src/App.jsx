@@ -17,6 +17,7 @@ import { HubBackButton, HubDock } from './components/HubNav';
 import { canEnterDiscipline, getDiscipline, resolveUserDisciplines } from './data/disciplines';
 import { canSeeScales } from './utils/instrumentAccess';
 import { consumePendingScreenRequest, listenScreenRequests } from './utils/appNavigationBridge';
+import { registerAssistantNavigator, resetAssistant, setAssistantScreen } from './components/assistant/assistantStore';
 import { GENERIC_ANAMNESE_DISCIPLINES } from './data/anamneseRegistry';
 import { SaveIndicator } from './components/ui/SaveIndicator';
 import { FirstAccessPasswordChange } from './components/FirstAccessPasswordChange';
@@ -52,6 +53,7 @@ const GestaoProfissional = lazyPanel(() => import('./components/panels/GestaoPro
 const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
 const ScalesScreen = lazyPanel(() => import('./components/instruments/ScalesScreen'), 'ScalesScreen');
 const FinanceiroScreen = lazyPanel(() => import('./components/financeiro/FinanceiroScreen'), 'FinanceiroScreen');
+const ClinicAssistantLauncher = lazyPanel(() => import('./components/assistant/ClinicAssistant'), 'ClinicAssistantLauncher');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
 // entre logins — sair limpa a chave.
@@ -64,7 +66,34 @@ function getFirstName(value) {
   return text.split(/\s+/)[0] || 'Profissional';
 }
 
+// Assistente da clínica (30/10/2026): o botão minimizado acompanha a
+// pessoa em todas as telas, menos a inicial (lá ela é o cartão do
+// HomeConsole). Fora dos bloqueios de conta e fora do SuperAdm, que
+// não é equipe de uma instituição.
 export default function App() {
+  const { user, profile, isSuperAdmin, mustChangePassword, needsMfa } = useAuth();
+  const userId = user?.id || null;
+
+  useEffect(() => {
+    resetAssistant();
+  }, [userId]);
+
+  const showAssistant = Boolean(user && profile?.is_active !== false && profile?.clinic_id
+    && !isSuperAdmin && !mustChangePassword && !needsMfa);
+
+  return (
+    <>
+      <AppScreens />
+      {showAssistant && (
+        <Suspense fallback={null}>
+          <ClinicAssistantLauncher profile={profile} />
+        </Suspense>
+      )}
+    </>
+  );
+}
+
+function AppScreens() {
   const {
     user,
     profile,
@@ -283,6 +312,33 @@ export default function App() {
     if (pending) queueMicrotask(() => openRequestedScreen(pending));
     return listenScreenRequests(openRequestedScreen);
   }, []);
+
+  // Assistente: em que tela a pessoa está e como os atalhos dela trocam
+  // de tela (dentro de uma área, sai dela antes, com a mesma pergunta de
+  // alterações não salvas).
+  const inArea = !isSuperAdmin && canEnterDiscipline(profile, activeDiscipline);
+  const assistantScreen = inArea ? 'area'
+    : showClinicPatients ? 'pacientes'
+      : showHubAgenda ? 'agenda'
+        : showHubEvolutions ? 'evolucao'
+          : showHubScales ? 'escalas'
+            : showHubFinance ? 'financeiro'
+              : showHubDocuments ? 'documentos'
+                : showHubGestao ? 'gestao'
+                  : 'inicio';
+  useEffect(() => {
+    setAssistantScreen(assistantScreen);
+  }, [assistantScreen]);
+  useEffect(() => registerAssistantNavigator(target => {
+    const current = bridgeStateRef.current;
+    if (current.activeDiscipline) {
+      if (current.hasPendingChanges && !window.confirm('Existem alterações ainda não salvas. Deseja trocar de tela mesmo assim?')) return;
+      sessionStorage.removeItem(DISCIPLINE_STORAGE_KEY);
+      setActiveDiscipline(null);
+      setActiveTab('Tela inicial');
+    }
+    openHubScreen(target);
+  }), []);
 
   if (loading) {
     return <PanelLoading />;

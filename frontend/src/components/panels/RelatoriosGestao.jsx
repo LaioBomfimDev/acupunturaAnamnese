@@ -52,6 +52,10 @@ const DocumentosTimbrados = lazy(() => import('./DocumentosTimbrados')
 const Importaveis = lazy(() => import('../patientForms/Importaveis')
   .then(module => ({ default: module.Importaveis })));
 
+// IA do mês (30/10/2026): gasto estimado da IA e teto da assistente.
+const UsoIA = lazy(() => import('./UsoIA')
+  .then(module => ({ default: module.UsoIA })));
+
 // ============================================================
 // Gestão da instituição — relatórios operacionais (Fase 8)
 //
@@ -77,6 +81,7 @@ const SECTIONS = [
   { id: 'documentos', label: 'Documentos timbrados' },
   { id: 'personalizar', label: 'Personalizar' },
   { id: 'acessopaciente', label: 'Acesso do paciente' },
+  { id: 'ia', label: 'IA do mês' },
   { id: 'cadastro', label: 'Meu cadastro' },
 ];
 
@@ -98,7 +103,7 @@ const SECTION_GROUPS = [
   { side: 'gestao', label: 'Área do Paciente', ids: ['importaveis'] },
   { side: 'gestao', label: 'Equipe', ids: ['profissionais', 'acessos'] },
   { side: 'gestao', label: 'Documentos', ids: ['documentos'] },
-  { side: 'configuracoes', label: 'Instituição', ids: ['personalizar', 'acessopaciente'] },
+  { side: 'configuracoes', label: 'Instituição', ids: ['personalizar', 'acessopaciente', 'ia'] },
   { side: 'configuracoes', label: 'Sua conta', ids: ['cadastro'] },
 ];
 
@@ -142,6 +147,9 @@ const TAB_ICONS = {
   ),
   acessopaciente: (
     <><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9" /><path d="m17 6 3 3" /><path d="m14.5 8.5 2 2" /></>
+  ),
+  ia: (
+    <><path d="M3 12h4l2-5 4 10 2-5h6" /></>
   ),
 };
 
@@ -1501,6 +1509,12 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
         {section === 'personalizar' && <PersonalizarClinica profile={profile} />}
 
         {section === 'acessopaciente' && <AcessoPaciente profile={profile} />}
+
+        {section === 'ia' && (
+          <Suspense fallback={<p className="gt-note">Carregando…</p>}>
+            <UsoIA />
+          </Suspense>
+        )}
 
         {section === 'cadastro' && <MeuCadastro profile={profile} />}
       </div>

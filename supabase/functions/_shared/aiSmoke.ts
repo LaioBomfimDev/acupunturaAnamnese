@@ -91,7 +91,7 @@ export async function runAiSmokeCheck({
         responseSchema: SMOKE_OUTPUT_SCHEMA,
         thinkingConfig: { thinkingBudget: 0 },
       },
-    });
+    }, null);
 
     if (!vertexResponse.ok) {
       console.error(`${functionName}: Vertex smoke erro`, vertexResponse.status);

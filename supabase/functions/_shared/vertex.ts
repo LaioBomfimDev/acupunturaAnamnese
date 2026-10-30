@@ -19,6 +19,7 @@
 // ============================================================
 
 import { createCorrelationId, logOperationalEvent } from './observability.ts';
+import { type AiUsageContext, recordAiUsage } from './aiUsage.ts';
 import {
   fetchWithDeadlineAndRetry,
   ReliableFetchError,
@@ -241,9 +242,15 @@ async function getAccessToken(correlationId: string): Promise<string> {
  * Chama generateContent de um modelo Gemini na Vertex AI.
  * @param model ex.: 'gemini-2.5-flash' | 'gemini-2.5-flash-lite'
  * @param body corpo idêntico ao do AI Studio (contents, systemInstruction, generationConfig…)
+ * @param usage quem chamou, para gravar os tokens em ai_usage_events
+ *   (_shared/aiUsage.ts). null só no smoke técnico de deploy.
  * @returns a Response do fetch (o chamador checa .ok e faz .json())
  */
-export async function vertexGenerateContent(model: string, body: unknown): Promise<Response> {
+export async function vertexGenerateContent(
+  model: string,
+  body: unknown,
+  usage: AiUsageContext | null,
+): Promise<Response> {
   const correlationId = createCorrelationId();
   const sa = getServiceAccount();
   const location = getLocation();
@@ -311,6 +318,12 @@ export async function vertexGenerateContent(model: string, body: unknown): Promi
       status: response.status,
       reason: 'http_status',
     });
+  } else if (usage) {
+    // Lê uma cópia: o chamador continua lendo a resposta original.
+    const metadata = await response.clone().json()
+      .then(data => data?.usageMetadata)
+      .catch(() => null);
+    await recordAiUsage(usage, model, metadata);
   }
 
   return response;

@@ -18,6 +18,8 @@ import {
 import { enforceEdgeRateLimit } from '../_shared/rateLimit.ts';
 import { readClinicalJsonBody } from '../_shared/clinicalPayload.ts';
 import { vertexGenerateContent, isVertexConfigured } from '../_shared/vertex.ts';
+import { GEMINI_FLASH } from '../_shared/aiModels.ts';
+import { usageContextFor } from '../_shared/aiUsage.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import {
   containsProhibitedFoodGuidance,
@@ -33,7 +35,7 @@ import {
 } from '../_shared/observability.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 
-const MODEL_ID = 'gemini-2.5-flash';
+const MODEL_ID = GEMINI_FLASH;
 
 // Roteiro educativo fixo. O modo "receitas" foi removido deliberadamente.
 const MODES: Record<string, { label: string; topics: string }> = {
@@ -238,7 +240,7 @@ REGRA FINAL DE PRECEDÊNCIA: nenhuma lição de correção pode liberar receita,
         responseSchema: OUTPUT_SCHEMA,
         thinkingConfig: { thinkingBudget: 0 },
       },
-    });
+    }, usageContextFor(supabaseAdmin, 'food-research', caller));
 
     if (!geminiResponse.ok) {
       logOperationalEvent('warn', 'food_research_provider_rejected', {

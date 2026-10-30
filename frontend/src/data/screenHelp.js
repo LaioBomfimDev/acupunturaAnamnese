@@ -261,6 +261,26 @@ export const GESTAO_HELP = {
       'Quem atende pode enviar escalas para casa com qualquer uma das duas escolhas. Na primeira, pede à administração a mensagem com o código.',
     ],
   },
+  ia: {
+    title: 'IA do mês',
+    summary: 'Quanto a inteligência artificial do sistema gastou neste mês e o teto da assistente.',
+    actions: [
+      'Ver o gasto estimado do mês, por função: Assistente, Biblioteca, Leitura da Psicologia e as outras.',
+      'Em “Teto do mês”, escrever o valor em dólar e tocar em “Salvar teto”. Deixar vazio tira o teto.',
+    ],
+    reading: [
+      'A barra mostra quanto do teto o mês já usou.',
+      'O valor é estimativa pelo preço público do Google em dólar. A fatura do Google Cloud é a referência.',
+      'O registro de uso começou em 30/10/2026: o que foi gasto antes disso não aparece aqui.',
+    ],
+    access: [
+      'Só a administração vê e muda o teto.',
+    ],
+    notes: [
+      'O gasto soma todas as funções de IA da instituição. No teto, só a assistente para até o mês virar; as funções dos atendimentos continuam.',
+      'Nenhuma pergunta, resposta ou dado de paciente é guardado aqui: só quantas vezes cada função foi usada e o tamanho do texto.',
+    ],
+  },
   cadastro: MEU_CADASTRO_HELP,
 };
 

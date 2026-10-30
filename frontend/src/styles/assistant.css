@@ -1,0 +1,604 @@
+/* ============================================================
+   Assistente da clínica (components/assistant/ClinicAssistant.jsx).
+   Cartão da tela inicial + botão minimizado e painel ao lado nas
+   outras telas. Só tokens: a cor é a da clínica (--r1-accent).
+   Vermelho só para risco, âmbar só para pendência.
+
+   z-index: o botão (44) fica abaixo de tudo que abre por cima da tela
+   (painel de baixo e ferramentas da Agenda 52–55, janelas 60) e,
+   no celular, fica acima da barra de baixo na altura, não na camada.
+   O painel é uma janela (200), abaixo da ajuda (210).
+   ============================================================ */
+
+.ca-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.ca-avatar svg {
+  width: 21px;
+  height: 21px;
+}
+
+.ca-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.ca-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--r1-text-subtle);
+}
+
+.ca-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---------- Sua atenção hoje ---------- */
+
+.ca-attention {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ca-attention-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ca-attention-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.ca-link-button {
+  border: 0;
+  padding: 4px 2px;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ca-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ca-attention-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--r1-text);
+}
+
+button.ca-attention-item {
+  cursor: pointer;
+}
+
+button.ca-attention-item:hover {
+  border-color: var(--r1-accent-line);
+}
+
+.ca-attention-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ca-attention-go {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--r1-accent);
+}
+
+.ca-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--r1-text-subtle);
+}
+
+.ca-dot--risk {
+  background: var(--r1-danger);
+}
+
+.ca-dot--pending {
+  background: var(--r1-warning);
+}
+
+.ca-attention-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--r1-text-subtle);
+}
+
+.ca-attention-note--warn {
+  color: var(--r1-warning);
+}
+
+/* ---------- conversa ---------- */
+
+.ca-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px;
+  background: var(--r1-surface-sunken);
+}
+
+.ca-starters p {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  color: var(--r1-text-subtle);
+}
+
+.ca-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ca-chip {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  font: inherit;
+  font-size: 13px;
+  color: var(--r1-text);
+  cursor: pointer;
+}
+
+.ca-chip:hover:not(:disabled) {
+  border-color: var(--r1-accent-line);
+  color: var(--r1-accent);
+}
+
+.ca-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 88%;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ca-bubble p {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ca-bubble--user {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+}
+
+.ca-bubble--assistant {
+  align-self: flex-start;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 14px 14px 14px 4px;
+  background: var(--r1-surface);
+  color: var(--r1-text);
+}
+
+.ca-bubble--typing {
+  color: var(--r1-text-subtle);
+}
+
+.ca-open {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--r1-accent);
+  cursor: pointer;
+}
+
+.ca-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 18px calc(14px + var(--r1-safe-bottom));
+  border-top: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface);
+}
+
+.ca-composer-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ca-composer input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  font: inherit;
+  font-size: 14px;
+  color: var(--r1-text);
+  background: var(--r1-surface);
+}
+
+.ca-composer input:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 1px;
+}
+
+.ca-send {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  cursor: pointer;
+}
+
+.ca-send:hover:not(:disabled) {
+  background: var(--r1-accent-strong);
+}
+
+.ca-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ca-send svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ca-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--r1-warning);
+}
+
+.ca-footnote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+/* ---------- cartão da tela inicial (prévia C) ---------- */
+
+.ca-home {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  min-height: 380px;
+  overflow: hidden;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
+}
+
+.ca-home-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-right: 1px solid var(--r1-border-subtle);
+  background: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-surface));
+}
+
+.ca-home-chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: 520px;
+}
+
+.ca-home .ca-messages {
+  background: var(--r1-surface);
+}
+
+/* ---------- botão minimizado ---------- */
+
+.ca-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: calc(24px + var(--r1-safe-bottom));
+  z-index: 44;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 18px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--r1-accent);
+  color: var(--r1-accent-contrast);
+  box-shadow: var(--r1-shadow-md);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Espaço no fim da página: o último botão de qualquer tela rola para
+   acima do botão da assistente, nunca fica coberto por ele. */
+body:has(.ca-launcher) #root {
+  padding-bottom: 88px;
+}
+
+.ca-launcher:hover {
+  background: var(--r1-accent-strong);
+}
+
+.ca-launcher:focus-visible {
+  outline: 3px solid var(--r1-accent-line);
+  outline-offset: 2px;
+}
+
+.ca-launcher-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--r1-accent-contrast) 18%, transparent);
+}
+
+.ca-launcher-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ca-launcher-count {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------- painel ao lado (prévia A) ---------- */
+
+.ca-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ca-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100%);
+  height: 100%;
+  border-left: 1px solid var(--r1-border-subtle);
+  background: var(--r1-surface);
+  box-shadow: var(--r1-shadow-lg);
+  animation: help-drawer-in var(--r1-dur) var(--r1-ease);
+}
+
+.ca-panel-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: calc(16px + var(--r1-safe-top)) 18px 14px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.ca-minimize {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--r1-text);
+  cursor: pointer;
+}
+
+.ca-panel .ca-attention {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  background: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-surface));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ca-panel {
+    animation: none;
+  }
+}
+
+/* ---------- celular e tablet (≤1024px, mesmo corte da barra de baixo) ---------- */
+
+@media (max-width: 1024px) {
+  .ca-launcher {
+    right: 16px;
+    bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom) + 12px);
+    height: 52px;
+    padding: 0 6px;
+  }
+
+  /* Com a faixa "voltar" de tela dentro de tela, sobe acima dela. */
+  body:has(.hub-back--nested) .ca-launcher {
+    bottom: calc(var(--r1-bottom-nav-h) + var(--r1-hub-strip-h, 50px) + var(--r1-safe-bottom) + 12px);
+  }
+
+  /* Na Agenda, o "+ Novo agendamento" (.ag-fab, 52px) mora no mesmo
+     canto: a assistente fica logo acima dele. */
+  body:has(.ag-fab) .ca-launcher {
+    bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom) + 16px + 52px + 12px);
+  }
+
+  .ca-launcher-label {
+    display: none;
+  }
+
+  .ca-panel {
+    width: 100%;
+    border-left: 0;
+  }
+
+  .ca-home {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ca-home-side {
+    border-right: 0;
+    border-bottom: 1px solid var(--r1-border-subtle);
+  }
+
+  .ca-bubble {
+    max-width: 94%;
+  }
+}
+
+@media print {
+  .ca-launcher,
+  .ca-scrim {
+    display: none !important;
+  }
+}
+
+/* ---------- Configurações → IA do mês (components/panels/UsoIA.jsx) ---------- */
+
+.ca-usage-total {
+  margin: 4px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--r1-text);
+}
+
+.ca-usage-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+}
+
+.ca-usage-bar span {
+  display: block;
+  height: 100%;
+  background: var(--r1-accent);
+}
+
+.ca-usage-bar--full span {
+  background: var(--r1-warning);
+}
+
+.ca-usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.ca-usage-table th,
+.ca-usage-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  text-align: left;
+}
+
+.ca-usage-table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-text-subtle);
+}
+
+.ca-usage-table tbody th {
+  font-weight: 500;
+}
+
+.ca-usage-table td {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ca-usage-limit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ca-usage-limit label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--r1-text);
+}
+
+.ca-usage-limit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ca-usage-limit-row input {
+  flex: 1 1 120px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  font: inherit;
+  font-size: 14px;
+}

@@ -12,11 +12,14 @@ const MIGRATION_PATH = path.resolve(root, '../supabase/migrations/20260708_clini
 // 10/09/2026: Neuropsicologia entrou como disciplina nova — migração
 // ADITIVA própria, não edita o arquivo original.
 const NEUROPSICOLOGIA_PATH = path.resolve(root, '../supabase/migrations/20260910_neuropsicologia_discipline.sql');
+// 01/11/2026: ABA entrou do mesmo jeito (CHECKs liberados por catálogo).
+const ABA_PATH = path.resolve(root, '../supabase/migrations/20261101_aba_discipline.sql');
 
 let server;
 let clinicPatientsService;
 let migrationSql;
 let neuropsicologiaSql;
+let abaSql;
 
 before(async () => {
   server = await createServer({
@@ -26,9 +29,10 @@ before(async () => {
     appType: 'custom',
   });
   clinicPatientsService = await server.ssrLoadModule('/src/services/clinicPatientsService.js');
-  [migrationSql, neuropsicologiaSql] = await Promise.all([
+  [migrationSql, neuropsicologiaSql, abaSql] = await Promise.all([
     readFile(MIGRATION_PATH, 'utf8'),
     readFile(NEUROPSICOLOGIA_PATH, 'utf8'),
+    readFile(ABA_PATH, 'utf8'),
   ]);
 });
 
@@ -48,7 +52,7 @@ test('migração Fase 2: estruturas centrais presentes (clinic_id, matrículas, 
 test('migração Fase 2: toda disciplina do catálogo está nos CHECKs (contrato hub ↔ banco)', () => {
   for (const id of DISCIPLINE_IDS) {
     const presentInOriginal = migrationSql.includes(`'${id}'`);
-    const presentInLaterMigration = neuropsicologiaSql.includes(`'${id}'`);
+    const presentInLaterMigration = neuropsicologiaSql.includes(`'${id}'`) || abaSql.includes(`'${id}'`);
     assert.ok(
       presentInOriginal || presentInLaterMigration,
       `disciplina ${id} ausente da migração original e das extensões aditivas`,

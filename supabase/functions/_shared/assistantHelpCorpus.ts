@@ -211,5 +211,45 @@ export const ASSISTANT_HELP_TOPICS: AssistantHelpTopic[] = [
     "id": "FINANCEIRO_HELP.faturamento",
     "title": "Financeiro → Dados para faturamento",
     "text": "O que é: O que a guia pede da clínica (CNES) e de quem atende (CPF, conselho e CBO).\nO que dá pra fazer: Salvar o CNES da clínica. Sem CNES, a guia leva 9999999, como manda a ANS. “Preencher” ou “Mudar” em cada profissional: CPF, conselho, número, UF e ocupação (CBO).\nComo ler: “Falta” mostra o que ainda não foi preenchido daquele profissional. Conselho e CBO vêm sugeridos pela profissão do cadastro quando estão vazios. Confira antes de salvar.\nQuem vê e quem altera: Só a administração vê e altera. O CPF de quem atende não aparece para o resto da equipe.\nBom saber: O CNPJ da clínica muda em Gestão → Configurações → Instituição."
+  },
+  {
+    "id": "ABA_HELP.painel",
+    "title": "ABA → Painel do paciente",
+    "text": "O que é: A visão rápida da criança na área ABA: independência geral, um anel por programa e a última sessão.\nO que dá pra fazer: “Iniciar coleta” abre a ficha da sessão; com uma coleta sua ainda aberta, o botão vira “Continuar coleta”. “Resultados” e “Sessões” levam aos gráficos e ao histórico.\nComo ler: O anel grande é a independência geral: respostas independentes divididas pelas tentativas preenchidas, somando todas as sessões — não é a média das sessões. Tentativa em branco, recusa e não aplicável ficam fora da conta. Os programas de redução mostram o último valor registrado; independência não se aplica a eles.\nQuem vê e quem altera: Quem vê: o time da criança, a supervisão do time, quem foi convocado e a administração da clínica."
+  },
+  {
+    "id": "ABA_HELP.coleta",
+    "title": "ABA → Coleta",
+    "text": "O que é: A ficha da sessão: escolha o contexto e os programas, registre tentativa por tentativa e finalize.\nO que dá pra fazer: Antes de começar, marque ambiente, estado de chegada, saúde, rotina, motivação, material e pessoas presentes. Na matriz, um toque registra a ajuda mais intrusiva usada na tentativa; tocar de novo apaga. No celular a ficha mostra uma tentativa por vez. Programas de redução usam contador, cronômetro ou grade de intervalos, conforme a forma de coleta. Os botões de baixo registram reforçador, episódio ABC e situação de risco. “Pausar” para o relógio da intervenção; “Finalizar sessão” mostra o resumo antes de gravar.\nComo ler: O resumo à direita conta acertos, independentes, com ajuda e erros, e diz se o critério da sessão foi atingido. A fase escolhida em “Fase deste programa hoje” é o que separa linha de base de intervenção nos gráficos.\nQuem vê e quem altera: Coleta quem é do time da criança, a supervisão e quem foi convocado. Só quem começou a coleta continua ela.\nBom saber: Cada toque é salvo sozinho em menos de um segundo. Fechar a aba com algo ainda não enviado faz o navegador perguntar. Com tentativa em branco, a sessão é salva como incompleta e entra na janela de correção. Situação de risco não se apaga: coleta com risco registrado não pode ser descartada, só finalizada. A coleta não substitui a evolução: o atendimento continua sendo evoluído na tela Evoluções."
+  },
+  {
+    "id": "ABA_HELP.sessoes",
+    "title": "ABA → Sessões",
+    "text": "O que é: O histórico das sessões finalizadas, com os registros de cada uma e a revisão da supervisão.\nO que dá pra fazer: “Abrir” mostra as tentativas, os valores de redução, o ABC, as situações de risco e o histórico da revisão. A supervisão pode “Solicitar correção” (com prazo) ou “Aprovar e assinar”. Quem coletou corrige em “Abrir correção” enquanto o prazo vale.\nComo ler: Selo da revisão: Aguardando revisão, Correção solicitada, Correção reenviada ou Aprovada e assinada.\nQuem vê e quem altera: Revisa e assina a supervisão do time ou a administração. A correção é de quem coletou (ou da supervisão).\nBom saber: Corrigir não apaga o que existia antes: a versão anterior fica guardada no histórico da revisão."
+  },
+  {
+    "id": "ABA_HELP.resultados",
+    "title": "ABA → Resultados",
+    "text": "O que é: Os gráficos por dimensão de cada programa, com o resumo do período e o critério de progressão.\nO que dá pra fazer: Filtrar por período (todos os registros ou últimos 30 dias) e por ambiente. Quando o critério é atingido, a supervisão aprova a progressão de fase com um parecer.\nComo ler: Cada bolinha é uma sessão. A linha tracejada horizontal é o critério; a vertical marca onde a fase mudou. Lacuna na linha é sessão sem dado pontuável — nunca é ligada por cima. Independência, tempo, ajuda, intensidade e duração ficam em gráficos separados. A comparação “Linha de base × intervenção” só aparece com sessões marcadas como linha de base na coleta.\nQuem vê e quem altera: Vê quem atende a criança. Aprovar progressão é da supervisão do time ou da administração."
+  },
+  {
+    "id": "ABA_HELP.programas",
+    "title": "ABA → Programas",
+    "text": "O que é: Os programas de aquisição e redução da criança e a configuração da ficha de coleta de cada um.\nO que dá pra fazer: Adicionar por um modelo pronto (um toque), pela biblioteca de objetivos por área ou do zero em “Aquisição” e “Redução”. “Buscar técnica” preenche estratégia, procedimento, forma de coleta e hierarquia de ajuda de uma vez. Editar critério, etapas da tarefa, teto de ajuda, reforçadores previstos e responsável. Arquivar tira o programa da coleta; o histórico e os gráficos continuam.\nComo ler: Os códigos abaixo do programa (I › AVS › AG…) são os níveis de ajuda que a ficha vai mostrar.\nQuem vê e quem altera: Monta e edita a supervisão do time ou a administração. O terapeuta vê o que vai aparecer na ficha. Criança ainda sem time: quem fez a matrícula ABA dela faz esse papel até a administração escolher o time.\nBom saber: Procedimento restrito (extinção, extinção de fuga, interrupção e redirecionamento, exposição gradual) exige comportamento-alvo com hipótese funcional e plano de segurança, mais o parecer de quem autoriza — gravado com nome e data. O modelo e a técnica são ponto de partida: revise antes de aplicar."
+  },
+  {
+    "id": "ABA_HELP.repertorio",
+    "title": "ABA → Repertório",
+    "text": "O que é: Os reforçadores e os comportamentos interferentes da criança — são os botões da coleta.\nO que dá pra fazer: Adicionar e editar reforçadores (categoria e preferência). Adicionar comportamento com definição operacional, hipótese funcional e orientação de segurança. A supervisão aprova ou inativa comportamentos.\nComo ler: Comportamento com “Revisão pendente” foi cadastrado por terapeuta e espera a supervisão.\nQuem vê e quem altera: Qualquer pessoa do time cadastra. Depois de revisado, só a supervisão muda a definição."
+  },
+  {
+    "id": "ABA_HELP.times",
+    "title": "ABA → Times",
+    "text": "O que é: Os times de atendimento ABA: quem supervisiona, quem atende e quais crianças são do time.\nO que dá pra fazer: A administração cria o time, escolhe a supervisão e pode encerrar o time. A supervisão adiciona terapeutas e crianças e marca os responsáveis diretos de cada criança. “Convocar apoio” chama um terapeuta de outro time para uma criança. Quem foi convocado registra se aceitou, se atendeu ou se não pôde.\nComo ler: Cada terapeuta e cada criança ficam em um time só. Transferir entre times é com a administração.\nQuem vê e quem altera: A administração vê todos os times. Cada pessoa vê o próprio time.\nBom saber: A convocação libera o acesso na hora, sem aprovação de outra supervisão. “Um atendimento” encerra sozinho 24 horas depois do início; “por período” vale até o fim informado; cancelar encerra na hora."
+  },
+  {
+    "id": "ABA_HELP.revisao",
+    "title": "ABA → Revisão",
+    "text": "O que é: As sessões de todas as crianças que esperam a supervisão e as correções pedidas a você.\nO que dá pra fazer: “Abrir sessão” leva ao paciente, já na sessão, para revisar ou corrigir.\nQuem vê e quem altera: A fila da supervisão mostra as crianças do time que você supervisiona (a administração vê todas)."
   }
 ];

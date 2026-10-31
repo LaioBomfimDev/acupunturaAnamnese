@@ -74,6 +74,14 @@ const DISCIPLINE_GLYPHS = {
       <path d="M12 4v16" />
     </>
   ),
+  aba: (
+    <>
+      <circle cx="6.5" cy="17" r="2.5" />
+      <circle cx="12" cy="11" r="2.5" />
+      <circle cx="17.5" cy="6" r="2.5" />
+      <path d="M8.3 15.2 10.2 13M13.8 9.2l1.9-1.6" />
+    </>
+  ),
 };
 
 function Icon({ id, glyphs = TOOL_GLYPHS }) {

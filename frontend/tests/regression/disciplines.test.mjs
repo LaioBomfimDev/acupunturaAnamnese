@@ -93,13 +93,17 @@ test('canEnterDiscipline: só entra em disciplina liberada NO PERFIL e com works
 test('migração 20260707 existe e cobre coluna, backfill de acupuntura e contas de teste', async () => {
   // 10/09/2026: Neuropsicologia entrou como disciplina nova — migração
   // ADITIVA própria, não edita o arquivo original de 2026-07-07.
-  const [sql, neuropsicologiaSql] = await Promise.all([
+  const [sql, neuropsicologiaSql, abaSql] = await Promise.all([
     readFile(
       path.resolve(root, '../supabase/migrations/20260707_profile_disciplines.sql'),
       'utf8',
     ),
     readFile(
       path.resolve(root, '../supabase/migrations/20260910_neuropsicologia_discipline.sql'),
+      'utf8',
+    ),
+    readFile(
+      path.resolve(root, '../supabase/migrations/20261101_aba_discipline.sql'),
       'utf8',
     ),
   ]);
@@ -112,7 +116,7 @@ test('migração 20260707 existe e cobre coluna, backfill de acupuntura e contas
   // extensão aditiva posterior (backfill por profissão/teste).
   for (const id of DISCIPLINE_IDS) {
     const presentInOriginal = sql.includes(id);
-    const presentInLaterMigration = neuropsicologiaSql.includes(id);
+    const presentInLaterMigration = neuropsicologiaSql.includes(id) || abaSql.includes(id);
     assert.ok(
       presentInOriginal || presentInLaterMigration,
       `disciplina ${id} ausente da migração original e das extensões aditivas`,

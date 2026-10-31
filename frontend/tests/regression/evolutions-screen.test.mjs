@@ -219,7 +219,8 @@ test('Neuropsicologia entra na fila e evolui com o formulário da Psicologia', (
   assert.ok(PSYCHOLOGY_FORM_DISCIPLINES.includes('neuropsicologia'));
 
   // Mesma lista que a versão viva de insert_patient_evolution aceita.
-  assert.equal(sources.migrationName, '20260929b_neuropsicologia_evolution.sql');
+  // 01/11/2026: ABA recriou a função (só com 'aba' a mais no array).
+  assert.equal(sources.migrationName, '20261101_aba_discipline.sql');
   const fromSql = sources.migration.match(/ARRAY\[([^\]]+)\]::TEXT\[\]/)[1]
     .split(',').map(part => part.trim().replace(/'/g, '')).sort();
   assert.deepEqual([...EVOLUTION_DISCIPLINES].sort(), fromSql);

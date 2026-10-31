@@ -25,6 +25,7 @@ export const HELP_GROUP_PLACES = {
   GESTAO_HELP: 'Gestão',
   GESTAO_PROFISSIONAL_HELP: 'Gestão pessoal',
   FINANCEIRO_HELP: 'Financeiro',
+  ABA_HELP: 'ABA',
 };
 
 // A tela inicial tem uma leitura por perfil, todas com o mesmo título.

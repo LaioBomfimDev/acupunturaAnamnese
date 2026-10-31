@@ -63,6 +63,17 @@ export const DISCIPLINES = [
     available: true,
     color: 'var(--r1-discipline-neuropsicologia)',
   },
+  {
+    id: 'aba',
+    label: 'ABA',
+    subtitle: 'Análise do Comportamento Aplicada',
+    description: 'Programas, coleta por tentativa, gráficos e times.',
+    // Trazida do Atlas em 31/10/2026 como área "da Psicologia": por
+    // enquanto só psicólogo atende (20261101_aba_discipline.sql libera a
+    // área para quem já tem Psicologia). Coleta separada da evolução.
+    available: true,
+    color: 'var(--r1-discipline-aba)',
+  },
 ];
 
 export const DISCIPLINE_IDS = DISCIPLINES.map(item => item.id);

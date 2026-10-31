@@ -20,11 +20,13 @@ export const ATTENDANCE_LABELS = {
 // Áreas com formulário de evolução — as mesmas que o banco aceita em
 // insert_patient_evolution. Neuropsicologia entrou em 2026-09-29: usa o
 // formulário da Psicologia, mas a evolução é gravada como
-// neuropsicologia (a mesma área do agendamento).
-export const EVOLUTION_DISCIPLINES = ['acupuntura', 'fisioterapia', 'psicologia', 'nutricao', 'neuropsicologia'];
+// neuropsicologia (a mesma área do agendamento). ABA entrou em
+// 2026-11-01 do mesmo jeito: a coleta fica na área ABA e a evolução do
+// atendimento é escrita aqui, com o formulário da Psicologia.
+export const EVOLUTION_DISCIPLINES = ['acupuntura', 'fisioterapia', 'psicologia', 'nutricao', 'neuropsicologia', 'aba'];
 
 // Áreas cuja evolução usa o formulário de Psicologia (PsychologyEvolucao).
-export const PSYCHOLOGY_FORM_DISCIPLINES = ['psicologia', 'neuropsicologia'];
+export const PSYCHOLOGY_FORM_DISCIPLINES = ['psicologia', 'neuropsicologia', 'aba'];
 
 export function onlyEvolutionDisciplines(items) {
   return (Array.isArray(items) ? items : []).filter(item => EVOLUTION_DISCIPLINES.includes(item?.discipline));

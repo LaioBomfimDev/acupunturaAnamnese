@@ -227,6 +227,51 @@ const NAV_ICONS = {
       <path d="m3 18 1.5 1.5L7 17" />
     </>
   ),
+  // ABA (31/10/2026): coleta, sessões, gráficos, programas e times.
+  'Coleta': (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M8 17h.01" />
+    </>
+  ),
+  'Sessões': (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
+    </>
+  ),
+  'Resultados': (
+    <>
+      <path d="M3 3v18h18" />
+      <path d="m7 15 4-4 3 3 5-6" />
+    </>
+  ),
+  'Programas': (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
+  'Repertório': (
+    <>
+      <path d="M4 5h16M4 12h16M4 19h10" />
+      <path d="m16 17 2 2 3-4" />
+    </>
+  ),
+  'Times': (
+    <>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20a6 6 0 0 1 12 0" />
+      <path d="M16 5a3 3 0 0 1 0 6M18 20a6 6 0 0 0-3-5.2" />
+    </>
+  ),
+  'Revisão': (
+    <>
+      <path d="M9 11l2 2 4-4" />
+      <path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z" />
+    </>
+  ),
   'create': (
     <>
       <circle cx="9" cy="8" r="4" />

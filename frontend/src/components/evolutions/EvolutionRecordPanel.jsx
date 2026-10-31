@@ -66,6 +66,12 @@ async function loadClinicalSession(patient, discipline) {
     return { session: createEmptyPsychologySession() };
   }
 
+  // ABA também evolui com o formulário da Psicologia, sem anamnese própria:
+  // a coleta da sessão fica na área ABA (2026-11-01).
+  if (discipline === 'aba') {
+    return { session: createEmptyPsychologySession() };
+  }
+
   const config = getAnamneseConfig(discipline);
   const record = await getLatestRecord(patient.id, config.recordType, discipline);
   return {

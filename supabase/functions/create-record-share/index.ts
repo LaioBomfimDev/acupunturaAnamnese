@@ -20,6 +20,7 @@ const DISCIPLINES = new Set([
   'psicologia',
   'nutricao',
   'neuropsicologia',
+  'aba',
 ]);
 const SHARE_SCOPES = new Set([
   'cadastro',

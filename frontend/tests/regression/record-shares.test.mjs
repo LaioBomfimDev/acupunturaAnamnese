@@ -18,12 +18,15 @@ const MULTI_APPLY_PATH = path.resolve(root, '../docs/aplicar-sql-compartilhament
 // ADITIVA própria, não edita o arquivo original (migrations aplicadas
 // não se reescrevem). from/to_discipline dela são liberados aqui.
 const NEUROPSICOLOGIA_PATH = path.resolve(root, '../supabase/migrations/20260910_neuropsicologia_discipline.sql');
+// 01/11/2026: ABA entrou do mesmo jeito (from/to liberados por catálogo).
+const ABA_PATH = path.resolve(root, '../supabase/migrations/20261101_aba_discipline.sql');
 
 let server;
 let recordSharesService;
 let migrationSql;
 let multiSql;
 let neuropsicologiaSql;
+let abaSql;
 
 before(async () => {
   server = await createServer({
@@ -33,10 +36,11 @@ before(async () => {
     appType: 'custom',
   });
   recordSharesService = await server.ssrLoadModule('/src/services/recordSharesService.js');
-  [migrationSql, multiSql, neuropsicologiaSql] = await Promise.all([
+  [migrationSql, multiSql, neuropsicologiaSql, abaSql] = await Promise.all([
     readFile(MIGRATION_PATH, 'utf8'),
     readFile(MULTI_PATH, 'utf8'),
     readFile(NEUROPSICOLOGIA_PATH, 'utf8'),
+    readFile(ABA_PATH, 'utf8'),
   ]);
 });
 
@@ -89,7 +93,7 @@ test('migração Fase 3: record_shares, is_clinic_admin e get_shared_session pre
   assert.match(migrationSql, /FUNCTION public\.get_shared_session/);
   for (const id of DISCIPLINE_IDS) {
     const presentInOriginal = migrationSql.includes(`'${id}'`);
-    const presentInLaterMigration = neuropsicologiaSql.includes(`'${id}'`);
+    const presentInLaterMigration = neuropsicologiaSql.includes(`'${id}'`) || abaSql.includes(`'${id}'`);
     assert.ok(
       presentInOriginal || presentInLaterMigration,
       `disciplina ${id} ausente da migração original e das extensões aditivas`,

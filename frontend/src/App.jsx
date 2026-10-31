@@ -45,6 +45,7 @@ const SuperAdminPanel = lazyPanel(() => import('./components/panels/SuperAdminPa
 const ClinicPatientsPanel = lazyPanel(() => import('./components/ClinicPatientsPanel'), 'ClinicPatientsPanel');
 const PsychologyWorkspace = lazyPanel(() => import('./components/PsychologyWorkspace'), 'PsychologyWorkspace');
 const NeuropsychologyWorkspace = lazyPanel(() => import('./components/NeuropsychologyWorkspace'), 'NeuropsychologyWorkspace');
+const AbaWorkspace = lazyPanel(() => import('./components/AbaWorkspace'), 'AbaWorkspace');
 const DisciplineWorkspace = lazyPanel(() => import('./components/DisciplineWorkspace'), 'DisciplineWorkspace');
 const AssistantDeepDive = lazyPanel(() => import('./components/panels/AssistantDeepDive'), 'AssistantDeepDive');
 const AssistantFoodLinks = lazyPanel(() => import('./components/panels/AssistantFoodLinks'), 'AssistantFoodLinks');
@@ -652,6 +653,21 @@ function AppScreens() {
     return (
       <Suspense fallback={<PanelLoading />}>
         <NeuropsychologyWorkspace
+          profile={profile}
+          therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
+          onSwitchDiscipline={handleSwitchDiscipline}
+          onSignOut={handleSignOut}
+        />
+      </Suspense>
+    );
+  }
+
+  // ABA (trazida do Atlas em 31/10/2026): programas, coleta por tentativa,
+  // gráficos e times, em workspace próprio.
+  if (!isSuperAdmin && activeDiscipline === 'aba') {
+    return (
+      <Suspense fallback={<PanelLoading />}>
+        <AbaWorkspace
           profile={profile}
           therapistName={getFirstName(profile?.full_name || user.user_metadata?.full_name || user.email)}
           onSwitchDiscipline={handleSwitchDiscipline}

@@ -61,6 +61,7 @@ function everyTopic() {
     ...Object.entries(help.AGENDA_HELP).map(([id, topic]) => [`Agenda/${id}`, topic]),
     ...Object.entries(help.HOME_HELP).map(([id, topic]) => [`Tela inicial/${id}`, topic]),
     ...Object.entries(help.FINANCEIRO_HELP).map(([id, topic]) => [`Financeiro/${id}`, topic]),
+    ...Object.entries(help.ABA_HELP).map(([id, topic]) => [`ABA/${id}`, topic]),
   ];
 }
 

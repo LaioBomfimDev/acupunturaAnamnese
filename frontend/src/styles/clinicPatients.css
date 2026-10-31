@@ -2315,3 +2315,88 @@ button.pf-discipline-row:disabled {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Convênio do paciente (Fase 1 dos convênios, 31/10/2026) */
+.pf-coverage-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-coverage-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pf-coverage-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.pf-coverage-list > li:has(.pf-coverage-form) {
+  display: block;
+}
+
+.pf-coverage-list > li.is-inactive {
+  opacity: 0.65;
+}
+
+.pf-coverage-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pf-coverage-main b {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.pf-coverage-main span {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.pf-coverage-expired {
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.pf-coverage-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.pf-coverage-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.pf-coverage-legacy {
+  color: var(--r1-text-subtle);
+}
+
+@media (max-width: 1024px) {
+  .pf-coverage-list > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pf-coverage-actions {
+    justify-content: flex-start;
+  }
+}

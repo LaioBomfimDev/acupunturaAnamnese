@@ -6,6 +6,7 @@ import { ScreenHelp } from '../ui/ScreenHelp';
 import { FINANCEIRO_HELP } from '../../data/screenHelp';
 import { getDiscipline } from '../../data/disciplines';
 import { loadFinanceData } from '../../services/financeiroService';
+import { loadConvenioData } from '../../services/convenioService';
 import {
   addDays,
   buildConfigStatus,
@@ -23,6 +24,8 @@ import {
 import { APagar, Equipe, Pagas } from './FinanceSaidas';
 import { AReceber, Pacotes, Recebidos } from './FinanceEntradas';
 import { ModelosConfig, RecebimentoConfig, SaidasFixasConfig, StartCard, ValoresConfig } from './FinanceConfig';
+import { Faturamento, Operadoras, Solicitantes } from './FinanceConvenios';
+import { buildConvenioTiles } from '../../utils/convenio';
 import '../../styles/gestao.css';
 import '../../styles/financeiro.css';
 
@@ -48,6 +51,9 @@ const SECTIONS = [
   { id: 'modelos', label: 'Modelos de pacote' },
   { id: 'recebimento', label: 'Como cada um recebe' },
   { id: 'saidasfixas', label: 'Saídas fixas' },
+  { id: 'operadoras', label: 'Operadoras' },
+  { id: 'solicitantes', label: 'Solicitantes' },
+  { id: 'faturamento', label: 'Dados para faturamento' },
 ];
 
 const SECTION_GROUPS = [
@@ -55,6 +61,7 @@ const SECTION_GROUPS = [
   { label: 'Entradas', ids: ['areceber', 'recebidos', 'pacotes'] },
   { label: 'Saídas', ids: ['apagar', 'pagas', 'equipe'] },
   { label: 'Configuração', ids: ['valores', 'modelos', 'recebimento', 'saidasfixas'] },
+  { label: 'Convênios', ids: ['operadoras', 'solicitantes', 'faturamento'] },
 ];
 
 const TAB_ICONS = {
@@ -69,6 +76,9 @@ const TAB_ICONS = {
   modelos: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 12h8M8 16h5" /></>,
   recebimento: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
   saidasfixas: <><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v4h4" /></>,
+  operadoras: <><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6M12 8v4M10 10h4" /></>,
+  solicitantes: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
+  faturamento: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2.2" /><path d="M5.8 16.5a3.5 3.5 0 0 1 6.4 0M14 10h4M14 14h3" /></>,
 };
 
 function plural(count, one, many) {
@@ -181,6 +191,10 @@ export function FinanceiroScreen({ profile }) {
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [flash, setFlash] = useState('');
+  // Convênios carregam à parte: falha ali não derruba o resto do financeiro.
+  const [conv, setConv] = useState(null);
+  const [convError, setConvError] = useState('');
+  const [convKey, setConvKey] = useState(0);
   // Trocar de parte limpa o aviso da gravação anterior.
   const goTo = id => { setSection(id); setFlash(''); };
 
@@ -192,6 +206,14 @@ export function FinanceiroScreen({ profile }) {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [reloadKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadConvenioData(profile?.clinic_id)
+      .then(next => { if (!cancelled) { setConv(next); setConvError(''); } })
+      .catch(err => { if (!cancelled) setConvError(err.message || 'Não foi possível carregar os convênios.'); });
+    return () => { cancelled = true; };
+  }, [convKey, profile?.clinic_id]);
 
   const derived = useMemo(() => {
     if (!data) return null;
@@ -233,8 +255,9 @@ export function FinanceiroScreen({ profile }) {
     };
   }, [data, month, today]);
 
-  const tiles = useMemo(() => (data && derived ? buildTiles({ data, derived, month }) : null), [data, derived, month]);
-  const navCounts = useMemo(() => (tiles && derived ? navCountsFrom(tiles, derived) : null), [tiles, derived]);
+  const convView = useMemo(() => (data ? buildConvenioTiles({ data, conv, convError }) : null), [data, conv, convError]);
+  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles } : null), [data, derived, month, convView]);
+  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts } : null), [tiles, derived, convView]);
 
   // Contexto que cada parte recebe: dados, contas e como gravar.
   const fin = data && derived ? {
@@ -245,6 +268,9 @@ export function FinanceiroScreen({ profile }) {
     reload: () => setReloadKey(key => key + 1),
     notify: message => setFlash(message),
     open: goTo,
+    conv,
+    convError,
+    convReload: () => setConvKey(key => key + 1),
   } : null;
 
   return (
@@ -310,6 +336,9 @@ export function FinanceiroScreen({ profile }) {
         {fin && section === 'modelos' && <ModelosConfig fin={fin} />}
         {fin && section === 'recebimento' && <RecebimentoConfig fin={fin} />}
         {fin && section === 'saidasfixas' && <SaidasFixasConfig fin={fin} />}
+        {fin && section === 'operadoras' && <Operadoras fin={fin} />}
+        {fin && section === 'solicitantes' && <Solicitantes fin={fin} />}
+        {fin && section === 'faturamento' && <Faturamento fin={fin} />}
       </div>
     </div>
   );

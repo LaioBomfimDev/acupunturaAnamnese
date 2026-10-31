@@ -28,6 +28,7 @@ import { TOOL_GLYPHS } from './ui/hubGlyphs';
 import { getStatusLabel } from '../utils/agenda';
 import { buildProfileTabSummaries } from '../utils/patientProfileTabs';
 import { scaleDisciplinesFor } from '../utils/instrumentAccess';
+import { PatientCoverages } from './PatientCoverages';
 
 // Área do Paciente (acesso + formulários): só a administração abre, então
 // carrega à parte e não pesa na ficha de quem não vê a aba.
@@ -901,8 +902,6 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     <Field label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
                     <Field label="Telefone" value={full?.phone} />
                     <Field label="E-mail" value={full?.email} />
-                    <Field label="Convênio" value={full?.convenio_nome} />
-                    <Field label="Carteirinha" value={full?.convenio_carteirinha} />
 
                     <SectionLabel show={hasFiliacao}>Filiação</SectionLabel>
                     <Field label="Mãe" value={full?.nome_mae} />
@@ -1000,18 +999,6 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                       </div>
 
                       <div className="cp-section">
-                        <p className="cp-form-group-title">Convênio</p>
-                        <div className="cp-form-grid">
-                          <label className="cp-field">Nome do convênio
-                            <input className="cp-input" value={editForm.convenioNome} onChange={e => setEditField('convenioNome', e.target.value)} />
-                          </label>
-                          <label className="cp-field">Número da carteirinha
-                            <input className="cp-input" value={editForm.convenioCarteirinha} onChange={e => setEditField('convenioCarteirinha', e.target.value)} />
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="cp-section">
                         <p className="cp-form-group-title">Endereço</p>
                         <div className="cp-form-grid">
                           <label className="cp-field">CEP
@@ -1073,6 +1060,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     </form>
                 )}
               </section>
+              {/* Convênio grava sozinho, fora do "Alterar dados cadastrais". */}
+              <PatientCoverages patientId={patient.id} legacyName={full?.convenio_nome || ''} legacyCard={full?.convenio_carteirinha || ''} />
             </section>
 
             {/* ================= MATRÍCULAS & COMPARTILHAMENTO ================= */}

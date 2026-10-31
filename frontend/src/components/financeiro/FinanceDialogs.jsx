@@ -28,9 +28,17 @@ import { MethodPicker, MoneyInput } from './FinanceFields';
 // descartar, e "salvando" segura a janela aberta.
 // ============================================================
 
-function DialogShell({ title, onClose, busy, guard = true, children, footer }) {
+// savedKey: janela que grava aos poucos e continua aberta (passo a passo
+// dos convênios) muda o número a cada gravação, e o que já foi salvo deixa
+// de contar como "não salvo".
+export function DialogShell({ title, onClose, busy, guard = true, savedKey = 0, children, footer }) {
   const titleId = useId();
   const dismiss = useDismiss({ onClose, busy, guardUnsaved: guard });
+  const [seenSavedKey, setSeenSavedKey] = useState(savedKey);
+  if (savedKey !== seenSavedKey) {
+    setSeenSavedKey(savedKey);
+    dismiss.markSaved();
+  }
   return (
     <div className="fin-dialog-overlay" role="dialog" aria-modal="true" aria-labelledby={titleId} {...dismiss.backdropProps}>
       <div className="fin-dialog" {...dismiss.panelProps}>

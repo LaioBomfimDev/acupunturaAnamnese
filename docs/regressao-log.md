@@ -372,3 +372,12 @@ Modelo de entrada:
 - Regra nova: quem recebe resultado clínico é decidido por vínculo explícito (Agenda ou responsável), nunca por quem criou o registro; a tela de envio diz para quem vai antes de enviar.
 - Teste ou verificação obrigatória: `instrument-responsible.test.mjs` (o caso do incidente: administração com matrícula sem responsável não envia sem escolher).
 - Regra destilada em: `AGENTS.md` §7 (Escalas clínicas).
+
+### 2026-10-31 - Exclusão aprovada de paciente parava em quem tinha evolução
+
+- Sintoma: ao validar a migration dos convênios (20261031) chamando `admin_decide_patient_deletion` de verdade, em transação desfeita, a aprovação da exclusão de um paciente real falhou com `23503: update or delete on table "appointments" violates foreign key constraint "patient_evolutions_appointment_id_fkey"`. Em produção, toda exclusão aprovada de paciente com evolução ligada a agendamento parava aí e voltava erro.
+- Causa: a função apagava `appointments` antes de `patient_evolutions`, e `patient_evolutions.appointment_id` é RESTRICT. As versões anteriores eram conferidas só pelo texto (o teste compara linhas), nunca executadas com um paciente que tivesse evolução.
+- Correção (20261031_convenios_fase1, recriando a função a partir da versão de 20261020): `DELETE FROM public.patient_evolutions` antes de `DELETE FROM public.appointments`. Conferido no banco: a mesma aprovação passou, apagou o convênio e a evolução e gravou o snapshot.
+- Regra nova: ao recriar a exclusão de paciente, a ordem dos DELETE segue as chaves RESTRICT (filho antes do pai), e a validação chama a função com um paciente que tenha evolução.
+- Teste ou verificação obrigatória: `convenios-fase1.test.mjs` ("exclusão: convênio do paciente sai, e a evolução sai antes do agendamento").
+- Regra destilada em: `AGENTS.md` §9.

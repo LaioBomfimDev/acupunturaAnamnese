@@ -457,7 +457,8 @@ export const PACIENTES_HELP = {
   title: 'Pacientes da instituição',
   summary: 'O cadastro central de pacientes. O paciente é um só na instituição e entra em cada área por matrícula.',
   actions: [
-    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, convênio, endereço e matrícula inicial.',
+    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço e matrícula inicial.',
+    'Na ficha, aba Cadastro, “+ Acrescentar convênio”: operadora, plano, número e validade da carteira e CNS. Convênio que acabou se desativa, não se apaga.',
     '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha.',
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
     '“Ver compartilhado”: ler o que já foi compartilhado daquele paciente.',
@@ -777,5 +778,52 @@ export const FINANCEIRO_HELP = {
     reading: ['Repasse de profissionais e Salários e diárias são do sistema e não desativam.'],
     access: ['Só a administração.'],
     notes: ['Saída fixa desativada para de aparecer em “A pagar”; o que já foi pago continua.'],
+  },
+  operadoras: {
+    title: 'Operadoras',
+    summary: 'As operadoras de convênio com que a clínica trabalha, com tudo o que a guia TISS pede de cada uma.',
+    actions: [
+      '“Nova operadora” abre o passo a passo: 1 Operadora (nome, registro ANS, CNPJ, versão TISS, como envia), 2 Credenciamento, 3 Planos e 4 Tabela de preços.',
+      'Cada etapa grava ao continuar. Dá para parar no meio: o cartão mostra o que falta.',
+      'Clicar num cartão abre a operadora na primeira etapa que falta.',
+      'Na Tabela de preços, “Buscar na tabela TUSS” acha o procedimento pelo código ou por palavras, na tabela oficial da ANS.',
+      'Na etapa Operadora, “Desativar” tira a operadora da escolha no cadastro do paciente, sem apagar nada.',
+    ],
+    reading: [
+      '“Pronta” = registro ANS, CNPJ, código do prestador e todos os preços com código. Planos são opcionais.',
+      'Credenciamento: o contratado pode ser a clínica (CNPJ) ou um profissional em nome próprio (CPF), cada um com o código de prestador que a operadora deu.',
+      'Procedimento que não existe na TUSS (ex.: avaliação neuropsicológica) entra como “Tabela própria da operadora”, com o código que ela usa.',
+    ],
+    access: ['Só a administração. A equipe do cadastro vê só o nome da operadora e os planos, para escolher no convênio do paciente.'],
+    notes: [
+      'Tabela TUSS e demais tabelas da ANS na versão 202607. Versão nova da ANS entra por atualização do sistema.',
+      'Desde 07/2026 o CNPJ pode ter letras; o sistema confere os dois últimos números.',
+      'Guia e lote de cobrança chegam numa próxima etapa.',
+    ],
+  },
+  solicitantes: {
+    title: 'Solicitantes',
+    summary: 'Quem pede o tratamento de fora da clínica, como o médico que encaminhou o paciente. A guia leva o nome, o conselho e o CBO dele.',
+    actions: [
+      '“+ Cadastrar solicitante”: nome, conselho, número, UF do conselho e ocupação (CBO).',
+      '“Mudar” corrige; “Desativar” tira da escolha sem apagar.',
+    ],
+    reading: ['A linha mostra conselho, número e UF (ex.: CRM 123456 SP) e a ocupação pelo nome da tabela da ANS.'],
+    access: ['Só a administração.'],
+    notes: ['Conselho, UF e CBO vêm das tabelas oficiais da ANS (26, 59 e 24).'],
+  },
+  faturamento: {
+    title: 'Dados para faturamento',
+    summary: 'O que a guia pede da clínica (CNES) e de quem atende (CPF, conselho e CBO).',
+    actions: [
+      'Salvar o CNES da clínica. Sem CNES, a guia leva 9999999, como manda a ANS.',
+      '“Preencher” ou “Mudar” em cada profissional: CPF, conselho, número, UF e ocupação (CBO).',
+    ],
+    reading: [
+      '“Falta” mostra o que ainda não foi preenchido daquele profissional.',
+      'Conselho e CBO vêm sugeridos pela profissão do cadastro quando estão vazios. Confira antes de salvar.',
+    ],
+    access: ['Só a administração vê e altera. O CPF de quem atende não aparece para o resto da equipe.'],
+    notes: ['O CNPJ da clínica muda em Gestão → Configurações → Instituição.'],
   },
 };

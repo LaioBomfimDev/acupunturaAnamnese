@@ -21,7 +21,6 @@ const EMPTY_FORM = {
   name: '', nomeSocial: '', birthDate: '', sexoBiologico: '', genero: '', cpf: '',
   phone: '', email: '', nomeMae: '', nomePai: '', nomeConjuge: '',
   responsavelNome: '', responsavelTelefone: '', responsavelCpf: '',
-  convenioNome: '', convenioCarteirinha: '',
   enderecoCep: '', enderecoLogradouro: '', enderecoNumero: '', enderecoComplemento: '', enderecoBairro: '', enderecoCidade: '', enderecoUf: '',
   discipline: 'acupuntura', imageConsent: false,
 };
@@ -139,8 +138,6 @@ export function NewPatientForm({ initialDiscipline = 'acupuntura', title = 'Novo
         responsavelNome: form.responsavelNome.trim() || null,
         responsavelTelefone: form.responsavelTelefone.trim() || null,
         responsavelCpf: form.responsavelCpf.trim() || null,
-        convenioNome: form.convenioNome.trim() || null,
-        convenioCarteirinha: form.convenioCarteirinha.trim() || null,
         enderecoCep: form.enderecoCep || null,
         enderecoLogradouro: form.enderecoLogradouro.trim() || null,
         enderecoNumero: form.enderecoNumero.trim() || null,
@@ -270,19 +267,6 @@ export function NewPatientForm({ initialDiscipline = 'acupuntura', title = 'Novo
               inputMode="numeric"
               required={responsavelRequired}
             />
-          </label>
-        </div>
-      </CpFormSection>
-
-      <CpFormSection icon="insurance" title="Convênio (se tiver)">
-        <div className="cp-form-grid">
-          <label className="cp-field">
-            Nome do convênio
-            <input className="cp-input" value={form.convenioNome} onChange={e => setField('convenioNome', e.target.value)} />
-          </label>
-          <label className="cp-field">
-            Número da carteirinha
-            <input className="cp-input" value={form.convenioCarteirinha} onChange={e => setField('convenioCarteirinha', e.target.value)} />
           </label>
         </div>
       </CpFormSection>

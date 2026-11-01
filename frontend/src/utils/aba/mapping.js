@@ -466,8 +466,69 @@ export function correctionRecordsToDb(records) {
   return records.map(recordToDb);
 }
 
-/** Pacote de aba_get_patient_data → estado da área ABA para um paciente. */
-export function patientDataFromDb(bundle) {
+// ---------- qualidade (20261101c_aba_qualidade.sql) ----------
+
+export function fidelityFromDb(row) {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    source: row.source,
+    assessorId: row.assessor_id,
+    items: Array.isArray(row.items) ? row.items : [],
+    applicableCount: Number(row.applicable_count) || 0,
+    metCount: Number(row.met_count) || 0,
+    scorePercentage: Number(row.score_percentage) || 0,
+    notes: row.notes || '',
+    revision: Number(row.revision) || 1,
+    updatedAt: toMs(row.updated_at),
+  };
+}
+
+export function ioaFromDb(row) {
+  return {
+    id: row.id,
+    sessionId: row.session_id || '',
+    programId: row.program_id || '',
+    method: row.method,
+    primaryValue: Number(row.primary_value) || 0,
+    secondaryValue: Number(row.secondary_value) || 0,
+    agreementPercentage: Number(row.agreement_percentage) || 0,
+    secondaryObserverId: row.secondary_observer_id || '',
+    observedOn: row.observed_on || '',
+    notes: row.notes || '',
+    createdBy: row.created_by,
+    createdAt: toMs(row.created_at),
+  };
+}
+
+export function alertFromDb(row) {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    patientName: row.patient_name || 'Paciente',
+    programId: row.program_id || '',
+    sessionId: row.session_id || '',
+    type: row.type,
+    category: row.category,
+    priority: row.priority,
+    message: row.message || '',
+    status: row.status,
+    assignedTo: row.assigned_to || '',
+    assignedName: row.assigned_name || '',
+    firstDetectedAt: toMs(row.first_detected_at),
+    lastDetectedAt: toMs(row.last_detected_at),
+    occurrenceCount: Number(row.occurrence_count) || 1,
+    resolvedAt: toMs(row.resolved_at),
+    decidedName: row.decided_name || '',
+    decidedAt: toMs(row.decided_at),
+    decisionNote: row.decision_note || '',
+    revision: Number(row.revision) || 1,
+    canManage: row.can_manage === true,
+  };
+}
+
+/** Pacote de aba_get_patient_data (+ aba_get_patient_quality) → estado da área ABA. */
+export function patientDataFromDb(bundle, quality = null) {
   const patientId = bundle?.patient_id;
   const professionals = new Map((bundle?.professionals || []).map(person => [person.id, person.full_name || 'Profissional']));
   return {
@@ -496,6 +557,8 @@ export function patientDataFromDb(bundle) {
     sessions: (bundle?.sessions || []).map(sessionFromDb),
     professionalName: id => professionals.get(id) || '—',
     professionals: [...professionals.entries()].map(([id, name]) => ({ id, name })),
+    fidelity: (quality?.fidelity || []).map(fidelityFromDb),
+    ioa: (quality?.ioa || []).map(ioaFromDb),
   };
 }
 

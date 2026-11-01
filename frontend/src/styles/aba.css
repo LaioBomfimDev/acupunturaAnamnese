@@ -2623,3 +2623,423 @@
     display: none;
   }
 }
+
+/* ==========================================================
+   Segunda etapa (20261101c): fidelidade, concordância, alertas e
+   relatório. Abaixo do mínimo é âmbar, não vermelho: vermelho fica
+   só para risco (situação de risco / alerta crítico).
+   ========================================================== */
+
+.aba-score {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--r1-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.aba-score.is-low {
+  color: var(--r1-warning);
+}
+
+.aba-fidelity {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.aba-fidelity-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+
+.aba-fidelity-cards article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+}
+
+.aba-fidelity-cards article > div {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.aba-fidelity-cards small {
+  color: var(--r1-text-muted);
+}
+
+.aba-fidelity-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aba-fidelity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+}
+
+.aba-fidelity-item > span {
+  flex: 1 1 220px;
+}
+
+.aba-fidelity-item.is-na > span {
+  color: var(--r1-text-muted);
+  text-decoration: line-through;
+}
+
+.aba-fidelity-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.aba-fidelity-readout small {
+  color: var(--r1-text-muted);
+}
+
+.aba-quality-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+
+.aba-quality-summary .aba-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aba-quality-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aba-quality-cell .aba-score {
+  min-width: 3.4em;
+  font-size: 1.05rem;
+}
+
+.aba-ioa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aba-ioa-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+}
+
+.aba-ioa-list article > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.aba-ioa-list small {
+  color: var(--r1-text-muted);
+}
+
+/* ---------- alertas ---------- */
+
+.aba-alert-summary {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+.aba-alert-summary > div:not(.aba-chip-row) {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.aba-alert-summary strong {
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.aba-alert-summary small {
+  color: var(--r1-text-muted);
+}
+
+.aba-alert-summary .aba-chip-row {
+  margin-left: auto;
+}
+
+.aba-alert-summary .is-critical strong {
+  color: var(--r1-danger);
+}
+
+.aba-alert-summary .is-high strong {
+  color: var(--r1-warning);
+}
+
+.aba-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aba-alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-left: 4px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.aba-alert--critica {
+  border-left-color: var(--r1-danger);
+  background: var(--r1-danger-bg);
+}
+
+.aba-alert--alta {
+  border-left-color: var(--r1-warning);
+}
+
+.aba-alert--media {
+  border-left-color: var(--r1-accent);
+}
+
+.aba-alert.is-closed {
+  opacity: 0.72;
+}
+
+.aba-alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.aba-alert-body p {
+  margin: 0;
+}
+
+.aba-alert-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aba-alert-priority {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--r1-surface-sunken);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.aba-alert-priority--critica {
+  background: var(--r1-danger);
+  color: var(--r1-text-on-inverse);
+}
+
+.aba-alert-priority--alta {
+  background: var(--r1-warning-bg);
+  box-shadow: inset 0 0 0 1px var(--r1-warning-border);
+}
+
+.aba-alert-priority--media {
+  background: var(--r1-accent-wash);
+}
+
+.aba-alert-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- relatório (PDF timbrado) ---------- */
+
+/* Só a fonte para medir/paginar: as folhas (.rpage) é que imprimem. */
+.aba-report-source {
+  display: none;
+}
+
+.aba-report-body h2 {
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.aba-report-body h3 {
+  margin: 16px 0 6px;
+  font-size: 13pt;
+  color: var(--clinic-accent, #0E2A4A);
+}
+
+.aba-report-body .aba-report-lead {
+  margin: 0 0 10px;
+  color: #475569;
+  font-size: 10.5pt;
+}
+
+.aba-report-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 6px 0 4px;
+}
+
+.aba-report-tiles > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid #d9e0d7;
+  border-radius: 6px;
+}
+
+.aba-report-tiles strong {
+  font-size: 15pt;
+}
+
+.aba-report-tiles small {
+  color: #475569;
+  font-size: 8.5pt;
+}
+
+.aba-report-table {
+  width: 100%;
+  margin: 4px 0 8px;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+
+.aba-report-table th,
+.aba-report-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid #d9e0d7;
+  text-align: left;
+  vertical-align: top;
+}
+
+.aba-report-table th {
+  background: #eef2ec;
+  font-weight: 700;
+}
+
+.aba-report-table .aba-report-table-title th {
+  padding: 12px 0 6px;
+  border-bottom: 0;
+  background: none;
+  color: var(--clinic-accent, #0E2A4A);
+  font-size: 13pt;
+}
+
+.aba-report-table td small {
+  display: block;
+  color: #64748b;
+  font-size: 8pt;
+}
+
+.aba-report-chart {
+  margin: 6px 0 10px;
+  break-inside: avoid;
+}
+
+.aba-report-chart h3 {
+  margin: 8px 0 2px;
+  font-size: 11pt;
+}
+
+.aba-report-note {
+  margin-top: 14px;
+  color: #475569;
+  font-size: 8.5pt;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .aba-alert {
+    flex-direction: column;
+  }
+
+  .aba-alert-actions {
+    justify-content: flex-start;
+  }
+
+  .aba-alert-summary .aba-chip-row {
+    margin-left: 0;
+  }
+
+  .aba-fidelity-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Fidelidade por sessão vira um bloco por sessão: as notas não podem
+     ficar escondidas na rolagem lateral. */
+  .aba-quality-table thead {
+    display: none;
+  }
+
+  .aba-quality-table,
+  .aba-quality-table tbody,
+  .aba-quality-table tr,
+  .aba-quality-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .aba-quality-table tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--r1-border-subtle);
+  }
+
+  .aba-quality-table td {
+    padding: 3px 0;
+    border: 0;
+  }
+
+  .aba-quality-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--r1-text-muted);
+    font-size: 0.74rem;
+  }
+}
+
+@media print {
+  /* Imprimindo o relatório ABA: só as folhas timbradas, nada da tela. */
+  body:has(> .aba-report-print) > #root {
+    display: none !important;
+  }
+}

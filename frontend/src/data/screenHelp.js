@@ -894,6 +894,7 @@ export const ABA_HELP = {
     actions: [
       'Filtrar por período (todos os registros ou últimos 30 dias) e por ambiente.',
       'Quando o critério é atingido, a supervisão aprova a progressão de fase com um parecer.',
+      '“Baixar PDF” abre a impressão no papel timbrado da clínica (escolha “Salvar como PDF”); “Baixar Excel” gera a planilha com resumo, sessões, tentativas, qualidade e um gráfico por programa. Os dois seguem o período e o ambiente escolhidos.',
     ],
     reading: [
       'Cada bolinha é uma sessão. A linha tracejada horizontal é o critério; a vertical marca onde a fase mudou.',
@@ -968,6 +969,39 @@ export const ABA_HELP = {
     ],
     access: [
       'A fila da supervisão mostra as crianças do time que você supervisiona (a administração vê todas).',
+    ],
+  },
+  qualidade: {
+    title: 'Qualidade da coleta',
+    summary: 'Fidelidade de aplicação sessão a sessão e concordância entre dois observadores (IOA). Mínimo de 80% nos dois.',
+    actions: [
+      'Fidelidade: “Avaliar” abre os cinco itens; toque nos cumpridos e marque “Não se aplica” no que não ocorreu na sessão.',
+      'A autoavaliação é de quem atendeu; a fidelidade da supervisão é de quem lidera o time. Também dá para avaliar dentro da sessão, em Sessões.',
+      '“Registrar IOA”: escolha o método, digite os dois números e veja a concordância antes de salvar.',
+    ],
+    reading: [
+      'Fidelidade = itens cumpridos ÷ itens aplicáveis. IOA por tentativa ou intervalo = acordos ÷ total; por contagem ou duração = menor ÷ maior.',
+      'Número em âmbar está abaixo de 80%. Fidelidade da supervisão ou IOA abaixo disso vira alerta.',
+      'Os dois valores do IOA ficam guardados: o dado bruto nunca é descartado.',
+    ],
+    access: [
+      'Vê quem atende a criança. IOA e fidelidade da supervisão são registrados pela supervisão do time ou pela administração.',
+    ],
+  },
+  alertas: {
+    title: 'Alertas',
+    summary: 'O que pede atenção nas crianças que você atende, calculado a partir da coleta.',
+    actions: [
+      '“Abrir” leva ao paciente, na tela onde o alerta se resolve.',
+      '“Dispensar” (supervisão) tira o alerta da lista com um motivo; se a situação passar e voltar, ele reabre sozinho.',
+      '“Só comigo” mostra os alertas sob sua responsabilidade; “Atualizar agora” recalcula na hora.',
+    ],
+    reading: [
+      'Avisos: critério atingido, baixa evolução (3 sessões abaixo do critério em 30 dias), programa sem coleta há 14 dias, aumento de comportamento, comportamento novo sem definição, reforçador perdendo efeito, situação de risco sem revisão, revisão parada há 48 horas, correção atrasada, fidelidade e concordância abaixo de 80%.',
+      'Crítico (vermelho) é só situação de risco grave. O alerta some sozinho quando a situação se resolve.',
+    ],
+    access: [
+      'Cada pessoa vê os alertas das crianças que atende; dispensar e reabrir é da supervisão do time ou da administração.',
     ],
   },
 };

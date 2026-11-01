@@ -1,11 +1,33 @@
+import { useEffect, useState } from 'react';
+import { listAlerts, refreshAlerts } from '../../services/abaService';
 import { patientIndependence, programIndependence, reductionLatestValue } from '../../utils/aba/calculations.js';
 import { reviewStatusLabel } from '../../utils/aba/labels.js';
+import { alertTargetTab } from '../../utils/aba/quality.js';
+import { AlertCard } from './AbaAlerts';
 import { AbaIcon } from './AbaIcon';
 import { IndependenceRing } from './IndependenceRing';
 
+// Alertas abertos deste paciente. Falha aqui não derruba o painel: o
+// alerta é um lembrete, o dado clínico está nas outras telas.
+function usePatientAlerts(patientId) {
+  const [alerts, setAlerts] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    refreshAlerts(false)
+      .catch(() => null)
+      .then(() => listAlerts({ patientId }))
+      .then(rows => { if (alive) setAlerts(rows); })
+      .catch(() => { if (alive) setAlerts([]); });
+    return () => { alive = false; };
+  }, [patientId]);
+  return alerts;
+}
+
 // Painel do paciente na área ABA: independência geral e por programa
-// (os anéis), a última sessão e os atalhos para coletar e ver resultados.
-export function AbaPatientPanel({ patient, data, onCollect, onPrograms, onResults, onSessions }) {
+// (os anéis), alertas abertos, a última sessão e os atalhos para coletar
+// e ver resultados.
+export function AbaPatientPanel({ patient, data, onCollect, onPrograms, onResults, onSessions, onOpenAlert, onAllAlerts }) {
+  const alerts = usePatientAlerts(patient.id);
   const finished = data.sessions.filter(session => session.status !== 'em_andamento');
   const stats = patientIndependence(patient.id, data.programs, finished);
   const programs = data.programs.filter(program => !program.archivedAt);
@@ -37,6 +59,25 @@ export function AbaPatientPanel({ patient, data, onCollect, onPrograms, onResult
           </div>
         </div>
       </section>
+
+      {alerts.length > 0 && (
+        <section className="aba-card">
+          <div className="aba-section-head">
+            <div><p className="aba-eyebrow">Pede atenção</p><h3>{alerts.length === 1 ? '1 alerta aberto' : `${alerts.length} alertas abertos`}</h3></div>
+            {alerts.length > 3 && <button type="button" className="quiet-button" onClick={onAllAlerts}><AbaIcon name="bell" /> Ver todos</button>}
+          </div>
+          <div className="aba-alert-list">
+            {alerts.slice(0, 3).map(alert => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                showPatient={false}
+                onOpen={item => onOpenAlert(item.patientId, alertTargetTab(item.type), item.sessionId)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="aba-card">
         <div className="aba-section-head">

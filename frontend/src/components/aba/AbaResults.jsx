@@ -12,6 +12,7 @@ import { updateProgramStatus } from '../../services/abaService';
 import { AbaDialog } from './AbaDialog';
 import { ColumnChart, LineChart, PercentBars } from './AbaCharts';
 import { AbaIcon } from './AbaIcon';
+import { AbaReportActions } from './AbaReport';
 import { responseColumnLabel } from '../../utils/aba/labels.js';
 
 // ============================================================
@@ -358,7 +359,7 @@ function ApproveProgressionDialog({ program, onClose, onDone }) {
   );
 }
 
-export function AbaResults({ data, onChanged }) {
+export function AbaResults({ data, onChanged, patient, profile }) {
   const [period, setPeriod] = useState('all');
   const [locationFilter, setLocationFilter] = useState('');
   const [approving, setApproving] = useState(null);
@@ -405,6 +406,7 @@ export function AbaResults({ data, onChanged }) {
           <h2>Análise clínica por dimensão</h2>
           <p className="aba-muted">Cada comportamento tem seu gráfico. Percentuais usam o total de tentativas preenchidas, nunca a média das sessões.</p>
         </div>
+        <AbaReportActions patient={patient} data={data} sessions={sessions} periodLabel={periodLabel} profile={profile} />
       </div>
       <div className="aba-filter-bar">
         <div className="aba-chip-row" role="group" aria-label="Período">

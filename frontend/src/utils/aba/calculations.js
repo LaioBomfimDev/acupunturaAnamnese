@@ -23,11 +23,11 @@ import {
  */
 const NOT_COLLECTABLE_STATUSES = ['Concluído', 'Pausado', 'Extinto'];
 
-// Rótulo do eixo dos gráficos: dia/mês, como se lê no Brasil (o Atlas
-// mostrava mês/dia).
 // Plural de verdade (regra do Vitalis: nunca "(s)").
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
+// Rótulo do eixo dos gráficos: dia/mês, como se lê no Brasil (o Atlas
+// mostrava mês/dia).
 const chartDay = (isoDate) => `${isoDate.slice(8, 10)}/${isoDate.slice(5, 7)}`;
 
 /**
@@ -518,7 +518,7 @@ export function evaluateProgression(program, allSessions) {
   const aboveCeiling = perSession.filter((entry) => !entry.withinCeiling).length;
   if (ceiling != null && aboveCeiling > 0) {
     pending.push(
-      `${aboveCeiling} sessão(ões) com ajuda acima de ${promptLevelOf(program.promptCeiling)?.label ?? 'teto'}`,
+      `${plural(aboveCeiling, 'sessão', 'sessões')} com ajuda acima de ${promptLevelOf(program.promptCeiling)?.label ?? 'teto'}`,
     );
   }
 
@@ -1012,14 +1012,16 @@ export function sessionNarrative(summary) {
   }
 
   for (const reinforcer of summary.reinforcers) {
-    sentences.push(`O reforçador "${reinforcer.name}" foi apresentado ${reinforcer.uses} vez(es) e classificado como ${reinforcer.efficiency.toLowerCase()}.`);
+    sentences.push(`O reforçador "${reinforcer.name}" foi apresentado ${plural(reinforcer.uses, 'vez', 'vezes')} e classificado como ${reinforcer.efficiency.toLowerCase()}.`);
   }
 
   if (summary.isGeneralizationProbe) {
     sentences.push('A sessão foi conduzida como sonda de generalização.');
   }
   if (summary.incidents > 0) {
-    sentences.push(`Foram registradas ${summary.incidents} situação(ões) de risco, encaminhadas para revisão da supervisão.`);
+    sentences.push(summary.incidents === 1
+      ? 'Foi registrada 1 situação de risco, encaminhada para revisão da supervisão.'
+      : `Foram registradas ${summary.incidents} situações de risco, encaminhadas para revisão da supervisão.`);
   }
 
   sentences.push(`A sessão durou ${plural(summary.durationMinutes, 'minuto', 'minutos')}${summary.pausedMinutes > 0 ? `, com ${plural(summary.pausedMinutes, 'minuto', 'minutos')} de pausa` : ''}.`);

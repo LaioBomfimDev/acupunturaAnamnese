@@ -1,7 +1,8 @@
 // ============================================================
 // SERVICE: área ABA (programas, coleta, revisão, times).
-// Migrações: supabase/migrations/20261101_aba_discipline.sql e
-// 20261101b_aba_coleta.sql.
+// Migrações: supabase/migrations/20261101_aba_discipline.sql,
+// 20261101b_aba_coleta.sql e 20261101c_aba_qualidade.sql (fidelidade, IOA
+// e alertas).
 //
 // Tudo passa pelas RPCs aba_*: as tabelas não têm leitura direta. Quem vê
 // e quem altera é decidido no banco (time, supervisão, convocação ativa,
@@ -11,8 +12,11 @@
 
 import { supabase } from '../lib/supabase';
 import {
+  alertFromDb,
   behaviorToDb,
   correctionRecordsToDb,
+  fidelityFromDb,
+  ioaFromDb,
   patientDataFromDb,
   programFromDb,
   programToDb,
@@ -23,7 +27,8 @@ import {
 
 export const ABA_MIGRATION_HINT =
   'A área ABA ainda não existe no banco. Aplique as migrações '
-  + 'supabase/migrations/20261101_aba_discipline.sql e 20261101b_aba_coleta.sql no Supabase.';
+  + 'supabase/migrations/20261101_aba_discipline.sql, 20261101b_aba_coleta.sql e '
+  + '20261101c_aba_qualidade.sql no Supabase.';
 
 export function isMissingAbaSchema(error) {
   const text = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ');
@@ -64,8 +69,22 @@ async function call(fn, args, fallback) {
 // ---------- paciente ----------
 
 export async function loadAbaPatient(patientId) {
-  const bundle = await call('aba_get_patient_data', { p_patient_id: patientId }, 'Não foi possível carregar a área ABA do paciente.');
-  return patientDataFromDb(bundle);
+  const [bundle, quality] = await Promise.all([
+    call('aba_get_patient_data', { p_patient_id: patientId }, 'Não foi possível carregar a área ABA do paciente.'),
+    loadQuality(patientId),
+  ]);
+  return patientDataFromDb(bundle, quality);
+}
+
+// Fidelidade e IOA. Banco ainda sem a segunda etapa: a área continua
+// funcionando, só sem esses dados (a coleta não depende deles).
+async function loadQuality(patientId) {
+  const { data, error } = await supabase.rpc('aba_get_patient_quality', { p_patient_id: patientId });
+  if (error) {
+    if (isMissingAbaSchema(error)) return null;
+    fail(error, 'Não foi possível carregar a fidelidade e a concordância.');
+  }
+  return data;
 }
 
 export async function saveProgram(patientId, program) {
@@ -167,6 +186,55 @@ export async function listReviewQueue() {
     forSupervision: row.for_supervision === true,
   }));
 }
+
+// ---------- qualidade ----------
+
+export async function saveFidelity(sessionId, source, items, notes, expectedRevision) {
+  const row = await call('aba_save_fidelity', {
+    p_session_id: sessionId,
+    p_source: source,
+    p_items: items.map(item => ({ key: item.key, met: item.met === true, applicable: item.applicable !== false })),
+    p_notes: notes?.trim() || null,
+    p_expected_revision: expectedRevision ?? null,
+  }, 'Não foi possível salvar a fidelidade.');
+  return fidelityFromDb(row);
+}
+
+export async function saveIoa(patientId, record) {
+  const row = await call('aba_save_ioa', {
+    p_patient_id: patientId,
+    p_record: {
+      method: record.method,
+      primary_value: record.primaryValue,
+      secondary_value: record.secondaryValue,
+      session_id: record.sessionId || null,
+      program_id: record.programId || null,
+      secondary_observer_id: record.secondaryObserverId || null,
+      observed_on: record.observedOn || null,
+      notes: record.notes?.trim() || null,
+    },
+  }, 'Não foi possível registrar a concordância.');
+  return ioaFromDb(row);
+}
+
+// ---------- alertas ----------
+
+/** Recalcula as regras da clínica (o banco segura repetição em 2 minutos). */
+export const refreshAlerts = (force = false) =>
+  call('aba_refresh_alerts', { p_force: force }, 'Não foi possível atualizar os alertas.');
+
+export async function listAlerts({ patientId = null, includeClosed = false } = {}) {
+  const rows = await call('aba_list_alerts', { p_patient_id: patientId, p_include_closed: includeClosed }, 'Não foi possível carregar os alertas.');
+  return (rows || []).map(alertFromDb);
+}
+
+export const manageAlert = (alert, action, note = null) =>
+  call('aba_manage_alert', {
+    p_alert_id: alert.id,
+    p_action: action,
+    p_note: note?.trim() || null,
+    p_expected_revision: alert.revision,
+  }, 'Não foi possível atualizar o alerta.');
 
 // ---------- times ----------
 

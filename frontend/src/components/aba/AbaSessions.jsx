@@ -4,19 +4,21 @@ import { phaseLabel, trialCode } from '../../utils/aba/catalog.js';
 import { TRIAL_RESPONSE_CODES } from '../../utils/aba/mapping.js';
 import { correctSession, reviewRisk, reviewSession } from '../../services/abaService';
 import { AbaDialog } from './AbaDialog';
+import { FidelityDialog, FidelitySection } from './AbaFidelity';
 import { AbaIcon } from './AbaIcon';
 import { responseColumnLabel, reviewActionLabel, reviewStatusLabel, sessionStatusLabel } from '../../utils/aba/labels.js';
 
 // ============================================================
 // Sessões do paciente: histórico, detalhe, revisão da supervisão
 // (pedir correção / aprovar e assinar), correção pelo terapeuta e
-// revisão das situações de risco. Trazido do Atlas (SessionsPage).
+// revisão das situações de risco e fidelidade de aplicação. Trazido do
+// Atlas (SessionsPage).
 // ============================================================
 
 const dateLabel = session => new Date(`${session.date}T12:00:00`).toLocaleDateString('pt-BR');
 const dateTime = value => (value ? new Date(value).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 
-function SessionDetail({ session, data, onClose, onRequestCorrection, onApprove, onCorrect, onReviewRisk }) {
+function SessionDetail({ session, data, onClose, onRequestCorrection, onApprove, onCorrect, onReviewRisk, onFidelity }) {
   const canSupervise = data.permissions.canSupervise;
   const userId = data.permissions.userId;
   const awaitingSupervision = ['pending_review', 'corrected_pending_review'].includes(session.reviewStatus);
@@ -137,6 +139,10 @@ function SessionDetail({ session, data, onClose, onRequestCorrection, onApprove,
               </article>
             ))}
           </div>
+        )}
+
+        {session.status !== 'em_andamento' && (
+          <FidelitySection session={session} data={data} onEdit={(source, saved) => onFidelity(session, source, saved)} />
         )}
 
         {session.signedAt && (
@@ -470,12 +476,22 @@ export function AbaSessions({ data, onChanged, openSessionId = null }) {
           onApprove={session => setDialog({ type: 'approve', session })}
           onCorrect={session => setDialog({ type: 'correct', session })}
           onReviewRisk={incident => setDialog({ type: 'risk', incident })}
+          onFidelity={(session, source, saved) => setDialog({ type: 'fidelity', session, source, saved })}
         />
       )}
       {dialog?.type === 'request' && <RequestCorrectionDialog session={dialog.session} data={data} onClose={() => setDialog(null)} onDone={done} />}
       {dialog?.type === 'approve' && <ApproveDialog session={dialog.session} onClose={() => setDialog(null)} onDone={done} />}
       {dialog?.type === 'correct' && <CorrectionDialog session={dialog.session} data={data} onClose={() => setDialog(null)} onDone={done} />}
       {dialog?.type === 'risk' && <RiskReviewDialog incident={dialog.incident} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog?.type === 'fidelity' && (
+        <FidelityDialog
+          session={dialog.session}
+          source={dialog.source}
+          saved={dialog.saved}
+          onClose={() => setDialog(null)}
+          onDone={() => { setDialog(null); onChanged?.(); }}
+        />
+      )}
     </div>
   );
 }

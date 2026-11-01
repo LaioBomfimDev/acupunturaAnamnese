@@ -266,6 +266,18 @@ const NAV_ICONS = {
       <path d="M16 5a3 3 0 0 1 0 6M18 20a6 6 0 0 0-3-5.2" />
     </>
   ),
+  'Qualidade': (
+    <>
+      <path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z" />
+      <path d="M8 13h2l1.5-3 2 5 1.5-2h1" />
+    </>
+  ),
+  'Alertas': (
+    <>
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" />
+      <path d="M10 21h4" />
+    </>
+  ),
   'Revisão': (
     <>
       <path d="M9 11l2 2 4-4" />

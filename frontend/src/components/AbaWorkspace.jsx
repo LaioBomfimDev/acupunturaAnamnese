@@ -8,9 +8,11 @@ import { ScreenHelp } from './ui/ScreenHelp';
 import { getDiscipline, resolveUserDisciplines } from '../data/disciplines';
 import { ABA_HELP } from '../data/screenHelp';
 import { AbaAccessError, loadAbaPatient } from '../services/abaService';
+import { AbaAlerts } from './aba/AbaAlerts';
 import { AbaCollection } from './aba/AbaCollection';
 import { AbaPatientPanel } from './aba/AbaPatientPanel';
 import { AbaPrograms } from './aba/AbaPrograms';
+import { AbaQuality } from './aba/AbaQuality';
 import { AbaRepertoire } from './aba/AbaRepertoire';
 import { AbaResults } from './aba/AbaResults';
 import { AbaReviewQueue } from './aba/AbaReviewQueue';
@@ -22,7 +24,8 @@ import '../styles/aba.css';
 // Workspace ABA (Análise do Comportamento Aplicada) — área própria "da
 // Psicologia", decidida com o usuário em 31/10/2026 (por enquanto só
 // psicólogo atende). Trazido do Atlas: programas, coleta por tentativa,
-// gráficos por dimensão, revisão da supervisão e times.
+// gráficos por dimensão, revisão da supervisão e times; na segunda etapa
+// (20261101c), fidelidade, concordância (IOA), alertas e PDF/Excel.
 //
 // A coleta é separada da evolução: o atendimento ABA continua sendo
 // evoluído na tela Evoluções, com o formulário da Psicologia. Quem vê o
@@ -36,30 +39,34 @@ const TABS = {
   COLETA: 'Coleta',
   SESSOES: 'Sessões',
   RESULTADOS: 'Resultados',
+  QUALIDADE: 'Qualidade',
   PROGRAMAS: 'Programas',
   REPERTORIO: 'Repertório',
   TIMES: 'Times',
   REVISAO: 'Revisão',
+  ALERTAS: 'Alertas',
 };
 
 const NAV_GROUPS = [
   { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
-  { title: 'Atendimento', tabs: [TABS.COLETA, TABS.SESSOES, TABS.RESULTADOS] },
+  { title: 'Atendimento', tabs: [TABS.COLETA, TABS.SESSOES, TABS.RESULTADOS, TABS.QUALIDADE] },
   { title: 'Plano', tabs: [TABS.PROGRAMAS, TABS.REPERTORIO] },
-  { title: 'Equipe', tabs: [TABS.TIMES, TABS.REVISAO] },
+  { title: 'Equipe', tabs: [TABS.TIMES, TABS.REVISAO, TABS.ALERTAS] },
 ];
 
-const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.TIMES, TABS.REVISAO];
+const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.TIMES, TABS.REVISAO, TABS.ALERTAS];
 
 const HELP_BY_TAB = {
   [TABS.PAINEL]: 'painel',
   [TABS.COLETA]: 'coleta',
   [TABS.SESSOES]: 'sessoes',
   [TABS.RESULTADOS]: 'resultados',
+  [TABS.QUALIDADE]: 'qualidade',
   [TABS.PROGRAMAS]: 'programas',
   [TABS.REPERTORIO]: 'repertorio',
   [TABS.TIMES]: 'times',
   [TABS.REVISAO]: 'revisao',
+  [TABS.ALERTAS]: 'alertas',
 };
 
 export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
@@ -119,6 +126,16 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
     setActiveTab(TABS.SESSOES);
   }
 
+  // Alerta → tela onde ele se resolve, já no paciente (e na sessão).
+  function openFromAlert(patientId, tab, sessionId) {
+    const patient = patients.find(item => item.id === patientId) || (selectedPatient?.id === patientId ? selectedPatient : null);
+    if (!patient) return;
+    if (selectedPatient?.id !== patientId) selectPatient(patient);
+    const target = Object.values(TABS).includes(tab) ? tab : TABS.PAINEL;
+    setOpenSessionId(target === TABS.SESSOES ? sessionId || null : null);
+    setActiveTab(target);
+  }
+
   const effectiveTab = !selectedPatient && !TABS_WITHOUT_PATIENT.includes(activeTab) ? TABS.HOME : activeTab;
   const now = new Date();
   const dateLabel = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
@@ -158,6 +175,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
     }
     if (effectiveTab === TABS.TIMES) return <AbaTeams />;
     if (effectiveTab === TABS.REVISAO) return <AbaReviewQueue onOpenPatient={openPatientSession} />;
+    if (effectiveTab === TABS.ALERTAS) return <AbaAlerts userId={profile?.id} onOpenAlert={openFromAlert} />;
 
     const waiting = renderPatientState();
     if (waiting || !data) return waiting;
@@ -175,7 +193,8 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
       );
     }
     if (effectiveTab === TABS.SESSOES) return <AbaSessions key={openSessionId || 'lista'} data={data} onChanged={reload} openSessionId={openSessionId} />;
-    if (effectiveTab === TABS.RESULTADOS) return <AbaResults data={data} onChanged={reload} />;
+    if (effectiveTab === TABS.RESULTADOS) return <AbaResults data={data} onChanged={reload} patient={selectedPatient} profile={profile} />;
+    if (effectiveTab === TABS.QUALIDADE) return <AbaQuality data={data} patientId={selectedPatient.id} onChanged={reload} />;
     if (effectiveTab === TABS.PROGRAMAS) return <AbaPrograms data={data} onChanged={reload} />;
     if (effectiveTab === TABS.REPERTORIO) return <AbaRepertoire data={data} onChanged={reload} />;
     return (
@@ -186,6 +205,8 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
         onPrograms={() => setActiveTab(TABS.PROGRAMAS)}
         onResults={() => setActiveTab(TABS.RESULTADOS)}
         onSessions={() => setActiveTab(TABS.SESSOES)}
+        onOpenAlert={openFromAlert}
+        onAllAlerts={() => setActiveTab(TABS.ALERTAS)}
       />
     );
   }

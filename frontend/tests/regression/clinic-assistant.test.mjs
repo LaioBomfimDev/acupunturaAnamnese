@@ -288,7 +288,7 @@ test('Edge Function da assistente: acesso, teto antes da IA, só ajuda do sistem
   assert.match(source, /enforceEdgeRateLimit\(/);
   assert.match(source, /scrubClinicalText\(text\)/, 'mensagens passam pela limpeza de identificadores');
   assert.match(source, /Nunca dê diagnóstico, conduta, prescrição/);
-  assert.match(source, /Você ainda não lê pacientes, evoluções, escalas, anamneses nem o financeiro/);
+  assert.match(source, /Ainda não leio dados de pacientes \(fichas, evoluções, resultados de escalas, anamneses\) nem o financeiro\./);
   assert.match(source, /Nunca diga que a pessoa "não tem acesso" a algo que o perfil dela tem/, 'não recusa o que o perfil pode fazer');
   assert.match(source, /helpIndex\(\)/);
   assert.doesNotMatch(source, /\.from\('(patients|patient_|clinical_records|appointments|finance_|appointment_charges)/, 'etapa 1 não lê dado de paciente nem financeiro');
@@ -446,4 +446,32 @@ test('regressão 01/11/2026: sem jornada no dia vale a grade padrão da clínica
 
   const past = assistant.freeSlotsForAssistant({ date, professionalId: 'denise', fallback, now: new Date(2026, 10, 5, 9) });
   assert.equal(past.motivo, 'passado');
+});
+
+test('assistente assertiva (01/11/2026): responde tudo, opina, sabe as escalas e o que faz', async () => {
+  const edge = await read(functionsDir + '/clinic-assistant/index.ts');
+  assert.match(edge, /Responda TODA pergunta da melhor forma que puder/);
+  assert.match(edge, /Nunca recuse opinar\./, 'pedido de 01/11/2026: opinião sincera, dita como opinião');
+  assert.match(edge, /SUAS_CAPACIDADES:/);
+  assert.match(edge, /termine com UMA sugestão concreta do próximo passo/);
+  assert.match(edge, /CATALOGO_DE_ESCALAS \(JSON\)/);
+  // O que não muda: nada de conduta para um paciente específico.
+  assert.match(edge, /Nunca dê diagnóstico, conduta, prescrição, dose nem interpretação clínica de um paciente específico/);
+  assert.match(edge, /thinkingConfig: THINKING_LOW,/);
+
+  const retrieval = await import('../../../supabase/functions/_shared/assistantRetrieval.ts');
+  assert.equal(retrieval.needsScaleCatalog(['me fale sobre as escalas que a gente aplica'], 'inicio'), true);
+  assert.equal(retrieval.needsScaleCatalog(['o PHQ-9 serve para quê?'], 'agenda'), true);
+  assert.equal(retrieval.needsScaleCatalog(['quais horários vagos tenho amanhã?'], 'agenda'), false, 'só vai quando importa');
+  assert.equal(retrieval.needsScaleCatalog(['explique esta tela'], 'escalas'), true);
+
+  const { ASSISTANT_SCALE_CATALOG } = await import('../../../supabase/functions/_shared/assistantHelpCorpus.ts');
+  const { CLINICAL_INSTRUMENTS } = await import('../../src/data/clinicalInstruments.js');
+  assert.equal(ASSISTANT_SCALE_CATALOG.length, CLINICAL_INSTRUMENTS.length, 'toda escala do sistema entra no catálogo');
+  const phq9 = ASSISTANT_SCALE_CATALOG.find(item => item.sigla === 'PHQ-9');
+  assert.equal(phq9.perguntas, 9);
+  assert.match(phq9.faixas, /Grave 20–27/);
+  for (const item of ASSISTANT_SCALE_CATALOG) {
+    assert.deepEqual(Object.keys(item).sort(), ['areas', 'conferida', 'faixas', 'mede', 'minutos', 'nome', 'perguntas', 'publico', 'reaplicarDias', 'sigla'], 'catálogo sem resultado de paciente');
+  }
 });

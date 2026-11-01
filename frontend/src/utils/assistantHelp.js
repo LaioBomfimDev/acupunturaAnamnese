@@ -10,6 +10,7 @@
 // ============================================================
 
 import * as SCREEN_HELP from '../data/screenHelp.js';
+import { CLINICAL_INSTRUMENTS, INSTRUMENT_REVIEW_STATUS } from '../data/clinicalInstruments.js';
 
 // Onde cada grupo de ajuda mora no sistema. Grupo novo em screenHelp.js
 // entra aqui, senão o teste avisa.
@@ -72,6 +73,38 @@ export function buildAssistantHelpTopics() {
     }
   }
   return topics;
+}
+
+function bandsText(instrument) {
+  if (instrument.noBands) return 'sem ponto de corte: mostra só a nota';
+  if (instrument.scoring?.method === 'subscales' || instrument.scoring?.method === 'subscale_means') {
+    const subscales = instrument.scoring.subscales || [];
+    const names = subscales.map(sub => sub.label || sub.name || sub.id).filter(Boolean);
+    return names.length ? `notas por subescala: ${names.join(', ')}` : 'notas por subescala';
+  }
+  const bands = instrument.bands || [];
+  return bands.map(band => `${band.label} ${band.min}–${band.max}`).join('; ');
+}
+
+/**
+ * Catálogo das escalas do sistema para a assistente (01/11/2026): o que
+ * cada uma mede, para quem, tamanho, faixas, quando reaplicar e se a
+ * psicóloga já conferiu. Sai de data/clinicalInstruments.js, a mesma
+ * fonte da tela; nunca traz resultado de paciente.
+ */
+export function buildAssistantScaleCatalog() {
+  return CLINICAL_INSTRUMENTS.map(instrument => ({
+    sigla: instrument.shortName,
+    nome: instrument.name,
+    mede: instrument.measures || '',
+    publico: instrument.population || '',
+    perguntas: (instrument.items || []).length,
+    minutos: instrument.minutes ?? null,
+    reaplicarDias: instrument.reapplyAfterDays ?? null,
+    faixas: bandsText(instrument),
+    areas: instrument.disciplines || [],
+    conferida: instrument.review?.status !== INSTRUMENT_REVIEW_STATUS.PENDING,
+  }));
 }
 
 /** Grupos de ajuda exportados que ainda não têm lugar na lista acima. */

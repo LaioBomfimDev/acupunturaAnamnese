@@ -108,6 +108,15 @@ export function selectHelpTopics(
   return picked.sort((a, b) => a.index - b.index).map(item => item.topic);
 }
 
+// Pergunta sobre escalas (01/11/2026): o catálogo vai junto. Fora disso
+// fica de fora, para não pesar em toda pergunta.
+const SCALE_WORDS = /\b(escala|escalas|instrumento|instrumentos|questionario|questionarios|teste|testes|rastreio|phq|gad|dass|pcl|kessler|k10|k6|asrs|rosenberg|autocompaixao|scs|depressao|ansiedade|estresse|tept|tdah|autoestima)/;
+
+export function needsScaleCatalog(questions: string[], screen: string) {
+  if (screen === 'escalas') return true;
+  return questions.slice(-3).some(question => SCALE_WORDS.test(normalize(question)));
+}
+
 /** Índice de toda a ajuda: só os títulos, para ela saber o que existe. */
 export function helpIndex(topics: AssistantHelpTopic[] = ASSISTANT_HELP_TOPICS) {
   return topics.map(topic => topic.title);

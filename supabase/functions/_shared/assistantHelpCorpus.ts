@@ -1,6 +1,6 @@
 // ============================================================
 // GERADO por frontend/scripts/sync-assistant-help.mjs a partir de
-// frontend/src/data/screenHelp.js. Não edite à mão: mude a fonte e
+// frontend/src/data/screenHelp.js e data/clinicalInstruments.js. Não edite à mão: mude a fonte e
 // rode o script (tests/regression/clinic-assistant.test.mjs).
 // ============================================================
 
@@ -266,5 +266,192 @@ export const ASSISTANT_HELP_TOPICS: AssistantHelpTopic[] = [
     "id": "ABA_HELP.alertas",
     "title": "ABA → Alertas",
     "text": "O que é: O que pede atenção nas crianças que você atende, calculado a partir da coleta.\nO que dá pra fazer: “Abrir” leva ao paciente, na tela onde o alerta se resolve. “Dispensar” (supervisão) tira o alerta da lista com um motivo; se a situação passar e voltar, ele reabre sozinho. “Só comigo” mostra os alertas sob sua responsabilidade; “Atualizar agora” recalcula na hora.\nComo ler: Avisos: critério atingido, baixa evolução (3 sessões abaixo do critério em 30 dias), programa sem coleta há 14 dias, aumento de comportamento, comportamento novo sem definição, reforçador perdendo efeito, situação de risco sem revisão, revisão parada há 48 horas, correção atrasada, fidelidade e concordância abaixo de 80%. Crítico (vermelho) é só situação de risco grave. O alerta some sozinho quando a situação se resolve.\nQuem vê e quem altera: Cada pessoa vê os alertas das crianças que atende; dispensar e reabrir é da supervisão do time ou da administração."
+  }
+];
+
+// Escalas do sistema (frontend/src/data/clinicalInstruments.js): o que
+// medem, para quem e as faixas. Nunca resultado de paciente.
+export const ASSISTANT_SCALE_CATALOG = [
+  {
+    "sigla": "PHQ-9",
+    "nome": "Questionário sobre a Saúde do Paciente (PHQ-9)",
+    "mede": "sintomas depressivos nas últimas 2 semanas",
+    "publico": "Adolescentes e adultos",
+    "perguntas": 9,
+    "minutos": 5,
+    "reaplicarDias": 14,
+    "faixas": "Mínima 0–4; Leve 5–9; Moderada 10–14; Moderadamente grave 15–19; Grave 20–27",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "PHQ-8",
+    "nome": "Questionário sobre a Saúde do Paciente, 8 perguntas (PHQ-8)",
+    "mede": "sintomas depressivos nas últimas 2 semanas, sem a pergunta sobre pensamentos de morte",
+    "publico": "Adolescentes e adultos",
+    "perguntas": 8,
+    "minutos": 4,
+    "reaplicarDias": 14,
+    "faixas": "Mínima 0–4; Leve 5–9; Moderada 10–14; Moderadamente grave 15–19; Grave 20–24",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "GAD-7",
+    "nome": "Escala de Transtorno de Ansiedade Generalizada (GAD-7)",
+    "mede": "sintomas de ansiedade nas últimas 2 semanas",
+    "publico": "Adolescentes e adultos",
+    "perguntas": 7,
+    "minutos": 3,
+    "reaplicarDias": 14,
+    "faixas": "Mínima 0–4; Leve 5–9; Moderada 10–14; Grave 15–21",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "PHQ-4",
+    "nome": "Questionário de Saúde do Paciente para ansiedade e depressão (PHQ-4)",
+    "mede": "rastreio rápido de ansiedade e depressão nas últimas 2 semanas",
+    "publico": "Adultos",
+    "perguntas": 4,
+    "minutos": 1,
+    "reaplicarDias": 14,
+    "faixas": "notas por subescala: Ansiedade (GAD-2), Depressão (PHQ-2)",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "DASS-21",
+    "nome": "Escala de Depressão, Ansiedade e Estresse (DASS-21)",
+    "mede": "sintomas de depressão, ansiedade e estresse na última semana",
+    "publico": "Adultos",
+    "perguntas": 21,
+    "minutos": 5,
+    "reaplicarDias": 7,
+    "faixas": "notas por subescala: Depressão, Ansiedade, Estresse",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "K10",
+    "nome": "Escala de Sofrimento Psíquico de Kessler (K10)",
+    "mede": "sofrimento psíquico nos últimos 30 dias",
+    "publico": "Adultos",
+    "perguntas": 10,
+    "minutos": 3,
+    "reaplicarDias": 30,
+    "faixas": "Baixo 10–15; Moderado 16–21; Alto 22–29; Muito alto 30–50",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "K6",
+    "nome": "Escala de Sofrimento Psíquico de Kessler, 6 perguntas (K6)",
+    "mede": "sofrimento psíquico nos últimos 30 dias",
+    "publico": "Adultos",
+    "perguntas": 6,
+    "minutos": 2,
+    "reaplicarDias": 30,
+    "faixas": "Baixo 0–4; Moderado 5–12; Grave 13–24",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "PCL-5",
+    "nome": "Lista de Verificação do TEPT para o DSM-5 (PCL-5)",
+    "mede": "sintomas de estresse pós-traumático no último mês",
+    "publico": "Adultos que passaram por uma experiência muito estressante",
+    "perguntas": 20,
+    "minutos": 7,
+    "reaplicarDias": 30,
+    "faixas": "Abaixo do ponto de corte 0–35; No ponto de corte ou acima 36–80",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "PHQ-15",
+    "nome": "Questionário de Saúde do Paciente: sintomas físicos (PHQ-15)",
+    "mede": "incômodo com sintomas físicos nas últimas 4 semanas",
+    "publico": "Adolescentes e adultos",
+    "perguntas": 15,
+    "minutos": 4,
+    "reaplicarDias": 28,
+    "faixas": "Mínima 0–4; Baixa 5–9; Média 10–14; Alta 15–30",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "ASRS-6",
+    "nome": "Escala de Autoavaliação de TDAH em Adultos, 6 perguntas (ASRS-V1.1)",
+    "mede": "rastreio de sintomas de TDAH nos últimos 6 meses",
+    "publico": "Adultos (18 anos ou mais)",
+    "perguntas": 6,
+    "minutos": 3,
+    "reaplicarDias": 180,
+    "faixas": "Negativo baixo 0–9; Negativo alto 10–13; Positivo baixo 14–17; Positivo alto 18–24",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "Rosenberg",
+    "nome": "Escala de Autoestima de Rosenberg (EPM/Rosenberg)",
+    "mede": "autoestima global",
+    "publico": "Adolescentes e adultos",
+    "perguntas": 10,
+    "minutos": 3,
+    "reaplicarDias": 30,
+    "faixas": "sem ponto de corte: mostra só a nota",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "Autocompaixão",
+    "nome": "Escala de Autocompaixão (SCS)",
+    "mede": "como a pessoa costuma lidar consigo mesma em momentos difíceis",
+    "publico": "A partir de 14 anos",
+    "perguntas": 26,
+    "minutos": 7,
+    "reaplicarDias": 30,
+    "faixas": "notas por subescala: Bondade consigo, Autocrítica severa, Senso de humanidade, Isolamento, Mindfulness, Sobre-identificação",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
+  },
+  {
+    "sigla": "Autocompaixão (12)",
+    "nome": "Escala de Autocompaixão, forma reduzida (SCS-SF)",
+    "mede": "como a pessoa costuma lidar consigo mesma em momentos difíceis",
+    "publico": "A partir de 14 anos",
+    "perguntas": 12,
+    "minutos": 3,
+    "reaplicarDias": 14,
+    "faixas": "Baixa 1–2.49; Moderada 2.5–3.5; Alta 3.51–5",
+    "areas": [
+      "psicologia"
+    ],
+    "conferida": false
   }
 ];

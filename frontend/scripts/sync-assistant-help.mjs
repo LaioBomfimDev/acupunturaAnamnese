@@ -20,17 +20,22 @@ export const HELP_MIRROR_TARGET = path.resolve(here, '../../supabase/functions/_
 
 /** Texto do arquivo gerado (o teste compara com o que está no disco). */
 export async function buildAssistantHelpMirror() {
-  const { buildAssistantHelpTopics } = await import(pathToFileURL(source).href);
+  const { buildAssistantHelpTopics, buildAssistantScaleCatalog } = await import(pathToFileURL(source).href);
   const topics = buildAssistantHelpTopics();
+  const scales = buildAssistantScaleCatalog();
   return `// ============================================================
 // GERADO por frontend/scripts/sync-assistant-help.mjs a partir de
-// frontend/src/data/screenHelp.js. Não edite à mão: mude a fonte e
+// frontend/src/data/screenHelp.js e data/clinicalInstruments.js. Não edite à mão: mude a fonte e
 // rode o script (tests/regression/clinic-assistant.test.mjs).
 // ============================================================
 
 export type AssistantHelpTopic = { id: string; title: string; text: string };
 
 export const ASSISTANT_HELP_TOPICS: AssistantHelpTopic[] = ${JSON.stringify(topics, null, 2)};
+
+// Escalas do sistema (frontend/src/data/clinicalInstruments.js): o que
+// medem, para quem e as faixas. Nunca resultado de paciente.
+export const ASSISTANT_SCALE_CATALOG = ${JSON.stringify(scales, null, 2)};
 `;
 }
 

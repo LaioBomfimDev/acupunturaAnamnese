@@ -20,7 +20,7 @@
 .wa-button:disabled { opacity: 0.55; cursor: not-allowed; }
 .wa-button:focus-visible, .wa-icon-button:focus-visible { outline: 3px solid var(--r1-focus-ring); outline-offset: 3px; }
 .wa-mobile-note { display: none; }
-.wa-workspace { display: grid; grid-template-columns: 285px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: clamp(440px, calc(100 * var(--vh) - 290px), 780px); overflow: hidden; border: 1px solid var(--r1-border-subtle); border-radius: var(--r1-radius-lg); background: var(--r1-surface); }
+.wa-workspace { display: grid; grid-template-columns: 285px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; border: 1px solid var(--r1-border-subtle); border-radius: var(--r1-radius-lg); background: var(--r1-surface); }
 .wa-conversations { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--r1-border-subtle); overflow: auto; }
 .wa-conversations > header { padding: 21px 18px 18px; border-bottom: 1px solid var(--r1-border-subtle); }
 .wa-conversations h2 { margin: 0 0 16px; font-size: 15px; font-weight: 650; }
@@ -36,7 +36,7 @@
 .wa-thread-head > span { display: grid; place-items: center; width: 37px; height: 37px; background: var(--r1-bg); border-radius: 50%; color: var(--r1-text-muted); }
 .wa-thread-head h2 { font-size: 13px; font-weight: 600; margin: 0; }
 .wa-thread-head p { font-size: 11.5px; color: var(--r1-text-muted); margin: 3px 0 0; }
-.wa-thread-empty { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 35px; text-align: center; }
+.wa-thread-empty { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow-y: auto; align-items: center; justify-content: center; gap: 16px; padding: 35px; text-align: center; }
 .wa-empty-mark { width: 77px; height: 77px; border-radius: var(--r1-radius-xl); border: 1px solid var(--r1-accent-line); background: var(--r1-surface); }
 .wa-thread-empty h2 { font-size: 21px; font-weight: 600; letter-spacing: -0.6px; margin: 4px 0 0; }
 .wa-thread-empty p { max-width: 330px; margin: 0; font-size: 13px; color: var(--r1-text-muted); line-height: 1.8; }
@@ -64,6 +64,18 @@
 .wa-dialog-footer { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--r1-border-subtle); }
 .wa-dialog-footer p { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--r1-text-muted); font-size: 12px; line-height: 1.7; }
 .wa-dialog-footer svg { margin-top: 3px; flex-shrink: 0; }
+
+/* Computador: a tela cabe na janela e a conversa fica com a altura que
+   sobra (flex, sem conta fixa de px). Com o botão da assistente, o pé
+   deixa o espaço dele livre: o campo de envio nunca fica coberto nem
+   abaixo do fim da tela. */
+@media (min-width: 1025px) {
+  .hub-screen:has(> .hub-body > .wa-screen) { display: flex; flex-direction: column; height: calc(100 * var(--svh)); min-height: 0; }
+  body:has(.ca-launcher) .hub-screen:has(> .hub-body > .wa-screen) { height: calc(100 * var(--svh) - var(--ca-launcher-room, 88px)); }
+  .hub-body:has(> .wa-screen) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding-bottom: 20px; }
+  .wa-screen { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+  .wa-workspace { flex: 1 1 auto; min-height: 260px; }
+}
 
 @media (max-width: 1024px) {
   .wa-title-row { gap: 12px; }

@@ -368,8 +368,12 @@ button.ca-attention-item:hover {
 
 /* Espaço no fim da página: o último botão de qualquer tela rola para
    acima do botão da assistente, nunca fica coberto por ele. */
+body:has(.ca-launcher) {
+  --ca-launcher-room: 88px;
+}
+
 body:has(.ca-launcher) #root {
-  padding-bottom: 88px;
+  padding-bottom: var(--ca-launcher-room);
 }
 
 .ca-launcher:hover {

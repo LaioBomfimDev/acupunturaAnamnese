@@ -83,3 +83,20 @@ test('celular mantém o aplicativo nativo e não exige pareamento na própria te
   assert.doesNotMatch(css, /\b\d+(?:\.\d+)?(?:s|d|l)?vh\b|#[0-9a-f]{3,8}\b|rgba?\(/i);
   assert.match(css, /grid-template-columns: 285px minmax\(0, 1fr\)/);
 });
+
+// Regressão 01/11/2026: a altura da conversa era conta fixa
+// (clamp(440px, 100vh - 290px, 780px)). No notebook (1366×768) o campo de
+// envio ficava abaixo do fim da tela e, com o botão da assistente, coberto
+// por ele.
+test('no computador a conversa usa a altura que sobra e o envio fica acima do botão da assistente', async () => {
+  const css = await read('styles/whatsapp.css');
+  const assistantCss = await read('styles/assistant.css');
+  const desktop = css.slice(css.indexOf('@media (min-width: 1025px)'), css.indexOf('@media (max-width: 1024px)'));
+  assert.doesNotMatch(css, /\.wa-workspace \{[^}]*\bheight: clamp\(/);
+  assert.match(desktop, /\.hub-screen:has\(> \.hub-body > \.wa-screen\) \{[^}]*height: calc\(100 \* var\(--svh\)\)/);
+  assert.match(desktop, /body:has\(\.ca-launcher\) \.hub-screen:has\(> \.hub-body > \.wa-screen\) \{[^}]*var\(--ca-launcher-room/);
+  assert.match(desktop, /\.wa-workspace \{[^}]*flex: 1 1 auto/);
+  assert.match(css, /\.wa-thread-empty \{[^}]*min-height: 0/);
+  assert.match(assistantCss, /body:has\(\.ca-launcher\) \{\s*--ca-launcher-room: 88px;/);
+  assert.match(assistantCss, /#root \{\s*padding-bottom: var\(--ca-launcher-room\);/);
+});

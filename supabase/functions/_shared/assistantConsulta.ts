@@ -11,7 +11,12 @@
 // (tipos e motivos; tests/regression/clinic-assistant.test.mjs confere).
 // ============================================================
 
-export const ASSISTANT_CONSULTAS = ['horarios_vagos'];
+// 01/11/2026 (caminho A): além dos horários vagos, contagens da clínica
+// sem paciente: atendimentos do dia, evoluções faltando, escalas
+// aplicadas no mês e pacientes sem retorno. Só números e nomes da equipe.
+export const ASSISTANT_CONSULTAS = [
+  'horarios_vagos', 'atendimentos_dia', 'evolucoes_pendentes', 'escalas_aplicadas', 'retornos_pendentes',
+];
 
 export const CONSULTA_MOTIVOS = [
   'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro',
@@ -29,10 +34,18 @@ export function readConsulta(raw: unknown) {
   const item = raw as Record<string, unknown> | null;
   if (!item || typeof item !== 'object') return null;
   const tipo = text(item.tipo, 30);
-  const profissional = text(item.profissional, 80);
+  const profissional = text(item.profissional, 80) || 'equipe';
   const dia = text(item.dia, 10);
-  if (!ASSISTANT_CONSULTAS.includes(tipo) || !profissional || !DAY.test(dia)) return null;
-  return { tipo, profissional, dia };
+  const dias = Number(item.dias);
+  if (!ASSISTANT_CONSULTAS.includes(tipo)) return null;
+  // Horários vagos são sempre de uma pessoa num dia certo.
+  if (tipo === 'horarios_vagos' && (profissional === 'equipe' || !DAY.test(dia))) return null;
+  return {
+    tipo,
+    profissional,
+    dia: DAY.test(dia) ? dia : '',
+    dias: Number.isInteger(dias) && dias >= 1 && dias <= 365 ? dias : null,
+  };
 }
 
 /** Resultado da consulta vindo do aparelho, limpo antes de ir ao Gemini. */
@@ -53,6 +66,13 @@ export function readConsultaResult(raw: unknown) {
     motivo: CONSULTA_MOTIVOS.includes(motivo) ? motivo : null,
     grade: text(item.grade, 10) === 'padrao' ? 'padrao' : 'jornada',
     opcoes: (Array.isArray(item.opcoes) ? item.opcoes : []).map(value => text(value, 60)).filter(Boolean).slice(0, 12),
+    // Contagens: só rótulo e número (nomes da equipe, siglas de escala).
+    periodo: text(item.periodo, 40),
+    total: Number.isInteger(item.total) ? item.total as number : null,
+    linhas: (Array.isArray(item.linhas) ? item.linhas : [])
+      .map(line => ({ rotulo: text((line as Record<string, unknown>)?.rotulo, 80), valor: Number((line as Record<string, unknown>)?.valor) }))
+      .filter(line => line.rotulo && Number.isInteger(line.valor) && line.valor >= 0)
+      .slice(0, 40),
   };
 }
 

@@ -42,7 +42,9 @@ export const ASSISTANT_SCREEN_LABELS = {
 
 // Consultas que a assistente pode pedir ao aparelho (31/10/2026) e os
 // motivos de não ter resposta: espelho de _shared/assistantConsulta.ts.
-export const ASSISTANT_CONSULTAS = ['horarios_vagos'];
+export const ASSISTANT_CONSULTAS = [
+  'horarios_vagos', 'atendimentos_dia', 'evolucoes_pendentes', 'escalas_aplicadas', 'retornos_pendentes',
+];
 export const CONSULTA_MOTIVOS = [
   'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro',
 ];
@@ -97,6 +99,78 @@ export function freeSlotsForAssistant({ date, professionalId, schedules = [], ap
   if (closedReason === 'past') return { horarios: [], motivo: 'passado', grade };
   if (closedReason === 'holiday') return { horarios: [], motivo: 'feriado', grade };
   return { horarios: slots.map(slot => slot.label), motivo: null, grade };
+}
+
+// ---------- contagens da clínica para a assistente (01/11/2026) ----------
+// Só números e nomes da equipe (`nameOf`), nunca paciente. Cada uma
+// devolve { total, linhas: [{ rotulo, valor }] } no formato de `dados`.
+
+const ABSENT = ['no_show', 'excused', 'cancelled'];
+
+function countBy(list, keyOf) {
+  const counts = new Map();
+  for (const item of list) {
+    const key = keyOf(item);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return counts;
+}
+
+function byCountDesc(a, b) {
+  return b.valor - a.valor || a.rotulo.localeCompare(b.rotulo);
+}
+
+/** Atendimentos de um dia: totais da clínica (ou da pessoa) e por profissional. */
+export function summarizeDayAppointments({ appointments = [], nameOf = id => id, professionalId = null }) {
+  const people = appointments.filter(item => item?.kind !== 'block'
+    && (!professionalId || item?.professional_id === professionalId));
+  const attended = people.filter(item => item.status === 'attended').length;
+  const absent = people.filter(item => ABSENT.includes(item.status)).length;
+  const linhas = [
+    { rotulo: 'A atender', valor: people.length - attended - absent },
+    { rotulo: 'Atendidos', valor: attended },
+    { rotulo: 'Faltas e cancelamentos', valor: absent },
+  ];
+  if (!professionalId) {
+    const perPerson = countBy(people, item => item.professional_id);
+    for (const [id, valor] of perPerson) linhas.push({ rotulo: `Marcados com ${nameOf(id)}`, valor });
+  }
+  return { total: people.length, linhas };
+}
+
+/** Evoluções faltando, por profissional (a RLS já corta o que a pessoa pode ver). */
+export function summarizePendingEvolutions({ pending = [], nameOf = id => id }) {
+  const linhas = [...countBy(pending, item => item.professional_id)]
+    .map(([id, valor]) => ({ rotulo: nameOf(id), valor }))
+    .sort(byCountDesc);
+  return { total: pending.length, linhas };
+}
+
+/** Escalas aplicadas no período, por escala (consultório + Área do Paciente). */
+export function summarizeScaleApplications({ rows = [], labelOf = id => id }) {
+  const perScale = new Map();
+  for (const row of rows) {
+    const key = row.instrumento;
+    const entry = perScale.get(key) || { total: 0, casa: 0 };
+    entry.total += Number(row.total) || 0;
+    if (row.origem === 'area_do_paciente') entry.casa += Number(row.total) || 0;
+    perScale.set(key, entry);
+  }
+  const linhas = [...perScale]
+    .map(([id, entry]) => ({
+      rotulo: entry.casa ? `${labelOf(id)} (${entry.casa} respondidas em casa)` : labelOf(id),
+      valor: entry.total,
+    }))
+    .sort(byCountDesc);
+  return { total: linhas.reduce((sum, line) => sum + line.valor, 0), linhas };
+}
+
+/** Pacientes sem retorno há N dias ou mais: só a conta, por profissional. */
+export function summarizeReturns({ returns = [], nameOf = id => id }) {
+  const linhas = [...countBy(returns, item => item.professional_id)]
+    .map(([id, valor]) => ({ rotulo: nameOf(id), valor }))
+    .sort(byCountDesc);
+  return { total: returns.length, linhas };
 }
 
 // Valor em aberto há mais que isto conta como atraso que pede atenção.

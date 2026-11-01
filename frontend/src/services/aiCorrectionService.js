@@ -28,6 +28,7 @@ export const AI_SURFACES = {
   FOOD_RESEARCH: 'food_research',
   PSYCH_MARKS: 'psych_marks',
   PSYCH_READING: 'psych_reading',
+  CLINIC_ASSISTANT: 'clinic_assistant',
 };
 
 export const AI_SURFACE_LABELS = {
@@ -39,6 +40,7 @@ export const AI_SURFACE_LABELS = {
   food_research: 'Dietoterapia (pesquisa de alimento)',
   psych_marks: 'Psicologia — sugestões da anamnese',
   psych_reading: 'Psicologia — leitura da IA (rascunho)',
+  clinic_assistant: 'Assistente da clínica',
 };
 
 export const CORRECTION_STATUS_LABELS = {

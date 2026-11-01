@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useDismiss } from '../../hooks/useDismiss';
 import { canSeeScales } from '../../utils/instrumentAccess';
 import { formatBRL } from '../../utils/finance';
+import { AI_SURFACES } from '../../services/aiCorrectionService';
+import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_SCREEN_LABELS,
@@ -23,14 +25,18 @@ import {
 // ============================================================
 // Assistente da clínica (30/10/2026, etapa 1; prévia C + painel A).
 //
-// Tela inicial: cartão "Sua colega de clínica" (AssistantHomeCard), com
-// o que pede atenção hoje e a conversa. Nas outras telas: o botão
-// "Assistente" minimizado no canto (ClinicAssistantLauncher), com o
-// número do que pede atenção; um toque abre o painel ao lado com a
-// mesma conversa. No celular e no tablet o painel ocupa a tela.
+// Só o botão "Assistente" flutuante, em todas as telas, inclusive a
+// inicial (01/11/2026: o cartão da tela inicial era teste e saiu), com o
+// número do que pede atenção; um toque abre o painel ao lado. No celular
+// e no tablet o painel ocupa a tela.
 //
-// Nesta etapa ela explica o sistema e conta o que pede atenção; não lê
-// paciente nem financeiro na conversa. Lembra e explica, nunca decide.
+// Ela explica o sistema, consulta números da clínica sem paciente e
+// aprende com o "Corrigir" de cada resposta. Lembra e explica, nunca
+// decide.
+//
+// Visual "Noite" (01/11/2026, opção C entre três prévias): o corpo da
+// assistente é um orbe de luz na cor da clínica; o resto está em
+// styles/assistant.css.
 // ============================================================
 
 const ATTENTION_MAX_AGE_MS = 2 * 60 * 1000;
@@ -40,14 +46,6 @@ const STARTERS = {
   professional: ['Explique esta tela', 'Quais horários vagos tenho amanhã?', 'Como envio uma escala para casa?'],
   reception: ['Explique esta tela', 'Como copio os horários vagos?', 'Como cadastro um paciente?'],
 };
-
-export function PulseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 12h4l2-5 4 10 2-5h6" />
-    </svg>
-  );
-}
 
 function SendIcon() {
   return (
@@ -168,11 +166,23 @@ function Conversation({ state, allowed, role, inputRef }) {
                 Abrir {ASSISTANT_SCREEN_LABELS[link]} →
               </button>
             ))}
+            {message.role === 'assistant' && (
+              // Caminho C: quem corrige ensina a assistente (vale na hora para
+              // a autora; para todos depois da aprovação do SuperAdm).
+              <AiCorrectionButton
+                surface={AI_SURFACES.CLINIC_ASSISTANT}
+                aiOutput={{ answer: message.text }}
+                contextSnapshot={{ question: state.messages[index - 1]?.text || '' }}
+                label="Corrigir"
+              />
+            )}
           </div>
         ))}
         {state.sending && (
           <div className="ca-bubble ca-bubble--assistant ca-bubble--typing">
-            {state.sendingStep === 'agenda' ? 'Consultando a agenda…' : 'Pensando…'}
+            <span className="ca-scan" aria-hidden="true" />
+            <span className="ca-scan" aria-hidden="true" />
+            {state.sendingStep === 'agenda' ? 'Consultando os dados da clínica…' : 'Pensando…'}
           </div>
         )}
       </div>
@@ -201,31 +211,7 @@ function Conversation({ state, allowed, role, inputRef }) {
   );
 }
 
-/** Cartão da tela inicial (prévia C). */
-export function AssistantHomeCard({ profile }) {
-  const state = useAssistantState();
-  const role = useAttentionRefresh(profile);
-  const allowed = allowedLinks(profile);
-  return (
-    <section className="ca-home" aria-label="Assistente">
-      <div className="ca-home-side">
-        <div className="ca-identity">
-          <span className="ca-avatar"><PulseIcon /></span>
-          <div>
-            <p className="ca-name">Sua colega de clínica</p>
-            <p className="ca-sub">Separei o que pede atenção hoje</p>
-          </div>
-        </div>
-        <AttentionList attention={state.attention} collapsed={false} allowed={allowed} />
-      </div>
-      <div className="ca-home-chat">
-        <Conversation state={state} allowed={allowed} role={role} />
-      </div>
-    </section>
-  );
-}
-
-/** Botão minimizado + painel ao lado (prévia A), em todas as telas menos a inicial. */
+/** Botão flutuante + painel ao lado, em todas as telas. */
 export function ClinicAssistantLauncher({ profile }) {
   const state = useAssistantState();
   const role = useAttentionRefresh(profile);
@@ -251,8 +237,6 @@ export function ClinicAssistantLauncher({ profile }) {
     inputRef.current?.focus();
   }, [open, role]);
 
-  if (state.screen === 'inicio') return null;
-
   const count = state.attention.items.length;
   return (
     <>
@@ -266,18 +250,17 @@ export function ClinicAssistantLauncher({ profile }) {
         aria-label={count ? `Abrir a assistente: ${count} ${count === 1 ? 'item pede' : 'itens pedem'} atenção hoje` : 'Abrir a assistente'}
         onClick={() => setAssistantOpen(true)}
       >
-        <span className="ca-launcher-icon">
-          <PulseIcon />
-          {count > 0 && <span className="ca-launcher-count" aria-hidden="true">{count}</span>}
-        </span>
+        <span className="ca-launcher-icon" aria-hidden="true" />
         <span className="ca-launcher-label">Assistente</span>
+        {count > 0 && <span className="ca-launcher-count" aria-hidden="true">{count}</span>}
       </button>
 
       {open && createPortal(
         <div className="ca-scrim no-print" {...dismiss.backdropProps}>
           <aside id={panelId} className="ca-panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <span className="ca-stars" aria-hidden="true"><span /><span /><span /><span /><span /></span>
             <header className="ca-panel-head">
-              <span className="ca-avatar"><PulseIcon /></span>
+              <span className="ca-avatar" aria-hidden="true" />
               <div>
                 <h2 id={titleId} className="ca-name">Assistente</h2>
                 <p className="ca-sub">Nesta tela: {ASSISTANT_SCREEN_LABELS[state.screen] || 'Tela inicial'}</p>

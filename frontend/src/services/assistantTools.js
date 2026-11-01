@@ -1,20 +1,33 @@
 // ============================================================
-// SERVICE: consultas que a assistente pede (31/10/2026).
+// SERVICE: consultas que a assistente pede (31/10/2026; contagens da
+// clínica em 01/11/2026).
 //
-// A assistente não lê o banco: quando a pergunta pede horários vagos,
-// o Gemini devolve o pedido e é este aparelho, com o login de quem
-// perguntou (a mesma permissão da tela), que faz a conta, pela mesma
-// regra do "Copiar horários vagos" da Agenda (utils/agendaFreeSlots.js).
-// Volta para a IA só o resultado: horários e o nome de quem atende,
-// nunca paciente.
+// A assistente não lê o banco: quando a pergunta pede um dado, o Gemini
+// devolve o pedido e é este aparelho, com o login de quem perguntou (a
+// mesma permissão da tela), que faz a conta pelas mesmas funções das
+// telas. Volta para a IA só o resultado: horários, números e nomes da
+// equipe, nunca paciente.
 // ============================================================
 
-import { listAppointments } from './appointmentService';
+import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn } from './appointmentService';
 import { listClinicMembers, shortName } from './clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from './agendaScheduleService';
 import { loadAgendaSettings } from './agendaSettingsService';
+import { supabase } from '../lib/supabase';
+import { CLINICAL_INSTRUMENTS } from '../data/clinicalInstruments';
 import { fallbackGridOf } from '../utils/agendaSettings';
-import { freeSlotsForAssistant, matchTeamMember } from '../utils/clinicAssistant';
+import { onlyEvolutionDisciplines } from '../utils/evolutionQueue';
+import { todayInClinic } from '../utils/finance';
+import {
+  freeSlotsForAssistant,
+  matchTeamMember,
+  summarizeDayAppointments,
+  summarizePendingEvolutions,
+  summarizeReturns,
+  summarizeScaleApplications,
+} from '../utils/clinicAssistant';
+
+const RETURN_DAYS_DEFAULT = 30;
 
 /** Quem atende na instituição (para a IA saber os nomes e para achar a pessoa). */
 export async function loadAssistantTeam() {
@@ -27,39 +40,97 @@ function dayStart(dia) {
   return new Date(year, month - 1, day);
 }
 
+function dayRange(dia) {
+  const date = dayStart(dia);
+  const end = new Date(date.getTime() + 86_400_000);
+  return { date, from: date.toISOString(), to: new Date(end.getTime() - 1).toISOString() };
+}
+
+function nameOfFor(people) {
+  const names = new Map(people.map(member => [member.id, shortName(member.full_name)]));
+  return id => names.get(id) || 'Outra pessoa da equipe';
+}
+
+/** "equipe" = todos; "eu" ou um nome = uma pessoa (ou pergunta de volta). */
+function resolvePerson(query, people, selfId) {
+  if (!query || query === 'equipe') return { member: null, motivo: null, opcoes: [] };
+  return matchTeamMember(query, people, selfId);
+}
+
+async function freeSlots(consulta, person, profile, now) {
+  const { date, from, to } = dayRange(consulta.dia);
+  const [appointments, schedules, holidays, settings] = await Promise.all([
+    listAppointments({ from, to, professionalId: person.id }),
+    listProfessionalSchedules({ professionalId: person.id }),
+    listHolidays({ from: consulta.dia, to: consulta.dia }),
+    loadAgendaSettings(profile?.clinic_id),
+  ]);
+  // Mesma conta da Agenda de uma pessoa: sem jornada no dia, vale a
+  // grade padrão da clínica, e `grade` avisa qual foi.
+  return freeSlotsForAssistant({
+    date,
+    professionalId: person.id,
+    schedules,
+    appointments,
+    holidays,
+    fallback: fallbackGridOf(settings?.settings),
+    now,
+  });
+}
+
+async function scaleApplications(dia) {
+  const [year, month] = dia.split('-').map(Number);
+  const first = `${year}-${String(month).padStart(2, '0')}-01`;
+  const last = new Date(year, month, 0).getDate();
+  const end = `${year}-${String(month).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
+  const { data, error } = await supabase.rpc('instrument_applications_summary', { p_from: first, p_to: end });
+  if (error) throw new Error(error.message);
+  const labels = new Map(CLINICAL_INSTRUMENTS.map(item => [item.id, item.shortName]));
+  return { periodo: `${String(month).padStart(2, '0')}/${year}`, ...summarizeScaleApplications({ rows: data || [], labelOf: id => labels.get(id) || id }) };
+}
+
 /**
- * Horários vagos de alguém num dia. Devolve o formato que a Edge
- * Function aceita em `dados` (_shared/assistantConsulta.ts).
+ * Faz a consulta pedida e devolve o formato que a Edge Function aceita
+ * em `dados` (_shared/assistantConsulta.ts).
  */
 export async function runAssistantConsulta(consulta, { profile, team = null, now = new Date() }) {
-  const base = { tipo: consulta.tipo, profissional: consulta.profissional, dia: consulta.dia, horarios: [], motivo: null, opcoes: [] };
+  const dia = consulta.dia || todayInClinic(now);
+  const base = {
+    tipo: consulta.tipo, profissional: consulta.profissional, dia, horarios: [], motivo: null, opcoes: [], linhas: [], total: null,
+  };
   try {
     const people = team || await loadAssistantTeam();
-    const match = matchTeamMember(consulta.profissional, people, profile?.id);
+    const match = resolvePerson(consulta.profissional, people, profile?.id);
     if (match.motivo) {
       return { ...base, motivo: match.motivo, opcoes: match.opcoes.map(member => shortName(member.full_name)) };
     }
     const person = match.member;
-    const date = dayStart(consulta.dia);
-    const end = new Date(date.getTime() + 86_400_000);
-    const [appointments, schedules, holidays, settings] = await Promise.all([
-      listAppointments({ from: date.toISOString(), to: new Date(end.getTime() - 1).toISOString(), professionalId: person.id }),
-      listProfessionalSchedules({ professionalId: person.id }),
-      listHolidays({ from: consulta.dia, to: consulta.dia }),
-      loadAgendaSettings(profile?.clinic_id),
-    ]);
-    // Mesma conta da Agenda de uma pessoa: sem jornada no dia, vale a
-    // grade padrão da clínica, e `grade` avisa qual foi.
-    const result = freeSlotsForAssistant({
-      date,
-      professionalId: person.id,
-      schedules,
-      appointments,
-      holidays,
-      fallback: fallbackGridOf(settings?.settings),
-      now,
-    });
-    return { ...base, profissional: shortName(person.full_name), ...result };
+    const named = person ? { ...base, profissional: shortName(person.full_name) } : { ...base, profissional: 'equipe' };
+    const nameOf = nameOfFor(people);
+
+    if (consulta.tipo === 'horarios_vagos') {
+      return { ...named, ...(await freeSlots({ ...consulta, dia }, person, profile, now)) };
+    }
+    if (consulta.tipo === 'atendimentos_dia') {
+      const { from, to } = dayRange(dia);
+      const appointments = await listAppointments({ from, to, professionalId: person?.id || null });
+      return { ...named, ...summarizeDayAppointments({ appointments, nameOf, professionalId: person?.id || null }) };
+    }
+    if (consulta.tipo === 'evolucoes_pendentes') {
+      const pending = onlyEvolutionDisciplines(await listAppointmentsAwaitingEvolution())
+        .filter(item => !person || item.professional_id === person.id);
+      return { ...named, ...summarizePendingEvolutions({ pending, nameOf }) };
+    }
+    if (consulta.tipo === 'escalas_aplicadas') {
+      return { ...named, ...(await scaleApplications(dia)) };
+    }
+    if (consulta.tipo === 'retornos_pendentes') {
+      const minDays = consulta.dias || RETURN_DAYS_DEFAULT;
+      const returns = (await listPatientsAwaitingReturn({ minDays }))
+        .filter(item => !person || item.professional_id === person.id);
+      return { ...named, periodo: `${minDays} dias ou mais`, ...summarizeReturns({ returns, nameOf }) };
+    }
+    return { ...base, motivo: 'erro' };
   } catch {
     return { ...base, motivo: 'erro' };
   }

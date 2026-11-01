@@ -21,6 +21,7 @@ const SURFACES = [
   { id: 'food_research', file: 'food-research/index.ts' },
   { id: 'psych_marks', file: 'psych-suggest-marks/index.ts' },
   { id: 'psych_reading', file: 'psych-reading/index.ts' },
+  { id: 'clinic_assistant', file: 'clinic-assistant/index.ts' },
 ];
 
 // A CHECK de surface começou no 20260619 e foi ampliada em migrações seguintes.
@@ -28,6 +29,7 @@ const SURFACE_MIGRATIONS = [
   '../supabase/migrations/20260619_ai_corrections.sql',
   '../supabase/migrations/20260705_ai_corrections_food_research.sql',
   '../supabase/migrations/20260711_ai_corrections_psychology.sql',
+  '../supabase/migrations/20261101d_assistant_scales_corrections.sql',
 ];
 
 let server;

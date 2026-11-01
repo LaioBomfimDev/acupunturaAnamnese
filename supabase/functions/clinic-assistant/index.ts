@@ -35,7 +35,8 @@ import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import { ASSISTANT_SCALE_CATALOG, type AssistantHelpTopic } from '../_shared/assistantHelpCorpus.ts';
 import { helpIndex, needsScaleCatalog, selectHelpTopics } from '../_shared/assistantRetrieval.ts';
-import { readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
+import { ASSISTANT_CONSULTAS, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
+import { withCorrectionLessons } from '../_shared/corrections.ts';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_MAX_MESSAGES,
@@ -88,6 +89,7 @@ type PromptContext = {
 const CAPABILITIES = [
   'Explicar qualquer tela do sistema, com o passo a passo e os nomes exatos dos botões.',
   'Consultar os horários vagos de qualquer pessoa da equipe em qualquer dia (ex.: "horários vagos da Denise na terça").',
+  'Contar o movimento da clínica sem abrir paciente: atendimentos do dia, evoluções faltando, escalas aplicadas no mês e pacientes sem retorno (ex.: "quantas evoluções faltam na equipe?").',
   'Explicar e comparar as escalas do sistema: o que cada uma mede, para quem, quantas perguntas, faixas e quando reaplicar.',
   'Ajudar com dúvidas gerais de gestão da clínica, organização da agenda, comunicação com pacientes e escrita de textos.',
   'No painel, mostrar o que pede atenção hoje: alertas de risco das escalas, evoluções faltando, pacotes acabando, valores em atraso e o limite de IA.',
@@ -100,10 +102,18 @@ function buildSystemPrompt(role: AssistantRole, screen: string, links: string[],
 Como responder:
 - Funcionamento do sistema: use a AJUDA_DO_SISTEMA, com os nomes de telas e botões exatamente como aparecem nela. Nunca invente tela, botão, regra ou prazo. A AJUDA traz só os tópicos ligados à pergunta; o INDICE_DA_AJUDA lista o título de todos: se a resposta está num tópico do índice que não veio completo, diga em qual tela fica e sugira o "Como funciona" de lá.
 - Escalas: quando vier o CATALOGO_DE_ESCALAS, use-o para dizer quais escalas o sistema tem, o que cada uma mede, para quem, quantas perguntas, as faixas e quando reaplicar, e para comparar. Lembre, quando fizer sentido, que as escalas com conferida = false ainda estão em conferência pela psicóloga responsável.
+- Instrumento que não está no sistema: ao citar ou sugerir uma escala de fora (ex.: CBCL, Conners, CDI), avise em uma frase que muitos instrumentos têm direito autoral e venda controlada, que só entram no sistema com licença conferida e que a escolha é da psicóloga responsável.
+- Seu conhecimento geral vem do treinamento, sem busca na internet: em dado que muda com o tempo (preços, leis, versões), diga que vale conferir na fonte.
 - Opinião: quando pedirem sua opinião, dê uma opinião sincera e fundamentada, dizendo que é sua opinião (ex.: pontos fortes do conjunto de escalas, lacunas, o que valeria acrescentar). Nunca recuse opinar.
 - Conhecimento geral (psicologia, saúde mental, gestão de clínica, atendimento, comunicação, escrita): responda com seu conhecimento, de forma prática, deixando claro quando é conhecimento geral e não algo do sistema.
-- Agenda: você CONSEGUE consultar os horários vagos de quem atende num dia. Quando pedirem horários vagos, livres ou disponíveis (da própria pessoa ou de alguém da EQUIPE) e não houver DADOS_CONSULTADOS, preencha consulta = {tipo: "horarios_vagos", profissional: o nome como está na EQUIPE ou "eu" para a própria pessoa, dia: AAAA-MM-DD} e deixe answer vazio. Use o CALENDARIO para transformar "terça", "amanhã" ou "sexta que vem" em data. Sem dia dito, use hoje. Nome ambíguo ou fora da EQUIPE: pergunte quem é, citando os nomes parecidos.
-- Com DADOS_CONSULTADOS, responda só com eles: diga o dia por extenso e liste os horários vagos (ex.: 09:00, 10:00). Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte por que um horário aparece ou o que é jornada; aí explique que, sem jornada cadastrada (Agenda → Ferramentas → Configurar horários de atendimento), a conta segue a grade padrão da clínica, como a Agenda mostra. Sem nenhum horário vago e sem motivo, diga que o dia está cheio. Se vier motivo, explique: feriado = feriado sem atendimento; passado = dia que já passou; sem_agenda = quem perguntou não atende; nao_encontrado ou ambiguo = cite as opcoes e pergunte quem é; erro = não deu para consultar agora.
+- Consultas: você CONSEGUE buscar dados da clínica (sem paciente). Quando a pergunta pedir um destes números e não houver DADOS_CONSULTADOS, preencha consulta e deixe answer vazio:
+  - horarios_vagos: horários livres de UMA pessoa num dia (profissional: nome como está na EQUIPE ou "eu"; dia obrigatório).
+  - atendimentos_dia: quantos atendimentos, a atender, atendidos e faltas num dia (profissional: "equipe", "eu" ou um nome; dia).
+  - evolucoes_pendentes: quantas evoluções faltam escrever, por profissional (profissional: "equipe", "eu" ou um nome).
+  - escalas_aplicadas: quais escalas foram aplicadas no mês e quantas vezes (dia: qualquer dia do mês pedido; sem mês dito, use hoje).
+  - retornos_pendentes: quantos pacientes estão sem voltar há N dias, por profissional (dias: N; sem número dito, 30).
+  Use o CALENDARIO para transformar "terça", "amanhã" ou "mês passado" em data; sem dia dito, use hoje. Nome ambíguo ou fora da EQUIPE: pergunte quem é, citando os nomes parecidos.
+- Com DADOS_CONSULTADOS de contagem (linhas e total), responda com os números, do maior para o menor, dizendo o dia ou o período; se a lista vier vazia, diga que não há nenhum. Com DADOS_CONSULTADOS de horarios_vagos, diga o dia por extenso e liste os horários vagos (ex.: 09:00, 10:00). Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte por que um horário aparece ou o que é jornada; aí explique que, sem jornada cadastrada (Agenda → Ferramentas → Configurar horários de atendimento), a conta segue a grade padrão da clínica, como a Agenda mostra. Sem nenhum horário vago e sem motivo, diga que o dia está cheio. Se vier motivo, explique: feriado = feriado sem atendimento; passado = dia que já passou; sem_agenda = quem perguntou não atende; nao_encontrado ou ambiguo = cite as opcoes e pergunte quem é; erro = não deu para consultar agora.
 - "O que você faz" ou "como aproveitar você": responda com as SUAS_CAPACIDADES em lista curta, cada uma com um exemplo de pergunta, e diga com franqueza o que ainda não faz.
 - Dado que você ainda não lê (um paciente específico, a evolução ou o resultado de escala de alguém, anamnese, financeiro): diga em uma frase onde a pessoa vê e como chegar, e já ofereça o que você consegue fazer sobre o assunto (ex.: explicar a escala, o caminho da tela).
 - Proatividade: quando fizer sentido, termine com UMA sugestão concreta do próximo passo que você pode fazer agora (ex.: "Quer que eu veja os horários vagos de amanhã?").
@@ -167,11 +177,12 @@ const OUTPUT_SCHEMA = {
       nullable: true,
       description: 'pedido de consulta à agenda, só quando ainda não há DADOS_CONSULTADOS',
       properties: {
-        tipo: { type: 'STRING', enum: ['horarios_vagos'] },
-        profissional: { type: 'STRING', description: 'nome como está na EQUIPE, ou "eu"' },
+        tipo: { type: 'STRING', enum: ASSISTANT_CONSULTAS },
+        profissional: { type: 'STRING', description: 'nome como está na EQUIPE, "eu" ou "equipe"' },
         dia: { type: 'STRING', description: 'AAAA-MM-DD' },
+        dias: { type: 'INTEGER', description: 'só em retornos_pendentes' },
       },
-      required: ['tipo', 'profissional', 'dia'],
+      required: ['tipo', 'profissional'],
     },
     links: {
       type: 'ARRAY',
@@ -257,11 +268,20 @@ Deno.serve(async (req) => {
       scales: needsScaleCatalog(messages.filter(message => message.role === 'user').map(message => message.text), screen),
     };
     const topics = selectHelpTopics(messages.filter(message => message.role === 'user').map(message => message.text), screen, role);
+    // Correções da equipe ("Corrigir" na resposta): valem na hora para
+    // quem corrigiu e, depois de aprovadas pelo SuperAdm, para todos.
+    const userQuestions = messages.filter(message => message.role === 'user').map(message => message.text);
+    const systemText = await withCorrectionLessons(supabaseAdmin, buildSystemPrompt(role, screen, links, topics, context), {
+      surface: 'clinic_assistant',
+      callerId: caller.user.id,
+      relevanceQuery: userQuestions[userQuestions.length - 1] || '',
+      totalBudgetChars: 60_000,
+    });
     const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
     if (budgetResponse) return budgetResponse;
     failure = 'conexao_google';
     const geminiResponse = await vertexGenerateContent(MODEL_ID, {
-      systemInstruction: { parts: [{ text: buildSystemPrompt(role, screen, links, topics, context) }] },
+      systemInstruction: { parts: [{ text: systemText }] },
       contents: messages.map(message => ({ role: message.role, parts: [{ text: message.text }] })),
       generationConfig: {
         temperature: 0.3,

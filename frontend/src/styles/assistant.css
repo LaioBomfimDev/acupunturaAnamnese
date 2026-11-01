@@ -1,8 +1,14 @@
 /* ============================================================
    Assistente da clínica (components/assistant/ClinicAssistant.jsx).
-   Cartão da tela inicial + botão minimizado e painel ao lado nas
-   outras telas. Só tokens: a cor é a da clínica (--r1-accent).
-   Vermelho só para risco, âmbar só para pendência.
+   Botão flutuante em todas as telas + painel ao lado.
+
+   Visual "Noite" (01/11/2026, opção C escolhida pela administradora
+   entre três prévias): painel escuro com borda de luz que corre e
+   pontos que brilham; botão em pílula escura com um risco de luz.
+   O escuro e a luz saem da cor da clínica (--r1-accent): a luz é a
+   mesma cor, clareada (oklch relativo; navegador sem suporte mistura
+   com branco). Vermelho só para risco, âmbar só para pendência.
+   Com menos movimento (prefers-reduced-motion) nada anima.
 
    z-index: o botão (44) fica abaixo de tudo que abre por cima da tela
    (painel de baixo e ferramentas da Agenda 52–55, janelas 60) e,
@@ -10,47 +16,90 @@
    O painel é uma janela (200), abaixo da ajuda (210).
    ============================================================ */
 
-.ca-avatar {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: var(--r1-accent);
-  color: var(--r1-accent-contrast);
+@property --ca-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
-.ca-avatar svg {
-  width: 21px;
-  height: 21px;
+.ca-launcher,
+.ca-panel {
+  --ca-night: color-mix(in srgb, var(--r1-accent) 26%, black);
+  --ca-night-soft: color-mix(in srgb, var(--r1-accent) 55%, black);
+  --ca-glow: color-mix(in srgb, var(--r1-accent) 30%, var(--r1-text-on-inverse));
+  --ca-glow-2: color-mix(in srgb, var(--r1-accent) 45%, var(--r1-text-on-inverse));
+  --ca-ink: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-text-on-inverse));
+  --ca-ink-soft: color-mix(in srgb, var(--ca-ink) 72%, transparent);
+  --ca-line: rgba(255, 255, 255, 0.1);
+  --ca-glass: rgba(255, 255, 255, 0.05);
+  --ca-risk: color-mix(in srgb, var(--r1-danger) 60%, var(--r1-text-on-inverse));
+  --ca-pending: color-mix(in srgb, var(--r1-warning) 50%, var(--r1-text-on-inverse));
+}
+
+@supports (color: oklch(from red l c h)) {
+  .ca-launcher,
+  .ca-panel {
+    --ca-glow: oklch(from var(--r1-accent) 0.88 0.13 h);
+    --ca-glow-2: oklch(from var(--r1-accent) 0.8 0.12 calc(h + 50));
+  }
+}
+
+.ca-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, var(--r1-text-on-inverse) 0%, var(--ca-glow) 32%, var(--r1-accent) 100%);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--ca-glow) 60%, transparent);
+  animation: ca-breathe 4s ease-in-out infinite;
 }
 
 .ca-name {
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--r1-text);
+  color: var(--ca-ink);
 }
 
 .ca-sub {
   margin: 0;
   font-size: 13px;
-  color: var(--r1-text-subtle);
+  color: var(--ca-ink-soft);
 }
 
-.ca-identity {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* pontos de luz atrás do topo do painel */
+.ca-stars {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 180px;
+  pointer-events: none;
 }
+
+.ca-stars span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ca-ink);
+  box-shadow: 0 0 8px var(--ca-glow);
+  opacity: 0.2;
+  animation: ca-twinkle 3.2s ease-in-out infinite, ca-float 7s ease-in-out infinite;
+}
+
+.ca-stars span:nth-child(1) { left: 9%; top: 26%; }
+.ca-stars span:nth-child(2) { left: 46%; top: 12%; animation-delay: 0.8s, 1s; }
+.ca-stars span:nth-child(3) { left: 80%; top: 40%; animation-delay: 1.6s, 2s; }
+.ca-stars span:nth-child(4) { left: 26%; top: 62%; animation-delay: 2.2s, 0.5s; }
+.ca-stars span:nth-child(5) { left: 66%; top: 76%; animation-delay: 0.4s, 3s; }
 
 /* ---------- Sua atenção hoje ---------- */
 
 .ca-attention {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ca-attention-head {
@@ -62,9 +111,11 @@
 
 .ca-attention-head h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--r1-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ca-glow);
 }
 
 .ca-link-button {
@@ -73,7 +124,7 @@
   background: transparent;
   font: inherit;
   font-size: 12.5px;
-  color: var(--r1-text-subtle);
+  color: var(--ca-ink-soft);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -94,13 +145,14 @@
   width: 100%;
   min-height: 44px;
   padding: 9px 12px;
-  border: 1px solid var(--r1-border-subtle);
+  border: 1px solid var(--ca-line);
   border-radius: var(--r1-radius-md);
-  background: var(--r1-surface);
+  background: var(--ca-glass);
   font: inherit;
   font-size: 13.5px;
   text-align: left;
-  color: var(--r1-text);
+  color: var(--ca-ink);
+  transition: background var(--r1-dur) var(--r1-ease), transform var(--r1-dur) var(--r1-ease), border-color var(--r1-dur) var(--r1-ease);
 }
 
 button.ca-attention-item {
@@ -108,7 +160,9 @@ button.ca-attention-item {
 }
 
 button.ca-attention-item:hover {
-  border-color: var(--r1-accent-line);
+  border-color: color-mix(in srgb, var(--ca-glow) 45%, transparent);
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateX(3px);
 }
 
 .ca-attention-text {
@@ -120,7 +174,7 @@ button.ca-attention-item:hover {
   flex: 0 0 auto;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--r1-accent);
+  color: var(--ca-glow);
 }
 
 .ca-dot {
@@ -128,30 +182,33 @@ button.ca-attention-item:hover {
   width: 9px;
   height: 9px;
   border-radius: 999px;
-  background: var(--r1-text-subtle);
+  background: var(--ca-ink-soft);
 }
 
 .ca-dot--risk {
-  background: var(--r1-danger);
+  background: var(--ca-risk);
+  box-shadow: 0 0 12px var(--ca-risk);
 }
 
 .ca-dot--pending {
-  background: var(--r1-warning);
+  background: var(--ca-pending);
+  box-shadow: 0 0 12px var(--ca-pending);
 }
 
 .ca-attention-note {
   margin: 0;
   font-size: 13px;
-  color: var(--r1-text-subtle);
+  color: var(--ca-ink-soft);
 }
 
 .ca-attention-note--warn {
-  color: var(--r1-warning);
+  color: var(--ca-pending);
 }
 
 /* ---------- conversa ---------- */
 
 .ca-messages {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -159,13 +216,14 @@ button.ca-attention-item:hover {
   min-height: 0;
   overflow-y: auto;
   padding: 14px 18px;
-  background: var(--r1-surface-sunken);
+  border-top: 1px solid var(--ca-line);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .ca-starters p {
   margin: 0 0 10px;
   font-size: 13.5px;
-  color: var(--r1-text-subtle);
+  color: var(--ca-ink-soft);
 }
 
 .ca-chips {
@@ -177,18 +235,19 @@ button.ca-attention-item:hover {
 .ca-chip {
   min-height: 36px;
   padding: 6px 12px;
-  border: 1px solid var(--r1-border-subtle);
+  border: 1px solid var(--ca-line);
   border-radius: 999px;
-  background: var(--r1-surface);
+  background: var(--ca-glass);
   font: inherit;
   font-size: 13px;
-  color: var(--r1-text);
+  color: var(--ca-ink);
   cursor: pointer;
+  transition: border-color var(--r1-dur) var(--r1-ease), color var(--r1-dur) var(--r1-ease);
 }
 
 .ca-chip:hover:not(:disabled) {
-  border-color: var(--r1-accent-line);
-  color: var(--r1-accent);
+  border-color: color-mix(in srgb, var(--ca-glow) 55%, transparent);
+  color: var(--ca-glow);
 }
 
 .ca-bubble {
@@ -200,6 +259,7 @@ button.ca-attention-item:hover {
   padding: 10px 14px;
   font-size: 14px;
   line-height: 1.5;
+  animation: ca-bubble-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .ca-bubble p {
@@ -210,66 +270,124 @@ button.ca-attention-item:hover {
 
 .ca-bubble--user {
   align-self: flex-end;
-  border-radius: 14px 14px 4px 14px;
-  background: var(--r1-accent);
-  color: var(--r1-accent-contrast);
+  border-radius: 16px 16px 4px 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ca-glow) 30%, var(--r1-accent)), var(--r1-accent));
+  color: var(--r1-text-on-inverse);
 }
 
 .ca-bubble--assistant {
   align-self: flex-start;
-  border: 1px solid var(--r1-border-subtle);
-  border-radius: 14px 14px 14px 4px;
-  background: var(--r1-surface);
-  color: var(--r1-text);
+  border: 1px solid var(--ca-line);
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ca-ink);
 }
 
 .ca-bubble--typing {
-  color: var(--r1-text-subtle);
+  gap: 6px;
+  width: 240px;
+  color: var(--ca-ink-soft);
+  font-size: 12.5px;
+}
+
+/* "pensando": duas linhas com luz passando */
+.ca-scan {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: linear-gradient(90deg, transparent 0, color-mix(in srgb, var(--ca-glow) 60%, transparent) 50%, transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 200px 100%;
+  animation: ca-scan 1.6s linear infinite;
+}
+
+.ca-scan + .ca-scan {
+  width: 70%;
 }
 
 .ca-open {
   min-height: 36px;
   padding: 6px 12px;
-  border: 1px solid var(--r1-accent-line);
+  border: 1px solid color-mix(in srgb, var(--ca-glow) 40%, transparent);
   border-radius: var(--r1-radius-sm);
-  background: var(--r1-surface);
+  background: transparent;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: var(--r1-accent);
+  color: var(--ca-glow);
   cursor: pointer;
 }
 
+.ca-open:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* "Corrigir" discreto embaixo da resposta; a janela que ele abre
+   segue clara como no resto do sistema. */
+.ca-panel .ai-correct-btn {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ca-ink-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ca-panel .ai-correct-btn:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ca-ink);
+}
+
+.ca-panel .ai-correction-dialog {
+  color: var(--r1-text);
+  text-align: left;
+}
+
 .ca-composer {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 18px calc(14px + var(--r1-safe-bottom));
-  border-top: 1px solid var(--r1-border-subtle);
-  background: var(--r1-surface);
 }
 
 .ca-composer-row {
   display: flex;
   gap: 8px;
+  padding: 5px 5px 5px 4px;
+  border: 1px solid color-mix(in srgb, var(--ca-glow) 30%, transparent);
+  border-radius: var(--r1-radius-lg);
+  background: var(--ca-glass);
+  transition: border-color var(--r1-dur) var(--r1-ease), box-shadow var(--r1-dur) var(--r1-ease);
+}
+
+.ca-composer-row:focus-within {
+  border-color: var(--ca-glow);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ca-glow) 20%, transparent), 0 0 24px color-mix(in srgb, var(--ca-glow) 25%, transparent);
 }
 
 .ca-composer input {
   flex: 1 1 auto;
   min-width: 0;
   height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--r1-border);
-  border-radius: var(--r1-radius-md);
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
   font: inherit;
   font-size: 14px;
-  color: var(--r1-text);
-  background: var(--r1-surface);
+  color: var(--ca-ink);
+}
+
+.ca-composer input::placeholder {
+  color: color-mix(in srgb, var(--ca-ink) 50%, transparent);
 }
 
 .ca-composer input:focus-visible {
-  outline: 2px solid var(--r1-accent);
-  outline-offset: 1px;
+  outline: none;
 }
 
 .ca-send {
@@ -280,17 +398,19 @@ button.ca-attention-item:hover {
   height: 44px;
   border: 0;
   border-radius: var(--r1-radius-md);
-  background: var(--r1-accent);
-  color: var(--r1-accent-contrast);
+  background: var(--ca-glow);
+  color: var(--ca-night);
   cursor: pointer;
+  transition: transform var(--r1-dur) var(--r1-ease), box-shadow var(--r1-dur) var(--r1-ease);
 }
 
 .ca-send:hover:not(:disabled) {
-  background: var(--r1-accent-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--ca-glow) 55%, transparent);
 }
 
 .ca-send:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: default;
 }
 
@@ -302,45 +422,13 @@ button.ca-attention-item:hover {
 .ca-error {
   margin: 0;
   font-size: 13px;
-  color: var(--r1-warning);
+  color: var(--ca-pending);
 }
 
 .ca-footnote {
   margin: 0;
   font-size: 12px;
-  color: var(--r1-text-subtle);
-}
-
-/* ---------- cartão da tela inicial (prévia C) ---------- */
-
-.ca-home {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  min-height: 380px;
-  overflow: hidden;
-  border: 1px solid var(--r1-border-subtle);
-  border-radius: var(--r1-radius-lg);
-  background: var(--r1-surface);
-}
-
-.ca-home-side {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px;
-  border-right: 1px solid var(--r1-border-subtle);
-  background: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-surface));
-}
-
-.ca-home-chat {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  max-height: 520px;
-}
-
-.ca-home .ca-messages {
-  background: var(--r1-surface);
+  color: var(--ca-ink-soft);
 }
 
 /* ---------- botão minimizado ---------- */
@@ -353,17 +441,35 @@ button.ca-attention-item:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 52px;
-  padding: 0 18px 0 6px;
-  border: 0;
+  height: 54px;
+  padding: 0 16px 0 8px;
+  overflow: hidden;
+  border: 1.5px solid transparent;
   border-radius: 999px;
-  background: var(--r1-accent);
-  color: var(--r1-accent-contrast);
-  box-shadow: var(--r1-shadow-md);
+  /* fundo escuro + borda de luz que gira (só a borda aparece) */
+  background:
+    linear-gradient(var(--ca-night), var(--ca-night)) padding-box,
+    conic-gradient(from var(--ca-angle), var(--ca-glow), transparent 25%, var(--ca-glow-2) 50%, transparent 75%, var(--ca-glow)) border-box;
+  color: var(--ca-ink);
+  box-shadow: 0 14px 34px rgba(4, 15, 14, 0.4);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  animation: ca-rotate 6s linear infinite;
+  transition: transform var(--r1-dur) var(--r1-ease), box-shadow var(--r1-dur) var(--r1-ease);
+}
+
+/* risco de luz que atravessa o botão de tempos em tempos */
+.ca-launcher::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ca-glow) 35%, transparent), transparent);
+  transform: translateX(-160%) skewX(-20deg);
+  animation: ca-sweep 4.5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* Espaço no fim da página: o último botão de qualquer tela rola para
@@ -377,47 +483,46 @@ body:has(.ca-launcher) #root {
 }
 
 .ca-launcher:hover {
-  background: var(--r1-accent-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(4, 15, 14, 0.45), 0 0 26px color-mix(in srgb, var(--ca-glow) 30%, transparent);
 }
 
 .ca-launcher:focus-visible {
   outline: 3px solid var(--r1-accent-line);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .ca-launcher-icon {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--r1-accent-contrast) 18%, transparent);
+  background: radial-gradient(circle at 35% 30%, var(--r1-text-on-inverse) 0%, var(--ca-glow) 34%, var(--r1-accent) 100%);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--ca-glow) 60%, transparent);
+  animation: ca-breathe 4s ease-in-out infinite;
 }
 
-.ca-launcher-icon svg {
-  width: 20px;
-  height: 20px;
+.ca-launcher-label {
+  position: relative;
 }
 
 .ca-launcher-count {
-  position: absolute;
-  top: -4px;
-  right: -6px;
+  position: relative;
   display: grid;
   place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   box-sizing: border-box;
   border-radius: 999px;
-  background: var(--r1-surface);
-  color: var(--r1-accent-strong);
-  font-size: 12px;
+  background: var(--ca-glow);
+  color: var(--ca-night);
+  font-size: 12.5px;
   font-weight: 700;
 }
 
-/* ---------- painel ao lado (prévia A) ---------- */
+/* ---------- painel ao lado ---------- */
 
 .ca-scrim {
   position: fixed;
@@ -428,47 +533,118 @@ body:has(.ca-launcher) #root {
 }
 
 .ca-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: min(440px, 100%);
   height: 100%;
-  border-left: 1px solid var(--r1-border-subtle);
-  background: var(--r1-surface);
-  box-shadow: var(--r1-shadow-lg);
+  overflow: hidden;
+  background: radial-gradient(120% 55% at 85% 0%, var(--ca-night-soft) 0%, var(--ca-night) 62%), var(--ca-night);
+  color: var(--ca-ink);
+  box-shadow: -24px 0 60px rgba(4, 15, 14, 0.35);
   animation: help-drawer-in var(--r1-dur) var(--r1-ease);
 }
 
+/* borda de luz que corre pela esquerda do painel */
+.ca-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--ca-glow), var(--ca-glow-2), transparent) no-repeat;
+  background-size: 100% 45%;
+  animation: ca-edge 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .ca-panel-head {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: calc(16px + var(--r1-safe-top)) 18px 14px;
-  border-bottom: 1px solid var(--r1-border-subtle);
+  padding: calc(18px + var(--r1-safe-top)) 18px 14px;
 }
 
 .ca-minimize {
   width: 44px;
   height: 44px;
-  border: 1px solid var(--r1-border-subtle);
+  border: 1px solid var(--ca-line);
   border-radius: var(--r1-radius-md);
-  background: var(--r1-surface);
+  background: var(--ca-glass);
   font: inherit;
   font-size: 20px;
   font-weight: 600;
-  color: var(--r1-text);
+  color: var(--ca-ink);
   cursor: pointer;
 }
 
+.ca-minimize:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ca-panel button:focus-visible {
+  outline: 2px solid var(--ca-glow);
+  outline-offset: 2px;
+}
+
 .ca-panel .ca-attention {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--r1-border-subtle);
-  background: color-mix(in srgb, var(--r1-accent) 6%, var(--r1-surface));
+  padding: 4px 18px 14px;
+}
+
+@keyframes ca-rotate {
+  to { --ca-angle: 360deg; }
+}
+
+@keyframes ca-sweep {
+  0% { transform: translateX(-160%) skewX(-20deg); }
+  55%, 100% { transform: translateX(380%) skewX(-20deg); }
+}
+
+@keyframes ca-breathe {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.06); filter: brightness(1.12); }
+}
+
+@keyframes ca-twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes ca-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -10px; }
+}
+
+@keyframes ca-bubble-in {
+  from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+}
+
+@keyframes ca-scan {
+  from { background-position: -200px 0; }
+  to { background-position: 400px 0; }
+}
+
+@keyframes ca-edge {
+  from { background-position: 0 -120%; }
+  to { background-position: 0 220%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ca-panel {
+  .ca-panel,
+  .ca-panel::before,
+  .ca-launcher,
+  .ca-launcher-icon,
+  .ca-avatar,
+  .ca-stars span,
+  .ca-bubble,
+  .ca-scan {
     animation: none;
+  }
+
+  .ca-launcher::after {
+    display: none;
   }
 }
 
@@ -478,8 +654,8 @@ body:has(.ca-launcher) #root {
   .ca-launcher {
     right: 16px;
     bottom: calc(var(--r1-bottom-nav-h) + var(--r1-safe-bottom) + 12px);
-    height: 52px;
-    padding: 0 6px;
+    padding: 0 8px;
+    gap: 0;
   }
 
   /* Com a faixa "voltar" de tela dentro de tela, sobe acima dela. */
@@ -497,18 +673,22 @@ body:has(.ca-launcher) #root {
     display: none;
   }
 
+  /* sem o rótulo, o número vira selo no canto do orbe */
+  .ca-launcher-count {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    min-width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+
   .ca-panel {
     width: 100%;
-    border-left: 0;
   }
 
-  .ca-home {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .ca-home-side {
-    border-right: 0;
-    border-bottom: 1px solid var(--r1-border-subtle);
+  .ca-panel::before {
+    display: none;
   }
 
   .ca-bubble {

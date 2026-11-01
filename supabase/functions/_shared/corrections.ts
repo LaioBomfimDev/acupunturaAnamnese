@@ -36,7 +36,8 @@ export type CorrectionSurface =
   | 'library_qa'
   | 'food_research'
   | 'psych_marks'
-  | 'psych_reading';
+  | 'psych_reading'
+  | 'clinic_assistant';
 
 export interface CorrectionLesson {
   correction_text: string;

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { buildHubCards } from '../data/disciplines';
 import { listAppointments, listPatientsAwaitingReturn } from '../services/appointmentService';
 import { listClinicMembers } from '../services/clinicMembersService';
@@ -10,11 +10,6 @@ import { ScreenHelp } from './ui/ScreenHelp';
 import { InstrumentRiskAlerts } from './instruments/InstrumentRiskAlerts';
 import { TOOL_GLYPHS } from './ui/hubGlyphs';
 import '../styles/console.css';
-
-// Assistente da clínica (30/10/2026, prévia C): cartão "Sua colega de
-// clínica" logo abaixo do cartão do dia. Carrega à parte.
-const AssistantHomeCard = lazy(() => import('./assistant/ClinicAssistant')
-  .then(module => ({ default: module.AssistantHomeCard })));
 
 // ============================================================
 // Home console (Fase 7) — tela inicial única com quatro leituras,
@@ -457,12 +452,6 @@ export function HomeConsole({
 
           {areasInHero && areasSection}
         </div>
-
-        {profile?.clinic_id && (
-          <Suspense fallback={null}>
-            <AssistantHomeCard profile={profile} />
-          </Suspense>
-        )}
 
         {!areasInHero && areasSection}
 

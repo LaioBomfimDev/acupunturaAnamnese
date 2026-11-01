@@ -387,8 +387,9 @@ test('de quem é a agenda: "eu" é quem pergunta, nome ambíguo pergunta de volt
 
 test('a consulta roda no aparelho com o login da pessoa, pela mesma conta da Agenda', async () => {
   const tools = await read('src/services/assistantTools.js');
-  assert.match(tools, /freeSlotsOfDay\(/, 'mesma conta do "Copiar horários vagos"');
-  assert.match(tools, /schedulesOfDay\(schedules, date\)\.length === 0\) return \{ \.\.\.named, motivo: 'sem_jornada' \}/, 'sem jornada não inventa o dia inteiro');
+  const util = await read('src/utils/clinicAssistant.js');
+  assert.match(util, /freeSlotsOfDay\(\{ date, professionalId, schedules, appointments, holidays, fallback, now \}\)/, 'mesma conta do "Copiar horários vagos"');
+  assert.match(tools, /freeSlotsForAssistant\(\{/, 'mesma conta da Agenda de uma pessoa');
   assert.doesNotMatch(tools, /patient|paciente_nome|full_session/, 'nada de paciente vai para a IA');
   const service = await read('src/services/clinicAssistantService.js');
   assert.match(service, /export async function askAssistantWithTools/);
@@ -414,4 +415,34 @@ test('SuperAdm vê o gasto de cada pessoa e cada ação em real', async () => {
   const panel = await read('src/components/panels/AiUsageAdminPanel.jsx');
   assert.match(panel, /Por pessoa/);
   assert.match(panel, /Cada ação/);
+});
+
+test('regressão 01/11/2026: sem jornada no dia vale a grade padrão da clínica, como na Agenda', () => {
+  // Caso real: terça cheia de atendimentos, sem jornada cadastrada. A
+  // assistente respondia "não tem jornada" em vez dos horários vagos.
+  const date = new Date(2026, 10, 3); // terça
+  const at = (hour, minutes = 0) => new Date(2026, 10, 3, hour, minutes).toISOString();
+  const appointments = [
+    { kind: 'appointment', professional_id: 'denise', status: 'scheduled', starts_at: at(9), ends_at: at(10) },
+    { kind: 'appointment', professional_id: 'denise', status: 'scheduled', starts_at: at(10), ends_at: at(11) },
+    { kind: 'appointment', professional_id: 'denise', status: 'cancelled', starts_at: at(11), ends_at: at(12) },
+    { kind: 'appointment', professional_id: 'outra', status: 'scheduled', starts_at: at(8), ends_at: at(9) },
+  ];
+  const fallback = { start: 8 * 60, end: 12 * 60, slot: 60 };
+  const result = assistant.freeSlotsForAssistant({
+    date, professionalId: 'denise', schedules: [], appointments, fallback, now: new Date(2026, 10, 1, 9),
+  });
+  assert.equal(result.grade, 'padrao');
+  assert.equal(result.motivo, null, 'não é mais "sem jornada"');
+  assert.deepEqual(result.horarios, ['08:00', '11:00'], 'tira os atendimentos dela; cancelado libera; o de outra pessoa não conta');
+
+  const withSchedule = assistant.freeSlotsForAssistant({
+    date, professionalId: 'denise', appointments, fallback, now: new Date(2026, 10, 1, 9),
+    schedules: [{ professional_id: 'denise', weekday: 2, starts_at: '09:00', ends_at: '12:00', is_active: true }],
+  });
+  assert.equal(withSchedule.grade, 'jornada');
+  assert.ok(!withSchedule.horarios.includes('08:00'), 'com jornada, vale a jornada');
+
+  const past = assistant.freeSlotsForAssistant({ date, professionalId: 'denise', fallback, now: new Date(2026, 10, 5, 9) });
+  assert.equal(past.motivo, 'passado');
 });

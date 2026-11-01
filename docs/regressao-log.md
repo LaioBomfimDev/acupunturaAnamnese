@@ -381,3 +381,12 @@ Modelo de entrada:
 - Regra nova: ao recriar a exclusão de paciente, a ordem dos DELETE segue as chaves RESTRICT (filho antes do pai), e a validação chama a função com um paciente que tenha evolução.
 - Teste ou verificação obrigatória: `convenios-fase1.test.mjs` ("exclusão: convênio do paciente sai, e a evolução sai antes do agendamento").
 - Regra destilada em: `AGENTS.md` §9.
+
+### 2026-11-01 - Assistente dizia "sem jornada" para quem tinha o dia cheio
+
+- Sintoma: a psicóloga perguntou à assistente "minha agenda de terça feira" com a terça cheia (8 atendimentos) e ouviu que "não tem jornada cadastrada na terça". Insistiu ("tem sim, verifique") e a resposta repetiu.
+- Causa: ela não tem jornada cadastrada, e a Agenda de uma pessoa usa então a grade padrão da clínica (Configurar agenda), como o "Copiar horários vagos". A consulta da assistente (`services/assistantTools.js`) parava em "sem jornada" sempre que não havia jornada no dia, regra que só vale para a visão da equipe inteira, onde a grade padrão inventaria o dia de todo mundo.
+- Correção: a conta foi para `freeSlotsForAssistant` (`utils/clinicAssistant.js`), que segue a Agenda de uma pessoa: sem jornada vale a grade padrão, tira os atendimentos ativos e devolve `grade: 'padrao'`; a assistente diz numa frase que são os horários da grade padrão.
+- Regra nova: quando a assistente responde o que uma tela mostra, ela usa a mesma função e o mesmo caso da tela (uma pessoa × equipe), nunca uma regra parecida.
+- Teste ou verificação obrigatória: `clinic-assistant.test.mjs` ("regressão 01/11/2026: sem jornada no dia vale a grade padrão da clínica").
+- Regra destilada em: `AGENTS.md` §7 (Assistente da clínica).

@@ -12,6 +12,9 @@
 // administração). A lista lembra; quem decide é a pessoa.
 // ============================================================
 
+import { freeSlotsOfDay } from './agendaFreeSlots.js';
+import { schedulesOfDay } from './agendaTimeline.js';
+
 export const ASSISTANT_SCREENS = [
   'inicio', 'agenda', 'evolucao', 'escalas', 'financeiro',
   'gestao', 'pacientes', 'documentos', 'area',
@@ -78,6 +81,21 @@ export function matchTeamMember(query, members = [], selfId = null) {
     if (found.length > 1) return { member: null, motivo: 'ambiguo', opcoes: found.slice(0, 12) };
   }
   return { member: null, motivo: 'nao_encontrado', opcoes: members.slice(0, 12) };
+}
+
+/**
+ * Horários vagos de UMA pessoa num dia, para a assistente: a mesma conta
+ * do "Copiar horários vagos" da agenda de uma pessoa. Sem jornada
+ * cadastrada no dia vale a grade padrão da clínica, como a Agenda mostra
+ * (bug de 01/11/2026: a assistente respondia "sem jornada" para quem
+ * tinha a terça cheia na grade padrão). `grade` diz qual valeu.
+ */
+export function freeSlotsForAssistant({ date, professionalId, schedules = [], appointments = [], holidays = [], fallback = null, now = null }) {
+  const grade = schedulesOfDay(schedules, date).length > 0 ? 'jornada' : 'padrao';
+  const { slots, closedReason } = freeSlotsOfDay({ date, professionalId, schedules, appointments, holidays, fallback, now });
+  if (closedReason === 'past') return { horarios: [], motivo: 'passado', grade };
+  if (closedReason === 'holiday') return { horarios: [], motivo: 'feriado', grade };
+  return { horarios: slots.map(slot => slot.label), motivo: null, grade };
 }
 
 // Valor em aberto há mais que isto conta como atraso que pede atenção.

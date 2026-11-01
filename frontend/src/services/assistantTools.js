@@ -13,10 +13,8 @@ import { listAppointments } from './appointmentService';
 import { listClinicMembers, shortName } from './clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from './agendaScheduleService';
 import { loadAgendaSettings } from './agendaSettingsService';
-import { freeSlotsOfDay } from '../utils/agendaFreeSlots';
-import { schedulesOfDay } from '../utils/agendaTimeline';
 import { fallbackGridOf } from '../utils/agendaSettings';
-import { matchTeamMember } from '../utils/clinicAssistant';
+import { freeSlotsForAssistant, matchTeamMember } from '../utils/clinicAssistant';
 
 /** Quem atende na instituição (para a IA saber os nomes e para achar a pessoa). */
 export async function loadAssistantTeam() {
@@ -50,11 +48,9 @@ export async function runAssistantConsulta(consulta, { profile, team = null, now
       listHolidays({ from: consulta.dia, to: consulta.dia }),
       loadAgendaSettings(profile?.clinic_id),
     ]);
-    const named = { ...base, profissional: shortName(person.full_name) };
-    // Sem jornada no dia, a grade padrão ofereceria o dia inteiro sem ser verdade.
-    if (schedulesOfDay(schedules, date).length === 0) return { ...named, motivo: 'sem_jornada' };
-
-    const { slots, closedReason } = freeSlotsOfDay({
+    // Mesma conta da Agenda de uma pessoa: sem jornada no dia, vale a
+    // grade padrão da clínica, e `grade` avisa qual foi.
+    const result = freeSlotsForAssistant({
       date,
       professionalId: person.id,
       schedules,
@@ -63,9 +59,7 @@ export async function runAssistantConsulta(consulta, { profile, team = null, now
       fallback: fallbackGridOf(settings?.settings),
       now,
     });
-    if (closedReason === 'past') return { ...named, motivo: 'passado' };
-    if (closedReason === 'holiday') return { ...named, motivo: 'feriado' };
-    return { ...named, horarios: slots.map(slot => slot.label) };
+    return { ...base, profissional: shortName(person.full_name), ...result };
   } catch {
     return { ...base, motivo: 'erro' };
   }

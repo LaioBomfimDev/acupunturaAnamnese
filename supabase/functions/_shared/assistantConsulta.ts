@@ -51,6 +51,7 @@ export function readConsultaResult(raw: unknown) {
       .filter(value => TIME.test(value))
       .slice(0, 96),
     motivo: CONSULTA_MOTIVOS.includes(motivo) ? motivo : null,
+    grade: text(item.grade, 10) === 'padrao' ? 'padrao' : 'jornada',
     opcoes: (Array.isArray(item.opcoes) ? item.opcoes : []).map(value => text(value, 60)).filter(Boolean).slice(0, 12),
   };
 }

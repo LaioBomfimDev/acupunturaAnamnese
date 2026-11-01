@@ -27,6 +27,25 @@ export const HELP_SECTIONS = [
   { key: 'notes', title: 'Bom saber' },
 ];
 
+export const WHATSAPP_HELP = {
+  title: 'WhatsApp',
+  summary: 'O espaço de conexão e conversas do WhatsApp da clínica dentro do Vitalis.',
+  actions: [
+    'Abrir o WhatsApp pelo menu da tela inicial. No celular e no tablet, o acesso fica entre os atalhos da tela inicial.',
+    'No computador, “Ver conexão” abre a janela reservada à vinculação pelo QR. Feche por “Entendi”, pelo ×, por Esc ou clicando fora.',
+    'Consultar o estado desta primeira etapa: a vinculação e o atendimento pelo painel ainda não estão disponíveis.',
+  ],
+  reading: [
+    '“Em preparação” indica que a conexão ainda não foi habilitada. Não significa que uma conta foi conectada ou que o sistema conferiu suas mensagens.',
+    '“Nenhuma conversa carregada” não conta mensagens da conta. A lista, a busca e o campo de envio esperam a ligação real ao WhatsApp.',
+  ],
+  access: 'A equipe com acesso à tela inicial pode conhecer este espaço. Nesta etapa não são carregadas conversas nem são alteradas contas do WhatsApp.',
+  notes: [
+    'Esta tela não gera um QR fictício nem envia mensagens. O código real aparecerá quando a vinculação estiver disponível.',
+    'No celular, os botões de envio já existentes continuam abrindo o aplicativo do WhatsApp com a mensagem preparada. O envio sai da conta em uso no aplicativo; abrir o aplicativo não confirma que a mensagem foi enviada.',
+  ],
+};
+
 const MEU_CADASTRO_HELP = {
   title: 'Meu cadastro',
   summary: 'Os seus dados de cadastro no sistema.',

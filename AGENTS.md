@@ -127,6 +127,8 @@ Ferramenta obrigatória ausente: não ignore em silêncio. Informe o impedimento
 - Use parsers, validadores e APIs estruturadas; evite manipulação frágil de strings.
 - Sem secrets, service role keys, tokens ou dados sensíveis no frontend, logs, commits ou docs públicos.
 
+- WhatsApp no hub (01/11/2026, etapa 1, opção C aprovada): entrada própria no menu da tela inicial e em `.hc-mobile-only`, sem aumentar os cinco destinos do `HubDock`. A conexão abre em janela por “Ver conexão” no computador, com `useDismiss`; no celular e no tablet (≤1024px), os envios existentes continuam abrindo o aplicativo por `wa.me`. Tela vazia não simula conexão, QR, contagens ou conversas: “Em preparação” enquanto não houver serviço ligado e autorizado no servidor. Nenhuma credencial ou sessão do WhatsApp no frontend. Conversas, vinculação real e envios pelo painel são etapas seguintes. Teste: `tests/regression/whatsapp-screen.test.mjs`.
+
 ## 8. Curadoria de conhecimento (política compartilhada)
 
 Vale para anamnese, língua, pulso, pontos e RAG da Biblioteca. Detalhe de catalogação por domínio e fontes visuais em `docs/agents-mapas.md`.

@@ -23,6 +23,7 @@ const SCREEN_PLACES: Record<string, string[]> = {
   evolucao: ['Evoluções'],
   escalas: ['Escalas'],
   financeiro: ['Financeiro'],
+  whatsapp: ['WhatsApp'],
   gestao: ['Gestão'],
   pacientes: ['Pacientes da instituição'],
   documentos: ['Gestão → Documentos timbrados'],

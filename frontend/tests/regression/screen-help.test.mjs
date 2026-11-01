@@ -55,6 +55,7 @@ function everyTopic() {
     ['Evoluções', help.EVOLUCOES_HELP],
     ['Ver evoluções', help.EVOLUCOES_REVIEW_HELP],
     ['Escalas', help.ESCALAS_HELP],
+    ['WhatsApp', help.WHATSAPP_HELP],
     ['Entrevistas', help.ENTREVISTAS_HELP],
     ['Sala online', help.SALA_ONLINE_HELP],
     ['Pacientes', help.PACIENTES_HELP],

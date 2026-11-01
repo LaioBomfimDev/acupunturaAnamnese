@@ -396,6 +396,7 @@ test('a consulta roda no aparelho com o login da pessoa, pela mesma conta da Age
   assert.match(service, /if \(second\.consulta \|\| !second\.answer\)/, 'uma volta só');
   const edge = await read(functionsDir + '/clinic-assistant/index.ts');
   assert.match(edge, /const consulta = dados \? null : readConsulta\(parsed\?\.consulta\);/);
+  assert.match(edge, /Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte/, 'pedido de 01/11/2026: só os horários');
   assert.match(edge, /readConsultaResult\(requestBody\.dados\)/, 'o que vem do aparelho é limpo antes de ir à IA');
 });
 

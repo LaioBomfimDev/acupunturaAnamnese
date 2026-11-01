@@ -704,3 +704,19 @@ body:has(.ca-launcher) #root {
   font-size: 13px;
   color: var(--r1-text-subtle);
 }
+
+.ca-admin-table-wrap {
+  overflow-x: auto;
+}
+
+.ca-admin-row h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ca-admin-sub {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--r1-text-subtle);
+}

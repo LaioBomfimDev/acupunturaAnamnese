@@ -23,12 +23,20 @@ let state = {
   messages: [],
   draft: '',
   sending: false,
+  // 'thinking' ou 'agenda' (consultando horários vagos), para a tela.
+  sendingStep: 'thinking',
   error: '',
   attention: EMPTY_ATTENTION,
   attentionCollapsed: false,
 };
 const listeners = new Set();
 let navigator = null;
+let currentProfile = null;
+
+/** Perfil de quem conversa: as consultas usam o login e a agenda dele. */
+export function setAssistantProfile(profile) {
+  currentProfile = profile || null;
+}
 let attentionRequest = 0;
 
 function setState(patch) {
@@ -103,10 +111,15 @@ export async function sendAssistantMessage(text) {
   const question = String(text ?? state.draft).trim();
   if (!question || state.sending) return;
   const messages = [...state.messages, { role: 'user', text: question }];
-  setState({ messages, draft: '', sending: true, error: '' });
+  setState({ messages, draft: '', sending: true, sendingStep: 'thinking', error: '' });
   try {
-    const { askAssistant } = await loadService();
-    const reply = await askAssistant({ messages, screen: state.screen });
+    const { askAssistantWithTools } = await loadService();
+    const reply = await askAssistantWithTools({
+      messages,
+      screen: state.screen,
+      profile: currentProfile,
+      onStep: step => setState({ sendingStep: step }),
+    });
     setState(current => ({
       messages: [...current.messages, { role: 'assistant', text: reply.answer, links: reply.links }],
       sending: false,
@@ -126,5 +139,6 @@ export async function sendAssistantMessage(text) {
 export function resetAssistant() {
   attentionRequest += 1;
   attentionLoadedAt = 0;
+  loadService().then(service => service.resetAssistantTeam()).catch(() => {});
   setState({ open: false, messages: [], draft: '', sending: false, error: '', attention: EMPTY_ATTENTION });
 }

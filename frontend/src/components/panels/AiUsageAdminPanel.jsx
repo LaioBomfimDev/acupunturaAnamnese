@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
-import { loadAiUsageOverview, saveClinicAiLimit } from '../../services/clinicAssistantService';
-import { formatUsd, summarizeAiOverview, withLimit, aiAlertFor } from '../../utils/aiUsage';
+import { loadAiUsageEvents, loadAiUsageOverview, saveClinicAiLimit } from '../../services/clinicAssistantService';
+import {
+  AI_FUNCTION_LABELS,
+  AI_USD_TO_BRL,
+  aiAlertFor,
+  eventCostUsd,
+  formatBrl,
+  formatUsd,
+  summarizeAiByPerson,
+  summarizeAiOverview,
+  withLimit,
+} from '../../utils/aiUsage';
 
 // ============================================================
 // SuperAdm → IA por instituição (30/10/2026).
@@ -10,7 +20,8 @@ import { formatUsd, summarizeAiOverview, withLimit, aiAlertFor } from '../../uti
 // é a dona do sistema; ao vender para outras clínicas, o limite de cada
 // uma é a cota do plano. Avisos em 50%, 80% e 100% (utils/aiUsage.js).
 // O uso sem instituição (o próprio SuperAdm) aparece por último, sem
-// limite.
+// limite. Embaixo, o gasto de cada pessoa e cada ação do mês, em real
+// (câmbio de referência em utils/aiUsage.js), pedido de 31/10/2026.
 // ============================================================
 
 function parseUsd(text) {
@@ -58,7 +69,7 @@ function ClinicRow({ clinic, onSaved }) {
         {clinic.alert && <span className={`ca-admin-badge ca-admin-badge--${clinic.alert.tone}`}>{clinic.alert.level}%</span>}
       </header>
       <p className="ca-admin-numbers">
-        <b>{formatUsd(clinic.totalUsd)}</b>
+        <b>{formatBrl(clinic.totalUsd)}</b> ({formatUsd(clinic.totalUsd)})
         {clinic.limitUsd === null ? ' · sem limite' : ` de ${formatUsd(clinic.limitUsd)} (${percent}%)`}
         {` · ${clinic.calls} ${clinic.calls === 1 ? 'chamada' : 'chamadas'}`}
       </p>
@@ -96,14 +107,85 @@ function ClinicRow({ clinic, onSaved }) {
   );
 }
 
+const WHEN = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+});
+
+/** Gasto do mês por pessoa e a lista de cada ação, em real. */
+function PeopleUsage({ events }) {
+  const [showAll, setShowAll] = useState(false);
+  const people = summarizeAiByPerson(events);
+  const visible = showAll ? events : events.slice(0, 50);
+  if (!events.length) return <p className="ca-admin-functions">Nenhuma ação de IA neste mês.</p>;
+  return (
+    <>
+      <section className="ca-admin-row" aria-labelledby="ai-por-pessoa">
+        <h3 id="ai-por-pessoa">Por pessoa</h3>
+        <div className="ca-admin-table-wrap">
+          <table className="ca-usage-table">
+            <thead>
+              <tr><th scope="col">Pessoa</th><th scope="col">Instituição</th><th scope="col">Ações</th><th scope="col">Gasto</th></tr>
+            </thead>
+            <tbody>
+              {people.map(person => (
+                <tr key={person.id || 'sem-pessoa'}>
+                  <th scope="row">
+                    {person.name}
+                    <small className="ca-admin-sub">{person.functions.map(fn => `${fn.label}: ${fn.actions}`).join(' · ')}</small>
+                  </th>
+                  <td>{person.clinic}</td>
+                  <td>{person.actions}</td>
+                  <td>{formatBrl(person.usd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="ca-admin-row" aria-labelledby="ai-por-acao">
+        <h3 id="ai-por-acao">Cada ação</h3>
+        <div className="ca-admin-table-wrap">
+          <table className="ca-usage-table">
+            <thead>
+              <tr><th scope="col">Quando</th><th scope="col">Pessoa</th><th scope="col">Função</th><th scope="col">Tokens</th><th scope="col">Gasto</th></tr>
+            </thead>
+            <tbody>
+              {visible.map((row, index) => (
+                <tr key={`${row.quando}-${index}`}>
+                  <td>{WHEN.format(new Date(row.quando))}</td>
+                  <th scope="row">{row.pessoa || 'Sem nome'}</th>
+                  <td>{AI_FUNCTION_LABELS[row.funcao] || row.funcao}</td>
+                  <td>{((row.entrada || 0) + (row.saida || 0) + (row.raciocinio || 0)).toLocaleString('pt-BR')}</td>
+                  <td>{formatBrl(eventCostUsd(row))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {events.length > visible.length && (
+          <button type="button" className="quiet-button" onClick={() => setShowAll(true)}>
+            Mostrar todas as {events.length} ações do mês
+          </button>
+        )}
+      </section>
+    </>
+  );
+}
+
 export function AiUsageAdminPanel() {
   const [clinics, setClinics] = useState(null);
+  const [events, setEvents] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    loadAiUsageOverview()
-      .then(rows => { if (!cancelled) setClinics(summarizeAiOverview(rows)); })
+    Promise.all([loadAiUsageOverview(), loadAiUsageEvents()])
+      .then(([rows, eventRows]) => {
+        if (cancelled) return;
+        setClinics(summarizeAiOverview(rows));
+        setEvents(eventRows);
+      })
       .catch(err => { if (!cancelled) setError(err.message); });
     return () => { cancelled = true; };
   }, []);
@@ -127,13 +209,20 @@ export function AiUsageAdminPanel() {
           todas as funções de IA da instituição param até o mês virar ou o limite subir. A administração
           da instituição vê o gasto e os avisos de 50%, 80% e 100%, mas não muda o limite.
         </p>
-        {clinics && <p className="ca-admin-total">Total do mês: <b>{formatUsd(totalUsd)}</b> (estimativa; a fatura do Google Cloud é a referência)</p>}
+        {clinics && (
+          <p className="ca-admin-total">
+            Total do mês: <b>{formatBrl(totalUsd)}</b> ({formatUsd(totalUsd)}). Estimativa pelo preço do Google em dólar,
+            com câmbio de referência de R$ {AI_USD_TO_BRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}; a fatura do
+            Google Cloud é a referência.
+          </p>
+        )}
       </header>
       {error && <div className="ca-usage-alert ca-usage-alert--full" role="alert">{error}</div>}
       {!clinics && !error && <p>Carregando…</p>}
       {clinics && clinics.map(clinic => (
         <ClinicRow key={clinic.id || 'sem-instituicao'} clinic={clinic} onSaved={updateLimit} />
       ))}
+      {events && <PeopleUsage events={events} />}
     </section>
   );
 }

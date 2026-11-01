@@ -13,6 +13,7 @@ import {
   openScreenFromAssistant,
   refreshAttention,
   sendAssistantMessage,
+  setAssistantProfile,
   setAssistantDraft,
   setAssistantOpen,
   toggleAttentionCollapsed,
@@ -35,8 +36,8 @@ import {
 const ATTENTION_MAX_AGE_MS = 2 * 60 * 1000;
 
 const STARTERS = {
-  admin: ['Explique esta tela', 'Como lanço um pacote?', 'Como envio uma escala para casa?'],
-  professional: ['Explique esta tela', 'Como registro um atendimento já realizado?', 'Como envio uma escala para casa?'],
+  admin: ['Explique esta tela', 'Quais horários vagos tenho amanhã?', 'Como lanço um pacote?'],
+  professional: ['Explique esta tela', 'Quais horários vagos tenho amanhã?', 'Como envio uma escala para casa?'],
   reception: ['Explique esta tela', 'Como copio os horários vagos?', 'Como cadastro um paciente?'],
 };
 
@@ -64,6 +65,9 @@ function allowedLinks(profile) {
 
 function useAttentionRefresh(profile) {
   const role = assistantRoleOf(profile);
+  useEffect(() => {
+    setAssistantProfile(profile);
+  }, [profile]);
   useEffect(() => {
     refreshAttention(role, { maxAgeMs: ATTENTION_MAX_AGE_MS });
   }, [role]);
@@ -146,7 +150,7 @@ function Conversation({ state, allowed, role, inputRef }) {
       <div className="ca-messages" ref={listRef} aria-live="polite">
         {state.messages.length === 0 && (
           <div className="ca-starters">
-            <p>Pergunte sobre o sistema ou sobre esta tela. Ainda não vejo pacientes nem o financeiro.</p>
+            <p>Pergunte sobre o sistema, sobre esta tela ou sobre horários vagos da equipe. Ainda não vejo pacientes nem o financeiro.</p>
             <div className="ca-chips">
               {(STARTERS[role] || STARTERS.professional).map(text => (
                 <button key={text} type="button" className="ca-chip" onClick={() => sendAssistantMessage(text)} disabled={state.sending}>
@@ -166,7 +170,11 @@ function Conversation({ state, allowed, role, inputRef }) {
             ))}
           </div>
         ))}
-        {state.sending && <div className="ca-bubble ca-bubble--assistant ca-bubble--typing">Pensando…</div>}
+        {state.sending && (
+          <div className="ca-bubble ca-bubble--assistant ca-bubble--typing">
+            {state.sendingStep === 'agenda' ? 'Consultando a agenda…' : 'Pensando…'}
+          </div>
+        )}
       </div>
 
       <form className="ca-composer" onSubmit={submit}>

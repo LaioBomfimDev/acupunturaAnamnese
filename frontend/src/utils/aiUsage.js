@@ -101,6 +101,58 @@ export function summarizeAiOverview(rows = []) {
     .sort((a, b) => (a.id === null) - (b.id === null) || b.totalUsd - a.totalUsd || a.name.localeCompare(b.name));
 }
 
+// Câmbio de referência para mostrar o gasto em real (31/10/2026). O
+// Google cobra em dólar pela tabela; a fatura é a referência final.
+// Mudou muito o dólar: ajuste aqui.
+export const AI_USD_TO_BRL = 5.5;
+
+/** Custo estimado de uma ação (linha de superadmin_ai_usage_events), em dólar. */
+export function eventCostUsd(row) {
+  return costOf(row);
+}
+
+/** Real com centavos: "R$ 0,42"; abaixo de 1 centavo, em fração de centavo ("0,6 centavo"). */
+export function formatBrl(usd) {
+  const brl = (Number(usd) || 0) * AI_USD_TO_BRL;
+  if (brl > 0 && brl < 0.01) {
+    const cents = (brl * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+    return `${cents} centavo`;
+  }
+  return `R$ ${brl.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * Gasto do mês por pessoa (SuperAdm): ações, tokens e custo, da maior
+ * para a menor. Ação sem pessoa (perfil apagado) fica como "Sem nome".
+ */
+export function summarizeAiByPerson(events = []) {
+  const people = new Map();
+  for (const row of events) {
+    const key = row.pessoa_id || 'sem-pessoa';
+    const person = people.get(key) || {
+      id: row.pessoa_id || null,
+      name: row.pessoa || 'Sem nome',
+      clinic: row.clinica || 'Sem instituição',
+      actions: 0,
+      tokens: 0,
+      usd: 0,
+      byFunction: new Map(),
+    };
+    const usd = costOf(row);
+    person.actions += 1;
+    person.tokens += (Number(row.entrada) || 0) + (Number(row.saida) || 0) + (Number(row.raciocinio) || 0);
+    person.usd += usd;
+    const fn = person.byFunction.get(row.funcao) || { label: AI_FUNCTION_LABELS[row.funcao] || row.funcao, actions: 0, usd: 0 };
+    fn.actions += 1;
+    fn.usd += usd;
+    person.byFunction.set(row.funcao, fn);
+    people.set(key, person);
+  }
+  return [...people.values()]
+    .map(person => ({ ...person, functions: [...person.byFunction.values()].sort((a, b) => b.usd - a.usd) }))
+    .sort((a, b) => b.usd - a.usd || a.name.localeCompare(b.name));
+}
+
 /** Dólar com vírgula: "US$ 0,42"; abaixo de um centavo, "menos de US$ 0,01". */
 export function formatUsd(value) {
   const number = Number(value) || 0;

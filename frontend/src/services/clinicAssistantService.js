@@ -15,7 +15,9 @@ import { loadReceivablesData } from './financeiroService';
 import { onlyEvolutionDisciplines } from '../utils/evolutionQueue';
 import { buildReceivables, todayInClinic } from '../utils/finance';
 import { aiAlertFor, summarizeAiUsage } from '../utils/aiUsage';
+import { shortName } from './clinicMembersService';
 import {
+  ASSISTANT_CONSULTAS,
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_MAX_MESSAGES,
   ASSISTANT_SCREENS,
@@ -27,7 +29,7 @@ import {
  * Pergunta à assistente. `messages` = [{ role: 'user'|'assistant', text }],
  * a última da pessoa. Devolve { answer, links }.
  */
-export async function askAssistant({ messages, screen, invoke = (...args) => supabase.functions.invoke(...args) }) {
+export async function askAssistant({ messages, screen, equipe = [], dados = undefined, invoke = (...args) => supabase.functions.invoke(...args) }) {
   const recent = (messages || [])
     .filter(message => message?.text?.trim())
     .slice(-ASSISTANT_MAX_MESSAGES)
@@ -42,15 +44,51 @@ export async function askAssistant({ messages, screen, invoke = (...args) => sup
   }
 
   const { data, error } = await invoke('clinic-assistant', {
-    body: { messages: recent, screen: ASSISTANT_SCREENS.includes(screen) ? screen : 'inicio' },
+    body: {
+      messages: recent,
+      screen: ASSISTANT_SCREENS.includes(screen) ? screen : 'inicio',
+      equipe,
+      ...(dados === undefined ? {} : { dados }),
+    },
   });
   if (error) {
     throw new Error(await getAiFunctionErrorMessage(error, 'A assistente não conseguiu responder agora.'));
   }
+  if (data?.consulta && ASSISTANT_CONSULTAS.includes(data.consulta.tipo)) {
+    return { answer: '', links: [], consulta: data.consulta };
+  }
   if (!data || typeof data.answer !== 'string') {
     throw new Error('A assistente respondeu num formato inesperado.');
   }
-  return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [] };
+  return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null };
+}
+
+let teamCache = null;
+
+/**
+ * Pergunta à assistente e, se ela pedir uma consulta (horários vagos),
+ * faz a consulta neste aparelho e pergunta de novo com o resultado. Uma
+ * volta só. `onStep` avisa a tela ("Consultando a agenda…").
+ */
+export async function askAssistantWithTools({ messages, screen, profile, onStep = () => {} }) {
+  const { loadAssistantTeam, runAssistantConsulta } = await import('./assistantTools');
+  if (!teamCache) teamCache = await loadAssistantTeam().catch(() => []);
+  const equipe = teamCache.map(member => shortName(member.full_name));
+
+  const first = await askAssistant({ messages, screen, equipe });
+  if (!first.consulta) return first;
+
+  onStep('agenda');
+  const dados = await runAssistantConsulta(first.consulta, { profile, team: teamCache });
+  onStep('thinking');
+  const second = await askAssistant({ messages, screen, equipe, dados });
+  if (second.consulta || !second.answer) throw new Error('A assistente não conseguiu responder com a agenda agora.');
+  return second;
+}
+
+/** Troca de conta: a equipe da próxima pessoa pode ser outra. */
+export function resetAssistantTeam() {
+  teamCache = null;
 }
 
 function settledValue(result) {
@@ -98,6 +136,13 @@ export async function loadAiUsageMonth() {
 export async function loadAiUsageOverview() {
   const { data, error } = await supabase.rpc('superadmin_ai_usage_overview');
   if (error) throw new Error(error.message || 'Não foi possível carregar o uso de IA das instituições.');
+  return data || [];
+}
+
+/** SuperAdm: cada ação de IA do mês (quem, quando, função, tokens). */
+export async function loadAiUsageEvents() {
+  const { data, error } = await supabase.rpc('superadmin_ai_usage_events');
+  if (error) throw new Error(error.message || 'Não foi possível carregar o uso de IA por pessoa.');
   return data || [];
 }
 

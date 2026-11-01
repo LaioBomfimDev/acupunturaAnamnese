@@ -36,6 +36,50 @@ export const ASSISTANT_SCREEN_LABELS = {
   area: 'Área de atendimento',
 };
 
+// Consultas que a assistente pode pedir ao aparelho (31/10/2026) e os
+// motivos de não ter resposta: espelho de _shared/assistantConsulta.ts.
+export const ASSISTANT_CONSULTAS = ['horarios_vagos'];
+export const CONSULTA_MOTIVOS = [
+  'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro',
+];
+
+const SELF_WORDS = new Set(['eu', 'mim', 'meu', 'meus', 'minha', 'minhas', 'comigo']);
+// Títulos e profissões não ajudam a achar a pessoa ("Denise psicóloga").
+const NAME_NOISE = new Set([
+  'dra', 'dr', 'doutora', 'doutor', 'psicologa', 'psicologo', 'fisioterapeuta', 'nutricionista',
+  'acupunturista', 'neuropsicologa', 'neuropsicologo', 'terapeuta', 'profissional', 'agenda', 'horarios',
+]);
+
+function plain(text) {
+  return String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+/**
+ * De quem é a agenda pedida: "eu" é quem pergunta; um nome é procurado
+ * na equipe que atende. Ambíguo ou fora da equipe volta com as opções
+ * para a assistente perguntar, nunca chuta.
+ * @returns {{ member: object|null, motivo: null|'sem_agenda'|'ambiguo'|'nao_encontrado', opcoes: object[] }}
+ */
+export function matchTeamMember(query, members = [], selfId = null) {
+  const words = plain(query).split(/[^a-z0-9]+/).filter(Boolean);
+  if (words.length > 0 && words.every(word => SELF_WORDS.has(word))) {
+    const self = members.find(member => member.id === selfId);
+    return self ? { member: self, motivo: null, opcoes: [] } : { member: null, motivo: 'sem_agenda', opcoes: [] };
+  }
+  const tokens = words.filter(word => word.length >= 3 && !NAME_NOISE.has(word));
+  if (!tokens.length) return { member: null, motivo: 'nao_encontrado', opcoes: members.slice(0, 12) };
+  const nameWords = member => plain(member.full_name).split(/[^a-z0-9]+/).filter(Boolean);
+  const hits = predicate => members.filter(member => {
+    const names = nameWords(member);
+    return predicate(token => names.some(name => name.startsWith(token)));
+  });
+  for (const found of [hits(has => tokens.every(has)), hits(has => tokens.some(has))]) {
+    if (found.length === 1) return { member: found[0], motivo: null, opcoes: [] };
+    if (found.length > 1) return { member: null, motivo: 'ambiguo', opcoes: found.slice(0, 12) };
+  }
+  return { member: null, motivo: 'nao_encontrado', opcoes: members.slice(0, 12) };
+}
+
 // Valor em aberto há mais que isto conta como atraso que pede atenção.
 export const ATTENTION_LATE_DAYS = 15;
 

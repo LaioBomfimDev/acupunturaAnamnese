@@ -94,9 +94,12 @@ test('no computador a conversa usa a altura que sobra e o envio fica acima do bo
   const desktop = css.slice(css.indexOf('@media (min-width: 1025px)'), css.indexOf('@media (max-width: 1024px)'));
   assert.doesNotMatch(css, /\.wa-workspace \{[^}]*\bheight: clamp\(/);
   assert.match(desktop, /\.hub-screen:has\(> \.hub-body > \.wa-screen\) \{[^}]*height: calc\(100 \* var\(--svh\)\)/);
-  assert.match(desktop, /body:has\(\.ca-launcher\) \.hub-screen:has\(> \.hub-body > \.wa-screen\) \{[^}]*var\(--ca-launcher-room/);
+  // Desde 03/11/2026 o espaço do botão fica DENTRO da tela (o pé do
+  // hub-body), e a tela ocupa a janela inteira, sem faixa em branco embaixo.
+  assert.match(desktop, /body:has\(\.ca-launcher\) \.hub-body:has\(> \.wa-screen\) \{ padding-bottom: var\(--ca-launcher-room/);
+  assert.doesNotMatch(desktop, /height: calc\(100 \* var\(--svh\) - var\(--ca-launcher-room/);
   assert.match(desktop, /\.wa-workspace \{[^}]*flex: 1 1 auto/);
   assert.match(css, /\.wa-thread-empty \{[^}]*min-height: 0/);
   assert.match(assistantCss, /body:has\(\.ca-launcher\) \{\s*--ca-launcher-room: 88px;/);
-  assert.match(assistantCss, /#root \{\s*padding-bottom: var\(--ca-launcher-room\);/);
+  assert.match(assistantCss, /body:has\(\.ca-launcher\) \.hub-body:not\(:has\(> \.wa-screen\)\)::after/);
 });

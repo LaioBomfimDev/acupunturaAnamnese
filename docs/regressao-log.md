@@ -409,3 +409,12 @@ Modelo de entrada:
 - Regra nova: trocar de aba numa tela de menu lateral leva ao título da aba.
 - Teste ou verificação obrigatória: `gestao-nav-scroll.test.mjs`. Não testado em navegador logado (a sessão não entra na conta da clínica).
 - Regra destilada em: `AGENTS.md` §7 (Gestão).
+
+### 2026-11-03 - Faixa em branco embaixo de toda página e lateral terminando antes do fim
+
+- Sintoma: em qualquer tela com o botão da Assistente, a página rolava cerca de 97px além do sistema. Embaixo aparecia uma faixa vazia, a lateral escura da tela inicial terminava antes do fim, e o botão parecia "fora da tela". Rolando além do topo também aparecia o fundo da página.
+- Causa: para o último botão de cada tela nunca ficar coberto pelo botão da Assistente (01/11/2026), o espaço de 88px foi colocado no `#root`, por fora do fundo das telas. Toda tela que já tinha a altura da janela passou a ficar 88px mais alta, até as curtas.
+- Correção: o espaço virou um `::after` dentro da coluna de conteúdo (`.hc-main`, `.hub-body`, `.main`), com o fundo da tela, e só cresce a página quando o conteúdo é comprido; o WhatsApp, que cabe na janela, guarda o espaço no pé do `hub-body`. `html, body` ganharam `overscroll-behavior-y: none`. Conferido no Chromium com o CSS do build (tela inicial, hub, área e WhatsApp; curto e comprido; 1440 e 390 px): sem sobra abaixo da tela, lateral até o fim e o último item acima do botão; com a regra antiga, 97px de sobra.
+- Regra nova: espaço reservado no fim mora dentro da coluna de conteúdo da tela, nunca em `#root` ou `body`.
+- Teste ou verificação obrigatória: `page-bottom-room.test.mjs` e `whatsapp-screen.test.mjs`.
+- Regra destilada em: `AGENTS.md` §7 (Escala da tela).

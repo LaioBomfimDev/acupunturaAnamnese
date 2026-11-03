@@ -473,13 +473,35 @@ button.ca-attention-item:hover {
 }
 
 /* Espaço no fim da página: o último botão de qualquer tela rola para
-   acima do botão da assistente, nunca fica coberto por ele. */
+   acima do botão da assistente, nunca fica coberto por ele.
+
+   03/11/2026: o espaço mora DENTRO da coluna de conteúdo de cada tela
+   (tela inicial, telas do hub e áreas), com o fundo da tela, e só
+   aparece quando o conteúdo é comprido. Antes ele ficava no #root, por
+   fora do fundo: toda página rolava 88px além do sistema, com uma faixa
+   em branco embaixo e a lateral escura terminando antes do fim. */
 body:has(.ca-launcher) {
   --ca-launcher-room: 88px;
 }
 
-body:has(.ca-launcher) #root {
+body:has(.ca-launcher) .hc-main::after,
+body:has(.ca-launcher) .hub-body:not(:has(> .wa-screen))::after,
+body:has(.ca-launcher) .main::after {
+  content: '';
+  display: block;
+  height: var(--ca-launcher-room);
+}
+
+/* Tela sem nenhuma dessas colunas (rara): o espaço volta ao fim da página. */
+body:has(.ca-launcher):not(:has(.hc-main, .hub-body, .main)) #root {
   padding-bottom: var(--ca-launcher-room);
+}
+
+/* Sem "puxão" além da borda (rolar passando do topo ou do fim mostrava
+   o fundo da página, por fora do sistema). */
+html,
+body {
+  overscroll-behavior-y: none;
 }
 
 .ca-launcher:hover {

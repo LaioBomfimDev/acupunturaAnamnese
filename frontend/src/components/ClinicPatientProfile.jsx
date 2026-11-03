@@ -29,6 +29,8 @@ import { getStatusLabel } from '../utils/agenda';
 import { buildProfileTabSummaries } from '../utils/patientProfileTabs';
 import { scaleDisciplinesFor } from '../utils/instrumentAccess';
 import { PatientCoverages } from './PatientCoverages';
+import { PatientNotesField } from './PatientNotesField';
+import { PATIENT_NOTES_LABEL } from '../utils/patientNotes';
 
 // Área do Paciente (acesso + formulários): só a administração abre, então
 // carrega à parte e não pesa na ficha de quem não vê a aba.
@@ -66,10 +68,10 @@ const PatientInstrumentsPanel = lazy(() => import('./instruments/PatientInstrume
 // qualquer largura; quem decide o que aparece é o CSS.
 // ============================================================
 
-function Field({ label, value, wide = false }) {
+function Field({ label, value, wide = false, multiline = false }) {
   if (value === undefined || value === null || value === '') return null;
   return (
-    <div className={`pf-field${wide ? ' pf-field--wide' : ''}`}>
+    <div className={`pf-field${wide ? ' pf-field--wide' : ''}${multiline ? ' pf-field--multiline' : ''}`}>
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
@@ -150,6 +152,7 @@ function buildEditForm(p) {
     convenioNome: p?.convenio_nome || '', convenioCarteirinha: p?.convenio_carteirinha || '',
     enderecoCep: p?.endereco_cep || '', enderecoLogradouro: p?.endereco_logradouro || '', enderecoNumero: p?.endereco_numero || '',
     enderecoComplemento: p?.endereco_complemento || '', enderecoBairro: p?.endereco_bairro || '', enderecoCidade: p?.endereco_cidade || '', enderecoUf: p?.endereco_uf || '',
+    observacoes: p?.observacoes || '',
   };
 }
 
@@ -372,6 +375,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
         enderecoBairro: editForm.enderecoBairro.trim() || null,
         enderecoCidade: editForm.enderecoCidade.trim() || null,
         enderecoUf: editForm.enderecoUf || null,
+        observacoes: editForm.observacoes,
       });
       setFull(updated);
       setEditing(false);
@@ -678,6 +682,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
       <PrintRow label="CPF" value={full?.cpf ? formatCpf(full.cpf) : null} />
       <PrintRow label="Telefone" value={full?.phone} />
       <PrintRow label="E-mail" value={full?.email} />
+      <PrintRow label={PATIENT_NOTES_LABEL} value={full?.observacoes} />
 
       {hasFiliacao && (
         <>
@@ -921,6 +926,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     <Field wide label="Endereço" value={enderecoLinha} />
                     <Field wide label="Complemento/bairro/cidade" value={[full?.endereco_complemento, enderecoComplementoLinha].filter(Boolean).join(' — ')} />
                     <Field label="CEP" value={full?.endereco_cep ? formatCep(full.endereco_cep) : null} />
+
+                    <SectionLabel show={Boolean(full?.observacoes)}>{PATIENT_NOTES_LABEL}</SectionLabel>
+                    <Field wide multiline label={PATIENT_NOTES_LABEL} value={full?.observacoes} />
                   </dl>
                 ) : (
                     <form className="cp-form" onSubmit={handleSaveEdit} style={{ boxShadow: 'none', border: 'none', padding: 0 }}>
@@ -1033,6 +1041,15 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                             </select>
                           </label>
                         </div>
+                      </div>
+
+                      <div className="cp-section">
+                        <p className="cp-form-group-title">{PATIENT_NOTES_LABEL}</p>
+                        <PatientNotesField
+                          id="edit-patient-notes"
+                          value={editForm.observacoes}
+                          onChange={value => setEditField('observacoes', value)}
+                        />
                       </div>
 
                       <div className="cps-actions cps-actions--split">

@@ -3,6 +3,8 @@ import { DISCIPLINES } from '../data/disciplines';
 import { createPatient, isMinor, isValidCpf, isValidEmail } from '../services/patientService';
 import { buscarEnderecoPorCep, formatCep, isValidCepFormat } from '../services/cepService';
 import { enrollPatientInitial } from '../services/clinicPatientsService';
+import { PatientNotesField } from './PatientNotesField';
+import { PATIENT_NOTES_LABEL } from '../utils/patientNotes';
 
 // ============================================================
 // Formulário "Novo paciente" (ficha da instituição), o mesmo em dois
@@ -22,6 +24,7 @@ const EMPTY_FORM = {
   phone: '', email: '', nomeMae: '', nomePai: '', nomeConjuge: '',
   responsavelNome: '', responsavelTelefone: '', responsavelCpf: '',
   enderecoCep: '', enderecoLogradouro: '', enderecoNumero: '', enderecoComplemento: '', enderecoBairro: '', enderecoCidade: '', enderecoUf: '',
+  observacoes: '',
   discipline: 'acupuntura', imageConsent: false,
 };
 
@@ -42,6 +45,7 @@ const CP_SECTION_GLYPHS = {
   guardian: <><path d="M12 3.2 19 6v5.2c0 4.7-3 8.2-7 9.6-4-1.4-7-4.9-7-9.6V6Z" /><path d="m9 12.2 2 2 4.2-4.2" /></>,
   insurance: <><rect x="3" y="6" width="18" height="13" rx="2.2" /><path d="M3 10.2h18" /><path d="M6.8 15h4" /></>,
   address: <><path d="M12 21s7-6.4 7-11.6A7 7 0 0 0 5 9.4C5 14.6 12 21 12 21Z" /><circle cx="12" cy="9.4" r="2.3" /></>,
+  notes: <><path d="M5 4h10l4 4v12H5Z" /><path d="M15 4v4h4" /><path d="M8.5 12h7M8.5 15.5h5" /></>,
   care: <><rect x="3" y="5" width="18" height="16" rx="2.2" /><path d="M3 10h18M8 3v4M16 3v4" /><path d="m8.3 15.3 2 2 4.7-4.7" /></>,
 };
 
@@ -146,6 +150,7 @@ export function NewPatientForm({ initialDiscipline = 'acupuntura', title = 'Novo
         enderecoCidade: form.enderecoCidade.trim() || null,
         enderecoUf: form.enderecoUf || null,
         imageConsent: form.imageConsent,
+        observacoes: form.observacoes,
       });
       const enrollment = await enrollPatientInitial(patient.id, form.discipline);
       setForm({ ...EMPTY_FORM, discipline: initialDiscipline });
@@ -314,6 +319,14 @@ export function NewPatientForm({ initialDiscipline = 'acupuntura', title = 'Novo
         </div>
         {cepLoading && <p className="cp-cep-hint">Consultando CEP…</p>}
         {cepNotice && <p className="cp-cep-hint">{cepNotice}</p>}
+      </CpFormSection>
+
+      <CpFormSection icon="notes" title={PATIENT_NOTES_LABEL}>
+        <PatientNotesField
+          id="new-patient-notes"
+          value={form.observacoes}
+          onChange={value => setField('observacoes', value)}
+        />
       </CpFormSection>
 
       <CpFormSection icon="care" title="Atendimento">

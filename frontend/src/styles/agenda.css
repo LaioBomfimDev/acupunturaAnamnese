@@ -3984,3 +3984,30 @@
     justify-self: start;
   }
 }
+
+/* ---------- Observações do cadastro do paciente (03/11/2026) ---------- */
+
+.ag-detail-notes {
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  background: var(--r1-surface-sunken);
+  min-width: 0;
+}
+
+.ag-detail-notes-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--r1-text-subtle);
+}
+
+.ag-detail-notes-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--r1-text);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

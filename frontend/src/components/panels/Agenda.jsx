@@ -90,6 +90,7 @@ import { usePatient } from '../../hooks/PatientContext';
 import { COMPLETED_APPOINTMENT_LABEL, lateEntryLabel } from '../../utils/completedAppointment';
 import { EVOLUTION_DISCIPLINES } from '../../utils/evolutionQueue';
 import { OPEN_PACKAGE_SESSIONS_LABEL } from '../../utils/agendaPackageSessions';
+import { PATIENT_NOTES_LABEL } from '../../utils/patientNotes';
 import '../../styles/agenda.css';
 
 // Resultado do atendimento no card aberto: Atendido, Não compareceu e
@@ -555,6 +556,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
   function patientName(id) {
     return patients.find(item => item.id === id)?.name || 'Paciente';
+  }
+
+  /** Observações do cadastro do paciente (texto livre; a equipe toda lê). */
+  function patientNotes(id) {
+    return patients.find(item => item.id === id)?.observacoes || '';
   }
 
   function patientPhone(id) {
@@ -1950,6 +1956,13 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
               {selectedPackage && (
                 <p className="ag-detail-package">{packageSessionLabel(selectedPackage)}</p>
+              )}
+
+              {selectedAppointment.kind !== 'block' && patientNotes(selectedAppointment.patient_id) && (
+                <div className="ag-detail-notes">
+                  <p className="ag-detail-notes-title">{PATIENT_NOTES_LABEL} do paciente</p>
+                  <p className="ag-detail-notes-text">{patientNotes(selectedAppointment.patient_id)}</p>
+                </div>
               )}
 
               {selectedAppointment.is_exception && (

@@ -162,6 +162,7 @@ export function AgendaWeekView({
                           : [
                             patientName(appointment.patient_id),
                             seriesMark?.label,
+                            appointment.billing_type === 'convenio' ? 'Convênio' : '',
                             moved,
                             pending ? 'Pendência marcada' : '',
                             confirmed ? 'Confirmado' : '',
@@ -173,6 +174,9 @@ export function AgendaWeekView({
                             ? <IconVideo className="agw-item-icon" />
                             : <IconPin className="agw-item-icon" />)}
                         <SeriesBadge mark={seriesMark} className="agw-series" />
+                        {!isBlock && appointment.billing_type === 'convenio' && (
+                          <span className="agw-billing">Conv.<span className="sr-only">ênio</span></span>
+                        )}
                         {isBlock
                           ? (appointment.note?.trim() || blockLabel)
                           : patientName(appointment.patient_id)}

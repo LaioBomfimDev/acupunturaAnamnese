@@ -1328,3 +1328,23 @@
   gap: 14px;
   min-width: 0;
 }
+
+/* A receber por quem paga (02/11/2026): pacientes (particular) e cada
+   operadora em bloco próprio. */
+.fin-payer {
+  margin-top: 14px;
+}
+
+.fin-payer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.fin-payer-title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

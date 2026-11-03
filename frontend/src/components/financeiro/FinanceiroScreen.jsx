@@ -102,9 +102,15 @@ function buildTiles({ data, derived, month }) {
   return {
     areceber: {
       display: formatBRL(summary.receivableCents),
+      // Por quem paga: atraso de paciente (particular) e de operadora.
       line: summary.lateCents > 0
-        ? `${formatBRL(summary.lateCents)} em atraso, de ${plural(summary.latePatients, 'paciente', 'pacientes')}`
-        : summary.receivableCount ? `${plural(summary.receivableCount, 'item', 'itens')} em aberto, nada em atraso` : 'nada em aberto',
+        ? `${formatBRL(summary.lateCents)} em atraso, de ${[
+          summary.latePatients ? plural(summary.latePatients, 'paciente', 'pacientes') : '',
+          summary.lateConvenios ? plural(summary.lateConvenios, 'operadora', 'operadoras') : '',
+        ].filter(Boolean).join(' e ')}`
+        : summary.receivableCount
+          ? `${plural(summary.receivableCount, 'item', 'itens')} em aberto, nada em atraso${summary.receivableConvenioCents ? ` · ${formatBRL(summary.receivableConvenioCents)} de convênio` : ''}`
+          : 'nada em aberto',
       tone: summary.lateCents > 0 ? 'warning' : undefined,
     },
     recebidos: {

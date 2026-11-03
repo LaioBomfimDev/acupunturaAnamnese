@@ -339,12 +339,17 @@ export function buildReceivables({ charges = [], packages = [], installments = [
   const items = [];
   const missingPrice = [];
   const credits = new Map();
+  // Crédito de operadora: pagamento de convênio num atendimento que deixou
+  // de valer. Nunca vira crédito do paciente.
+  const convenioCredits = new Map();
 
   for (const charge of charges) {
     if (charge.package_id || charge.source !== 'appointment') continue;
     const paid = paidByCharge.get(charge.id) || 0;
+    const byConvenio = isConvenioCharge(charge);
     if (charge.voided_at) {
-      if (paid > 0) credits.set(charge.patient_id, (credits.get(charge.patient_id) || 0) + paid);
+      if (paid > 0 && byConvenio) convenioCredits.set(charge.convenio_id, (convenioCredits.get(charge.convenio_id) || 0) + paid);
+      else if (paid > 0) credits.set(charge.patient_id, (credits.get(charge.patient_id) || 0) + paid);
       continue;
     }
     if (charge.price_cents == null) {
@@ -356,6 +361,9 @@ export function buildReceivables({ charges = [], packages = [], installments = [
     items.push({
       key: `charge:${charge.id}`,
       kind: 'charge',
+      payer: byConvenio ? 'convenio' : 'patient',
+      convenioId: byConvenio ? charge.convenio_id : null,
+      tussCode: byConvenio ? charge.tuss_code || null : null,
       patientId: charge.patient_id,
       professionalId: charge.professional_id,
       discipline: charge.discipline,
@@ -378,6 +386,8 @@ export function buildReceivables({ charges = [], packages = [], installments = [
       items.push({
         key: `package:${pkg.id}:${due.kind}:${due.chargeId || due.installmentNumber}`,
         kind: due.kind,
+        payer: 'patient',
+        convenioId: null,
         patientId: pkg.patient_id,
         professionalId: due.professionalId || pkg.professional_id,
         discipline: pkg.discipline,
@@ -400,7 +410,37 @@ export function buildReceivables({ charges = [], packages = [], installments = [
   }
   items.sort((a, b) => (a.late === b.late ? 0 : a.late ? -1 : 1) || a.dueOn.localeCompare(b.dueOn));
 
-  return { items, missingPrice, credits };
+  return { items, missingPrice, credits, convenioCredits };
+}
+
+/** Cobrança que a operadora paga (20261102): nunca cobra o paciente. */
+export function isConvenioCharge(charge) {
+  return charge?.payer === 'convenio' && Boolean(charge.convenio_id);
+}
+
+/**
+ * "A receber" por quem paga: pacientes (particular) e cada operadora.
+ * Item de convênio nunca entra no grupo do paciente.
+ */
+export function splitReceivablesByPayer(items) {
+  const patients = [];
+  const byConvenio = new Map();
+  for (const item of items || []) {
+    if (item.payer !== 'convenio') {
+      patients.push(item);
+      continue;
+    }
+    const group = byConvenio.get(item.convenioId)
+      || { convenioId: item.convenioId, items: [], openCents: 0, lateCents: 0, oldestDue: item.dueOn };
+    group.items.push(item);
+    group.openCents += item.openCents;
+    if (item.late) group.lateCents += item.openCents;
+    if (item.dueOn < group.oldestDue) group.oldestDue = item.dueOn;
+    byConvenio.set(item.convenioId, group);
+  }
+  const convenios = [...byConvenio.values()]
+    .sort((a, b) => (b.lateCents > 0) - (a.lateCents > 0) || a.oldestDue.localeCompare(b.oldestDue));
+  return { patients, convenios };
 }
 
 /** Itens a receber de cada paciente, com o total e o atraso. */
@@ -665,6 +705,8 @@ export function buildMonthSummary({ receipts = [], expenses = [], charges = [], 
   const outCents = monthExpenses.reduce((total, row) => total + row.amount_cents, 0);
   const openItems = receivables?.items || [];
   const lateItems = openItems.filter(item => item.late);
+  const latePatientItems = lateItems.filter(item => item.payer !== 'convenio');
+  const convenioItems = openItems.filter(item => item.payer === 'convenio');
   const monthPayables = (payables || []).filter(item => item.kind === 'payout' || item.dueOn <= month.to);
   const unknownAmounts = monthPayables.filter(item => item.amountCents == null).length;
 
@@ -677,7 +719,11 @@ export function buildMonthSummary({ receipts = [], expenses = [], charges = [], 
     receivableCents: openItems.reduce((total, item) => total + item.openCents, 0),
     receivableCount: openItems.length,
     lateCents: lateItems.reduce((total, item) => total + item.openCents, 0),
-    latePatients: new Set(lateItems.map(item => item.patientId)).size,
+    // Atraso de paciente só conta o particular; o de convênio é da operadora.
+    latePatients: new Set(latePatientItems.map(item => item.patientId)).size,
+    lateConvenios: new Set(lateItems.filter(item => item.payer === 'convenio').map(item => item.convenioId)).size,
+    receivableConvenioCents: convenioItems.reduce((total, item) => total + item.openCents, 0),
+    receivableConvenioCount: convenioItems.length,
     payableCents: monthPayables.reduce((total, item) => total + (item.amountCents || 0), 0),
     payableCount: monthPayables.length,
     payableLate: monthPayables.filter(item => item.late).length,

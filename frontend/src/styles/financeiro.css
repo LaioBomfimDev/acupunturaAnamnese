@@ -1348,3 +1348,253 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* ============================================================
+   Convênios, Fase 2 (03/11/2026, tela A): Guias, Lotes, Pagamentos e
+   glosas. Guias é fila à esquerda e guia aberta à direita, 40/60 (como
+   a tela Evoluções); no celular e no tablet, uma coisa por vez.
+   ============================================================ */
+
+.fin-tiss-split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--fin-gap);
+  align-items: start;
+  min-width: 0;
+}
+
+.fin-tiss-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fin-tiss-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fin-tiss-item:hover {
+  border-color: var(--r1-accent-line);
+}
+
+.fin-tiss-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.fin-tiss-item.is-selected {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.fin-tiss-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fin-tiss-item-head b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fin-tiss-item-sub {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-tiss-detail {
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+}
+
+.fin-tiss-guide,
+.fin-tiss-build {
+  display: grid;
+  gap: 12px;
+}
+
+.fin-tiss-guide-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.fin-tiss-guide-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.fin-tiss-guide-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fin-tiss-back {
+  display: none;
+}
+
+.fin-tiss-check {
+  margin: 0;
+}
+
+.fin-tiss-missing {
+  padding: 10px 12px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+  font-size: 13px;
+}
+
+.fin-tiss-missing ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.fin-tiss-missing .fin-hint {
+  display: inline;
+}
+
+.fin-tiss-warnings {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.fin-tiss-pay-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.fin-tiss-glosa-code {
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 1024px) {
+  .fin-tiss-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fin-tiss-detail {
+    position: static;
+  }
+
+  /* Guia aberta ocupa a tela; a fila volta por "Voltar às guias". */
+  .fin-tiss.has-detail .fin-tiss-queue,
+  .fin-tiss.has-detail > .fin-toolbar,
+  .fin-tiss.has-detail > .fin-choices {
+    display: none;
+  }
+
+  .fin-tiss:not(.has-detail) .fin-tiss-detail {
+    display: none;
+  }
+
+  .fin-tiss-back {
+    display: inline;
+    justify-self: start;
+  }
+}
+
+/* ---------- guia impressa (layout da ANS) ---------- */
+
+.tiss-print-root {
+  display: none;
+}
+
+@media print {
+  body.tiss-printing > *:not(.tiss-print-root) {
+    display: none !important;
+  }
+
+  body.tiss-printing .tiss-print-root {
+    display: block;
+  }
+
+  .tiss-print {
+    display: grid;
+    gap: 3px;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+  }
+
+  .tiss-ptitle {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #000;
+    font-weight: 700;
+    font-size: 10pt;
+  }
+
+  .tiss-pband {
+    padding: 2px 4px;
+    background: #d9d9d9;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .tiss-prow {
+    display: flex;
+    gap: 3px;
+  }
+
+  .tiss-pbox {
+    display: grid;
+    align-content: start;
+    min-height: 30px;
+    padding: 2px 4px;
+    border: 1px solid #555;
+  }
+
+  .tiss-pbox small {
+    font-size: 6.5pt;
+  }
+
+  .tiss-pbox b {
+    font-size: 9pt;
+  }
+
+  .tiss-pbox.is-missing {
+    border: 1.5px dashed #000;
+  }
+
+  .tiss-psign .tiss-pbox {
+    min-height: 46px;
+  }
+
+  .tiss-pnote {
+    margin: 6px 0 0;
+    font-size: 7pt;
+  }
+}

@@ -695,12 +695,15 @@ export const FINANCEIRO_HELP = {
     reading: [
       '“Pacientes (particular)” reúne o que cada paciente deve. Cada “Convênio · operadora” reúne o que a operadora deve, com os atendimentos de cada paciente e o código TUSS: atendimento de convênio nunca aparece cobrando o paciente.',
       'Atendimento avulso vence no dia em que acontece. Âmbar = passou do dia, com quantos dias.',
+      'No convênio, cada atendimento mostra a guia: “a faturar” (ainda não foi em lote), “lote N” (esperando a operadora), “glosada” ou “em recurso”. Só atrasa depois do envio do lote mais o prazo de pagamento da operadora (Operadoras → etapa 1).',
+      'Glosa não sai do “A receber”: o atendimento só sai quando o dinheiro da operadora entra.',
       'Pagamento parcial cobre primeiro o item mais antigo.',
     ],
     access: ['Só a administração.'],
     notes: [
       'A data do recebimento é hoje ou antes, nunca depois.',
       'Crédito de paciente aparece quando um atendimento pago deixa de ser Atendido; o pagamento de convênio vira crédito da operadora, nunca do paciente.',
+      'O dinheiro do convênio entra em Pagamentos e glosas, pelo depósito da operadora, e não em “Receber”: no grupo da operadora, o botão leva às Guias ou aos Pagamentos.',
       'Atendimento de convênio sem preço da operadora para a área aparece em “Sem valor”.',
       'Repasse de quem atende no convênio: por enquanto, a mesma regra do particular, calculada sobre o valor da operadora.',
     ],
@@ -835,6 +838,7 @@ export const FINANCEIRO_HELP = {
       'Clicar num cartão abre a operadora na primeira etapa que falta.',
       'Na Tabela de preços, “Buscar na tabela TUSS” acha o procedimento pelo código ou por palavras, na tabela oficial da ANS.',
       'Na etapa Operadora, “Desativar” tira a operadora da escolha no cadastro do paciente, sem apagar nada.',
+      'Na etapa Operadora, “Prazo para a operadora pagar” (em dias depois do envio do lote) faz o “A receber” mostrar o que está em atraso com a operadora.',
     ],
     reading: [
       '“Pronta” = registro ANS, CNPJ, código do prestador e todos os preços com código. Planos são opcionais.',
@@ -845,7 +849,71 @@ export const FINANCEIRO_HELP = {
     notes: [
       'Tabela TUSS e demais tabelas da ANS na versão 202607. Versão nova da ANS entra por atualização do sistema.',
       'Desde 07/2026 o CNPJ pode ter letras; o sistema confere os dois últimos números.',
-      'Guia e lote de cobrança chegam numa próxima etapa.',
+      'Guia, lote e pagamento da operadora ficam em Guias, Lotes e Pagamentos e glosas, no mesmo grupo Convênios.',
+    ],
+  },
+  guias: {
+    title: 'Guias',
+    summary: 'Uma guia SP/SADT para cada atendimento de convênio Atendido, com o que falta para ela entrar no lote.',
+    actions: [
+      'A guia nasce sozinha quando o atendimento de convênio vira Atendido na Agenda, com o número seguinte daquela operadora. Esse número não muda.',
+      'Escolha a guia na lista (à esquerda) para ver e completar (à direita): quem pediu (Solicitante de fora ou quem atendeu), data do pedido, indicação clínica, tipo de atendimento, caráter e acidente.',
+      'Senha, número da guia na operadora e data da autorização são opcionais. Com senha ou número, a data da autorização é obrigatória.',
+      '“Salvar guia” grava os campos da guia em aberto. “Imprimir guia” imprime no modelo da ANS, para assinatura.',
+      '“Reenviar em novo lote” tira uma guia já enviada do lote, com o motivo, para corrigir e mandar no próximo lote.',
+    ],
+    reading: [
+      'Filtros: Com pendência (falta dado para o lote), Prontas, No lote, Glosadas e em recurso, Pagas, Todas.',
+      '“Antes do lote, falta” diz o que completar e onde: carteira na ficha do paciente (Cadastro → Convênio), código do prestador e TUSS em Operadoras, CPF, conselho e CBO de quem atendeu em Dados para faturamento.',
+      'Avisos em cinza não barram o lote: sem indicação clínica (muitas operadoras pedem em terapia), carteira vencida no dia, clínica sem CNES (vai 9999999).',
+      'Atendimento online pela sala do sistema vai com regime Telessaúde; o presencial, Ambulatorial.',
+    ],
+    access: ['Só a administração da instituição vê e altera.'],
+    notes: [
+      'Guia em lote não muda, nem o atendimento dela na Agenda: falta, mudança de dia ou exclusão pedem antes “Reenviar em novo lote”.',
+      'Falta ou cancelamento de um atendimento ainda sem lote cancela a guia; se ele voltar a Atendido, a mesma guia volta, com o mesmo número.',
+      'O arquivo da guia vai sem acento (o padrão TISS pede texto simples). O nome do paciente sai só no papel: desde a versão 4.00 ele não vai no arquivo.',
+    ],
+  },
+  lotes: {
+    title: 'Lotes',
+    summary: 'Juntar as guias prontas de uma operadora num lote, gerar o arquivo XML do padrão TISS 4.03.00 e marcar quando foi enviado no portal.',
+    actions: [
+      '“Montar lote” mostra as guias prontas daquela operadora e daquele contratado: desmarque o que não vai e toque “Gerar lote”.',
+      '“Baixar XML” baixa o arquivo para subir no portal da operadora.',
+      '“Marcar enviado” guarda o dia do envio e o protocolo do portal (opcional). O prazo de pagamento conta dali.',
+      '“Descartar” desfaz um lote gerado que ainda não foi enviado: as guias voltam a ficar em aberto.',
+    ],
+    reading: [
+      'Cada lote mostra o período dos atendimentos, quantas guias, o valor, se já foi enviado e quando o pagamento está previsto (envio + prazo da operadora).',
+      'Um lote leva até 100 guias e um contratado só (a clínica ou um profissional credenciado em nome próprio): o sistema separa sozinho.',
+    ],
+    access: ['Só a administração da instituição.'],
+    notes: [
+      'Ao gerar, a cópia das guias fica congelada no lote, com o XML e o hash do epílogo. Lote enviado não muda; correção é por “Reenviar em novo lote”, em Guias, e o lote antigo fica guardado como foi.',
+      'O número do lote é seguido por operadora e não volta, nem depois de descartar.',
+      'O XML é conferido contra o XSD oficial da ANS nos testes do sistema. Se a operadora pedir outra versão TISS, avise antes de enviar.',
+    ],
+  },
+  pagamentos: {
+    title: 'Pagamentos e glosas',
+    summary: 'O que a operadora pagou de cada lote enviado, o que ela glosou e por quê, e o recurso da glosa.',
+    actions: [
+      '“Registrar pagamento” no lote: dia em que o dinheiro entrou, como chegou (TED, Pix, Boleto, Depósito, Outro) e, em cada guia, quanto foi pago e quanto foi glosado.',
+      'Glosa pede o código do motivo da tabela 38 da ANS (4 números, como vem no demonstrativo da operadora). Pagamento zero registra só a glosa.',
+      '“Registrar recurso” guarda a justificativa enviada no portal; “Resultado do recurso” guarda se foi aceito ou negado.',
+      '“Anular” num lançamento risca o depósito e o que ele acertou, com motivo.',
+    ],
+    reading: [
+      'Cada lote enviado mostra quantas guias esperam a operadora e quanto falta receber.',
+      'Situação da guia: No lote (esperando), Paga (a operadora pagou tudo), Glosada (parte ou tudo foi glosado), Em recurso.',
+      'O depósito precisa ser igual à soma do que foi pago nas guias.',
+    ],
+    access: ['Só a administração da instituição.'],
+    notes: [
+      'Glosa não sai do “A receber”: o atendimento só sai de lá quando o dinheiro entra. Recurso aceito: registre o pagamento quando a operadora depositar.',
+      'Dinheiro lançado não se apaga nem se edita: anula com motivo e lança de novo.',
+      'O depósito entra em Recebidos (“Da operadora”) e no resultado do mês. O repasse “quando o paciente paga”, no convênio, conta quando a operadora paga.',
     ],
   },
   solicitantes: {

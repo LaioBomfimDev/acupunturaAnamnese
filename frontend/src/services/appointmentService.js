@@ -91,6 +91,18 @@ export function billingErrorMessage(error) {
   if (/appointment_has_payment/.test(text) && /quem paga/.test(text)) {
     return 'Este atendimento tem pagamento registrado. Anule o pagamento no Financeiro antes de mudar quem paga.';
   }
+  // Fase 2 do convênio (20261103): atendimento numa guia em lote não muda,
+  // e com pagamento só dia e profissional mudam.
+  if (/appointment_has_payment/.test(text) && /área, tipo ou paciente/.test(text)) {
+    return 'Este atendimento tem pagamento registrado. Anule o pagamento no Financeiro antes de mudar área, tipo ou paciente.';
+  }
+  const lote = text.match(/guia_no_lote: este atendimento está na (guia \S+ no lote \S+)/);
+  if (lote) {
+    return `Este atendimento está na ${lote[1]} do convênio e não muda. No Financeiro → Guias, reenvie a guia em novo lote (com o motivo) antes de mudar.`;
+  }
+  if (/guia_ja_enviada/.test(text)) {
+    return 'A guia deste atendimento já foi enviada a esta operadora: não dá para trocar a operadora. Registre um atendimento novo.';
+  }
   return null;
 }
 

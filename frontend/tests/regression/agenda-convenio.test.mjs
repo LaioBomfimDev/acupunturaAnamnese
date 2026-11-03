@@ -308,9 +308,18 @@ test('Resumo: atraso de paciente só conta o particular; o de convênio é da op
   const receivables = finance.buildReceivables({ charges: CHARGES, receipts: RECEIPTS, today: '2026-11-02' });
   const summary = finance.buildMonthSummary({ charges: CHARGES, receipts: RECEIPTS, receivables, payables: [], month: finance.monthOf('2026-11-02'), today: '2026-11-02' });
   assert.equal(summary.latePatients, 1);
-  assert.equal(summary.lateConvenios, 1);
+  // Fase 2 (20261103): convênio sem lote enviado não atrasa (antes atrasava
+  // no dia seguinte ao atendimento, e a operadora só paga depois do lote).
+  assert.equal(summary.lateConvenios, 0);
   assert.equal(summary.receivableConvenioCents, 25000);
   assert.equal(summary.receivableCents, 45000);
+
+  // Lote enviado em 01/10 com prazo de 20 dias: em 02/11 a operadora está atrasada.
+  const tissStatus = ['c2', 'c3'].map(id => ({ cobranca: id, guia: `g-${id}`, numero_guia: '1', situacao: 'batched', lote: '1', enviado_em: '2026-10-01', prazo_dias: 20, pago_centavos: 0, glosa_centavos: 0 }));
+  const late = finance.buildReceivables({ charges: CHARGES, receipts: RECEIPTS, tissStatus, today: '2026-11-02' });
+  const lateSummary = finance.buildMonthSummary({ charges: CHARGES, receipts: RECEIPTS, receivables: late, payables: [], month: finance.monthOf('2026-11-02'), today: '2026-11-02' });
+  assert.equal(lateSummary.lateConvenios, 1);
+  assert.equal(lateSummary.latePatients, 1);
 });
 
 test('A receber na tela: blocos de pacientes e de cada operadora, recebendo por paciente', async () => {

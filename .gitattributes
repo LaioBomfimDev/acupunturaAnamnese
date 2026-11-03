@@ -3,3 +3,6 @@
 *.webp binary
 *.jpg binary
 *.jpeg binary
+
+# XSD oficiais da ANS: bytes como publicados (CRLF, ISO-8859-1), conferidos por SHA-256.
+supabase/tiss/** -text

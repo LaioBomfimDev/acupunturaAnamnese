@@ -12,6 +12,7 @@ import { getAiFunctionErrorMessage } from './aiRuntime';
 import { listAppointmentsAwaitingEvolution } from './appointmentService';
 import { listMyInstrumentRiskAlerts } from './patientInstrumentService';
 import { loadReceivablesData } from './financeiroService';
+import { operatorReceiptsFrom } from '../utils/tissXml';
 import { onlyEvolutionDisciplines } from '../utils/evolutionQueue';
 import { buildReceivables, todayInClinic } from '../utils/finance';
 import { aiAlertFor, summarizeAiUsage } from '../utils/aiUsage';
@@ -108,7 +109,12 @@ export async function loadAttention({ role, now = new Date() }) {
   const aiRows = settledValue(aiUsage);
   const financeData = settledValue(finance);
   const receivables = financeData
-    ? buildReceivables({ ...financeData, today: todayInClinic(now) }).items
+    ? buildReceivables({
+      ...financeData,
+      // Dinheiro da operadora conta como recebido (Fase 2 do convênio).
+      receipts: [...financeData.receipts, ...operatorReceiptsFrom(financeData.tissPaid)],
+      today: todayInClinic(now),
+    }).items
     : null;
   return buildAttentionItems({
     role,

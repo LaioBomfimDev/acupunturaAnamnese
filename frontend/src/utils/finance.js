@@ -13,7 +13,15 @@
 // Duas contas existem dos dois lados e precisam bater:
 //  - resolvePrice  ↔ public.finance_resolve_price
 //  - packageShare  ↔ a parte da sessão em public.finance_charge_appointment
+//
+// Convênio (Fase 2, 20261103): o dinheiro da operadora entra pelas contas
+// como recebimento (operatorReceiptsFrom em utils/tissXml.js), e a
+// cobrança de convênio só "atrasa" depois do lote enviado + o prazo da
+// operadora (convenioDueOn). Antes ela atrasava no dia seguinte ao
+// atendimento.
 // ============================================================
+
+import { CONVENIO_PAYMENT_METHODS, convenioDueOn } from './tissXml.js';
 
 export const CLINIC_TIME_ZONE = 'America/Sao_Paulo';
 
@@ -71,6 +79,8 @@ export function labelOf(list, id) {
 }
 
 export function methodLabel(id) {
+  const convenio = CONVENIO_PAYMENT_METHODS.find(row => row.id === id);
+  if (convenio && !PAYMENT_METHODS.some(row => row.id === id)) return `${convenio.label} da operadora`;
   return labelOf(PAYMENT_METHODS, id) || 'Outro';
 }
 
@@ -332,8 +342,9 @@ function packageDues(pkg, charges, installments) {
  * "a cada sessão". Também o atendimento que ficou sem valor na tabela e o
  * crédito de quem pagou um atendimento que deixou de valer.
  */
-export function buildReceivables({ charges = [], packages = [], installments = [], receipts = [], today }) {
+export function buildReceivables({ charges = [], packages = [], installments = [], receipts = [], tissStatus = [], today }) {
   const live = liveReceipts(receipts);
+  const guideByCharge = new Map((tissStatus || []).map(row => [row.cobranca, row]));
   const paidByCharge = sumBy(live, 'charge_id');
   const paidByPackage = sumBy(live, 'package_id');
   const items = [];
@@ -358,6 +369,8 @@ export function buildReceivables({ charges = [], packages = [], installments = [
     }
     const open = charge.price_cents - paid;
     if (open <= 0) continue;
+    const guide = byConvenio ? guideByCharge.get(charge.id) || null : null;
+    const convenioDue = guide ? convenioDueOn({ sentOn: guide.enviado_em, termDays: guide.prazo_dias }) : null;
     items.push({
       key: `charge:${charge.id}`,
       kind: 'charge',
@@ -369,7 +382,17 @@ export function buildReceivables({ charges = [], packages = [], installments = [
       discipline: charge.discipline,
       appointmentType: charge.appointment_type,
       chargeId: charge.id,
-      dueOn: charge.service_on,
+      dueOn: convenioDue || charge.service_on,
+      // Convênio sem lote enviado (ou sem prazo da operadora) não vence.
+      hasDue: !byConvenio || Boolean(convenioDue),
+      guide: guide ? {
+        id: guide.guia,
+        number: guide.numero_guia,
+        status: guide.situacao,
+        batch: guide.lote,
+        sentOn: guide.enviado_em,
+        glosaCents: Math.min(guide.glosa_centavos || 0, open),
+      } : null,
       totalCents: charge.price_cents,
       openCents: open,
     });
@@ -405,7 +428,7 @@ export function buildReceivables({ charges = [], packages = [], installments = [
   }
 
   for (const item of items) {
-    item.late = Boolean(today) && item.dueOn < today;
+    item.late = Boolean(today) && item.hasDue !== false && item.dueOn < today;
     item.daysLate = item.late ? daysBetween(item.dueOn, today) : 0;
   }
   items.sort((a, b) => (a.late === b.late ? 0 : a.late ? -1 : 1) || a.dueOn.localeCompare(b.dueOn));

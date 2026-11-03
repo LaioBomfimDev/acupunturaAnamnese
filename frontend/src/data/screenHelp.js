@@ -504,6 +504,30 @@ export const PACIENTES_HELP = {
 
 /** Editores que abrem de dentro da Agenda (components/panels/agenda/). */
 export const AGENDA_HELP = {
+  agendamento: {
+    title: 'Novo agendamento',
+    summary: 'Marcar um atendimento ou bloquear um horário, e dizer como o paciente paga: particular ou convênio.',
+    actions: [
+      'Escolher o profissional, o paciente, a área, o tipo, a modalidade, o início e a duração.',
+      'Em “Como paga”, marcar “Particular” ou “Convênio · nome da operadora”. Ao escolher o paciente, o convênio ativo da ficha já vem marcado; com dois convênios, aparece um botão para cada operadora.',
+      '“Repetir” cria o pacote de sessões: cada sessão herda a mesma forma de pagamento.',
+      'Mudar a forma de pagamento depois, em “Editar” no detalhe do atendimento.',
+    ],
+    reading: [
+      'Embaixo de “Como paga”, a nota em verde mostra o plano, a carteira e a validade. A administração vê também o valor da operadora e o código TUSS.',
+      'Aviso em âmbar: “Carteira vencida em …” ou “a operadora não tem preço para a área”. Dá para marcar assim mesmo.',
+      'O selo “Convênio” aparece no card da agenda e no detalhe do atendimento.',
+    ],
+    access: [
+      'Quem marca atendimento escolhe como paga. O valor da operadora só a administração vê.',
+      'O convênio do paciente se cadastra na ficha do paciente, aba Cadastro.',
+    ],
+    notes: [
+      'O valor fica gravado quando o atendimento vira Atendido: no convênio, é o preço da operadora para a área (o do tipo vence o da área), e o paciente não é cobrado. Convênio não gasta sessão de pacote particular.',
+      'Sem preço da operadora, o atendimento entra no Financeiro como “sem valor” para a administração resolver em Financeiro → Operadoras.',
+      'Mudar de particular para convênio num atendimento já Atendido refaz a cobrança, se ainda não tem pagamento registrado.',
+    ],
+  },
   horarios: {
     title: 'Horários de atendimento',
     summary: 'A jornada do profissional: os dias e horários que são o normal dele na agenda.',
@@ -661,7 +685,7 @@ export const FINANCEIRO_HELP = {
   },
   areceber: {
     title: 'A receber',
-    summary: 'Tudo o que o paciente ainda deve: atendimento avulso feito e não pago, parcela de pacote e sessão de pacote paga a cada sessão.',
+    summary: 'Tudo o que ainda falta receber, separado por quem paga: dos pacientes (particular: atendimento avulso, parcela e sessão de pacote) e de cada operadora de convênio.',
     actions: [
       '“Receber” abre na própria linha: marcar o que está sendo pago, escolher a forma (Pix, Dinheiro, Cartão de débito, Cartão de crédito, Outro) e a data.',
       '“+ Dividir em outra forma” separa o pagamento, por exemplo parte no Pix e parte em dinheiro.',
@@ -669,13 +693,16 @@ export const FINANCEIRO_HELP = {
       '“+ Vender pacote” vende um pacote sem sair daqui.',
     ],
     reading: [
+      '“Pacientes (particular)” reúne o que cada paciente deve. Cada “Convênio · operadora” reúne o que a operadora deve, com os atendimentos de cada paciente e o código TUSS: atendimento de convênio nunca aparece cobrando o paciente.',
       'Atendimento avulso vence no dia em que acontece. Âmbar = passou do dia, com quantos dias.',
       'Pagamento parcial cobre primeiro o item mais antigo.',
     ],
     access: ['Só a administração.'],
     notes: [
       'A data do recebimento é hoje ou antes, nunca depois.',
-      'Crédito de paciente aparece quando um atendimento pago deixa de ser Atendido.',
+      'Crédito de paciente aparece quando um atendimento pago deixa de ser Atendido; o pagamento de convênio vira crédito da operadora, nunca do paciente.',
+      'Atendimento de convênio sem preço da operadora para a área aparece em “Sem valor”.',
+      'Repasse de quem atende no convênio: por enquanto, a mesma regra do particular, calculada sobre o valor da operadora.',
     ],
   },
   recebidos: {

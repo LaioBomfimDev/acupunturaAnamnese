@@ -207,3 +207,20 @@ export function buildConvenioTiles(fin) {
     },
   };
 }
+
+// ---------- Agenda com particular ou convênio (02/11/2026) ----------
+
+/**
+ * Preço da operadora para um atendimento: o tipo vence o padrão da área.
+ * Mesma escolha do banco (finance_convenio_price em
+ * 20261102_agenda_convenio.sql): mudou um, muda o outro. Sem linha, o
+ * atendimento grava "sem valor" para a administração resolver.
+ */
+export function resolveConvenioPrice(prices, { convenioId, discipline, type = null }) {
+  const candidates = (prices || []).filter(row => row.convenio_id === convenioId
+    && row.discipline === discipline
+    && (row.appointment_type == null || row.appointment_type === type));
+  const best = [...candidates].sort((a, b) => (a.appointment_type == null) - (b.appointment_type == null))[0];
+  if (!best) return { found: false, cents: null, byType: false, price: null };
+  return { found: true, cents: best.price_cents, byType: best.appointment_type != null, price: best };
+}

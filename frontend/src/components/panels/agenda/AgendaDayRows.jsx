@@ -186,6 +186,9 @@ function AppointmentCard({
               {DISCIPLINE_SHORT[appointment.discipline] || appointment.discipline}
             </span>
           )}
+          {!isBlock && appointment.billing_type === 'convenio' && (
+            <span className="agd-chip agd-chip--billing">Convênio</span>
+          )}
           {!isBlock && appointment.appointment_type && (
             <span className="agd-chip">
               {APPOINTMENT_TYPE_LABEL[appointment.appointment_type] || appointment.appointment_type}

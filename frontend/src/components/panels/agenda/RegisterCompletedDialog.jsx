@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { APPOINTMENT_MODALITIES, APPOINTMENT_TYPES, registerCompletedAppointment } from '../../../services/appointmentService';
+import { PARTICULAR } from '../../../utils/agendaBilling';
+import { BillingChoice } from './BillingChoice';
 import { toDayKey } from '../../../utils/agenda';
 import {
   COMPLETED_APPOINTMENT_LABEL,
@@ -80,6 +82,9 @@ export function RegisterCompletedDialog({
   const [modality, setModality] = useState('presencial');
   const [appointmentType, setAppointmentType] = useState('');
   const [note, setNote] = useState('');
+  // Como paga: o atendimento já nasce Atendido, então a cobrança sai na
+  // hora com quem paga certo (convênio ativo da ficha marcado de início).
+  const [billing, setBilling] = useState(PARTICULAR);
   const [saving, setSaving] = useState(false);
   const dismiss = useDismiss({ onClose, busy: saving, guardUnsaved: true });
   const [error, setError] = useState('');
@@ -173,6 +178,7 @@ export function RegisterCompletedDialog({
           discipline: disciplineValue,
           appointmentType: appointmentType || null,
           modality,
+          ...billing,
           startsAt: start.toISOString(),
           endsAt: new Date(start.getTime() + durationMinutes * 60000).toISOString(),
           note,
@@ -226,6 +232,20 @@ export function RegisterCompletedDialog({
               </button>
             )}
           </div>
+
+          {!quick.open && (
+            <BillingChoice
+              idPrefix="agc-billing"
+              patientId={patientId}
+              discipline={disciplineValue}
+              disciplineLabel={disciplineLabel}
+              appointmentType={appointmentType || null}
+              value={billing}
+              onChange={setBilling}
+              canSeePrice={profile?.role === 'clinic_admin' || profile?.role === 'super_admin'}
+              disabled={saving}
+            />
+          )}
 
           {quick.open && (
             <div className="ag-quick">

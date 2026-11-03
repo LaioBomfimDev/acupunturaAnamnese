@@ -3691,3 +3691,89 @@
     box-shadow: var(--r1-shadow-md);
   }
 }
+
+/* ---------- Como paga: particular ou convênio (02/11/2026, prévia A) ----------
+   Um botão por operadora ativa na ficha; nome longo quebra linha em vez
+   de alargar o formulário (nada passa de 360px no celular). Verde só
+   para a nota da carteira, âmbar só para aviso; cor só por token e nada
+   de box-shadow no selo (é de selecionado, movendo, foco e pendência). */
+.ag-billing-seg {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+}
+
+.ag-billing-seg .ag-seg-btn {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.ag-billing-ok,
+.ag-billing-warn {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: var(--r1-radius-sm);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ag-billing-ok {
+  border: 1px solid color-mix(in srgb, var(--r1-success) 45%, transparent);
+  background: color-mix(in srgb, var(--r1-success) 10%, transparent);
+  color: var(--r1-text);
+}
+
+.ag-billing-warn {
+  border: 1px solid var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.ag-detail-billing {
+  margin: 0;
+}
+
+.ag-billing-badge,
+.agd-chip--billing {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 1px 8px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-accent-strong);
+  font-size: 11.5px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.agd-chip--billing {
+  font-size: 10.5px;
+}
+
+.agd-card--filled .agd-chip--billing {
+  border-color: var(--r1-text-on-inverse);
+  background: transparent;
+  color: var(--r1-text-on-inverse);
+}
+
+.agw-billing {
+  flex: 0 0 auto;
+  margin-right: 2px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.ag-form-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}

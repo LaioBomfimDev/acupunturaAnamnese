@@ -12,6 +12,8 @@
 // com o nome.
 // ============================================================
 
+import { scrollToSectionTop } from '../../utils/sectionScroll';
+
 export function GestaoNav({ label, sections, groups, icons, active, onSelect, counts = null }) {
   const byId = new Map(sections.map(item => [item.id, item]));
 
@@ -26,7 +28,10 @@ export function GestaoNav({ label, sections, groups, icons, active, onSelect, co
               type="button"
               className="gt-nav-item"
               aria-current={active === id ? 'page' : undefined}
-              onClick={() => onSelect(id)}
+              onClick={event => {
+                onSelect(id);
+                scrollToSectionTop(event.currentTarget);
+              }}
             >
               <span className="gt-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -32,6 +32,7 @@ import { SearchSelect } from '../ui/SearchSelect';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { GESTAO_HELP } from '../../data/screenHelp';
 import { GestaoNav, GestaoSectionHead } from './GestaoNav';
+import { scrollToSectionTop } from '../../utils/sectionScroll';
 import { GestaoResumo } from './GestaoResumo';
 import { HubBackButton } from '../HubNav';
 import { loadGestaoSummary } from '../../services/gestaoSummaryService';
@@ -897,7 +898,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
         {/* Só no celular e no tablet (gestao.css): o Resumo é o índice e a
             aba aberta volta para ele pela faixa de baixo. */}
         {side === 'gestao' && section !== 'resumo' && (
-          <HubBackButton nested label="Voltar ao Resumo" onClick={() => setSection('resumo')} className="topbar-button gt-back-summary" />
+          <HubBackButton nested label="Voltar ao Resumo" onClick={() => { setSection('resumo'); scrollToSectionTop(null); }} className="topbar-button gt-back-summary" />
         )}
 
         {section === 'resumo' && (
@@ -907,7 +908,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
             icons={TAB_ICONS}
             summary={summary}
             loading={summaryLoading}
-            onOpen={setSection}
+            onOpen={id => { setSection(id); scrollToSectionTop(null); }}
           />
         )}
 

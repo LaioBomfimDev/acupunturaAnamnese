@@ -400,3 +400,12 @@ Modelo de entrada:
 - Regra nova: toda coluna do atendimento que a cobrança copia tem gatilho que a acompanha; ao copiar uma coluna nova para a cobrança, acrescente-a ao gatilho e ao cenário de validação.
 - Teste ou verificação obrigatória: `convenios-fase2.test.mjs` ("erro da auditoria…" e "convênio não atrasa…") e o cenário 4 de `supabase/validation/20261103_convenios_fase2_scenarios.sql`.
 - Regra destilada em: `AGENTS.md` §7 (Convênios, Fase 2).
+
+### 2026-11-03 - Aba do Financeiro parecia vazia depois de clicar no menu
+
+- Sintoma: a administradora clicou em Convênios → Lotes, no fim do menu do Financeiro, e a tela ficou em branco. A página continuava rolada lá embaixo, e o conteúdo da aba nova começa no topo.
+- Causa: o menu (`GestaoNav`), os quadros do Resumo e os links internos só trocavam o estado da aba, sem levar a página ao título dela. Com o menu comprido (cinco grupos no Financeiro), o fim do menu fica abaixo do conteúdo.
+- Correção: `scrollToSectionTop` em `utils/sectionScroll.js`, chamado pelo menu, pelo `goTo` do Financeiro e pelos quadros e "Voltar ao Resumo" da Gestão. Só rola quando o título está acima da tela; com menos movimento, sem animação.
+- Regra nova: trocar de aba numa tela de menu lateral leva ao título da aba.
+- Teste ou verificação obrigatória: `gestao-nav-scroll.test.mjs`. Não testado em navegador logado (a sessão não entra na conta da clínica).
+- Regra destilada em: `AGENTS.md` §7 (Gestão).

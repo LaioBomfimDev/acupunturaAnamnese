@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { GestaoNav, GestaoSectionHead } from '../panels/GestaoNav';
+import { scrollToSectionTop } from '../../utils/sectionScroll';
 import { GestaoResumo } from '../panels/GestaoResumo';
 import { HubBackButton } from '../HubNav';
 import { ScreenHelp } from '../ui/ScreenHelp';
@@ -213,8 +214,9 @@ export function FinanceiroScreen({ profile }) {
   const [tiss, setTiss] = useState(null);
   const [tissError, setTissError] = useState('');
   const [tissKey, setTissKey] = useState(0);
-  // Trocar de parte limpa o aviso da gravação anterior.
-  const goTo = id => { setSection(id); setFlash(''); };
+  // Trocar de parte limpa o aviso da gravação anterior e leva ao título
+  // dela (quadro do Resumo, link "Abrir Operadoras", "Voltar ao Resumo").
+  const goTo = id => { setSection(id); setFlash(''); scrollToSectionTop(null); };
 
   useEffect(() => {
     let cancelled = false;

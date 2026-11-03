@@ -390,3 +390,13 @@ Modelo de entrada:
 - Regra nova: quando a assistente responde o que uma tela mostra, ela usa a mesma função e o mesmo caso da tela (uma pessoa × equipe), nunca uma regra parecida.
 - Teste ou verificação obrigatória: `clinic-assistant.test.mjs` ("regressão 01/11/2026: sem jornada no dia vale a grade padrão da clínica").
 - Regra destilada em: `AGENTS.md` §7 (Assistente da clínica).
+
+### 2026-11-03 - Atendido que mudava de dia, profissional ou área ficava com a cobrança velha
+
+- Sintoma: na auditoria do financeiro antes da Fase 2 dos convênios, um atendimento já Atendido arrastado na Agenda para outro dia (ou com profissional, área ou tipo trocados) seguia no Financeiro com o dia, a área, o valor e o profissional antigos. O repasse ia para quem não atendeu, o mês do Resumo saía errado e, no convênio, a guia iria com a data errada.
+- Causa: a cobrança só era recalculada quando o status mudava (`trg_appointments_finance_status`) ou quando mudava quem paga (`trg_appointments_finance_billing`). Ninguém olhava `starts_at`, `professional_id`, `discipline`, `appointment_type` nem `patient_id`; a Agenda deixa mover atendimento Atendido.
+- Correção (20261103_convenios_fase2): gatilho `trg_appointments_finance_change`. Sem pagamento, anula e refaz a cobrança (mesma linha, mesma guia); com pagamento, dia e profissional acompanham e o repasse é recalculado, e área, tipo ou paciente barram com mensagem. Guia em lote barra tudo isso até "Reenviar em novo lote".
+- Também achado na mesma auditoria: cobrança de convênio aparecia "em atraso" no dia seguinte ao atendimento (a operadora paga semanas depois do lote). Agora só atrasa depois do envio do lote mais o prazo da operadora.
+- Regra nova: toda coluna do atendimento que a cobrança copia tem gatilho que a acompanha; ao copiar uma coluna nova para a cobrança, acrescente-a ao gatilho e ao cenário de validação.
+- Teste ou verificação obrigatória: `convenios-fase2.test.mjs` ("erro da auditoria…" e "convênio não atrasa…") e o cenário 4 de `supabase/validation/20261103_convenios_fase2_scenarios.sql`.
+- Regra destilada em: `AGENTS.md` §7 (Convênios, Fase 2).

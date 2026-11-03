@@ -232,13 +232,22 @@ END $$;
 
 -- 9. Exclusão de paciente aprovada com carteira, atendimento de convênio
 --    e pagamento da operadora: passa, e a cobrança fica (KEPT_ON_PURPOSE).
-SELECT public.finance_register_receipt(
-  'b0000000-0000-4000-8000-000000000001', public.finance_today(),
-  jsonb_build_array(jsonb_build_object(
-    'charge_id', (SELECT id FROM public.appointment_charges WHERE appointment_id = '10000000-0000-4000-8000-000000000003'),
-    'amount_cents', 10000, 'method', 'outro')),
-  'Pagamento da operadora (validação)'
-);
+-- Desde 20261103 (Fase 2) o pagamento da operadora entra por
+-- finance_tiss_register_payment, não por finance_receipts: o recebimento
+-- abaixo só roda antes dela. A exclusão com pagamento da operadora em lote
+-- é conferida em 20261103_convenios_fase2_scenarios.sql.
+DO $$
+BEGIN
+  IF to_regclass('public.tiss_guides') IS NULL THEN
+    PERFORM public.finance_register_receipt(
+      'b0000000-0000-4000-8000-000000000001', public.finance_today(),
+      jsonb_build_array(jsonb_build_object(
+        'charge_id', (SELECT id FROM public.appointment_charges WHERE appointment_id = '10000000-0000-4000-8000-000000000003'),
+        'amount_cents', 10000, 'method', 'outro')),
+      'Pagamento da operadora (validação)'
+    );
+  END IF;
+END $$;
 
 SELECT set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated","aal":"aal2"}', TRUE);
 SELECT public.request_patient_deletion('b0000000-0000-4000-8000-000000000001', 'Pedido de exclusão só para a validação.');

@@ -14,12 +14,27 @@ Só entram as tabelas que o faturamento da clínica usa: 22 (procedimentos),
 Versão nova da ANS: gere outra migration com a versão nova; o upsert troca
 termo e vigência e o que saiu da tabela fica com o fim de vigência que a
 própria ANS publicou.
+
+Tabela 38 (mensagens de glosa), só ela, na mesma forma:
+
+    python -I frontend/scripts/build-tiss-terms-sql.py --tabelas 38 202609 \
+        "TUSS - Demais terminologias - VERSÃO 202609.xlsx"
+
+Enquanto o site da ANS não abre no ambiente de trabalho (gov.br bloqueado
+em 03/11/2026), a tabela 38 pode vir do arquivo glosas.json do pacote
+aberto Voa-Health/tiss (Apache-2.0), que copia a mesma planilha da ANS
+(versão 202609, SHA-256 do zip da ANS anotado nele):
+
+    python -I frontend/scripts/build-tiss-terms-sql.py --tabela38-json glosas.json \
+        > supabase/migrations/20261103b_tiss_terms_38.sql
+
+Quando a planilha oficial estiver à mão, gere de novo pela forma de cima:
+o upsert troca termo e vigência.
 """
 
 import datetime
+import json
 import sys
-
-import openpyxl
 
 TABLES = {'22', '24', '26', '50', '59', '76'}
 
@@ -83,31 +98,63 @@ def read_sheet(ws, table):
     return rows
 
 
-def main():
-    if len(sys.argv) < 3:
-        raise SystemExit(__doc__)
-    version = sys.argv[1]
+def read_tabela38_json(path):
+    """glosas.json do Voa-Health/tiss: records [{codigo, descricao, fonte}]."""
+    with open(path, encoding='utf-8') as handle:
+        data = json.load(handle)
+    source = data.get('source') or {}
     rows = []
-    for path in sys.argv[2:]:
-        wb = openpyxl.load_workbook(path, read_only=True)
-        for name in wb.sheetnames:
-            parts = name.split()
-            if len(parts) >= 2 and parts[0] == 'Tab' and parts[1] in TABLES:
-                rows.extend(read_sheet(wb[name], parts[1]))
-    found = {r[0] for r in rows}
-    missing = TABLES - found
-    if missing:
-        raise SystemExit(f'Tabelas não achadas nas planilhas: {sorted(missing)}')
+    for record in data.get('records', []):
+        code = str(record.get('codigo') or '').strip()
+        term = ' '.join(str(record.get('descricao') or '').split())
+        if len(code) != 4 or not code.isdigit() or not term:
+            raise SystemExit(f'Registro inválido na tabela 38: {record!r}')
+        rows.append(('38', code, term, None, None))
+    if not rows:
+        raise SystemExit('Nenhum termo da tabela 38 no arquivo.')
+    version = str(source.get('data') or '').replace('-', '') or 'desconhecida'
+    note = (f"tabela 38 copiada da planilha da ANS por Voa-Health/tiss (Apache-2.0): "
+            f"{source.get('titulo', '')} · {source.get('url', '')}")
+    return version, rows, note
+
+
+def main():
+    args = sys.argv[1:]
+    tables = TABLES
+    note = 'planilhas do Padrão TISS publicadas pela ANS'
+    if len(args) == 2 and args[0] == '--tabela38-json':
+        version, rows, note = read_tabela38_json(args[1])
+        tables = {'38'}
+    else:
+        if len(args) >= 2 and args[0] == '--tabelas':
+            tables = set(args[1].split(','))
+            args = args[2:]
+        if len(args) < 2:
+            raise SystemExit(__doc__)
+        import openpyxl
+
+        version = args[0]
+        rows = []
+        for path in args[1:]:
+            wb = openpyxl.load_workbook(path, read_only=True)
+            for name in wb.sheetnames:
+                parts = name.split()
+                if len(parts) >= 2 and parts[0] == 'Tab' and parts[1] in tables:
+                    rows.extend(read_sheet(wb[name], parts[1]))
+        found = {r[0] for r in rows}
+        missing = tables - found
+        if missing:
+            raise SystemExit(f'Tabelas não achadas nas planilhas: {sorted(missing)}')
 
     out = sys.stdout
     out.reconfigure(encoding='utf-8', newline='\n')
     out.write('-- ==========================================================\n')
-    out.write(f'-- Catálogo oficial da ANS (TUSS {version}): tabelas {", ".join(sorted(TABLES))}\n')
+    out.write(f'-- Catálogo oficial da ANS (TUSS {version}): tabelas {", ".join(sorted(tables))}\n')
     out.write('-- REQUER: 20261031_convenios_fase1 (tiss_terms).\n')
-    out.write('-- Gerado por frontend/scripts/build-tiss-terms-sql.py a partir das\n')
-    out.write('-- planilhas do Padrão TISS publicadas pela ANS. Não editar à mão.\n')
+    out.write('-- Gerado por frontend/scripts/build-tiss-terms-sql.py a partir de\n')
+    out.write(f'-- {note}. Não editar à mão.\n')
     out.write('-- ==========================================================\n\n')
-    for table in sorted(TABLES):
+    for table in sorted(tables):
         chunk = [r for r in rows if r[0] == table]
         out.write(f'-- Tabela {table}: {len(chunk)} termos\n')
         for start in range(0, len(chunk), 500):

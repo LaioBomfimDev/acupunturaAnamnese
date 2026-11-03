@@ -5,7 +5,7 @@ import { HubBackButton } from '../HubNav';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { FINANCEIRO_HELP } from '../../data/screenHelp';
 import { getDiscipline } from '../../data/disciplines';
-import { loadFinanceData } from '../../services/financeiroService';
+import { loadFinanceData, loadTissData } from '../../services/financeiroService';
 import { loadConvenioData } from '../../services/convenioService';
 import {
   addDays,
@@ -25,7 +25,9 @@ import { APagar, Equipe, Pagas } from './FinanceSaidas';
 import { AReceber, Pacotes, Recebidos } from './FinanceEntradas';
 import { ModelosConfig, RecebimentoConfig, SaidasFixasConfig, StartCard, ValoresConfig } from './FinanceConfig';
 import { Faturamento, Operadoras, Solicitantes } from './FinanceConvenios';
+import { Guias, Lotes, Pagamentos } from './FinanceTiss';
 import { buildConvenioTiles } from '../../utils/convenio';
+import { buildTissTiles, operatorReceiptsFrom } from '../../utils/tissXml';
 import '../../styles/gestao.css';
 import '../../styles/financeiro.css';
 
@@ -51,6 +53,9 @@ const SECTIONS = [
   { id: 'modelos', label: 'Modelos de pacote' },
   { id: 'recebimento', label: 'Como cada um recebe' },
   { id: 'saidasfixas', label: 'Saídas fixas' },
+  { id: 'guias', label: 'Guias' },
+  { id: 'lotes', label: 'Lotes' },
+  { id: 'pagamentos', label: 'Pagamentos e glosas' },
   { id: 'operadoras', label: 'Operadoras' },
   { id: 'solicitantes', label: 'Solicitantes' },
   { id: 'faturamento', label: 'Dados para faturamento' },
@@ -61,7 +66,7 @@ const SECTION_GROUPS = [
   { label: 'Entradas', ids: ['areceber', 'recebidos', 'pacotes'] },
   { label: 'Saídas', ids: ['apagar', 'pagas', 'equipe'] },
   { label: 'Configuração', ids: ['valores', 'modelos', 'recebimento', 'saidasfixas'] },
-  { label: 'Convênios', ids: ['operadoras', 'solicitantes', 'faturamento'] },
+  { label: 'Convênios', ids: ['guias', 'lotes', 'pagamentos', 'operadoras', 'solicitantes', 'faturamento'] },
 ];
 
 const TAB_ICONS = {
@@ -76,6 +81,9 @@ const TAB_ICONS = {
   modelos: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 12h8M8 16h5" /></>,
   recebimento: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
   saidasfixas: <><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v4h4" /></>,
+  guias: <><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h5" /></>,
+  lotes: <><rect x="4" y="4" width="14" height="5" rx="1" /><rect x="6" y="11" width="14" height="5" rx="1" /><path d="M8 18h10v3H8z" /></>,
+  pagamentos: <><path d="M3 7h18v12H3z" /><path d="M3 11h18M7 15h4" /><path d="m15 15 1.5 1.5L19 14" /></>,
   operadoras: <><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6M12 8v4M10 10h4" /></>,
   solicitantes: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   faturamento: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2.2" /><path d="M5.8 16.5a3.5 3.5 0 0 1 6.4 0M14 10h4M14 14h3" /></>,
@@ -201,6 +209,10 @@ export function FinanceiroScreen({ profile }) {
   const [conv, setConv] = useState(null);
   const [convError, setConvError] = useState('');
   const [convKey, setConvKey] = useState(0);
+  // Guias, lotes e pagamentos da operadora (Fase 2): também à parte.
+  const [tiss, setTiss] = useState(null);
+  const [tissError, setTissError] = useState('');
+  const [tissKey, setTissKey] = useState(0);
   // Trocar de parte limpa o aviso da gravação anterior.
   const goTo = id => { setSection(id); setFlash(''); };
 
@@ -221,14 +233,26 @@ export function FinanceiroScreen({ profile }) {
     return () => { cancelled = true; };
   }, [convKey, profile?.clinic_id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    loadTissData()
+      .then(next => { if (!cancelled) { setTiss(next); setTissError(''); } })
+      .catch(err => { if (!cancelled) setTissError(err.message || 'Não foi possível carregar as guias.'); });
+    return () => { cancelled = true; };
+  }, [tissKey]);
+
   const derived = useMemo(() => {
     if (!data) return null;
+    // Dinheiro da operadora entra nas mesmas contas que o recebimento do
+    // paciente (o que falta, o recebido no mês, o repasse quando paga).
+    const receipts = [...data.receipts, ...operatorReceiptsFrom(data.tissPaid)];
+    const money = { ...data, receipts };
     const settings = data.settings;
     const repasseCategory = data.categories.find(row => row.system_key === 'repasse') || null;
     const salaryCategory = data.categories.find(row => row.system_key === 'salarios') || null;
-    const receivables = buildReceivables({ ...data, today });
+    const receivables = buildReceivables({ ...money, today });
     const payouts = buildPayouts({
-      ...data,
+      ...money,
       repasseCategoryId: repasseCategory?.id,
       basis: settings?.payout_basis || 'on_payment',
       month,
@@ -242,7 +266,7 @@ export function FinanceiroScreen({ profile }) {
       today,
       payouts,
     });
-    const summary = buildMonthSummary({ ...data, receivables, payables, month, today });
+    const summary = buildMonthSummary({ ...money, receivables, payables, month, today });
     const config = buildConfigStatus(data);
     return {
       today,
@@ -262,8 +286,9 @@ export function FinanceiroScreen({ profile }) {
   }, [data, month, today]);
 
   const convView = useMemo(() => (data ? buildConvenioTiles({ data, conv, convError }) : null), [data, conv, convError]);
-  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles } : null), [data, derived, month, convView]);
-  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts } : null), [tiles, derived, convView]);
+  const tissView = useMemo(() => buildTissTiles({ tiss, tissError, today }), [tiss, tissError, today]);
+  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles, ...tissView.tiles } : null), [data, derived, month, convView, tissView]);
+  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts, ...tissView.counts } : null), [tiles, derived, convView, tissView]);
 
   // Contexto que cada parte recebe: dados, contas e como gravar.
   const fin = data && derived ? {
@@ -277,6 +302,9 @@ export function FinanceiroScreen({ profile }) {
     conv,
     convError,
     convReload: () => setConvKey(key => key + 1),
+    tiss,
+    tissError,
+    tissReload: () => setTissKey(key => key + 1),
   } : null;
 
   return (
@@ -342,6 +370,9 @@ export function FinanceiroScreen({ profile }) {
         {fin && section === 'modelos' && <ModelosConfig fin={fin} />}
         {fin && section === 'recebimento' && <RecebimentoConfig fin={fin} />}
         {fin && section === 'saidasfixas' && <SaidasFixasConfig fin={fin} />}
+        {fin && section === 'guias' && <Guias fin={fin} />}
+        {fin && section === 'lotes' && <Lotes fin={fin} />}
+        {fin && section === 'pagamentos' && <Pagamentos fin={fin} />}
         {fin && section === 'operadoras' && <Operadoras fin={fin} />}
         {fin && section === 'solicitantes' && <Solicitantes fin={fin} />}
         {fin && section === 'faturamento' && <Faturamento fin={fin} />}

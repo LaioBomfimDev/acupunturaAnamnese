@@ -157,7 +157,19 @@ function ReceiveForm({ fin, items, payerLabel = '', onDone }) {
  * (particular) ou da operadora (convênio, com payerLabel). Receber é por
  * paciente: o recebimento do banco é sempre de um paciente só.
  */
-function ReceivableGroup({ fin, group, title, payerLabel = '', openKey, openPatient, setOpenPatient, chargeById, paidByCharge, onAdjust }) {
+/** Situação da guia do item de convênio, no lugar do vencimento. */
+function GuideTag({ item, today }) {
+  const guide = item.guide;
+  if (!guide) return <span className="gt-badge gt-badge-neutral">sem guia</span>;
+  if (guide.status === 'open') return <span className="gt-badge gt-badge-neutral">guia {guide.number} · a faturar</span>;
+  if (guide.status === 'glosa' || guide.status === 'appeal') {
+    return <span className="gt-badge gt-badge-pending">guia {guide.number} · {guide.status === 'glosa' ? 'glosada' : 'em recurso'} {formatBRL(guide.glosaCents)}</span>;
+  }
+  if (item.hasDue) return <DueTag dueOn={item.dueOn} today={today} />;
+  return <span className="gt-badge gt-badge-neutral">guia {guide.number} · lote {guide.batch}{guide.sentOn ? '' : ' (falta enviar)'}</span>;
+}
+
+function ReceivableGroup({ fin, group, title, payerLabel = '', operator = false, openKey, openPatient, setOpenPatient, chargeById, paidByCharge, onAdjust }) {
   const open = openPatient === openKey;
   return (
     <div className={`fin-group${group.lateCents > 0 ? ' fin-group--late' : ''}`}>
@@ -167,14 +179,21 @@ function ReceivableGroup({ fin, group, title, payerLabel = '', openKey, openPati
           <span>{group.items.length} {group.items.length === 1 ? 'item' : 'itens'}{group.lateCents > 0 ? ` · ${formatBRL(group.lateCents)} em atraso` : ''}</span>
         </div>
         <b className="fin-num fin-amount">{formatBRL(group.openCents)}</b>
-        <button
-          type="button"
-          className={`gt-btn gt-btn--sm${open ? '' : ' gt-btn--primary'}`}
-          aria-expanded={open}
-          onClick={() => setOpenPatient(current => (current === openKey ? '' : openKey))}
-        >
-          {open ? 'Fechar' : 'Receber'}
-        </button>
+        {operator ? (
+          // Convênio (Fase 2): o dinheiro entra pelo pagamento da operadora.
+          <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open(group.items.some(item => item.guide?.status === 'open') ? 'guias' : 'pagamentos')}>
+            {group.items.some(item => item.guide?.status === 'open') ? 'Ver guias' : 'Pagamentos'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={`gt-btn gt-btn--sm${open ? '' : ' gt-btn--primary'}`}
+            aria-expanded={open}
+            onClick={() => setOpenPatient(current => (current === openKey ? '' : openKey))}
+          >
+            {open ? 'Fechar' : 'Receber'}
+          </button>
+        )}
       </div>
       <ul className="fin-items">
         {group.items.map(item => {
@@ -186,19 +205,19 @@ function ReceivableGroup({ fin, group, title, payerLabel = '', openKey, openPati
                 {itemTitle(item)}{item.professionalId ? ` · ${professionalName(fin, item.professionalId)}` : ''}
                 {item.tussCode ? ` · TUSS ${item.tussCode}` : ''}
               </span>
-              <DueTag dueOn={item.dueOn} today={fin.today} />
+              {operator ? <GuideTag item={item} today={fin.today} /> : <DueTag dueOn={item.dueOn} today={fin.today} />}
               <span className="fin-num">
                 {formatBRL(item.openCents)}
                 {item.openCents < item.totalCents && <small> de {formatBRL(item.totalCents)}</small>}
               </span>
-              {charge && (
+              {charge && !(operator && item.guide && item.guide.status !== 'open') && (
                 <button type="button" className="fin-link" onClick={() => onAdjust({ charge, paid: paidByCharge.get(charge.id) || 0 })}>Mudar valor</button>
               )}
             </li>
           );
         })}
       </ul>
-      {open && (
+      {open && !operator && (
         <ReceiveForm fin={fin} items={group.items} payerLabel={payerLabel} onDone={() => setOpenPatient('')} />
       )}
     </div>
@@ -332,6 +351,7 @@ export function AReceber({ fin }) {
                   group={group}
                   title={`Atendimentos de ${patientName(fin, group.patientId)}`}
                   payerLabel={convenioName(fin, convGroup.convenioId)}
+                  operator={Boolean(fin.data.tissReady)}
                   openKey={`convenio:${convGroup.convenioId}:${group.patientId}`}
                   openPatient={openPatient}
                   setOpenPatient={setOpenPatient}
@@ -417,6 +437,7 @@ export function Recebidos({ fin }) {
           })}
         </div>
       )}
+      <OperatorPayments fin={fin} showVoided={showVoided} />
       {voiding && (
         <VoidDialog
           title="Anular recebimento"
@@ -431,6 +452,32 @@ export function Recebidos({ fin }) {
         />
       )}
     </section>
+  );
+}
+
+/** Depósitos da operadora no mês (Fase 2). Anula em Pagamentos e glosas. */
+function OperatorPayments({ fin, showVoided }) {
+  const list = (fin.tiss?.payments || [])
+    .filter(row => inRange(row.received_on, fin.month) && (showVoided || !row.voided_at));
+  if (list.length === 0) return null;
+  return (
+    <>
+      <h3 className="fin-subtitle">Da operadora</h3>
+      <div className="fin-list">
+        {list.map(row => (
+          <div key={row.id} className={`fin-row${row.voided_at ? ' fin-row--void' : ''}`}>
+            <span className="fin-date">{formatShortDay(row.received_on)}</span>
+            <div className="fin-row-main">
+              <b>{convenioName(fin, row.convenio_id)}</b>
+              <span>{methodLabel(row.method)}{row.note ? ` · ${row.note}` : ''}</span>
+              {row.voided_at && <span className="fin-void-reason">Anulado: {row.void_reason}</span>}
+            </div>
+            <b className="fin-num fin-amount">{formatBRL(row.amount_cents)}</b>
+            {!row.voided_at && <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open('pagamentos')}>Ver</button>}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

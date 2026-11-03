@@ -528,6 +528,28 @@ export const AGENDA_HELP = {
       'Mudar de particular para convênio num atendimento já Atendido refaz a cobrança, se ainda não tem pagamento registrado.',
     ],
   },
+  pacote: {
+    title: 'Sessões do pacote',
+    summary: 'Todas as sessões marcadas juntas na Agenda para este paciente, da primeira à última, para controlar o pacote sem sair da Agenda.',
+    actions: [
+      'Abrir pelo botão “Ver sessões do pacote”, no detalhe de qualquer sessão de um pacote.',
+      'Tocar numa sessão da lista: a janela fecha, a Agenda vai para o dia dela e abre o detalhe daquela sessão.',
+    ],
+    reading: [
+      'Os três números do topo: quantas foram atendidas, quantas faltam e quantas tem o pacote.',
+      'Atendido conta como feita. Agendado conta como falta, inclusive a que já passou sem resultado marcado (a linha avisa).',
+      'Não compareceu e Cancelado pelo paciente aparecem na lista, mas não contam como feita nem como faltando.',
+      'Cancelado (pacote encerrado pela clínica) aparece riscado, sem número, e sai do total.',
+      'A linha em destaque é a sessão de onde a janela abriu. Sessão movida mostra o selo Eventual e o horário de antes.',
+    ],
+    access: [
+      'Quem usa a Agenda vê a lista. Nenhum valor ou pagamento aparece aqui.',
+    ],
+    notes: [
+      'A lista mostra o pacote da Agenda, as sessões marcadas juntas. O pagamento do pacote fica no Financeiro e pode ser diferente: tem paciente que paga tudo no início, tudo no fim ou a cada sessão atendida.',
+      'A linha “sessão 3 de 10” do detalhe vem do pacote do Financeiro; a lista desta janela vem da Agenda.',
+    ],
+  },
   horarios: {
     title: 'Horários de atendimento',
     summary: 'A jornada do profissional: os dias e horários que são o normal dele na agenda.',

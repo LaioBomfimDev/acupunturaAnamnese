@@ -1153,6 +1153,16 @@ export async function listSeriesFrom(groupId, { fromIso, runtime } = {}) {
 }
 
 /**
+ * Todas as sessões de um pacote da Agenda, da primeira à última, lidas do
+ * banco ("Ver sessões do pacote"). Mesma leitura de `listSeriesFrom`,
+ * desde o começo: a tela só tem o período visível. Sem valor nem
+ * pagamento (APPOINTMENT_COLUMNS não tem nenhum).
+ */
+export function listSeriesSessions(groupId, { runtime } = {}) {
+  return listSeriesFrom(groupId, { fromIso: '1970-01-01T00:00:00.000Z', runtime });
+}
+
+/**
  * Exclui várias sessões de uma vez — pacote marcado errado.
  *
  * PARCIAL É DE PROPÓSITO, como em `createSeries`: uma sessão que já tem

@@ -81,6 +81,7 @@ import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
 import RegisterCompletedDialog from './agenda/RegisterCompletedDialog';
+import PackageSessionsDialog from './agenda/PackageSessionsDialog';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
 import ShareAgendaPanel from './agenda/ShareAgendaPanel';
@@ -88,6 +89,7 @@ import TodayPanel from './agenda/TodayPanel';
 import { usePatient } from '../../hooks/PatientContext';
 import { COMPLETED_APPOINTMENT_LABEL, lateEntryLabel } from '../../utils/completedAppointment';
 import { EVOLUTION_DISCIPLINES } from '../../utils/evolutionQueue';
+import { OPEN_PACKAGE_SESSIONS_LABEL } from '../../utils/agendaPackageSessions';
 import '../../styles/agenda.css';
 
 // Resultado do atendimento no card aberto: Atendido, Não compareceu e
@@ -257,6 +259,9 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     return () => { cancelled = true; };
   }, [packageKey]);
   const selectedPackage = packageInfo?.key === packageKey ? packageInfo.info : null;
+  // "Ver sessões do pacote": o atendimento de onde a janela abriu. A
+  // lista em si vem do banco dentro da janela (listSeriesSessions).
+  const [packageOf, setPackageOf] = useState(null);
   // Agendamento em modo "mover": o próximo toque num horário remarca.
   const [moving, setMoving] = useState(null);
 
@@ -1191,6 +1196,29 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     }
   }
 
+  /**
+   * Toque numa sessão da janela "Sessões do pacote": vai para o dia dela
+   * e abre o detalhe. "Hoje" e as visões sem calendário mostram outro
+   * dia como Dia; agenda de outra pessoa troca para a de quem atende.
+   */
+  function openPackageSession(row) {
+    const start = new Date(row?.starts_at);
+    if (Number.isNaN(start.getTime())) return;
+    const dayKey = toDayKey(start);
+    setPackageOf(null);
+    if (!CALENDAR_VIEWS.has(view) || (view === 'hoje' && dayKey !== toDayKey(today))) {
+      viewTouchedRef.current = true;
+      setView('dia');
+    }
+    if (agendaOf !== ALL_PROFESSIONALS && row.professional_id && agendaOf !== row.professional_id) {
+      setAgendaOf(row.professional_id);
+    }
+    goToDate(dayKey);
+    setMoving(null);
+    setSelectedAppointment(row);
+    setSheetOpen(true);
+  }
+
   function openAppointment(appointment) {
     if (moving) return;
     setPendingException(null);
@@ -1983,6 +2011,16 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 </p>
               )}
 
+              {selectedAppointment.kind !== 'block' && selectedAppointment.recurrence_group_id && (
+                <button
+                  type="button"
+                  className="ag-btn ag-detail-package-open"
+                  onClick={() => setPackageOf(selectedAppointment)}
+                >
+                  {OPEN_PACKAGE_SESSIONS_LABEL}
+                </button>
+              )}
+
               <div className="ag-row">
                 <button
                   type="button"
@@ -2591,6 +2629,20 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
           onClose={() => setShowRegisterCompleted(false)}
           onPatientCreated={created => setPatients(prev => [{ ...created, enrollments: [] }, ...prev])}
           onCreated={handleCompletedRegistered}
+        />
+      )}
+
+      {packageOf && (
+        <PackageSessionsDialog
+          appointment={packageOf}
+          subtitle={[
+            patientName(packageOf.patient_id),
+            getDiscipline(packageOf.discipline)?.label || packageOf.discipline,
+            professionalName(packageOf.professional_id),
+          ].filter(Boolean).join(' · ')}
+          agendaSettings={agendaSettings}
+          onClose={() => setPackageOf(null)}
+          onOpenSession={openPackageSession}
         />
       )}
 

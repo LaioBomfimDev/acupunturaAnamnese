@@ -3777,3 +3777,210 @@
   gap: 6px;
   min-width: 0;
 }
+
+/* ---------- Sessões do pacote (prévia A, 03/11/2026) ----------
+   Janela .ag-dialog-*: painel de baixo no celular, centro no computador.
+   Ação e seleção na cor da clínica; status com os tons da Agenda. */
+
+.ag-detail-package-open {
+  width: 100%;
+}
+
+.agpk-panel {
+  max-width: 520px;
+}
+
+.agpk-head-text {
+  min-width: 0;
+}
+
+.agpk-subtitle {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.agpk-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.agpk-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agpk-tile {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-sm);
+  min-width: 0;
+}
+
+.agpk-tile b {
+  font-size: 22px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.agpk-tile span {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.agpk-tile--main {
+  border-color: var(--r1-accent-line);
+  background: var(--r1-accent-wash);
+}
+
+.agpk-tile--main b {
+  color: var(--r1-accent-strong);
+}
+
+.agpk-bar {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+}
+
+.agpk-bar i {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 3px;
+  background: var(--r1-border-subtle);
+}
+
+.agpk-bar i[data-status='attended'] { background: var(--r1-success); }
+.agpk-bar i[data-status='no_show'] { background: var(--r1-danger); }
+.agpk-bar i[data-status='excused'] { background: var(--r1-warning); }
+.agpk-bar i[data-status='cancelled'] { opacity: 0.4; }
+
+.agpk-bar i.is-current {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 1px;
+}
+
+.agpk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.agpk-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--r1-tap, 44px);
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--r1-border-subtle);
+  background: transparent;
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agpk-row:hover {
+  background: var(--r1-accent-wash);
+}
+
+.agpk-row:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: -2px;
+}
+
+.agpk-list li.is-current .agpk-row {
+  background: var(--r1-accent-wash);
+  border-left: 3px solid var(--r1-accent);
+  padding-left: 3px;
+}
+
+.agpk-num {
+  text-align: right;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--r1-text-subtle);
+}
+
+.agpk-list li.is-current .agpk-num {
+  color: var(--r1-accent);
+  font-weight: 700;
+}
+
+.agpk-when {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.agpk-when b {
+  font-weight: 600;
+}
+
+.agpk-when small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.agpk-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--r1-border-subtle);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--r1-text-subtle);
+}
+
+.agpk-status[data-status='attended'] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--r1-success) 14%, transparent);
+  color: var(--r1-success);
+}
+
+.agpk-status[data-status='no_show'] {
+  border-color: var(--r1-danger-border);
+  background: var(--r1-danger-bg);
+  color: var(--r1-danger);
+}
+
+.agpk-status[data-status='excused'] {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+}
+
+.agpk-status[data-status='cancelled'] {
+  text-decoration: line-through;
+}
+
+.agpk-finance {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+/* Celular estreito: o status desce para baixo da data, nada passa de 360px. */
+@media (max-width: 480px) {
+  .agpk-row {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .agpk-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

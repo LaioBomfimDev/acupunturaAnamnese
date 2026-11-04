@@ -28,9 +28,19 @@ import {
   payableMembers,
   resolvePrice,
   simulateClosedPackage,
-  typeLabel,
 } from '../../utils/finance';
+import {
+  FINANCE_PACKAGE_RULES,
+  financePriceCells,
+  financePriceKey as priceKey,
+  financePricePayload,
+  financePriceRows,
+  financePriceSignature,
+  financeServiceLabel,
+  financeServicesForArea,
+} from '../../utils/financeServices';
 import { AreaTag, EmptyNote, MoneyInput } from './FinanceFields';
+import { FinancePackagePricing } from './FinancePackagePricing';
 
 // ============================================================
 // Configuração do Financeiro: começo das contas, valores, modelos de
@@ -124,29 +134,22 @@ function SettingsStrip({ fin }) {
 
 // ---------- Valores dos atendimentos ----------
 
-const DEFAULT_ROW = { id: '', label: 'Valor padrão da área' };
-
-function priceKey(discipline, type) {
-  return `${discipline}:${type || ''}`;
-}
-
 function PriceGrid({ fin, professional }) {
   const scopeId = professional?.id || null;
   const areas = professional
     ? DISCIPLINES.filter(area => (professional.disciplines || []).includes(area.id))
     : DISCIPLINES;
   const own = fin.data.prices.filter(row => (row.professional_id || null) === scopeId);
-  const [cells, setCells] = useState(() => Object.fromEntries(own.map(row => [priceKey(row.discipline, row.appointment_type), centsToInput(row.price_cents)])));
+  const [cells, setCells] = useState(() => financePriceCells(own));
   // Celular e tablet: uma área por vez (o CSS esconde as outras colunas).
   const [mobileArea, setMobileArea] = useState(areas[0]?.id || '');
   const otherArea = id => (areas.length > 1 && id !== mobileArea ? 'is-other-area' : undefined);
   const { busy, error, run } = useSaver(fin);
   const others = fin.data.prices.filter(row => (row.professional_id || null) !== scopeId);
 
-  const rows = [DEFAULT_ROW, ...FINANCE_APPOINTMENT_TYPES];
+  const rows = financePriceRows(areas.map(area => area.id), fin.data.prices.filter(row => !row.professional_id || row.professional_id === scopeId));
   const invalid = Object.entries(cells).filter(([, text]) => text.trim() && parseBRLInput(text) == null).map(([key]) => key);
-  const original = Object.fromEntries(own.map(row => [priceKey(row.discipline, row.appointment_type), centsToInput(row.price_cents)]));
-  const dirty = JSON.stringify(Object.fromEntries(Object.entries(cells).filter(([, value]) => value.trim()))) !== JSON.stringify(original);
+  const dirty = financePriceSignature(cells) !== financePriceSignature(financePriceCells(own));
 
   function inherited(discipline, type) {
     // O que valeria sem esta célula: o resto da tabela, sem ela.
@@ -163,12 +166,7 @@ function PriceGrid({ fin, professional }) {
   }
 
   function save() {
-    const payload = Object.entries(cells)
-      .filter(([, text]) => text.trim())
-      .map(([key, text]) => {
-        const [discipline, type] = key.split(':');
-        return { discipline, appointmentType: type || null, priceCents: parseBRLInput(text) };
-      });
+    const payload = financePricePayload(cells);
     run(() => savePrices(scopeId, payload), professional ? `Valores de ${professional.full_name} salvos.` : 'Valores da instituição salvos.');
   }
 
@@ -195,9 +193,11 @@ function PriceGrid({ fin, professional }) {
           </thead>
           <tbody>
             {rows.map(row => (
-              <tr key={row.id || 'padrao'}>
+              <tr key={row.id || 'padrao'} className={!row.services[mobileArea] ? 'is-other-service' : undefined}>
                 <th scope="row">{row.label}</th>
                 {areas.map(area => {
+                  const service = row.services[area.id];
+                  if (!service) return <td key={area.id} className={otherArea(area.id)}><span className="fin-cell-unavailable" aria-label={`Não se aplica a ${area.label}`}>—</span></td>;
                   const key = priceKey(area.id, row.id);
                   const text = cells[key] ?? '';
                   const fallback = inherited(area.id, row.id || null);
@@ -206,12 +206,15 @@ function PriceGrid({ fin, professional }) {
                     : `${fallback.source?.startsWith('inst') && professional ? 'instituição' : 'padrão'} ${formatBRL(fallback.cents)}`;
                   return (
                     <td key={area.id} className={otherArea(area.id)}>
+                      {service.label !== row.label && <span className="fin-service-name">{service.label}</span>}
+                      {service.legacy && <small className="fin-cell-note">Tipo anterior cadastrado</small>}
                       <span className={`fin-cell${text.trim() ? ' fin-cell--set' : ''}${professional && text.trim() ? ' fin-cell--own' : ''}${invalid.includes(key) ? ' fin-cell--invalid' : ''}`}>
                         <MoneyInput
                           id={`fin-price-${scopeId || 'inst'}-${key}`}
                           value={text}
                           placeholder={placeholder}
-                          ariaLabel={`${row.label}, ${area.label}`}
+                          ariaLabel={`${service.label}, ${area.label}`}
+                          disabled={busy}
                           onChange={value => setCells(current => ({ ...current, [key]: value }))}
                         />
                       </span>
@@ -221,6 +224,10 @@ function PriceGrid({ fin, professional }) {
                 })}
               </tr>
             ))}
+            <tr className={!FINANCE_PACKAGE_RULES[mobileArea] ? 'is-other-service' : undefined}>
+              <th scope="row">Pacotes</th>
+              {areas.map(area => <td key={area.id} className={otherArea(area.id)}><span className="fin-package-policy">{FINANCE_PACKAGE_RULES[area.id]?.label || '—'}</span></td>)}
+            </tr>
           </tbody>
         </table>
       </div>
@@ -320,7 +327,7 @@ function ModelForm({ fin, model, onDone }) {
       <div className="fin-grid-3">
         <label className="gt-field" htmlFor="fin-model-area">
           Área
-          <select id="fin-model-area" className="gt-select" value={form.discipline} onChange={event => set({ discipline: event.target.value })}>
+          <select id="fin-model-area" className="gt-select" value={form.discipline} onChange={event => set({ discipline: event.target.value, appointment_types: [] })}>
             <option value="">Escolher</option>
             {DISCIPLINES.map(area => <option key={area.id} value={area.id}>{area.label}</option>)}
           </select>
@@ -364,7 +371,7 @@ function ModelForm({ fin, model, onDone }) {
       <fieldset className="fin-fieldset">
         <legend>Que atendimentos gastam o pacote</legend>
         <div className="fin-choices">
-          {FINANCE_APPOINTMENT_TYPES.map(type => (
+          {financeServicesForArea(form.discipline, form.appointment_types).map(type => (
             <button
               key={type.id}
               type="button"
@@ -378,6 +385,14 @@ function ModelForm({ fin, model, onDone }) {
         </div>
         <p className="fin-hint">{form.appointment_types.length ? 'Só os tipos marcados.' : 'Nenhum marcado: qualquer atendimento da área gasta o pacote.'}</p>
       </fieldset>
+      <FinancePackagePricing
+        discipline={form.discipline}
+        types={form.appointment_types}
+        sessions={sessions}
+        prices={fin.data.prices.filter(row => !row.professional_id)}
+        onApply={total => set({ total })}
+        busy={busy}
+      />
       <div className="fin-choices" role="group" aria-label="Opções do pacote">
         <button type="button" className="fin-choice" aria-pressed={form.allow_per_session} onClick={() => set({ allow_per_session: !form.allow_per_session })}>Pode pagar a cada sessão</button>
         {form.kind === 'closed' && (
@@ -460,7 +475,7 @@ export function ModelosConfig({ fin }) {
                     {' · '}{formatBRL(info.perSession)} por sessão{info.discountPercent > 0 ? `, ${info.discountPercent}% abaixo do avulso` : ''}
                   </span>
                   <span className="fin-row-sub">
-                    {model.appointment_types.length ? `Gastam: ${model.appointment_types.map(typeLabel).join(', ')}` : 'Qualquer atendimento da área'}
+                    {model.appointment_types.length ? `Gastam: ${model.appointment_types.map(type => financeServiceLabel(model.discipline, type)).join(', ')}` : 'Qualquer atendimento da área'}
                     {' · '}{model.max_installments > 1 ? `até ${model.max_installments} vezes` : 'à vista'}{model.allow_per_session ? ' ou a cada sessão' : ''}
                     {!model.active && ' · desativado'}
                   </span>

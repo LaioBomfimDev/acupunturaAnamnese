@@ -6,7 +6,7 @@ import { HubBackButton } from '../HubNav';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { FINANCEIRO_HELP } from '../../data/screenHelp';
 import { getDiscipline } from '../../data/disciplines';
-import { loadFinanceData, loadTissData } from '../../services/financeiroService';
+import { loadFinanceData, loadFiscalData, loadTissData } from '../../services/financeiroService';
 import { loadConvenioData } from '../../services/convenioService';
 import {
   addDays,
@@ -27,6 +27,8 @@ import { AReceber, Pacotes, Recebidos } from './FinanceEntradas';
 import { ModelosConfig, RecebimentoConfig, SaidasFixasConfig, StartCard, ValoresConfig } from './FinanceConfig';
 import { Faturamento, Operadoras, Solicitantes } from './FinanceConvenios';
 import { Guias, Lotes, Pagamentos } from './FinanceTiss';
+import { NotasFiscais } from './FinanceFiscal';
+import { buildFiscalTiles, fiscalBySource } from '../../utils/fiscal';
 import { buildConvenioTiles } from '../../utils/convenio';
 import { buildTissTiles, operatorReceiptsFrom } from '../../utils/tissXml';
 import '../../styles/gestao.css';
@@ -46,6 +48,7 @@ const SECTIONS = [
   { id: 'resumo', label: 'Resumo' },
   { id: 'areceber', label: 'A receber' },
   { id: 'recebidos', label: 'Recebidos' },
+  { id: 'notas', label: 'Notas fiscais' },
   { id: 'pacotes', label: 'Pacotes' },
   { id: 'apagar', label: 'A pagar' },
   { id: 'pagas', label: 'Pagas' },
@@ -64,7 +67,7 @@ const SECTIONS = [
 
 const SECTION_GROUPS = [
   { label: 'Visão geral', ids: ['resumo'] },
-  { label: 'Entradas', ids: ['areceber', 'recebidos', 'pacotes'] },
+  { label: 'Entradas', ids: ['areceber', 'recebidos', 'notas', 'pacotes'] },
   { label: 'Saídas', ids: ['apagar', 'pagas', 'equipe'] },
   { label: 'Configuração', ids: ['valores', 'modelos', 'recebimento', 'saidasfixas'] },
   { label: 'Convênios', ids: ['guias', 'lotes', 'pagamentos', 'operadoras', 'solicitantes', 'faturamento'] },
@@ -74,6 +77,7 @@ const TAB_ICONS = {
   resumo: <><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></>,
   areceber: <><circle cx="12" cy="12" r="9" /><path d="M12 7.5v4.5l3 2" /></>,
   recebidos: <><path d="m5 12.5 4.5 4.5L19 7.5" /></>,
+  notas: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   pacotes: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" /></>,
   apagar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
   pagas: <><path d="M4 7h16M4 12h16M4 17h10" /></>,
@@ -214,6 +218,10 @@ export function FinanceiroScreen({ profile }) {
   const [tiss, setTiss] = useState(null);
   const [tissError, setTissError] = useState('');
   const [tissKey, setTissKey] = useState(0);
+  // Notas fiscais (20261104): também à parte.
+  const [fiscal, setFiscal] = useState(null);
+  const [fiscalError, setFiscalError] = useState('');
+  const [fiscalKey, setFiscalKey] = useState(0);
   // Trocar de parte limpa o aviso da gravação anterior e leva ao título
   // dela (quadro do Resumo, link "Abrir Operadoras", "Voltar ao Resumo").
   const goTo = id => { setSection(id); setFlash(''); scrollToSectionTop(null); };
@@ -242,6 +250,14 @@ export function FinanceiroScreen({ profile }) {
       .catch(err => { if (!cancelled) setTissError(err.message || 'Não foi possível carregar as guias.'); });
     return () => { cancelled = true; };
   }, [tissKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadFiscalData()
+      .then(next => { if (!cancelled) { setFiscal(next); setFiscalError(''); } })
+      .catch(err => { if (!cancelled) setFiscalError(err.message || 'Não foi possível carregar as notas fiscais.'); });
+    return () => { cancelled = true; };
+  }, [fiscalKey]);
 
   const derived = useMemo(() => {
     if (!data) return null;
@@ -289,8 +305,10 @@ export function FinanceiroScreen({ profile }) {
 
   const convView = useMemo(() => (data ? buildConvenioTiles({ data, conv, convError }) : null), [data, conv, convError]);
   const tissView = useMemo(() => buildTissTiles({ tiss, tissError, today }), [tiss, tissError, today]);
-  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles, ...tissView.tiles } : null), [data, derived, month, convView, tissView]);
-  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts, ...tissView.counts } : null), [tiles, derived, convView, tissView]);
+  const fiscalView = useMemo(() => buildFiscalTiles({ fiscal, fiscalError }), [fiscal, fiscalError]);
+  const fiscalSources = useMemo(() => (fiscal ? fiscalBySource(fiscal) : null), [fiscal]);
+  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles, ...tissView.tiles, ...fiscalView.tiles } : null), [data, derived, month, convView, tissView, fiscalView]);
+  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts, ...tissView.counts, ...fiscalView.counts } : null), [tiles, derived, convView, tissView, fiscalView]);
 
   // Contexto que cada parte recebe: dados, contas e como gravar.
   const fin = data && derived ? {
@@ -298,7 +316,8 @@ export function FinanceiroScreen({ profile }) {
     ...derived,
     month,
     profile,
-    reload: () => setReloadKey(key => key + 1),
+    // Recebimento lançado ou anulado mexe na nota: as duas cargas voltam.
+    reload: () => { setReloadKey(key => key + 1); setFiscalKey(key => key + 1); },
     notify: message => setFlash(message),
     open: goTo,
     conv,
@@ -307,6 +326,10 @@ export function FinanceiroScreen({ profile }) {
     tiss,
     tissError,
     tissReload: () => setTissKey(key => key + 1),
+    fiscal,
+    fiscalError,
+    fiscalBySource: fiscalSources,
+    fiscalReload: () => setFiscalKey(key => key + 1),
   } : null;
 
   return (
@@ -364,6 +387,7 @@ export function FinanceiroScreen({ profile }) {
 
         {fin && section === 'areceber' && <AReceber fin={fin} />}
         {fin && section === 'recebidos' && <Recebidos fin={fin} />}
+        {fin && section === 'notas' && <NotasFiscais fin={fin} />}
         {fin && section === 'pacotes' && <Pacotes fin={fin} />}
         {fin && section === 'apagar' && <APagar fin={fin} />}
         {fin && section === 'pagas' && <Pagas fin={fin} />}

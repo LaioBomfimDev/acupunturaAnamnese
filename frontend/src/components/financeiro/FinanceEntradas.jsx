@@ -24,6 +24,7 @@ import {
 } from '../../utils/finance';
 import { AreaTag, DueTag, EmptyNote, MethodPicker, MoneyInput } from './FinanceFields';
 import { AdjustDialog, SellPackageDialog, VoidDialog } from './FinanceDialogs';
+import { FiscalChip, VoucherButton } from './FinanceFiscal';
 
 // ============================================================
 // Entradas: A receber, Recebidos e Pacotes.
@@ -429,8 +430,12 @@ export function Recebidos({ fin }) {
                   {group.voided && <span className="fin-void-reason">Anulado: {group.reason}</span>}
                 </div>
                 <b className="fin-num fin-amount">{formatBRL(total)}</b>
+                <FiscalChip doc={fin.fiscalBySource?.byGroup.get(group.id)} />
                 {!group.voided && (
-                  <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding({ id: group.id, total, patientId: group.patientId })}>Anular</button>
+                  <div className="fin-row-actions">
+                    {fin.fiscal && <VoucherButton fin={fin} group={group} />}
+                    <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding({ id: group.id, total, patientId: group.patientId })}>Anular</button>
+                  </div>
                 )}
               </div>
             );
@@ -473,6 +478,7 @@ function OperatorPayments({ fin, showVoided }) {
               {row.voided_at && <span className="fin-void-reason">Anulado: {row.void_reason}</span>}
             </div>
             <b className="fin-num fin-amount">{formatBRL(row.amount_cents)}</b>
+            <FiscalChip doc={fin.fiscalBySource?.byPayment.get(row.id)} />
             {!row.voided_at && <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open('pagamentos')}>Ver</button>}
           </div>
         ))}

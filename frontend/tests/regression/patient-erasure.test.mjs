@@ -54,6 +54,8 @@ const KEPT_ON_PURPOSE = {
   // Convênios, Fase 2 (20261103): a guia é o documento de cobrança à
   // operadora; a cópia enviada no lote fica (registro de faturamento).
   tiss_guides: 'registro de faturamento: guia enviada à operadora fica, com o paciente anonimizado (a carteira ao vivo sai com patient_coverages)',
+  // Notas fiscais (20261104): documento fiscal, guarda legal.
+  fiscal_documents: 'documento fiscal: a nota (e o CPF do tomador) fica pela guarda legal, com o paciente anonimizado',
 };
 
 test('exclusão: parte da versão de 20261008 e só acrescenta a Área do Paciente', async () => {

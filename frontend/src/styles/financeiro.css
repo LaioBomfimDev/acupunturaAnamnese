@@ -1598,3 +1598,95 @@
     font-size: 7pt;
   }
 }
+
+/* ============================================================
+   Notas fiscais e comprovante (04/11/2026, tela A): a fila e o
+   detalhe usam .fin-tiss-split (40/60, um de cada vez no celular).
+   ============================================================ */
+
+.fin-fiscal-settings {
+  display: grid;
+  gap: 12px;
+}
+
+.fin-fiscal-settings h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.fin-fiscal-copy th {
+  width: 34%;
+  font-weight: 600;
+  color: var(--r1-text-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fin-fiscal-copy td {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fin-fiscal-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.fin-fiscal-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.fin-fiscal-facts dt {
+  color: var(--r1-text-subtle);
+}
+
+.fin-fiscal-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+  .fin-fiscal-copy th,
+  .fin-fiscal-copy td {
+    display: block;
+    width: auto;
+  }
+}
+
+/* Comprovante: só a folha imprime (mesma folha do papel timbrado). */
+.fin-print-root {
+  display: none;
+}
+
+.fin-voucher h2 {
+  margin: 0 0 14px;
+  font-size: 15pt;
+}
+
+.fin-voucher p {
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+
+.fin-voucher-nfse {
+  margin-top: 18px;
+  font-weight: 600;
+}
+
+@media print {
+  body.fin-printing > *:not(.fin-print-root) {
+    display: none !important;
+  }
+
+  body.fin-printing .fin-print-root {
+    display: block;
+  }
+}

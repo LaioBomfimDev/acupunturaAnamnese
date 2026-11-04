@@ -15,7 +15,8 @@ import * as agenda from '../../src/utils/agenda.js';
 //   em ordem alfabética, e o banco aceita os mesmos valores.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const TYPES_MIGRATION = path.resolve(root, '../supabase/migrations/20260924c_appointment_types_expand.sql');
+// Desde 04/11/2026 a lista mora numa função só (appointment_type_fits_area).
+const TYPES_MIGRATION = path.resolve(root, '../supabase/migrations/20261104b_valores_servicos_por_area.sql');
 
 let server;
 let service;
@@ -65,9 +66,13 @@ test('tipos em ordem alfabética, com os 4 novos', () => {
 
 test('banco aceita exatamente os tipos da tela, na agenda e nas duas tabelas de preço', () => {
   const ids = [...service.APPOINTMENT_TYPE_IDS].sort();
+  const fn = typesSql.split('FUNCTION public.appointment_type_fits_area')[1]?.split('$$;')[0] || '';
+  const fromSql = [...new Set([...fn.matchAll(/'([a-z_]+)'/g)].map(match => match[1]))]
+    .filter(id => !['acupuntura', 'fisioterapia', 'psicologia', 'aba'].includes(id))
+    .sort();
+  assert.deepEqual(fromSql, ids, 'appointment_type_fits_area diverge de APPOINTMENT_TYPES');
   for (const constraint of ['appointments_type_check', 'procedure_prices_appointment_type_check', 'convenio_procedure_prices_appointment_type_check']) {
     const bloco = typesSql.split(`ADD CONSTRAINT ${constraint}`)[1]?.split(';')[0] || '';
-    const fromSql = [...bloco.matchAll(/'([a-z_]+)'/g)].map(match => match[1]).sort();
-    assert.deepEqual(fromSql, ids, `${constraint} diverge de APPOINTMENT_TYPES`);
+    assert.match(bloco, /public\.appointment_type_fits_area\(discipline, appointment_type\)/, `${constraint} usa a regra única`);
   }
 });

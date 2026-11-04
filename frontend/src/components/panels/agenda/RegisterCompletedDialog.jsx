@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { APPOINTMENT_MODALITIES, APPOINTMENT_TYPES, registerCompletedAppointment } from '../../../services/appointmentService';
+import { APPOINTMENT_MODALITIES, registerCompletedAppointment } from '../../../services/appointmentService';
+import { typeAfterAreaChange } from '../../../utils/appointmentTypes.js';
+import AppointmentTypeOptions from './AppointmentTypeOptions';
 import { PARTICULAR } from '../../../utils/agendaBilling';
 import { BillingChoice } from './BillingChoice';
 import { toDayKey } from '../../../utils/agenda';
@@ -327,7 +329,10 @@ export function RegisterCompletedDialog({
                 id="agc-discipline"
                 className="ag-select"
                 value={disciplineValue}
-                onChange={e => setDiscipline(e.target.value)}
+                onChange={e => {
+                  setDiscipline(e.target.value);
+                  setAppointmentType(prev => typeAfterAreaChange(prev, e.target.value));
+                }}
                 disabled={saving || quick.open}
                 required
               >
@@ -345,10 +350,7 @@ export function RegisterCompletedDialog({
                 onChange={e => setAppointmentType(e.target.value)}
                 disabled={saving}
               >
-                <option value="">Não classificado</option>
-                {APPOINTMENT_TYPES.map(item => (
-                  <option key={item.id} value={item.id}>{item.label}</option>
-                ))}
+                <AppointmentTypeOptions discipline={disciplineValue} current={appointmentType} />
               </select>
             </div>
           </div>

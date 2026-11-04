@@ -1,4 +1,5 @@
 import { ROW_STATES } from '../../../utils/agendaTimeline';
+import { appointmentTypeLabel } from '../../../utils/appointmentTypes.js';
 import {
   appointmentCardStyle,
   appointmentLookAttrs,
@@ -38,17 +39,6 @@ const DISCIPLINE_SHORT = {
   nutricao: 'Nutri',
 };
 
-// Espelha APPOINTMENT_TYPES (services/appointmentService.js) sem
-// importar o service — este arquivo é renderizado isolado nos testes.
-const APPOINTMENT_TYPE_LABEL = {
-  anamnesis: 'Anamnese',
-  evaluation: 'Avaliação',
-  feedback: 'Devolutiva',
-  interview: 'Entrevista',
-  first_visit: 'Primeira vez',
-  return: 'Retorno',
-  session: 'Sessão',
-};
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const BLOCK_TYPE_LABEL = {
@@ -191,7 +181,7 @@ function AppointmentCard({
           )}
           {!isBlock && appointment.appointment_type && (
             <span className="agd-chip">
-              {APPOINTMENT_TYPE_LABEL[appointment.appointment_type] || appointment.appointment_type}
+              {appointmentTypeLabel(appointment.appointment_type, appointment.discipline)}
             </span>
           )}
           {!isBlock && (

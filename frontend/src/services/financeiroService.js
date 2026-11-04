@@ -39,6 +39,11 @@ export function financeErrorMessage(error, fallback) {
   if (/idx_finance_payout_rules_scope_unique/.test(text)) return 'A mesma área apareceu duas vezes nas exceções.';
   if (/finance_expense_categories_name_unique/.test(text)) return 'Já existe uma categoria com esse nome.';
   if (/finance_package_models_range/.test(text)) return 'O máximo de sessões não pode ser menor que o previsto.';
+  // Tipo de atendimento fora da área (20261104b, appointment_type_fits_area).
+  if (/procedure_prices_appointment_type_check|finance_payout_rules_appointment_type_check|convenio_procedure_prices_appointment_type_check/.test(text)) {
+    return 'Um dos tipos não é serviço desta área. Confira a área de cada valor.';
+  }
+  if (/finance_package_models_types|patient_packages_types/.test(text)) return 'O pacote tem tipo que não é serviço desta área.';
   if (error?.code === '42501' || /permission denied|row-level security/i.test(text)) {
     return 'Só a administração da instituição mexe no financeiro.';
   }

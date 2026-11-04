@@ -11,7 +11,6 @@ import {
   saveRecurring,
 } from '../../services/financeiroService';
 import {
-  FINANCE_APPOINTMENT_TYPES,
   PAYOUT_BASIS,
   PAYOUT_MODES,
   RECURRING_FREQUENCIES,
@@ -39,6 +38,7 @@ import {
   financeServiceLabel,
   financeServicesForArea,
 } from '../../utils/financeServices';
+import { typeAfterAreaChange } from '../../utils/appointmentTypes.js';
 import { AreaTag, EmptyNote, MoneyInput } from './FinanceFields';
 import { FinancePackagePricing } from './FinancePackagePricing';
 
@@ -604,13 +604,13 @@ function RuleEditor({ fin, member, onDone }) {
           <legend>Exceções por área ou tipo</legend>
           {exceptions.map((row, index) => (
             <div key={index} className="fin-exception">
-              <select className="gt-select" aria-label="Área" value={row.discipline || ''} onChange={event => setExceptions(current => current.map((item, position) => (position === index ? { ...item, discipline: event.target.value } : item)))}>
+              <select className="gt-select" aria-label="Área" value={row.discipline || ''} onChange={event => setExceptions(current => current.map((item, position) => (position === index ? { ...item, discipline: event.target.value, type: typeAfterAreaChange(item.type, event.target.value) } : item)))}>
                 <option value="">Área</option>
                 {areas.map(area => <option key={area.id} value={area.id}>{area.label}</option>)}
               </select>
               <select className="gt-select" aria-label="Tipo" value={row.type} onChange={event => setExceptions(current => current.map((item, position) => (position === index ? { ...item, type: event.target.value } : item)))}>
                 <option value="">Todos os tipos</option>
-                {FINANCE_APPOINTMENT_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
+                {financeServicesForArea(row.discipline, [row.type]).map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
               </select>
               <select className="gt-select" aria-label="Jeito" value={row.mode} onChange={event => setExceptions(current => current.map((item, position) => (position === index ? { ...item, mode: event.target.value, value: '' } : item)))}>
                 <option value="percent">%</option>

@@ -1,48 +1,9 @@
+import { SERVICES_BY_AREA } from './appointmentTypes.js';
 import { FINANCE_APPOINTMENT_TYPES, centsToInput, parseBRLInput, resolvePrice } from './finance.js';
 
-// Catálogo da configuração financeira. Os tipos novos precisam ser liberados
-// pelo backend antes do uso na Agenda; não ampliar o catálogo global por aqui.
-const ADJUNCT_SERVICES = [
-  { id: 'neuromodulation', label: 'Neuromodulação' },
-  { id: 'vascular_biomodulation', label: 'Biomodulação vascular' },
-  { id: 'e_ilib', label: 'e-ILIB' },
-];
-
-export const FINANCE_SERVICES_BY_AREA = {
-  acupuntura: [
-    { id: 'anamnesis', label: 'Avaliação inicial (anamnese)' },
-    { id: 'session', label: 'Sessão de acupuntura' },
-    { id: 'auriculotherapy', label: 'Sessão de auriculoterapia' },
-    { id: 'laserpuncture', label: 'Sessão de laserpuntura' },
-    { id: 'cupping', label: 'Sessão de ventosa' },
-  ],
-  fisioterapia: [
-    { id: 'anamnesis', label: 'Anamnese' },
-    { id: 'session', label: 'Sessão' },
-    { id: 'evaluation', label: 'Avaliação' },
-    ...ADJUNCT_SERVICES,
-  ],
-  psicologia: [
-    { id: 'anamnesis', label: 'Anamnese' },
-    { id: 'session', label: 'Sessão' },
-    { id: 'evaluation', label: 'Avaliação psicológica' },
-    ...ADJUNCT_SERVICES,
-  ],
-  nutricao: [
-    { id: 'anamnesis', label: 'Anamnese' },
-    { id: 'return', label: 'Retorno' },
-    { id: 'session', label: 'Sessão' },
-  ],
-  neuropsicologia: [
-    { id: 'evaluation', label: 'Avaliação neuropsicológica' },
-  ],
-  aba: [
-    { id: 'evaluation', label: 'Avaliação' },
-    { id: 'home_visit', label: 'Visita domiciliar' },
-    { id: 'school_visit', label: 'Visita escolar' },
-    { id: 'session', label: 'Sessão' },
-  ],
-};
+// O catálogo por área mora em utils/appointmentTypes.js (um só para Agenda,
+// Financeiro e Convênios); aqui ficam as contas da configuração financeira.
+export const FINANCE_SERVICES_BY_AREA = SERVICES_BY_AREA;
 
 export const FINANCE_PACKAGE_RULES = {
   acupuntura: { discountPercent: 5, label: '5% de desconto nos pacotes' },

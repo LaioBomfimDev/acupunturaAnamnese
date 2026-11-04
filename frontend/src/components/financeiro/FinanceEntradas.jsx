@@ -45,7 +45,7 @@ function professionalName(fin, id) {
 
 /** O que é o item, em uma linha. */
 function itemTitle(item) {
-  if (item.kind === 'charge') return `${typeLabel(item.appointmentType)} de ${formatShortDay(item.dueOn)}`;
+  if (item.kind === 'charge') return `${typeLabel(item.appointmentType, item.discipline)} de ${formatShortDay(item.dueOn)}`;
   if (item.kind === 'installment') return `${item.packageName} · parcela ${item.installmentNumber} de ${item.installments}`;
   if (item.kind === 'rest') return `${item.packageName} · restante do pacote`;
   return `${item.packageName} · sessão ${item.sessionNumber} de ${item.sessionsPlanned}`;
@@ -303,7 +303,7 @@ export function AReceber({ fin }) {
                 <div className="fin-row-main">
                   <b>{patientName(fin, charge.patient_id)}</b>
                   <span>
-                    <AreaTag discipline={charge.discipline} /> · {typeLabel(charge.appointment_type)} de {formatShortDay(charge.service_on)} · {professionalName(fin, charge.professional_id)}
+                    <AreaTag discipline={charge.discipline} /> · {typeLabel(charge.appointment_type, charge.discipline)} de {formatShortDay(charge.service_on)} · {professionalName(fin, charge.professional_id)}
                     {charge.payer === 'convenio' && ` · Convênio · ${convenioName(fin, charge.convenio_id)} sem preço para a área`}
                   </span>
                 </div>
@@ -396,7 +396,7 @@ export function Recebidos({ fin }) {
   const describe = row => {
     if (row.charge_id) {
       const charge = chargeById.get(row.charge_id);
-      return charge ? `${typeLabel(charge.appointment_type)} de ${formatShortDay(charge.service_on)}` : 'Atendimento';
+      return charge ? `${typeLabel(charge.appointment_type, charge.discipline)} de ${formatShortDay(charge.service_on)}` : 'Atendimento';
     }
     return packageById.get(row.package_id)?.name || 'Pacote';
   };

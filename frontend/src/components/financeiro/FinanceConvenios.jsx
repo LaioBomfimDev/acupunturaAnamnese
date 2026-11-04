@@ -42,7 +42,6 @@ import {
   professionalBillingMissing,
 } from '../../utils/convenio';
 import {
-  FINANCE_APPOINTMENT_TYPES,
   centsToInput,
   formatBRL,
   formatDay,
@@ -50,6 +49,8 @@ import {
   payableMembers,
   typeLabel,
 } from '../../utils/finance';
+import { financeServicesForArea } from '../../utils/financeServices';
+import { typeAfterAreaChange } from '../../utils/appointmentTypes.js';
 import { DialogShell } from './FinanceDialogs';
 import { AreaTag, EmptyNote, MoneyInput } from './FinanceFields';
 
@@ -546,7 +547,7 @@ function PriceForm({ fin, convenio, price, onDone, markSaved }) {
       <div className="fin-grid-2">
         <label className="gt-field" htmlFor="conv-price-area">
           Área
-          <select id="conv-price-area" className="gt-select" value={form.discipline} onChange={event => set({ discipline: event.target.value })}>
+          <select id="conv-price-area" className="gt-select" value={form.discipline} onChange={event => set({ discipline: event.target.value, appointment_type: typeAfterAreaChange(form.appointment_type, event.target.value) })}>
             <option value="">Escolha</option>
             {DISCIPLINES.map(area => <option key={area.id} value={area.id}>{area.label}</option>)}
           </select>
@@ -555,7 +556,7 @@ function PriceForm({ fin, convenio, price, onDone, markSaved }) {
           Tipo de atendimento
           <select id="conv-price-type" className="gt-select" value={form.appointment_type} onChange={event => set({ appointment_type: event.target.value })}>
             <option value="">Todos os tipos (valor da área)</option>
-            {FINANCE_APPOINTMENT_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
+            {financeServicesForArea(form.discipline, [form.appointment_type]).map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
           </select>
         </label>
       </div>
@@ -617,7 +618,7 @@ function StepPrecos({ fin, convenio, markSaved }) {
           ) : (
             <div key={row.id} className={`fin-row${row.tuss_code ? '' : ' fin-row--todo'}`}>
               <div className="fin-row-main">
-                <b><AreaTag discipline={row.discipline} /> {row.appointment_type ? typeLabel(row.appointment_type) : 'todos os tipos'}</b>
+                <b><AreaTag discipline={row.discipline} /> {row.appointment_type ? typeLabel(row.appointment_type, row.discipline) : 'todos os tipos'}</b>
                 <span>{procedureCodeLabel(row)}{row.tuss_term ? ` · ${row.tuss_term}` : ''}</span>
               </div>
               <span className="fin-amount fin-num">{formatBRL(row.price_cents)}</span>

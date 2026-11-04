@@ -1,5 +1,7 @@
 # Repasse para o Claude — valores e serviços por área
 
+> **Situação (04/11/2026, depois do repasse):** backend e integração feitos no mesmo branch: migration `20261104b_valores_servicos_por_area.sql`, validação `supabase/validation/20261104b_valores_servicos_scenarios.sql`, catálogo único em `frontend/src/utils/appointmentTypes.js` (Agenda, Financeiro, Convênios) e teste `tests/regression/valores-servicos-por-area.test.mjs`. As pendências abaixo ficam como registro do que foi pedido.
+
 Pedido de 04/11/2026: implementar somente o frontend; backend fica com o Claude. Nenhuma migration, Edge Function, regra de acesso, serviço de persistência ou deploy foi alterado.
 
 ## O que já foi implementado

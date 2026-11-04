@@ -833,30 +833,43 @@ export const FINANCEIRO_HELP = {
   },
   valores: {
     title: 'Valores dos atendimentos',
-    summary: 'Quanto custa cada atendimento, por área e por tipo (Anamnese, Avaliação, Devolutiva, Entrevista, Primeira vez, Retorno, Sessão).',
+    summary: 'Quanto custa cada atendimento, por área e pelos serviços daquela área: cada área mostra só os campos dos serviços dela (na Acupuntura, avaliação inicial, acupuntura, auriculoterapia, laserpuntura e ventosa; na Fisioterapia e na Psicologia, também Neuromodulação, Biomodulação vascular e e-ILIB; na ABA, visitas domiciliar e escolar).',
     actions: [
-      'Em “Valores da instituição”, preencher o valor padrão de cada área e só os tipos que custam diferente.',
+      'Em “Valores da instituição”, preencher o valor padrão de cada área e só os serviços que custam diferente.',
       'Escolher um profissional para dar a ele valores próprios: preencher só o que muda.',
       'Gravar em “Salvar valores”.',
     ],
     reading: [
-      'Campo vazio usa o valor padrão (o texto cinza diz qual). R$ 0 = aquele tipo não é cobrado.',
+      'Campo vazio usa o valor padrão (o texto cinza diz qual). R$ 0 = aquele serviço não é cobrado.',
       'Ordem de quem vale: tipo do profissional, tipo da instituição, padrão do profissional, padrão da instituição.',
+      '“Tipo anterior cadastrado”: um tipo que já tinha valor antes da lista por área. Continua valendo e pode ser editado ou apagado.',
+      'A linha “Pacotes” lembra a regra de cada área: “5% de desconto nos pacotes” na Acupuntura, “Pacotes sem desconto” na Psicologia e “Pacotes disponíveis” na Fisioterapia (total digitado, sem percentual definido).',
     ],
     access: ['Só a administração.'],
-    notes: ['Valor novo vale para os atendimentos que virarem Atendido daqui para frente.'],
+    notes: [
+      'Valor novo vale para os atendimentos que virarem Atendido daqui para frente: o que já foi cobrado não muda.',
+      'Salvar grava todos os valores do escopo de uma vez, inclusive os de áreas que não estão na tela: se algum for recusado, nada muda.',
+      'O mesmo serviço aparece no campo “Tipo” da Agenda, com o nome da área.',
+    ],
   },
   modelos: {
     title: 'Modelos de pacote',
-    summary: 'Os pacotes prontos para vender: sessões contadas ou valor fechado com sessões previstas.',
+    summary: 'Os pacotes prontos para vender: sessões contadas ou valor fechado com sessões previstas, com os serviços da área escolhida.',
     actions: [
-      '“+ Novo modelo”: área, tipo, sessões, valor total, que atendimentos gastam o pacote e em quantas vezes pode parcelar.',
+      '“+ Novo modelo”: área, serviços que gastam o pacote, sessões, valor total e em quantas vezes pode parcelar.',
+      'Com um serviço só marcado e o valor avulso cadastrado, “Calcular com 5% de desconto” (Acupuntura) ou “Calcular sem desconto” (Psicologia) preenche o total: preço avulso × sessões. Na Fisioterapia e em pacote com mais de um serviço, o total é digitado.',
       'No valor fechado, a simulação mostra quanto vale cada sessão se a previsão mudar.',
       '“Desativar” tira o modelo da venda sem mexer no que já foi vendido.',
     ],
-    reading: ['Cada modelo mostra o valor por sessão e quanto fica abaixo do avulso.'],
+    reading: [
+      'Cada modelo mostra o valor por sessão e quanto fica abaixo do avulso.',
+      'Trocar a área limpa os serviços marcados: cada área tem os seus.',
+    ],
     access: ['Só a administração.'],
-    notes: ['A venda guarda os valores do dia: mudar o modelo não muda pacote já vendido.'],
+    notes: [
+      'A venda guarda os valores do dia: mudar o modelo ou o preço avulso não muda pacote já vendido.',
+      'O cálculo só preenche o campo; quem decide o total é a administração. Falta (Não compareceu, Cancelado) não gasta sessão.',
+    ],
   },
   recebimento: {
     title: 'Como cada um recebe',

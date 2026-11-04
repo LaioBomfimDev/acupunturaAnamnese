@@ -264,9 +264,13 @@ test('PL/pgSQL: ON CONFLICT pelo nome da constraint', () => {
 test('formas de pagamento e tipos de atendimento iguais no banco e na tela', async () => {
   const methods = finance.PAYMENT_METHODS.map(item => `'${item.id}'`).join(', ');
   assert.ok(sql.includes(`method IN (${methods})`), 'mesmas formas no CHECK');
+  // Desde 04/11/2026 a Agenda e o Financeiro leem o mesmo catálogo.
   const appointmentService = await read('src/services/appointmentService.js');
+  const catalog = await read('src/utils/appointmentTypes.js');
+  assert.match(appointmentService, /from '\.\.\/utils\/appointmentTypes\.js'/);
+  assert.match(appointmentService, /export \{ APPOINTMENT_TYPES, APPOINTMENT_TYPE_IDS \}/);
   for (const type of finance.FINANCE_APPOINTMENT_TYPES) {
-    assert.ok(appointmentService.includes(`{ id: '${type.id}', label: '${type.label}' }`), `tipo ${type.id} igual ao da Agenda`);
+    assert.ok(catalog.includes(`{ id: '${type.id}', label: '${type.label}' }`), `tipo ${type.id} igual ao da Agenda`);
   }
 });
 

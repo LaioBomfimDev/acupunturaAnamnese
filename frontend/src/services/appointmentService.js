@@ -19,6 +19,7 @@ import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { APPOINTMENT_STATUS_IDS, FREEING_STATUSES, findOverlap } from '../utils/agenda';
 import { validateCompletedStart } from '../utils/completedAppointment';
+import { APPOINTMENT_TYPES, APPOINTMENT_TYPE_IDS, isTypeAllowedInArea } from '../utils/appointmentTypes.js';
 
 const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 
@@ -39,20 +40,10 @@ export const APPOINTMENT_MODALITIES = [
 
 export const APPOINTMENT_MODALITY_IDS = APPOINTMENT_MODALITIES.map(item => item.id);
 
-// Espelha appointments_type_check (20260924c). Nulo é válido: nem toda
-// clínica classifica o atendimento. Em ordem alfabética do rótulo — é
-// assim que aparece no campo "Tipo".
-export const APPOINTMENT_TYPES = [
-  { id: 'anamnesis', label: 'Anamnese' },
-  { id: 'evaluation', label: 'Avaliação' },
-  { id: 'feedback', label: 'Devolutiva' },
-  { id: 'interview', label: 'Entrevista' },
-  { id: 'first_visit', label: 'Primeira vez' },
-  { id: 'return', label: 'Retorno' },
-  { id: 'session', label: 'Sessão' },
-];
-
-export const APPOINTMENT_TYPE_IDS = APPOINTMENT_TYPES.map(item => item.id);
+// Catálogo único em utils/appointmentTypes.js, espelho de
+// appointments_type_check (20261104b). Nulo é válido: nem toda clínica
+// classifica o atendimento. Tipo novo só vale nas áreas dele.
+export { APPOINTMENT_TYPES, APPOINTMENT_TYPE_IDS };
 
 // Espelha appointments_block_type_check (migração 20260823). Só se
 // aplica a kind='block' — bloqueio não tem paciente nem disciplina,
@@ -78,8 +69,12 @@ export const AGENDA_BILLING_MIGRATION_HINT =
 export const BILLING_TYPES = ['particular', 'convenio'];
 
 /** Erro do gatilho de quem paga → frase para quem está marcando. */
+// Espelha appointments_type_check (20261104b): tipo novo só nas áreas dele.
+export const TYPE_AREA_MESSAGE = 'Este tipo de atendimento não é desta área. Escolha outro tipo ou outra área.';
+
 export function billingErrorMessage(error) {
   const text = [error?.message, error?.details].filter(Boolean).join(' ');
+  if (/appointments_type_check/.test(text)) return TYPE_AREA_MESSAGE;
   if (/coverage_id/.test(text) && /does not exist|schema cache|Could not find|42703/i.test(text)) {
     return AGENDA_BILLING_MIGRATION_HINT;
   }
@@ -192,6 +187,9 @@ function assertValid(input) {
 
   if (input?.appointmentType && !APPOINTMENT_TYPE_IDS.includes(input.appointmentType)) {
     throw new Error(`Tipo de atendimento inválido: ${input.appointmentType}.`);
+  }
+  if (input?.appointmentType && !isTypeAllowedInArea(input?.discipline, input.appointmentType)) {
+    throw new Error(TYPE_AREA_MESSAGE);
   }
 
   if (kind === 'appointment' && input?.modality && !APPOINTMENT_MODALITY_IDS.includes(input.modality)) {
@@ -992,6 +990,10 @@ export async function updateAppointmentDetails(id, {
       throw new Error(`Tipo de atendimento inválido: ${appointmentType}.`);
     }
     patch.appointment_type = appointmentType || null;
+  }
+
+  if (discipline !== undefined && appointmentType && !isTypeAllowedInArea(discipline, appointmentType)) {
+    throw new Error(TYPE_AREA_MESSAGE);
   }
 
   if (modality !== undefined) {

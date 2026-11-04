@@ -741,6 +741,40 @@
   min-width: 132px;
 }
 
+.fin-prices .fin-money-input > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.fin-service-name {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.fin-cell-unavailable {
+  color: var(--r1-text-subtle);
+}
+
+.fin-package-policy {
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.fin-package-pricing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+}
+
 .fin-cell .gt-select::placeholder {
   color: var(--r1-text-subtle);
   font-size: 12px;
@@ -996,8 +1030,22 @@
     min-width: 0;
   }
 
-  .fin-prices .is-other-area {
+  .fin-prices .is-other-area,
+  .fin-prices .is-other-service {
     display: none;
+  }
+
+  .fin-prices th,
+  .fin-prices td {
+    overflow-wrap: anywhere;
+  }
+
+  .fin-prices tbody th {
+    width: 40%;
+  }
+
+  .fin-prices td {
+    min-width: 0;
   }
 
   .fin-dialog-overlay {

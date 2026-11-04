@@ -22,6 +22,7 @@
 // ============================================================
 
 import { CONVENIO_PAYMENT_METHODS, convenioDueOn } from './tissXml.js';
+import { APPOINTMENT_TYPES, appointmentTypeLabel } from './appointmentTypes.js';
 
 export const CLINIC_TIME_ZONE = 'America/Sao_Paulo';
 
@@ -34,17 +35,9 @@ export const PAYMENT_METHODS = [
   { id: 'outro', label: 'Outro' },
 ];
 
-// Espelha APPOINTMENT_TYPES (services/appointmentService.js), na mesma
-// ordem alfabética do campo "Tipo" da Agenda.
-export const FINANCE_APPOINTMENT_TYPES = [
-  { id: 'anamnesis', label: 'Anamnese' },
-  { id: 'evaluation', label: 'Avaliação' },
-  { id: 'feedback', label: 'Devolutiva' },
-  { id: 'interview', label: 'Entrevista' },
-  { id: 'first_visit', label: 'Primeira vez' },
-  { id: 'return', label: 'Retorno' },
-  { id: 'session', label: 'Sessão' },
-];
+// Catálogo único em utils/appointmentTypes.js (Agenda, Financeiro e
+// Convênios leem o mesmo).
+export const FINANCE_APPOINTMENT_TYPES = APPOINTMENT_TYPES;
 
 export const PAYOUT_MODES = [
   { id: 'percent', label: '% do valor do atendimento' },
@@ -84,8 +77,9 @@ export function methodLabel(id) {
   return labelOf(PAYMENT_METHODS, id) || 'Outro';
 }
 
-export function typeLabel(id) {
-  return labelOf(FINANCE_APPOINTMENT_TYPES, id) || 'Sem tipo';
+/** Com a área, o nome daquela área ("Avaliação psicológica"). */
+export function typeLabel(id, discipline = null) {
+  return appointmentTypeLabel(id, discipline);
 }
 
 // ---------- dinheiro ----------

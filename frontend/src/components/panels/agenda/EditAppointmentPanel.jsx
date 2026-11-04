@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { APPOINTMENT_BLOCK_TYPES, APPOINTMENT_MODALITIES, APPOINTMENT_TYPES } from '../../../services/appointmentService';
+import { APPOINTMENT_BLOCK_TYPES, APPOINTMENT_MODALITIES } from '../../../services/appointmentService';
+import { typeAfterAreaChange } from '../../../utils/appointmentTypes.js';
+import AppointmentTypeOptions from './AppointmentTypeOptions';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { DismissPrompt } from '../../ui/DismissPrompt';
 import { billingOf, sameBilling } from '../../../utils/agendaBilling';
@@ -113,7 +115,10 @@ export function EditAppointmentPanel({
                     id="ag-edit-discipline"
                     className="ag-select"
                     value={discipline}
-                    onChange={e => setDiscipline(e.target.value)}
+                    onChange={e => {
+                      setDiscipline(e.target.value);
+                      setAppointmentType(prev => typeAfterAreaChange(prev, e.target.value));
+                    }}
                     disabled={saving}
                     required
                   >
@@ -132,10 +137,7 @@ export function EditAppointmentPanel({
                     onChange={e => setAppointmentType(e.target.value)}
                     disabled={saving}
                   >
-                    <option value="">Não classificado</option>
-                    {APPOINTMENT_TYPES.map(item => (
-                      <option key={item.id} value={item.id}>{item.label}</option>
-                    ))}
+                    <AppointmentTypeOptions discipline={discipline} current={appointmentType} />
                   </select>
                 </div>
               </div>

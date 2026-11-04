@@ -22,7 +22,6 @@ import { buildTodayQueue } from '../../utils/agendaToday';
 import {
   APPOINTMENT_BLOCK_TYPES,
   APPOINTMENT_MODALITIES,
-  APPOINTMENT_TYPES,
   cancelSeriesFrom,
   confirmAppointment,
   createAppointment,
@@ -81,6 +80,8 @@ import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
 import RegisterCompletedDialog from './agenda/RegisterCompletedDialog';
+import AppointmentTypeOptions from './agenda/AppointmentTypeOptions';
+import { appointmentTypeLabel, typeAfterAreaChange } from '../../utils/appointmentTypes.js';
 import PackageSessionsDialog from './agenda/PackageSessionsDialog';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
@@ -1940,7 +1941,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                     selectedAppointment.modality === 'online' ? 'online' : 'presencial'
                   ),
                   selectedAppointment.kind === 'block' ? null : (
-                    APPOINTMENT_TYPES.find(item => item.id === selectedAppointment.appointment_type)?.label
+                    (selectedAppointment.appointment_type ? appointmentTypeLabel(selectedAppointment.appointment_type, selectedAppointment.discipline) : null)
                   ),
                   professionalName(selectedAppointment.professional_id),
                 ].filter(Boolean).join(' · ')}
@@ -2369,7 +2370,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           id="ag-discipline"
                           className="ag-select"
                           value={disciplineValue}
-                          onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value }))}
+                          onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value, appointmentType: typeAfterAreaChange(prev.appointmentType, e.target.value) }))}
                           disabled={saving}
                           required
                         >
@@ -2388,10 +2389,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           onChange={e => setForm(prev => ({ ...prev, appointmentType: e.target.value }))}
                           disabled={saving}
                         >
-                          <option value="">Não classificado</option>
-                          {APPOINTMENT_TYPES.map(item => (
-                            <option key={item.id} value={item.id}>{item.label}</option>
-                          ))}
+                          <AppointmentTypeOptions discipline={disciplineValue} current={form.appointmentType} />
                         </select>
                       </div>
                     </div>

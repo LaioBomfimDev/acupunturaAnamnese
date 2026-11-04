@@ -398,3 +398,57 @@ export async function settleRecurring({ recurringId, occurrenceOn, skip = false,
 export async function voidExpense(expenseId, reason) {
   return rpc('finance_void_expense', { p_expense: expenseId, p_reason: reason }, 'Não foi possível anular a saída.');
 }
+
+// ---------- notas fiscais e comprovante (20261104) ----------
+
+export const FISCAL_MIGRATION_HINT =
+  'As notas fiscais ainda não estão no banco. Aplique a migração '
+  + 'supabase/migrations/20261104_notas_fiscais.sql no Supabase.';
+
+function isMissingFiscalSchema(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ');
+  return /fiscal_|finance_receipt_voucher|finance_sequences/.test(text)
+    && /does not exist|schema cache|Could not find|PGRST20[025]|42883|42P01/i.test(text);
+}
+
+export function fiscalErrorMessage(error, fallback) {
+  if (isMissingFiscalSchema(error)) return FISCAL_MIGRATION_HINT;
+  const text = error?.message || '';
+  const coded = text.match(/^[a-z_]+: (.+)$/s);
+  if (coded) return coded[1];
+  return financeErrorMessage(error, fallback);
+}
+
+async function fiscalRpc(name, args, fallback) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw new Error(fiscalErrorMessage(error, fallback));
+  return data;
+}
+
+/** Notas, o que cada uma cobre, configuração e comprovantes, numa ida só. */
+export async function loadFiscalData() {
+  const fallback = 'Não foi possível carregar as notas fiscais.';
+  const results = await Promise.all([
+    supabase.from('fiscal_documents').select('*').order('competence_on', { ascending: false }),
+    supabase.from('fiscal_document_sources').select('document_id,receipt_group_id,convenio_payment_id,amount_cents,released_at'),
+    supabase.from('clinic_fiscal_settings').select('*').maybeSingle(),
+    supabase.from('clinic_fiscal_service_codes').select('*'),
+    supabase.from('finance_receipt_vouchers').select('group_id,number'),
+  ]);
+  for (const result of results) {
+    if (result.error) throw new Error(fiscalErrorMessage(result.error, fallback));
+  }
+  const [documents, sources, settings, codes, vouchers] = results.map(result => result.data);
+  return { documents: documents || [], sources: sources || [], settings: settings || null, codes: codes || [], vouchers: vouchers || [] };
+}
+
+export const saveFiscalSettings = (emitterUrl, codes) =>
+  fiscalRpc('finance_fiscal_save_settings', { p_emitter_url: emitterUrl || null, p_codes: codes }, 'Não foi possível salvar a configuração das notas.');
+export const saveFiscalDocument = (docId, fields) =>
+  fiscalRpc('finance_fiscal_save_document', { p_doc: docId, p_fields: fields }, 'Não foi possível salvar a nota.');
+export const registerFiscalIssued = (docId, number, issuedOn, accessKey) =>
+  fiscalRpc('finance_fiscal_register_issued', { p_doc: docId, p_number: number, p_issued_on: issuedOn, p_access_key: accessKey || null }, 'Não foi possível registrar a nota.');
+export const cancelFiscalDocument = (docId, reason) =>
+  fiscalRpc('finance_fiscal_cancel', { p_doc: docId, p_reason: reason }, 'Não foi possível registrar o cancelamento.');
+export const receiptVoucherNumber = groupId =>
+  fiscalRpc('finance_receipt_voucher', { p_group: groupId }, 'Não foi possível numerar o comprovante.');

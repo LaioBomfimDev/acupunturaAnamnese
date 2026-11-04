@@ -738,10 +738,41 @@ export const FINANCEIRO_HELP = {
     actions: [
       '“Anular” desfaz um recebimento lançado errado: pede o motivo, e o que ele pagava volta para “A receber”.',
       '“Mostrar anulados” traz de volta os anulados, riscados, com o motivo.',
+      '“Comprovante” imprime o comprovante do recebimento no papel timbrado, com número em sequência da clínica (o mesmo número se imprimir de novo).',
     ],
-    reading: ['Os totais do topo somam cada forma de pagamento no mês.'],
+    reading: [
+      'Os totais do topo somam cada forma de pagamento no mês.',
+      'Cada recebimento mostra a nota fiscal: “Nota: falta” (ainda não emitida) ou “Nota nº 152”. “Da operadora” lista os depósitos de convênio do mês.',
+    ],
     access: ['Só a administração.'],
-    notes: ['Nada se apaga e valor recebido não se edita: para corrigir, anule e lance de novo.'],
+    notes: [
+      'Nada se apaga e valor recebido não se edita: para corrigir, anule e lance de novo.',
+      'O comprovante não substitui a nota fiscal: enquanto a nota não sai, ele diz isso; depois, traz o número da NFS-e.',
+    ],
+  },
+  notas: {
+    title: 'Notas fiscais',
+    summary: 'A nota fiscal de serviço (NFS-e) de cada recebimento do particular e de cada depósito da operadora: o que falta emitir, os dados prontos para copiar no emissor e o número de cada nota emitida.',
+    actions: [
+      'A nota nasce sozinha quando o dinheiro entra: uma por recebimento do particular (para o paciente, ou para o responsável quando o paciente não tem CPF no cadastro) e uma por depósito da operadora (para a operadora).',
+      'Escolha a nota na lista (à esquerda) e use “Copiar” em cada campo (CPF ou CNPJ, nome, código do serviço, descrição, valor e competência) para colar no emissor. “Abrir emissor” abre o site.',
+      'Depois de emitir, digite o número da NFS-e e a data e toque “Registrar nota”. A chave de acesso (50 números) é opcional.',
+      '“Corrigir dados antes de emitir” muda tomador, código, descrição e competência da nota que falta emitir.',
+      '“Registrar cancelamento” guarda o cancelamento de uma nota (cancele primeiro no emissor).',
+      '“Configurar” guarda onde a clínica emite (o Emissor Nacional é o padrão) e o código do serviço de cada área.',
+    ],
+    reading: [
+      'Filtros: Falta emitir, Cancelar no emissor, Emitidas e Canceladas.',
+      'Competência é o dia do atendimento (o mais recente que o recebimento paga). Pacote pago antes das sessões usa o dia do recebimento.',
+      '“Cancelar no emissor” aparece quando o recebimento foi anulado (ou mudou de valor) depois da nota emitida.',
+    ],
+    access: ['Só a administração da instituição.'],
+    notes: [
+      'Desde 01/11/2026 a clínica do Simples Nacional emite a NFS-e pelo Emissor Nacional. Se a prefeitura mandar usar o emissor dela, troque o endereço em “Configurar”.',
+      'O código do serviço de cada área é o contador quem define. Os números em cinza são só sugestão (lista de serviços da LC 116).',
+      'Nota registrada não se apaga. Cancelada com o recebimento ainda valendo, ela volta para “Falta emitir”, para emitir de novo.',
+      'O sistema ainda não emite a nota sozinho: isso pede o certificado digital A1 e fica para uma próxima etapa.',
+    ],
   },
   pacotes: {
     title: 'Pacotes',

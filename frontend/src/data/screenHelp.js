@@ -477,7 +477,8 @@ export const PACIENTES_HELP = {
   title: 'Pacientes da instituição',
   summary: 'O cadastro central de pacientes. O paciente é um só na instituição e entra em cada área por matrícula.',
   actions: [
-    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço e matrícula inicial.',
+    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço, observações e matrícula inicial.',
+    '“Observações”: texto livre do cadastro, até 1000 caracteres, para o que a equipe precisa lembrar (horário preferido, quem acompanha, como avisar). Muda em “Alterar dados cadastrais”, na aba Cadastro da ficha.',
     'Na ficha, aba Cadastro, “+ Acrescentar convênio”: operadora, plano, número e validade da carteira e CNS. Convênio que acabou se desativa, não se apaga.',
     '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha.',
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
@@ -498,6 +499,7 @@ export const PACIENTES_HELP = {
   ],
   notes: [
     'Paciente menor de idade exige responsável no cadastro. Campos com * são obrigatórios.',
+    'As observações aparecem também no detalhe do atendimento na Agenda. Toda a equipe que vê o paciente lê, inclusive a recepção: dado clínico vai na ficha da área, não aqui.',
     'Excluir apaga prontuário, evoluções, agenda e matrículas, e não tem como desfazer pela tela.',
   ],
 };

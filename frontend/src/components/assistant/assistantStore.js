@@ -77,7 +77,7 @@ export function registerAssistantNavigator(handler) {
   };
 }
 
-/** Abre a tela (e, na Gestão, a aba `section`) pedida por um atalho. */
+/** Abre a tela (e, na Gestão ou no Financeiro, a aba `section`) pedida por um atalho. */
 export function openScreenFromAssistant(target, section = null) {
   if (!navigator) return;
   setState({ open: false });

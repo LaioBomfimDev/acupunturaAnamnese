@@ -91,9 +91,10 @@ test('região da Vertex: endereço certo para global, multirregião e região ú
 });
 
 test('atalhos por perfil: financeiro só da administração, recepção sem clínico', () => {
-  assert.deepEqual(assistant.linksForRole('admin'), assistant.ASSISTANT_LINKS);
-  assert.deepEqual(assistant.linksForRole('professional'), ['agenda', 'evolucao', 'escalas', 'gestao', 'pacientes']);
-  assert.deepEqual(assistant.linksForRole('reception'), ['agenda', 'gestao', 'pacientes']);
+  const personal = ['documentos', 'personalizar', 'cadastro'];
+  assert.deepEqual(assistant.linksForRole('admin'), [...assistant.ASSISTANT_LINKS, ...Object.keys(assistant.ASSISTANT_SECTION_LINKS)]);
+  assert.deepEqual(assistant.linksForRole('professional'), ['agenda', 'evolucao', 'escalas', 'gestao', 'pacientes', ...personal]);
+  assert.deepEqual(assistant.linksForRole('reception'), ['agenda', 'gestao', 'pacientes', ...personal]);
   assert.equal(assistant.assistantRoleOf({ role: 'clinic_admin' }), 'admin');
   assert.equal(assistant.assistantRoleOf({ role: 'receptionist' }), 'reception');
   assert.equal(assistant.assistantRoleOf({ role: 'therapist' }), 'professional');
@@ -294,6 +295,52 @@ test('Edge Function da assistente: acesso, teto antes da IA, só ajuda do sistem
   assert.doesNotMatch(source, /\.from\('(patients|patient_|clinical_records|appointments|finance_|appointment_charges)/, 'etapa 1 não lê dado de paciente nem financeiro');
   assert.match(source, /links\.includes\(link\)/, 'atalho só da lista do perfil');
   assert.match(source, /role === 'super_admin'\) return null/, 'SuperAdm não é equipe de instituição');
+});
+
+// Bug de 06/11/2026: a resposta falava de Documentos timbrados e o botão
+// dizia "Abrir Gestão →", caindo no Resumo.
+test('atalho abre a aba certa, não a tela em volta dela', async () => {
+  assert.deepEqual(assistant.assistantLinkDestination('documentos', 'admin'), { target: 'gestao', section: 'documentos' });
+  assert.equal(assistant.assistantLinkLabel('documentos'), 'Documentos timbrados');
+  // Quem não é da administração tem Documentos timbrados como tela própria.
+  assert.deepEqual(assistant.assistantLinkDestination('documentos', 'professional'), { target: 'documentos', section: null });
+  assert.deepEqual(assistant.assistantLinkDestination('documentos', 'reception'), { target: 'documentos', section: null });
+  assert.deepEqual(assistant.assistantLinkDestination('areceber', 'admin'), { target: 'financeiro', section: 'areceber' });
+  assert.deepEqual(assistant.assistantLinkDestination('agenda', 'admin'), { target: 'agenda', section: null });
+  assert.equal(assistant.assistantLinkLabel('pacientes'), 'Pacientes da instituição');
+
+  // Toda aba existe na tela com o mesmo nome, e toda aba da tela tem atalho.
+  const sectionsOf = source => new Map([...source.match(/const SECTIONS = \[([\s\S]*?)\];/)[1]
+    .matchAll(/\{ id: '([a-z]+)', label: '([^']+)' \}/g)].map(match => [match[1], match[2]]));
+  const screens = {
+    gestao: sectionsOf(await read('src/components/panels/RelatoriosGestao.jsx')),
+    financeiro: sectionsOf(await read('src/components/financeiro/FinanceiroScreen.jsx')),
+  };
+  for (const [id, link] of Object.entries(assistant.ASSISTANT_SECTION_LINKS)) {
+    assert.equal(screens[link.screen].get(id), link.label, `aba ${id} diferente da tela`);
+  }
+  for (const [screen, sections] of Object.entries(screens)) {
+    for (const id of sections.keys()) {
+      if (id !== 'resumo') assert.equal(assistant.ASSISTANT_SECTION_LINKS[id]?.screen, screen, `aba ${id} sem atalho da assistente`);
+    }
+  }
+  const personal = sectionsOf(await read('src/components/panels/GestaoProfissional.jsx'));
+  for (const [id, link] of Object.entries(assistant.ASSISTANT_SECTION_LINKS)) {
+    if (link.everyone && id !== 'documentos') assert.ok(personal.has(id), `${id} não existe na Gestão pessoal`);
+  }
+
+  // Espelho do servidor e pedido à IA.
+  const rulesTs = await read(`${functionsDir}/_shared/clinicAssistant.ts`);
+  const mirrored = Object.fromEntries([...rulesTs.matchAll(/^  ([a-z]+): \{ screen: '([a-z]+)', label: '([^']+)'(, everyone: true)? \},\r?$/gm)]
+    .map(match => [match[1], { screen: match[2], label: match[3], ...(match[4] ? { everyone: true } : {}) }]));
+  assert.deepEqual(mirrored, assistant.ASSISTANT_SECTION_LINKS);
+  const edge = await read(`${functionsDir}/clinic-assistant/index.ts`);
+  assert.match(edge, /Use sempre o destino mais específico/);
+
+  // Gestão ou Financeiro já abertos também trocam de aba.
+  const app = await read('src/App.jsx');
+  assert.equal((app.match(/key=\{hubSectionRequest\}/g) || []).length, 3, 'as três telas remontam com o atalho');
+  assert.match(app, /setHubSectionRequest\(request => request \+ 1\)/);
 });
 
 test('tela: só o botão flutuante, em todas as telas (o cartão da tela inicial saiu em 01/11/2026)', async () => {

@@ -164,7 +164,7 @@ test('paleta sem vermelho de risco, com rosas e dourados, e texto branco legíve
 test('Gestão pessoal não monta nada da instituição', async () => {
   const app = await readFile(path.join(srcDir, 'App.jsx'), 'utf8');
   assert.match(app, /isClinicAdmin \? \(\s*<RelatoriosGestao/);
-  assert.match(app, /<GestaoProfissional profile=\{profile\}/);
+  assert.match(app, /<GestaoProfissional [^>]*profile=\{profile\}/);
 
   const personal = await readFile(path.join(srcDir, 'components/panels/GestaoProfissional.jsx'), 'utf8');
   const imports = personal.match(/^import .*$/gm).join('\n');

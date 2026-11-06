@@ -8,6 +8,8 @@ import { AiCorrectionButton } from '../ui/AiCorrectionButton';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_SCREEN_LABELS,
+  assistantLinkDestination,
+  assistantLinkLabel,
   assistantRoleOf,
   linksForRole,
 } from '../../utils/clinicAssistant';
@@ -162,8 +164,11 @@ function Conversation({ state, allowed, role, inputRef }) {
           <div key={index} className={`ca-bubble ca-bubble--${message.role}`}>
             <p>{message.text}</p>
             {message.role === 'assistant' && message.links?.filter(link => allowed.includes(link)).map(link => (
-              <button key={link} type="button" className="ca-open" onClick={() => openScreenFromAssistant(link)}>
-                Abrir {ASSISTANT_SCREEN_LABELS[link]} →
+              <button key={link} type="button" className="ca-open" onClick={() => {
+                const { target, section } = assistantLinkDestination(link, role);
+                openScreenFromAssistant(target, section);
+              }}>
+                Abrir {assistantLinkLabel(link)} →
               </button>
             ))}
             {message.role === 'assistant' && (

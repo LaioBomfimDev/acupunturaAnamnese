@@ -41,6 +41,7 @@ import {
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_MAX_MESSAGES,
   ASSISTANT_SCREENS,
+  ASSISTANT_SECTION_LINKS,
   type AssistantRole,
   linksForRole,
 } from '../_shared/clinicAssistant.ts';
@@ -128,7 +129,7 @@ Contexto:
 - Quem pergunta: ${context.callerName || 'alguém da equipe'} (${ROLE_LABELS[role]}).
 - A pessoa está em: ${SCREEN_LABELS[screen] || 'Tela inicial'}.
 - Formato: texto simples, sem markdown de negrito ou título; listas com "- " no começo da linha quando ajudar. Seja direta: até 8 frases, ou uma lista curta.
-- Em links, ponha até 2 telas que ajudem a pessoa a seguir, só desta lista: ${links.join(', ') || 'nenhuma'}.
+- Em links, ponha até 2 destinos que ajudem a pessoa a seguir, só desta lista (id = nome no sistema): ${links.map(link => `${link} = ${ASSISTANT_SECTION_LINKS[link]?.label || SCREEN_LABELS[link]}`).join('; ') || 'nenhuma'}. Use sempre o destino mais específico: se a resposta fala de uma aba, ponha a aba, nunca a tela em volta dela (fala de Documentos timbrados: documentos, não gestao).
 
 SUAS_CAPACIDADES:
 ${CAPABILITIES.map(item => `- ${item}`).join('\n')}
@@ -186,7 +187,7 @@ const OUTPUT_SCHEMA = {
     },
     links: {
       type: 'ARRAY',
-      description: 'até 2 telas para abrir, da lista permitida',
+      description: 'até 2 destinos para abrir, da lista permitida, sempre o mais específico',
       items: { type: 'STRING' },
     },
   },

@@ -201,10 +201,12 @@ function ResultBand({ summary, month }) {
   );
 }
 
-export function FinanceiroScreen({ profile }) {
+export function FinanceiroScreen({ profile, initialSection = null }) {
   const [today] = useState(() => todayInClinic());
   const [month, setMonth] = useState(() => monthOf(todayInClinic()));
-  const [section, setSection] = useState('resumo');
+  const [section, setSection] = useState(() => (
+    SECTIONS.some(item => item.id === initialSection) ? initialSection : 'resumo'
+  ));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

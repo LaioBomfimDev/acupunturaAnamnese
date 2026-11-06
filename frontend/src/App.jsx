@@ -117,6 +117,10 @@ function AppScreens() {
   const [patientEvolutionRecords, setPatientEvolutionRecords] = useState([]);
   const [hubAgendaShowBirthdays, setHubAgendaShowBirthdays] = useState(false);
   const [hubGestaoInitialSection, setHubGestaoInitialSection] = useState(null);
+  const [hubFinanceInitialSection, setHubFinanceInitialSection] = useState(null);
+  // Gestão e Financeiro só leem a aba inicial ao montar: cada atalho para uma
+  // aba troca a key, senão a tela já aberta ficaria onde estava.
+  const [hubSectionRequest, setHubSectionRequest] = useState(0);
   // Por onde o workspace da área abre (null = tela de escolha do paciente).
   // 'escalas' = alerta de risco da tela inicial, com a paciente já escolhida.
   const [activeTab, setActiveTab] = useState('Tela inicial');
@@ -343,8 +347,11 @@ function AppScreens() {
       setActiveTab('Tela inicial');
     }
     openHubScreen(target);
-    // Atalho para uma aba da Gestão (ex.: IA do mês).
-    if (target === 'gestao' && section) setHubGestaoInitialSection(section);
+    // Atalho para uma aba da Gestão ou do Financeiro (ex.: IA do mês).
+    if (!section) return;
+    if (target === 'gestao') setHubGestaoInitialSection(section);
+    if (target === 'financeiro') setHubFinanceInitialSection(section);
+    setHubSectionRequest(request => request + 1);
   }), []);
 
   if (loading) {
@@ -587,7 +594,7 @@ function AppScreens() {
           </header>
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
-              <FinanceiroScreen profile={profile} />
+              <FinanceiroScreen key={hubSectionRequest} profile={profile} initialSection={hubFinanceInitialSection} />
             </Suspense>
           </main>
           {renderHubDock('financeiro')}
@@ -636,6 +643,7 @@ function AppScreens() {
             <Suspense fallback={<PanelLoading />}>
               {isClinicAdmin ? (
                 <RelatoriosGestao
+                  key={hubSectionRequest}
                   profile={profile}
                   initialSection={hubGestaoInitialSection}
                   onOpenBirthdays={() => {
@@ -646,7 +654,7 @@ function AppScreens() {
                   }}
                 />
               ) : (
-                <GestaoProfissional profile={profile} initialSection={hubGestaoInitialSection} />
+                <GestaoProfissional key={hubSectionRequest} profile={profile} initialSection={hubGestaoInitialSection} />
               )}
             </Suspense>
           </main>
@@ -859,6 +867,7 @@ function AppScreens() {
     setShowHubDocuments(screen === 'documentos');
     setShowHubGestao(screen === 'gestao');
     setHubGestaoInitialSection(null);
+    setHubFinanceInitialSection(null);
     setShowHubScales(screen === 'escalas');
     setHubScalesPatient(null);
     setShowHubFinance(screen === 'financeiro');

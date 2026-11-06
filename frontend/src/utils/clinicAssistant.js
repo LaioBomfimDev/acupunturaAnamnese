@@ -24,6 +24,38 @@ export const ASSISTANT_LINKS = [
   'agenda', 'evolucao', 'escalas', 'financeiro', 'gestao', 'pacientes',
 ];
 
+// Abas que a resposta pode abrir direto (06/11/2026): "Abrir Documentos
+// timbrados →" em vez de "Abrir Gestão →". O id é o da aba na tela; o rótulo
+// é o do menu. `everyone`: existe para todo perfil; as outras são só da
+// administração. Aba nova da Gestão ou do Financeiro entra aqui.
+export const ASSISTANT_SECTION_LINKS = {
+  indicadores: { screen: 'gestao', label: 'Indicadores' },
+  faltosos: { screen: 'gestao', label: 'Faltosos' },
+  retornos: { screen: 'gestao', label: 'Retornos' },
+  pesquisa: { screen: 'gestao', label: 'Pesquisa de satisfação' },
+  importaveis: { screen: 'gestao', label: 'Importáveis' },
+  profissionais: { screen: 'gestao', label: 'Profissionais' },
+  acessos: { screen: 'gestao', label: 'Acessos' },
+  documentos: { screen: 'gestao', label: 'Documentos timbrados', everyone: true },
+  personalizar: { screen: 'gestao', label: 'Personalizar', everyone: true },
+  acessopaciente: { screen: 'gestao', label: 'Acesso do paciente' },
+  ia: { screen: 'gestao', label: 'IA do mês' },
+  cadastro: { screen: 'gestao', label: 'Meu cadastro', everyone: true },
+  areceber: { screen: 'financeiro', label: 'A receber' },
+  recebidos: { screen: 'financeiro', label: 'Recebidos' },
+  pacotes: { screen: 'financeiro', label: 'Pacotes' },
+  apagar: { screen: 'financeiro', label: 'A pagar' },
+  pagas: { screen: 'financeiro', label: 'Pagas' },
+  equipe: { screen: 'financeiro', label: 'Equipe e repasses' },
+  valores: { screen: 'financeiro', label: 'Valores dos atendimentos' },
+  modelos: { screen: 'financeiro', label: 'Modelos de pacote' },
+  recebimento: { screen: 'financeiro', label: 'Como cada um recebe' },
+  saidasfixas: { screen: 'financeiro', label: 'Saídas fixas' },
+  operadoras: { screen: 'financeiro', label: 'Operadoras' },
+  solicitantes: { screen: 'financeiro', label: 'Solicitantes' },
+  faturamento: { screen: 'financeiro', label: 'Dados para faturamento' },
+};
+
 export const ASSISTANT_MAX_MESSAGES = 12;
 export const ASSISTANT_MAX_MESSAGE_CHARS = 1500;
 
@@ -185,11 +217,30 @@ export function assistantRoleOf(profile) {
 
 /** Atalhos que este perfil pode abrir (mesmo corte do menu da tela inicial). */
 export function linksForRole(role) {
-  return ASSISTANT_LINKS.filter(link => {
+  const screens = ASSISTANT_LINKS.filter(link => {
     if (link === 'financeiro') return role === 'admin';
     if (link === 'evolucao' || link === 'escalas') return role !== 'reception';
     return true;
   });
+  const sections = Object.keys(ASSISTANT_SECTION_LINKS)
+    .filter(link => role === 'admin' || ASSISTANT_SECTION_LINKS[link].everyone);
+  return [...screens, ...sections];
+}
+
+/** Nome do destino no botão "Abrir … →". */
+export function assistantLinkLabel(link) {
+  return ASSISTANT_SECTION_LINKS[link]?.label || ASSISTANT_SCREEN_LABELS[link];
+}
+
+/**
+ * Para onde o atalho leva. Documentos timbrados é aba da Gestão só para a
+ * administração; para os outros perfis é tela própria.
+ */
+export function assistantLinkDestination(link, role) {
+  const sectionLink = ASSISTANT_SECTION_LINKS[link];
+  if (!sectionLink) return { target: link, section: null };
+  if (link === 'documentos' && role !== 'admin') return { target: 'documentos', section: null };
+  return { target: sectionLink.screen, section: link };
 }
 
 function plural(count, one, many) {

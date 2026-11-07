@@ -101,6 +101,7 @@ export async function loadFinanceData() {
     expenses,
     members,
     patients,
+    purchaseItems,
   ] = await Promise.all([
     supabase.from('clinic_finance_settings').select('*').maybeSingle(),
     fetchAll('procedure_prices', 'id,discipline,appointment_type,professional_id,price_cents,active', 'discipline'),
@@ -116,6 +117,7 @@ export async function loadFinanceData() {
     fetchAll('finance_expenses', '*'),
     listClinicMembers(),
     listClinicPatients(),
+    fetchAll('finance_purchase_items', '*', 'position'),
   ]);
 
   if (settingsResult.error) fail(settingsResult.error, 'Não foi possível carregar a configuração do financeiro.');
@@ -138,6 +140,7 @@ export async function loadFinanceData() {
     expenses,
     members,
     patients,
+    purchaseItems,
   };
 }
 
@@ -382,6 +385,23 @@ export async function registerExpense(input) {
     p_person: input.personId || null,
     p_note: input.note || null,
   }, 'Não foi possível lançar a saída.');
+}
+
+/** items: [{ description, quantityThousandths, unitCents }] */
+export async function registerPurchase(input) {
+  return rpc('finance_register_purchase', {
+    p_category: input.categoryId,
+    p_paid_on: input.paidOn,
+    p_method: input.method,
+    p_professional: input.professionalId || null,
+    p_person: input.personId || null,
+    p_note: input.note || null,
+    p_items: input.items.map(item => ({
+      description: item.description,
+      quantity: item.quantityThousandths / 1000,
+      unit_cents: item.unitCents,
+    })),
+  }, 'Não foi possível registrar a compra.');
 }
 
 export async function payExpense(expenseId, paidOn, method) {

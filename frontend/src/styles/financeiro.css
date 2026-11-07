@@ -1738,3 +1738,82 @@
     display: block;
   }
 }
+
+/* ---------- compras e recibo (06/11/2026) ---------- */
+
+.fin-purchase-items {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fin-purchase-items legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.fin-purchase-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 130px 84px auto;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fin-purchase-line {
+  align-self: center;
+  text-align: right;
+}
+
+.fin-purchase-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fin-purchase-total,
+.fin-receipt-total {
+  font-size: 15px;
+}
+
+.fin-receipt-total {
+  margin: 10px 0 0;
+  text-align: right;
+}
+
+.fin-receipt-details {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+
+.fin-receipt-details > div {
+  display: flex;
+  gap: 10px;
+}
+
+.fin-receipt-details dt {
+  min-width: 130px;
+  color: var(--r1-text-muted, #64748b);
+}
+
+.fin-receipt-details dd {
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .fin-purchase-item {
+    grid-template-columns: minmax(0, 1fr) 64px;
+  }
+
+  .fin-purchase-item .fin-purchase-unit,
+  .fin-purchase-item .fin-purchase-line,
+  .fin-purchase-item .fin-link {
+    grid-column: auto;
+  }
+}

@@ -797,6 +797,7 @@ export const FINANCEIRO_HELP = {
       '“Pagar” abre na própria linha: valor, data e forma. Em saída fixa, “Não houve este vencimento” tira a conta daquele dia.',
       '“Pagar repasse” lança a saída na categoria Repasse de profissionais.',
       '“+ Lançar saída” lança uma conta avulsa, já paga ou a pagar.',
+      '“+ Registrar compra” lança uma compra já paga (água, almoço da equipe, material) com os itens, a categoria, a forma de pagamento e quem comprou, e gera o recibo interno numerado.',
     ],
     reading: [
       'Âmbar = venceu. “valor muda” = saída fixa sem valor fixo (luz, água): escreva quanto veio.',
@@ -807,14 +808,22 @@ export const FINANCEIRO_HELP = {
   },
   pagas: {
     title: 'Pagas',
-    summary: 'As saídas pagas no mês, por categoria.',
+    summary: 'As saídas pagas no mês, por categoria, inclusive as compras com recibo.',
     actions: [
-      '“Anular” desfaz uma saída lançada errado, com motivo. Se era saída fixa, o vencimento volta para “A pagar”.',
+      '“+ Registrar compra”: um ou mais itens (descrição, quantidade e valor de cada), categoria, data, forma de pagamento e quem comprou. Ao registrar, o recibo abre para imprimir ou salvar em PDF.',
+      '“Recibo”, na linha de uma compra, abre o recibo Nº AAAA-000123 de novo no papel timbrado da instituição.',
+      '“Anular” desfaz uma saída lançada errado, com motivo. Se era saída fixa, o vencimento volta para “A pagar”. Compra anulada continua guardada, com o recibo marcado como anulado.',
       '“Mostrar anuladas” traz de volta as anuladas, riscadas.',
     ],
-    reading: ['Os totais do topo somam cada categoria no mês.'],
+    reading: [
+      'Os totais do topo somam cada categoria no mês.',
+      'O número do recibo é sequencial por ano e nunca se repete nem pula.',
+    ],
     access: ['Só a administração.'],
-    notes: ['Nada se apaga: anula e lança de novo.'],
+    notes: [
+      'Nada se apaga: anula e lança de novo. Compra registrada não se edita.',
+      'O recibo é um comprovante interno da instituição e não tem valor fiscal: não substitui nota fiscal.',
+    ],
   },
   equipe: {
     title: 'Equipe e repasses',

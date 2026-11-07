@@ -115,6 +115,49 @@ export function centsToInput(cents) {
   return (value / 100).toFixed(2).replace('.', ',');
 }
 
+// ---------- compras (itens e recibo) ----------
+
+/** "2", "1,5", "0,250" → milésimos inteiros (2000, 1500, 250). Vazio, zero ou inválido → null. */
+export function parseQuantityInput(text) {
+  const raw = String(text ?? '').trim();
+  if (!/^\d{1,7}([.,]\d{1,3})?$/.test(raw)) return null;
+  const thousandths = Math.round(Number(raw.replace(',', '.')) * 1000);
+  return thousandths > 0 ? thousandths : null;
+}
+
+/** Milésimos → número que vai para o banco (1500 → 1.5). */
+export function quantityFromThousandths(thousandths) {
+  return thousandths / 1000;
+}
+
+/** Milésimos → texto do campo e do recibo (2000 → "2", 1500 → "1,5"). */
+export function quantityToText(thousandths) {
+  return String(thousandths / 1000).replace('.', ',');
+}
+
+// Meio para cima em inteiros, a mesma conta de round(quantidade × valor) do
+// banco (finance_register_purchase), sem erro de ponto flutuante.
+export function purchaseItemTotal({ quantityThousandths, unitCents }) {
+  if (!Number.isInteger(quantityThousandths) || !Number.isInteger(unitCents)) return 0;
+  return Math.floor((quantityThousandths * unitCents + 500) / 1000);
+}
+
+export function purchaseTotal(items) {
+  return (items || []).reduce((total, item) => total + purchaseItemTotal(item), 0);
+}
+
+/** "2026-000123" → "Nº 2026-000123". */
+export function formatReceiptNumber(number) {
+  return number ? `Nº ${number}` : '';
+}
+
+/** Itens gravados de uma compra, na ordem em que foram lançados. */
+export function itemsOfPurchase(items, expenseId) {
+  return (items || [])
+    .filter(item => item.expense_id === expenseId)
+    .sort((a, b) => a.position - b.position);
+}
+
 /** Para os quadros: R$ 18.420 vira "18,4 mil"; abaixo de mil fica inteiro. */
 export function formatShortBRL(cents) {
   if (cents == null) return '–';

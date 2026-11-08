@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { GestaoNav, GestaoSectionHead } from '../panels/GestaoNav';
+import { scrollToSectionTop } from '../../utils/sectionScroll';
 import { GestaoResumo } from '../panels/GestaoResumo';
 import { HubBackButton } from '../HubNav';
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { FINANCEIRO_HELP } from '../../data/screenHelp';
 import { getDiscipline } from '../../data/disciplines';
-import { loadFinanceData } from '../../services/financeiroService';
+import { loadFinanceData, loadFiscalData, loadTissData } from '../../services/financeiroService';
 import { loadConvenioData } from '../../services/convenioService';
 import {
   addDays,
@@ -25,7 +26,11 @@ import { APagar, Equipe, Pagas } from './FinanceSaidas';
 import { AReceber, Pacotes, Recebidos } from './FinanceEntradas';
 import { ModelosConfig, RecebimentoConfig, SaidasFixasConfig, StartCard, ValoresConfig } from './FinanceConfig';
 import { Faturamento, Operadoras, Solicitantes } from './FinanceConvenios';
+import { Guias, Lotes, Pagamentos } from './FinanceTiss';
+import { NotasFiscais } from './FinanceFiscal';
+import { buildFiscalTiles, fiscalBySource } from '../../utils/fiscal';
 import { buildConvenioTiles } from '../../utils/convenio';
+import { buildTissTiles, operatorReceiptsFrom } from '../../utils/tissXml';
 import '../../styles/gestao.css';
 import '../../styles/financeiro.css';
 
@@ -43,6 +48,7 @@ const SECTIONS = [
   { id: 'resumo', label: 'Resumo' },
   { id: 'areceber', label: 'A receber' },
   { id: 'recebidos', label: 'Recebidos' },
+  { id: 'notas', label: 'Notas fiscais' },
   { id: 'pacotes', label: 'Pacotes' },
   { id: 'apagar', label: 'A pagar' },
   { id: 'pagas', label: 'Pagas' },
@@ -51,6 +57,9 @@ const SECTIONS = [
   { id: 'modelos', label: 'Modelos de pacote' },
   { id: 'recebimento', label: 'Como cada um recebe' },
   { id: 'saidasfixas', label: 'Saídas fixas' },
+  { id: 'guias', label: 'Guias' },
+  { id: 'lotes', label: 'Lotes' },
+  { id: 'pagamentos', label: 'Pagamentos e glosas' },
   { id: 'operadoras', label: 'Operadoras' },
   { id: 'solicitantes', label: 'Solicitantes' },
   { id: 'faturamento', label: 'Dados para faturamento' },
@@ -58,16 +67,17 @@ const SECTIONS = [
 
 const SECTION_GROUPS = [
   { label: 'Visão geral', ids: ['resumo'] },
-  { label: 'Entradas', ids: ['areceber', 'recebidos', 'pacotes'] },
+  { label: 'Entradas', ids: ['areceber', 'recebidos', 'notas', 'pacotes'] },
   { label: 'Saídas', ids: ['apagar', 'pagas', 'equipe'] },
   { label: 'Configuração', ids: ['valores', 'modelos', 'recebimento', 'saidasfixas'] },
-  { label: 'Convênios', ids: ['operadoras', 'solicitantes', 'faturamento'] },
+  { label: 'Convênios', ids: ['guias', 'lotes', 'pagamentos', 'operadoras', 'solicitantes', 'faturamento'] },
 ];
 
 const TAB_ICONS = {
   resumo: <><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></>,
   areceber: <><circle cx="12" cy="12" r="9" /><path d="M12 7.5v4.5l3 2" /></>,
   recebidos: <><path d="m5 12.5 4.5 4.5L19 7.5" /></>,
+  notas: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   pacotes: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" /></>,
   apagar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
   pagas: <><path d="M4 7h16M4 12h16M4 17h10" /></>,
@@ -76,6 +86,9 @@ const TAB_ICONS = {
   modelos: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 12h8M8 16h5" /></>,
   recebimento: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
   saidasfixas: <><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v4h4" /></>,
+  guias: <><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h5" /></>,
+  lotes: <><rect x="4" y="4" width="14" height="5" rx="1" /><rect x="6" y="11" width="14" height="5" rx="1" /><path d="M8 18h10v3H8z" /></>,
+  pagamentos: <><path d="M3 7h18v12H3z" /><path d="M3 11h18M7 15h4" /><path d="m15 15 1.5 1.5L19 14" /></>,
   operadoras: <><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6M12 8v4M10 10h4" /></>,
   solicitantes: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   faturamento: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2.2" /><path d="M5.8 16.5a3.5 3.5 0 0 1 6.4 0M14 10h4M14 14h3" /></>,
@@ -102,9 +115,15 @@ function buildTiles({ data, derived, month }) {
   return {
     areceber: {
       display: formatBRL(summary.receivableCents),
+      // Por quem paga: atraso de paciente (particular) e de operadora.
       line: summary.lateCents > 0
-        ? `${formatBRL(summary.lateCents)} em atraso, de ${plural(summary.latePatients, 'paciente', 'pacientes')}`
-        : summary.receivableCount ? `${plural(summary.receivableCount, 'item', 'itens')} em aberto, nada em atraso` : 'nada em aberto',
+        ? `${formatBRL(summary.lateCents)} em atraso, de ${[
+          summary.latePatients ? plural(summary.latePatients, 'paciente', 'pacientes') : '',
+          summary.lateConvenios ? plural(summary.lateConvenios, 'operadora', 'operadoras') : '',
+        ].filter(Boolean).join(' e ')}`
+        : summary.receivableCount
+          ? `${plural(summary.receivableCount, 'item', 'itens')} em aberto, nada em atraso${summary.receivableConvenioCents ? ` · ${formatBRL(summary.receivableConvenioCents)} de convênio` : ''}`
+          : 'nada em aberto',
       tone: summary.lateCents > 0 ? 'warning' : undefined,
     },
     recebidos: {
@@ -197,8 +216,17 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
   const [conv, setConv] = useState(null);
   const [convError, setConvError] = useState('');
   const [convKey, setConvKey] = useState(0);
-  // Trocar de parte limpa o aviso da gravação anterior.
-  const goTo = id => { setSection(id); setFlash(''); };
+  // Guias, lotes e pagamentos da operadora (Fase 2): também à parte.
+  const [tiss, setTiss] = useState(null);
+  const [tissError, setTissError] = useState('');
+  const [tissKey, setTissKey] = useState(0);
+  // Notas fiscais (20261104): também à parte.
+  const [fiscal, setFiscal] = useState(null);
+  const [fiscalError, setFiscalError] = useState('');
+  const [fiscalKey, setFiscalKey] = useState(0);
+  // Trocar de parte limpa o aviso da gravação anterior e leva ao título
+  // dela (quadro do Resumo, link "Abrir Operadoras", "Voltar ao Resumo").
+  const goTo = id => { setSection(id); setFlash(''); scrollToSectionTop(null); };
 
   useEffect(() => {
     let cancelled = false;
@@ -217,14 +245,34 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
     return () => { cancelled = true; };
   }, [convKey, profile?.clinic_id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    loadTissData()
+      .then(next => { if (!cancelled) { setTiss(next); setTissError(''); } })
+      .catch(err => { if (!cancelled) setTissError(err.message || 'Não foi possível carregar as guias.'); });
+    return () => { cancelled = true; };
+  }, [tissKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadFiscalData()
+      .then(next => { if (!cancelled) { setFiscal(next); setFiscalError(''); } })
+      .catch(err => { if (!cancelled) setFiscalError(err.message || 'Não foi possível carregar as notas fiscais.'); });
+    return () => { cancelled = true; };
+  }, [fiscalKey]);
+
   const derived = useMemo(() => {
     if (!data) return null;
+    // Dinheiro da operadora entra nas mesmas contas que o recebimento do
+    // paciente (o que falta, o recebido no mês, o repasse quando paga).
+    const receipts = [...data.receipts, ...operatorReceiptsFrom(data.tissPaid)];
+    const money = { ...data, receipts };
     const settings = data.settings;
     const repasseCategory = data.categories.find(row => row.system_key === 'repasse') || null;
     const salaryCategory = data.categories.find(row => row.system_key === 'salarios') || null;
-    const receivables = buildReceivables({ ...data, today });
+    const receivables = buildReceivables({ ...money, today });
     const payouts = buildPayouts({
-      ...data,
+      ...money,
       repasseCategoryId: repasseCategory?.id,
       basis: settings?.payout_basis || 'on_payment',
       month,
@@ -238,7 +286,7 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
       today,
       payouts,
     });
-    const summary = buildMonthSummary({ ...data, receivables, payables, month, today });
+    const summary = buildMonthSummary({ ...money, receivables, payables, month, today });
     const config = buildConfigStatus(data);
     return {
       today,
@@ -258,8 +306,11 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
   }, [data, month, today]);
 
   const convView = useMemo(() => (data ? buildConvenioTiles({ data, conv, convError }) : null), [data, conv, convError]);
-  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles } : null), [data, derived, month, convView]);
-  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts } : null), [tiles, derived, convView]);
+  const tissView = useMemo(() => buildTissTiles({ tiss, tissError, today }), [tiss, tissError, today]);
+  const fiscalView = useMemo(() => buildFiscalTiles({ fiscal, fiscalError }), [fiscal, fiscalError]);
+  const fiscalSources = useMemo(() => (fiscal ? fiscalBySource(fiscal) : null), [fiscal]);
+  const tiles = useMemo(() => (data && derived ? { ...buildTiles({ data, derived, month }), ...convView.tiles, ...tissView.tiles, ...fiscalView.tiles } : null), [data, derived, month, convView, tissView, fiscalView]);
+  const navCounts = useMemo(() => (tiles && derived ? { ...navCountsFrom(tiles, derived), ...convView.counts, ...tissView.counts, ...fiscalView.counts } : null), [tiles, derived, convView, tissView, fiscalView]);
 
   // Contexto que cada parte recebe: dados, contas e como gravar.
   const fin = data && derived ? {
@@ -267,12 +318,20 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
     ...derived,
     month,
     profile,
-    reload: () => setReloadKey(key => key + 1),
+    // Recebimento lançado ou anulado mexe na nota: as duas cargas voltam.
+    reload: () => { setReloadKey(key => key + 1); setFiscalKey(key => key + 1); },
     notify: message => setFlash(message),
     open: goTo,
     conv,
     convError,
     convReload: () => setConvKey(key => key + 1),
+    tiss,
+    tissError,
+    tissReload: () => setTissKey(key => key + 1),
+    fiscal,
+    fiscalError,
+    fiscalBySource: fiscalSources,
+    fiscalReload: () => setFiscalKey(key => key + 1),
   } : null;
 
   return (
@@ -330,6 +389,7 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
 
         {fin && section === 'areceber' && <AReceber fin={fin} />}
         {fin && section === 'recebidos' && <Recebidos fin={fin} />}
+        {fin && section === 'notas' && <NotasFiscais fin={fin} />}
         {fin && section === 'pacotes' && <Pacotes fin={fin} />}
         {fin && section === 'apagar' && <APagar fin={fin} />}
         {fin && section === 'pagas' && <Pagas fin={fin} />}
@@ -338,6 +398,9 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
         {fin && section === 'modelos' && <ModelosConfig fin={fin} />}
         {fin && section === 'recebimento' && <RecebimentoConfig fin={fin} />}
         {fin && section === 'saidasfixas' && <SaidasFixasConfig fin={fin} />}
+        {fin && section === 'guias' && <Guias fin={fin} />}
+        {fin && section === 'lotes' && <Lotes fin={fin} />}
+        {fin && section === 'pagamentos' && <Pagamentos fin={fin} />}
         {fin && section === 'operadoras' && <Operadoras fin={fin} />}
         {fin && section === 'solicitantes' && <Solicitantes fin={fin} />}
         {fin && section === 'faturamento' && <Faturamento fin={fin} />}

@@ -215,7 +215,8 @@ test('exclusão: convênio do paciente sai, e a evolução sai antes do agendame
 
 test('Financeiro ganha o grupo Convênios, com ajuda em cada parte', async () => {
   const screen = await read('src/components/financeiro/FinanceiroScreen.jsx');
-  assert.match(screen, /\{ label: 'Convênios', ids: \['operadoras', 'solicitantes', 'faturamento'\] \}/);
+  // Fase 2 (20261103) pôs Guias, Lotes e Pagamentos e glosas antes dos cadastros.
+  assert.match(screen, /\{ label: 'Convênios', ids: \['guias', 'lotes', 'pagamentos', 'operadoras', 'solicitantes', 'faturamento'\] \}/);
   for (const id of ['operadoras', 'solicitantes', 'faturamento']) {
     assert.match(screen, new RegExp(`\\{ id: '${id}', label: '`), `${id} no menu`);
     assert.ok(FINANCEIRO_HELP[id]?.title && FINANCEIRO_HELP[id]?.summary, `${id} com "Como funciona"`);

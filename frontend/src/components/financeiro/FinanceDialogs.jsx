@@ -9,7 +9,6 @@ import {
   sellPackage,
 } from '../../services/financeiroService';
 import {
-  FINANCE_APPOINTMENT_TYPES,
   PAYMENT_PLANS,
   addDays,
   centsToInput,
@@ -21,6 +20,8 @@ import {
   splitInstallments,
 } from '../../utils/finance';
 import { MethodPicker, MoneyInput } from './FinanceFields';
+import { FinancePackagePricing } from './FinancePackagePricing';
+import { financeServicesForArea } from '../../utils/financeServices';
 
 // ============================================================
 // Janelas do Financeiro. Todas fecham com Esc, clique fora e ×
@@ -267,7 +268,7 @@ export function SellPackageDialog({ fin, onClose, initialPatientId = '' }) {
         </label>
         <label className="gt-field" htmlFor="fin-sell-area">
           Área
-          <select id="fin-sell-area" className="gt-select" value={discipline} onChange={event => { setDiscipline(event.target.value); setProfessionalId(''); }}>
+          <select id="fin-sell-area" className="gt-select" value={discipline} onChange={event => { setDiscipline(event.target.value); setProfessionalId(''); setTypes([]); }}>
             <option value="">Escolher</option>
             {DISCIPLINES.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
           </select>
@@ -306,7 +307,7 @@ export function SellPackageDialog({ fin, onClose, initialPatientId = '' }) {
       <fieldset className="fin-fieldset">
         <legend>Que atendimentos gastam o pacote</legend>
         <div className="fin-choices">
-          {FINANCE_APPOINTMENT_TYPES.map(type => (
+          {financeServicesForArea(discipline, types).map(type => (
             <button
               key={type.id}
               type="button"
@@ -320,6 +321,16 @@ export function SellPackageDialog({ fin, onClose, initialPatientId = '' }) {
         </div>
         <p className="fin-hint">{types.length ? 'Só os tipos marcados.' : 'Nenhum marcado: qualquer atendimento da área gasta o pacote.'}</p>
       </fieldset>
+
+      <FinancePackagePricing
+        discipline={discipline}
+        types={types}
+        sessions={sessionCount}
+        prices={fin.data.prices}
+        professionalId={professionalId || null}
+        onApply={setTotal}
+        busy={busy}
+      />
 
       <fieldset className="fin-fieldset">
         <legend>Como o paciente vai pagar</legend>

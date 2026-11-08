@@ -741,6 +741,40 @@
   min-width: 132px;
 }
 
+.fin-prices .fin-money-input > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.fin-service-name {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.fin-cell-unavailable {
+  color: var(--r1-text-subtle);
+}
+
+.fin-package-policy {
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.fin-package-pricing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-accent-wash);
+}
+
 .fin-cell .gt-select::placeholder {
   color: var(--r1-text-subtle);
   font-size: 12px;
@@ -996,8 +1030,22 @@
     min-width: 0;
   }
 
-  .fin-prices .is-other-area {
+  .fin-prices .is-other-area,
+  .fin-prices .is-other-service {
     display: none;
+  }
+
+  .fin-prices th,
+  .fin-prices td {
+    overflow-wrap: anywhere;
+  }
+
+  .fin-prices tbody th {
+    width: 40%;
+  }
+
+  .fin-prices td {
+    min-width: 0;
   }
 
   .fin-dialog-overlay {
@@ -1327,4 +1375,445 @@
   display: grid;
   gap: 14px;
   min-width: 0;
+}
+
+/* A receber por quem paga (02/11/2026): pacientes (particular) e cada
+   operadora em bloco próprio. */
+.fin-payer {
+  margin-top: 14px;
+}
+
+.fin-payer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.fin-payer-title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   Convênios, Fase 2 (03/11/2026, tela A): Guias, Lotes, Pagamentos e
+   glosas. Guias é fila à esquerda e guia aberta à direita, 40/60 (como
+   a tela Evoluções); no celular e no tablet, uma coisa por vez.
+   ============================================================ */
+
+.fin-tiss-split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--fin-gap);
+  align-items: start;
+  min-width: 0;
+}
+
+.fin-tiss-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fin-tiss-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fin-tiss-item:hover {
+  border-color: var(--r1-accent-line);
+}
+
+.fin-tiss-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.fin-tiss-item.is-selected {
+  border-color: var(--r1-accent);
+  background: var(--r1-accent-wash);
+}
+
+.fin-tiss-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fin-tiss-item-head b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fin-tiss-item-sub {
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-tiss-detail {
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+}
+
+.fin-tiss-guide,
+.fin-tiss-build {
+  display: grid;
+  gap: 12px;
+}
+
+.fin-tiss-guide-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.fin-tiss-guide-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.fin-tiss-guide-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fin-tiss-back {
+  display: none;
+}
+
+.fin-tiss-check {
+  margin: 0;
+}
+
+.fin-tiss-missing {
+  padding: 10px 12px;
+  border: 1px solid var(--r1-warning-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-warning-bg);
+  color: var(--r1-warning);
+  font-size: 13px;
+}
+
+.fin-tiss-missing ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.fin-tiss-missing .fin-hint {
+  display: inline;
+}
+
+.fin-tiss-warnings {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.fin-tiss-pay-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.fin-tiss-glosa-code {
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 1024px) {
+  .fin-tiss-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fin-tiss-detail {
+    position: static;
+  }
+
+  /* Guia aberta ocupa a tela; a fila volta por "Voltar às guias". */
+  .fin-tiss.has-detail .fin-tiss-queue,
+  .fin-tiss.has-detail > .fin-toolbar,
+  .fin-tiss.has-detail > .fin-choices {
+    display: none;
+  }
+
+  .fin-tiss:not(.has-detail) .fin-tiss-detail {
+    display: none;
+  }
+
+  .fin-tiss-back {
+    display: inline;
+    justify-self: start;
+  }
+}
+
+/* ---------- guia impressa (layout da ANS) ---------- */
+
+.tiss-print-root {
+  display: none;
+}
+
+@media print {
+  body.tiss-printing > *:not(.tiss-print-root) {
+    display: none !important;
+  }
+
+  body.tiss-printing .tiss-print-root {
+    display: block;
+  }
+
+  .tiss-print {
+    display: grid;
+    gap: 3px;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+  }
+
+  .tiss-ptitle {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #000;
+    font-weight: 700;
+    font-size: 10pt;
+  }
+
+  .tiss-pband {
+    padding: 2px 4px;
+    background: #d9d9d9;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .tiss-prow {
+    display: flex;
+    gap: 3px;
+  }
+
+  .tiss-pbox {
+    display: grid;
+    align-content: start;
+    min-height: 30px;
+    padding: 2px 4px;
+    border: 1px solid #555;
+  }
+
+  .tiss-pbox small {
+    font-size: 6.5pt;
+  }
+
+  .tiss-pbox b {
+    font-size: 9pt;
+  }
+
+  .tiss-pbox.is-missing {
+    border: 1.5px dashed #000;
+  }
+
+  .tiss-psign .tiss-pbox {
+    min-height: 46px;
+  }
+
+  .tiss-pnote {
+    margin: 6px 0 0;
+    font-size: 7pt;
+  }
+}
+
+/* ============================================================
+   Notas fiscais e comprovante (04/11/2026, tela A): a fila e o
+   detalhe usam .fin-tiss-split (40/60, um de cada vez no celular).
+   ============================================================ */
+
+.fin-fiscal-settings {
+  display: grid;
+  gap: 12px;
+}
+
+.fin-fiscal-settings h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.fin-fiscal-copy th {
+  width: 34%;
+  font-weight: 600;
+  color: var(--r1-text-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fin-fiscal-copy td {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fin-fiscal-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.fin-fiscal-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.fin-fiscal-facts dt {
+  color: var(--r1-text-subtle);
+}
+
+.fin-fiscal-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+  .fin-fiscal-copy th,
+  .fin-fiscal-copy td {
+    display: block;
+    width: auto;
+  }
+}
+
+/* Comprovante: só a folha imprime (mesma folha do papel timbrado). */
+.fin-print-root {
+  display: none;
+}
+
+.fin-voucher h2 {
+  margin: 0 0 14px;
+  font-size: 15pt;
+}
+
+.fin-voucher p {
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+
+.fin-voucher-nfse {
+  margin-top: 18px;
+  font-weight: 600;
+}
+
+@media print {
+  body.fin-printing > *:not(.fin-print-root) {
+    display: none !important;
+  }
+
+  body.fin-printing .fin-print-root {
+    display: block;
+  }
+}
+
+/* ---------- compras e recibo (06/11/2026) ---------- */
+
+.fin-purchase-items {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fin-purchase-items legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.fin-purchase-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 130px 84px auto;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fin-purchase-line {
+  align-self: center;
+  text-align: right;
+}
+
+.fin-purchase-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fin-purchase-total,
+.fin-receipt-total {
+  font-size: 15px;
+}
+
+.fin-receipt-total {
+  margin: 10px 0 0;
+  text-align: right;
+}
+
+.fin-receipt-details {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+
+.fin-receipt-details > div {
+  display: flex;
+  gap: 10px;
+}
+
+.fin-receipt-details dt {
+  min-width: 130px;
+  color: var(--r1-text-muted, #64748b);
+}
+
+.fin-receipt-details dd {
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .fin-purchase-item {
+    grid-template-columns: minmax(0, 1fr) 64px;
+  }
+
+  .fin-purchase-item .fin-purchase-unit,
+  .fin-purchase-item .fin-purchase-line,
+  .fin-purchase-item .fin-link {
+    grid-column: auto;
+  }
 }

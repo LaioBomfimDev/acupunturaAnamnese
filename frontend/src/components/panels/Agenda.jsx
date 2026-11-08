@@ -22,7 +22,6 @@ import { buildTodayQueue } from '../../utils/agendaToday';
 import {
   APPOINTMENT_BLOCK_TYPES,
   APPOINTMENT_MODALITIES,
-  APPOINTMENT_TYPES,
   cancelSeriesFrom,
   confirmAppointment,
   createAppointment,
@@ -66,6 +65,11 @@ import {
 } from './agenda/AgendaIcons';
 import { canEnterOnlineRoom, onlineRoomHref } from '../../utils/onlineConsultation';
 import { packageSessionLabel } from '../../utils/finance';
+import { PARTICULAR, billingBadgeLabel } from '../../utils/agendaBilling';
+import { listConvenioChoicesCached } from '../../services/convenioService';
+import { BillingChoice } from './agenda/BillingChoice';
+import { ScreenHelp } from '../ui/ScreenHelp';
+import { AGENDA_HELP } from '../../data/screenHelp';
 import { AgendaToolsMenu } from './agenda/AgendaToolsMenu';
 import AgendaDayView from './agenda/AgendaDayView';
 import AgendaSettingsEditor from './agenda/AgendaSettingsEditor';
@@ -76,6 +80,9 @@ import EditAppointmentPanel from './agenda/EditAppointmentPanel';
 import HolidaysEditor from './agenda/HolidaysEditor';
 import PendingConfirmationView from './agenda/PendingConfirmationView';
 import RegisterCompletedDialog from './agenda/RegisterCompletedDialog';
+import AppointmentTypeOptions from './agenda/AppointmentTypeOptions';
+import { appointmentTypeLabel, typeAfterAreaChange } from '../../utils/appointmentTypes.js';
+import PackageSessionsDialog from './agenda/PackageSessionsDialog';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
 import ShareAgendaPanel from './agenda/ShareAgendaPanel';
@@ -83,6 +90,8 @@ import TodayPanel from './agenda/TodayPanel';
 import { usePatient } from '../../hooks/PatientContext';
 import { COMPLETED_APPOINTMENT_LABEL, lateEntryLabel } from '../../utils/completedAppointment';
 import { EVOLUTION_DISCIPLINES } from '../../utils/evolutionQueue';
+import { OPEN_PACKAGE_SESSIONS_LABEL } from '../../utils/agendaPackageSessions';
+import { PATIENT_NOTES_LABEL } from '../../utils/patientNotes';
 import '../../styles/agenda.css';
 
 // Resultado do atendimento no card aberto: Atendido, Não compareceu e
@@ -252,6 +261,9 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     return () => { cancelled = true; };
   }, [packageKey]);
   const selectedPackage = packageInfo?.key === packageKey ? packageInfo.info : null;
+  // "Ver sessões do pacote": o atendimento de onde a janela abriu. A
+  // lista em si vem do banco dentro da janela (listSeriesSessions).
+  const [packageOf, setPackageOf] = useState(null);
   // Agendamento em modo "mover": o próximo toque num horário remarca.
   const [moving, setMoving] = useState(null);
 
@@ -282,6 +294,19 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   // Espelha clinic_admin_update_agenda_settings (20260928): a regra vale
   // para a equipe toda, então só o Admin da clínica altera.
   const canConfigureAgenda = profile?.role === 'clinic_admin';
+  // Valor e código TUSS da operadora: só a administração (o banco também
+  // só devolve o valor para can_manage_finance).
+  const canSeeConvenioPrice = profile?.role === 'clinic_admin' || profile?.role === 'super_admin';
+  // Nome da operadora no selo do detalhe. Falha não esconde o selo: ele
+  // fica só "Convênio".
+  const [convenioNames, setConvenioNames] = useState(() => new Map());
+  useEffect(() => {
+    let cancelled = false;
+    listConvenioChoicesCached()
+      .then(({ convenios }) => { if (!cancelled) setConvenioNames(new Map(convenios.map(row => [row.id, row.name]))); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const [form, setForm] = useState(() => ({
     kind: 'appointment',
@@ -290,6 +315,9 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     professionalId: profile?.id || '',
     appointmentType: '',
     modality: 'presencial',
+    // Como paga (02/11/2026): escolher o paciente marca o convênio ativo
+    // da ficha; o pacote de sessões herda a mesma escolha.
+    billing: PARTICULAR,
     blockType: 'outro',
     time: '09:00',
     durationMinutes: 60,
@@ -531,6 +559,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     return patients.find(item => item.id === id)?.name || 'Paciente';
   }
 
+  /** Observações do cadastro do paciente (texto livre; a equipe toda lê). */
+  function patientNotes(id) {
+    return patients.find(item => item.id === id)?.observacoes || '';
+  }
+
   function patientPhone(id) {
     return patients.find(item => item.id === id)?.phone || '';
   }
@@ -750,6 +783,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
           appointmentType: form.kind === 'block' ? null : (form.appointmentType || null),
           modality: form.kind === 'block' ? null : form.modality,
           blockType: form.kind === 'block' ? form.blockType : null,
+          ...(form.kind === 'block' ? PARTICULAR : form.billing),
           startsAt: start.toISOString(),
           endsAt: addMinutes(start, Number(form.durationMinutes) || 60).toISOString(),
           note: form.note,
@@ -759,7 +793,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         { knownAppointments: appointments },
       );
       setAppointments(prev => [...prev, created]);
-      setForm(prev => ({ ...prev, patientId: '', note: '' }));
+      setForm(prev => ({ ...prev, patientId: '', note: '', billing: PARTICULAR }));
       setPatientSearch('');
       setPendingException(null);
       setError('');
@@ -823,6 +857,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
           discipline: disciplineValue,
           appointmentType: form.appointmentType || null,
           modality: form.modality,
+          // Cada sessão do pacote herda quem paga.
+          ...form.billing,
           note: form.note,
         },
         { items: criaveis },
@@ -830,7 +866,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
       setAppointments(prev => [...prev, ...created]);
       setSeriesPreview(null);
-      setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false }));
+      setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false, billing: PARTICULAR }));
       setPatientSearch('');
       setSheetOpen(false);
 
@@ -1165,6 +1201,29 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
     } finally {
       setSaving(false);
     }
+  }
+
+  /**
+   * Toque numa sessão da janela "Sessões do pacote": vai para o dia dela
+   * e abre o detalhe. "Hoje" e as visões sem calendário mostram outro
+   * dia como Dia; agenda de outra pessoa troca para a de quem atende.
+   */
+  function openPackageSession(row) {
+    const start = new Date(row?.starts_at);
+    if (Number.isNaN(start.getTime())) return;
+    const dayKey = toDayKey(start);
+    setPackageOf(null);
+    if (!CALENDAR_VIEWS.has(view) || (view === 'hoje' && dayKey !== toDayKey(today))) {
+      viewTouchedRef.current = true;
+      setView('dia');
+    }
+    if (agendaOf !== ALL_PROFESSIONALS && row.professional_id && agendaOf !== row.professional_id) {
+      setAgendaOf(row.professional_id);
+    }
+    goToDate(dayKey);
+    setMoving(null);
+    setSelectedAppointment(row);
+    setSheetOpen(true);
   }
 
   function openAppointment(appointment) {
@@ -1882,14 +1941,29 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                     selectedAppointment.modality === 'online' ? 'online' : 'presencial'
                   ),
                   selectedAppointment.kind === 'block' ? null : (
-                    APPOINTMENT_TYPES.find(item => item.id === selectedAppointment.appointment_type)?.label
+                    (selectedAppointment.appointment_type ? appointmentTypeLabel(selectedAppointment.appointment_type, selectedAppointment.discipline) : null)
                   ),
                   professionalName(selectedAppointment.professional_id),
                 ].filter(Boolean).join(' · ')}
               </p>
 
+              {selectedAppointment.kind !== 'block' && selectedAppointment.billing_type === 'convenio' && (
+                <p className="ag-detail-billing">
+                  <span className="ag-billing-badge">
+                    {billingBadgeLabel(selectedAppointment, convenioNames.get(selectedAppointment.convenio_id))}
+                  </span>
+                </p>
+              )}
+
               {selectedPackage && (
                 <p className="ag-detail-package">{packageSessionLabel(selectedPackage)}</p>
+              )}
+
+              {selectedAppointment.kind !== 'block' && patientNotes(selectedAppointment.patient_id) && (
+                <div className="ag-detail-notes">
+                  <p className="ag-detail-notes-title">{PATIENT_NOTES_LABEL} do paciente</p>
+                  <p className="ag-detail-notes-text">{patientNotes(selectedAppointment.patient_id)}</p>
+                </div>
               )}
 
               {selectedAppointment.is_exception && (
@@ -1949,6 +2023,16 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                     : `${seriesLabelOf('one-off', agendaSettings)}: marcado só para este dia, não se repete.`}
                   {rescheduledLabel(selectedAppointment) && ` ${rescheduledLabel(selectedAppointment)}.`}
                 </p>
+              )}
+
+              {selectedAppointment.kind !== 'block' && selectedAppointment.recurrence_group_id && (
+                <button
+                  type="button"
+                  className="ag-btn ag-detail-package-open"
+                  onClick={() => setPackageOf(selectedAppointment)}
+                >
+                  {OPEN_PACKAGE_SESSIONS_LABEL}
+                </button>
               )}
 
               <div className="ag-row">
@@ -2054,6 +2138,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                             {[
                               seriesMark?.label,
                               item.kind === 'block' ? null : item.discipline,
+                              item.kind !== 'block' && item.billing_type === 'convenio' ? 'Convênio' : null,
                               showProfessional ? professionalName(item.professional_id) : null,
                             ].filter(Boolean).join(' · ')}
                           </span>
@@ -2066,7 +2151,10 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
               )}
 
               <form className="ag-form" onSubmit={handleSubmit}>
-                <p className="ag-form-title">{isBlock ? 'Novo bloqueio' : 'Novo agendamento'}</p>
+                <div className="ag-form-head">
+                  <p className="ag-form-title">{isBlock ? 'Novo bloqueio' : 'Novo agendamento'}</p>
+                  {!isBlock && <ScreenHelp topic={AGENDA_HELP.agendamento} />}
+                </div>
 
                 <div className="ag-seg" role="group" aria-label="O que está sendo marcado">
                   <button
@@ -2262,6 +2350,19 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                       </div>
                     )}
 
+                    {!quickPatient.open && (
+                      <BillingChoice
+                        patientId={form.patientId}
+                        discipline={disciplineValue}
+                        disciplineLabel={availableDisciplines.find(item => item.id === disciplineValue)?.label || disciplineValue}
+                        appointmentType={form.appointmentType || null}
+                        value={form.billing}
+                        onChange={billing => setForm(prev => ({ ...prev, billing }))}
+                        canSeePrice={canSeeConvenioPrice}
+                        disabled={saving}
+                      />
+                    )}
+
                     <div className="ag-row">
                       <div className="ag-field">
                         <label htmlFor="ag-discipline">Área</label>
@@ -2269,7 +2370,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           id="ag-discipline"
                           className="ag-select"
                           value={disciplineValue}
-                          onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value }))}
+                          onChange={e => setForm(prev => ({ ...prev, discipline: e.target.value, appointmentType: typeAfterAreaChange(prev.appointmentType, e.target.value) }))}
                           disabled={saving}
                           required
                         >
@@ -2288,10 +2389,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                           onChange={e => setForm(prev => ({ ...prev, appointmentType: e.target.value }))}
                           disabled={saving}
                         >
-                          <option value="">Não classificado</option>
-                          {APPOINTMENT_TYPES.map(item => (
-                            <option key={item.id} value={item.id}>{item.label}</option>
-                          ))}
+                          <AppointmentTypeOptions discipline={disciplineValue} current={form.appointmentType} />
                         </select>
                       </div>
                     </div>
@@ -2545,11 +2643,26 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
         />
       )}
 
+      {packageOf && (
+        <PackageSessionsDialog
+          appointment={packageOf}
+          subtitle={[
+            patientName(packageOf.patient_id),
+            getDiscipline(packageOf.discipline)?.label || packageOf.discipline,
+            professionalName(packageOf.professional_id),
+          ].filter(Boolean).join(' · ')}
+          agendaSettings={agendaSettings}
+          onClose={() => setPackageOf(null)}
+          onOpenSession={openPackageSession}
+        />
+      )}
+
       <EditAppointmentPanel
         key={selectedAppointment?.id || 'none'}
         open={showEdit}
         appointment={selectedAppointment}
         availableDisciplines={availableDisciplines}
+        canSeeConvenioPrice={canSeeConvenioPrice}
         saving={saving}
         onClose={() => setShowEdit(false)}
         onSave={handleSaveEdit}

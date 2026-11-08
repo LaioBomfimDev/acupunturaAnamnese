@@ -71,8 +71,8 @@
    abaixo do fim da tela. */
 @media (min-width: 1025px) {
   .hub-screen:has(> .hub-body > .wa-screen) { display: flex; flex-direction: column; height: calc(100 * var(--svh)); min-height: 0; }
-  body:has(.ca-launcher) .hub-screen:has(> .hub-body > .wa-screen) { height: calc(100 * var(--svh) - var(--ca-launcher-room, 88px)); }
   .hub-body:has(> .wa-screen) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding-bottom: 20px; }
+  body:has(.ca-launcher) .hub-body:has(> .wa-screen) { padding-bottom: var(--ca-launcher-room, 88px); }
   .wa-screen { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
   .wa-workspace { flex: 1 1 auto; min-height: 260px; }
 }

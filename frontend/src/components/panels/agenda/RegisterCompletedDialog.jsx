@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { APPOINTMENT_MODALITIES, APPOINTMENT_TYPES, registerCompletedAppointment } from '../../../services/appointmentService';
+import { APPOINTMENT_MODALITIES, registerCompletedAppointment } from '../../../services/appointmentService';
+import { typeAfterAreaChange } from '../../../utils/appointmentTypes.js';
+import AppointmentTypeOptions from './AppointmentTypeOptions';
+import { PARTICULAR } from '../../../utils/agendaBilling';
+import { BillingChoice } from './BillingChoice';
 import { toDayKey } from '../../../utils/agenda';
 import {
   COMPLETED_APPOINTMENT_LABEL,
@@ -80,6 +84,9 @@ export function RegisterCompletedDialog({
   const [modality, setModality] = useState('presencial');
   const [appointmentType, setAppointmentType] = useState('');
   const [note, setNote] = useState('');
+  // Como paga: o atendimento já nasce Atendido, então a cobrança sai na
+  // hora com quem paga certo (convênio ativo da ficha marcado de início).
+  const [billing, setBilling] = useState(PARTICULAR);
   const [saving, setSaving] = useState(false);
   const dismiss = useDismiss({ onClose, busy: saving, guardUnsaved: true });
   const [error, setError] = useState('');
@@ -173,6 +180,7 @@ export function RegisterCompletedDialog({
           discipline: disciplineValue,
           appointmentType: appointmentType || null,
           modality,
+          ...billing,
           startsAt: start.toISOString(),
           endsAt: new Date(start.getTime() + durationMinutes * 60000).toISOString(),
           note,
@@ -226,6 +234,20 @@ export function RegisterCompletedDialog({
               </button>
             )}
           </div>
+
+          {!quick.open && (
+            <BillingChoice
+              idPrefix="agc-billing"
+              patientId={patientId}
+              discipline={disciplineValue}
+              disciplineLabel={disciplineLabel}
+              appointmentType={appointmentType || null}
+              value={billing}
+              onChange={setBilling}
+              canSeePrice={profile?.role === 'clinic_admin' || profile?.role === 'super_admin'}
+              disabled={saving}
+            />
+          )}
 
           {quick.open && (
             <div className="ag-quick">
@@ -307,7 +329,10 @@ export function RegisterCompletedDialog({
                 id="agc-discipline"
                 className="ag-select"
                 value={disciplineValue}
-                onChange={e => setDiscipline(e.target.value)}
+                onChange={e => {
+                  setDiscipline(e.target.value);
+                  setAppointmentType(prev => typeAfterAreaChange(prev, e.target.value));
+                }}
                 disabled={saving || quick.open}
                 required
               >
@@ -325,10 +350,7 @@ export function RegisterCompletedDialog({
                 onChange={e => setAppointmentType(e.target.value)}
                 disabled={saving}
               >
-                <option value="">Não classificado</option>
-                {APPOINTMENT_TYPES.map(item => (
-                  <option key={item.id} value={item.id}>{item.label}</option>
-                ))}
+                <AppointmentTypeOptions discipline={disciplineValue} current={appointmentType} />
               </select>
             </div>
           </div>

@@ -426,13 +426,17 @@ test('tipo de atendimento inválido não passa', async () => {
 
 test('os tipos do JS espelham o CHECK da migração', async () => {
   // A lista vive na migração mais recente que redefine a constraint
-  // (20260924c ampliou os tipos; 20260810 criou).
-  const tiposSql = path.resolve(root, '../supabase/migrations/20260924c_appointment_types_expand.sql');
+  // (20260810 criou; 20260924c ampliou; 20261104b passou a usar a função
+  // appointment_type_fits_area, com a trava área × tipo dos tipos novos).
+  const tiposSql = path.resolve(root, '../supabase/migrations/20261104b_valores_servicos_por_area.sql');
   const sql = await readFile(tiposSql, 'utf8');
-  const check = sql.match(/appointment_type IN \(([^)]+)\)/);
-  assert.ok(check);
+  assert.match(sql, /ADD CONSTRAINT appointments_type_check\s+CHECK \(public\.appointment_type_fits_area\(discipline, appointment_type\)\)/);
+  const fn = sql.split('FUNCTION public.appointment_type_fits_area')[1]?.split('$$;')[0] || '';
+  assert.ok(fn);
 
-  const fromSql = check[1].split(',').map(part => part.trim().replace(/'/g, '')).sort();
+  const fromSql = [...fn.matchAll(/WHEN p_type IN \(([^)]+)\)/g)]
+    .flatMap(match => match[1].split(',').map(part => part.trim().replace(/'/g, '')))
+    .sort();
   assert.deepEqual([...service.APPOINTMENT_TYPE_IDS].sort(), fromSql);
 });
 

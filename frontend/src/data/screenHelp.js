@@ -477,7 +477,8 @@ export const PACIENTES_HELP = {
   title: 'Pacientes da instituição',
   summary: 'O cadastro central de pacientes. O paciente é um só na instituição e entra em cada área por matrícula.',
   actions: [
-    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço e matrícula inicial.',
+    '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço, observações e matrícula inicial.',
+    '“Observações”: texto livre do cadastro, até 1000 caracteres, para o que a equipe precisa lembrar (horário preferido, quem acompanha, como avisar). Muda em “Alterar dados cadastrais”, na aba Cadastro da ficha.',
     'Na ficha, aba Cadastro, “+ Acrescentar convênio”: operadora, plano, número e validade da carteira e CNS. Convênio que acabou se desativa, não se apaga.',
     '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha.',
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
@@ -498,12 +499,59 @@ export const PACIENTES_HELP = {
   ],
   notes: [
     'Paciente menor de idade exige responsável no cadastro. Campos com * são obrigatórios.',
+    'As observações aparecem também no detalhe do atendimento na Agenda. Toda a equipe que vê o paciente lê, inclusive a recepção: dado clínico vai na ficha da área, não aqui.',
     'Excluir apaga prontuário, evoluções, agenda e matrículas, e não tem como desfazer pela tela.',
   ],
 };
 
 /** Editores que abrem de dentro da Agenda (components/panels/agenda/). */
 export const AGENDA_HELP = {
+  agendamento: {
+    title: 'Novo agendamento',
+    summary: 'Marcar um atendimento ou bloquear um horário, e dizer como o paciente paga: particular ou convênio.',
+    actions: [
+      'Escolher o profissional, o paciente, a área, o tipo, a modalidade, o início e a duração.',
+      'Em “Como paga”, marcar “Particular” ou “Convênio · nome da operadora”. Ao escolher o paciente, o convênio ativo da ficha já vem marcado; com dois convênios, aparece um botão para cada operadora.',
+      '“Repetir” cria o pacote de sessões: cada sessão herda a mesma forma de pagamento.',
+      'Mudar a forma de pagamento depois, em “Editar” no detalhe do atendimento.',
+    ],
+    reading: [
+      'Embaixo de “Como paga”, a nota em verde mostra o plano, a carteira e a validade. A administração vê também o valor da operadora e o código TUSS.',
+      'Aviso em âmbar: “Carteira vencida em …” ou “a operadora não tem preço para a área”. Dá para marcar assim mesmo.',
+      'O selo “Convênio” aparece no card da agenda e no detalhe do atendimento.',
+    ],
+    access: [
+      'Quem marca atendimento escolhe como paga. O valor da operadora só a administração vê.',
+      'O convênio do paciente se cadastra na ficha do paciente, aba Cadastro.',
+    ],
+    notes: [
+      'O valor fica gravado quando o atendimento vira Atendido: no convênio, é o preço da operadora para a área (o do tipo vence o da área), e o paciente não é cobrado. Convênio não gasta sessão de pacote particular.',
+      'Sem preço da operadora, o atendimento entra no Financeiro como “sem valor” para a administração resolver em Financeiro → Operadoras.',
+      'Mudar de particular para convênio num atendimento já Atendido refaz a cobrança, se ainda não tem pagamento registrado.',
+    ],
+  },
+  pacote: {
+    title: 'Sessões do pacote',
+    summary: 'Todas as sessões marcadas juntas na Agenda para este paciente, da primeira à última, para controlar o pacote sem sair da Agenda.',
+    actions: [
+      'Abrir pelo botão “Ver sessões do pacote”, no detalhe de qualquer sessão de um pacote.',
+      'Tocar numa sessão da lista: a janela fecha, a Agenda vai para o dia dela e abre o detalhe daquela sessão.',
+    ],
+    reading: [
+      'Os três números do topo: quantas foram atendidas, quantas faltam e quantas tem o pacote.',
+      'Atendido conta como feita. Agendado conta como falta, inclusive a que já passou sem resultado marcado (a linha avisa).',
+      'Não compareceu e Cancelado pelo paciente aparecem na lista, mas não contam como feita nem como faltando.',
+      'Cancelado (pacote encerrado pela clínica) aparece riscado, sem número, e sai do total.',
+      'A linha em destaque é a sessão de onde a janela abriu. Sessão movida mostra o selo Eventual e o horário de antes.',
+    ],
+    access: [
+      'Quem usa a Agenda vê a lista. Nenhum valor ou pagamento aparece aqui.',
+    ],
+    notes: [
+      'A lista mostra o pacote da Agenda, as sessões marcadas juntas. O pagamento do pacote fica no Financeiro e pode ser diferente: tem paciente que paga tudo no início, tudo no fim ou a cada sessão atendida.',
+      'A linha “sessão 3 de 10” do detalhe vem do pacote do Financeiro; a lista desta janela vem da Agenda.',
+    ],
+  },
   horarios: {
     title: 'Horários de atendimento',
     summary: 'A jornada do profissional: os dias e horários que são o normal dele na agenda.',
@@ -661,7 +709,7 @@ export const FINANCEIRO_HELP = {
   },
   areceber: {
     title: 'A receber',
-    summary: 'Tudo o que o paciente ainda deve: atendimento avulso feito e não pago, parcela de pacote e sessão de pacote paga a cada sessão.',
+    summary: 'Tudo o que ainda falta receber, separado por quem paga: dos pacientes (particular: atendimento avulso, parcela e sessão de pacote) e de cada operadora de convênio.',
     actions: [
       '“Receber” abre na própria linha: marcar o que está sendo pago, escolher a forma (Pix, Dinheiro, Cartão de débito, Cartão de crédito, Outro) e a data.',
       '“+ Dividir em outra forma” separa o pagamento, por exemplo parte no Pix e parte em dinheiro.',
@@ -669,13 +717,19 @@ export const FINANCEIRO_HELP = {
       '“+ Vender pacote” vende um pacote sem sair daqui.',
     ],
     reading: [
+      '“Pacientes (particular)” reúne o que cada paciente deve. Cada “Convênio · operadora” reúne o que a operadora deve, com os atendimentos de cada paciente e o código TUSS: atendimento de convênio nunca aparece cobrando o paciente.',
       'Atendimento avulso vence no dia em que acontece. Âmbar = passou do dia, com quantos dias.',
+      'No convênio, cada atendimento mostra a guia: “a faturar” (ainda não foi em lote), “lote N” (esperando a operadora), “glosada” ou “em recurso”. Só atrasa depois do envio do lote mais o prazo de pagamento da operadora (Operadoras → etapa 1).',
+      'Glosa não sai do “A receber”: o atendimento só sai quando o dinheiro da operadora entra.',
       'Pagamento parcial cobre primeiro o item mais antigo.',
     ],
     access: ['Só a administração.'],
     notes: [
       'A data do recebimento é hoje ou antes, nunca depois.',
-      'Crédito de paciente aparece quando um atendimento pago deixa de ser Atendido.',
+      'Crédito de paciente aparece quando um atendimento pago deixa de ser Atendido; o pagamento de convênio vira crédito da operadora, nunca do paciente.',
+      'O dinheiro do convênio entra em Pagamentos e glosas, pelo depósito da operadora, e não em “Receber”: no grupo da operadora, o botão leva às Guias ou aos Pagamentos.',
+      'Atendimento de convênio sem preço da operadora para a área aparece em “Sem valor”.',
+      'Repasse de quem atende no convênio: por enquanto, a mesma regra do particular, calculada sobre o valor da operadora.',
     ],
   },
   recebidos: {
@@ -684,10 +738,41 @@ export const FINANCEIRO_HELP = {
     actions: [
       '“Anular” desfaz um recebimento lançado errado: pede o motivo, e o que ele pagava volta para “A receber”.',
       '“Mostrar anulados” traz de volta os anulados, riscados, com o motivo.',
+      '“Comprovante” imprime o comprovante do recebimento no papel timbrado, com número em sequência da clínica (o mesmo número se imprimir de novo).',
     ],
-    reading: ['Os totais do topo somam cada forma de pagamento no mês.'],
+    reading: [
+      'Os totais do topo somam cada forma de pagamento no mês.',
+      'Cada recebimento mostra a nota fiscal: “Nota: falta” (ainda não emitida) ou “Nota nº 152”. “Da operadora” lista os depósitos de convênio do mês.',
+    ],
     access: ['Só a administração.'],
-    notes: ['Nada se apaga e valor recebido não se edita: para corrigir, anule e lance de novo.'],
+    notes: [
+      'Nada se apaga e valor recebido não se edita: para corrigir, anule e lance de novo.',
+      'O comprovante não substitui a nota fiscal: enquanto a nota não sai, ele diz isso; depois, traz o número da NFS-e.',
+    ],
+  },
+  notas: {
+    title: 'Notas fiscais',
+    summary: 'A nota fiscal de serviço (NFS-e) de cada recebimento do particular e de cada depósito da operadora: o que falta emitir, os dados prontos para copiar no emissor e o número de cada nota emitida.',
+    actions: [
+      'A nota nasce sozinha quando o dinheiro entra: uma por recebimento do particular (para o paciente, ou para o responsável quando o paciente não tem CPF no cadastro) e uma por depósito da operadora (para a operadora).',
+      'Escolha a nota na lista (à esquerda) e use “Copiar” em cada campo (CPF ou CNPJ, nome, código do serviço, descrição, valor e competência) para colar no emissor. “Abrir emissor” abre o site.',
+      'Depois de emitir, digite o número da NFS-e e a data e toque “Registrar nota”. A chave de acesso (50 números) é opcional.',
+      '“Corrigir dados antes de emitir” muda tomador, código, descrição e competência da nota que falta emitir.',
+      '“Registrar cancelamento” guarda o cancelamento de uma nota (cancele primeiro no emissor).',
+      '“Configurar” guarda onde a clínica emite (o Emissor Nacional é o padrão) e o código do serviço de cada área.',
+    ],
+    reading: [
+      'Filtros: Falta emitir, Cancelar no emissor, Emitidas e Canceladas.',
+      'Competência é o dia do atendimento (o mais recente que o recebimento paga). Pacote pago antes das sessões usa o dia do recebimento.',
+      '“Cancelar no emissor” aparece quando o recebimento foi anulado (ou mudou de valor) depois da nota emitida.',
+    ],
+    access: ['Só a administração da instituição.'],
+    notes: [
+      'Desde 01/11/2026 a clínica do Simples Nacional emite a NFS-e pelo Emissor Nacional. Se a prefeitura mandar usar o emissor dela, troque o endereço em “Configurar”.',
+      'O código do serviço de cada área é o contador quem define. Os números em cinza são só sugestão (lista de serviços da LC 116).',
+      'Nota registrada não se apaga. Cancelada com o recebimento ainda valendo, ela volta para “Falta emitir”, para emitir de novo.',
+      'O sistema ainda não emite a nota sozinho: isso pede o certificado digital A1 e fica para uma próxima etapa.',
+    ],
   },
   pacotes: {
     title: 'Pacotes',
@@ -712,6 +797,7 @@ export const FINANCEIRO_HELP = {
       '“Pagar” abre na própria linha: valor, data e forma. Em saída fixa, “Não houve este vencimento” tira a conta daquele dia.',
       '“Pagar repasse” lança a saída na categoria Repasse de profissionais.',
       '“+ Lançar saída” lança uma conta avulsa, já paga ou a pagar.',
+      '“+ Registrar compra” lança uma compra já paga (água, almoço da equipe, material) com os itens, a categoria, a forma de pagamento e quem comprou, e gera o recibo interno numerado.',
     ],
     reading: [
       'Âmbar = venceu. “valor muda” = saída fixa sem valor fixo (luz, água): escreva quanto veio.',
@@ -722,14 +808,22 @@ export const FINANCEIRO_HELP = {
   },
   pagas: {
     title: 'Pagas',
-    summary: 'As saídas pagas no mês, por categoria.',
+    summary: 'As saídas pagas no mês, por categoria, inclusive as compras com recibo.',
     actions: [
-      '“Anular” desfaz uma saída lançada errado, com motivo. Se era saída fixa, o vencimento volta para “A pagar”.',
+      '“+ Registrar compra”: um ou mais itens (descrição, quantidade e valor de cada), categoria, data, forma de pagamento e quem comprou. Ao registrar, o recibo abre para imprimir ou salvar em PDF.',
+      '“Recibo”, na linha de uma compra, abre o recibo Nº AAAA-000123 de novo no papel timbrado da instituição.',
+      '“Anular” desfaz uma saída lançada errado, com motivo. Se era saída fixa, o vencimento volta para “A pagar”. Compra anulada continua guardada, com o recibo marcado como anulado.',
       '“Mostrar anuladas” traz de volta as anuladas, riscadas.',
     ],
-    reading: ['Os totais do topo somam cada categoria no mês.'],
+    reading: [
+      'Os totais do topo somam cada categoria no mês.',
+      'O número do recibo é sequencial por ano e nunca se repete nem pula.',
+    ],
     access: ['Só a administração.'],
-    notes: ['Nada se apaga: anula e lança de novo.'],
+    notes: [
+      'Nada se apaga: anula e lança de novo. Compra registrada não se edita.',
+      'O recibo é um comprovante interno da instituição e não tem valor fiscal: não substitui nota fiscal.',
+    ],
   },
   equipe: {
     title: 'Equipe e repasses',
@@ -748,30 +842,43 @@ export const FINANCEIRO_HELP = {
   },
   valores: {
     title: 'Valores dos atendimentos',
-    summary: 'Quanto custa cada atendimento, por área e por tipo (Anamnese, Avaliação, Devolutiva, Entrevista, Primeira vez, Retorno, Sessão).',
+    summary: 'Quanto custa cada atendimento, por área e pelos serviços daquela área: cada área mostra só os campos dos serviços dela (na Acupuntura, avaliação inicial, acupuntura, auriculoterapia, laserpuntura e ventosa; na Fisioterapia e na Psicologia, também Neuromodulação, Biomodulação vascular e e-ILIB; na ABA, visitas domiciliar e escolar).',
     actions: [
-      'Em “Valores da instituição”, preencher o valor padrão de cada área e só os tipos que custam diferente.',
+      'Em “Valores da instituição”, preencher o valor padrão de cada área e só os serviços que custam diferente.',
       'Escolher um profissional para dar a ele valores próprios: preencher só o que muda.',
       'Gravar em “Salvar valores”.',
     ],
     reading: [
-      'Campo vazio usa o valor padrão (o texto cinza diz qual). R$ 0 = aquele tipo não é cobrado.',
+      'Campo vazio usa o valor padrão (o texto cinza diz qual). R$ 0 = aquele serviço não é cobrado.',
       'Ordem de quem vale: tipo do profissional, tipo da instituição, padrão do profissional, padrão da instituição.',
+      '“Tipo anterior cadastrado”: um tipo que já tinha valor antes da lista por área. Continua valendo e pode ser editado ou apagado.',
+      'A linha “Pacotes” lembra a regra de cada área: “5% de desconto nos pacotes” na Acupuntura, “Pacotes sem desconto” na Psicologia e “Pacotes disponíveis” na Fisioterapia (total digitado, sem percentual definido).',
     ],
     access: ['Só a administração.'],
-    notes: ['Valor novo vale para os atendimentos que virarem Atendido daqui para frente.'],
+    notes: [
+      'Valor novo vale para os atendimentos que virarem Atendido daqui para frente: o que já foi cobrado não muda.',
+      'Salvar grava todos os valores do escopo de uma vez, inclusive os de áreas que não estão na tela: se algum for recusado, nada muda.',
+      'O mesmo serviço aparece no campo “Tipo” da Agenda, com o nome da área.',
+    ],
   },
   modelos: {
     title: 'Modelos de pacote',
-    summary: 'Os pacotes prontos para vender: sessões contadas ou valor fechado com sessões previstas.',
+    summary: 'Os pacotes prontos para vender: sessões contadas ou valor fechado com sessões previstas, com os serviços da área escolhida.',
     actions: [
-      '“+ Novo modelo”: área, tipo, sessões, valor total, que atendimentos gastam o pacote e em quantas vezes pode parcelar.',
+      '“+ Novo modelo”: área, serviços que gastam o pacote, sessões, valor total e em quantas vezes pode parcelar.',
+      'Com um serviço só marcado e o valor avulso cadastrado, “Calcular com 5% de desconto” (Acupuntura) ou “Calcular sem desconto” (Psicologia) preenche o total: preço avulso × sessões. Na Fisioterapia e em pacote com mais de um serviço, o total é digitado.',
       'No valor fechado, a simulação mostra quanto vale cada sessão se a previsão mudar.',
       '“Desativar” tira o modelo da venda sem mexer no que já foi vendido.',
     ],
-    reading: ['Cada modelo mostra o valor por sessão e quanto fica abaixo do avulso.'],
+    reading: [
+      'Cada modelo mostra o valor por sessão e quanto fica abaixo do avulso.',
+      'Trocar a área limpa os serviços marcados: cada área tem os seus.',
+    ],
     access: ['Só a administração.'],
-    notes: ['A venda guarda os valores do dia: mudar o modelo não muda pacote já vendido.'],
+    notes: [
+      'A venda guarda os valores do dia: mudar o modelo ou o preço avulso não muda pacote já vendido.',
+      'O cálculo só preenche o campo; quem decide o total é a administração. Falta (Não compareceu, Cancelado) não gasta sessão.',
+    ],
   },
   recebimento: {
     title: 'Como cada um recebe',
@@ -808,6 +915,7 @@ export const FINANCEIRO_HELP = {
       'Clicar num cartão abre a operadora na primeira etapa que falta.',
       'Na Tabela de preços, “Buscar na tabela TUSS” acha o procedimento pelo código ou por palavras, na tabela oficial da ANS.',
       'Na etapa Operadora, “Desativar” tira a operadora da escolha no cadastro do paciente, sem apagar nada.',
+      'Na etapa Operadora, “Prazo para a operadora pagar” (em dias depois do envio do lote) faz o “A receber” mostrar o que está em atraso com a operadora.',
     ],
     reading: [
       '“Pronta” = registro ANS, CNPJ, código do prestador e todos os preços com código. Planos são opcionais.',
@@ -818,7 +926,71 @@ export const FINANCEIRO_HELP = {
     notes: [
       'Tabela TUSS e demais tabelas da ANS na versão 202607. Versão nova da ANS entra por atualização do sistema.',
       'Desde 07/2026 o CNPJ pode ter letras; o sistema confere os dois últimos números.',
-      'Guia e lote de cobrança chegam numa próxima etapa.',
+      'Guia, lote e pagamento da operadora ficam em Guias, Lotes e Pagamentos e glosas, no mesmo grupo Convênios.',
+    ],
+  },
+  guias: {
+    title: 'Guias',
+    summary: 'Uma guia SP/SADT para cada atendimento de convênio Atendido, com o que falta para ela entrar no lote.',
+    actions: [
+      'A guia nasce sozinha quando o atendimento de convênio vira Atendido na Agenda, com o número seguinte daquela operadora. Esse número não muda.',
+      'Escolha a guia na lista (à esquerda) para ver e completar (à direita): quem pediu (Solicitante de fora ou quem atendeu), data do pedido, indicação clínica, tipo de atendimento, caráter e acidente.',
+      'Senha, número da guia na operadora e data da autorização são opcionais. Com senha ou número, a data da autorização é obrigatória.',
+      '“Salvar guia” grava os campos da guia em aberto. “Imprimir guia” imprime no modelo da ANS, para assinatura.',
+      '“Reenviar em novo lote” tira uma guia já enviada do lote, com o motivo, para corrigir e mandar no próximo lote.',
+    ],
+    reading: [
+      'Filtros: Com pendência (falta dado para o lote), Prontas, No lote, Glosadas e em recurso, Pagas, Todas.',
+      '“Antes do lote, falta” diz o que completar e onde: carteira na ficha do paciente (Cadastro → Convênio), código do prestador e TUSS em Operadoras, CPF, conselho e CBO de quem atendeu em Dados para faturamento.',
+      'Avisos em cinza não barram o lote: sem indicação clínica (muitas operadoras pedem em terapia), carteira vencida no dia, clínica sem CNES (vai 9999999).',
+      'Atendimento online pela sala do sistema vai com regime Telessaúde; o presencial, Ambulatorial.',
+    ],
+    access: ['Só a administração da instituição vê e altera.'],
+    notes: [
+      'Guia em lote não muda, nem o atendimento dela na Agenda: falta, mudança de dia ou exclusão pedem antes “Reenviar em novo lote”.',
+      'Falta ou cancelamento de um atendimento ainda sem lote cancela a guia; se ele voltar a Atendido, a mesma guia volta, com o mesmo número.',
+      'O arquivo da guia vai sem acento (o padrão TISS pede texto simples). O nome do paciente sai só no papel: desde a versão 4.00 ele não vai no arquivo.',
+    ],
+  },
+  lotes: {
+    title: 'Lotes',
+    summary: 'Juntar as guias prontas de uma operadora num lote, gerar o arquivo XML do padrão TISS 4.03.00 e marcar quando foi enviado no portal.',
+    actions: [
+      '“Montar lote” mostra as guias prontas daquela operadora e daquele contratado: desmarque o que não vai e toque “Gerar lote”.',
+      '“Baixar XML” baixa o arquivo para subir no portal da operadora.',
+      '“Marcar enviado” guarda o dia do envio e o protocolo do portal (opcional). O prazo de pagamento conta dali.',
+      '“Descartar” desfaz um lote gerado que ainda não foi enviado: as guias voltam a ficar em aberto.',
+    ],
+    reading: [
+      'Cada lote mostra o período dos atendimentos, quantas guias, o valor, se já foi enviado e quando o pagamento está previsto (envio + prazo da operadora).',
+      'Um lote leva até 100 guias e um contratado só (a clínica ou um profissional credenciado em nome próprio): o sistema separa sozinho.',
+    ],
+    access: ['Só a administração da instituição.'],
+    notes: [
+      'Ao gerar, a cópia das guias fica congelada no lote, com o XML e o hash do epílogo. Lote enviado não muda; correção é por “Reenviar em novo lote”, em Guias, e o lote antigo fica guardado como foi.',
+      'O número do lote é seguido por operadora e não volta, nem depois de descartar.',
+      'O XML é conferido contra o XSD oficial da ANS nos testes do sistema. Se a operadora pedir outra versão TISS, avise antes de enviar.',
+    ],
+  },
+  pagamentos: {
+    title: 'Pagamentos e glosas',
+    summary: 'O que a operadora pagou de cada lote enviado, o que ela glosou e por quê, e o recurso da glosa.',
+    actions: [
+      '“Registrar pagamento” no lote: dia em que o dinheiro entrou, como chegou (TED, Pix, Boleto, Depósito, Outro) e, em cada guia, quanto foi pago e quanto foi glosado.',
+      'Glosa pede o código do motivo da tabela 38 da ANS (4 números, como vem no demonstrativo da operadora). Pagamento zero registra só a glosa.',
+      '“Registrar recurso” guarda a justificativa enviada no portal; “Resultado do recurso” guarda se foi aceito ou negado.',
+      '“Anular” num lançamento risca o depósito e o que ele acertou, com motivo.',
+    ],
+    reading: [
+      'Cada lote enviado mostra quantas guias esperam a operadora e quanto falta receber.',
+      'Situação da guia: No lote (esperando), Paga (a operadora pagou tudo), Glosada (parte ou tudo foi glosado), Em recurso.',
+      'O depósito precisa ser igual à soma do que foi pago nas guias.',
+    ],
+    access: ['Só a administração da instituição.'],
+    notes: [
+      'Glosa não sai do “A receber”: o atendimento só sai de lá quando o dinheiro entra. Recurso aceito: registre o pagamento quando a operadora depositar.',
+      'Dinheiro lançado não se apaga nem se edita: anula com motivo e lança de novo.',
+      'O depósito entra em Recebidos (“Da operadora”) e no resultado do mês. O repasse “quando o paciente paga”, no convênio, conta quando a operadora paga.',
     ],
   },
   solicitantes: {

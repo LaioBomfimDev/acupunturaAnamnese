@@ -19,13 +19,14 @@ import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
 import { DISCIPLINE_IDS } from '../data/disciplines';
 import { APPOINTMENT_STATUS_IDS, FREEING_STATUSES, findOverlap } from '../utils/agenda';
 import { validateCompletedStart } from '../utils/completedAppointment';
+import { APPOINTMENT_TYPES, APPOINTMENT_TYPE_IDS, isTypeAllowedInArea } from '../utils/appointmentTypes.js';
 
 const LOCAL_APPOINTMENTS_KEY = 'acup_local_appointments';
 
 const APPOINTMENT_COLUMNS =
   'id,clinic_id,patient_id,professional_id,discipline,starts_at,ends_at,status,note,cancellation_reason,'
   + 'kind,appointment_type,modality,block_type,room,confirmed_at,checked_in_at,recurrence_group_id,is_exception,exception_reason,'
-  + 'rescheduled_from,created_by,created_at,updated_at';
+  + 'rescheduled_from,billing_type,convenio_id,coverage_id,created_by,created_at,updated_at';
 
 // Espelha o CHECK appointments_kind_check da migração 20260810.
 export const APPOINTMENT_KINDS = ['appointment', 'block'];
@@ -39,20 +40,10 @@ export const APPOINTMENT_MODALITIES = [
 
 export const APPOINTMENT_MODALITY_IDS = APPOINTMENT_MODALITIES.map(item => item.id);
 
-// Espelha appointments_type_check (20260924c). Nulo é válido: nem toda
-// clínica classifica o atendimento. Em ordem alfabética do rótulo — é
-// assim que aparece no campo "Tipo".
-export const APPOINTMENT_TYPES = [
-  { id: 'anamnesis', label: 'Anamnese' },
-  { id: 'evaluation', label: 'Avaliação' },
-  { id: 'feedback', label: 'Devolutiva' },
-  { id: 'interview', label: 'Entrevista' },
-  { id: 'first_visit', label: 'Primeira vez' },
-  { id: 'return', label: 'Retorno' },
-  { id: 'session', label: 'Sessão' },
-];
-
-export const APPOINTMENT_TYPE_IDS = APPOINTMENT_TYPES.map(item => item.id);
+// Catálogo único em utils/appointmentTypes.js, espelho de
+// appointments_type_check (20261104b). Nulo é válido: nem toda clínica
+// classifica o atendimento. Tipo novo só vale nas áreas dele.
+export { APPOINTMENT_TYPES, APPOINTMENT_TYPE_IDS };
 
 // Espelha appointments_block_type_check (migração 20260823). Só se
 // aplica a kind='block' — bloqueio não tem paciente nem disciplina,
@@ -69,6 +60,58 @@ export const APPOINTMENT_BLOCK_TYPE_IDS = APPOINTMENT_BLOCK_TYPES.map(item => it
 export const AGENDA_MIGRATION_HINT =
   'Estrutura de agenda ausente no banco. Aplique a migração ' +
   'supabase/migrations/20260809_appointments.sql no Supabase.';
+
+// "Como paga" (20261102): coverage_id e o gatilho da carteira.
+export const AGENDA_BILLING_MIGRATION_HINT =
+  'A Agenda ainda não sabe quem paga no banco. Aplique a migração '
+  + 'supabase/migrations/20261102_agenda_convenio.sql no Supabase.';
+
+export const BILLING_TYPES = ['particular', 'convenio'];
+
+/** Erro do gatilho de quem paga → frase para quem está marcando. */
+// Espelha appointments_type_check (20261104b): tipo novo só nas áreas dele.
+export const TYPE_AREA_MESSAGE = 'Este tipo de atendimento não é desta área. Escolha outro tipo ou outra área.';
+
+export function billingErrorMessage(error) {
+  const text = [error?.message, error?.details].filter(Boolean).join(' ');
+  if (/appointments_type_check/.test(text)) return TYPE_AREA_MESSAGE;
+  if (/coverage_id/.test(text) && /does not exist|schema cache|Could not find|42703/i.test(text)) {
+    return AGENDA_BILLING_MIGRATION_HINT;
+  }
+  if (/carteira_de_outro_paciente/.test(text)) return 'A carteira escolhida é de outro paciente. Escolha de novo o convênio.';
+  if (/carteira_de_outra_operadora/.test(text)) return 'A carteira escolhida é de outra operadora. Escolha de novo o convênio.';
+  if (/carteira_desativada/.test(text)) return 'Esta carteira foi desativada na ficha do paciente. Escolha outra ou marque Particular.';
+  if (/convenio_sem_operadora|convenio_de_outra_clinica/.test(text)) return 'Escolha a operadora do convênio ou marque Particular.';
+  if (/convenio_sem_paciente/.test(text)) return 'Bloqueio de horário não tem convênio.';
+  if (/appointment_has_payment/.test(text) && /quem paga/.test(text)) {
+    return 'Este atendimento tem pagamento registrado. Anule o pagamento no Financeiro antes de mudar quem paga.';
+  }
+  // Fase 2 do convênio (20261103): atendimento numa guia em lote não muda,
+  // e com pagamento só dia e profissional mudam.
+  if (/appointment_has_payment/.test(text) && /área, tipo ou paciente/.test(text)) {
+    return 'Este atendimento tem pagamento registrado. Anule o pagamento no Financeiro antes de mudar área, tipo ou paciente.';
+  }
+  const lote = text.match(/guia_no_lote: este atendimento está na (guia \S+ no lote \S+)/);
+  if (lote) {
+    return `Este atendimento está na ${lote[1]} do convênio e não muda. No Financeiro → Guias, reenvie a guia em novo lote (com o motivo) antes de mudar.`;
+  }
+  if (/guia_ja_enviada/.test(text)) {
+    return 'A guia deste atendimento já foi enviada a esta operadora: não dá para trocar a operadora. Registre um atendimento novo.';
+  }
+  return null;
+}
+
+/** Quem paga, como vai para o banco: particular nunca leva operadora nem carteira. */
+export function billingColumns(input) {
+  if (input?.billingType === 'convenio') {
+    return {
+      billing_type: 'convenio',
+      convenio_id: input.convenioId || null,
+      coverage_id: input.coverageId || null,
+    };
+  }
+  return { billing_type: 'particular', convenio_id: null, coverage_id: null };
+}
 
 export function isMissingAgendaSchemaError(error) {
   const text = [error?.message, error?.details, error?.hint, error?.code]
@@ -145,6 +188,9 @@ function assertValid(input) {
   if (input?.appointmentType && !APPOINTMENT_TYPE_IDS.includes(input.appointmentType)) {
     throw new Error(`Tipo de atendimento inválido: ${input.appointmentType}.`);
   }
+  if (input?.appointmentType && !isTypeAllowedInArea(input?.discipline, input.appointmentType)) {
+    throw new Error(TYPE_AREA_MESSAGE);
+  }
 
   if (kind === 'appointment' && input?.modality && !APPOINTMENT_MODALITY_IDS.includes(input.modality)) {
     throw new Error(`Modalidade inválida: ${input.modality}.`);
@@ -152,6 +198,14 @@ function assertValid(input) {
 
   if (kind === 'block' && input?.blockType && !APPOINTMENT_BLOCK_TYPE_IDS.includes(input.blockType)) {
     throw new Error(`Categoria de bloqueio inválida: ${input.blockType}.`);
+  }
+
+  if (input?.billingType && !BILLING_TYPES.includes(input.billingType)) {
+    throw new Error(`Forma de pagamento inválida: ${input.billingType}.`);
+  }
+  if (input?.billingType === 'convenio') {
+    if (kind === 'block') throw new Error('Bloqueio de horário não tem convênio.');
+    if (!input.convenioId) throw new Error('Escolha a operadora do convênio ou marque Particular.');
   }
 
   const start = new Date(input?.startsAt);
@@ -220,6 +274,8 @@ export async function listAppointments({ from, to, professionalId = null, patien
   const { data, error } = await query.order('starts_at', { ascending: true }).limit(2000);
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     throw new Error(error.message || 'Não foi possível carregar a agenda.');
   }
@@ -265,6 +321,8 @@ export async function createAppointment(input, { knownAppointments = null, runti
     exception_reason: input.isException === true
       ? String(input.exceptionReason || '').trim()
       : null,
+    // Como paga: o gatilho do banco confere carteira × paciente × operadora.
+    ...billingColumns(kind === 'block' ? null : input),
   };
   // Só "Registrar atendimento realizado" nasce confirmado; o agendamento
   // comum confirma depois (botão ou link do WhatsApp).
@@ -307,6 +365,8 @@ export async function createAppointment(input, { knownAppointments = null, runti
     .single();
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isOverlapError(error)) {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
@@ -380,6 +440,8 @@ export async function updateAppointmentStatus(id, status, { reason = null, runti
     .single();
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível atualizar o agendamento.');
@@ -422,6 +484,8 @@ export async function confirmAppointment(id, { undo = false, at = null, runtime 
     .single();
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível registrar a confirmação.');
@@ -477,6 +541,8 @@ export async function listPendingConfirmations({ from, to, professionalId = null
       const appointments = await listAppointments({ from, to, professionalId, runtime });
       return appointments.filter(isPending);
     }
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     throw new Error(error.message || 'Não foi possível carregar a fila de confirmação.');
   }
@@ -751,6 +817,8 @@ export async function cancelSeriesFrom(groupId, {
     .select(APPOINTMENT_COLUMNS);
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsUpdateMessage(error));
     throw new Error(error.message || 'Não foi possível cancelar as sessões.');
@@ -819,6 +887,8 @@ export async function rescheduleAppointment(id, {
     .single();
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isOverlapError(error)) {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
@@ -882,11 +952,24 @@ export async function updateAppointmentDetails(id, {
   blockType,
   endsAt,
   note,
+  billing,
   runtime,
 } = {}) {
   if (!id) throw new Error('Agendamento não informado.');
 
   const patch = {};
+
+  // Como paga: { billingType, convenioId, coverageId }. Mudar num
+  // atendimento já Atendido refaz a cobrança no banco (sem pagamento).
+  if (billing !== undefined) {
+    if (!BILLING_TYPES.includes(billing?.billingType)) {
+      throw new Error(`Forma de pagamento inválida: ${billing?.billingType || '(vazia)'}.`);
+    }
+    if (billing.billingType === 'convenio' && !billing.convenioId) {
+      throw new Error('Escolha a operadora do convênio ou marque Particular.');
+    }
+    Object.assign(patch, billingColumns(billing));
+  }
 
   if (discipline !== undefined) {
     if (!DISCIPLINE_IDS.includes(discipline)) {
@@ -907,6 +990,10 @@ export async function updateAppointmentDetails(id, {
       throw new Error(`Tipo de atendimento inválido: ${appointmentType}.`);
     }
     patch.appointment_type = appointmentType || null;
+  }
+
+  if (discipline !== undefined && appointmentType && !isTypeAllowedInArea(discipline, appointmentType)) {
+    throw new Error(TYPE_AREA_MESSAGE);
   }
 
   if (modality !== undefined) {
@@ -949,6 +1036,8 @@ export async function updateAppointmentDetails(id, {
     .single();
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isOverlapError(error)) {
       throw new Error('Esse profissional já tem atendimento nesse horário.');
@@ -997,6 +1086,8 @@ export async function deleteAppointment(id, { runtime } = {}) {
     .maybeSingle();
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     if (isRlsPolicyError(error)) throw new Error(rlsDeleteMessage(error));
     // Financeiro (20261023): atendimento com pagamento não se exclui. O
@@ -1054,11 +1145,23 @@ export async function listSeriesFrom(groupId, { fromIso, runtime } = {}) {
     .order('starts_at', { ascending: true });
 
   if (error) {
+    const billingMessage = billingErrorMessage(error);
+    if (billingMessage) throw new Error(billingMessage);
     if (isMissingAgendaSchemaError(error)) throw new Error(AGENDA_MIGRATION_HINT);
     throw new Error(error.message || 'Não foi possível ler as sessões do pacote.');
   }
 
   return data || [];
+}
+
+/**
+ * Todas as sessões de um pacote da Agenda, da primeira à última, lidas do
+ * banco ("Ver sessões do pacote"). Mesma leitura de `listSeriesFrom`,
+ * desde o começo: a tela só tem o período visível. Sem valor nem
+ * pagamento (APPOINTMENT_COLUMNS não tem nenhum).
+ */
+export function listSeriesSessions(groupId, { runtime } = {}) {
+  return listSeriesFrom(groupId, { fromIso: '1970-01-01T00:00:00.000Z', runtime });
 }
 
 /**

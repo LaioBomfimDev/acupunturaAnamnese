@@ -19,10 +19,12 @@ import {
   labelOf,
   methodLabel,
   parseBRLInput,
+  splitReceivablesByPayer,
   typeLabel,
 } from '../../utils/finance';
 import { AreaTag, DueTag, EmptyNote, MethodPicker, MoneyInput } from './FinanceFields';
 import { AdjustDialog, SellPackageDialog, VoidDialog } from './FinanceDialogs';
+import { FiscalChip, VoucherButton } from './FinanceFiscal';
 
 // ============================================================
 // Entradas: A receber, Recebidos e Pacotes.
@@ -32,6 +34,10 @@ function patientName(fin, id) {
   return fin.patientsById.get(id)?.name || 'Paciente arquivado';
 }
 
+function convenioName(fin, id) {
+  return fin.conv?.convenios?.find(row => row.id === id)?.name || 'Operadora';
+}
+
 function professionalName(fin, id) {
   const member = fin.membersById.get(id);
   return member ? shortName(member.full_name) : '';
@@ -39,13 +45,13 @@ function professionalName(fin, id) {
 
 /** O que é o item, em uma linha. */
 function itemTitle(item) {
-  if (item.kind === 'charge') return `${typeLabel(item.appointmentType)} de ${formatShortDay(item.dueOn)}`;
+  if (item.kind === 'charge') return `${typeLabel(item.appointmentType, item.discipline)} de ${formatShortDay(item.dueOn)}`;
   if (item.kind === 'installment') return `${item.packageName} · parcela ${item.installmentNumber} de ${item.installments}`;
   if (item.kind === 'rest') return `${item.packageName} · restante do pacote`;
   return `${item.packageName} · sessão ${item.sessionNumber} de ${item.sessionsPlanned}`;
 }
 
-function ReceiveForm({ fin, items, onDone }) {
+function ReceiveForm({ fin, items, payerLabel = '', onDone }) {
   const [selected, setSelected] = useState(() => new Set(items.map(item => item.key)));
   const chosen = items.filter(item => selected.has(item.key));
   const chosenTotal = chosen.reduce((total, item) => total + item.openCents, 0);
@@ -84,7 +90,9 @@ function ReceiveForm({ fin, items, onDone }) {
     setError('');
     try {
       await registerReceipt({ patientId: items[0].patientId, receivedOn, rows, note });
-      fin.notify(`Recebimento registrado: ${formatBRL(splitTotal)} de ${patientName(fin, items[0].patientId)}.`);
+      fin.notify(payerLabel
+        ? `Recebimento registrado: ${formatBRL(splitTotal)} de ${payerLabel}, atendimento de ${patientName(fin, items[0].patientId)}.`
+        : `Recebimento registrado: ${formatBRL(splitTotal)} de ${patientName(fin, items[0].patientId)}.`);
       fin.reload();
       onDone();
     } catch (err) {
@@ -145,6 +153,78 @@ function ReceiveForm({ fin, items, onDone }) {
   );
 }
 
+/**
+ * Um grupo de "A receber": os itens de um paciente, cobrados dele
+ * (particular) ou da operadora (convênio, com payerLabel). Receber é por
+ * paciente: o recebimento do banco é sempre de um paciente só.
+ */
+/** Situação da guia do item de convênio, no lugar do vencimento. */
+function GuideTag({ item, today }) {
+  const guide = item.guide;
+  if (!guide) return <span className="gt-badge gt-badge-neutral">sem guia</span>;
+  if (guide.status === 'open') return <span className="gt-badge gt-badge-neutral">guia {guide.number} · a faturar</span>;
+  if (guide.status === 'glosa' || guide.status === 'appeal') {
+    return <span className="gt-badge gt-badge-pending">guia {guide.number} · {guide.status === 'glosa' ? 'glosada' : 'em recurso'} {formatBRL(guide.glosaCents)}</span>;
+  }
+  if (item.hasDue) return <DueTag dueOn={item.dueOn} today={today} />;
+  return <span className="gt-badge gt-badge-neutral">guia {guide.number} · lote {guide.batch}{guide.sentOn ? '' : ' (falta enviar)'}</span>;
+}
+
+function ReceivableGroup({ fin, group, title, payerLabel = '', operator = false, openKey, openPatient, setOpenPatient, chargeById, paidByCharge, onAdjust }) {
+  const open = openPatient === openKey;
+  return (
+    <div className={`fin-group${group.lateCents > 0 ? ' fin-group--late' : ''}`}>
+      <div className="fin-group-head">
+        <div className="fin-row-main">
+          <b>{title}</b>
+          <span>{group.items.length} {group.items.length === 1 ? 'item' : 'itens'}{group.lateCents > 0 ? ` · ${formatBRL(group.lateCents)} em atraso` : ''}</span>
+        </div>
+        <b className="fin-num fin-amount">{formatBRL(group.openCents)}</b>
+        {operator ? (
+          // Convênio (Fase 2): o dinheiro entra pelo pagamento da operadora.
+          <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open(group.items.some(item => item.guide?.status === 'open') ? 'guias' : 'pagamentos')}>
+            {group.items.some(item => item.guide?.status === 'open') ? 'Ver guias' : 'Pagamentos'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={`gt-btn gt-btn--sm${open ? '' : ' gt-btn--primary'}`}
+            aria-expanded={open}
+            onClick={() => setOpenPatient(current => (current === openKey ? '' : openKey))}
+          >
+            {open ? 'Fechar' : 'Receber'}
+          </button>
+        )}
+      </div>
+      <ul className="fin-items">
+        {group.items.map(item => {
+          const charge = item.kind === 'charge' ? chargeById.get(item.chargeId) : null;
+          return (
+            <li key={item.key}>
+              <AreaTag discipline={item.discipline} />
+              <span className="fin-item-title">
+                {itemTitle(item)}{item.professionalId ? ` · ${professionalName(fin, item.professionalId)}` : ''}
+                {item.tussCode ? ` · TUSS ${item.tussCode}` : ''}
+              </span>
+              {operator ? <GuideTag item={item} today={fin.today} /> : <DueTag dueOn={item.dueOn} today={fin.today} />}
+              <span className="fin-num">
+                {formatBRL(item.openCents)}
+                {item.openCents < item.totalCents && <small> de {formatBRL(item.totalCents)}</small>}
+              </span>
+              {charge && !(operator && item.guide && item.guide.status !== 'open') && (
+                <button type="button" className="fin-link" onClick={() => onAdjust({ charge, paid: paidByCharge.get(charge.id) || 0 })}>Mudar valor</button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {open && !operator && (
+        <ReceiveForm fin={fin} items={group.items} payerLabel={payerLabel} onDone={() => setOpenPatient('')} />
+      )}
+    </div>
+  );
+}
+
 const RECEIVABLE_FILTERS = [
   { id: 'all', label: 'Tudo' },
   { id: 'late', label: 'Em atraso' },
@@ -158,7 +238,7 @@ export function AReceber({ fin }) {
   const [openPatient, setOpenPatient] = useState('');
   const [adjusting, setAdjusting] = useState(null);
   const [selling, setSelling] = useState(false);
-  const { items, missingPrice, credits } = fin.receivables;
+  const { items, missingPrice, credits, convenioCredits } = fin.receivables;
 
   const counts = {
     all: items.length,
@@ -169,7 +249,14 @@ export function AReceber({ fin }) {
   const needle = query.trim().toLocaleLowerCase('pt-BR');
   const matches = id => !needle || patientName(fin, id).toLocaleLowerCase('pt-BR').includes(needle);
   const visible = items.filter(item => (filter === 'late' ? item.late : filter === 'next' ? !item.late : true) && matches(item.patientId));
-  const groups = groupReceivablesByPatient(visible);
+  // Por quem paga: pacientes (particular) e cada operadora. Cobrança de
+  // convênio nunca entra no grupo do paciente.
+  const byPayer = splitReceivablesByPayer(visible);
+  const groups = groupReceivablesByPatient(byPayer.patients);
+  const convenioGroups = byPayer.convenios.map(group => ({
+    ...group,
+    patients: groupReceivablesByPatient(group.items),
+  }));
   const chargeById = new Map(fin.data.charges.map(row => [row.id, row]));
   const paidByCharge = useMemo(() => {
     const map = new Map();
@@ -201,6 +288,13 @@ export function AReceber({ fin }) {
         </p>
       )}
 
+      {convenioCredits?.size > 0 && (
+        <p className="gt-notice">
+          Crédito de operadora: {[...convenioCredits.entries()].map(([id, cents]) => `${convenioName(fin, id)} (${formatBRL(cents)})`).join(', ')}.
+          É pagamento de convênio num atendimento que deixou de valer. Para usar, anule o recebimento em “Recebidos” e lance de novo no atendimento certo.
+        </p>
+      )}
+
       {filter === 'missing' ? (
         missingPrice.length === 0 ? <EmptyNote>Todo atendimento feito tem valor. Atendimento sem valor aparece aqui quando a tabela não tem preço para a área e o tipo.</EmptyNote> : (
           <div className="fin-list">
@@ -208,7 +302,10 @@ export function AReceber({ fin }) {
               <div key={charge.id} className="fin-row">
                 <div className="fin-row-main">
                   <b>{patientName(fin, charge.patient_id)}</b>
-                  <span><AreaTag discipline={charge.discipline} /> · {typeLabel(charge.appointment_type)} de {formatShortDay(charge.service_on)} · {professionalName(fin, charge.professional_id)}</span>
+                  <span>
+                    <AreaTag discipline={charge.discipline} /> · {typeLabel(charge.appointment_type, charge.discipline)} de {formatShortDay(charge.service_on)} · {professionalName(fin, charge.professional_id)}
+                    {charge.payer === 'convenio' && ` · Convênio · ${convenioName(fin, charge.convenio_id)} sem preço para a área`}
+                  </span>
                 </div>
                 <span className="gt-badge gt-badge-pending">sem valor</span>
                 <button type="button" className="gt-btn gt-btn--sm gt-btn--primary" onClick={() => setAdjusting({ charge, paid: 0 })}>Definir valor</button>
@@ -216,52 +313,57 @@ export function AReceber({ fin }) {
             ))}
           </div>
         )
-      ) : groups.length === 0 ? (
+      ) : groups.length === 0 && convenioGroups.length === 0 ? (
         <EmptyNote>{items.length ? 'Nada com esse filtro.' : 'Nada a receber. Atendimento feito e não pago e parcela de pacote aparecem aqui.'}</EmptyNote>
       ) : (
-        <div className="fin-list">
-          {groups.map(group => (
-            <div key={group.patientId} className={`fin-group${group.lateCents > 0 ? ' fin-group--late' : ''}`}>
-              <div className="fin-group-head">
-                <div className="fin-row-main">
-                  <b>{patientName(fin, group.patientId)}</b>
-                  <span>{group.items.length} {group.items.length === 1 ? 'item' : 'itens'}{group.lateCents > 0 ? ` · ${formatBRL(group.lateCents)} em atraso` : ''}</span>
-                </div>
-                <b className="fin-num fin-amount">{formatBRL(group.openCents)}</b>
-                <button
-                  type="button"
-                  className={`gt-btn gt-btn--sm${openPatient === group.patientId ? '' : ' gt-btn--primary'}`}
-                  aria-expanded={openPatient === group.patientId}
-                  onClick={() => setOpenPatient(current => (current === group.patientId ? '' : group.patientId))}
-                >
-                  {openPatient === group.patientId ? 'Fechar' : 'Receber'}
-                </button>
+        <>
+          {groups.length > 0 && (
+            <div className="fin-list">
+              {convenioGroups.length > 0 && <p className="fin-label fin-payer-title">Pacientes (particular)</p>}
+              {groups.map(group => (
+                <ReceivableGroup
+                  key={group.patientId}
+                  fin={fin}
+                  group={group}
+                  title={patientName(fin, group.patientId)}
+                  openKey={`patient:${group.patientId}`}
+                  openPatient={openPatient}
+                  setOpenPatient={setOpenPatient}
+                  chargeById={chargeById}
+                  paidByCharge={paidByCharge}
+                  onAdjust={setAdjusting}
+                />
+              ))}
+            </div>
+          )}
+          {convenioGroups.map(convGroup => (
+            <div key={convGroup.convenioId} className="fin-list fin-payer">
+              <div className="fin-payer-head">
+                <p className="fin-label fin-payer-title">Convênio · {convenioName(fin, convGroup.convenioId)}</p>
+                <span className="fin-num">
+                  {formatBRL(convGroup.openCents)}
+                  {convGroup.lateCents > 0 && <small> · {formatBRL(convGroup.lateCents)} em atraso</small>}
+                </span>
               </div>
-              <ul className="fin-items">
-                {group.items.map(item => {
-                  const charge = item.kind === 'charge' ? chargeById.get(item.chargeId) : null;
-                  return (
-                    <li key={item.key}>
-                      <AreaTag discipline={item.discipline} />
-                      <span className="fin-item-title">{itemTitle(item)}{item.professionalId ? ` · ${professionalName(fin, item.professionalId)}` : ''}</span>
-                      <DueTag dueOn={item.dueOn} today={fin.today} />
-                      <span className="fin-num">
-                        {formatBRL(item.openCents)}
-                        {item.openCents < item.totalCents && <small> de {formatBRL(item.totalCents)}</small>}
-                      </span>
-                      {charge && (
-                        <button type="button" className="fin-link" onClick={() => setAdjusting({ charge, paid: paidByCharge.get(charge.id) || 0 })}>Mudar valor</button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-              {openPatient === group.patientId && (
-                <ReceiveForm fin={fin} items={group.items} onDone={() => setOpenPatient('')} />
-              )}
+              {convGroup.patients.map(group => (
+                <ReceivableGroup
+                  key={group.patientId}
+                  fin={fin}
+                  group={group}
+                  title={`Atendimentos de ${patientName(fin, group.patientId)}`}
+                  payerLabel={convenioName(fin, convGroup.convenioId)}
+                  operator={Boolean(fin.data.tissReady)}
+                  openKey={`convenio:${convGroup.convenioId}:${group.patientId}`}
+                  openPatient={openPatient}
+                  setOpenPatient={setOpenPatient}
+                  chargeById={chargeById}
+                  paidByCharge={paidByCharge}
+                  onAdjust={setAdjusting}
+                />
+              ))}
             </div>
           ))}
-        </div>
+        </>
       )}
 
       {adjusting && <AdjustDialog fin={fin} charge={adjusting.charge} paidCents={adjusting.paid} onClose={() => setAdjusting(null)} />}
@@ -294,7 +396,7 @@ export function Recebidos({ fin }) {
   const describe = row => {
     if (row.charge_id) {
       const charge = chargeById.get(row.charge_id);
-      return charge ? `${typeLabel(charge.appointment_type)} de ${formatShortDay(charge.service_on)}` : 'Atendimento';
+      return charge ? `${typeLabel(charge.appointment_type, charge.discipline)} de ${formatShortDay(charge.service_on)}` : 'Atendimento';
     }
     return packageById.get(row.package_id)?.name || 'Pacote';
   };
@@ -328,14 +430,19 @@ export function Recebidos({ fin }) {
                   {group.voided && <span className="fin-void-reason">Anulado: {group.reason}</span>}
                 </div>
                 <b className="fin-num fin-amount">{formatBRL(total)}</b>
+                <FiscalChip doc={fin.fiscalBySource?.byGroup.get(group.id)} />
                 {!group.voided && (
-                  <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding({ id: group.id, total, patientId: group.patientId })}>Anular</button>
+                  <div className="fin-row-actions">
+                    {fin.fiscal && <VoucherButton fin={fin} group={group} />}
+                    <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding({ id: group.id, total, patientId: group.patientId })}>Anular</button>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
       )}
+      <OperatorPayments fin={fin} showVoided={showVoided} />
       {voiding && (
         <VoidDialog
           title="Anular recebimento"
@@ -350,6 +457,33 @@ export function Recebidos({ fin }) {
         />
       )}
     </section>
+  );
+}
+
+/** Depósitos da operadora no mês (Fase 2). Anula em Pagamentos e glosas. */
+function OperatorPayments({ fin, showVoided }) {
+  const list = (fin.tiss?.payments || [])
+    .filter(row => inRange(row.received_on, fin.month) && (showVoided || !row.voided_at));
+  if (list.length === 0) return null;
+  return (
+    <>
+      <h3 className="fin-subtitle">Da operadora</h3>
+      <div className="fin-list">
+        {list.map(row => (
+          <div key={row.id} className={`fin-row${row.voided_at ? ' fin-row--void' : ''}`}>
+            <span className="fin-date">{formatShortDay(row.received_on)}</span>
+            <div className="fin-row-main">
+              <b>{convenioName(fin, row.convenio_id)}</b>
+              <span>{methodLabel(row.method)}{row.note ? ` · ${row.note}` : ''}</span>
+              {row.voided_at && <span className="fin-void-reason">Anulado: {row.void_reason}</span>}
+            </div>
+            <b className="fin-num fin-amount">{formatBRL(row.amount_cents)}</b>
+            <FiscalChip doc={fin.fiscalBySource?.byPayment.get(row.id)} />
+            {!row.voided_at && <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open('pagamentos')}>Ver</button>}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

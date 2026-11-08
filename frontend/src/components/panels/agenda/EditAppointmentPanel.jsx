@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { APPOINTMENT_BLOCK_TYPES, APPOINTMENT_MODALITIES, APPOINTMENT_TYPES } from '../../../services/appointmentService';
+import { APPOINTMENT_BLOCK_TYPES, APPOINTMENT_MODALITIES } from '../../../services/appointmentService';
+import { typeAfterAreaChange } from '../../../utils/appointmentTypes.js';
+import AppointmentTypeOptions from './AppointmentTypeOptions';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { DismissPrompt } from '../../ui/DismissPrompt';
+import { billingOf, sameBilling } from '../../../utils/agendaBilling';
+import { BillingChoice } from './BillingChoice';
 
 function durationOf(appointment) {
   const start = new Date(appointment.starts_at);
@@ -29,6 +33,7 @@ export function EditAppointmentPanel({
   open,
   appointment,
   availableDisciplines,
+  canSeeConvenioPrice = false,
   saving = false,
   onClose,
   onSave,
@@ -43,6 +48,10 @@ export function EditAppointmentPanel({
   const [blockType, setBlockType] = useState(() => appointment?.block_type || 'outro');
   const [durationMinutes, setDurationMinutes] = useState(() => (appointment ? durationOf(appointment) : 60));
   const [note, setNote] = useState(() => appointment?.note || '');
+  // Como paga: muda aqui também. Atendimento já Atendido refaz a cobrança
+  // no banco (sem pagamento lançado); a repetição de pacote não muda as
+  // outras sessões, só esta.
+  const [billing, setBilling] = useState(() => billingOf(appointment));
   const dismiss = useDismiss({ open: Boolean(open && appointment), onClose, busy: saving, guardUnsaved: true });
 
   if (!open || !appointment) return null;
@@ -59,7 +68,14 @@ export function EditAppointmentPanel({
 
     const start = new Date(appointment.starts_at);
     const endsAt = new Date(start.getTime() + durationMinutes * 60000);
-    onSave({ discipline, appointmentType: appointmentType || null, modality, endsAt, note });
+    onSave({
+      discipline,
+      appointmentType: appointmentType || null,
+      modality,
+      endsAt,
+      note,
+      ...(sameBilling(billing, billingOf(appointment)) ? {} : { billing }),
+    });
   }
 
   return (
@@ -99,7 +115,10 @@ export function EditAppointmentPanel({
                     id="ag-edit-discipline"
                     className="ag-select"
                     value={discipline}
-                    onChange={e => setDiscipline(e.target.value)}
+                    onChange={e => {
+                      setDiscipline(e.target.value);
+                      setAppointmentType(prev => typeAfterAreaChange(prev, e.target.value));
+                    }}
                     disabled={saving}
                     required
                   >
@@ -118,13 +137,23 @@ export function EditAppointmentPanel({
                     onChange={e => setAppointmentType(e.target.value)}
                     disabled={saving}
                   >
-                    <option value="">Não classificado</option>
-                    {APPOINTMENT_TYPES.map(item => (
-                      <option key={item.id} value={item.id}>{item.label}</option>
-                    ))}
+                    <AppointmentTypeOptions discipline={discipline} current={appointmentType} />
                   </select>
                 </div>
               </div>
+
+              <BillingChoice
+                idPrefix="ag-edit-billing"
+                patientId={appointment.patient_id}
+                discipline={discipline}
+                disciplineLabel={availableDisciplines.find(item => item.id === discipline)?.label || discipline}
+                appointmentType={appointmentType || null}
+                value={billing}
+                onChange={setBilling}
+                canSeePrice={canSeeConvenioPrice}
+                disabled={saving}
+                autoPick={false}
+              />
 
               <div className="ag-field">
                 <span className="agj-label">Modalidade</span>

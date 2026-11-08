@@ -2400,3 +2400,37 @@ button.pf-discipline-row:disabled {
     justify-content: flex-start;
   }
 }
+
+/* ---------- Observações do cadastro (03/11/2026) ---------- */
+
+.cp-notes {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cp-textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.cp-notes-hint {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 12.5px;
+  color: var(--r1-text-subtle);
+}
+
+.cp-notes-count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pf-field--multiline dd {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

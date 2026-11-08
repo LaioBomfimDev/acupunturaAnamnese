@@ -94,7 +94,7 @@ test('Resumo é a primeira aba do lado Gestão, com ajuda, números no menu e í
   assert.match(gestao, /\{ side: 'gestao', label: 'Visão geral', ids: \['resumo'\] \},\r?\n\s+\{ side: 'gestao', label: 'Atendimentos'/);
   assert.match(gestao, /<GestaoResumo\r?\n/);
   assert.match(gestao, /counts=\{navCounts\}/);
-  assert.match(gestao, /<HubBackButton nested label="Voltar ao Resumo" onClick=\{\(\) => setSection\('resumo'\)\} className="topbar-button gt-back-summary" \/>/);
+  assert.match(gestao, /<HubBackButton nested label="Voltar ao Resumo" onClick=\{\(\) => \{ setSection\('resumo'\); scrollToSectionTop\(null\); \}\} className="topbar-button gt-back-summary" \/>/);
   assert.match(gestao, /className=\{`gt gt--rail\$\{side === 'gestao' \? ' gt--index' : ''\}`\}/);
 
   const help = await server.ssrLoadModule('/src/data/screenHelp.js');

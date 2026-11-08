@@ -44,6 +44,15 @@ function isMissingCpfColumnError(error) {
 // Pendência manual (20260914_patient_pending_flag.sql): mesmo espírito
 // do CPF — sem a migração, a lista continua funcionando, só sem o selo
 // "pendência" e sem a barra amarela na agenda.
+// Observações do cadastro (20261103c_patient_notes.sql): sem a migração,
+// a lista (e a Agenda, que lê daqui) continua, só sem as observações.
+function isMissingNotesColumnError(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code]
+    .filter(Boolean)
+    .join(' ');
+  return /observacoes/.test(text) && /does not exist|schema cache|Could not find/i.test(text);
+}
+
 function isMissingPendingColumnError(error) {
   const text = [error?.message, error?.details, error?.hint, error?.code]
     .filter(Boolean)
@@ -112,10 +121,19 @@ export async function listClinicPatients() {
 
   let { data, error } = await supabase
     .from('patients')
-    .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at,assigned_to)')
+    .select('id,name,phone,age,birth_date,cpf,has_pending,observacoes,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at,assigned_to)')
     .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(2000);
+
+  if (error && isMissingNotesColumnError(error)) {
+    ({ data, error } = await supabase
+      .from('patients')
+      .select('id,name,phone,age,birth_date,cpf,has_pending,archived_at,suspended_at,created_at,therapist_id,clinic_id,patient_enrollments(id,discipline,status,note,created_at,assigned_to)')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false })
+      .limit(2000));
+  }
 
   if (error && isMissingPendingColumnError(error)) {
     ({ data, error } = await supabase

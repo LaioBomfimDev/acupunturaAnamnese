@@ -7,6 +7,7 @@ import {
   formatBRL,
   formatShortDay,
   inRange,
+  itemsOfPurchase,
   methodLabel,
   parseBRLInput,
   payableMembers,
@@ -14,6 +15,8 @@ import {
 } from '../../utils/finance';
 import { DueTag, EmptyNote, MethodPicker, MoneyInput } from './FinanceFields';
 import { ExpenseDialog, VoidDialog } from './FinanceDialogs';
+import { PurchaseDialog } from './PurchaseDialog';
+import { PurchaseReceiptDialog } from './PurchaseReceipt';
 
 // ============================================================
 // Saídas: A pagar, Pagas e Equipe e repasses.
@@ -90,6 +93,7 @@ export function APagar({ fin }) {
   const [filter, setFilter] = useState('all');
   const [open, setOpen] = useState('');
   const [expenseDialog, setExpenseDialog] = useState(null);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const items = fin.payables.filter(item => item.kind === 'payout' || item.dueOn <= fin.month.to);
   const counts = {
     all: items.length,
@@ -123,7 +127,10 @@ export function APagar({ fin }) {
             </button>
           ))}
         </div>
-        <button type="button" className="gt-btn gt-btn--primary" onClick={() => setExpenseDialog({})}>+ Lançar saída</button>
+        <div className="fin-actions">
+          <button type="button" className="gt-btn" onClick={() => setPurchaseOpen(true)}>+ Registrar compra</button>
+          <button type="button" className="gt-btn gt-btn--primary" onClick={() => setExpenseDialog({})}>+ Lançar saída</button>
+        </div>
       </div>
       <p className="fin-hint">Até o fim de {fin.month.label}. Saída fixa aparece sozinha no dia; repasse é o que cada profissional tem a receber até agora.</p>
       {visible.length === 0 ? <EmptyNote>{items.length ? 'Nada com esse filtro.' : 'Nada a pagar até o fim do mês.'}</EmptyNote> : (
@@ -156,6 +163,7 @@ export function APagar({ fin }) {
         </div>
       )}
       {expenseDialog && <ExpenseDialog fin={fin} preset={expenseDialog.title ? expenseDialog : null} onClose={() => setExpenseDialog(null)} />}
+      {purchaseOpen && <PurchaseDialog fin={fin} onClose={() => setPurchaseOpen(false)} />}
     </section>
   );
 }
@@ -163,6 +171,8 @@ export function APagar({ fin }) {
 export function Pagas({ fin }) {
   const [showVoided, setShowVoided] = useState(false);
   const [voiding, setVoiding] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const lookups = { membersById: fin.membersById, peopleById: fin.peopleById };
   const list = fin.data.expenses
     .filter(row => !row.skipped && row.paid_on && inRange(row.paid_on, fin.month) && (showVoided || !row.voided_at))
@@ -182,10 +192,13 @@ export function Pagas({ fin }) {
           ))}
           {byCategory.size === 0 && <span className="fin-hint">Nada pago em {fin.month.label}.</span>}
         </div>
-        <label className="fin-toggle" htmlFor="fin-show-voided-exp">
-          <input id="fin-show-voided-exp" type="checkbox" checked={showVoided} onChange={event => setShowVoided(event.target.checked)} />
-          Mostrar anuladas
-        </label>
+        <div className="fin-actions">
+          <label className="fin-toggle" htmlFor="fin-show-voided-exp">
+            <input id="fin-show-voided-exp" type="checkbox" checked={showVoided} onChange={event => setShowVoided(event.target.checked)} />
+            Mostrar anuladas
+          </label>
+          <button type="button" className="gt-btn gt-btn--primary" onClick={() => setPurchaseOpen(true)}>+ Registrar compra</button>
+        </div>
       </div>
       {list.length === 0 ? <EmptyNote>Nenhuma saída paga em {fin.month.label}.</EmptyNote> : (
         <div className="fin-list">
@@ -195,6 +208,7 @@ export function Pagas({ fin }) {
               <div className="fin-row-main">
                 <b>{row.description}</b>
                 <span>
+                  {row.receipt_number ? `Recibo Nº ${row.receipt_number} · ` : ''}
                   {categoryName(fin, row.category_id)}
                   {payeeName({ professionalId: row.professional_id, personId: row.person_id }, lookups) ? ` · ${payeeName({ professionalId: row.professional_id, personId: row.person_id }, lookups)}` : ''}
                   {` · ${methodLabel(row.method)}`}
@@ -202,6 +216,7 @@ export function Pagas({ fin }) {
                 {row.voided_at && <span className="fin-void-reason">Anulada: {row.void_reason}</span>}
               </div>
               <b className="fin-num fin-amount">{formatBRL(row.amount_cents)}</b>
+              {row.receipt_number && <button type="button" className="gt-btn gt-btn--sm" onClick={() => setReceipt(row)}>Recibo</button>}
               {!row.voided_at && <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding(row)}>Anular</button>}
             </div>
           ))}
@@ -210,7 +225,7 @@ export function Pagas({ fin }) {
       {voiding && (
         <VoidDialog
           title="Anular saída"
-          description={`${voiding.description}, ${formatBRL(voiding.amount_cents)}. Se for saída fixa, o vencimento volta para “A pagar”.`}
+          description={`${voiding.description}, ${formatBRL(voiding.amount_cents)}.${voiding.receipt_number ? ` O recibo Nº ${voiding.receipt_number} continua guardado, marcado como anulado.` : ' Se for saída fixa, o vencimento volta para “A pagar”.'}`}
           onClose={() => setVoiding(null)}
           onConfirm={async reason => {
             await voidExpense(voiding.id, reason);
@@ -220,6 +235,8 @@ export function Pagas({ fin }) {
           }}
         />
       )}
+      {receipt && <PurchaseReceiptDialog fin={fin} expense={receipt} items={itemsOfPurchase(fin.data.purchaseItems, receipt.id)} onClose={() => setReceipt(null)} />}
+      {purchaseOpen && <PurchaseDialog fin={fin} onClose={() => setPurchaseOpen(false)} />}
     </section>
   );
 }

@@ -6,11 +6,12 @@
 
 import { supabase, getAuthenticatedUser } from '../lib/supabase';
 import { LOCAL_DEVELOPMENT_MODE } from '../lib/localDevelopmentMode';
+import { normalizePatientNotes } from '../utils/patientNotes';
 
 const LOCAL_PATIENTS_KEY = 'acup_local_patients';
 const PATIENT_SELECT_COLUMNS =
   'id,therapist_id,name,phone,email,birth_date,age,archived_at,suspended_at,created_at,clinic_id,image_consent,image_consent_at,cpf,' +
-  'has_pending,' +
+  'has_pending,observacoes,' +
   'nome_social,nome_mae,nome_pai,nome_conjuge,sexo_biologico,genero,' +
   'responsavel_nome,responsavel_telefone,responsavel_cpf,' +
   'convenio_nome,convenio_carteirinha,' +
@@ -292,6 +293,18 @@ export function assertCanFallbackWithoutPendingFlag(error, hasPending) {
 }
 
 /**
+ * Observações digitadas que somem caladas por falta da migração são
+ * piores do que a tela recusar na hora.
+ */
+export function assertCanFallbackWithoutNotes(error, notes) {
+  if (!isMissingColumnError(error) || !notes) return;
+  throw new Error(
+    'Não foi possível salvar as observações porque a coluna observacoes não está disponível no banco. ' +
+    'Execute a migration supabase/migrations/20261103c_patient_notes.sql antes de preenchê-las.'
+  );
+}
+
+/**
  * Mesmo raciocínio: nome social, filiação, responsável, convênio e
  * endereço preenchidos que somem silenciosamente por falta da migração
  * são piores do que a tela quebrar na hora.
@@ -336,12 +349,14 @@ export async function createPatient({
   responsavelNome, responsavelTelefone, responsavelCpf,
   convenioNome, convenioCarteirinha,
   enderecoCep, enderecoLogradouro, enderecoNumero, enderecoComplemento, enderecoBairro, enderecoCidade, enderecoUf,
+  observacoes,
 }) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error('Usuário não autenticado.');
   const normalizedAge = normalizeAge(age !== undefined ? age : calculateAgeFromBirthDate(birthDate));
   const normalizedCpf = assertValidCpfIfProvided(cpf);
   const normalizedEmail = assertValidEmailIfProvided(email);
+  const normalizedNotes = normalizePatientNotes(observacoes) ?? null;
   const consentGiven = imageConsent === true;
   const consentAt = consentGiven ? new Date().toISOString() : null;
   assertResponsavelRequiredIfMinor(birthDate, { nome: responsavelNome, telefone: responsavelTelefone, cpf: responsavelCpf });
@@ -366,6 +381,7 @@ export async function createPatient({
       image_consent: consentGiven,
       image_consent_at: consentAt,
       cpf: normalizedCpf,
+      observacoes: normalizedNotes,
       ...registrationFields,
     };
     const patients = getLocalPatients();
@@ -385,6 +401,7 @@ export async function createPatient({
     cpf: normalizedCpf,
     ...registrationFields,
   };
+  if (normalizedNotes) payload.observacoes = normalizedNotes;
   if (hasSubmittedAge(age) || birthDate) payload.age = normalizedAge;
 
   let { data, error } = await supabase
@@ -398,6 +415,7 @@ export async function createPatient({
     assertCanFallbackWithoutImageConsent(error, imageConsent);
     assertCanFallbackWithoutCpf(error, normalizedCpf);
     assertCanFallbackWithoutEmail(error, normalizedEmail);
+    assertCanFallbackWithoutNotes(error, normalizedNotes);
     assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')
@@ -425,6 +443,7 @@ export async function updatePatient(patientId, updates) {
   if (!user) throw new Error('Usuário não autenticado.');
   const normalizedCpf = updates.cpf !== undefined ? assertValidCpfIfProvided(updates.cpf) : undefined;
   const normalizedEmail = updates.email !== undefined ? assertValidEmailIfProvided(updates.email) : undefined;
+  const normalizedNotes = normalizePatientNotes(updates.observacoes);
   if (updates.birthDate !== undefined || updates.responsavelNome !== undefined
     || updates.responsavelTelefone !== undefined || updates.responsavelCpf !== undefined) {
     assertResponsavelRequiredIfMinor(updates.birthDate, {
@@ -447,6 +466,7 @@ export async function updatePatient(patientId, updates) {
     if (updates.archivedAt !== undefined) patients[idx].archived_at = updates.archivedAt;
     if (updates.cpf !== undefined) patients[idx].cpf = normalizedCpf;
     if (updates.hasPending !== undefined) patients[idx].has_pending = updates.hasPending === true;
+    if (normalizedNotes !== undefined) patients[idx].observacoes = normalizedNotes;
     if (updates.imageConsent !== undefined) {
       const consentGiven = updates.imageConsent === true;
       patients[idx].image_consent = consentGiven;
@@ -466,6 +486,7 @@ export async function updatePatient(patientId, updates) {
   if (updates.archivedAt !== undefined) payload.archived_at = updates.archivedAt;
   if (updates.cpf !== undefined) payload.cpf = normalizedCpf;
   if (updates.hasPending !== undefined) payload.has_pending = updates.hasPending === true;
+  if (normalizedNotes !== undefined) payload.observacoes = normalizedNotes;
   if (updates.imageConsent !== undefined) {
     const consentGiven = updates.imageConsent === true;
     payload.image_consent = consentGiven;
@@ -488,6 +509,7 @@ export async function updatePatient(patientId, updates) {
     assertCanFallbackWithoutCpf(error, normalizedCpf);
     assertCanFallbackWithoutEmail(error, normalizedEmail);
     assertCanFallbackWithoutPendingFlag(error, updates.hasPending);
+    assertCanFallbackWithoutNotes(error, normalizedNotes);
     assertCanFallbackWithoutRegistrationFields(error, registrationFields);
     const fallbackPayload = { ...payload };
     delete fallbackPayload.age;
@@ -497,6 +519,7 @@ export async function updatePatient(patientId, updates) {
     delete fallbackPayload.cpf;
     delete fallbackPayload.email;
     delete fallbackPayload.has_pending;
+    delete fallbackPayload.observacoes;
     for (const column of Object.values(REGISTRATION_FIELD_TO_COLUMN)) delete fallbackPayload[column];
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('patients')

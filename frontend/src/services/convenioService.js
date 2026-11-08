@@ -179,3 +179,49 @@ export function savePatientCoverage(row) {
     ...(row.cns !== undefined ? { cns: onlyDigits(row.cns) || null } : {}),
   }, 'Não foi possível salvar o convênio do paciente.');
 }
+
+// ---------- Agenda: "Como paga" (02/11/2026) ----------
+
+let convenioChoicesCache = null;
+
+/**
+ * Operadoras e planos para a Agenda, uma ida por sessão da tela. Falha
+ * não fica guardada: a próxima tentativa vai de novo ao banco.
+ */
+export function listConvenioChoicesCached() {
+  if (!convenioChoicesCache) {
+    convenioChoicesCache = listConvenioChoices().catch(error => {
+      convenioChoicesCache = null;
+      throw error;
+    });
+  }
+  return convenioChoicesCache;
+}
+
+/**
+ * A operadora tem preço para a área (e o tipo)? Pela RPC
+ * convenio_price_check (20261102): quem edita o cadastro sabe se tem e o
+ * código; o valor só volta para a administração.
+ */
+export async function checkConvenioPrice({ convenioId, discipline, type = null }) {
+  const { data, error } = await supabase.rpc('convenio_price_check', {
+    p_convenio: convenioId,
+    p_discipline: discipline,
+    p_type: type || null,
+  });
+  if (error) {
+    if (/convenio_price_check/.test(error.message || '') && /does not exist|Could not find/i.test(error.message || '')) {
+      throw new Error('A conferência de preço do convênio ainda não está no banco (migração 20261102_agenda_convenio.sql).');
+    }
+    throw new Error(convenioErrorMessage(error, 'Não foi possível conferir o preço da operadora.'));
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    hasPrice: Boolean(row?.tem_preco),
+    byType: Boolean(row?.do_tipo),
+    tussTable: row?.tabela || null,
+    tussCode: row?.codigo || null,
+    tussTerm: row?.termo || null,
+    cents: row?.valor_centavos ?? null,
+  };
+}

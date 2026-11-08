@@ -381,7 +381,7 @@ test('Agenda: botão Configurar só para clinic_admin, e mover guarda o horário
   assert.match(source, /rescheduledFrom: nextRescheduledFrom\(appointment, start\.toISOString\(\)\)/);
 
   const serviceSource = await readFile(path.join(root, 'src/services/appointmentService.js'), 'utf8');
-  assert.match(serviceSource, /'rescheduled_from,created_by,created_at,updated_at'/);
+  assert.match(serviceSource, /'rescheduled_from,billing_type,convenio_id,coverage_id,created_by,created_at,updated_at'/);
 });
 
 test('CSS do visual de status não usa vermelho (reservado a conflito)', async () => {

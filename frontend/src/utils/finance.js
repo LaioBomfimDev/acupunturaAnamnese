@@ -13,7 +13,16 @@
 // Duas contas existem dos dois lados e precisam bater:
 //  - resolvePrice  ↔ public.finance_resolve_price
 //  - packageShare  ↔ a parte da sessão em public.finance_charge_appointment
+//
+// Convênio (Fase 2, 20261103): o dinheiro da operadora entra pelas contas
+// como recebimento (operatorReceiptsFrom em utils/tissXml.js), e a
+// cobrança de convênio só "atrasa" depois do lote enviado + o prazo da
+// operadora (convenioDueOn). Antes ela atrasava no dia seguinte ao
+// atendimento.
 // ============================================================
+
+import { CONVENIO_PAYMENT_METHODS, convenioDueOn } from './tissXml.js';
+import { APPOINTMENT_TYPES, appointmentTypeLabel } from './appointmentTypes.js';
 
 export const CLINIC_TIME_ZONE = 'America/Sao_Paulo';
 
@@ -26,17 +35,9 @@ export const PAYMENT_METHODS = [
   { id: 'outro', label: 'Outro' },
 ];
 
-// Espelha APPOINTMENT_TYPES (services/appointmentService.js), na mesma
-// ordem alfabética do campo "Tipo" da Agenda.
-export const FINANCE_APPOINTMENT_TYPES = [
-  { id: 'anamnesis', label: 'Anamnese' },
-  { id: 'evaluation', label: 'Avaliação' },
-  { id: 'feedback', label: 'Devolutiva' },
-  { id: 'interview', label: 'Entrevista' },
-  { id: 'first_visit', label: 'Primeira vez' },
-  { id: 'return', label: 'Retorno' },
-  { id: 'session', label: 'Sessão' },
-];
+// Catálogo único em utils/appointmentTypes.js (Agenda, Financeiro e
+// Convênios leem o mesmo).
+export const FINANCE_APPOINTMENT_TYPES = APPOINTMENT_TYPES;
 
 export const PAYOUT_MODES = [
   { id: 'percent', label: '% do valor do atendimento' },
@@ -71,11 +72,14 @@ export function labelOf(list, id) {
 }
 
 export function methodLabel(id) {
+  const convenio = CONVENIO_PAYMENT_METHODS.find(row => row.id === id);
+  if (convenio && !PAYMENT_METHODS.some(row => row.id === id)) return `${convenio.label} da operadora`;
   return labelOf(PAYMENT_METHODS, id) || 'Outro';
 }
 
-export function typeLabel(id) {
-  return labelOf(FINANCE_APPOINTMENT_TYPES, id) || 'Sem tipo';
+/** Com a área, o nome daquela área ("Avaliação psicológica"). */
+export function typeLabel(id, discipline = null) {
+  return appointmentTypeLabel(id, discipline);
 }
 
 // ---------- dinheiro ----------
@@ -109,6 +113,49 @@ export function centsToInput(cents) {
   const value = Number(cents);
   if (value % 100 === 0) return String(value / 100);
   return (value / 100).toFixed(2).replace('.', ',');
+}
+
+// ---------- compras (itens e recibo) ----------
+
+/** "2", "1,5", "0,250" → milésimos inteiros (2000, 1500, 250). Vazio, zero ou inválido → null. */
+export function parseQuantityInput(text) {
+  const raw = String(text ?? '').trim();
+  if (!/^\d{1,7}([.,]\d{1,3})?$/.test(raw)) return null;
+  const thousandths = Math.round(Number(raw.replace(',', '.')) * 1000);
+  return thousandths > 0 ? thousandths : null;
+}
+
+/** Milésimos → número que vai para o banco (1500 → 1.5). */
+export function quantityFromThousandths(thousandths) {
+  return thousandths / 1000;
+}
+
+/** Milésimos → texto do campo e do recibo (2000 → "2", 1500 → "1,5"). */
+export function quantityToText(thousandths) {
+  return String(thousandths / 1000).replace('.', ',');
+}
+
+// Meio para cima em inteiros, a mesma conta de round(quantidade × valor) do
+// banco (finance_register_purchase), sem erro de ponto flutuante.
+export function purchaseItemTotal({ quantityThousandths, unitCents }) {
+  if (!Number.isInteger(quantityThousandths) || !Number.isInteger(unitCents)) return 0;
+  return Math.floor((quantityThousandths * unitCents + 500) / 1000);
+}
+
+export function purchaseTotal(items) {
+  return (items || []).reduce((total, item) => total + purchaseItemTotal(item), 0);
+}
+
+/** "2026-000123" → "Nº 2026-000123". */
+export function formatReceiptNumber(number) {
+  return number ? `Nº ${number}` : '';
+}
+
+/** Itens gravados de uma compra, na ordem em que foram lançados. */
+export function itemsOfPurchase(items, expenseId) {
+  return (items || [])
+    .filter(item => item.expense_id === expenseId)
+    .sort((a, b) => a.position - b.position);
 }
 
 /** Para os quadros: R$ 18.420 vira "18,4 mil"; abaixo de mil fica inteiro. */
@@ -332,19 +379,25 @@ function packageDues(pkg, charges, installments) {
  * "a cada sessão". Também o atendimento que ficou sem valor na tabela e o
  * crédito de quem pagou um atendimento que deixou de valer.
  */
-export function buildReceivables({ charges = [], packages = [], installments = [], receipts = [], today }) {
+export function buildReceivables({ charges = [], packages = [], installments = [], receipts = [], tissStatus = [], today }) {
   const live = liveReceipts(receipts);
+  const guideByCharge = new Map((tissStatus || []).map(row => [row.cobranca, row]));
   const paidByCharge = sumBy(live, 'charge_id');
   const paidByPackage = sumBy(live, 'package_id');
   const items = [];
   const missingPrice = [];
   const credits = new Map();
+  // Crédito de operadora: pagamento de convênio num atendimento que deixou
+  // de valer. Nunca vira crédito do paciente.
+  const convenioCredits = new Map();
 
   for (const charge of charges) {
     if (charge.package_id || charge.source !== 'appointment') continue;
     const paid = paidByCharge.get(charge.id) || 0;
+    const byConvenio = isConvenioCharge(charge);
     if (charge.voided_at) {
-      if (paid > 0) credits.set(charge.patient_id, (credits.get(charge.patient_id) || 0) + paid);
+      if (paid > 0 && byConvenio) convenioCredits.set(charge.convenio_id, (convenioCredits.get(charge.convenio_id) || 0) + paid);
+      else if (paid > 0) credits.set(charge.patient_id, (credits.get(charge.patient_id) || 0) + paid);
       continue;
     }
     if (charge.price_cents == null) {
@@ -353,15 +406,30 @@ export function buildReceivables({ charges = [], packages = [], installments = [
     }
     const open = charge.price_cents - paid;
     if (open <= 0) continue;
+    const guide = byConvenio ? guideByCharge.get(charge.id) || null : null;
+    const convenioDue = guide ? convenioDueOn({ sentOn: guide.enviado_em, termDays: guide.prazo_dias }) : null;
     items.push({
       key: `charge:${charge.id}`,
       kind: 'charge',
+      payer: byConvenio ? 'convenio' : 'patient',
+      convenioId: byConvenio ? charge.convenio_id : null,
+      tussCode: byConvenio ? charge.tuss_code || null : null,
       patientId: charge.patient_id,
       professionalId: charge.professional_id,
       discipline: charge.discipline,
       appointmentType: charge.appointment_type,
       chargeId: charge.id,
-      dueOn: charge.service_on,
+      dueOn: convenioDue || charge.service_on,
+      // Convênio sem lote enviado (ou sem prazo da operadora) não vence.
+      hasDue: !byConvenio || Boolean(convenioDue),
+      guide: guide ? {
+        id: guide.guia,
+        number: guide.numero_guia,
+        status: guide.situacao,
+        batch: guide.lote,
+        sentOn: guide.enviado_em,
+        glosaCents: Math.min(guide.glosa_centavos || 0, open),
+      } : null,
       totalCents: charge.price_cents,
       openCents: open,
     });
@@ -378,6 +446,8 @@ export function buildReceivables({ charges = [], packages = [], installments = [
       items.push({
         key: `package:${pkg.id}:${due.kind}:${due.chargeId || due.installmentNumber}`,
         kind: due.kind,
+        payer: 'patient',
+        convenioId: null,
         patientId: pkg.patient_id,
         professionalId: due.professionalId || pkg.professional_id,
         discipline: pkg.discipline,
@@ -395,12 +465,42 @@ export function buildReceivables({ charges = [], packages = [], installments = [
   }
 
   for (const item of items) {
-    item.late = Boolean(today) && item.dueOn < today;
+    item.late = Boolean(today) && item.hasDue !== false && item.dueOn < today;
     item.daysLate = item.late ? daysBetween(item.dueOn, today) : 0;
   }
   items.sort((a, b) => (a.late === b.late ? 0 : a.late ? -1 : 1) || a.dueOn.localeCompare(b.dueOn));
 
-  return { items, missingPrice, credits };
+  return { items, missingPrice, credits, convenioCredits };
+}
+
+/** Cobrança que a operadora paga (20261102): nunca cobra o paciente. */
+export function isConvenioCharge(charge) {
+  return charge?.payer === 'convenio' && Boolean(charge.convenio_id);
+}
+
+/**
+ * "A receber" por quem paga: pacientes (particular) e cada operadora.
+ * Item de convênio nunca entra no grupo do paciente.
+ */
+export function splitReceivablesByPayer(items) {
+  const patients = [];
+  const byConvenio = new Map();
+  for (const item of items || []) {
+    if (item.payer !== 'convenio') {
+      patients.push(item);
+      continue;
+    }
+    const group = byConvenio.get(item.convenioId)
+      || { convenioId: item.convenioId, items: [], openCents: 0, lateCents: 0, oldestDue: item.dueOn };
+    group.items.push(item);
+    group.openCents += item.openCents;
+    if (item.late) group.lateCents += item.openCents;
+    if (item.dueOn < group.oldestDue) group.oldestDue = item.dueOn;
+    byConvenio.set(item.convenioId, group);
+  }
+  const convenios = [...byConvenio.values()]
+    .sort((a, b) => (b.lateCents > 0) - (a.lateCents > 0) || a.oldestDue.localeCompare(b.oldestDue));
+  return { patients, convenios };
 }
 
 /** Itens a receber de cada paciente, com o total e o atraso. */
@@ -665,6 +765,8 @@ export function buildMonthSummary({ receipts = [], expenses = [], charges = [], 
   const outCents = monthExpenses.reduce((total, row) => total + row.amount_cents, 0);
   const openItems = receivables?.items || [];
   const lateItems = openItems.filter(item => item.late);
+  const latePatientItems = lateItems.filter(item => item.payer !== 'convenio');
+  const convenioItems = openItems.filter(item => item.payer === 'convenio');
   const monthPayables = (payables || []).filter(item => item.kind === 'payout' || item.dueOn <= month.to);
   const unknownAmounts = monthPayables.filter(item => item.amountCents == null).length;
 
@@ -677,7 +779,11 @@ export function buildMonthSummary({ receipts = [], expenses = [], charges = [], 
     receivableCents: openItems.reduce((total, item) => total + item.openCents, 0),
     receivableCount: openItems.length,
     lateCents: lateItems.reduce((total, item) => total + item.openCents, 0),
-    latePatients: new Set(lateItems.map(item => item.patientId)).size,
+    // Atraso de paciente só conta o particular; o de convênio é da operadora.
+    latePatients: new Set(latePatientItems.map(item => item.patientId)).size,
+    lateConvenios: new Set(lateItems.filter(item => item.payer === 'convenio').map(item => item.convenioId)).size,
+    receivableConvenioCents: convenioItems.reduce((total, item) => total + item.openCents, 0),
+    receivableConvenioCount: convenioItems.length,
     payableCents: monthPayables.reduce((total, item) => total + (item.amountCents || 0), 0),
     payableCount: monthPayables.length,
     payableLate: monthPayables.filter(item => item.late).length,

@@ -42,7 +42,6 @@ import {
   professionalBillingMissing,
 } from '../../utils/convenio';
 import {
-  FINANCE_APPOINTMENT_TYPES,
   centsToInput,
   formatBRL,
   formatDay,
@@ -50,6 +49,8 @@ import {
   payableMembers,
   typeLabel,
 } from '../../utils/finance';
+import { financeServicesForArea } from '../../utils/financeServices';
+import { typeAfterAreaChange } from '../../utils/appointmentTypes.js';
 import { DialogShell } from './FinanceDialogs';
 import { AreaTag, EmptyNote, MoneyInput } from './FinanceFields';
 
@@ -239,17 +240,23 @@ function StepOperadora({ fin, convenio, onSaved, markSaved }) {
     tiss_version: convenio?.tiss_version || '4.03.00',
     submission_channel: convenio?.submission_channel || 'portal',
     lot_due_day: convenio?.lot_due_day ? String(convenio.lot_due_day) : '',
+    payment_term_days: convenio?.payment_term_days ? String(convenio.payment_term_days) : '',
     notes: convenio?.notes || '',
   }));
   const { busy, error, run } = useConvSaver(fin, markSaved);
   const set = patch => setForm(value => ({ ...value, ...patch }));
   const ans = onlyDigits(form.ans_registry);
   const day = form.lot_due_day ? Number(form.lot_due_day) : null;
+  const term = form.payment_term_days ? Number(form.payment_term_days) : null;
+  // Prazo de pagamento é da Fase 2 (20261103): só vai ao banco quando a
+  // coluna existe ou a pessoa preencheu.
+  const sendTerm = term != null || (convenio && 'payment_term_days' in convenio);
   const problems = [
     !form.name.trim() && 'o nome',
     ans && !ANS_PATTERN.test(ans) && 'o registro ANS (6 números)',
     form.cnpj.trim() && !isValidCnpj(form.cnpj) && 'o CNPJ (os dois últimos números não conferem)',
     day != null && (day < 1 || day > 31) && 'o dia do envio (1 a 31)',
+    term != null && (term < 1 || term > 180) && 'o prazo de pagamento (1 a 180 dias)',
     !/^\d\.\d{2}\.\d{2}$/.test(form.tiss_version) && 'a versão TISS (ex.: 4.03.00)',
   ].filter(Boolean);
 
@@ -262,6 +269,7 @@ function StepOperadora({ fin, convenio, onSaved, markSaved }) {
       tiss_version: form.tiss_version,
       submission_channel: form.submission_channel,
       lot_due_day: day,
+      ...(sendTerm ? { payment_term_days: term } : {}),
       notes: form.notes.trim() || null,
     }), convenio ? `${form.name.trim()} salva.` : `${form.name.trim()} cadastrada.`);
     if (saved) onSaved(saved);
@@ -307,6 +315,11 @@ function StepOperadora({ fin, convenio, onSaved, markSaved }) {
         <label className="gt-field" htmlFor="conv-day">
           Envio do lote até o dia
           <input id="conv-day" className="gt-select" inputMode="numeric" maxLength={2} placeholder="opcional" value={form.lot_due_day} onChange={event => set({ lot_due_day: onlyDigits(event.target.value) })} />
+        </label>
+        <label className="gt-field" htmlFor="conv-term">
+          Prazo para a operadora pagar
+          <input id="conv-term" className="gt-select" inputMode="numeric" maxLength={3} placeholder="dias, opcional" value={form.payment_term_days} onChange={event => set({ payment_term_days: onlyDigits(event.target.value) })} />
+          <small className="fin-field-note">Dias depois do envio do lote. Sem prazo, nada de convênio aparece em atraso.</small>
         </label>
         <label className="gt-field" htmlFor="conv-notes">
           Observação
@@ -534,7 +547,7 @@ function PriceForm({ fin, convenio, price, onDone, markSaved }) {
       <div className="fin-grid-2">
         <label className="gt-field" htmlFor="conv-price-area">
           Área
-          <select id="conv-price-area" className="gt-select" value={form.discipline} onChange={event => set({ discipline: event.target.value })}>
+          <select id="conv-price-area" className="gt-select" value={form.discipline} onChange={event => set({ discipline: event.target.value, appointment_type: typeAfterAreaChange(form.appointment_type, event.target.value) })}>
             <option value="">Escolha</option>
             {DISCIPLINES.map(area => <option key={area.id} value={area.id}>{area.label}</option>)}
           </select>
@@ -543,7 +556,7 @@ function PriceForm({ fin, convenio, price, onDone, markSaved }) {
           Tipo de atendimento
           <select id="conv-price-type" className="gt-select" value={form.appointment_type} onChange={event => set({ appointment_type: event.target.value })}>
             <option value="">Todos os tipos (valor da área)</option>
-            {FINANCE_APPOINTMENT_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
+            {financeServicesForArea(form.discipline, [form.appointment_type]).map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
           </select>
         </label>
       </div>
@@ -605,7 +618,7 @@ function StepPrecos({ fin, convenio, markSaved }) {
           ) : (
             <div key={row.id} className={`fin-row${row.tuss_code ? '' : ' fin-row--todo'}`}>
               <div className="fin-row-main">
-                <b><AreaTag discipline={row.discipline} /> {row.appointment_type ? typeLabel(row.appointment_type) : 'todos os tipos'}</b>
+                <b><AreaTag discipline={row.discipline} /> {row.appointment_type ? typeLabel(row.appointment_type, row.discipline) : 'todos os tipos'}</b>
                 <span>{procedureCodeLabel(row)}{row.tuss_term ? ` · ${row.tuss_term}` : ''}</span>
               </div>
               <span className="fin-amount fin-num">{formatBRL(row.price_cents)}</span>

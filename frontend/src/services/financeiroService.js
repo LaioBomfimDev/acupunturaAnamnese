@@ -39,6 +39,11 @@ export function financeErrorMessage(error, fallback) {
   if (/idx_finance_payout_rules_scope_unique/.test(text)) return 'A mesma área apareceu duas vezes nas exceções.';
   if (/finance_expense_categories_name_unique/.test(text)) return 'Já existe uma categoria com esse nome.';
   if (/finance_package_models_range/.test(text)) return 'O máximo de sessões não pode ser menor que o previsto.';
+  // Tipo de atendimento fora da área (20261104b, appointment_type_fits_area).
+  if (/procedure_prices_appointment_type_check|finance_payout_rules_appointment_type_check|convenio_procedure_prices_appointment_type_check/.test(text)) {
+    return 'Um dos tipos não é serviço desta área. Confira a área de cada valor.';
+  }
+  if (/finance_package_models_types|patient_packages_types/.test(text)) return 'O pacote tem tipo que não é serviço desta área.';
   if (error?.code === '42501' || /permission denied|row-level security/i.test(text)) {
     return 'Só a administração da instituição mexe no financeiro.';
   }
@@ -96,6 +101,7 @@ export async function loadFinanceData() {
     expenses,
     members,
     patients,
+    purchaseItems,
   ] = await Promise.all([
     supabase.from('clinic_finance_settings').select('*').maybeSingle(),
     fetchAll('procedure_prices', 'id,discipline,appointment_type,professional_id,price_cents,active', 'discipline'),
@@ -111,11 +117,15 @@ export async function loadFinanceData() {
     fetchAll('finance_expenses', '*'),
     listClinicMembers(),
     listClinicPatients(),
+    fetchAll('finance_purchase_items', '*', 'position'),
   ]);
 
   if (settingsResult.error) fail(settingsResult.error, 'Não foi possível carregar a configuração do financeiro.');
 
+  const tiss = await loadTissMoney();
+
   return {
+    ...tiss,
     settings: settingsResult.data || null,
     prices,
     rules,
@@ -130,6 +140,7 @@ export async function loadFinanceData() {
     expenses,
     members,
     patients,
+    purchaseItems,
   };
 }
 
@@ -138,14 +149,121 @@ export async function loadFinanceData() {
  * sem preparar o financeiro: não cria nada, só lê.
  */
 export async function loadReceivablesData() {
-  const [packages, installments, charges, receipts] = await Promise.all([
+  const [packages, installments, charges, receipts, tiss] = await Promise.all([
     fetchAll('patient_packages', '*'),
     fetchAll('patient_package_installments', 'id,package_id,number,due_on,amount_cents', 'due_on'),
     fetchAll('appointment_charges', '*', 'service_on'),
     fetchAll('finance_receipts', '*', 'received_on'),
+    loadTissMoney(),
   ]);
-  return { packages, installments, charges, receipts };
+  return { packages, installments, charges, receipts, ...tiss };
 }
+
+// ---------- convênio: guia, lote, pagamento da operadora (Fase 2) ----------
+
+export const TISS_MIGRATION_HINT =
+  'Guias e lotes de convênio ainda não estão no banco. Aplique a migração '
+  + 'supabase/migrations/20261103_convenios_fase2.sql no Supabase.';
+
+function isMissingTissSchema(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ');
+  return /tiss_|convenio_payments|finance_tiss/.test(text)
+    && /does not exist|schema cache|Could not find|PGRST20[025]|42883/i.test(text);
+}
+
+/** Erro do banco → frase de quem fatura convênio. */
+export function tissErrorMessage(error, fallback) {
+  if (isMissingTissSchema(error)) return TISS_MIGRATION_HINT;
+  const text = error?.message || '';
+  // As funções já mandam a frase depois do código ("guia_no_lote: …").
+  const coded = text.match(/^[a-z_]+: (.+)$/s);
+  if (coded) return coded[1];
+  return financeErrorMessage(error, fallback);
+}
+
+async function tissRpc(name, args, fallback) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw new Error(tissErrorMessage(error, fallback));
+  return data;
+}
+
+/**
+ * O que o "A receber", o Resumo e o repasse precisam do convênio. Sem a
+ * migration da Fase 2 no banco, volta vazio e o resto do financeiro segue.
+ */
+export async function loadTissMoney() {
+  const [status, paid] = await Promise.all([
+    supabase.rpc('finance_tiss_charge_status'),
+    supabase.rpc('finance_tiss_paid_rows'),
+  ]);
+  for (const result of [status, paid]) {
+    if (result.error && !isMissingTissSchema(result.error)) fail(result.error, 'Não foi possível carregar o convênio do financeiro.');
+  }
+  return {
+    tissStatus: status.error ? [] : status.data || [],
+    tissPaid: paid.error ? [] : paid.data || [],
+    tissReady: !status.error,
+  };
+}
+
+/** Tudo o que Guias, Lotes e Pagamentos e glosas mostram, numa ida só. */
+export async function loadTissData() {
+  const fallback = 'Não foi possível carregar as guias.';
+  const [guides, batches, payments, settlements, appeals, glosas] = await Promise.all([
+    tissRpc('finance_tiss_guides', { p_convenio: null }, fallback),
+    supabase.from('tiss_batches')
+      .select('id,convenio_id,number,status,origin_kind,origin_value,generated_on,generated_time,period_from,period_until,guide_count,total_cents,xml_hash,sent_on,protocol_number,created_at,discarded_at,discard_reason')
+      .order('created_at', { ascending: false }),
+    supabase.from('convenio_payments').select('*').order('received_on', { ascending: false }),
+    supabase.from('tiss_guide_settlements').select('*').order('created_at', { ascending: false }),
+    supabase.from('tiss_guide_appeals').select('*').order('created_at', { ascending: false }),
+    supabase.from('tiss_terms').select('code,term').eq('table_code', '38').order('code'),
+  ]);
+  for (const result of [batches, payments, settlements, appeals, glosas]) {
+    if (result.error) throw new Error(tissErrorMessage(result.error, fallback));
+  }
+  return {
+    guides: guides || [],
+    batches: batches.data || [],
+    payments: payments.data || [],
+    settlements: settlements.data || [],
+    appeals: appeals.data || [],
+    glosas: glosas.data || [],
+  };
+}
+
+/** XML guardado do lote (só quando a pessoa pede para baixar). */
+export async function loadBatchXml(batchId) {
+  const { data, error } = await supabase.from('tiss_batches').select('number,xml,xml_hash').eq('id', batchId).single();
+  if (error) throw new Error(tissErrorMessage(error, 'Não foi possível ler o XML do lote.'));
+  return data;
+}
+
+export const saveGuide = (guideId, fields) =>
+  tissRpc('finance_tiss_save_guide', { p_guide: guideId, p_fields: fields }, 'Não foi possível salvar a guia.');
+export const createBatch = (convenioId, guideIds) =>
+  tissRpc('finance_tiss_create_batch', { p_convenio: convenioId, p_guides: guideIds }, 'Não foi possível montar o lote.');
+export const markBatchSent = (batchId, sentOn, protocol) =>
+  tissRpc('finance_tiss_mark_sent', { p_batch: batchId, p_sent_on: sentOn, p_protocol: protocol || null }, 'Não foi possível marcar o envio.');
+export const discardBatch = (batchId, reason) =>
+  tissRpc('finance_tiss_discard_batch', { p_batch: batchId, p_reason: reason }, 'Não foi possível descartar o lote.');
+export const resendGuide = (guideId, reason) =>
+  tissRpc('finance_tiss_resend_guide', { p_guide: guideId, p_reason: reason }, 'Não foi possível reenviar a guia.');
+export const registerConvenioPayment = ({ convenioId, receivedOn, amountCents, method, items, note }) =>
+  tissRpc('finance_tiss_register_payment', {
+    p_convenio: convenioId,
+    p_received_on: receivedOn,
+    p_amount_cents: amountCents,
+    p_method: method,
+    p_items: items,
+    p_note: note || null,
+  }, 'Não foi possível registrar o pagamento.');
+export const voidSettlement = (groupId, reason) =>
+  tissRpc('finance_tiss_void_settlement', { p_group: groupId, p_reason: reason }, 'Não foi possível anular o lançamento.');
+export const openAppeal = (guideId, note) =>
+  tissRpc('finance_tiss_open_appeal', { p_guide: guideId, p_note: note }, 'Não foi possível registrar o recurso.');
+export const closeAppeal = (guideId, outcome, note) =>
+  tissRpc('finance_tiss_close_appeal', { p_guide: guideId, p_outcome: outcome, p_note: note || null }, 'Não foi possível fechar o recurso.');
 
 // ---------- configuração ----------
 
@@ -269,6 +387,23 @@ export async function registerExpense(input) {
   }, 'Não foi possível lançar a saída.');
 }
 
+/** items: [{ description, quantityThousandths, unitCents }] */
+export async function registerPurchase(input) {
+  return rpc('finance_register_purchase', {
+    p_category: input.categoryId,
+    p_paid_on: input.paidOn,
+    p_method: input.method,
+    p_professional: input.professionalId || null,
+    p_person: input.personId || null,
+    p_note: input.note || null,
+    p_items: input.items.map(item => ({
+      description: item.description,
+      quantity: item.quantityThousandths / 1000,
+      unit_cents: item.unitCents,
+    })),
+  }, 'Não foi possível registrar a compra.');
+}
+
 export async function payExpense(expenseId, paidOn, method) {
   return rpc('finance_pay_expense', { p_expense: expenseId, p_paid_on: paidOn, p_method: method }, 'Não foi possível pagar a saída.');
 }
@@ -288,3 +423,57 @@ export async function settleRecurring({ recurringId, occurrenceOn, skip = false,
 export async function voidExpense(expenseId, reason) {
   return rpc('finance_void_expense', { p_expense: expenseId, p_reason: reason }, 'Não foi possível anular a saída.');
 }
+
+// ---------- notas fiscais e comprovante (20261104) ----------
+
+export const FISCAL_MIGRATION_HINT =
+  'As notas fiscais ainda não estão no banco. Aplique a migração '
+  + 'supabase/migrations/20261104_notas_fiscais.sql no Supabase.';
+
+function isMissingFiscalSchema(error) {
+  const text = [error?.message, error?.details, error?.hint, error?.code].filter(Boolean).join(' ');
+  return /fiscal_|finance_receipt_voucher|finance_sequences/.test(text)
+    && /does not exist|schema cache|Could not find|PGRST20[025]|42883|42P01/i.test(text);
+}
+
+export function fiscalErrorMessage(error, fallback) {
+  if (isMissingFiscalSchema(error)) return FISCAL_MIGRATION_HINT;
+  const text = error?.message || '';
+  const coded = text.match(/^[a-z_]+: (.+)$/s);
+  if (coded) return coded[1];
+  return financeErrorMessage(error, fallback);
+}
+
+async function fiscalRpc(name, args, fallback) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw new Error(fiscalErrorMessage(error, fallback));
+  return data;
+}
+
+/** Notas, o que cada uma cobre, configuração e comprovantes, numa ida só. */
+export async function loadFiscalData() {
+  const fallback = 'Não foi possível carregar as notas fiscais.';
+  const results = await Promise.all([
+    supabase.from('fiscal_documents').select('*').order('competence_on', { ascending: false }),
+    supabase.from('fiscal_document_sources').select('document_id,receipt_group_id,convenio_payment_id,amount_cents,released_at'),
+    supabase.from('clinic_fiscal_settings').select('*').maybeSingle(),
+    supabase.from('clinic_fiscal_service_codes').select('*'),
+    supabase.from('finance_receipt_vouchers').select('group_id,number'),
+  ]);
+  for (const result of results) {
+    if (result.error) throw new Error(fiscalErrorMessage(result.error, fallback));
+  }
+  const [documents, sources, settings, codes, vouchers] = results.map(result => result.data);
+  return { documents: documents || [], sources: sources || [], settings: settings || null, codes: codes || [], vouchers: vouchers || [] };
+}
+
+export const saveFiscalSettings = (emitterUrl, codes) =>
+  fiscalRpc('finance_fiscal_save_settings', { p_emitter_url: emitterUrl || null, p_codes: codes }, 'Não foi possível salvar a configuração das notas.');
+export const saveFiscalDocument = (docId, fields) =>
+  fiscalRpc('finance_fiscal_save_document', { p_doc: docId, p_fields: fields }, 'Não foi possível salvar a nota.');
+export const registerFiscalIssued = (docId, number, issuedOn, accessKey) =>
+  fiscalRpc('finance_fiscal_register_issued', { p_doc: docId, p_number: number, p_issued_on: issuedOn, p_access_key: accessKey || null }, 'Não foi possível registrar a nota.');
+export const cancelFiscalDocument = (docId, reason) =>
+  fiscalRpc('finance_fiscal_cancel', { p_doc: docId, p_reason: reason }, 'Não foi possível registrar o cancelamento.');
+export const receiptVoucherNumber = groupId =>
+  fiscalRpc('finance_receipt_voucher', { p_group: groupId }, 'Não foi possível numerar o comprovante.');

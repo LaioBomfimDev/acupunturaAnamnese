@@ -12,8 +12,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 |---|---|---|---|---|---|
 | ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK | integracao (2e0f524) | PRONTO | ver abaixo |
 | ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK | integracao (3700917) | PRONTO | ver abaixo |
-| ACUP-003 | Tela do plano terapêutico | Codex LK | codex/lk | FAZENDO | ver abaixo |
-| ACUP-010 | Ajustes do plano no banco (pendências do review da 002) | Codex LK | codex/lk | TODO (após 003) |
+| ACUP-003 | Tela do plano terapêutico | Codex LK | integracao (f30952f) | PRONTO | ver abaixo |
+| ACUP-010 | Ajustes do plano (pendências dos reviews da 002 e da 003) | Codex LK | codex/lk | FAZENDO |
 | ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | codex/lk | TODO (após 010) | ver abaixo |
 | ACUP-005 | Tela do perfil ABA | Codex LK | codex/lk | TODO (após 004) | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | codex/lk | TODO (após 005) | ver abaixo |
@@ -58,7 +58,7 @@ Regras de toda task com SQL (além do aceite próprio):
 - Arquivos de propriedade: `frontend/src/components/aba/AbaPlan.jsx` (novo); `frontend/src/services/abaService.js` (só funções novas, pelo mesmo `call()` do arquivo); `frontend/src/components/AbaWorkspace.jsx` (só registrar a aba "Plano terapêutico" no grupo "Plano", em `TABS`, no mapa de ids e na navegação, sem mexer nas outras); `frontend/src/styles/aba.css` (só acréscimos); `frontend/tests/regression/aba-plan-screen.test.mjs` (novo); `AGENTS.md` (só o bullet ABA, se a tela criar regra).
 - Fora de escopo: qualquer `.sql` ou Edge Function; outras abas do ABA; `data/abaLibrary.js`; financeiro.
 - Critério de aceite (verificável):
-  1. Lista de versões (mais nova em cima) com estado, número, quem enviou, quem aprovou e quando; o aprovado vigente em destaque; anulado mostra o motivo; nenhuma ação sobre aprovado/substituído/anulado.
+  1. Lista de versões (mais nova em cima) com estado, número, autoria (`authored_by`), data de envio (`submitted_at`), quem aprovou e quando; o aprovado vigente em destaque; anulado mostra o motivo. Ações por estado: rascunho = editar, enviar, anular; em revisão = aprovar, anular; aprovado = imprimir e anular (o banco permite, para corrigir aprovação errada: a confirmação avisa que o paciente fica sem plano vigente); substituído e anulado = só leitura/impressão. "Nova versão" é ação geral da tela. Não mostrar "enviado por": o banco não guarda (vem na ACUP-010). (Ajuste de 08/11/2026, pergunta do dev.)
   2. Rascunho: escolher programas do paciente (fixa `{program_id, revision}` atual de cada um), resumo, data de revisão; salvar com `client_event_id` novo por ação e `revision` (CAS); enviar exige programa e resumo (a tela avisa antes de chamar).
   3. Aprovar e Anular só aparecem para quem supervisiona (mesma fonte de permissão que a tela de Programas já usa); anular pede motivo; confirmação antes de aprovar dizendo que a versão anterior vira substituída. A IA não aprova, sugere nem gera plano.
   4. Erros do banco viram mensagem pt-BR: 40001 "foi alterado por outra pessoa, recarregue", 42501 sem permissão, 23505/22023 pela mensagem do banco ou texto próprio; nunca código cru nem inglês.
@@ -71,7 +71,9 @@ Regras de toda task com SQL (além do aceite próprio):
 
 ## ACUP-010 — Ajustes do plano no banco (pendências do review da ACUP-002)
 - Objetivo: três achados não bloqueantes do QA: (1) `FOR UPDATE` em `patients` nas RPCs de plano trava inserts com FK; trocar por `FOR NO KEY UPDATE`; (2) violação 23505 do evento reaproveitado sobe em inglês: devolver mensagem pt-BR com o mesmo código; (3) replay do último evento é no-op silencioso: manter o no-op (é a idempotência), mas devolver o mesmo retorno da primeira chamada e documentar no cabeçalho.
-- Arquivos de propriedade: `supabase/migrations/20261108a_aba_plano_ajustes.sql` (novo, recria só as RPCs afetadas a partir de `20261108_aba_plano_versionado.sql`); `frontend/tests/regression/aba-plan-versions.test.mjs` (acréscimos).
+- (5) Pendências do review da 003: a aba ganha o "Como funciona" (`ABA_HELP.plano` em `data/screenHelp.js`, seções fixas, escrito pelos rótulos reais da tela; depois rodar `scripts/sync-assistant-help.mjs` para o espelho `_shared/assistantHelpCorpus.ts`); erro 22023 com mensagem pt-BR do banco aparece com o texto do banco, não genérico.
+- (4) Gravar quem enviou: coluna `submitted_by` (carimbada com `auth.uid()` em `aba_submit_plan`, CHECK com `IS NOT NULL` nos estados enviados, linhas antigas preenchidas com `authored_by` antes do CHECK) e devolvida em `aba_list_plan_versions`; a tela mostra "Enviado por".
+- Arquivos de propriedade: `supabase/migrations/20261108a_aba_plano_ajustes.sql` (novo, recria só as RPCs afetadas a partir de `20261108_aba_plano_versionado.sql`); `frontend/tests/regression/aba-plan-versions.test.mjs` (acréscimos); `frontend/src/components/aba/AbaPlan.jsx` (só a linha "Enviado por", o botão "Como funciona" e o 22023); `frontend/src/data/screenHelp.js` (só `ABA_HELP.plano`); `supabase/functions/_shared/assistantHelpCorpus.ts` (só regenerado pelo script); `frontend/src/services/abaService.js` (só o tratamento do 22023, se for lá).
 - Critério de aceite: regras comuns de SQL; diff textual de cada RPC recriada = versão da 002 + só a mudança pedida; sem tocar a exclusão de paciente; roteiro SQL no handoff para o QA rodar no `acup-qa-pg`, incluindo duas sessões concorrentes (aprovar × inserir filho do paciente).
 - Depende de: ACUP-003.
 
@@ -129,3 +131,5 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — ACUP-001 PRONTO: QA aprovou (15 mutações mordem; 4 fugas do teste corrigidas pelo QA em 0ad3ab8), merge de `qa/ACUP-001` em `integracao` (2e0f524), quality verde (1350 testes, 1349 ok, 1 pulado). ACUP-002 distribuída ao César, com a pendência do QA (DISABLE RLS/GRANT) no aceite.
 - 2026-11-08 — Sessão César saiu do barramento; a sala LK agora tem Sofia (idle) e Ícaro (working, a mais nova). O `aviso.mjs` entregou a ACUP-002 ao Ícaro. Leandro segue preso no snapshot.
 - 2026-11-08 — ACUP-002 PRONTO: QA aprovou sem correção (roteiro do dev + 55 cenários adversariais com ROLLBACK, idempotência com COMMIT 2x, concorrência em 2 sessões, diffs textuais conferidos, 34 mutações mordem), merge de `qa/ACUP-002` em `integracao` (3700917), quality verde (1358 testes, 1357 ok, 1 pulado). Pendências não bloqueantes viraram a ACUP-010. Time passa para a mesa (TIME-1/TIME-2): quadro vivo em `mesa/TASKS.md`; este arquivo vira retrato. ACUP-003 distribuída pelo `mesa/aviso.mjs`.
+- 2026-11-08 — ACUP-003, aceite 1 ajustado a pedido do dev: sem "enviado por" (o banco não guarda; vira item 4 da ACUP-010); aprovado pode ser anulado pela supervisão com motivo, como o banco já permite.
+- 2026-11-08 — ACUP-003 PRONTO: QA aprovou (navegador real via harness sem login + Chrome headless, 50/50 cenários; corrigiu texto cortado no meio da palavra a cada 450 caracteres, 83d9286, com teste que falha antes), merge em `integracao` (f30952f), quality verde (1368 testes, 1367 ok, 1 pulado). Pendências ("Como funciona" e 22023) entraram na ACUP-010, distribuída ao Codex LK.

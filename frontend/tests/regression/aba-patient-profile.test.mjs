@@ -109,3 +109,33 @@ test('perfil ABA: exclusão é a última versão anterior + só snapshot e DELET
   assert.equal(updated.split(/\r?\n/).filter(line => !additions.includes(line)).join('\n'), latest.text.replace(/\r?\n/g, '\n'));
   assert.ok(updated.indexOf('INSERT INTO patient_erasure_backup.snapshots') < updated.indexOf('DELETE FROM public.aba_patient_profiles'));
 });
+
+
+const adjustments = await readFile(path.join(directory, '20261108ba_aba_perfil_ajustes.sql'), 'utf8');
+
+test('perfil 011: só save recriada, delta integral limitado às duas recusas', async () => {
+  const declared = [...adjustments.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g)].map(match => match[1]);
+  assert.deepEqual(declared, ['aba_save_profile']);
+  const plan = await readFile(path.join(directory, '20261108a_aba_plano_ajustes.sql'), 'utf8');
+  const archive = plan.match(/  IF EXISTS \(SELECT 1 FROM public\.patients WHERE id = p_patient_id AND archived_at IS NOT NULL\) THEN\r?\n    RAISE EXCEPTION 'Paciente arquivado não recebe plano\.' USING ERRCODE = '22023';\r?\n  END IF;/)?.[0];
+  assert.ok(archive, 'bloco literal da regra do plano');
+  const future = "      IF v_report_date > (clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::DATE THEN\n        RAISE EXCEPTION 'Data do laudo não pode ser futura.' USING ERRCODE = '22023';\n      END IF;\n";
+  const anchor = "  IF NOT FOUND THEN RAISE EXCEPTION 'Paciente indisponível.' USING ERRCODE = '42501'; END IF;";
+  const original = body('aba_save_profile').replace(/\r?\n/g, '\n');
+  const expected = original.replace(anchor, anchor + '\n' + archive.replace(/\r?\n/g, '\n'))
+    .replace('      v_diagnosis := public.aba_encrypt(jsonb_build_object(', future + '      v_diagnosis := public.aba_encrypt(jsonb_build_object(');
+  const actual = adjustments.match(/CREATE OR REPLACE FUNCTION public\.aba_save_profile\([\s\S]*?\$aba_save_profile\$;/)?.[0];
+  assert.ok(actual);
+  assert.equal(actual.replace(/\r?\n/g, '\n'), expected, 'nenhum outro comportamento mudou');
+  assert.doesNotMatch(adjustments, /CREATE OR REPLACE FUNCTION public\.(?:aba_get_profile|admin_decide_patient_deletion)/);
+});
+
+test('perfil 011: arquivado recusa escrita como no plano e hoje é calculado no fuso explícito', () => {
+  assert.ok(adjustments.indexOf('archived_at IS NOT NULL') < adjustments.indexOf('IF v_existing.client_event_id = v_event'));
+  assert.match(adjustments, /v_report_date > \(clock_timestamp\(\) AT TIME ZONE 'America\/Sao_Paulo'\)::DATE/);
+  assert.ok(adjustments.indexOf('Data do laudo não pode ser futura.') < adjustments.indexOf('v_diagnosis := public.aba_encrypt'));
+  assert.doesNotMatch(adjustments, /\bcurrent_date\b/i);
+  assert.match(adjustments, /Data do laudo não pode ser futura\.' USING ERRCODE = '22023'/);
+  assert.match(adjustments, /REVOKE ALL ON FUNCTION public\.aba_save_profile\(UUID, JSONB\) FROM PUBLIC, anon;/);
+  assert.match(adjustments, /GRANT EXECUTE ON FUNCTION public\.aba_save_profile\(UUID, JSONB\) TO authenticated;/);
+});

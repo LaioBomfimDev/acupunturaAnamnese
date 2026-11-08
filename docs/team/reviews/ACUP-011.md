@@ -1,5 +1,16 @@
 ## ACUP-011 — revisão
-- Veredito: **APROVADO** (sem correção minha; uma pendência de texto para o Orquestrador decidir, item 1 abaixo)
+- Veredito: **APROVADO** em `1a30db2` (reconferência abaixo). A primeira revisão foi sobre `8d2701a`.
+
+### Reconferência do fix (`1a30db2` sobre `8d2701a`, decisão do Orquestrador: mensagem "perfil")
+- **Diff `8d2701a..1a30db2`:** na migration, **só** a linha da mensagem, `'Paciente arquivado não recebe perfil.' USING ERRCODE = '22023'`, na **mesma posição** (depois da trava do paciente, antes do replay), e o comentário do cabeçalho. No teste, a mensagem esperada passa a "perfil", e a comparação do corpo inteiro continua. Handoff atualizado. **Nada mais mudou.**
+- **Banco** (clone novo de `acup_base`, `20261108ba` aplicada 2× com COMMIT, exit 0 e 0): o roteiro do QA roda inteiro de novo, todo OK. Atualizar, replay e criar perfil em arquivado → 22023 "Paciente arquivado não recebe perfil."; o plano do mesmo paciente segue "…não recebe plano."; a leitura continua; data futura, virada do dia e controle negativo iguais aos da primeira revisão.
+- **Mutações (12, todas derrubam o teste):** inclui mensagem voltando a "plano", mensagem com outro texto, código 22023 → P0001 e as 9 da primeira revisão.
+- **Gate:** `npm run quality` verde (exit 0), 1382 testes (1381 passaram, 1 ignorado, 0 falhas).
+- A pendência 1 da primeira revisão (mensagem "plano") está **resolvida**.
+
+---
+### Primeira revisão (`8d2701a`)
+- Veredito daquela entrega: APROVADO (sem correção minha; uma pendência de texto para o Orquestrador decidir, item 1 abaixo)
 - Branch revisada: `codex/lk` @ `8d2701a` (base `integracao` @ `4bd3326`) → `qa/ACUP-011`.
 - Gate: `cd frontend && npm run quality` **verde** (exit 0): security · lint · testes **1382 (1381 passaram, 1 ignorado, 0 falhas)** · build · bundle.
 - SQL: ok, validado no `acup-qa-pg` (saídas abaixo). Produção não foi tocada.

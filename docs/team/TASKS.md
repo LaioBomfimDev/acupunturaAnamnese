@@ -9,7 +9,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ID | Task | Dono | Branch | Estado | Aceite |
 |---|---|---|---|---|---|
 | ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK (César) | integracao (2e0f524) | PRONTO | ver abaixo |
-| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (César) | codex/lk | FAZENDO | ver abaixo |
+| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (sessão Ícaro) | codex/lk | FAZENDO | ver abaixo |
 | ACUP-003 | Tela do plano terapêutico | Codex LK (César) | codex/lk | TODO (após 002) | ver abaixo |
 | ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK (César) | codex/lk | TODO (após 003) | ver abaixo |
 | ACUP-005 | Tela do perfil ABA | Codex LK (César) | codex/lk | TODO (após 004) | ver abaixo |
@@ -107,3 +107,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — Humano autorizou o Orquestrador a decidir a rodada. Decisões D0–D5 em `docs/team/propostas/aba-auditoria-2026-11-08.md` (seção Decisões): D0 merge de `origin/main` feito (eafb605, conflitos = commit duplicado, resolvidos com `origin/main`); D1 plano versionado com aprovação; D2 diagnóstico cifrado; D3 catálogo do sistema + itens da clínica; D4 só supervisão formal (ACUP-009 adiada); D5 guarda mínima, nada se apaga. ACUP-002..008 liberadas em série; ACUP-001 revisada reenviada ao César.
 - 2026-11-08 — Preparo do QA aprovado (`qa/revisao` 6530798, `docs/team/reviews/preparo-validacao-sql.md`): validação SQL no Postgres local `acup-qa-pg` (supabase/postgres 15.8, as 106 migrations aplicam do zero, modelo `acup_base`, ciclo BEGIN → RPC como authenticated/anon → ROLLBACK testado). Produção: nenhuma escrita, nem com ROLLBACK; conferência só leitura da divergência decidida na revisão da ACUP-002. Limite conhecido: a ordem alfabética das migrations não é a de produção, e o banco local não prova o que está no ar.
 - 2026-11-08 — ACUP-001 PRONTO: QA aprovou (15 mutações mordem; 4 fugas do teste corrigidas pelo QA em 0ad3ab8), merge de `qa/ACUP-001` em `integracao` (2e0f524), quality verde (1350 testes, 1349 ok, 1 pulado). ACUP-002 distribuída ao César, com a pendência do QA (DISABLE RLS/GRANT) no aceite.
+- 2026-11-08 — Sessão César saiu do barramento; a sala LK agora tem Sofia (idle) e Ícaro (working, a mais nova). O `aviso.mjs` entregou a ACUP-002 ao Ícaro. Leandro segue preso no snapshot.

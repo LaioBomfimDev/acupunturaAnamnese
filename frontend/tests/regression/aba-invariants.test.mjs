@@ -44,6 +44,26 @@ test('ABA: nenhuma policy concede acesso direto', () => {
   }
 });
 
+test('ABA: migrations não desligam RLS', () => {
+  for (const { name, sql } of aba) {
+    assert.doesNotMatch(sql,
+      /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?(?:(?:"?public"?\.)?"?aba_\w+"?|(?:"?public"?\.)?%I)\s+DISABLE\s+ROW\s+LEVEL\s+SECURITY/i,
+      `${name}: RLS não pode ser desligada`);
+  }
+});
+
+test('ABA: migrations não concedem acesso direto às tabelas', () => {
+  for (const { name, sql } of aba) {
+    for (const [grant] of sql.matchAll(/\bGRANT\s+[^;]+;/gi)) {
+      if (/\bON\s+(?:FUNCTION|PROCEDURE|SCHEMA|SEQUENCE)\b/i.test(grant)) continue;
+      if (!/\bTO\s+[^;]*\b(?:anon|authenticated|PUBLIC)\b/i.test(grant)) continue;
+      assert.doesNotMatch(grant,
+        /\bON\s+(?:TABLE\s+)?[^;]*?(?:\baba_\w+\b|%I)|\bON\s+ALL\s+TABLES\s+IN\s+SCHEMA\s+"?public"?\b/i,
+        `${name}: GRANT não pode liberar tabelas ABA`);
+    }
+  }
+});
+
 test('ABA: funções têm search_path fixo e DEFINER, exceto auxiliares puros conhecidos', () => {
   const seen = new Set();
   for (const { name, sql } of aba) {

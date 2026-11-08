@@ -16,13 +16,13 @@ O repositório principal (`C:\Users\m\Downloads\Sistema Acup`, branch `rebrand/v
 ## Fluxo de uma task
 
 1. O humano dá o objetivo ao Orquestrador.
-2. Orquestrador escreve a task em `docs/team/TASKS.md` (ID, objetivo, arquivos de propriedade, critério de aceite) e avisa o(s) dev(s) pelo barramento.
+2. Orquestrador escreve a task em `mesa/TASKS.md` (ID, objetivo, arquivos de propriedade, critério de aceite) e manda `TASK · ACUP-000 · …` pelo `mesa/aviso.mjs`.
 3. O dev implementa na branch dele, roda o mínimo (`cd frontend && npm run lint && npm test`), commita e escreve `docs/team/handoff/<task>.md`.
 4. O dev avisa o Orquestrador.
 5. Orquestrador manda a task para o QA.
 6. QA revisa a branch do dev, roda `cd frontend && npm run quality`, revisa migrations `.sql` quando houver, corrige na branch `qa/<task>`, commita e escreve `docs/team/reviews/<task>.md` com `APROVADO` ou `REPROVADO`.
 7. QA avisa o Orquestrador.
-8. Orquestrador mergeia `qa/<task>` em `integracao`, roda o quality final e atualiza `TASKS.md`.
+8. Orquestrador mergeia `qa/<task>` em `integracao`, roda o quality final, atualiza `mesa/TASKS.md` e o retrato `docs/team/TASKS.md`.
 9. Orquestrador reporta ao humano: o que entrou, o que ficou pendente, o que precisa de decisão.
 
 ## Regras duras
@@ -30,13 +30,25 @@ O repositório principal (`C:\Users\m\Downloads\Sistema Acup`, branch `rebrand/v
 - **Um dono por arquivo por rodada.** A task declara os arquivos; ninguém edita fora dela sem pedir ao Orquestrador.
 - **Quem escreve não revisa.** Dev não aprova a própria branch; QA não mergeia.
 - **Só o Orquestrador fala com o humano.** Dev e QA falam com o Orquestrador.
-- **Só o Orquestrador escreve `TASKS.md`.** Cada um escreve apenas o próprio handoff/review.
+- **Só o Orquestrador escreve `mesa/TASKS.md`, `mesa/DECISOES.md` e `mesa/pausas.md`.** Cada papel mantém só o próprio `mesa/estado/<papel>.md`. Cada um escreve apenas o próprio handoff/review.
 - **Nada de merge em `rebrand/vitalis`.** O time inteiro vive em branches; a passagem final é do humano.
 - **Área congelada:** `frontend/src/components/financeiro/`, `frontend/src/services/financeiroService.js`, `frontend/src/utils/finance*.js`, `frontend/tests/regression/finance*`, `supabase/migrations/20261106_financeiro_compras_recibos.sql` têm mudanças locais não commitadas. Não tocar até o humano integrar.
 - **Área sensível** (schema, RLS, auth, dados clínicos): o Orquestrador para e pergunta ao humano antes de distribuir.
 - **Definição de pronto:** review `APROVADO` + merge em `integracao` + `npm run quality` verde + task fechada no `TASKS.md`.
 
-## Barramento de mensagens
+## Mesa e barramento (desde a ACUP-003)
+
+Pasta comum, fora do git: `C:/Users/m/Downloads/acup-team/mesa` (leia `mesa/LEIA-ME.md`). Quadro vivo `mesa/TASKS.md`; `docs/team/TASKS.md` é retrato atualizado a cada PRONTO.
+
+Ritual: ao abrir, `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs caixa <papel>` e ler `mesa/estado/<papel>.md`; ao terminar um passo, atualizar o estado e só então avisar, no formato `TIPO · ACUP-000 · commit · arquivo · resumo` (TASK, ENTREGA, REVIEW, BLOQUEIO, PERGUNTA, INFO). A mensagem fica na caixa mesmo com a sessão fechada; papel em `mesa/pausas.md` não recebe.
+
+```bash
+node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs lista
+node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "ENTREGA · ACUP-003 · 1a2b3c4 · docs/team/handoff/ACUP-003.md · lint e testes verdes"
+node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs caixa lk
+```
+
+## Barramento antigo (até a ACUP-002, não usar)
 
 O Habblaud entrega mensagens às sessões abertas em `http://127.0.0.1:4747`.
 

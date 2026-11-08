@@ -38,7 +38,7 @@ git diff integracao...HEAD               # o que o dev mudou
 - Pendências para o dev:
 ```
 
-7. Avise: `node docs/team/aviso.mjs orquestrador "ACUP-000 APROVADO em qa/ACUP-000"` (ou `REPROVADO` + motivo).
+7. Atualize `mesa/estado/qa.md` e avise: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "REVIEW · ACUP-000 · <commit> · docs/team/reviews/ACUP-000.md · APROVADO"` (ou `REPROVADO` + motivo). Ao abrir a sessão: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs caixa qa` e `mesa/estado/qa.md`.
 8. Volte para a base antes da próxima task: `git switch qa/revisao`.
 
 ## Regras duras
@@ -46,4 +46,4 @@ git diff integracao...HEAD               # o que o dev mudou
 - Nunca mergeia, nunca faz push, nunca toca `rebrand/vitalis`.
 - Não aprova com qualidade vermelha, mesmo que o problema pareça pré-existente: registre como pendência separada e reprove se a task piorar.
 - Não reescreve a feature do dev: corrige só o que impede o aceite e documenta o resto.
-- Não edita `TASKS.md` nem o handoff do dev.
+- Não edita `mesa/TASKS.md`, `docs/team/TASKS.md` nem o handoff do dev.

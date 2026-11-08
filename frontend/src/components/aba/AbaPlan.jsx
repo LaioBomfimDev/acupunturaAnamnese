@@ -185,10 +185,29 @@ function PlanConfirmation({ action, plan, patientId, onClose, onChanged }) {
 }
 
 // Parágrafos pequenos permitem ao paginador compartilhar texto longo entre folhas.
+// Corta só na quebra de linha da pessoa ou num espaço: cortar no meio da palavra
+// separava "50%" em "5" e "0%" (tela e papel). Palavra sem espaço maior que o
+// limite é a única que se divide.
+const PARAGRAPH_LIMIT = 450;
+function textChunks(value) {
+  const chunks = [];
+  for (const line of value.split(/\r?\n/)) {
+    let rest = line;
+    while (rest.length > PARAGRAPH_LIMIT) {
+      const space = rest.lastIndexOf(' ', PARAGRAPH_LIMIT);
+      const cut = space > 0 ? space : PARAGRAPH_LIMIT;
+      chunks.push(rest.slice(0, cut));
+      rest = rest.slice(space > 0 ? cut + 1 : cut);
+    }
+    chunks.push(rest);
+  }
+  return chunks;
+}
 function TextParagraphs({ text }) {
   const value = String(text || '');
-  const chunks = value.match(/[\s\S]{1,450}/gu) || ['—'];
-  return chunks.map((chunk, index) => <p className="aba-plan-text" key={index}>{chunk}</p>);
+  const chunks = value ? textChunks(value) : ['—'];
+  // Linha em branco escrita pela pessoa continua ocupando espaço.
+  return chunks.map((chunk, index) => <p className="aba-plan-text" key={index}>{chunk || ' '}</p>);
 }
 
 function FrozenPrograms({ plan }) {

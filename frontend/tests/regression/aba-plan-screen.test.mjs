@@ -136,6 +136,27 @@ test('documento: só cópia congelada, nota histórica, estado real e escape de 
   assert.doesNotMatch(frozen, /data\.programs|programFromDb/);
 });
 
+// Regressão (QA, 08/11/2026): o texto era cortado a cada 450 caracteres no meio da palavra,
+// e "Reduzir 50%" podia sair como "Reduzir 5" num parágrafo e "0%" no outro (tela e papel).
+test('texto longo: parágrafos só quebram em espaço ou na quebra de linha da pessoa, nunca no meio da palavra', () => {
+  const words = Array.from({ length: 160 }, (_, index) => `palavra${index} Reduzir 50%`);
+  const summary = `${words.join(' ')}\r\nSegunda linha escrita pela pessoa\n\nDepois de uma linha em branco`;
+  const html = render(screen.AbaPlanDocument, { plan: { ...plan, summary, program_snapshots: [] }, patient: { name: 'Paciente' }, professionalName: names });
+  const paragraphs = [...html.matchAll(/<p class="aba-plan-text">([\s\S]*?)<\/p>/g)].map(match => match[1].replace(/&nbsp;| /g, ''));
+  const resumo = paragraphs; // o plano de exemplo não tem approval_statement: só o resumo usa .aba-plan-text
+  assert.ok(resumo.length > 3, 'texto longo vira vários parágrafos para o paginador');
+  for (const chunk of resumo) assert.ok(chunk.length <= 450, `parágrafo com ${chunk.length} caracteres`);
+  const firstLine = resumo.slice(0, resumo.indexOf('Segunda linha escrita pela pessoa'));
+  assert.equal(firstLine.join(' '), words.join(' '), 'juntando com espaço volta o texto original: nenhum corte no meio da palavra');
+  for (const chunk of firstLine) assert.doesNotMatch(chunk, /^\s|\s$/, 'sem espaço sobrando nas pontas');
+  assert.ok(resumo.includes('Segunda linha escrita pela pessoa'), 'quebra de linha da pessoa vira parágrafo');
+  assert.ok(resumo.includes('Depois de uma linha em branco'));
+  const giant = render(screen.AbaPlanDocument, { plan: { ...plan, summary: 'x'.repeat(1000), program_snapshots: [] }, patient: { name: 'P' }, professionalName: names });
+  const giantText = [...giant.matchAll(/<p class="aba-plan-text">([\s\S]*?)<\/p>/g)].map(match => match[1]);
+  assert.equal(giantText.join(''), 'x'.repeat(1000), 'palavra gigante sem espaço não perde caractere');
+  assert.ok(giantText.every(chunk => chunk.length <= 450));
+});
+
 test('impressão: timbrado, paginação e mesma tipografia no palco invisível, sem cor pessoal', () => {
   assert.match(source, /<PrintLetterhead/);
   assert.match(source, /new Date\(plan\.approved_at\)\.toLocaleDateString\('pt-BR'\)/);

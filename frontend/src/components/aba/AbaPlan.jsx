@@ -241,6 +241,7 @@ export function AbaPlanDocument({ plan, patient, professionalName }) {
       <h2>Plano terapêutico ABA — versão {plan.version_no}</h2>
       <p><strong>{STATUS[plan.status]}</strong> · {patient.name}</p>
       <p>Autoria: {professionalName(plan.authored_by)} · Envio para revisão: {instant(plan.submitted_at)}</p>
+      <p>Enviado por: {plan.submitted_by ? professionalName(plan.submitted_by) : '—'}</p>
       <p>Aprovação: {professionalName(plan.approved_by)} · {instant(plan.approved_at)}</p>
       {plan.approval_statement && <TextParagraphs text={plan.approval_statement} />}
       <p>Revisão prevista: {date(plan.review_due_on)} · {planProgramCount(plan.programs?.length || 0)}</p>
@@ -304,6 +305,7 @@ export function AbaPlanVersionCard({ plan, canSupervise, professionalName, onEdi
       <dl className="aba-plan-meta">
         <div><dt>Autoria</dt><dd>{professionalName(plan.authored_by)}</dd></div>
         <div><dt>Envio para revisão</dt><dd>{instant(plan.submitted_at)}</dd></div>
+        <div><dt>Enviado por</dt><dd>{plan.submitted_by ? professionalName(plan.submitted_by) : '—'}</dd></div>
         <div><dt>Aprovação</dt><dd>{plan.approved_by ? professionalName(plan.approved_by) : '—'}</dd></div>
         <div><dt>Aprovado em</dt><dd>{instant(plan.approved_at)}</dd></div>
       </dl>

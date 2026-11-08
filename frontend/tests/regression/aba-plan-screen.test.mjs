@@ -49,7 +49,8 @@ test('cartões: autoria/envio/aprovação e destaque do vigente, sem remetente i
   const html = render(screen.AbaPlanVersionCard, { plan, canSupervise: true, professionalName: names });
   assert.match(html, /is-current/);
   for (const text of ['Versão 2', 'Aprovado vigente', 'Autoria', 'Autora do plano', 'Envio para revisão', 'Supervisora responsável', 'Aprovado em', '1 programa']) assert.ok(html.includes(text), text);
-  assert.doesNotMatch(html, /enviado por|items|undefined/i);
+  assert.match(html, /<dt>Enviado por<\/dt><dd>—<\/dd>/);
+  assert.doesNotMatch(html, /items|undefined/i);
   assert.match(source, /versions\.map\(plan =>/);
 });
 
@@ -185,4 +186,42 @@ test('navegação: grupo Plano, paciente como key e celular/tablet até 1024px s
   assert.match(added, /grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(added, /overflow-wrap: anywhere/);
   assert.doesNotMatch(added, /min-width:\s*(?:3[6-9]\d|[4-9]\d\d)px|\b\d+(?:vh|dvh|svh)\b/);
+});
+
+
+test('remetente: mostra submitted_by e não confunde autoria com quem enviou', () => {
+  const professionalName = id => id === 'remetente' ? 'Profissional que enviou' : names(id);
+  const submitted = { ...plan, submitted_by: 'remetente' };
+  const html = render(screen.AbaPlanVersionCard, { plan: submitted, canSupervise: false, professionalName });
+  assert.match(html, /<dt>Autoria<\/dt><dd>Autora do plano<\/dd>/);
+  assert.match(html, /<dt>Enviado por<\/dt><dd>Profissional que enviou<\/dd>/);
+  const document = render(screen.AbaPlanDocument, { plan: submitted, patient: { name: 'Paciente' }, professionalName });
+  assert.match(document, /Enviado por: Profissional que enviou/);
+  const missing = render(screen.AbaPlanDocument, { plan, patient: { name: 'Paciente' }, professionalName });
+  assert.match(missing, /Enviado por: —/);
+});
+
+test('22023: preserva mensagem de validação pt-BR do banco e mantém filtro de mensagem técnica', async () => {
+  for (const message of ['Só o rascunho pode ser editado. Crie outra versão.', 'Paciente arquivado não recebe plano.', 'Cada programa entra uma única vez no plano.']) {
+    db.rpc = async () => ({ data: null, error: { code: '22023', message } });
+    try { await api.approvePlan('paciente', plan, 'evento'); assert.fail('deveria recusar'); }
+    catch (failure) { assert.equal(api.planErrorMessage(failure), message); }
+  }
+  assert.doesNotMatch(api.planErrorMessage({ code: '22023', message: 'invalid input syntax' }), /invalid|syntax/);
+});
+
+test('ajuda: ABA_HELP.plano alimenta o Como funciona existente e explica o remetente histórico', async () => {
+  const help = await server.ssrLoadModule('/src/data/screenHelp.js');
+  const { ScreenHelp } = await server.ssrLoadModule('/src/components/ui/ScreenHelp.jsx');
+  const topic = help.ABA_HELP.plano;
+  assert.equal(topic.title, 'Plano terapêutico');
+  for (const { key } of help.HELP_SECTIONS) assert.ok(topic[key]?.length, key);
+  const text = Object.values(topic).flat().join(' ');
+  for (const label of ['Nova versão', 'Salvar rascunho', 'Enviar para revisão', 'Aprovar', 'Anular', 'Enviado por', 'Imprimir versão']) assert.ok(text.includes(label), label);
+  assert.match(text, /envios anteriores.*autoria/);
+  assert.match(render(ScreenHelp, { topic }), /Como funciona/);
+  const workspace = await readFile(path.join(root, 'src/components/AbaWorkspace.jsx'), 'utf8');
+  assert.match(workspace, /\[TABS\.PLANO\]: 'plano'/);
+  assert.match(workspace, /ABA_HELP\[HELP_BY_TAB\[effectiveTab\]\]/);
+  assert.match(workspace, /<ScreenHelp topic=\{helpTopic\}/);
 });

@@ -57,6 +57,7 @@ function fail(error, fallback) {
   if (isMissingAbaSchema(error)) throw new Error(ABA_MIGRATION_HINT);
   if (error?.code === '40001') throw new AbaConflictError(error.message || fallback);
   if (error?.code === '42501') throw new AbaAccessError(error.message || fallback);
+  if (error?.code === '22023') throw Object.assign(new Error(error.message || fallback), { code: '22023' });
   throw new Error(error?.message || fallback);
 }
 
@@ -352,6 +353,10 @@ export function planErrorMessage(error) {
   }
   if (error?.code === '23505' || /duplicate key|unique constraint/i.test(error?.message || '')) {
     return 'Esta ação ou versão já foi registrada. Recarregue os planos antes de continuar.';
+  }
+  // Mensagens de validação do contrato ABA são pt-BR; erro técnico continua oculto.
+  if (error?.code === '22023' && /^(?:Plano |Informe |Paciente |Só |Os programas |O plano |Referência |Revisão |Programa |Cada programa |Envie |Anular |Texto )/u.test(error.message || '')) {
+    return error.message;
   }
   // call() mantém o contrato das outras abas. Aqui nunca exibimos SQL/inglês.
   return 'Não foi possível concluir. Confira os dados do plano e tente novamente. Se persistir, peça ajuda à administração.';

@@ -100,3 +100,49 @@ test('exclusão ABA: versão 20261103c intacta exceto quatro linhas, histórico 
   assert.ok(updated.indexOf('DELETE FROM public.aba_program_revisions') < updated.indexOf('DELETE FROM public.aba_programs'));
   assert.ok(updated.indexOf('INSERT INTO patient_erasure_backup.snapshots') < updated.indexOf('DELETE FROM public.aba_plan_versions'));
 });
+
+
+const adjustments = await load('20261108a_aba_plano_ajustes.sql');
+
+test('ajustes 010: só quatro RPCs recriadas, com delta textual estritamente pedido', () => {
+  const names = ['aba_save_plan_draft', 'aba_submit_plan', 'aba_approve_plan', 'aba_void_plan'];
+  const declared = [...adjustments.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g)].map(match => match[1]);
+  assert.deepEqual(declared, names);
+  for (const name of names) {
+    let expected = fn(sql, name).replace('FROM public.patients WHERE id = p_patient_id AND erased_at IS NULL FOR UPDATE;',
+      'FROM public.patients WHERE id = p_patient_id AND erased_at IS NULL FOR NO KEY UPDATE;');
+    if (name === 'aba_submit_plan') expected = expected.replace("SET status = 'em_revisao', submitted_at = clock_timestamp(),",
+      "SET status = 'em_revisao', submitted_at = clock_timestamp(), submitted_by = auth.uid(),");
+    if (name !== 'aba_save_plan_draft') expected = expected.replace(`\nEND;\n$${name}$;`, `\n  RETURN;\nEND;\n$${name}$;`);
+    expected = expected.replace(`\nEND;\n$${name}$;`, `\nEXCEPTION\n  WHEN unique_violation THEN\n    RAISE EXCEPTION 'Esta ação ou versão já foi registrada. Recarregue os planos e use um novo evento.'\n      USING ERRCODE = '23505';\nEND;\n$${name}$;`);
+    assert.equal(fn(adjustments, name), expected, `${name}: nenhum outro comportamento alterado`);
+  }
+  assert.doesNotMatch(adjustments, /CREATE OR REPLACE FUNCTION public\.admin_decide_patient_deletion/);
+});
+
+test('ajustes 010: remetente retrocompatível, carimbo no envio e CHECK não aceita NULL', () => {
+  assert.match(adjustments, /ADD COLUMN IF NOT EXISTS submitted_by UUID\s+REFERENCES public\.profiles\(id\) ON DELETE RESTRICT/);
+  const backfill = adjustments.indexOf('SET submitted_by = authored_by');
+  const check = adjustments.indexOf('ADD CONSTRAINT aba_plan_versions_sender_check');
+  assert.ok(backfill >= 0 && backfill < check);
+  assert.match(adjustments, /WHERE submitted_at IS NOT NULL AND submitted_by IS NULL/);
+  assert.match(adjustments, /status IN \('em_revisao', 'aprovado', 'substituido'\)[\s\S]*?submitted_by IS NOT NULL/);
+  assert.match(adjustments, /conrelid = 'public\.aba_plan_versions'::regclass/);
+  assert.match(fn(adjustments, 'aba_submit_plan'), /submitted_by = auth\.uid\(\)/);
+  assert.match(fn(sql, 'aba_list_plan_versions'), /to_jsonb\(plan\)/);
+});
+
+test('ajustes 010: trava de paciente compatível com FK e contrato de replay preservado', () => {
+  for (const name of ['aba_save_plan_draft', 'aba_submit_plan', 'aba_approve_plan', 'aba_void_plan']) {
+    const body = fn(adjustments, name);
+    assert.match(body, /FROM public\.patients WHERE id = p_patient_id AND erased_at IS NULL FOR NO KEY UPDATE/);
+    assert.match(body, /WHEN unique_violation THEN\r?\n\s+RAISE EXCEPTION 'Esta ação ou versão já foi registrada/);
+    assert.match(body, /USING ERRCODE = '23505'/);
+    const result = name === 'aba_save_plan_draft' ? 'UUID' : 'VOID';
+    assert.match(body, new RegExp(`RETURNS ${result}\\r?\\n`));
+    assert.match(body, /client_event_id = (?:v_event|p_client_event_id) THEN RETURN/);
+    assert.ok(body.indexOf('THEN RETURN') < body.indexOf('revision <>'), 'replay precede a comparação CAS');
+  }
+  assert.match(adjustments, /mesmo retorno da primeira/);
+  assert.match(adjustments, /sem incrementar revision/);
+});

@@ -1119,6 +1119,29 @@ export const ABA_HELP = {
       'O modelo e a técnica são ponto de partida: revise antes de aplicar.',
     ],
   },
+  plano: {
+    title: 'Plano terapêutico',
+    summary: 'As versões do plano terapêutico ABA do paciente, com os programas escolhidos e a revisão da supervisão.',
+    actions: [
+      '“Nova versão” abre um rascunho copiando o plano aprovado vigente, se houver. Escolha os programas, escreva o “Resumo do plano” e a “Data de revisão”.',
+      '“Salvar rascunho” guarda o texto. Depois de salvar, “Enviar para revisão” exige ao menos um programa e o resumo preenchido.',
+      'A supervisão usa “Aprovar” com confirmação: a versão aprovada anterior vira substituída. “Anular” exige motivo de ao menos 10 caracteres; anular o aprovado deixa o paciente sem plano vigente.',
+      '“Ler versão” abre o conteúdo. “Imprimir versão” abre o diálogo de impressão do navegador, que também permite salvar como PDF.',
+    ],
+    reading: [
+      'A versão mais nova aparece primeiro; “Aprovado vigente” recebe destaque. Autoria é quem criou o rascunho; “Enviado por” é quem o enviou para revisão, com a data ao lado.',
+      'Cada programa mantém a revisão escolhida. “Usar revisão atual” troca essa referência explicitamente, sem atualizar sozinho o conteúdo antigo.',
+      'Substituído e anulado ficam para leitura e impressão; o anulado conserva o motivo e imprime seu estado real.',
+    ],
+    access: [
+      'Quem acessa o paciente em ABA pode ler, montar rascunho e enviar para revisão. Aprovar e anular cabem somente à supervisão do paciente ou à administração.',
+    ],
+    notes: [
+      'Se outra pessoa alterar o plano, o sistema pede recarga antes de continuar e conserva o texto que você digitou no editor. Ao fechar com alterações não salvas, pergunta antes de descartar.',
+      'A impressão usa a cópia dos programas daquela versão, mesmo que o programa atual tenha mudado. A IA não sugere, gera nem aprova o plano.',
+      'Nos envios anteriores ao registro do remetente, “Enviado por” foi preenchido com a autoria do plano; o sistema não tinha registrado quem fez aquele envio.',
+    ],
+  },
   repertorio: {
     title: 'Repertório',
     summary: 'Os reforçadores e os comportamentos interferentes da criança — são os botões da coleta.',

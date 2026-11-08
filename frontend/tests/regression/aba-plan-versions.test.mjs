@@ -126,7 +126,11 @@ test('ajustes 010: remetente retrocompatível, carimbo no envio e CHECK não ace
   const check = adjustments.indexOf('ADD CONSTRAINT aba_plan_versions_sender_check');
   assert.ok(backfill >= 0 && backfill < check);
   assert.match(adjustments, /WHERE submitted_at IS NOT NULL AND submitted_by IS NULL/);
-  assert.match(adjustments, /status IN \('em_revisao', 'aprovado', 'substituido'\)[\s\S]*?submitted_by IS NOT NULL/);
+  // Cada ramo do CHECK com seu próprio IS NOT NULL (AGENTS §9): a regex preguiçosa antiga casava
+  // com o IS NOT NULL do ramo "anulado" e deixava o ramo dos enviados sem proteção (QA, ACUP-010).
+  assert.match(adjustments, /\(status IN \('em_revisao', 'aprovado', 'substituido'\)\s+AND submitted_at IS NOT NULL AND submitted_by IS NOT NULL\)/);
+  assert.match(adjustments, /\(status = 'rascunho' AND submitted_at IS NULL AND submitted_by IS NULL\)/);
+  assert.match(adjustments, /\(submitted_at IS NOT NULL AND submitted_by IS NOT NULL\)\s+\)\)/);
   assert.match(adjustments, /conrelid = 'public\.aba_plan_versions'::regclass/);
   assert.match(fn(adjustments, 'aba_submit_plan'), /submitted_by = auth\.uid\(\)/);
   assert.match(fn(sql, 'aba_list_plan_versions'), /to_jsonb\(plan\)/);

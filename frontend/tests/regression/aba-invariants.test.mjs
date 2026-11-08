@@ -12,10 +12,18 @@ const aba = sqls.filter(({ name }) => name.includes('aba'));
 assert.ok(aba.length, 'encontra migrations ABA');
 const pureHelpers = new Set(['aba_clean_text', 'aba_is_restricted_procedure', 'aba_num', 'aba_prompt_rank', 'aba_ioa_agreement', 'aba_fidelity_keys']);
 
+// [texto, nome, cabeçalho + cláusulas depois do corpo, tag, corpo]: aceita CREATE sem OR REPLACE,
+// nome sem `public.` e LANGUAGE/SECURITY/SET depois do `$tag$` (formato do pg_dump).
 function functions(sql) {
-  return [...sql.matchAll(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.(\w+)\s*\(([\s\S]*?)\bAS\s+(\$\w*\$)([\s\S]*?)\3\s*;/gi)];
+  return [...sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?"?(\w+)"?\s*\(([\s\S]*?)\bAS\s+(\$\w*\$)([\s\S]*?)\3([^;]*);/gi)]
+    .map(match => [match[0], match[1], match[2] + match[5], match[3], match[4]]);
 }
-const tables = aba.flatMap(({ name, sql }) => [...sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?public\.(aba_\w+)\s*\(([\s\S]*?)\r?\n\);/gi)].map(([, table, columns]) => ({ name, sql, table, columns })));
+const tables = aba.flatMap(({ name, sql }) => {
+  const parsed = [...sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?(aba_\w+)"?\s*\(([\s\S]*?)\r?\n\s*\)\s*;/gi)].map(([, table, columns]) => ({ name, sql, table, columns }));
+  const declared = [...sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:\w+\.)?"?aba_\w+/gi)];
+  assert.equal(parsed.length, declared.length, `${name}: leitor reconhece todas as tabelas ABA`);
+  return parsed;
+});
 assert.ok(tables.length, 'encontra tabelas ABA');
 
 test('ABA: toda tabela tem RLS e revogação no próprio bloco de proteção', () => {
@@ -49,7 +57,7 @@ test('ABA: funções têm search_path fixo e DEFINER, exceto auxiliares puros co
         assert.match(header, /\bSECURITY\s+DEFINER\b/i, `${name}: ${fn} DEFINER`);
       }
     }
-    const declared = [...sql.matchAll(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.(aba_\w+)\s*\(/gi)];
+    const declared = [...sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:\w+\.)?"?aba_\w+"?\s*\(/gi)];
     assert.equal(definitions.length, declared.length, `${name}: leitor reconhece todas as funções ABA`);
   }
   assert.ok(seen.size, 'encontra funções ABA');
@@ -60,6 +68,8 @@ test('ABA: tabelas de paciente entram no snapshot e DELETE da exclusão mais rec
   const versions = sqls.flatMap(({ name, sql }) => functions(sql).filter(match => match[1] === 'admin_decide_patient_deletion').map(match => ({ name, body: match[4] })));
   assert.ok(versions.length, 'encontra versões da exclusão em todas as migrations');
   const { name, body } = versions.at(-1);
+  const newest = sqls.filter(({ sql }) => /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?"?admin_decide_patient_deletion"?\s*\(/i.test(sql)).at(-1).name;
+  assert.equal(name, newest, 'leitor reconhece a versão mais recente da exclusão');
   for (const { table, columns } of tables) {
     if (!/\bpatient_id\s+/i.test(columns)) continue;
     assert.match(body, new RegExp(`'${table}'\\s*,\\s*\\(SELECT\\b`), `${table}: snapshot em ${name}`);

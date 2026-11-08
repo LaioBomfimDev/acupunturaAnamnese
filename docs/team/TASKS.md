@@ -14,14 +14,15 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK | integracao (3700917) | PRONTO | ver abaixo |
 | ACUP-003 | Tela do plano terapêutico | Codex LK | integracao (f30952f) | PRONTO | ver abaixo |
 | ACUP-010 | Ajustes do plano (pendências dos reviews da 002 e da 003) | Codex LK | integracao (a5b47d3) | PRONTO |
-| ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | codex/lk | FAZENDO | ver abaixo |
-| ACUP-005 | Tela do perfil ABA | Codex LK | codex/lk | TODO (após 004) | ver abaixo |
+| ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | integracao (1b3144a) | PRONTO | ver abaixo |
+| ACUP-011 | Ajustes do perfil no banco (pendências do review da 004) | Codex LK | codex/lk | FAZENDO |
+| ACUP-005 | Tela do perfil ABA | Codex LK | codex/lk | TODO (após 011) | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | codex/lk | TODO (após 005) | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk | TODO (após 006) | ver abaixo |
 | ACUP-008 | Registro formal de supervisão (SQL + RPC + tela) | Codex LK | codex/lk | TODO (após 007) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
-Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 005 → 006 → 007 → 008; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108_aba_plano_versionado.sql`). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
+Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108b_aba_perfil_paciente.sql`). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
 
 Regras de toda task com SQL (além do aceite próprio):
 - RLS ligada + `REVOKE ALL FROM PUBLIC, anon, authenticated`, nenhuma policy; toda RPC `SECURITY DEFINER SET search_path = pg_catalog`, começando por `aba_require_gate`/`aba_require_patient`; `GRANT EXECUTE` só para `authenticated`.
@@ -86,6 +87,14 @@ Regras de toda task com SQL (além do aceite próprio):
 - Decisões (D2): lê quem acessa, grava quem supervisiona; `diagnosis_encrypted` só de laudo (fonte e data dentro do texto cifrado); nenhum diagnóstico sugerido.
 - Depende de: ACUP-010 (a exclusão parte da versão da 002).
 
+## ACUP-011 — Ajustes do perfil no banco (pendências do review da ACUP-004)
+- Objetivo: (1) `aba_save_profile` recusa paciente arquivado, pela mesma regra e mensagem que `aba_save_plan_draft`/`aba_save_program` já usam (ler e copiar, não inventar outra); (2) data do laudo (`issued_on`) no futuro é recusada com 22023 pt-BR, comparando com o dia de hoje no fuso `America/Sao_Paulo`.
+- Arquivos de propriedade: `supabase/migrations/20261108ba_aba_perfil_ajustes.sql` (novo, recria só `aba_save_profile` a partir da `20261108b`); `frontend/tests/regression/aba-patient-profile.test.mjs` (acréscimos).
+- Fora de escopo: exclusão de paciente (não recriar); tela.
+- Critério de aceite: regras comuns de SQL; diff textual da RPC = versão da 004 + só os dois testes; roteiro SQL no handoff (arquivado recusa; arquivado lê, se a 004 deixa ler; laudo hoje passa, amanhã recusa; replay e CAS intactos; migration 2x com COMMIT).
+- Comandos: `cd frontend && npm run lint && npm test && npm run build`.
+- Depende de: ACUP-004 (PRONTO).
+
 ## ACUP-005 — Tela do perfil ABA
 - Arquivos de propriedade: `frontend/src/components/aba/AbaProfile.jsx` (novo), funções novas em `abaService.js`, teste novo.
 - Critério de aceite: nenhum texto sugere diagnóstico; campos de laudo com fonte e data; pt-BR; "Como funciona" da aba (screenHelp + sync); erros do banco em pt-BR como na 003/010. Também corrigir a pendência do review da 010: "Aprovado em" quebra linha no computador (grid de 4 colunas em `aba.css`).
@@ -138,3 +147,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — ACUP-003 PRONTO: QA aprovou (navegador real via harness sem login + Chrome headless, 50/50 cenários; corrigiu texto cortado no meio da palavra a cada 450 caracteres, 83d9286, com teste que falha antes), merge em `integracao` (f30952f), quality verde (1368 testes, 1367 ok, 1 pulado). Pendências ("Como funciona" e 22023) entraram na ACUP-010, distribuída ao Codex LK.
 - 2026-11-08 — ACUP-010: dev autorizado a ajustar `aba-plan-screen.test.mjs` (proibição de "Enviado por" vira exigência; casos novos). Replay: RPC que devolve UUID repete o id; RPC VOID repete sucesso vazio, sem revisão nova (aceito).
 - 2026-11-08 — ACUP-010 PRONTO: QA aprovou (diff das 4 RPCs = 002 + pedido; exclusão intocada; CHECK do remetente nos 5 estados; NO KEY UPDATE libera INSERT com FK; corrigiu teste do CHECK que não mordia, 9/9 mutações), merge em `integracao` (a5b47d3), quality verde (1374, 1373 ok, 1 pulado). Pendência cosmética ("Aprovado em" quebra linha) foi para a ACUP-005. ACUP-004 distribuída.
+- 2026-11-08 — ACUP-004 PRONTO: QA aprovou (34 cenários próprios + roteiro do dev; nada em claro; payload não forja clínica/paciente/ator; exclusão = 20261108 + 2 linhas, testada com perfil+plano+programa+atendimento+evolução; corrigiu teste que não pegava coluna clara de CID, 19/19 mutações), merge em `integracao` (1b3144a), quality verde (1380, 1379 ok, 1 pulado). Pendências (paciente arquivado aceito; laudo com data futura) viraram a ACUP-011, antes da 005.

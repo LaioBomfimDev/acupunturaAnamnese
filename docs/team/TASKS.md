@@ -1,24 +1,27 @@
-# TASKS — Sistema Acup
+# TASKS — Sistema Acup (retrato)
 
-Só o Orquestrador edita este arquivo. Estados: `TODO` · `FAZENDO` · `REVIEW` · `PRONTO` · `BLOQUEADO`.
+> **Retrato.** O quadro vivo é `C:/Users/m/Downloads/acup-team/mesa/TASKS.md`. Este arquivo é atualizado pelo Orquestrador a cada PRONTO, para o histórico ficar no git.
 
-> **Pausa ativa (2026-11-08):** Dev Deni (conta Codex Deni) pausado por cota. Não distribuir tasks nem mandar mensagem para ele até o humano liberar.
+Quadro vivo: `C:/Users/m/Downloads/acup-team/mesa/TASKS.md` (TIME-2). Só o Orquestrador edita. Estados: `TODO` · `FAZENDO` · `REVIEW` · `PRONTO` · `BLOQUEADO`.
+
+> Pausas: `mesa/pausas.md` (Deni pausado por cota). Decisões: `mesa/DECISOES.md`. Mensagens: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs <papel> "TIPO · ACUP-000 · commit · arquivo · resumo"`.
 
 Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (auditoria, modelo de dados, bloco do AGENTS.md, decisões D0–D5).
 
 | ID | Task | Dono | Branch | Estado | Aceite |
 |---|---|---|---|---|---|
-| ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK (César) | integracao (2e0f524) | PRONTO | ver abaixo |
-| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (sessão Ícaro) | codex/lk (f65fa97) | REVIEW (QA Lucas) | ver abaixo |
-| ACUP-003 | Tela do plano terapêutico | Codex LK (César) | codex/lk | TODO (após 002) | ver abaixo |
-| ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK (César) | codex/lk | TODO (após 003) | ver abaixo |
-| ACUP-005 | Tela do perfil ABA | Codex LK (César) | codex/lk | TODO (após 004) | ver abaixo |
-| ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK (César) | codex/lk | TODO (após 005) | ver abaixo |
-| ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK (César) | codex/lk | TODO (após 006) | ver abaixo |
-| ACUP-008 | Registro formal de supervisão (SQL + RPC + tela) | Codex LK (César) | codex/lk | TODO (após 007) | ver abaixo |
+| ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK | integracao (2e0f524) | PRONTO | ver abaixo |
+| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK | integracao (3700917) | PRONTO | ver abaixo |
+| ACUP-003 | Tela do plano terapêutico | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-010 | Ajustes do plano no banco (pendências do review da 002) | Codex LK | codex/lk | TODO (após 003) |
+| ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | codex/lk | TODO (após 010) | ver abaixo |
+| ACUP-005 | Tela do perfil ABA | Codex LK | codex/lk | TODO (após 004) | ver abaixo |
+| ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | codex/lk | TODO (após 005) | ver abaixo |
+| ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk | TODO (após 006) | ver abaixo |
+| ACUP-008 | Registro formal de supervisão (SQL + RPC + tela) | Codex LK | codex/lk | TODO (após 007) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
-Ordem: uma task por vez, 001 → 008; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261103c_patient_notes.sql`). Nomes: 002 `20261108_aba_plano_versionado.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
+Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 005 → 006 → 007 → 008; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108_aba_plano_versionado.sql`). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
 
 Regras de toda task com SQL (além do aceite próprio):
 - RLS ligada + `REVOKE ALL FROM PUBLIC, anon, authenticated`, nenhuma policy; toda RPC `SECURITY DEFINER SET search_path = pg_catalog`, começando por `aba_require_gate`/`aba_require_patient`; `GRANT EXECUTE` só para `authenticated`.
@@ -51,16 +54,33 @@ Regras de toda task com SQL (além do aceite próprio):
 
 ## ACUP-003 — Tela do plano terapêutico
 - Objetivo: ver versões, montar rascunho a partir dos programas, enviar para revisão, aprovar (supervisão), anular com motivo; imprimir o aprovado no papel timbrado.
-- Arquivos de propriedade: `frontend/src/components/aba/AbaPlan.jsx` (novo), `frontend/src/services/abaService.js` (só funções novas), registro da aba em `AbaWorkspace.jsx`, teste novo.
-- Critério de aceite: botões de aprovar/anular só aparecem para quem supervisiona, e a recusa do banco aparece como mensagem em pt-BR; nada de aprovação automática; regras de navegação/celular do AGENTS §7.
-- Depende de: ACUP-002.
+- Contrato do banco: seção "API para ACUP-003" de `docs/team/handoff/ACUP-002.md` (`aba_save_plan_draft`, `aba_submit_plan`, `aba_approve_plan`, `aba_void_plan`, `aba_list_plan_versions`). Não muda SQL.
+- Arquivos de propriedade: `frontend/src/components/aba/AbaPlan.jsx` (novo); `frontend/src/services/abaService.js` (só funções novas, pelo mesmo `call()` do arquivo); `frontend/src/components/AbaWorkspace.jsx` (só registrar a aba "Plano terapêutico" no grupo "Plano", em `TABS`, no mapa de ids e na navegação, sem mexer nas outras); `frontend/src/styles/aba.css` (só acréscimos); `frontend/tests/regression/aba-plan-screen.test.mjs` (novo); `AGENTS.md` (só o bullet ABA, se a tela criar regra).
+- Fora de escopo: qualquer `.sql` ou Edge Function; outras abas do ABA; `data/abaLibrary.js`; financeiro.
+- Critério de aceite (verificável):
+  1. Lista de versões (mais nova em cima) com estado, número, quem enviou, quem aprovou e quando; o aprovado vigente em destaque; anulado mostra o motivo; nenhuma ação sobre aprovado/substituído/anulado.
+  2. Rascunho: escolher programas do paciente (fixa `{program_id, revision}` atual de cada um), resumo, data de revisão; salvar com `client_event_id` novo por ação e `revision` (CAS); enviar exige programa e resumo (a tela avisa antes de chamar).
+  3. Aprovar e Anular só aparecem para quem supervisiona (mesma fonte de permissão que a tela de Programas já usa); anular pede motivo; confirmação antes de aprovar dizendo que a versão anterior vira substituída. A IA não aprova, sugere nem gera plano.
+  4. Erros do banco viram mensagem pt-BR: 40001 "foi alterado por outra pessoa, recarregue", 42501 sem permissão, 23505/22023 pela mensagem do banco ou texto próprio; nunca código cru nem inglês.
+  5. Imprimir o aprovado no papel timbrado com `PrintLetterhead` + `paginateReportBody` (como `AbaReport.jsx`), preto/cinza/branco, sem cor do app; mostra os programas pela cópia congelada (`program_snapshots`), nunca pelo programa atual.
+  6. Celular e tablet (≤1024px): nada mais largo que 360px, lista vira cartão, botões com `HubBackButton` quando aninhado; pt-BR com plural certo ("1 programa", "2 programas").
+  7. Teste de regressão cobre 1–6 por leitura de fonte (regex com `?
+`) e pelas funções puras que a tela usar.
+- Comandos que precisam passar: `cd frontend && npm run lint && npm test && npm run build` (build com `.env.local` público copiado).
+- Depende de: ACUP-002 (PRONTO).
+
+## ACUP-010 — Ajustes do plano no banco (pendências do review da ACUP-002)
+- Objetivo: três achados não bloqueantes do QA: (1) `FOR UPDATE` em `patients` nas RPCs de plano trava inserts com FK; trocar por `FOR NO KEY UPDATE`; (2) violação 23505 do evento reaproveitado sobe em inglês: devolver mensagem pt-BR com o mesmo código; (3) replay do último evento é no-op silencioso: manter o no-op (é a idempotência), mas devolver o mesmo retorno da primeira chamada e documentar no cabeçalho.
+- Arquivos de propriedade: `supabase/migrations/20261108a_aba_plano_ajustes.sql` (novo, recria só as RPCs afetadas a partir de `20261108_aba_plano_versionado.sql`); `frontend/tests/regression/aba-plan-versions.test.mjs` (acréscimos).
+- Critério de aceite: regras comuns de SQL; diff textual de cada RPC recriada = versão da 002 + só a mudança pedida; sem tocar a exclusão de paciente; roteiro SQL no handoff para o QA rodar no `acup-qa-pg`, incluindo duas sessões concorrentes (aprovar × inserir filho do paciente).
+- Depende de: ACUP-003.
 
 ## ACUP-004 — Perfil ABA do paciente (SQL + RPC)
 - Objetivo: item 2, tabela `aba_patient_profiles` (B2) + `aba_get_profile`/`aba_save_profile` com CAS.
 - Arquivos de propriedade: migration nova, teste novo.
 - Critério de aceite: como ACUP-002 (RLS, definer, CAS, cifra, exclusão de paciente, chamada real com ROLLBACK); diagnóstico só cifrado; quem grava conforme D2.
 - Decisões (D2): lê quem acessa, grava quem supervisiona; `diagnosis_encrypted` só de laudo (fonte e data dentro do texto cifrado); nenhum diagnóstico sugerido.
-- Depende de: ACUP-003 (a exclusão parte da versão da 002).
+- Depende de: ACUP-010 (a exclusão parte da versão da 002).
 
 ## ACUP-005 — Tela do perfil ABA
 - Arquivos de propriedade: `frontend/src/components/aba/AbaProfile.jsx` (novo), funções novas em `abaService.js`, teste novo.
@@ -108,3 +128,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — Preparo do QA aprovado (`qa/revisao` 6530798, `docs/team/reviews/preparo-validacao-sql.md`): validação SQL no Postgres local `acup-qa-pg` (supabase/postgres 15.8, as 106 migrations aplicam do zero, modelo `acup_base`, ciclo BEGIN → RPC como authenticated/anon → ROLLBACK testado). Produção: nenhuma escrita, nem com ROLLBACK; conferência só leitura da divergência decidida na revisão da ACUP-002. Limite conhecido: a ordem alfabética das migrations não é a de produção, e o banco local não prova o que está no ar.
 - 2026-11-08 — ACUP-001 PRONTO: QA aprovou (15 mutações mordem; 4 fugas do teste corrigidas pelo QA em 0ad3ab8), merge de `qa/ACUP-001` em `integracao` (2e0f524), quality verde (1350 testes, 1349 ok, 1 pulado). ACUP-002 distribuída ao César, com a pendência do QA (DISABLE RLS/GRANT) no aceite.
 - 2026-11-08 — Sessão César saiu do barramento; a sala LK agora tem Sofia (idle) e Ícaro (working, a mais nova). O `aviso.mjs` entregou a ACUP-002 ao Ícaro. Leandro segue preso no snapshot.
+- 2026-11-08 — ACUP-002 PRONTO: QA aprovou sem correção (roteiro do dev + 55 cenários adversariais com ROLLBACK, idempotência com COMMIT 2x, concorrência em 2 sessões, diffs textuais conferidos, 34 mutações mordem), merge de `qa/ACUP-002` em `integracao` (3700917), quality verde (1358 testes, 1357 ok, 1 pulado). Pendências não bloqueantes viraram a ACUP-010. Time passa para a mesa (TIME-1/TIME-2): quadro vivo em `mesa/TASKS.md`; este arquivo vira retrato. ACUP-003 distribuída pelo `mesa/aviso.mjs`.

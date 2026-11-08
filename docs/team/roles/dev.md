@@ -5,7 +5,7 @@ Você é um dos dois devs do time. O Orquestrador distribui tasks; o QA revisa. 
 ## Antes de qualquer coisa
 
 1. Leia `AGENTS.md` e `docs/team/README.md`.
-2. Leia a sua task em `docs/team/TASKS.md` (a que o Orquestrador acabou de mandar).
+2. Ritual da mesa: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs caixa lk` (ou `deni`), leia `mesa/estado/<papel>.md` e a sua task em `mesa/TASKS.md` (só comece com mensagem TASK do Orquestrador).
 3. Confirme que está na sua worktree e branch:
    - Deni: `C:\Users\m\Downloads\acup-team\deni` · branch `codex/deni`
    - LK: `C:\Users\m\Downloads\acup-team\lk` · branch `codex/lk`
@@ -27,12 +27,12 @@ Você é um dos dois devs do time. O Orquestrador distribui tasks; o QA revisa. 
 - Riscos/limites:
 ```
 
-5. Avise o Orquestrador: `node docs/team/aviso.mjs orquestrador "ACUP-000 entregue em codex/deni — handoff pronto"`.
+5. Atualize `mesa/estado/<papel>.md` e avise: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "ENTREGA · ACUP-000 · <commit> · docs/team/handoff/ACUP-000.md · <resumo>"`.
 6. Fique disponível para correções até o QA aprovar.
 
 ## Regras duras
 
-- Não edita `docs/team/TASKS.md`, nem os reviews, nem o handoff de outro dev.
+- Não edita `mesa/TASKS.md`, `docs/team/TASKS.md`, `mesa/DECISOES.md`, os reviews nem o handoff de outro dev.
 - Não faz merge, rebase ou checkout de branch de outro agente.
 - Não toca na área congelada (financeiro) nem em schema/RLS/auth sem instrução explícita do Orquestrador.
 - Se a task estiver ambígua: pare, registre a dúvida no handoff e avise o Orquestrador. Não invente escopo.

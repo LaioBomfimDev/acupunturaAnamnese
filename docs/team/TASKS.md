@@ -13,8 +13,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK | integracao (2e0f524) | PRONTO | ver abaixo |
 | ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK | integracao (3700917) | PRONTO | ver abaixo |
 | ACUP-003 | Tela do plano terapêutico | Codex LK | integracao (f30952f) | PRONTO | ver abaixo |
-| ACUP-010 | Ajustes do plano (pendências dos reviews da 002 e da 003) | Codex LK | codex/lk | FAZENDO |
-| ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | codex/lk | TODO (após 010) | ver abaixo |
+| ACUP-010 | Ajustes do plano (pendências dos reviews da 002 e da 003) | Codex LK | integracao (a5b47d3) | PRONTO |
+| ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | codex/lk | FAZENDO | ver abaixo |
 | ACUP-005 | Tela do perfil ABA | Codex LK | codex/lk | TODO (após 004) | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | codex/lk | TODO (após 005) | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk | TODO (após 006) | ver abaixo |
@@ -73,20 +73,23 @@ Regras de toda task com SQL (além do aceite próprio):
 - Objetivo: três achados não bloqueantes do QA: (1) `FOR UPDATE` em `patients` nas RPCs de plano trava inserts com FK; trocar por `FOR NO KEY UPDATE`; (2) violação 23505 do evento reaproveitado sobe em inglês: devolver mensagem pt-BR com o mesmo código; (3) replay do último evento é no-op silencioso: manter o no-op (é a idempotência), mas devolver o mesmo retorno da primeira chamada e documentar no cabeçalho.
 - (5) Pendências do review da 003: a aba ganha o "Como funciona" (`ABA_HELP.plano` em `data/screenHelp.js`, seções fixas, escrito pelos rótulos reais da tela; depois rodar `scripts/sync-assistant-help.mjs` para o espelho `_shared/assistantHelpCorpus.ts`); erro 22023 com mensagem pt-BR do banco aparece com o texto do banco, não genérico.
 - (4) Gravar quem enviou: coluna `submitted_by` (carimbada com `auth.uid()` em `aba_submit_plan`, CHECK com `IS NOT NULL` nos estados enviados, linhas antigas preenchidas com `authored_by` antes do CHECK) e devolvida em `aba_list_plan_versions`; a tela mostra "Enviado por".
-- Arquivos de propriedade: `supabase/migrations/20261108a_aba_plano_ajustes.sql` (novo, recria só as RPCs afetadas a partir de `20261108_aba_plano_versionado.sql`); `frontend/tests/regression/aba-plan-versions.test.mjs` (acréscimos); `frontend/src/components/aba/AbaPlan.jsx` (só a linha "Enviado por", o botão "Como funciona" e o 22023); `frontend/src/data/screenHelp.js` (só `ABA_HELP.plano`); `supabase/functions/_shared/assistantHelpCorpus.ts` (só regenerado pelo script); `frontend/src/services/abaService.js` (só o tratamento do 22023, se for lá).
+- Arquivos de propriedade: `supabase/migrations/20261108a_aba_plano_ajustes.sql` (novo, recria só as RPCs afetadas a partir de `20261108_aba_plano_versionado.sql`); `frontend/tests/regression/aba-plan-versions.test.mjs` (acréscimos); `frontend/src/components/aba/AbaPlan.jsx` (só a linha "Enviado por", o botão "Como funciona" e o 22023); `frontend/src/data/screenHelp.js` (só `ABA_HELP.plano`); `supabase/functions/_shared/assistantHelpCorpus.ts` (só regenerado pelo script); `frontend/src/services/abaService.js` (só o tratamento do 22023, se for lá). `frontend/tests/regression/aba-plan-screen.test.mjs` (autorizado em 08/11/2026: trocar a proibição de "Enviado por" pela exigência dele ligado a `submitted_by`, e acrescentar casos de remetente, 22023 e "Como funciona"; nenhuma outra expectativa muda).
 - Critério de aceite: regras comuns de SQL; diff textual de cada RPC recriada = versão da 002 + só a mudança pedida; sem tocar a exclusão de paciente; roteiro SQL no handoff para o QA rodar no `acup-qa-pg`, incluindo duas sessões concorrentes (aprovar × inserir filho do paciente).
 - Depende de: ACUP-003.
 
 ## ACUP-004 — Perfil ABA do paciente (SQL + RPC)
-- Objetivo: item 2, tabela `aba_patient_profiles` (B2) + `aba_get_profile`/`aba_save_profile` com CAS.
-- Arquivos de propriedade: migration nova, teste novo.
-- Critério de aceite: como ACUP-002 (RLS, definer, CAS, cifra, exclusão de paciente, chamada real com ROLLBACK); diagnóstico só cifrado; quem grava conforme D2.
+- Objetivo: item 2, tabela `aba_patient_profiles` (B2 da proposta) + `aba_get_profile(p_patient_id)` e `aba_save_profile(p_patient_id, p_profile JSONB)` com CAS (`revision`) e `client_event_id` (replay devolve o mesmo retorno, como na 010).
+- Arquivos de propriedade: `supabase/migrations/20261108b_aba_perfil_paciente.sql` (novo); `frontend/tests/regression/aba-patient-profile.test.mjs` (novo); `AGENTS.md` (só o bullet ABA: regra do perfil).
+- Fora de escopo: tela (ACUP-005); outras RPCs ABA.
+- Critério de aceite (verificável): regras comuns de SQL; `communication_mode` = array de códigos com CHECK de lista fechada (`vocal`, `pecs`, `caa_alta`, `caa_baixa`, `sinais`, `gestos`, `misto`) sem repetição; `support_level` CHECK (`1`,`2`,`3`,`nao_informado`); diagnóstico e detalhes SÓ em `*_encrypted` (nenhuma coluna de CID/diagnóstico em claro, nada em log/NOTICE); lê quem `aba_can_access_patient`, grava só `aba_can_supervise_patient` (D2), `updated_by` = `auth.uid()`; `clinic_id` sempre do banco; `admin_decide_patient_deletion` recriada a partir da versão de maior nome (hoje `20261108_aba_plano_versionado.sql`) com `aba_patient_profiles` no snapshot e no DELETE; diff textual da exclusão = anterior + só essas linhas; roteiro SQL no handoff (supervisor grava, membro lê e é barrado ao gravar, outra clínica/anon barrados, CAS velho 40001, replay, exclusão de paciente com perfil, migration 2x com COMMIT).
+- Comandos: `cd frontend && npm run lint && npm test && npm run build`.
 - Decisões (D2): lê quem acessa, grava quem supervisiona; `diagnosis_encrypted` só de laudo (fonte e data dentro do texto cifrado); nenhum diagnóstico sugerido.
 - Depende de: ACUP-010 (a exclusão parte da versão da 002).
 
 ## ACUP-005 — Tela do perfil ABA
 - Arquivos de propriedade: `frontend/src/components/aba/AbaProfile.jsx` (novo), funções novas em `abaService.js`, teste novo.
-- Critério de aceite: nenhum texto sugere diagnóstico; campos de laudo com fonte e data; pt-BR.
+- Critério de aceite: nenhum texto sugere diagnóstico; campos de laudo com fonte e data; pt-BR; "Como funciona" da aba (screenHelp + sync); erros do banco em pt-BR como na 003/010. Também corrigir a pendência do review da 010: "Aprovado em" quebra linha no computador (grid de 4 colunas em `aba.css`).
+- Arquivos extras autorizados: `frontend/src/styles/aba.css` (acréscimos e o ajuste do grid do plano), `frontend/src/data/screenHelp.js` (só `ABA_HELP.perfil`), espelho regenerado.
 - Depende de: ACUP-004.
 
 ## ACUP-006 — Biblioteca da clínica (SQL + RPC)
@@ -133,3 +136,5 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — ACUP-002 PRONTO: QA aprovou sem correção (roteiro do dev + 55 cenários adversariais com ROLLBACK, idempotência com COMMIT 2x, concorrência em 2 sessões, diffs textuais conferidos, 34 mutações mordem), merge de `qa/ACUP-002` em `integracao` (3700917), quality verde (1358 testes, 1357 ok, 1 pulado). Pendências não bloqueantes viraram a ACUP-010. Time passa para a mesa (TIME-1/TIME-2): quadro vivo em `mesa/TASKS.md`; este arquivo vira retrato. ACUP-003 distribuída pelo `mesa/aviso.mjs`.
 - 2026-11-08 — ACUP-003, aceite 1 ajustado a pedido do dev: sem "enviado por" (o banco não guarda; vira item 4 da ACUP-010); aprovado pode ser anulado pela supervisão com motivo, como o banco já permite.
 - 2026-11-08 — ACUP-003 PRONTO: QA aprovou (navegador real via harness sem login + Chrome headless, 50/50 cenários; corrigiu texto cortado no meio da palavra a cada 450 caracteres, 83d9286, com teste que falha antes), merge em `integracao` (f30952f), quality verde (1368 testes, 1367 ok, 1 pulado). Pendências ("Como funciona" e 22023) entraram na ACUP-010, distribuída ao Codex LK.
+- 2026-11-08 — ACUP-010: dev autorizado a ajustar `aba-plan-screen.test.mjs` (proibição de "Enviado por" vira exigência; casos novos). Replay: RPC que devolve UUID repete o id; RPC VOID repete sucesso vazio, sem revisão nova (aceito).
+- 2026-11-08 — ACUP-010 PRONTO: QA aprovou (diff das 4 RPCs = 002 + pedido; exclusão intocada; CHECK do remetente nos 5 estados; NO KEY UPDATE libera INSERT com FK; corrigiu teste do CHECK que não mordia, 9/9 mutações), merge em `integracao` (a5b47d3), quality verde (1374, 1373 ok, 1 pulado). Pendência cosmética ("Aprovado em" quebra linha) foi para a ACUP-005. ACUP-004 distribuída.

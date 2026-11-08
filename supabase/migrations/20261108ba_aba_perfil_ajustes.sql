@@ -2,8 +2,8 @@
 -- REQUER: 20261108b_aba_perfil_paciente.sql.
 -- Aplicar em transação. Recria somente aba_save_profile, sem tocar leitura,
 -- tabela, exclusão de paciente ou qualquer outra RPC.
--- O bloco de arquivado (inclusive a mensagem) é cópia literal da versão
--- vigente de aba_save_plan_draft em 20261108a_aba_plano_ajustes.sql.
+-- A regra de arquivado é cópia da versão vigente de aba_save_plan_draft
+-- em 20261108a_aba_plano_ajustes.sql, com a mensagem ajustada para perfil.
 -- A regra bloqueia a escrita antes do replay, como no plano; ler continua
 -- seguindo a 004. Para paciente ativo, replay/CAS/retorno permanecem iguais.
 -- Data de laudo nova não pode superar o hoje de America/Sao_Paulo,
@@ -57,7 +57,7 @@ BEGIN
   PERFORM 1 FROM public.patients WHERE id = p_patient_id AND erased_at IS NULL FOR NO KEY UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Paciente indisponível.' USING ERRCODE = '42501'; END IF;
   IF EXISTS (SELECT 1 FROM public.patients WHERE id = p_patient_id AND archived_at IS NOT NULL) THEN
-    RAISE EXCEPTION 'Paciente arquivado não recebe plano.' USING ERRCODE = '22023';
+    RAISE EXCEPTION 'Paciente arquivado não recebe perfil.' USING ERRCODE = '22023';
   END IF;
   SELECT * INTO v_existing FROM public.aba_patient_profiles WHERE patient_id = p_patient_id FOR UPDATE;
   IF FOUND THEN

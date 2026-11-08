@@ -3,11 +3,11 @@
 - Branch/base: `codex/lk`, merge de `integracao` (`4bd3326`) antes de começar. Commit da task: `fix(ACUP-011): recusa perfil arquivado e laudo futuro`.
 - Arquivos: migration nova `20261108ba_aba_perfil_ajustes.sql`, somente acréscimos em `aba-patient-profile.test.mjs`, este handoff. Sem tela, schema novo, financeiro ou exclusão recriada.
 - O que mudou: apenas dois IFs em `aba_save_profile`, copiada integralmente da 20261108b. O teste reconstrói o corpo anterior + essas duas inserções e compara tudo, preservando gates, cifra, CAS, replay, locks e retorno.
-- Arquivado: bloco/mensagem copiados literalmente de `aba_save_plan_draft` da 20261108a: `Paciente arquivado não recebe plano.` (22023). O substantivo foi mantido por instrução de copiar a mensagem, sem inventar outra. A checagem fica após o lock do paciente e antes do replay, exatamente como no plano. Portanto, nem replay escreve/responde sucesso em paciente arquivado; a leitura segue a regra inalterada da 004.
+- Arquivado: mesma regra de `aba_save_plan_draft` da 20261108a, com mensagem ajustada pelo Orquestrador em 08/11/2026 20:43 para `Paciente arquivado não recebe perfil.` (22023). A correção altera só o texto, preservando posição, condição e código. A checagem fica após o lock do paciente e antes do replay, exatamente como no plano. Portanto, nem replay escreve/responde sucesso em paciente arquivado; a leitura segue a regra inalterada da 004.
 - Data: depois do cast válido e antes da cifra, `issued_on` não pode superar `(clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::DATE`; recusa 22023 `Data do laudo não pode ser futura.` Não usa current_date nem o fuso da conexão, não ecoa conteúdo de laudo e não reescreve registro antigo.
 - Validação SQL: passou (exit 0), quatro NOTICEs OK e ROLLBACK. Laudo hoje aceito, amanhã recusado com 22023 pt-BR em conexão Pacific/Kiritimati; CAS e replay preservados no ativo; arquivado lê mas não cria/atualiza/replay. Migration 2x com COMMIT em acup_lk_011_20261108; hashes de get_profile/exclusão iguais antes/depois. Template e produção intocados.
 - Regressão: 15 testes focados (perfil + invariantes) passaram; retiradas temporariamente, uma por vez, as guardas de arquivado e data futura da migration: cada mutação fez o teste sair com 1. Bytes originais restaurados, e os 8 testes do perfil passaram novamente. Nenhuma expectativa anterior foi removida ou alterada.
-- Gates: lint e build passaram (exit 0); build com avisos existentes de chunk/import misto. Suíte completa passou (exit 0): 1.382 testes, 1.381 aprovados, 1 ignorado, zero falhas (155,5 s).
+- Gates: lint e build passaram (exit 0); build com avisos existentes de chunk/import misto. Suíte completa passou (exit 0): 1.382 testes, 1.381 aprovados, 1 ignorado, zero falhas (163,9 s, após ajustar a mensagem).
 - Reversão: restaurar somente aba_save_profile da 20261108b; isso volta a permitir as situações corrigidas. Nenhum dado ou estrutura é apagado.
 
 ### Roteiro SQL local (ROLLBACK)
@@ -77,14 +77,14 @@ BEGIN
   PERFORM public.aba_save_profile(p,jsonb_build_object('revision',2,'client_event_id',gen_random_uuid(),'details','Tentativa fictícia em arquivado'));
   RAISE EXCEPTION 'Arquivado aceitou atualização';
  EXCEPTION WHEN invalid_parameter_value THEN
-  ASSERT SQLERRM='Paciente arquivado não recebe plano.';
+  ASSERT SQLERRM='Paciente arquivado não recebe perfil.';
  END;
  ASSERT public.aba_get_profile(p)=before;
  BEGIN
   PERFORM public.aba_save_profile(p,jsonb_build_object('revision',1,'client_event_id',before->>'client_event_id'));
   RAISE EXCEPTION 'Arquivado aceitou replay';
  EXCEPTION WHEN invalid_parameter_value THEN
-  ASSERT SQLERRM='Paciente arquivado não recebe plano.';
+  ASSERT SQLERRM='Paciente arquivado não recebe perfil.';
  END;
  ASSERT public.aba_get_profile(p)=before;
  ASSERT public.aba_get_profile('b0110000-0000-4000-8000-000000000002') IS NULL;
@@ -92,10 +92,10 @@ BEGIN
   PERFORM public.aba_save_profile('b0110000-0000-4000-8000-000000000002',jsonb_build_object('revision',0,'client_event_id',gen_random_uuid()));
   RAISE EXCEPTION 'Arquivado aceitou criação';
  EXCEPTION WHEN invalid_parameter_value THEN
-  ASSERT SQLERRM='Paciente arquivado não recebe plano.';
+  ASSERT SQLERRM='Paciente arquivado não recebe perfil.';
  END;
  ASSERT public.aba_get_profile('b0110000-0000-4000-8000-000000000002') IS NULL;
- RAISE NOTICE 'OK arquivado: leitura preservada; criação, atualização e replay recusados com a regra literal do plano';
+ RAISE NOTICE 'OK arquivado: leitura preservada; criação, atualização e replay recusados com a mesma regra do plano e mensagem do perfil';
 END $test$;
 ROLLBACK;
 ```
@@ -112,3 +112,5 @@ result=subprocess.run(['docker','exec','-i','acup-qa-pg','sh','-c',
  'PGPASSWORD="$POSTGRES_PASSWORD" psql -U supabase_admin -d acup_lk_011_20261108 -v ON_ERROR_STOP=1'],input=script.encode('utf-8'))
 raise SystemExit(result.returncode)
 ```
+
+- Ajuste antes do merge: novo commit `fix(ACUP-011)` sobre `8d2701a`, trocando apenas o substantivo da mensagem e adaptando comentários/teste/roteiro, conforme aceite corrigido. Validação reexecutada antes da nova ENTREGA: 15 focados, roteiro SQL com ROLLBACK, lint, suíte completa (1382; 1381 aprovados, 1 ignorado) e build verdes.

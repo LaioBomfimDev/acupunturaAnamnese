@@ -9,7 +9,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ID | Task | Dono | Branch | Estado | Aceite |
 |---|---|---|---|---|---|
 | ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK (César) | integracao (2e0f524) | PRONTO | ver abaixo |
-| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (sessão Ícaro) | codex/lk | FAZENDO | ver abaixo |
+| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (sessão Ícaro) | codex/lk (f65fa97) | REVIEW (QA Lucas) | ver abaixo |
 | ACUP-003 | Tela do plano terapêutico | Codex LK (César) | codex/lk | TODO (após 002) | ver abaixo |
 | ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK (César) | codex/lk | TODO (após 003) | ver abaixo |
 | ACUP-005 | Tela do perfil ABA | Codex LK (César) | codex/lk | TODO (após 004) | ver abaixo |

@@ -118,7 +118,7 @@ Parte **proposta** (entra só depois das decisões D1–D5, cada uma na task que
 
 ## D. Tasks
 
-Ver `docs/team/TASKS.md` (ACUP-001 a ACUP-009). Só a ACUP-001 (doc + teste, sem schema) foi distribuída. As demais esperam as decisões.
+Ver `docs/team/TASKS.md` (ACUP-001 a ACUP-009). Decisões tomadas em 08/11/2026 (seção Decisões, no fim): 002–008 liberadas em série, 009 adiada.
 
 ## E. Decisões do humano (3 alternativas, uma recomendada)
 
@@ -128,3 +128,14 @@ Ver `docs/team/TASKS.md` (ACUP-001 a ACUP-009). Só a ACUP-001 (doc + teste, sem
 - **D3 — Biblioteca**: (A) cópia do catálogo para cada clínica (seed): edição livre, perde atualizações do sistema. (B) catálogo do sistema em código + itens/ajustes/ocultos da clínica — **recomendo**. (C) manter fixo. Quem edita: administração + supervisores?
 - **D4 — Supervisão e avaliações**: quais instrumentos de avaliação a clínica usa e se tem licença; se o registro de supervisão precisa de ciência do supervisionado; se conta horas para certificação. Sem essa lista, recomendo fazer só a supervisão formal agora e deixar avaliações para depois.
 - **D5 — Retenção**: confirmar com o jurídico o prazo de guarda do prontuário psicológico aplicado ao ABA (lembro da Res. CFP 001/2009 com mínimo de 5 anos — **palpite, conferir**).
+
+## Decisões (08/11/2026)
+
+Tomadas pelo Orquestrador com autorização do humano ("decida e aprove sozinho esta rodada, use as recomendações já registradas"), valendo até ele revogar. Travas mantidas: nada em `rebrand/vitalis`, financeiro congelado intocado, PRONTO só com quality verde + migration idempotente + RLS verificada, sem `service_role` no frontend.
+
+- **D0 = (a) merge de `origin/main` em `integracao`.** Feito em 08/11/2026 (merge eafb605 sobre cdb181e). Os 3 conflitos (`AGENTS.md`, `utils/clinicAssistant.js`, `_shared/clinicAssistant.ts`) vinham do mesmo commit aplicado duas vezes (da43141 = 7ca2d23, diff idêntico conferido); resolvidos com a versão de `origin/main`. `integracao` agora = `origin/main` + `docs/team/`. Justificativa: a última `admin_decide_patient_deletion` (`20261103c_patient_notes.sql`) só existia em `origin/main`; migration ABA nova parte dela. Os arquivos do financeiro entraram como estão em `origin/main` e não foram editados.
+- **D1 = (B) histórico de revisões por programa + `aba_plan_versions` com aprovação.** Sub-decisões: rascunho e envio para revisão por quem acessa o paciente (`aba_can_access_patient`); aprovar e anular só quem supervisiona (`aba_can_supervise_patient`, que inclui a administração, como já é hoje para programa e sessão: não muda regra de produção). Justificativa: é o único caminho que dá "plano aprovado" consultável e imprimível, com trilha, sem misturar com a ficha da Psicologia.
+- **D2 = (A) diagnóstico cifrado (só o que veio de laudo, com fonte e data), comunicação e nível de suporte em código.** Lê quem acessa; grava quem supervisiona. Justificativa: menor exposição; o sistema nunca sugere diagnóstico.
+- **D3 = (B) catálogo do sistema em código (só leitura) + itens, ajustes e ocultos da clínica.** Edita a administração e quem é supervisor de um time ativo na clínica. Justificativa: a clínica personaliza sem perder as atualizações do catálogo.
+- **D4 = só registro formal de supervisão agora (ACUP-008); avaliações (ACUP-009) ADIADAS** até a clínica dizer quais instrumentos usa e com que licença. O registro guarda duração (permite somar horas) e ciência opcional do supervisionado; sem fluxo de certificação.
+- **D5 = guarda mínima de 5 anos, nada se apaga.** Registro ABA é prontuário: sem `DELETE` direto, só a anonimização auditada que já existe (§9). O prazo de 5 anos é lembrança da Res. CFP 001/2009, não conferida: a regra escrita fica "no mínimo o prazo do prontuário psicológico" para não fixar número errado. Nenhum código de expurgo será criado.

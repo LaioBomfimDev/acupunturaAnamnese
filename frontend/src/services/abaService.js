@@ -327,3 +327,63 @@ export const saveAbaSettings = ({ defaultTrialCount, programBlockMinutes, pauseM
     p_pause_minutes: pauseMinutes,
     p_correction_window_hours: correctionWindowHours,
   }, 'Não foi possível salvar a configuração da coleta.');
+// ---------- plano terapêutico versionado (ACUP-003) ----------
+
+export function orderedPlanVersions(rows) {
+  return [...(rows || [])].sort((left, right) => Number(right.version_no) - Number(left.version_no));
+}
+
+export function planProgramCount(count) {
+  return `${count} ${count === 1 ? 'programa' : 'programas'}`;
+}
+
+export function planDraftIssue(plan) {
+  if (!plan.programs?.length) return 'Escolha ao menos um programa antes de enviar para revisão.';
+  if (!plan.summary?.trim()) return 'Preencha o resumo antes de enviar para revisão.';
+  return '';
+}
+
+export function planErrorMessage(error) {
+  if (error instanceof AbaConflictError || error?.code === '40001' || /alterado por outra pessoa/i.test(error?.message || '')) {
+    return 'Este plano foi alterado por outra pessoa. Recarregue antes de continuar.';
+  }
+  if (error instanceof AbaAccessError || error?.code === '42501') {
+    return 'Você não tem permissão para realizar esta ação neste paciente.';
+  }
+  if (error?.code === '23505' || /duplicate key|unique constraint/i.test(error?.message || '')) {
+    return 'Esta ação ou versão já foi registrada. Recarregue os planos antes de continuar.';
+  }
+  // call() mantém o contrato das outras abas. Aqui nunca exibimos SQL/inglês.
+  return 'Não foi possível concluir. Confira os dados do plano e tente novamente. Se persistir, peça ajuda à administração.';
+}
+
+export async function listPlanVersions(patientId) {
+  const rows = await call('aba_list_plan_versions', { p_patient_id: patientId }, 'Não foi possível carregar os planos.');
+  return orderedPlanVersions(rows);
+}
+
+export function savePlanDraft(patientId, plan, eventId) {
+  return call('aba_save_plan_draft', {
+    p_patient_id: patientId,
+    p_plan: {
+      id: plan.id,
+      revision: plan.revision,
+      client_event_id: eventId,
+      programs: plan.programs.map(item => ({ program_id: item.program_id, revision: item.revision })),
+      summary: plan.summary,
+      review_due_on: plan.review_due_on || null,
+    },
+  }, 'Não foi possível salvar o rascunho do plano.');
+}
+
+export function submitPlan(patientId, plan, eventId) {
+  return call('aba_submit_plan', { p_patient_id: patientId, p_plan_id: plan.id, p_revision: plan.revision, p_client_event_id: eventId }, 'Não foi possível enviar o plano para revisão.');
+}
+
+export function approvePlan(patientId, plan, eventId) {
+  return call('aba_approve_plan', { p_patient_id: patientId, p_plan_id: plan.id, p_revision: plan.revision, p_client_event_id: eventId }, 'Não foi possível aprovar o plano.');
+}
+
+export function voidPlan(patientId, plan, eventId, reason) {
+  return call('aba_void_plan', { p_patient_id: patientId, p_plan_id: plan.id, p_revision: plan.revision, p_client_event_id: eventId, p_reason: reason.trim() }, 'Não foi possível anular o plano.');
+}

@@ -8,8 +8,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 
 | ID | Task | Dono | Branch | Estado | Aceite |
 |---|---|---|---|---|---|
-| ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK (César) | codex/lk (2a7e0d7) | REVIEW (QA Lucas) | ver abaixo |
-| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (César) | codex/lk | TODO (próxima, após 001) | ver abaixo |
+| ACUP-001 | Regras ABA vigentes no AGENTS.md + teste das invariantes | Codex LK (César) | integracao (2e0f524) | PRONTO | ver abaixo |
+| ACUP-002 | Histórico de revisões de programa + plano versionado (SQL) | Codex LK (César) | codex/lk | FAZENDO | ver abaixo |
 | ACUP-003 | Tela do plano terapêutico | Codex LK (César) | codex/lk | TODO (após 002) | ver abaixo |
 | ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK (César) | codex/lk | TODO (após 003) | ver abaixo |
 | ACUP-005 | Tela do perfil ABA | Codex LK (César) | codex/lk | TODO (após 004) | ver abaixo |
@@ -42,9 +42,9 @@ Regras de toda task com SQL (além do aceite próprio):
 
 ## ACUP-002 — Histórico de revisões de programa + plano versionado (SQL)
 - Objetivo: item 1. Tabelas `aba_program_revisions` e `aba_plan_versions` (seção B1 da proposta), RPCs `aba_save_plan_draft`, `aba_submit_plan`, `aba_approve_plan`, `aba_void_plan`, `aba_list_plan_versions`; `aba_save_program` e `aba_update_program_status` recriadas a partir da versão viva gravando a revisão.
-- Arquivos de propriedade: `supabase/migrations/2026111x_aba_plano_versionado.sql` (novo); `frontend/tests/regression/aba-plan-versions.test.mjs` (novo).
+- Arquivos de propriedade: `supabase/migrations/20261108_aba_plano_versionado.sql` (novo); `frontend/tests/regression/aba-plan-versions.test.mjs` (novo); `frontend/tests/regression/aba-invariants.test.mjs` (só acrescentar as duas checagens); `AGENTS.md` (só o bullet ABA).
 - Fora de escopo: telas; outras tabelas.
-- Critério de aceite: RLS ligada + `REVOKE ALL`, sem policy; toda RPC `SECURITY DEFINER SET search_path = pg_catalog` com `aba_require_patient`; aprovar exige `aba_can_supervise_patient` e é carimbado com `auth.uid()`; um único `aprovado` por paciente (índice parcial); aprovado imutável; CHECK por status com `IS NOT NULL` explícito; texto livre cifrado; `admin_decide_patient_deletion` recriada a partir da última versão com as duas tabelas no snapshot e no DELETE (filho antes do pai); migration roda duas vezes sem erro; RPCs chamadas de verdade em transação com ROLLBACK (AGENTS §9), saída anexada ao handoff.
+- Critério de aceite: RLS ligada + `REVOKE ALL`, sem policy; toda RPC `SECURITY DEFINER SET search_path = pg_catalog` com `aba_require_patient`; aprovar exige `aba_can_supervise_patient` e é carimbado com `auth.uid()`; um único `aprovado` por paciente (índice parcial); aprovado imutável; CHECK por status com `IS NOT NULL` explícito; texto livre cifrado; `admin_decide_patient_deletion` recriada a partir da última versão com as duas tabelas no snapshot e no DELETE (filho antes do pai); migration roda duas vezes sem erro; o handoff traz o roteiro SQL de validação (chamadas das RPCs como supervisor, como membro do time, como profissional de outra clínica e como `anon`, cada uma com o resultado esperado), que o QA roda no `acup-qa-pg` em transação com ROLLBACK (AGENTS §9); `aba-invariants.test.mjs` passa a pegar também `DISABLE ROW LEVEL SECURITY` e `GRANT` de tabela `aba_*` para `anon`/`authenticated`/`PUBLIC` (pendência do review da ACUP-001); bullet ABA do AGENTS.md ganha a regra do plano (parte "proposta", ajustada à D1).
 - Comandos: `cd frontend && npm run lint && npm test`.
 - Decisões (D1): rascunho e envio por quem acessa (`aba_can_access_patient`); aprovar e anular só `aba_can_supervise_patient` (inclui administração). Aprovar marca a anterior `substituido` na mesma transação; versão nova nasce rascunho copiando a aprovada.
 - Depende de: ACUP-001.
@@ -106,3 +106,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — Critério (c)/(e) da ACUP-001 ajustado: 6 auxiliares puros sem DEFINER e a recusa de chave em `supabaseConfig.js:56` conferidos.
 - 2026-11-08 — Humano autorizou o Orquestrador a decidir a rodada. Decisões D0–D5 em `docs/team/propostas/aba-auditoria-2026-11-08.md` (seção Decisões): D0 merge de `origin/main` feito (eafb605, conflitos = commit duplicado, resolvidos com `origin/main`); D1 plano versionado com aprovação; D2 diagnóstico cifrado; D3 catálogo do sistema + itens da clínica; D4 só supervisão formal (ACUP-009 adiada); D5 guarda mínima, nada se apaga. ACUP-002..008 liberadas em série; ACUP-001 revisada reenviada ao César.
 - 2026-11-08 — Preparo do QA aprovado (`qa/revisao` 6530798, `docs/team/reviews/preparo-validacao-sql.md`): validação SQL no Postgres local `acup-qa-pg` (supabase/postgres 15.8, as 106 migrations aplicam do zero, modelo `acup_base`, ciclo BEGIN → RPC como authenticated/anon → ROLLBACK testado). Produção: nenhuma escrita, nem com ROLLBACK; conferência só leitura da divergência decidida na revisão da ACUP-002. Limite conhecido: a ordem alfabética das migrations não é a de produção, e o banco local não prova o que está no ar.
+- 2026-11-08 — ACUP-001 PRONTO: QA aprovou (15 mutações mordem; 4 fugas do teste corrigidas pelo QA em 0ad3ab8), merge de `qa/ACUP-001` em `integracao` (2e0f524), quality verde (1350 testes, 1349 ok, 1 pulado). ACUP-002 distribuída ao César, com a pendência do QA (DISABLE RLS/GRANT) no aceite.

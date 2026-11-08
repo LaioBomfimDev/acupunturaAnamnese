@@ -29,10 +29,20 @@ test('perfil ABA: uma linha por paciente, códigos fechados e comunicação sem 
   assert.match(table, /support_level IN \('1', '2', '3', 'nao_informado'\)/);
 });
 
-test('perfil ABA: só diagnóstico/detalhes cifrados, sem coluna clínica clara ou log de conteúdo', () => {
+test('perfil ABA: só diagnóstico/detalhes cifrados, sem coluna clínica clara ou log de conteúdo', async () => {
   assert.match(table, /diagnosis_encrypted BYTEA/);
   assert.match(table, /details_encrypted BYTEA/);
   assert.doesNotMatch(table, /\r?\n\s*(?:diagnosis|cid|source|issued_on|details)\s+/i);
+  // Lista fechada (QA, ACUP-004): a lista negra deixava passar "diagnosis_cid TEXT", "cid10" ou um
+  // ADD COLUMN posterior. Coluna nova no perfil exige mudar este teste de propósito.
+  const columns = [...table.matchAll(/\r?\n\s*(?!CONSTRAINT\b)([a-z_][a-z0-9_]*)\s+(?:UUID|TEXT|BYTEA|BIGINT|TIMESTAMPTZ|INTEGER|BOOLEAN|DATE|JSONB|NUMERIC|SMALLINT)\b/g)].map(match => match[1]);
+  assert.deepEqual(columns, ['patient_id', 'clinic_id', 'communication_mode', 'support_level', 'diagnosis_encrypted',
+    'details_encrypted', 'revision', 'client_event_id', 'updated_by', 'updated_at']);
+  assert.equal([...table.matchAll(/\r?\n\s*(?!CONSTRAINT\b)[a-z_][a-z0-9_]*\s+[A-Za-z"]/g)].length, columns.length, 'toda coluna da tabela foi reconhecida');
+  for (const file of (await readdir(directory)).filter(item => item.endsWith('.sql'))) {
+    const text = await readFile(path.join(directory, file), 'utf8');
+    assert.doesNotMatch(text, /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?(?:public\.)?"?aba_patient_profiles"?\s+ADD\b/i, `${file}: coluna nova no perfil fora da lista`);
+  }
   assert.match(body('aba_save_profile'), /v_diagnosis := public\.aba_encrypt\(jsonb_build_object/);
   assert.match(body('aba_save_profile'), /v_details := public\.aba_encrypt/);
   assert.doesNotMatch(sql, /RAISE\s+(?:NOTICE|LOG|INFO)|RAISE EXCEPTION[^;]*p_profile/i);

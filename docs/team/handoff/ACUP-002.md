@@ -16,6 +16,7 @@
 - Compatibilidade/reversão: RPCs antigas de programa mantêm contrato. Para suspender a feature, revogar EXECUTE das cinco RPCs de plano, mantendo dados, escritores do histórico e exclusão atualizados; reaplicar restaura. Não restaurar escritores antigos com histórico em uso, nem apagar tabelas.
 - API para ACUP-003: `aba_save_plan_draft(patient_id, JSONB)` retorna UUID; payload exige `id` UUID, `client_event_id` UUID e `revision` (0 ao criar). `programs` = lista de `{program_id, revision}` (até 200, sem repetição), `summary` (até 12000), `review_due_on` (data ou null). Ao criar, campos omitidos copiam o aprovado; valores presentes substituem. Rascunho vazio pode ser salvo, mas envio exige programas e resumo. `aba_submit_plan(patient_id, plan_id, revision, event_id)`, `aba_approve_plan(...)`, `aba_void_plan(..., reason)` retornam void. Cada nova ação usa outro evento; repetição do último evento é no-op. CAS desatualizado = 40001. `aba_list_plan_versions(patient_id)` retorna array em ordem decrescente com metadados, resumo/motivo decifrados e `program_snapshots` (sem depender de programa vivo).
 - Stash: descartado pelo nome somente `ACUP-001-pre-merge` (41020bf), criado pelo LK e superado pela ACUP-001 integrada; stash do financeiro preservado.
+- Aviso: `node docs/team/aviso.mjs orquestrador ACUP-002-pronta-para-review` confirmou `ok orquestrador (Mirela, .claude:17640)`. Após confirmar entrega, o Node encerrou com assertion `UV_HANDLE_CLOSING` (exit 1); mensagem não repetida.
 
 ### Roteiro SQL para QA (somente Postgres local)
 

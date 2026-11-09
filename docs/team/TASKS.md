@@ -29,6 +29,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Codex LK | codex/lk | FAZENDO | ver abaixo |
 | ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | REVIEW (rascunho aguardando aprovação do humano) | ver abaixo |
 | ACUP-020 | Remover a tela de integração com o WhatsApp | Codex LK | — | TODO (após 018) | ver abaixo |
+| ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | FAZENDO | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
@@ -225,6 +226,15 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - Comandos: `cd frontend && npm run lint && npm test && npm run build`.
 - Depende de: ACUP-018 (mesmos arquivos da assistente).
 
+## ACUP-021 — Documentos timbrados: PDF sem páginas em branco e Word com timbrado (hotfix sobre a main)
+- Origem: pedido da humana (Karen, 09/11, pela sessão "Documentos timbrados na gestão"): "preciso logo de tudo em producao". O trabalho já está pronto no commit `ac30abe` (PR #16, branch `remove-tela-whatsapp`, pasta Sistema Acup). Só o `ac30abe` entra; o `3061329` (WhatsApp) é a ACUP-020 e o `e86d792` (docs/team antigo, docs/skills, .gg) não entram. O PR #16 é fechado sem merge depois.
+- Base: `origin/main` (1ea4172 = produção), NUNCA o `integracao`, porque o `integracao` já tem a 016/017, que não podem ir ao ar antes da 018 e do RIPD (PUB-1). Decisão PUB-2.
+- Fazer: `git switch -c qa/ACUP-021 origin/main && git cherry-pick ac30abe` (o Orquestrador testou: aplica sem conflito sobre a main). Revisar como entrega de dev. Correção pequena é do QA, como na 017.
+- Arquivos do commit: `DocumentosTimbrados.jsx`, `documentosDocx.js`, `App.css` (só o que for de documentos/pq-printing), `screenHelp.js` + corpus regenerado pelo `scripts/sync-assistant-help.mjs` (conferir que o espelho bate), `package.json`/lock (`buffer`, `jszip`: conferir versão, licença e que nada sobe ao bundle além do necessário), `documentos-timbrados.test.mjs`, `docs/regressao-log.md`, bullet no AGENTS.md §7.
+- Critério de aceite: `npm run quality` verde na branch; PDF do Chrome com o número de folhas = número de páginas (sem página em branco intercalada) num documento fictício de várias folhas; .docx gerado abre e tem A4, logo/monograma, faixas, rodapé, marca d'água e cabeçalho de tabela repetido; "Colar conteúdo" limpa o colado (sem script/estilo estranho); sem dado de paciente real; prints em `mesa/prints/ACUP-021` (tela no computador e no celular 360px, PDF e Word).
+- Depois do APROVADO: o Orquestrador prepara o pacote de publicação da main (o humano publica) e junta a main de volta no `integracao` (conflito esperado no AGENTS.md e no corpus: resolver mantendo os dois bullets e regenerar o corpus pelo script).
+- Depende de: nada. Dono: QA.
+
 ## ACUP-015 — Detalhes do aviso de texto não salvo (observações do review da 012)
 - Objetivo: (1) editores dentro de `AbaDialog` também ligam o aviso ao fechar a aba do navegador (`beforeunload`) enquanto houver texto pendente; (2) clique em sair durante a gravação mostra "Salvando…" em vez de não fazer nada calado; (3) trocar o texto "Fechar agora" da pergunta de saída por um que diga o que acontece.
 - Arquivos de propriedade: a definir na abertura.
@@ -309,3 +319,4 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - 2026-11-09 — ACUP-017: aceito o marcador financeiro que segue a conversa depois de uma consulta financeira (as respostas seguintes também ficam protegidas no Corrigir; só restringe, nunca dá acesso). Autorizado `frontend/src/utils/assistantHelp.js` só para acrescentar o tópico da assistente em `HELP_GROUP_PLACES`.
 - 2026-11-09 — ACUP-017 entregue (d5b80ef; lint, 1460 testes com 1459 ok e 1 pulado, build verdes; 9/9 mutações; 10 prints). REVIEW mandado ao QA.
 - 2026-11-09 — ACUP-017 PRONTO: QA aprovou com correção (o painel do SuperAdm ainda oferecia 'Promover para base curada' para a nota financeira; escondido + teste; corrections.ts real testado com aprovação forçada: outra pessoa nunca vê; 20/23 mutações, 3 equivalentes), merge em `integracao` (9b871b7), quality verde (1461, 1460 ok, 1 pulado). CONDIÇÃO do QA aceita (PUB-1): a 017 não vai para o ar sem a 018, porque o texto já diz 'primeiro nome e idade' e os dados da 016 ainda levam nome completo. ACUP-018 distribuída.
+- 2026-11-09 — Humana pediu pressa para produção. ACUP-021: o commit `ac30abe` (Documentos timbrados, PR #16) entra por hotfix sobre a `main`, revisado pelo QA, sem esperar a rodada da assistente (PUB-2). PR #16 fecha sem merge; WhatsApp segue como ACUP-020.

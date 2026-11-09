@@ -34,7 +34,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 | ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | integracao (f227800) | PRONTO (publicado 09/11, main a391aef) | ver abaixo |
 | ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | integracao (a391aef) | PRONTO (publicado 09/11, main a391aef) | ver abaixo |
-| ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | FAZENDO (codando, AG-8; publicar só com 026 aprovado) | ver abaixo |
+| ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | REVIEW (8c00938; publicar só com 026 aprovado) | ver abaixo |
 | ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
 | ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | TODO (após 025) | ver abaixo |
 | ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |

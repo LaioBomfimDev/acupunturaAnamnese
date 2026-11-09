@@ -93,6 +93,13 @@ test('ABA: tabelas de paciente entram no snapshot e DELETE da exclusão mais rec
   for (const { table, columns } of tables) {
     if (!/\bpatient_id\s+/i.test(columns)) continue;
     assert.match(body, new RegExp(`'${table}'\\s*,\\s*\\(SELECT\\b`), `${table}: snapshot em ${name}`);
+    if (table === 'aba_supervision_records') {
+      assert.doesNotMatch(body, /DELETE\s+FROM\s+public\.aba_supervision_records\b/i);
+      assert.match(body, /UPDATE public\.aba_supervision_records SET patient_id = NULL, agenda_encrypted = NULL, decisions_encrypted = NULL,/);
+      assert.match(body, /void_reason_encrypted = CASE WHEN status = 'anulado' THEN public\.aba_encrypt\('Motivo removido na exclusão do paciente\.'\) ELSE NULL END,/);
+      assert.match(body, /revision = revision \+ 1 WHERE patient_id = v_req\.patient_id;/);
+      continue;
+    }
     assert.match(body, new RegExp(`DELETE\\s+FROM\\s+public\\.${table}\\s+WHERE\\s+patient_id\\s*=\\s*v_req\\.patient_id\\s*;`, 'i'), `${table}: DELETE em ${name}`);
   }
 });

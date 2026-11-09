@@ -10,8 +10,12 @@
 // ============================================================
 
 import { loadReceivablesData } from './financeiroService';
+// ACUP-023: só leituras do Resumo do Financeiro (convênio e notas), sem escrita.
+import { loadFiscalData, loadTissData } from './financeiroService';
+import { listSatisfactionSurveys } from './satisfactionSurveyService';
+import { listAssignments } from './patientPortalService';
 import { listClinicPatients } from './clinicPatientsService';
-import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn } from './appointmentService';
+import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn, listPendingConfirmations } from './appointmentService';
 import { listClinicMembers, shortName } from './clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from './agendaScheduleService';
 import { loadAgendaSettings } from './agendaSettingsService';
@@ -23,6 +27,10 @@ import { todayInClinic } from '../utils/finance';
 import {
   freeSlotsForAssistant,
   readFinanceConsulta, financeConsultaIssue, financeConsultaFailure, summarizeFinance,
+  AGENDA_CONSULTAS, AGENDA_ACCESS, AGENDA_SOURCE_LIMIT, PACKAGE_WINDOW_DAYS,
+  readAgendaConsulta, agendaConsultaIssue, agendaConsultaFailure,
+  summarizeAgendaPeriod, summarizeAbsencesPeriod, summarizePendingConfirmationsPeriod, summarizePackagesNearEndAgenda,
+  summarizeBirthdaysCount, summarizeSurveysPeriod, summarizePortalForms, summarizeConvenioState,
   matchTeamMember,
   summarizeDayAppointments,
   summarizePendingEvolutions,
@@ -98,6 +106,7 @@ async function scaleApplications(dia) {
  */
 export async function runAssistantConsulta(consulta, { profile, team = null, now = new Date() }) {
   if (consulta.tipo === 'financeiro') return runFinanceConsulta(consulta, profile, now);
+  if (AGENDA_CONSULTAS.includes(consulta.tipo)) return runAgendaConsulta(consulta, profile, team, now);
   const dia = consulta.dia || todayInClinic(now);
   const base = {
     tipo: consulta.tipo, profissional: consulta.profissional, dia, horarios: [], motivo: null, opcoes: [], linhas: [], total: null,
@@ -154,5 +163,100 @@ async function runFinanceConsulta(raw, profile, now) {
     return summarizeFinance({ consulta: query, money, patients, members, shortName, today: todayInClinic(now), selfId: profile.id });
   } catch {
     return financeConsultaFailure(query, 'erro');
+  }
+}
+
+// ============================================================
+// ACUP-023 (AG-1, AG-5): agenda e operação sem paciente. A porta de perfil
+// vem ANTES de qualquer fonte: quem não vê a tela de origem não dispara busca.
+// ============================================================
+async function agendaAllowed(access, profile) {
+  if (!profile?.id || !profile?.clinic_id) return false;
+  if (access === 'equipe') return true;
+  if (access === 'admin_recepcao') return profile.role === 'clinic_admin' || profile.role === 'receptionist';
+  if (profile.role !== 'clinic_admin') return false;
+  if (access === 'admin') return true;
+  const rpc = access === 'portal' ? 'can_manage_patient_portal' : access === 'financeiro' ? 'can_manage_finance' : null;
+  if (!rpc) return false;
+  const { data, error } = await supabase.rpc(rpc, { p_clinic: profile.clinic_id });
+  return !error && data === true;
+}
+
+function periodRange(de, ate) {
+  const start = dayStart(de);
+  const end = dayStart(ate);
+  return { from: start.toISOString(), to: new Date(end.getTime() + 86_400_000 - 1).toISOString(), next: new Date(end.getTime() + 86_400_000).toISOString() };
+}
+
+function localKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// Lista cheia até o limite do serviço pode estar cortada: vira erro, nunca subcontagem.
+function full(list, limit = AGENDA_SOURCE_LIMIT) {
+  if (list.length >= limit) throw new Error('fonte no limite');
+  return list;
+}
+
+async function runAgendaConsulta(raw, profile, team, now) {
+  let query = readAgendaConsulta(raw);
+  const access = AGENDA_ACCESS[query.tipo];
+  try {
+    if (!access || !(await agendaAllowed(access, profile))) return agendaConsultaFailure(query, 'sem_permissao');
+    if (query.tipo === 'confirmacoes_pendentes' && !query.de && !query.ate) {
+      const tomorrow = localKey(new Date(now.getTime() + 86_400_000));
+      query = { ...query, de: tomorrow, ate: tomorrow };
+    }
+    const issue = agendaConsultaIssue(query);
+    if (issue) return agendaConsultaFailure(query, issue);
+
+    const byPerson = ['agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim'].includes(query.tipo);
+    let person = null;
+    let nameOf = () => '';
+    if (byPerson) {
+      const people = team || await loadAssistantTeam();
+      const match = resolvePerson(query.profissional, people, profile.id);
+      if (match.motivo) return agendaConsultaFailure(query, match.motivo);
+      person = match.member;
+      if (person) query = { ...query, profissional: shortName(person.full_name) };
+      nameOf = nameOfFor(await listClinicMembers().catch(() => people));
+    }
+
+    if (query.tipo === 'agenda' || query.tipo === 'faltas') {
+      const { from, to } = periodRange(query.de, query.ate);
+      const appointments = full(await listAppointments({ from, to, professionalId: person?.id || null }));
+      return query.tipo === 'agenda'
+        ? summarizeAgendaPeriod({ consulta: query, appointments, nameOf })
+        : summarizeAbsencesPeriod({ consulta: query, appointments, nameOf });
+    }
+    if (query.tipo === 'confirmacoes_pendentes') {
+      const { from, to } = periodRange(query.de, query.ate);
+      const pending = await listPendingConfirmations({ from, to, professionalId: person?.id || null });
+      return summarizePendingConfirmationsPeriod({ consulta: query, pending, nameOf });
+    }
+    if (query.tipo === 'pacotes_fim') {
+      const from = new Date(now.getTime() - PACKAGE_WINDOW_DAYS * 86_400_000).toISOString();
+      const to = new Date(now.getTime() + PACKAGE_WINDOW_DAYS * 86_400_000).toISOString();
+      const appointments = full(await listAppointments({ from, to }));
+      return summarizePackagesNearEndAgenda({ consulta: query, appointments, nameOf, professionalId: person?.id || null, now });
+    }
+    if (query.tipo === 'aniversarios') {
+      return summarizeBirthdaysCount({ consulta: query, patients: await listClinicPatients(), today: now });
+    }
+    if (query.tipo === 'pesquisas') {
+      const { from, next } = periodRange(query.de, query.ate);
+      const surveys = full(await listSatisfactionSurveys({ limit: 1000, from, to: next }), 1000);
+      return summarizeSurveysPeriod({ consulta: query, surveys, now });
+    }
+    if (query.tipo === 'formularios_pendentes') {
+      return summarizePortalForms({ consulta: query, assignments: full(await listAssignments({ limit: 500 }), 500), now });
+    }
+    if (query.tipo === 'convenio') {
+      const [tiss, fiscal] = await Promise.all([loadTissData(), loadFiscalData()]);
+      return summarizeConvenioState({ consulta: query, tiss, fiscal, today: todayInClinic(now) });
+    }
+    return agendaConsultaFailure(query, 'erro');
+  } catch {
+    return agendaConsultaFailure(query, 'erro');
   }
 }

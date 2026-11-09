@@ -1281,11 +1281,13 @@ export const ASSISTANT_HELP = {
   actions: [
     'Perguntar sobre telas, horários vagos e contagens da clínica; abrir o destino sugerido em “Abrir …”.',
     'A administração pode perguntar sobre recebidos, a receber e atrasados por período, paciente e profissional.',
+    'Toda a equipe pode perguntar pela agenda de um período (de uma pessoa ou da equipe), faltas e cancelamentos, confirmações pendentes e pacotes perto do fim. A administração também pergunta por pesquisas de satisfação, formulários da Área do Paciente, convênio e notas fiscais; administração e recepção, pelo número de aniversariantes do mês.',
     '“Corrigir” registra sua orientação. Em resposta financeira, salva somente sua nota: não escreva nome de paciente, valores, datas ou dados financeiros. A pergunta, a resposta original e os dados não são gravados nessa correção.',
   ],
   reading: [
     'A resposta financeira diz o período e o critério. Valores de operadora não são cobrança ao paciente. Sem lote ou prazo, o vencimento fica sem data e o recorte considera a data do atendimento.',
     'Se a consulta falhar, não significa zero. Pedidos acima de 93 dias ou 50 linhas precisam de um recorte menor. Confira os registros na tela Financeiro, que é a referência.',
+    'As consultas de agenda e operação não trazem paciente: só horários, profissional, área, tipo, status e números. Com mais de 50 itens, vêm só os números do resumo; estreite o período para ver a lista. A tela de origem (Agenda, Gestão ou Financeiro) é a referência.',
   ],
   access: [
     'Apenas a administração com permissão no Financeiro pode consultar seus valores. Recepção e terapeutas podem usar as outras ajudas, sem receber dados financeiros.',

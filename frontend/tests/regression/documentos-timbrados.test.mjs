@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import * as docx from '../../src/components/panels/documentosDocx.js';
 
 // Aba Documentos timbrados: valida a fiação (App/Sidebar/Psi) e as
 // regras puras de aceitação de arquivo. A conversão em si (mammoth +
@@ -87,4 +88,71 @@ test('exporta de volta para .docx editável com o padrão da casa', () => {
 
   const panel = read('../../src/components/panels/DocumentosTimbrados.jsx');
   assert.match(panel, /Baixar Word \(\.docx\)/);
+});
+
+// 09/11/2026: na Gestão o "Imprimir / PDF" saía com uma página só com o
+// topo da Gestão, páginas em branco intercaladas e folhas deslocadas. A
+// folha ficava dentro do layout da tela; o navegador não aplicava a página
+// A4 sem margem e a folha de 296,5mm passava da página. Agora a folha mora
+// num portal direto no <body> e só ela imprime (.pq-printing).
+test('folha de impressão em portal no body, só ela imprime (09/11/2026)', () => {
+  const panel = read('../../src/components/panels/DocumentosTimbrados.jsx');
+  const formsCss = read('../../src/styles/patientForms.css');
+  assert.match(panel, /createPortal\(\r?\n\s*<div className="pq-print-root" aria-hidden="true">\r?\n\s*<div className="report-print-pages"/);
+  assert.match(panel, /,\r?\n\s*document\.body,\r?\n\s*\)\}/);
+  assert.match(panel, /document\.body\.classList\.add\('pq-printing'\);\r?\n\s*try \{\r?\n\s*window\.print\(\);/);
+  assert.match(panel, /finally \{\r?\n\s*document\.body\.classList\.remove\('pq-printing'\);/);
+  assert.match(panel, /import '\.\.\/\.\.\/styles\/patientForms\.css';/);
+  assert.match(formsCss, /body\.pq-printing > \*:not\(\.pq-print-root\) \{\s*display: none !important;/);
+});
+
+test('tabela tem fundo próprio: a marca d\'água não aparece listrada por trás (09/11/2026)', () => {
+  const css = read('../../src/App.css');
+  assert.match(css, /\.doc-body table\.doc-table tbody td,\r?\n\.doc-body table\.doc-table tbody th \{\r?\n\s*background: #fff;/);
+  assert.match(css, /\.doc-body table\.doc-table tbody tr:nth-child\(even\) td,[^{]*\{\r?\n\s*background: #f1f5f9;/);
+});
+
+test('Word sai em A4 com o timbrado do PDF: logo, faixas, rodapé, marca d\'água (09/11/2026)', () => {
+  // Antes: papel Carta, margens do Word e só o nome da clínica em texto.
+  assert.deepEqual(
+    [docx.DOCX_PAGE.widthMm, docx.DOCX_PAGE.heightMm, docx.DOCX_PAGE.sideMm],
+    [210, 297, 21],
+  );
+  assert.match(docxHelpers, /pageSize: \{ width: twip\(DOCX_PAGE\.widthMm\), height: twip\(DOCX_PAGE\.heightMm\) \}/);
+  assert.match(docxHelpers, /buildLogoAssets\(logoUrl\)/);
+  assert.match(docxHelpers, /drawMonogram\(/);
+  assert.match(docxHelpers, /buildFooterHtml\(/);
+  // O conversor chama Buffer.from ao embutir imagem: sem o polyfill,
+  // qualquer imagem derrubava a exportação ("Buffer is not defined").
+  assert.match(docxHelpers, /window\.Buffer = \(await import\('buffer'\)\)\.Buffer;/);
+  assert.match(docxHelpers, /return finishDocx\(blob, \{ watermark:/);
+
+  const wm = docx.watermarkParagraphXml({ widthPx: 600, heightPx: 300 });
+  assert.match(wm, /behindDoc="1"/);
+  assert.match(wm, /<wp:extent cx="5715000" cy="2857500"\/>/);
+  assert.match(wm, /r:embed="rIdTimbradoMarca"/);
+});
+
+test('Word repete o cabeçalho da tabela em cada página', () => {
+  const xml = '<w:tbl><w:tblPr/><w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc/></w:tr>'
+    + '<w:tr><w:trPr><w:cantSplit/></w:trPr></w:tr></w:tbl><w:p/>'
+    + '<w:tbl><w:tr><w:trPr><w:cantSplit/></w:trPr></w:tr></w:tbl>';
+  const marked = docx.markTableHeaderRows(xml);
+  assert.equal(marked.match(/<w:tblHeader\/>/g).length, 2, 'só a primeira linha de cada tabela');
+  assert.equal(docx.markTableHeaderRows(marked), marked, 'não marca duas vezes');
+});
+
+test('colar conteúdo: só texto vira parágrafos, sem HTML cru', () => {
+  assert.equal(
+    docx.plainTextToHtml('Primeira linha\r\nsegunda\n\n\nOutro <b>parágrafo</b> & fim'),
+    '<p>Primeira linha<br>segunda</p><p>Outro &lt;b&gt;parágrafo&lt;/b&gt; &amp; fim</p>',
+  );
+  assert.equal(docx.plainTextToHtml('   \n\n  '), '');
+
+  const panel = read('../../src/components/panels/DocumentosTimbrados.jsx');
+  assert.match(panel, /\{ id: 'colar', label: 'Colar conteúdo' \}/);
+  // Colado com formatação passa pela mesma limpeza do .docx.
+  assert.match(panel, /rich \? normalizePastedContent\(rich\) : plainTextToHtml\(data\.getData\('text\/plain'\)\)/);
+  assert.match(docxHelpers, /b\[id\^="docs-internal-guid"\]/);
+  assert.match(docxHelpers, /file:\/\//);
 });

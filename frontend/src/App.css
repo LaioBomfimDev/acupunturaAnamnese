@@ -9917,6 +9917,89 @@ textarea { min-height: 95px; resize: vertical; }
   background: #eef4fb;
 }
 
+/* Escolha da origem: arquivo Word ou colar/digitar o conteúdo. */
+.doc-source-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  flex-wrap: wrap;
+  padding: 3px;
+  border: 1px solid var(--r1-border-subtle, #dbe3ee);
+  border-radius: 999px;
+  background: var(--r1-surface-sunken, #f1f5f9);
+}
+
+.doc-source-toggle button {
+  min-height: 34px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--r1-text-muted, #475569);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doc-source-toggle button[aria-pressed='true'] {
+  background: var(--r1-accent, #0e2a4a);
+  color: var(--r1-accent-contrast, #fff);
+}
+
+.doc-source-toggle button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring, rgba(14, 42, 74, .25));
+}
+
+.doc-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-paste[hidden] {
+  display: none;
+}
+
+.doc-paste-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.doc-paste > .small {
+  margin: 0;
+}
+
+.doc-paste-area {
+  min-height: calc(32 * var(--vh));
+  max-height: calc(60 * var(--vh));
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #1f2937;
+  cursor: text;
+}
+
+.doc-paste-area:focus {
+  outline: none;
+  border-color: var(--r1-accent, #0e2a4a);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring, rgba(14, 42, 74, .2));
+}
+
+.doc-paste-area[data-empty='true']::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.doc-paste-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .doc-note {
   border: 1px solid #dbe3ee;
   border-left: 4px solid #94a3b8;
@@ -9981,7 +10064,22 @@ textarea { min-height: 95px; resize: vertical; }
   print-color-adjust: exact;
 }
 
-.doc-body table.doc-table tbody tr:nth-child(even) td {
+/* Toda célula tem fundo próprio (branco ou zebra): a marca d'água do
+   logo fica atrás do texto, mas não atravessa a tabela. Com só a zebra
+   opaca, o logo aparecia listrado por trás das linhas (09/11/2026). */
+.doc-body table.doc-table {
+  background: #fff;
+}
+
+.doc-body table.doc-table tbody td,
+.doc-body table.doc-table tbody th {
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.doc-body table.doc-table tbody tr:nth-child(even) td,
+.doc-body table.doc-table tbody tr:nth-child(even) th {
   background: #f1f5f9;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;

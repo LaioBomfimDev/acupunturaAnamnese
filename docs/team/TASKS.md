@@ -20,8 +20,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | integracao (c452e87) | PRONTO | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | integracao (7c8d6f5) | PRONTO | ver abaixo |
 | ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | integracao (40019b9) | PRONTO | ver abaixo |
-| ACUP-013 | Tela da supervisão formal | Codex LK | codex/lk (8f545d5) | REVIEW | ver abaixo |
-| ACUP-014 | Ajustes da biblioteca (pendências do review da 007) | Codex LK | — | TODO (após 013) | ver abaixo |
+| ACUP-013 | Tela da supervisão formal | Codex LK | integracao (3c54d5d) | PRONTO | ver abaixo |
+| ACUP-014 | Ajustes da biblioteca e da supervisão (pendências dos reviews da 007 e da 013) | Codex LK | codex/lk | FAZENDO | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 014) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
@@ -158,10 +158,10 @@ Regras de toda task com SQL (além do aceite próprio):
 - Depende de: ACUP-008.
 
 ## ACUP-014 — Ajustes da biblioteca (pendências do review da 007)
-- Objetivo: (1) no editor de técnica, categoria, objetivos, funções do comportamento e configuração sugerida viram seletores com os rótulos pt-BR que Programas já usa, nunca código em texto livre; (2) 23505 num ajuste simultâneo do mesmo modelo do sistema oferece "Recarregar" e, depois de recarregar, edita o item que já existe em vez de repetir o erro; (3) item próprio arquivado volta pela tela (decisão BIB-1): filtro "Arquivados" só para quem grava, com "Reativar" (confirmação), nunca apagar.
-- Arquivos de propriedade: `frontend/src/components/aba/AbaLibrary.jsx`, `frontend/src/utils/abaLibraryMerge.js` (se preciso), `frontend/src/styles/aba.css` (acréscimos), `frontend/tests/regression/aba-library-screen.test.mjs` (acréscimos), `frontend/src/data/screenHelp.js` (só `ABA_HELP.biblioteca`, se o texto mudar) + espelho.
+- Objetivo: (1) no editor de técnica, categoria, objetivos, funções do comportamento e configuração sugerida viram seletores com os rótulos pt-BR que Programas já usa, nunca código em texto livre; (2) 23505 num ajuste simultâneo do mesmo modelo do sistema oferece "Recarregar" e, depois de recarregar, edita o item que já existe em vez de repetir o erro; (3) item próprio arquivado volta pela tela (decisão BIB-1): filtro "Arquivados" só para quem grava, com "Reativar" (confirmação), nunca apagar; (4) Supervisão: depois do 40001, o editor oferece "Recarregar revisão" (como a Biblioteca) e salva sobre a versão nova sem perder o digitado (pendência do review da 013).
+- Arquivos de propriedade: `frontend/src/components/aba/AbaLibrary.jsx`, `frontend/src/components/aba/AbaSupervision.jsx` (só o item 4), `frontend/tests/regression/aba-supervision-screen.test.mjs` (acréscimos), `frontend/src/utils/abaLibraryMerge.js` (se preciso), `frontend/src/styles/aba.css` (acréscimos), `frontend/tests/regression/aba-library-screen.test.mjs` (acréscimos), `frontend/src/data/screenHelp.js` (só `ABA_HELP.biblioteca`, se o texto mudar) + espelho.
 - Fora de escopo: SQL (o banco deve aceitar `arquivado` → `ativo` em item próprio; se não aceitar, PERGUNTA antes).
-- Critério de aceite: os três pontos com teste que morde; prints do editor de técnica e do filtro Arquivados (computador + celular pelo print-cdp); QA confere com `-qa`.
+- Critério de aceite: os quatro pontos com teste que morde; legendas dos prints com espaços normais ("celular 360", não "celular360"); prints do editor de técnica, do filtro Arquivados e do Recarregar revisão da Supervisão (computador + celular pelo print-cdp); QA confere com `-qa`.
 - Depende de: ACUP-013.
 
 ## ACUP-012 — Aviso de texto não salvo na área ABA + estilo do seletor de suporte
@@ -221,3 +221,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-09 — ACUP-013: autorizado acrescentar só `TABS.SUPERVISAO` na lista fechada do grupo Equipe em `aba-library-screen.test.mjs`; demais asserções intactas. Permissão de criação pela `loadTeams` (aceito). Paciente arquivado: a tela explica pelo 22023 que o banco devolve, junto da ação, sem flag nova na RPC (aceito).
 - 2026-11-09 — ACUP-013: autorizado também acrescentar só `TABS.SUPERVISAO` na lista fechada de `TABS_WITHOUT_PATIENT` (mesmo bloco de `aba-library-screen.test.mjs`); são as duas únicas asserções que mudam.
 - 2026-11-09 — ACUP-013 entregue (8f545d5; lint, 1432 testes com 1431 ok e 1 pulado, build verdes; 14 prints no board). REVIEW mandado ao QA.
+- 2026-11-09 — ACUP-013 PRONTO: QA aprovou (navegador real em 360/768/1024/1280; pauta restrita nem no HTML; clique triplo = 1 RPC nas 4 ações; corrigiu teste que deixava passar assinar sem confirmação, motivo curto e clique repetido, 17/17 mutações), merge em `integracao` (3c54d5d), quality verde (1433, 1432 ok, 1 pulado). Pendência do Recarregar revisão entrou na ACUP-014, distribuída.

@@ -54,7 +54,6 @@ const GestaoProfissional = lazyPanel(() => import('./components/panels/GestaoPro
 const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
 const ScalesScreen = lazyPanel(() => import('./components/instruments/ScalesScreen'), 'ScalesScreen');
 const FinanceiroScreen = lazyPanel(() => import('./components/financeiro/FinanceiroScreen'), 'FinanceiroScreen');
-const WhatsAppScreen = lazyPanel(() => import('./components/whatsapp/WhatsAppScreen'), 'WhatsAppScreen');
 const ClinicAssistantLauncher = lazyPanel(() => import('./components/assistant/ClinicAssistant'), 'ClinicAssistantLauncher');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
@@ -135,7 +134,6 @@ function AppScreens() {
   const [showHubScales, setShowHubScales] = useState(false);
   // Financeiro (23/10/2026): só a administração da instituição.
   const [showHubFinance, setShowHubFinance] = useState(false);
-  const [showHubWhatsApp, setShowHubWhatsApp] = useState(false);
   const [hubScalesPatient, setHubScalesPatient] = useState(null);
   const [pendingEvolutionsCount, setPendingEvolutionsCount] = useState(0);
   const [superAdminSection, setSuperAdminSection] = useState('manage');
@@ -308,7 +306,6 @@ function AppScreens() {
       setShowHubGestao(false);
       setHubGestaoInitialSection(null);
       setShowHubFinance(false);
-      setShowHubWhatsApp(false);
       setShowClinicPatients(false);
       setShowHubEvolutions(request.screen === 'evolucao');
       setShowHubScales(request.screen === 'escalas');
@@ -330,11 +327,10 @@ function AppScreens() {
       : showHubAgenda ? 'agenda'
         : showHubEvolutions ? 'evolucao'
           : showHubScales ? 'escalas'
-            : showHubWhatsApp ? 'whatsapp'
-              : showHubFinance ? 'financeiro'
-                : showHubDocuments ? 'documentos'
-                  : showHubGestao ? 'gestao'
-                    : 'inicio';
+            : showHubFinance ? 'financeiro'
+              : showHubDocuments ? 'documentos'
+                : showHubGestao ? 'gestao'
+                  : 'inicio';
   useEffect(() => {
     setAssistantScreen(assistantScreen);
   }, [assistantScreen]);
@@ -413,7 +409,7 @@ function AppScreens() {
       : isClinicAdmin
         ? (attendsPatients ? 'admin-professional' : 'admin')
         : 'professional';
-    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions && !showHubScales && !showHubFinance && !showHubWhatsApp) {
+    if (!showClinicPatients && !showHubAgenda && !showHubDocuments && !showHubGestao && !showHubEvolutions && !showHubScales && !showHubFinance) {
       return (
         <Suspense fallback={<PanelLoading />}>
           <HomeConsole
@@ -440,7 +436,6 @@ function AppScreens() {
             onOpenScales={canSeeScales(profile) ? () => { setHubScalesPatient(null); setShowHubScales(true); } : undefined}
             // Financeiro: só a administração (a RLS do banco também barra o resto).
             onOpenFinance={isClinicAdmin ? () => setShowHubFinance(true) : undefined}
-            onOpenWhatsApp={() => openHubScreen('whatsapp')}
             pendingEvolutionsCount={pendingEvolutionsCount}
             onOpenInstrumentAlert={openInstrumentAlert}
           />
@@ -558,25 +553,6 @@ function AppScreens() {
             </Suspense>
           </main>
           {renderHubDock('escalas')}
-        </div>
-      );
-    }
-    if (showHubWhatsApp) {
-      return (
-        <div className="hub-screen">
-          <header className="hub-topbar hub-topbar--titled">
-            <div className="hub-brand">
-              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
-              <p>WhatsApp</p>
-            </div>
-            <HubBackButton label="Voltar às áreas" onClick={() => openHubScreen(null)} />
-          </header>
-          <main className="hub-body">
-            <Suspense fallback={<PanelLoading />}>
-              <WhatsAppScreen />
-            </Suspense>
-          </main>
-          {renderHubDock('whatsapp')}
         </div>
       );
     }
@@ -871,7 +847,6 @@ function AppScreens() {
     setShowHubScales(screen === 'escalas');
     setHubScalesPatient(null);
     setShowHubFinance(screen === 'financeiro');
-    setShowHubWhatsApp(screen === 'whatsapp');
     setShowClinicPatients(screen === 'pacientes');
   }
 

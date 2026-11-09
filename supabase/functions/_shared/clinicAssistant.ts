@@ -8,7 +8,7 @@
 // Onde a pessoa pode estar quando abre a assistente.
 export const ASSISTANT_SCREENS = [
   'inicio', 'agenda', 'evolucao', 'escalas', 'financeiro',
-  'gestao', 'pacientes', 'documentos', 'whatsapp', 'area',
+  'gestao', 'pacientes', 'documentos', 'area',
 ];
 
 // Telas que a resposta pode oferecer como atalho ("Abrir Agenda →").

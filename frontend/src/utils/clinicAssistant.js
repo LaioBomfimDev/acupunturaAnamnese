@@ -17,7 +17,7 @@ import { schedulesOfDay } from './agendaTimeline.js';
 
 export const ASSISTANT_SCREENS = [
   'inicio', 'agenda', 'evolucao', 'escalas', 'financeiro',
-  'gestao', 'pacientes', 'documentos', 'whatsapp', 'area',
+  'gestao', 'pacientes', 'documentos', 'area',
 ];
 
 export const ASSISTANT_LINKS = [
@@ -72,7 +72,6 @@ export const ASSISTANT_SCREEN_LABELS = {
   gestao: 'Gestão',
   pacientes: 'Pacientes da instituição',
   documentos: 'Documentos timbrados',
-  whatsapp: 'WhatsApp',
   area: 'Área de atendimento',
 };
 

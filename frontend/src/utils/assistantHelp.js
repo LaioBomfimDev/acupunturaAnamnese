@@ -26,7 +26,6 @@ export const HELP_GROUP_PLACES = {
   GESTAO_HELP: 'Gestão',
   GESTAO_PROFISSIONAL_HELP: 'Gestão pessoal',
   FINANCEIRO_HELP: 'Financeiro',
-  WHATSAPP_HELP: 'WhatsApp',
   ABA_HELP: 'ABA',
 };
 

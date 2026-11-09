@@ -178,7 +178,6 @@ export function HomeConsole({
   onOpenAgenda, onOpenPendingEvolutions, onOpenGestao, onOpenClinicPatients, onOpenDocuments, onOpenBirthdays,
   onOpenScales = null,
   onOpenFinance = null,
-  onOpenWhatsApp = null,
   pendingEvolutionsCount = 0,
   onOpenInstrumentAlert = null,
 }) {
@@ -253,12 +252,6 @@ export function HomeConsole({
   }, [variant, profile?.id, isFrontDeskView]);
 
   const mobileShortcuts = [
-    onOpenWhatsApp && {
-      id: 'whatsapp',
-      title: 'WhatsApp',
-      text: 'Conexão e espaço de conversas da clínica.',
-      onClick: onOpenWhatsApp,
-    },
     onOpenFinance && {
       id: 'financeiro',
       title: 'Financeiro',
@@ -342,14 +335,6 @@ export function HomeConsole({
                   ? 'Indicadores, faltosos, retornos, pesquisa de satisfação, equipe, personalização e documentos timbrados.'
                   : 'Cor da sua tela e os seus dados de cadastro.'}
                 onClick={() => onOpenGestao()}
-              />
-            )}
-            {onOpenWhatsApp && (
-              <NavItem
-                icon="whatsapp"
-                title="WhatsApp"
-                description="Conexão e espaço de conversas da clínica."
-                onClick={onOpenWhatsApp}
               />
             )}
             {onOpenFinance && (

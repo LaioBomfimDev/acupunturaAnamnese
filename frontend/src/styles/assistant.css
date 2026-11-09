@@ -485,7 +485,7 @@ body:has(.ca-launcher) {
 }
 
 body:has(.ca-launcher) .hc-main::after,
-body:has(.ca-launcher) .hub-body:not(:has(> .wa-screen))::after,
+body:has(.ca-launcher) .hub-body::after,
 body:has(.ca-launcher) .main::after {
   content: '';
   display: block;

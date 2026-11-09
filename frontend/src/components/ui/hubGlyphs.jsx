@@ -4,12 +4,6 @@
 // celular (HubNav). Desenho igual nos dois lugares ensina que é o mesmo
 // lugar.
 export const TOOL_GLYPHS = {
-  whatsapp: (
-    <>
-      <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2v-9A9 9 0 1 1 21 11.5Z" />
-      <path d="M7 9h9M7 13h6" />
-    </>
-  ),
   inicio: (
     <>
       <path d="M3 10.5 12 3l9 7.5" />

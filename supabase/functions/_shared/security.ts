@@ -55,20 +55,24 @@ export function createCorsContext(req: Request) {
   };
 }
 
+// Chaves novas do Supabase vêm como JSON {"nome": "sb_..."}. JSON inválido
+// devolve vazio: o erro do JSON.parse cita o conteúdo e levaria a chave ao log.
 function getNamedOrFirstKey(rawKeys: string | undefined, preferredName = 'default') {
   if (!rawKeys) return '';
-  const keys = JSON.parse(rawKeys) as Record<string, string>;
-  return keys[preferredName] || Object.values(keys)[0] || '';
+  try {
+    const keys = JSON.parse(rawKeys) as Record<string, string>;
+    return keys[preferredName] || Object.values(keys)[0] || '';
+  } catch {
+    return '';
+  }
 }
 
 export function createServiceClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const secretKeys = Deno.env.get('SUPABASE_SECRET_KEYS');
-  let serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-  if (!serviceRoleKey && secretKeys) {
-    serviceRoleKey = getNamedOrFirstKey(secretKeys);
-  }
+  // Chave nova (sb_secret_) primeiro; a antiga (JWT service_role) só de
+  // reserva, até as Legacy API keys serem desligadas (ACUP-022).
+  const serviceRoleKey = getNamedOrFirstKey(Deno.env.get('SUPABASE_SECRET_KEYS'))
+    || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Chave secreta do Supabase não configurada nas Edge Functions.');
@@ -84,12 +88,9 @@ export function createServiceClient() {
 
 export function createAnonClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const publishableKeys = Deno.env.get('SUPABASE_PUBLISHABLE_KEYS');
-  let anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-  if (!anonKey && publishableKeys) {
-    anonKey = getNamedOrFirstKey(publishableKeys);
-  }
+  // Chave nova (sb_publishable_) primeiro; a anon antiga só de reserva.
+  const anonKey = getNamedOrFirstKey(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS'))
+    || Deno.env.get('SUPABASE_ANON_KEY');
 
   if (!supabaseUrl || !anonKey) {
     throw new Error('Chave pública do Supabase não configurada nas Edge Functions.');

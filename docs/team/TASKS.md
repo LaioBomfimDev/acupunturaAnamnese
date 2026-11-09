@@ -33,8 +33,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | PRONTO (f2dd32c; publicado 09/11) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 | ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | integracao (f227800) | PRONTO (publicar) | ver abaixo |
-| ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | claude/dev2 | REVIEW (d0550f3) | ver abaixo |
-| ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | TODO (após 024; publicar só com 026 aprovado) | ver abaixo |
+| ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | integracao (a391aef) | PRONTO (publicar junto da 023) | ver abaixo |
+| ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | FAZENDO (codando, AG-8; publicar só com 026 aprovado) | ver abaixo |
 | ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
 | ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | TODO (após 025) | ver abaixo |
 | ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |
@@ -398,3 +398,4 @@ Pedido literal: "sim quero a fase 1 / 2 ok pode / fase 3 isso mesmo". Fora em to
 - 2026-11-09 — Rodada "Assistente ciente de tudo" (humana: fases 1, 2 e 3 aprovadas). ACUP-023 a 028 abertas, em sequência por mexerem nos mesmos arquivos; AG-1 a AG-4 em DECISOES. Com o Codex LK fechado, dev2 faz a 020 e depois a rodada (DEV2-2). Modelo espera a escolha da humana (ACUP-028).
 - 2026-11-09 — ACUP-020 PRONTO: QA aprovou (7e15dbe), juntada no integracao ca4235d, quality 1484 (1483 ok, 1 pulado; cobre o pendente do QA). Pacote em mesa/publicacao.md (site + clinic-assistant).
 - 2026-11-09 — ACUP-020 publicada (main e99c896). ACUP-023 PRONTO: QA aprovou (fc881ac, corrigiu confirmações/aniversários no teto viram erro e o texto de pacotes_fim), juntada no integracao f227800, quality 1493 (1492 ok, 1 pulado); pacote em mesa/publicacao.md. ACUP-029 aberta (AG-7). ACUP-024: desenho aprovado (AG-6).
+- 2026-11-09 — ACUP-024 PRONTO: QA aprovou (3b490af, corrigiu falha de consulta sem período), juntada no integracao a391aef, quality completo rodado pelo Orquestrador (o do QA caiu por memória): 1503 (1502 ok, 1 pulado). Pacote 023+024 em mesa/publicacao.md. Teto de dados sobe para 80.000 dentro da 025 (AG-9).

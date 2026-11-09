@@ -151,6 +151,9 @@ test('AG-6 aparelho: o marcador financeiro (FIN-3/6) segue se QUALQUER volta foi
   const plain = askRounds([{ consulta: consultas[1] }, answer('sem dinheiro')]);
   assert.ok(!('financeiro' in await plain.promise));
   assert.match(storeSource, /onStep: \(step, round = 0\) => setState\(\{ sendingStep: step, sendingRound: round \}\)/);
+  // Autorizado na ACUP-024: a tela mostra a volta ("Consultando… 2 de 3"), lendo sendingRound do store.
+  const component = await readFile(new URL('../../src/components/assistant/ClinicAssistant.jsx', import.meta.url), 'utf8');
+  assert.match(component, /\{state\.sendingStep === 'agenda' \? `Consultando os dados da clínica…\$\{state\.sendingRound \? ` \$\{state\.sendingRound\} de 3` : ''\}` : 'Pensando…'\}/);
 });
 
 test('AG-6 Edge: voltas contadas pelo que veio; pedido acima de 3 recusado antes da porta, do orçamento e do Gemini', () => {

@@ -190,7 +190,7 @@ function Conversation({ state, allowed, role, inputRef }) {
           <div className="ca-bubble ca-bubble--assistant ca-bubble--typing">
             <span className="ca-scan" aria-hidden="true" />
             <span className="ca-scan" aria-hidden="true" />
-            {state.sendingStep === 'agenda' ? 'Consultando os dados da clínica…' : 'Pensando…'}
+            {state.sendingStep === 'agenda' ? `Consultando os dados da clínica…${state.sendingRound ? ` ${state.sendingRound} de 3` : ''}` : 'Pensando…'}
           </div>
         )}
       </div>

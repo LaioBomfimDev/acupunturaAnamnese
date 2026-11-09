@@ -16,6 +16,8 @@
 // aplicadas no mês e pacientes sem retorno. Só números e nomes da equipe.
 export const ASSISTANT_CONSULTAS = [
   'horarios_vagos', 'atendimentos_dia', 'evolucoes_pendentes', 'escalas_aplicadas', 'retornos_pendentes', 'financeiro',
+  // ACUP-023: agenda e operação sem paciente.
+  'agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim', 'aniversarios', 'pesquisas', 'formularios_pendentes', 'convenio',
 ];
 
 export const CONSULTA_MOTIVOS = [
@@ -39,6 +41,7 @@ export function readConsulta(raw: unknown) {
   const dias = Number(item.dias);
   if (!ASSISTANT_CONSULTAS.includes(tipo)) return null;
   if (tipo === 'financeiro') return readFinanceConsulta(item);
+  if (AGENDA_CONSULTAS.includes(tipo)) return readAgendaConsulta(item);
   // Horários vagos são sempre de uma pessoa num dia certo.
   if (tipo === 'horarios_vagos' && (profissional === 'equipe' || !DAY.test(dia))) return null;
   return {
@@ -56,6 +59,7 @@ export function readConsultaResult(raw: unknown) {
   const tipo = text(item.tipo, 30);
   if (!ASSISTANT_CONSULTAS.includes(tipo)) return null;
   if (tipo === 'financeiro') return readFinanceResult(item);
+  if (AGENDA_CONSULTAS.includes(tipo)) return readAgendaResult(item);
   const motivo = text(item.motivo, 30);
   return {
     tipo,
@@ -276,4 +280,147 @@ export function readFinanceResult(raw: unknown) {
       : query.status === 'recebidos' ? FINANCE_CRITERIA.pagamento
         : linhas.some(line => line.status === 'aguardando_lote_operadora') ? FINANCE_CRITERIA.misto : FINANCE_CRITERIA.vencimento;
   return { ...query, motivo: null, mensagem: '', criterio, linhas, totais, total: linhas.length };
+}
+
+// ============================================================
+// ACUP-023 (AG-1, AG-5): agenda e operação da clínica SEM paciente.
+// Espelho de frontend/src/utils/clinicAssistant.js (tipos, acesso,
+// chaves, rótulos, critérios, motivos e a limpeza); o teste
+// tests/regression/clinic-assistant-agenda.test.mjs confere. Nenhuma
+// linha leva id nem nada do paciente.
+// ============================================================
+
+export const AGENDA_CONSULTAS = ['agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim', 'aniversarios', 'pesquisas', 'formularios_pendentes', 'convenio'];
+export const AGENDA_ACCESS: Record<string, string> = {
+  agenda: 'equipe', faltas: 'equipe', confirmacoes_pendentes: 'equipe', pacotes_fim: 'equipe',
+  aniversarios: 'admin_recepcao', pesquisas: 'admin', formularios_pendentes: 'portal', convenio: 'financeiro',
+};
+export const AGENDA_PERIOD_REQUIRED = ['agenda', 'faltas', 'pesquisas'];
+export const AGENDA_PERIOD_OPTIONAL = ['confirmacoes_pendentes'];
+export const AGENDA_KEYS: Record<string, { linha: string[]; resumo: string[] }> = {
+  agenda: { linha: ['dia', 'inicio', 'fim', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
+  faltas: { linha: ['profissional', 'area', 'nao_compareceu', 'cancelado_paciente', 'cancelado'], resumo: ['total', 'atendimentos'] },
+  confirmacoes_pendentes: { linha: ['dia', 'inicio', 'profissional', 'area'], resumo: ['total'] },
+  pacotes_fim: { linha: ['profissional', 'area', 'pacotes', 'sessoes_restantes'], resumo: ['total'] },
+  aniversarios: { linha: [], resumo: ['total'] },
+  pesquisas: { linha: [], resumo: ['respondidas', 'media', 'aguardando'] },
+  formularios_pendentes: { linha: [], resumo: ['enviados', 'respondidos', 'aguardando'] },
+  convenio: { linha: [], resumo: ['guias_com_pendencia', 'guias_prontas', 'lotes_nao_enviados', 'guias_esperando_operadora', 'valor_esperando_centavos', 'glosadas', 'notas_pendentes', 'notas_a_cancelar', 'valor_notas_pendentes_centavos'] },
+};
+// Rótulos de frontend/src/utils/agenda.js e utils/appointmentTypes.js (o teste confere).
+export const AGENDA_STATUS_LABELS = ['Agendado', 'Atendido', 'Cancelado', 'Não compareceu', 'Cancelado pelo paciente'];
+export const AGENDA_TYPE_LABELS = ['Anamnese', 'Auriculoterapia', 'Avaliação', 'Avaliação inicial (anamnese)', 'Avaliação neuropsicológica', 'Avaliação psicológica', 'Biomodulação vascular', 'Devolutiva', 'e-ILIB', 'Entrevista', 'Laserpuntura', 'Neuromodulação', 'Primeira vez', 'Retorno', 'Sem tipo', 'Sessão', 'Sessão de acupuntura', 'Sessão de auriculoterapia', 'Sessão de laserpuntura', 'Sessão de ventosa', 'Ventosa', 'Visita domiciliar', 'Visita escolar'];
+export const AGENDA_MODALITIES = ['Presencial', 'Online', 'Não informada'];
+export const AGENDA_CRITERIA: Record<string, string> = {
+  agenda: 'Atendimentos com início no período informado; bloqueios só entram na contagem.',
+  faltas: 'Não compareceu, cancelado pelo paciente e cancelado, pela data do atendimento no período (mesma regra de Gestão → Indicadores).',
+  confirmacoes_pendentes: 'Atendimentos agendados ainda sem confirmação, com início no período (mesma fila da Agenda).',
+  pacotes_fim: 'Pacotes da Agenda (sessões marcadas juntas) em uso, com 1 sessão agendada ou menos. Não é o pacote do Financeiro, que a "Sua atenção hoje" conta: os dois números podem não bater.',
+  aniversarios: 'Pacientes que fazem aniversário no mês atual (só a contagem).',
+  pesquisas: 'Pesquisas enviadas no período: respondidas, nota média e as que ainda aguardam resposta.',
+  formularios_pendentes: 'Formulários da Área do Paciente enviados e não cancelados (mesma conta de Gestão → Importáveis).',
+  convenio: 'Situação de agora das guias, lotes e notas fiscais (mesma conta do Resumo do Financeiro).',
+};
+export const AGENDA_REASONS = {
+  sem_permissao: 'Esta consulta é de uma tela que o seu perfil não vê.',
+  periodo_invalido: 'Informe início e fim válidos no formato AAAA-MM-DD, em ordem.',
+  limite_periodo: 'Escolha um período de até 93 dias.',
+  limite_linhas: 'Há mais de 50 itens na lista. Os números do resumo valem; estreite o período ou o profissional para ver a lista.',
+  ambiguo: 'Há mais de uma pessoa da equipe com esse nome. Diga qual.',
+  nao_encontrado: 'Não encontrei essa pessoa na equipe.',
+  erro: 'Não foi possível consultar agora. Confira a tela de origem e tente novamente.',
+};
+
+const HOUR = /^\d{2}:\d{2}$/;
+function agendaRecord(raw: unknown): Row {
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Row : {};
+}
+function sameKeys(item: Row, keys: string[]) {
+  const own = Object.keys(item);
+  return own.length === keys.length && keys.every(key => Object.hasOwn(item, key));
+}
+
+export function readAgendaConsulta(raw: unknown) {
+  const item = agendaRecord(raw);
+  const tipo = typeof item.tipo === 'string' && AGENDA_CONSULTAS.includes(item.tipo) ? item.tipo : '';
+  const usesPeriod = AGENDA_PERIOD_REQUIRED.includes(tipo) || AGENDA_PERIOD_OPTIONAL.includes(tipo);
+  return {
+    tipo,
+    de: usesPeriod ? financeDay(item.de) : '',
+    ate: usesPeriod ? financeDay(item.ate) : '',
+    profissional: typeof item.profissional === 'string' ? financeName(item.profissional).slice(0, 80) || 'equipe' : 'equipe',
+  };
+}
+export function agendaConsultaIssue(raw: unknown) {
+  const query = readAgendaConsulta(raw);
+  if (!query.tipo) return 'erro';
+  const required = AGENDA_PERIOD_REQUIRED.includes(query.tipo);
+  if (!required && !query.de && !query.ate) return null;
+  if (!query.de || !query.ate || query.de > query.ate) return 'periodo_invalido';
+  if ((Date.parse(query.ate) - Date.parse(query.de)) / 86400000 + 1 > FINANCE_MAX_DAYS) return 'limite_periodo';
+  return null;
+}
+export function agendaConsultaFailure(raw: unknown, reason: unknown, resumo: Row | null = null) {
+  const query = readAgendaConsulta(raw);
+  const motivo = typeof reason === 'string' && Object.hasOwn(AGENDA_REASONS, reason) ? reason as keyof typeof AGENDA_REASONS : 'erro';
+  return { ...query, motivo, mensagem: AGENDA_REASONS[motivo], criterio: null, linhas: [] as Row[], total: null as number | null, resumo };
+}
+
+function readAgendaSummary(tipo: string, raw: unknown) {
+  const resumo = agendaRecord(raw);
+  const keys = AGENDA_KEYS[tipo].resumo;
+  if (!sameKeys(resumo, keys)) return null;
+  const clean: Row = {};
+  for (const key of keys) {
+    const value = resumo[key];
+    if (key === 'media') {
+      if (value !== null && !(typeof value === 'number' && value >= 1 && value <= 5 && Math.abs(value * 10 - Math.round(value * 10)) < 1e-9)) return null;
+    } else if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) return null;
+    clean[key] = value;
+  }
+  return clean;
+}
+function readAgendaLine(tipo: string, raw: unknown) {
+  const line = agendaRecord(raw);
+  if (!sameKeys(line, AGENDA_KEYS[tipo].linha)) return null;
+  const clean: Row = {};
+  for (const key of AGENDA_KEYS[tipo].linha) {
+    const value = line[key];
+    const text = typeof value === 'string' ? value : '';
+    const ok = key === 'dia' ? typeof value === 'string' && financeDay(value) === value
+      : key === 'inicio' || key === 'fim' ? HOUR.test(text)
+        : key === 'profissional' ? typeof value === 'string' && value.length <= 80 && !/\p{Cc}/u.test(value)
+          : key === 'area' ? FINANCE_AREAS.includes(text)
+            : key === 'tipo_atendimento' ? AGENDA_TYPE_LABELS.includes(text)
+              : key === 'modalidade' ? AGENDA_MODALITIES.includes(text)
+                : key === 'status' ? AGENDA_STATUS_LABELS.includes(text)
+                  : typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+    if (!ok) return null;
+    clean[key] = value;
+  }
+  return clean;
+}
+const AGENDA_TOP_KEYS = ['tipo', 'de', 'ate', 'profissional', 'motivo', 'mensagem', 'criterio', 'linhas', 'total', 'resumo'];
+/** Lista fechada por tipo: chave a mais em qualquer nível derruba a resposta inteira. */
+export function readAgendaResult(raw: unknown) {
+  const item = agendaRecord(raw);
+  const query = readAgendaConsulta(item);
+  if (!query.tipo || Object.keys(item).some(key => !AGENDA_TOP_KEYS.includes(key))) return agendaConsultaFailure(query, 'erro');
+  const issue = agendaConsultaIssue(query);
+  if (issue) return agendaConsultaFailure(query, issue);
+  if (item.motivo === 'limite_linhas') {
+    const resumo = readAgendaSummary(query.tipo, item.resumo);
+    return agendaConsultaFailure(query, resumo ? 'limite_linhas' : 'erro', resumo);
+  }
+  if (item.motivo) return agendaConsultaFailure(query, item.motivo);
+  const resumo = readAgendaSummary(query.tipo, item.resumo);
+  if (!resumo || !Array.isArray(item.linhas)) return agendaConsultaFailure(query, 'erro');
+  if (item.linhas.length > FINANCE_MAX_ROWS) return agendaConsultaFailure(query, 'limite_linhas', resumo);
+  const linhas: Row[] = [];
+  for (const rawLine of item.linhas) {
+    const line = readAgendaLine(query.tipo, rawLine);
+    if (!line) return agendaConsultaFailure(query, 'erro');
+    linhas.push(line);
+  }
+  return { ...query, motivo: null, mensagem: '', criterio: AGENDA_CRITERIA[query.tipo], linhas, total: linhas.length, resumo };
 }

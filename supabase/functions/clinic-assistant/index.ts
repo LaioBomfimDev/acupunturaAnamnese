@@ -93,6 +93,7 @@ const CAPABILITIES = [
   'Explicar qualquer tela do sistema, com o passo a passo e os nomes exatos dos botões.',
   'Consultar os horários vagos de qualquer pessoa da equipe em qualquer dia (ex.: "horários vagos da Denise na terça").',
   'Contar o movimento da clínica sem abrir paciente: atendimentos do dia, evoluções faltando, escalas aplicadas no mês e pacientes sem retorno (ex.: "quantas evoluções faltam na equipe?").',
+  'Ver a agenda e a operação sem abrir paciente: agenda de um período por pessoa ou equipe, faltas e cancelamentos, confirmações pendentes e pacotes perto do fim; para a administração, também pesquisas, formulários da Área do Paciente, aniversários do mês (contagem) e convênio e notas (ex.: "como está a agenda da Denise na semana que vem?").',
   'Explicar e comparar as escalas do sistema: o que cada uma mede, para quem, quantas perguntas, faixas e quando reaplicar.',
   'Ajudar com dúvidas gerais de gestão da clínica, organização da agenda, comunicação com pacientes e escrita de textos.',
   'No painel, mostrar o que pede atenção hoje: alertas de risco das escalas, evoluções faltando, pacotes acabando, valores em atraso e o limite de IA.',
@@ -116,11 +117,20 @@ Como responder:
   - escalas_aplicadas: quais escalas foram aplicadas no mês e quantas vezes (dia: qualquer dia do mês pedido; sem mês dito, use hoje).
   - retornos_pendentes: quantos pacientes estão sem voltar há N dias, por profissional (dias: N; sem número dito, 30).
   - financeiro: SOMENTE se quem pergunta é administração. Para recebidos, a receber ou atrasados, informe de e ate (AAAA-MM-DD), status (recebidos, a_receber ou atrasados), paciente (nome pedido ou vazio) e profissional (nome, "eu" ou "equipe"). Use o período pedido, até 93 dias inclusivos. Se não houver período claro, pergunte qual; não consulte tudo nem substitua por hoje. O aparelho busca com o login da pessoa. Recepção e quem atende podem pedir explicações do Financeiro, mas não consulta de valores. "Quanto recebi" (por área ou no geral) = status por_area. "Quem falta pagar", "quem está em dia" ou quantas sessões um paciente pagou = status por_paciente. Em paciente vai SÓ o primeiro nome (uma palavra), nunca sobrenome; se houver dois com o mesmo nome, peça a idade ou o profissional e mande idade.
+  - agenda: a agenda de um período (de/ate, até 93 dias; "semana que vem", "outubro" viram datas) e de uma pessoa ou da equipe: horário, área, tipo, modalidade e status de cada atendimento, sem paciente.
+  - faltas: faltas e cancelamentos num período (de/ate), por profissional e área.
+  - confirmacoes_pendentes: atendimentos ainda sem confirmação num período (de/ate; sem período, amanhã).
+  - pacotes_fim: pacotes da Agenda com 1 sessão agendada ou menos, por profissional e área (sem período). Não é o pacote do Financeiro da "Sua atenção hoje": não diga que os números são os mesmos.
+  - aniversarios: quantos pacientes fazem aniversário no mês atual (só administração e recepção; só o número).
+  - pesquisas: pesquisas de satisfação num período (de/ate): respondidas, nota média e aguardando (só administração).
+  - formularios_pendentes: formulários da Área do Paciente enviados, respondidos e aguardando (só administração).
+  - convenio: situação de agora de guias, lotes e notas fiscais (só administração com acesso ao Financeiro).
   Use o CALENDARIO para transformar "terça", "amanhã" ou "mês passado" em data; sem dia dito, use hoje. Nome ambíguo ou fora da EQUIPE: pergunte quem é, citando os nomes parecidos.
-- Com DADOS_CONSULTADOS de contagem (tipo DIFERENTE de financeiro, linhas e total), responda com os números, do maior para o menor, dizendo o dia ou o período; se a lista vier vazia, diga que não há nenhum. Com DADOS_CONSULTADOS de horarios_vagos, diga o dia por extenso e liste os horários vagos (ex.: 09:00, 10:00). Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte por que um horário aparece ou o que é jornada; aí explique que, sem jornada cadastrada (Agenda → Ferramentas → Configurar horários de atendimento), a conta segue a grade padrão da clínica, como a Agenda mostra. Sem nenhum horário vago e sem motivo, diga que o dia está cheio. Se vier motivo, explique: feriado = feriado sem atendimento; passado = dia que já passou; sem_agenda = quem perguntou não atende; nao_encontrado ou ambiguo = cite as opcoes e pergunte quem é; erro = não deu para consultar agora.
+- Com DADOS_CONSULTADOS de contagem (tipo atendimentos_dia, evolucoes_pendentes, escalas_aplicadas ou retornos_pendentes, com linhas e total), responda com os números, do maior para o menor, dizendo o dia ou o período; se a lista vier vazia, diga que não há nenhum. Com DADOS_CONSULTADOS de horarios_vagos, diga o dia por extenso e liste os horários vagos (ex.: 09:00, 10:00). Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte por que um horário aparece ou o que é jornada; aí explique que, sem jornada cadastrada (Agenda → Ferramentas → Configurar horários de atendimento), a conta segue a grade padrão da clínica, como a Agenda mostra. Sem nenhum horário vago e sem motivo, diga que o dia está cheio. Se vier motivo, explique: feriado = feriado sem atendimento; passado = dia que já passou; sem_agenda = quem perguntou não atende; nao_encontrado ou ambiguo = cite as opcoes e pergunte quem é; erro = não deu para consultar agora.
 - Se a consulta já foi tentada e não há DADOS_CONSULTADOS aceitos, diga que não conseguiu buscar; não peça outra consulta nesta resposta.
 - Financeiro: responda SOMENTE com DADOS_CONSULTADOS de tipo financeiro aceitos nesta chamada. Sem dados ou com motivo, explique que não conseguiu buscar e use a mensagem recebida; não invente valores, não trate indisponibilidade como zero e não reaproveite valores antigos como se fossem consulta atual. Acima de 50 linhas ou 93 dias, peça para estreitar, sem cortar calado. Sempre diga de/ate e o criterio recebido; o total é quantidade de linhas, não dinheiro. valor_centavos é inteiro em centavos: ao mostrar reais, divida por 100 e use vírgula e duas casas.
 - Distinga recebido/a_receber/atrasado dos status com operadora: dívida de operadora nunca é cobrança ao paciente. aguardando_lote_operadora tem vencimento NULL, usa a data do atendimento para o período e pode aguardar lote OU prazo; explique o criterio, sem inventar vencimento nem dizer que atrasou. Não afirme causa além do rótulo recebido: por exemplo, "Paciente arquivado" é só um rótulo, não prova que houve arquivamento, exclusão ou anonimização. Não crie fatos para explicar nome ausente ou status.
+- Agenda e operação (agenda, faltas, confirmacoes_pendentes, pacotes_fim, aniversarios, pesquisas, formularios_pendentes, convenio): responda SOMENTE com os DADOS_CONSULTADOS desse tipo aceitos nesta chamada; sem dados ou com motivo, diga que não conseguiu buscar e use a mensagem; nunca trate indisponibilidade como zero. Diga o período (de/ate) e o criterio. Estas consultas NÃO trazem paciente: nunca invente nome, quem é o paciente nem quantos pacientes diferentes são. resumo traz os números; linhas detalham (agenda: dia, início, fim, profissional, área, tipo_atendimento, modalidade e status). Com motivo limite_linhas, os números do resumo valem e a lista não veio: diga os números e peça para estreitar se a pessoa quiser a lista. pesquisas.media é a nota média de 1 a 5 (use vírgula); null = nenhuma respondida. convenio: valores em centavos (divida por 100 e use vírgula); guias da operadora nunca são cobrança ao paciente. O total é quantidade de linhas, não dinheiro.
 - Financeiro por_area: cada linha é uma área com paciente_centavos (pago pelo paciente), operadora_centavos (pago pela operadora do convênio) e total_centavos; totais traz a soma geral. Diga o total de cada área e o total geral, separando o que veio da operadora. O total da consulta é quantidade de áreas, não dinheiro.
 - Financeiro por_paciente: cada linha é um paciente numa área com um profissional (ex.: "Lucas, 7 anos — falta pagar 1 sessão de Psicologia com Denise"). forma avulso ou pacote_por_sessao: fale de sessoes_feitas, sessoes_pagas e em_aberto_centavos; sessoes_sem_valor são atendimentos sem valor na tabela, nem pagos nem devidos. forma pacote_parcelas: a dívida está nas parcelas, nunca diga que uma sessão foi paga; diga "sessão sessao_atual de sessoes_previstas" e parcelas_pagas / parcelas_em_aberto. forma convenio: quem paga é a operadora; com situacao da_operadora diga que a operadora ainda não pagou, nunca que o paciente deve. situacao em_dia = não deve nada no período (ex.: "pagou as 5 sessões de Nutrição"); atrasado = tem valor vencido.
 - Paciente na consulta financeira: diga só o primeiro nome e a idade recebidos ("Lucas, 7 anos"); sem idade, só o primeiro nome. Com homonimo true, diga apenas que há dois pacientes com o mesmo nome, sem tentar desempatar por mais nada.
@@ -194,8 +204,8 @@ const OUTPUT_SCHEMA = {
         profissional: { type: 'STRING', description: 'nome como está na EQUIPE, "eu" ou "equipe"' },
         dia: { type: 'STRING', description: 'AAAA-MM-DD' },
         dias: { type: 'INTEGER', description: 'só em retornos_pendentes' },
-        de: { type: 'STRING', description: 'financeiro: início inclusivo AAAA-MM-DD' },
-        ate: { type: 'STRING', description: 'financeiro: fim inclusivo AAAA-MM-DD; até 93 dias' },
+        de: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes e pesquisas: início inclusivo AAAA-MM-DD' },
+        ate: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes e pesquisas: fim inclusivo AAAA-MM-DD; até 93 dias' },
         status: { type: 'STRING', enum: FINANCE_FILTERS, description: 'somente financeiro' },
         paciente: { type: 'STRING', description: 'financeiro: SÓ o primeiro nome do paciente pedido, uma palavra; vazio para todos' },
         idade: { type: 'INTEGER', nullable: true, description: 'financeiro: idade do paciente em anos, só para separar dois com o mesmo primeiro nome' },
@@ -378,6 +388,28 @@ async function readAuthorizedConsultaResult(raw: unknown, client: ReturnType<typ
     try {
       const { data, error } = await client.rpc('can_manage_finance', { p_clinic: clinicId, p_user: userId });
       if (error || data !== true) return null;
+    } catch { return null; }
+  }
+  // ACUP-023 (AG-5): mesma porta para a agenda e a operação. O papel vem do
+  // perfil do caller lido aqui no servidor, nunca de campo do pedido; sem
+  // perfil, de outra clínica ou fora da lista, os dados são descartados.
+  // Espelho de AGENDA_ACCESS (_shared/assistantConsulta.ts; o teste confere).
+  const SERVER_ACCESS: Record<string, string> = {
+    agenda: 'equipe', faltas: 'equipe', confirmacoes_pendentes: 'equipe', pacotes_fim: 'equipe',
+    aniversarios: 'admin_recepcao', pesquisas: 'admin', formularios_pendentes: 'portal', convenio: 'financeiro',
+  };
+  const ROLES: Record<string, string[]> = { admin_recepcao: ['clinic_admin', 'receptionist'], admin: ['clinic_admin'] };
+  const access = dados ? SERVER_ACCESS[dados.tipo] : undefined;
+  if (access && access !== 'equipe') {
+    try {
+      if (access === 'financeiro' || access === 'portal') {
+        const rpc = access === 'financeiro' ? 'can_manage_finance' : 'can_manage_patient_portal';
+        const { data, error } = await client.rpc(rpc, { p_clinic: clinicId, p_user: userId });
+        if (error || data !== true) return null;
+      } else {
+        const { data, error } = await client.from('profiles').select('role, clinic_id').eq('id', userId).maybeSingle();
+        if (error || !data || data.clinic_id !== clinicId || !(ROLES[access] || []).includes(data.role)) return null;
+      }
     } catch { return null; }
   }
   return dados;

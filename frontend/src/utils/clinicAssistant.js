@@ -15,7 +15,13 @@
 import { freeSlotsOfDay } from './agendaFreeSlots.js';
 import { buildReceivables, isConvenioCharge } from './finance.js';
 import { DISCIPLINES } from '../data/disciplines.js';
-import { operatorReceiptsFrom } from './tissXml.js';
+import { buildTissTiles, operatorReceiptsFrom } from './tissXml.js';
+import { APPOINTMENT_STATUSES } from './agenda.js';
+import { APPOINTMENT_TYPES, SERVICES_BY_AREA, appointmentTypeLabel } from './appointmentTypes.js';
+import { currentMonthBirthdays, isAbsence } from './gestaoDashboard.js';
+import { summarizePackageSessions } from './agendaPackageSessions.js';
+import { sendsTabSummary } from './patientForms.js';
+import { fiscalQueue } from './fiscal.js';
 import { schedulesOfDay } from './agendaTimeline.js';
 
 export const ASSISTANT_SCREENS = [
@@ -82,6 +88,8 @@ export const ASSISTANT_SCREEN_LABELS = {
 // motivos de não ter resposta: espelho de _shared/assistantConsulta.ts.
 export const ASSISTANT_CONSULTAS = [
   'horarios_vagos', 'atendimentos_dia', 'evolucoes_pendentes', 'escalas_aplicadas', 'retornos_pendentes', 'financeiro',
+  // ACUP-023: agenda e operação sem paciente.
+  'agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim', 'aniversarios', 'pesquisas', 'formularios_pendentes', 'convenio',
 ];
 export const CONSULTA_MOTIVOS = [
   'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro', 'sem_permissao', 'periodo_invalido', 'limite_periodo', 'limite_linhas', 'filtro_invalido',
@@ -743,4 +751,314 @@ export function summarizeFinance({ consulta, money, patients, members, shortName
   return readFinanceResult({ ...query, linhas: matches.map(row => ({
     ...who(row), valor_centavos: row.value, vencimento: row.due, pagamento: row.paid, status: row.status,
   })) });
+}
+
+// ============================================================
+// ACUP-023 (AG-1, AG-5): agenda e operação da clínica SEM paciente.
+// Oito consultas, cada uma com a regra de perfil da tela de origem,
+// contadas aqui pelas mesmas funções das telas. Nenhuma linha leva id
+// (agendamento, pacote, profissional) nem nada do paciente; o
+// profissional sai só pelo nome da Agenda. Espelho dos tipos, chaves,
+// rótulos e da limpeza em supabase/functions/_shared/assistantConsulta.ts
+// (mudou um, muda o outro; tests/regression/clinic-assistant-agenda.test.mjs).
+// ============================================================
+
+export const AGENDA_CONSULTAS = ['agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim', 'aniversarios', 'pesquisas', 'formularios_pendentes', 'convenio'];
+// Quem vê cada consulta = quem vê a tela de origem.
+//   equipe: Agenda (a clínica toda, inclusive recepção)
+//   admin_recepcao: aniversários (botão só da administração e da recepção)
+//   admin: Gestão institucional (pesquisas)
+//   portal: Importáveis (can_manage_patient_portal)
+//   financeiro: Financeiro → convênio e notas (can_manage_finance)
+export const AGENDA_ACCESS = {
+  agenda: 'equipe', faltas: 'equipe', confirmacoes_pendentes: 'equipe', pacotes_fim: 'equipe',
+  aniversarios: 'admin_recepcao', pesquisas: 'admin', formularios_pendentes: 'portal', convenio: 'financeiro',
+};
+// Com período obrigatório; confirmações usam amanhã quando não vier período.
+export const AGENDA_PERIOD_REQUIRED = ['agenda', 'faltas', 'pesquisas'];
+export const AGENDA_PERIOD_OPTIONAL = ['confirmacoes_pendentes'];
+// Mesmo limite da "Sua atenção hoje" (packagesNearEnd): 1 sessão ou menos. A fonte é outra (série da Agenda, não pacote do Financeiro).
+export const PACKAGE_NEAR_END_MAX = 1;
+// Pacote da Agenda ainda em uso: alguma sessão até 30 dias atrás.
+export const PACKAGE_ACTIVE_DAYS = 30;
+export const PACKAGE_WINDOW_DAYS = 180;
+export const AGENDA_SOURCE_LIMIT = 2000;
+
+export const AGENDA_KEYS = {
+  agenda: { linha: ['dia', 'inicio', 'fim', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
+  faltas: { linha: ['profissional', 'area', 'nao_compareceu', 'cancelado_paciente', 'cancelado'], resumo: ['total', 'atendimentos'] },
+  confirmacoes_pendentes: { linha: ['dia', 'inicio', 'profissional', 'area'], resumo: ['total'] },
+  pacotes_fim: { linha: ['profissional', 'area', 'pacotes', 'sessoes_restantes'], resumo: ['total'] },
+  aniversarios: { linha: [], resumo: ['total'] },
+  pesquisas: { linha: [], resumo: ['respondidas', 'media', 'aguardando'] },
+  formularios_pendentes: { linha: [], resumo: ['enviados', 'respondidos', 'aguardando'] },
+  convenio: { linha: [], resumo: ['guias_com_pendencia', 'guias_prontas', 'lotes_nao_enviados', 'guias_esperando_operadora', 'valor_esperando_centavos', 'glosadas', 'notas_pendentes', 'notas_a_cancelar', 'valor_notas_pendentes_centavos'] },
+};
+export const AGENDA_STATUS_LABELS = [...new Set(APPOINTMENT_STATUSES.map(item => item.label))];
+export const AGENDA_TYPE_LABELS = [...new Set([
+  ...APPOINTMENT_TYPES.map(item => item.label),
+  ...Object.values(SERVICES_BY_AREA).flat().map(item => item.label),
+  'Sem tipo',
+])].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+export const AGENDA_MODALITIES = ['Presencial', 'Online', 'Não informada'];
+export const AGENDA_CRITERIA = {
+  agenda: 'Atendimentos com início no período informado; bloqueios só entram na contagem.',
+  faltas: 'Não compareceu, cancelado pelo paciente e cancelado, pela data do atendimento no período (mesma regra de Gestão → Indicadores).',
+  confirmacoes_pendentes: 'Atendimentos agendados ainda sem confirmação, com início no período (mesma fila da Agenda).',
+  pacotes_fim: 'Pacotes da Agenda (sessões marcadas juntas) em uso, com 1 sessão agendada ou menos. Não é o pacote do Financeiro, que a "Sua atenção hoje" conta: os dois números podem não bater.',
+  aniversarios: 'Pacientes que fazem aniversário no mês atual (só a contagem).',
+  pesquisas: 'Pesquisas enviadas no período: respondidas, nota média e as que ainda aguardam resposta.',
+  formularios_pendentes: 'Formulários da Área do Paciente enviados e não cancelados (mesma conta de Gestão → Importáveis).',
+  convenio: 'Situação de agora das guias, lotes e notas fiscais (mesma conta do Resumo do Financeiro).',
+};
+export const AGENDA_REASONS = {
+  sem_permissao: 'Esta consulta é de uma tela que o seu perfil não vê.',
+  periodo_invalido: 'Informe início e fim válidos no formato AAAA-MM-DD, em ordem.',
+  limite_periodo: 'Escolha um período de até 93 dias.',
+  limite_linhas: 'Há mais de 50 itens na lista. Os números do resumo valem; estreite o período ou o profissional para ver a lista.',
+  ambiguo: 'Há mais de uma pessoa da equipe com esse nome. Diga qual.',
+  nao_encontrado: 'Não encontrei essa pessoa na equipe.',
+  erro: 'Não foi possível consultar agora. Confira a tela de origem e tente novamente.',
+};
+
+const HOUR = /^\d{2}:\d{2}$/;
+function agendaRecord(raw) {
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+}
+function sameKeys(item, keys) {
+  const own = Object.keys(item);
+  return own.length === keys.length && keys.every(key => Object.hasOwn(item, key));
+}
+
+export function readAgendaConsulta(raw) {
+  const item = agendaRecord(raw);
+  const tipo = AGENDA_CONSULTAS.includes(item.tipo) ? item.tipo : '';
+  const usesPeriod = AGENDA_PERIOD_REQUIRED.includes(tipo) || AGENDA_PERIOD_OPTIONAL.includes(tipo);
+  return {
+    tipo,
+    de: usesPeriod ? financeDay(item.de) : '',
+    ate: usesPeriod ? financeDay(item.ate) : '',
+    profissional: typeof item.profissional === 'string' ? financeName(item.profissional).slice(0, 80) || 'equipe' : 'equipe',
+  };
+}
+export function agendaConsultaIssue(raw) {
+  const query = readAgendaConsulta(raw);
+  if (!query.tipo) return 'erro';
+  const required = AGENDA_PERIOD_REQUIRED.includes(query.tipo);
+  if (!required && !query.de && !query.ate) return null;
+  if (!query.de || !query.ate || query.de > query.ate) return 'periodo_invalido';
+  if ((Date.parse(query.ate) - Date.parse(query.de)) / 86400000 + 1 > FINANCE_MAX_DAYS) return 'limite_periodo';
+  return null;
+}
+export function agendaConsultaFailure(raw, reason, resumo = null) {
+  const query = readAgendaConsulta(raw);
+  const motivo = typeof reason === 'string' && Object.hasOwn(AGENDA_REASONS, reason) ? reason : 'erro';
+  return { ...query, motivo, mensagem: AGENDA_REASONS[motivo], criterio: null, linhas: [], total: null, resumo };
+}
+
+function readAgendaSummary(tipo, raw) {
+  const resumo = agendaRecord(raw);
+  const keys = AGENDA_KEYS[tipo].resumo;
+  if (!sameKeys(resumo, keys)) return null;
+  const clean = {};
+  for (const key of keys) {
+    const value = resumo[key];
+    if (key === 'media') {
+      if (value !== null && !(typeof value === 'number' && value >= 1 && value <= 5 && Math.abs(value * 10 - Math.round(value * 10)) < 1e-9)) return null;
+    } else if (!Number.isSafeInteger(value) || value < 0) return null;
+    clean[key] = value;
+  }
+  return clean;
+}
+function readAgendaLine(tipo, raw) {
+  const line = agendaRecord(raw);
+  if (!sameKeys(line, AGENDA_KEYS[tipo].linha)) return null;
+  const clean = {};
+  for (const key of AGENDA_KEYS[tipo].linha) {
+    const value = line[key];
+    const ok = key === 'dia' ? financeDay(value) === value
+      : key === 'inicio' || key === 'fim' ? typeof value === 'string' && HOUR.test(value)
+        : key === 'profissional' ? typeof value === 'string' && value.length <= 80 && !/\p{Cc}/u.test(value)
+          : key === 'area' ? FINANCE_AREAS.includes(value)
+            : key === 'tipo_atendimento' ? AGENDA_TYPE_LABELS.includes(value)
+              : key === 'modalidade' ? AGENDA_MODALITIES.includes(value)
+                : key === 'status' ? AGENDA_STATUS_LABELS.includes(value)
+                  : Number.isSafeInteger(value) && value >= 0;
+    if (!ok) return null;
+    clean[key] = value;
+  }
+  return clean;
+}
+const AGENDA_TOP_KEYS = ['tipo', 'de', 'ate', 'profissional', 'motivo', 'mensagem', 'criterio', 'linhas', 'total', 'resumo'];
+/**
+ * Lista fechada por tipo: chave a mais (paciente, id, token, observação)
+ * em qualquer nível derruba a resposta inteira, que nunca chega ao modelo.
+ * Lista acima de 50 itens volta sem lista, com o resumo em números.
+ */
+export function readAgendaResult(raw) {
+  const item = agendaRecord(raw);
+  const query = readAgendaConsulta(item);
+  if (!query.tipo || Object.keys(item).some(key => !AGENDA_TOP_KEYS.includes(key))) return agendaConsultaFailure(query, 'erro');
+  const issue = agendaConsultaIssue(query);
+  if (issue) return agendaConsultaFailure(query, issue);
+  if (item.motivo === 'limite_linhas') {
+    const resumo = readAgendaSummary(query.tipo, item.resumo);
+    return agendaConsultaFailure(query, resumo ? 'limite_linhas' : 'erro', resumo);
+  }
+  if (item.motivo) return agendaConsultaFailure(query, item.motivo);
+  const resumo = readAgendaSummary(query.tipo, item.resumo);
+  if (!resumo || !Array.isArray(item.linhas)) return agendaConsultaFailure(query, 'erro');
+  if (item.linhas.length > FINANCE_MAX_ROWS) return agendaConsultaFailure(query, 'limite_linhas', resumo);
+  const linhas = [];
+  for (const rawLine of item.linhas) {
+    const line = readAgendaLine(query.tipo, rawLine);
+    if (!line) return agendaConsultaFailure(query, 'erro');
+    linhas.push(line);
+  }
+  return { ...query, motivo: null, mensagem: '', criterio: AGENDA_CRITERIA[query.tipo], linhas, total: linhas.length, resumo };
+}
+
+// ---------- contas (aparelho), só com funções das telas ----------
+
+const pad2 = value => String(value).padStart(2, '0');
+function localDay(iso) {
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+function localHour(iso) {
+  const date = new Date(iso);
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+const statusLabel = status => APPOINTMENT_STATUSES.find(item => item.id === status)?.label || 'Agendado';
+const modalityLabel = modality => (modality === 'online' ? 'Online' : modality === 'presencial' ? 'Presencial' : 'Não informada');
+const areaOf = discipline => DISCIPLINES.find(item => item.id === discipline)?.label || FINANCE_NO_AREA;
+function withLimit(query, linhas, resumo) {
+  if (linhas.length > FINANCE_MAX_ROWS) return readAgendaResult({ ...query, motivo: 'limite_linhas', linhas: [], total: null, resumo });
+  return readAgendaResult({ ...query, motivo: null, mensagem: '', criterio: '', linhas, total: linhas.length, resumo });
+}
+
+/** Agenda do período: horário, área, tipo, modalidade e status. Bloqueio só conta. */
+export function summarizeAgendaPeriod({ consulta, appointments = [], nameOf = () => '' }) {
+  const query = readAgendaConsulta(consulta);
+  const visits = appointments.filter(item => item?.kind !== 'block');
+  const resumo = {
+    agendados: visits.filter(item => item.status === 'scheduled' || item.status === 'ready').length,
+    atendidos: visits.filter(item => item.status === 'attended').length,
+    faltas: visits.filter(item => item.status === 'no_show').length,
+    cancelamentos: visits.filter(item => item.status === 'excused' || item.status === 'cancelled').length,
+    bloqueios: appointments.length - visits.length,
+  };
+  const linhas = visits.slice().sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at))).map(item => ({
+    dia: localDay(item.starts_at),
+    inicio: localHour(item.starts_at),
+    fim: localHour(item.ends_at || item.starts_at),
+    profissional: nameOf(item.professional_id),
+    area: areaOf(item.discipline),
+    tipo_atendimento: appointmentTypeLabel(item.appointment_type, item.discipline),
+    modalidade: modalityLabel(item.modality),
+    status: statusLabel(item.status),
+  }));
+  return withLimit(query, linhas, resumo);
+}
+
+/** Faltas e cancelamentos por profissional e área (isAbsence de Gestão → Indicadores). */
+export function summarizeAbsencesPeriod({ consulta, appointments = [], nameOf = () => '' }) {
+  const query = readAgendaConsulta(consulta);
+  const absences = appointments.filter(isAbsence);
+  const groups = new Map();
+  for (const item of absences) {
+    const key = `${item.professional_id}|${item.discipline}`;
+    const line = groups.get(key) || { profissional: nameOf(item.professional_id), area: areaOf(item.discipline), nao_compareceu: 0, cancelado_paciente: 0, cancelado: 0 };
+    if (item.status === 'no_show') line.nao_compareceu += 1;
+    else if (item.status === 'excused') line.cancelado_paciente += 1;
+    else line.cancelado += 1;
+    groups.set(key, line);
+  }
+  const total = line => line.nao_compareceu + line.cancelado_paciente + line.cancelado;
+  const linhas = [...groups.values()].sort((a, b) => total(b) - total(a) || a.profissional.localeCompare(b.profissional, 'pt-BR'));
+  return withLimit(query, linhas, { total: absences.length, atendimentos: appointments.filter(item => item?.kind === 'appointment').length });
+}
+
+/** Confirmações pendentes (a lista vem de listPendingConfirmations, a fila da Agenda). */
+export function summarizePendingConfirmationsPeriod({ consulta, pending = [], nameOf = () => '' }) {
+  const query = readAgendaConsulta(consulta);
+  const linhas = pending.slice().sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at))).map(item => ({
+    dia: localDay(item.starts_at), inicio: localHour(item.starts_at), profissional: nameOf(item.professional_id), area: areaOf(item.discipline),
+  }));
+  return withLimit(query, linhas, { total: pending.length });
+}
+
+/**
+ * Pacotes da Agenda perto do fim: série (recurrence_group_id) em uso, com
+ * PACKAGE_NEAR_END_MAX sessão agendada ou menos, contada por
+ * summarizePackageSessions (a mesma janela "Sessões do pacote").
+ */
+export function summarizePackagesNearEndAgenda({ consulta, appointments = [], nameOf = () => '', professionalId = null, now = new Date() }) {
+  const query = readAgendaConsulta(consulta);
+  const bySeries = new Map();
+  for (const item of appointments) {
+    if (!item?.recurrence_group_id || item.kind === 'block') continue;
+    const list = bySeries.get(item.recurrence_group_id) || [];
+    list.push(item);
+    bySeries.set(item.recurrence_group_id, list);
+  }
+  const activeSince = now.getTime() - PACKAGE_ACTIVE_DAYS * 86_400_000;
+  const groups = new Map();
+  let packages = 0;
+  for (const rows of bySeries.values()) {
+    const summary = summarizePackageSessions(rows, { now });
+    const recent = rows.some(row => row.status !== 'cancelled' && new Date(row.starts_at).getTime() >= activeSince);
+    if (!recent || summary.remaining > PACKAGE_NEAR_END_MAX) continue;
+    const last = rows.slice().sort((a, b) => String(b.starts_at).localeCompare(String(a.starts_at)))[0];
+    if (professionalId && last.professional_id !== professionalId) continue;
+    packages += 1;
+    const key = `${last.professional_id}|${last.discipline}`;
+    const line = groups.get(key) || { profissional: nameOf(last.professional_id), area: areaOf(last.discipline), pacotes: 0, sessoes_restantes: 0 };
+    line.pacotes += 1;
+    line.sessoes_restantes += summary.remaining;
+    groups.set(key, line);
+  }
+  const linhas = [...groups.values()].sort((a, b) => b.pacotes - a.pacotes || a.profissional.localeCompare(b.profissional, 'pt-BR'));
+  return withLimit(query, linhas, { total: packages });
+}
+
+/** Aniversários do mês: só a contagem (currentMonthBirthdays da Agenda). */
+export function summarizeBirthdaysCount({ consulta, patients = [], today = new Date() }) {
+  return withLimit(readAgendaConsulta(consulta), [], { total: currentMonthBirthdays(patients, today).length });
+}
+
+/** Pesquisas do período: respondidas, média e aguardando, sem comentário. */
+export function summarizeSurveysPeriod({ consulta, surveys = [], now = new Date() }) {
+  const responded = surveys.filter(item => item.responded_at);
+  const waiting = surveys.filter(item => !item.responded_at && (!item.expires_at || new Date(item.expires_at) >= now)).length;
+  // Mesma média do quadro Pesquisa do Resumo da Gestão (pesquisaTile): soma das notas ÷ respondidas.
+  // O teste confere contra buildGestaoSummary (gestaoSummary.js não carrega fora do Vite).
+  const media = responded.length ? Math.round((responded.reduce((sum, item) => sum + Number(item.rating || 0), 0) / responded.length) * 10) / 10 : null;
+  return withLimit(readAgendaConsulta(consulta), [], { respondidas: responded.length, media, aguardando: waiting });
+}
+
+/** Formulários da Área do Paciente: mesma conta de Importáveis (sendsTabSummary). */
+export function summarizePortalForms({ consulta, assignments = [], now = new Date() }) {
+  const summary = sendsTabSummary(assignments, now);
+  return withLimit(readAgendaConsulta(consulta), [], { enviados: summary.count, respondidos: summary.count - summary.waiting, aguardando: summary.waiting });
+}
+
+/** Convênio e notas: os números dos quadros Guias, Lotes, Pagamentos e Notas do Financeiro. */
+export function summarizeConvenioState({ consulta, tiss, fiscal, today }) {
+  const guides = tiss?.guides || [];
+  const waiting = guides.filter(row => ['batched', 'glosa', 'appeal'].includes(row.status) && row.batch?.status === 'sent');
+  const queue = fiscalQueue(fiscal?.documents || []);
+  // Os dois primeiros números são os que os quadros Guias e Lotes mostram (buildTissTiles).
+  const tiles = buildTissTiles({ tiss, tissError: null, today }).tiles;
+  return withLimit(readAgendaConsulta(consulta), [], {
+    guias_com_pendencia: Number(tiles.guias.display),
+    guias_prontas: Number(tiles.lotes.display),
+    lotes_nao_enviados: (tiss?.batches || []).filter(row => row.status === 'generated').length,
+    guias_esperando_operadora: waiting.length,
+    valor_esperando_centavos: waiting.reduce((sum, row) => sum + (row.total_cents - (row.settled?.paid_cents || 0)), 0),
+    glosadas: guides.filter(row => row.status === 'glosa' || row.status === 'appeal').length,
+    notas_pendentes: queue.pending.length,
+    notas_a_cancelar: queue.toCancel.length,
+    valor_notas_pendentes_centavos: queue.pending.reduce((sum, row) => sum + row.amount_cents, 0),
+  });
 }

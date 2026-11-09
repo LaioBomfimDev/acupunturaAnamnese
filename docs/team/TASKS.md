@@ -35,7 +35,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | claude/dev2 | TODO (após 020) | ver abaixo |
 | ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | claude/dev2 | TODO (após 023) | ver abaixo |
 | ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | TODO (após 024; publicar só com 026 aprovado) | ver abaixo |
-| ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | FAZENDO | ver abaixo |
+| ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
 | ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | TODO (após 025) | ver abaixo |
 | ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |
 

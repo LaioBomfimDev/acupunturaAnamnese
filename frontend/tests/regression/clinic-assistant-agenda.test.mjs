@@ -335,3 +335,26 @@ test('AG-5 prompt, ajuda e AGENTS: consultas novas explicadas, sem paciente e co
   const tools = await readFile(new URL('../../src/services/assistantTools.js', import.meta.url), 'utf8');
   assert.doesNotMatch(tools, /console\.|\.from\(|\.insert\(|\.update\(|\.delete\(/);
 });
+
+test('QA 09/11/2026: confirmações e aniversários com a fonte no limite (2000) viram erro, nunca subcontagem', async () => {
+  reset();
+  state.appointments = Array.from({ length: 2000 }, (_, i) => ap('p' + i, 'den', 'psicologia', '2026-11-10', '09:00', 'scheduled'));
+  const pending = await run(ask('confirmacoes_pendentes'));
+  assert.equal(pending.motivo, 'erro', 'fila de confirmação cheia pode estar cortada');
+  assert.equal(pending.resumo, null);
+  state.appointments.pop();
+  assert.equal((await run(ask('confirmacoes_pendentes'))).motivo, 'limite_linhas', '1999 cabem na fonte: resumo sem a lista');
+  reset();
+  state.patients = Array.from({ length: 2000 }, (_, i) => ({ id: 'q' + i, name: 'Nome ' + i, birth_date: '1990-11-03' }));
+  const birthdays = await run(ask('aniversarios'));
+  assert.equal(birthdays.motivo, 'erro', 'cadastro cheio pode estar cortado');
+  assert.equal(birthdays.resumo, null);
+  state.patients.pop();
+  assert.deepEqual((await run(ask('aniversarios'))).resumo, { total: 1999 });
+  // pacotes_fim: a fonte é a série da Agenda, não o pacote do Financeiro da "Sua atenção hoje".
+  for (const criteria of [front.AGENDA_CRITERIA, edge.AGENDA_CRITERIA]) {
+    assert.match(criteria.pacotes_fim, /Não é o pacote do Financeiro/);
+    assert.doesNotMatch(criteria.pacotes_fim, /mesma regra/);
+  }
+  assert.match(edgeSource, /pacotes_fim: [^\r\n]*não diga que os números são os mesmos/);
+});

@@ -120,7 +120,7 @@ Como responder:
   - agenda: a agenda de um período (de/ate, até 93 dias; "semana que vem", "outubro" viram datas) e de uma pessoa ou da equipe: horário, área, tipo, modalidade e status de cada atendimento, sem paciente.
   - faltas: faltas e cancelamentos num período (de/ate), por profissional e área.
   - confirmacoes_pendentes: atendimentos ainda sem confirmação num período (de/ate; sem período, amanhã).
-  - pacotes_fim: pacotes da Agenda com 1 sessão agendada ou menos, por profissional e área (sem período).
+  - pacotes_fim: pacotes da Agenda com 1 sessão agendada ou menos, por profissional e área (sem período). Não é o pacote do Financeiro da "Sua atenção hoje": não diga que os números são os mesmos.
   - aniversarios: quantos pacientes fazem aniversário no mês atual (só administração e recepção; só o número).
   - pesquisas: pesquisas de satisfação num período (de/ate): respondidas, nota média e aguardando (só administração).
   - formularios_pendentes: formulários da Área do Paciente enviados, respondidos e aguardando (só administração).

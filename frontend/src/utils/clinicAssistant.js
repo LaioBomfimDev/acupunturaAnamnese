@@ -777,7 +777,7 @@ export const AGENDA_ACCESS = {
 // Com período obrigatório; confirmações usam amanhã quando não vier período.
 export const AGENDA_PERIOD_REQUIRED = ['agenda', 'faltas', 'pesquisas'];
 export const AGENDA_PERIOD_OPTIONAL = ['confirmacoes_pendentes'];
-// Igual à "Sua atenção hoje" (packagesNearEnd): 1 sessão ou menos.
+// Mesmo limite da "Sua atenção hoje" (packagesNearEnd): 1 sessão ou menos. A fonte é outra (série da Agenda, não pacote do Financeiro).
 export const PACKAGE_NEAR_END_MAX = 1;
 // Pacote da Agenda ainda em uso: alguma sessão até 30 dias atrás.
 export const PACKAGE_ACTIVE_DAYS = 30;
@@ -805,7 +805,7 @@ export const AGENDA_CRITERIA = {
   agenda: 'Atendimentos com início no período informado; bloqueios só entram na contagem.',
   faltas: 'Não compareceu, cancelado pelo paciente e cancelado, pela data do atendimento no período (mesma regra de Gestão → Indicadores).',
   confirmacoes_pendentes: 'Atendimentos agendados ainda sem confirmação, com início no período (mesma fila da Agenda).',
-  pacotes_fim: 'Pacotes da Agenda em uso com 1 sessão agendada ou menos (mesma regra da "Sua atenção hoje").',
+  pacotes_fim: 'Pacotes da Agenda (sessões marcadas juntas) em uso, com 1 sessão agendada ou menos. Não é o pacote do Financeiro, que a "Sua atenção hoje" conta: os dois números podem não bater.',
   aniversarios: 'Pacientes que fazem aniversário no mês atual (só a contagem).',
   pesquisas: 'Pesquisas enviadas no período: respondidas, nota média e as que ainda aguardam resposta.',
   formularios_pendentes: 'Formulários da Área do Paciente enviados e não cancelados (mesma conta de Gestão → Importáveis).',

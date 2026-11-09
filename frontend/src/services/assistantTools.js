@@ -231,7 +231,8 @@ async function runAgendaConsulta(raw, profile, team, now) {
     }
     if (query.tipo === 'confirmacoes_pendentes') {
       const { from, to } = periodRange(query.de, query.ate);
-      const pending = await listPendingConfirmations({ from, to, professionalId: person?.id || null });
+      // A fila também corta em 2000 (QA, 09/11/2026): cheia vira erro, como as outras fontes.
+      const pending = full(await listPendingConfirmations({ from, to, professionalId: person?.id || null }));
       return summarizePendingConfirmationsPeriod({ consulta: query, pending, nameOf });
     }
     if (query.tipo === 'pacotes_fim') {
@@ -241,7 +242,8 @@ async function runAgendaConsulta(raw, profile, team, now) {
       return summarizePackagesNearEndAgenda({ consulta: query, appointments, nameOf, professionalId: person?.id || null, now });
     }
     if (query.tipo === 'aniversarios') {
-      return summarizeBirthdaysCount({ consulta: query, patients: await listClinicPatients(), today: now });
+      // listClinicPatients corta em 2000 (QA, 09/11/2026): cheia vira erro, nunca subcontagem.
+      return summarizeBirthdaysCount({ consulta: query, patients: full(await listClinicPatients()), today: now });
     }
     if (query.tipo === 'pesquisas') {
       const { from, next } = periodRange(query.de, query.ate);

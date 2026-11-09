@@ -16,14 +16,16 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-010 | Ajustes do plano (pendências dos reviews da 002 e da 003) | Codex LK | integracao (a5b47d3) | PRONTO |
 | ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | integracao (1b3144a) | PRONTO | ver abaixo |
 | ACUP-011 | Ajustes do perfil no banco (pendências do review da 004) | Codex LK | integracao (d614058) | PRONTO |
-| ACUP-005 | Tela do perfil ABA | Codex LK | integracao (0729ff3) | PRONTO (prints do QA pendentes) | ver abaixo |
+| ACUP-005 | Tela do perfil ABA | Codex LK | integracao (0729ff3) | PRONTO | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | integracao (c452e87) | PRONTO | ver abaixo |
-| ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk (107e5d9) | REVIEW | ver abaixo |
-| ACUP-008 | Registro formal de supervisão (SQL + RPC + tela) | Codex LK | codex/lk | TODO (após 007) | ver abaixo |
-| ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 008) | ver abaixo |
+| ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | integracao (7c8d6f5) | PRONTO | ver abaixo |
+| ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-013 | Tela da supervisão formal | Codex LK | — | TODO (após 008) | ver abaixo |
+| ACUP-014 | Ajustes da biblioteca (pendências do review da 007) | Codex LK | — | TODO (após 013) | ver abaixo |
+| ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 014) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
-Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108b_aba_perfil_paciente.sql` (a 011 não recriou a exclusão)). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
+Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108b_aba_perfil_paciente.sql` (a 011 não recriou a exclusão)). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
 
 Toda task com tela: prints do dev na ENTREGA e conferência do QA no REVIEW (rotina do board, `mesa/LEIA-ME.md`). Ao marcar PRONTO, o Orquestrador escreve `mesa/resumos/ACUP-000.md` e atualiza `mesa/para-voce.md`.
 
@@ -133,16 +135,39 @@ Regras de toda task com SQL (além do aceite próprio):
 - Comandos que precisam passar: `cd frontend && npm run lint && npm test && npm run build`.
 - Depende de: ACUP-006 (PRONTO).
 
-## ACUP-008 — Registro formal de supervisão
-- Objetivo: item 4a, `aba_supervision_records` (B4) com RPCs e tela. Prints (rotina do board): o dev tira com `mesa/ferramentas/print.mjs ACUP-008 …` no computador e, no celular, com `mesa/ferramentas/harness-telas/print-cdp.mjs` (o `--celular` do print.mjs sai cortado) dos estados principais (vazio, preenchido, erro, só leitura) e cita na ENTREGA; o QA confere/refaz com sufixo `-qa` e diz no REVIEW quais conferiu.
-- Arquivos de propriedade: migration `20261108d_aba_supervisao_formal.sql`, `frontend/src/components/aba/AbaSupervision.jsx` (novo), funções novas em `abaService.js`, registro em `AbaWorkspace.jsx`, teste novo.
-- Decisões (D4): grava o supervisor do time do supervisionado ou a administração; o supervisionado lê os próprios registros e marca ciência (`supervisee_ack_at`); assinado não se edita, anula com motivo; `duration_minutes` permite somar horas; sem fluxo de certificação.
-- Depende de: ACUP-007 (a exclusão parte da versão da 004).
+## ACUP-008 — Registro formal de supervisão (SQL + RPC)
+- Objetivo: item 4a, tabela `aba_supervision_records` (B4 da proposta) + RPCs `aba_save_supervision_draft(p_record JSONB)`, `aba_sign_supervision(p_id, p_revision, p_client_event_id)`, `aba_ack_supervision(p_id, p_client_event_id)`, `aba_void_supervision(p_id, p_revision, p_reason, p_client_event_id)`, `aba_list_supervisions(p_supervisee_id UUID DEFAULT NULL)` (devolve também a soma de `duration_minutes` dos assinados por supervisionado). A tela é a ACUP-013.
+- Arquivos de propriedade: `supabase/migrations/20261108d_aba_supervisao_formal.sql` (novo); `frontend/tests/regression/aba-supervision-records.test.mjs` (novo); `AGENTS.md` (só o bullet ABA: regra da supervisão).
+- Fora de escopo: tela; avaliações (ACUP-009, adiada); certificação; financeiro.
+- Critério de aceite (verificável): regras comuns de SQL (RPC começa por `aba_require_gate`; com `patient_id`, também `aba_require_patient`); colunas da B4 (`supervisor_id`, `supervisee_id` → `profiles`, `patient_id` NULL, `held_on`, `duration_minutes` 1–600, `modality` `individual`/`grupo`, `format` `presencial`/`online`, `agenda_encrypted`, `decisions_encrypted`, `status` `rascunho`/`assinado`/`anulado`, `signed_by`, `signed_at`, `supervisee_ack_at`, `void_reason_encrypted`, `voided_by`, `voided_at`, `revision`, `client_event_id`, carimbos); CHECK por status com `IS NOT NULL` explícito (assinado exige `signed_by`/`signed_at`; anulado exige motivo, `voided_by`, `voided_at`); `held_on` não aceita futuro (dia de `America/Sao_Paulo`, como na 011); `clinic_id` sempre do banco.
+  - Quem grava (D4): a administração da clínica ou o `supervisor_id` do time ATIVO em que o supervisionado é membro ativo (`aba_care_team_members` sem `ended_at`); `supervisor_id` gravado = `auth.uid()`, nunca do payload. Supervisionado da mesma clínica, ativo, profissional ABA. Com `patient_id`: paciente da mesma clínica e `aba_can_supervise_patient(auth.uid(), paciente)`.
+  - Quem lê: administração (tudo da clínica), quem registrou e o supervisor atual do time do supervisionado; o supervisionado lê só os PRÓPRIOS registros assinados ou anulados (rascunho é do supervisor). Ninguém de outra clínica; `anon` barrado.
+  - Assinar: só quem registrou ou a administração, carimbado com `auth.uid()`/`now()`; assinado não se edita (nem agenda, nem decisões, nem data); anular com motivo (10 caracteres ou mais) por quem assinou ou a administração. Ciência (`supervisee_ack_at`): só o próprio supervisionado, só em assinado, uma vez (replay devolve o mesmo retorno).
+  - CAS (`revision`) e `client_event_id` em toda escrita, replay do último evento devolve o mesmo retorno (como na 010); 40001 conflito, 42501 acesso, 22023 validação, 23505 evento reaproveitado, tudo em pt-BR, sem ecoar texto cifrado.
+  - Exclusão de paciente (decisão SUP-1 do Orquestrador): `admin_decide_patient_deletion` recriada a partir de `20261108b_aba_perfil_paciente.sql` (maior nome com a função); a tabela entra no snapshot e, em vez de DELETE, os registros daquele paciente ficam sem o paciente: `patient_id = NULL`, `agenda_encrypted` e `decisions_encrypted` = NULL, mantendo data, duração, modalidade, formato, status e carimbos (as horas de supervisão do profissional não somem). Diff textual da exclusão = 20261108b + só essas linhas; `patient-erasure` continua verde (se o teste exigir DELETE, a tabela entra em `KEPT_ON_PURPOSE` com esse motivo; PERGUNTA se nenhum dos dois couber).
+  - Roteiro SQL no handoff (admin grava; supervisor do time grava e assina; supervisor de outro time, terapeuta comum, outra clínica e `anon` barrados; supervisionado não lê rascunho, lê assinado e marca ciência uma vez; assinado recusa edição; anular sem motivo recusa; CAS 40001; replay; data futura recusa; exclusão de paciente com registro assinado: fica, sem paciente e sem texto, horas preservadas; migration 2x com COMMIT).
+- Comandos: `cd frontend && npm run lint && npm test && npm run build`.
+- Decisões (D4, SUP-1): grava o supervisor do time do supervisionado ou a administração; supervisionado lê os próprios assinados e marca ciência; assinado não se edita, anula com motivo; sem certificação.
+- Depende de: ACUP-007 (PRONTO).
+
+## ACUP-013 — Tela da supervisão formal
+- Objetivo: aba "Supervisão" no grupo "Equipe" do `AbaWorkspace` (sem paciente): quem registra lista, cria rascunho, assina e anula; o supervisionado vê os próprios assinados e marca ciência; total de horas assinadas por supervisionado.
+- Contrato do banco: seção "API para ACUP-013" do handoff da 008. Não muda SQL.
+- Arquivos de propriedade: `frontend/src/components/aba/AbaSupervision.jsx` (novo), `frontend/src/services/abaService.js` (só funções novas), `frontend/src/components/AbaWorkspace.jsx` (só registrar a aba), `frontend/src/styles/aba.css` (acréscimos), `frontend/src/data/screenHelp.js` (só `ABA_HELP.supervisao`) + espelho pelo script, `frontend/tests/regression/aba-supervision-screen.test.mjs` (novo).
+- Critério de aceite: horas somando só assinados, com plural certo ("1 hora", "2 horas"); data no futuro barrada na tela; assinar e anular pedem confirmação (anular pede motivo); assinado só leitura; erros pt-BR (40001 sem perder o digitado); `client_event_id` novo por ação, clique repetido = 1 chamada; nada do texto da reunião no console ou no título; até 1024px sem rolagem lateral, lista vira cartão. Prints: computador com `mesa/ferramentas/print.mjs ACUP-013 …` e celular com `mesa/ferramentas/harness-telas/print-cdp.mjs` (vazio, rascunho, assinado, visão do supervisionado com ciência, erro); QA confere com `-qa`.
+- Depende de: ACUP-008.
+
+## ACUP-014 — Ajustes da biblioteca (pendências do review da 007)
+- Objetivo: (1) no editor de técnica, categoria, objetivos, funções do comportamento e configuração sugerida viram seletores com os rótulos pt-BR que Programas já usa, nunca código em texto livre; (2) 23505 num ajuste simultâneo do mesmo modelo do sistema oferece "Recarregar" e, depois de recarregar, edita o item que já existe em vez de repetir o erro; (3) item próprio arquivado volta pela tela (decisão BIB-1): filtro "Arquivados" só para quem grava, com "Reativar" (confirmação), nunca apagar.
+- Arquivos de propriedade: `frontend/src/components/aba/AbaLibrary.jsx`, `frontend/src/utils/abaLibraryMerge.js` (se preciso), `frontend/src/styles/aba.css` (acréscimos), `frontend/tests/regression/aba-library-screen.test.mjs` (acréscimos), `frontend/src/data/screenHelp.js` (só `ABA_HELP.biblioteca`, se o texto mudar) + espelho.
+- Fora de escopo: SQL (o banco deve aceitar `arquivado` → `ativo` em item próprio; se não aceitar, PERGUNTA antes).
+- Critério de aceite: os três pontos com teste que morde; prints do editor de técnica e do filtro Arquivados (computador + celular pelo print-cdp); QA confere com `-qa`.
+- Depende de: ACUP-013.
 
 ## ACUP-012 — Aviso de texto não salvo na área ABA + estilo do seletor de suporte
 - Objetivo: pendências do review da 005. (1) Na área ABA inteira, trocar de aba ou de paciente com texto digitado e não salvo pergunta antes, pelo padrão do projeto (`guardUnsaved` + `<DismissPrompt>`, AGENTS §7), nunca descarta calado; (2) o seletor de nível de suporte do Perfil ganha o estilo dos outros campos.
 - Arquivos de propriedade: a definir na abertura (depende de onde a troca de aba acontece em `AbaWorkspace.jsx`).
-- Depende de: ACUP-008.
+- Depende de: ACUP-014.
 
 ## ACUP-009 — Avaliações formais do paciente
 - Objetivo: item 4b, `aba_assessments` (B4) + catálogo de instrumentos em código (só nome, domínio e escore para instrumento com direito autoral).
@@ -185,3 +210,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — ACUP-006 PRONTO: QA aprovou sem correção (SQL refeito do zero no acup-qa-pg: migration 2x COMMIT, roteiro do dev 9 OK, 10 cenários próprios, 161 modelos aceitos e devolvidos idênticos, concorrência em 2 sessões, 14/14 mutações mordem), merge em `integracao` (c452e87), quality verde (1400, 1399 ok, 1 pulado). ACUP-007 aberta com os dois achados do QA no aceite: `restricted` do sistema vence o ajuste da clínica; objetivo ganha `key` explícito em `abaLibrary.js` (decisão do Orquestrador: chave escrita no arquivo, com lista fechada no teste, em vez de título ou posição).
 - 2026-11-08 — ACUP-007: dev autorizado a mexer em `aba-library-items.test.mjs` (teste da 006) só para tirar `key` dos metadados de objetivo na comparação com as chaves SQL, acrescentando a asserção de que `key` NÃO está na lista de chaves permitidas do `content` no SQL; demais asserções intactas.
 - 2026-11-09 — ACUP-007 entregue (107e5d9; lint, 1410 testes com 1409 ok e 1 pulado, build verdes; 14 prints no board). REVIEW mandado ao QA.
+- 2026-11-09 — ACUP-007 PRONTO: QA aprovou com correção (técnica mostrava código cru em vez de rótulo pt-BR; teste não mordia em 4 pontos, agora 18/19 mutações e a restante equivalente), merge em `integracao` (7c8d6f5), quality verde (1413, 1412 ok, 1 pulado). Pendências viraram a ACUP-014. ACUP-008 reescrita só com o banco (a tela virou a ACUP-013); ordem nova 008 → 013 → 014 → 012. Decisões SUP-1 (exclusão de paciente tira o paciente e o texto do registro de supervisão, mantém as horas) e BIB-1 (item próprio arquivado pode ser reativado pela tela).

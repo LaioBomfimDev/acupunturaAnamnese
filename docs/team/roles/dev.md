@@ -27,7 +27,7 @@ Você é um dos dois devs do time. O Orquestrador distribui tasks; o QA revisa. 
 - Riscos/limites:
 ```
 
-5. Atualize `mesa/estado/<papel>.md` e avise: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "ENTREGA · ACUP-000 · <commit> · docs/team/handoff/ACUP-000.md · <resumo>"`.
+5. Em task com tela, tire os prints (`node C:/Users/m/Downloads/acup-team/mesa/ferramentas/print.mjs ACUP-000 nome URL "legenda" [--celular]`, computador + celular dos estados principais) e cite na ENTREGA. Atualize `mesa/estado/<papel>.md` a cada passo e avise: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "ENTREGA · ACUP-000 · <commit> · docs/team/handoff/ACUP-000.md · <resumo>"`.
 6. Fique disponível para correções até o QA aprovar.
 
 ## Regras duras

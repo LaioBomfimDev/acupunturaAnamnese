@@ -48,6 +48,14 @@ node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "ENTREGA · ACUP
 node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs caixa lk
 ```
 
+### Board ao vivo do humano
+
+O humano acompanha só pelo board (http://127.0.0.1:4790, lê a mesa); não lê terminal, `.js` nem handoff. O que não está na mesa ele não vê. Regras completas na seção "Board ao vivo do humano" de `mesa/LEIA-ME.md`:
+- todos atualizam `mesa/estado/<papel>.md` a cada passo (alerta depois de 2 h parado);
+- dev: em task com tela, prints com `mesa/ferramentas/print.mjs ACUP-000 nome URL "legenda" [--celular]` (harness em `mesa/ferramentas/harness-telas/`), citados na ENTREGA;
+- QA: confere ou refaz os prints com sufixo `-qa` e diz no REVIEW quais conferiu;
+- Orquestrador: ao marcar PRONTO, `mesa/resumos/ACUP-000.md` (o que muda para quem usa, português simples, sem nome `.js`, só o `.sql` a lançar) e `mesa/para-voce.md` (SQL em ordem, um `nome.sql` entre crases por item, e decisões pendentes, tirando o que foi resolvido). Relatório ao humano aponta para o board.
+
 ## Barramento antigo (até a ACUP-002, não usar)
 
 O Habblaud entrega mensagens às sessões abertas em `http://127.0.0.1:4747`.

@@ -282,8 +282,8 @@ test('erros: conflito preserva texto, recarrega revisão; demais códigos viram 
 });
 
 test('navegação, ajuda e responsividade: Equipe, sem paciente, cards e corte único 1024', async () => {
-  assert.match(workspace, /title: 'Equipe', tabs: \[TABS\.TIMES, TABS\.BIBLIOTECA, TABS\.REVISAO, TABS\.ALERTAS\]/);
-  assert.match(workspace, /const TABS_WITHOUT_PATIENT = \[TABS\.HOME, TABS\.TIMES, TABS\.BIBLIOTECA, TABS\.REVISAO, TABS\.ALERTAS\]/);
+  assert.match(workspace, /title: 'Equipe', tabs: \[TABS\.TIMES, TABS\.BIBLIOTECA, TABS\.SUPERVISAO, TABS\.REVISAO, TABS\.ALERTAS\]/);
+  assert.match(workspace, /const TABS_WITHOUT_PATIENT = \[TABS\.HOME, TABS\.TIMES, TABS\.BIBLIOTECA, TABS\.SUPERVISAO, TABS\.REVISAO, TABS\.ALERTAS\]/);
   assert.match(workspace, /\[TABS\.BIBLIOTECA\]: 'biblioteca'/);
   assert.match(workspace, /if \(effectiveTab === TABS\.BIBLIOTECA\) return <AbaLibrary \/>/);
   const { ABA_HELP } = await import('../../src/data/screenHelp.js');

@@ -21,6 +21,7 @@ import { AbaReviewQueue } from './aba/AbaReviewQueue';
 import { AbaSessions } from './aba/AbaSessions';
 import { AbaTeams } from './aba/AbaTeams';
 import { AbaLibrary } from './aba/AbaLibrary';
+import { AbaSupervision } from './aba/AbaSupervision';
 import '../styles/aba.css';
 
 // ============================================================
@@ -49,6 +50,7 @@ const TABS = {
   REPERTORIO: 'Repertório',
   TIMES: 'Times',
   BIBLIOTECA: 'Biblioteca',
+  SUPERVISAO: 'Supervisão',
   REVISAO: 'Revisão',
   ALERTAS: 'Alertas',
 };
@@ -57,10 +59,10 @@ const NAV_GROUPS = [
   { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
   { title: 'Atendimento', tabs: [TABS.COLETA, TABS.SESSOES, TABS.RESULTADOS, TABS.QUALIDADE] },
   { title: 'Plano', tabs: [TABS.PERFIL, TABS.PROGRAMAS, TABS.PLANO, TABS.REPERTORIO] },
-  { title: 'Equipe', tabs: [TABS.TIMES, TABS.BIBLIOTECA, TABS.REVISAO, TABS.ALERTAS] },
+  { title: 'Equipe', tabs: [TABS.TIMES, TABS.BIBLIOTECA, TABS.SUPERVISAO, TABS.REVISAO, TABS.ALERTAS] },
 ];
 
-const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.TIMES, TABS.BIBLIOTECA, TABS.REVISAO, TABS.ALERTAS];
+const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.TIMES, TABS.BIBLIOTECA, TABS.SUPERVISAO, TABS.REVISAO, TABS.ALERTAS];
 
 const HELP_BY_TAB = {
   [TABS.PAINEL]: 'painel',
@@ -74,6 +76,7 @@ const HELP_BY_TAB = {
   [TABS.REPERTORIO]: 'repertorio',
   [TABS.TIMES]: 'times',
   [TABS.BIBLIOTECA]: 'biblioteca',
+  [TABS.SUPERVISAO]: 'supervisao',
   [TABS.REVISAO]: 'revisao',
   [TABS.ALERTAS]: 'alertas',
 };
@@ -184,6 +187,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
     }
     if (effectiveTab === TABS.TIMES) return <AbaTeams />;
     if (effectiveTab === TABS.BIBLIOTECA) return <AbaLibrary />;
+    if (effectiveTab === TABS.SUPERVISAO) return <AbaSupervision />;
     if (effectiveTab === TABS.REVISAO) return <AbaReviewQueue onOpenPatient={openPatientSession} />;
     if (effectiveTab === TABS.ALERTAS) return <AbaAlerts userId={profile?.id} onOpenAlert={openFromAlert} />;
 

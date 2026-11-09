@@ -1022,6 +1022,32 @@ export const FINANCEIRO_HELP = {
 
 /** Área ABA (components/AbaWorkspace.jsx) — uma ajuda por aba. */
 export const ABA_HELP = {
+  supervisao: {
+    title: 'Supervisão formal',
+    summary: 'O registro dos encontros de supervisão, com data, duração, pauta, decisões, assinatura e ciência do profissional supervisionado.',
+    actions: [
+      '“Novo registro” cria um rascunho. Escolha o profissional supervisionado, o paciente se houver, data, duração, modalidade, formato, pauta e decisões; use “Salvar rascunho”.',
+      '“Editar rascunho” ajusta um registro ainda não assinado. “Assinar” pede confirmação e trava o conteúdo.',
+      '“Anular” exige confirmação e motivo de pelo menos 10 caracteres; o registro continua no histórico e sai da soma de horas.',
+      'O próprio supervisionado usa “Marcar ciência” uma única vez no registro assinado. “Atualizar” confere os dados novamente.',
+    ],
+    reading: [
+      '“Horas assinadas” soma somente os registros assinados de cada profissional no filtro escolhido, antes de converter os minutos em horas. Rascunhos e anulados não somam.',
+      '“Ver registro” abre pauta e decisões; assinatura, anulação e ciência mostram quem fez e quando.',
+      '“Pauta restrita” conserva os dados do encontro e as horas, mas não mostra paciente nem textos quando falta acesso clínico.',
+    ],
+    access: [
+      'Registram a administração e a supervisão do time ativo do profissional. Assinam quem registrou ou a administração; anulam quem assinou ou a administração.',
+      'Leem a administração, quem registrou e a supervisão atual; o supervisionado lê somente os próprios assinados ou anulados. Só ele marca ciência.',
+    ],
+    notes: [
+      'Data futura não é aceita; o dia segue o horário de São Paulo. Duração de 1 a 600 minutos.',
+      'Paciente arquivado bloqueia escrita até a decisão da exclusão. Se o banco recusar, a explicação aparece junto da ação; use “Atualizar” após a decisão.',
+      'Exclusão de paciente retira o vínculo e os textos do encontro, mas preserva as horas e o histórico profissional.',
+      'Se outra pessoa alterar o registro, seu texto fica no editor. Atualizar a lista não substitui o rascunho aberto nem força uma gravação sobre a nova versão.',
+      'Este registro não é certificação e não substitui a evolução do atendimento.',
+    ],
+  },
   biblioteca: {
     title: 'Biblioteca da clínica',
     summary: 'Modelos institucionais de objetivos e técnicas, reunindo os modelos do sistema e os da clínica. Não é prontuário.',

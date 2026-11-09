@@ -182,6 +182,10 @@ const OUTPUT_SCHEMA = {
         profissional: { type: 'STRING', description: 'nome como está na EQUIPE, "eu" ou "equipe"' },
         dia: { type: 'STRING', description: 'AAAA-MM-DD' },
         dias: { type: 'INTEGER', description: 'só em retornos_pendentes' },
+        de: { type: 'STRING', description: 'financeiro: início inclusivo AAAA-MM-DD' },
+        ate: { type: 'STRING', description: 'financeiro: fim inclusivo AAAA-MM-DD; até 93 dias' },
+        status: { type: 'STRING', enum: ['recebidos', 'a_receber', 'atrasados'], description: 'somente financeiro' },
+        paciente: { type: 'STRING', description: 'financeiro: nome do paciente pedido; vazio para todos' },
       },
       required: ['tipo', 'profissional'],
     },
@@ -261,7 +265,7 @@ Deno.serve(async (req) => {
 
     const links = linksForRole(role);
     const requestBody = body as Record<string, unknown>;
-    const dados = requestBody.dados === undefined ? null : readConsultaResult(requestBody.dados);
+    const dados = await readAuthorizedConsultaResult(requestBody.dados, supabaseAdmin, clinicId, caller.user.id);
     const context: PromptContext = {
       callerName: String(caller.profile.full_name || '').split(/\s+/)[0] || '',
       team: readTeam(requestBody.equipe),
@@ -351,3 +355,16 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// FIN-1: o aparelho não concede acesso. Identidades vêm exclusivamente do caller autenticado.
+async function readAuthorizedConsultaResult(raw: unknown, client: ReturnType<typeof createServiceClient>, clinicId: string, userId: string) {
+  const dados = raw === undefined ? null : readConsultaResult(raw);
+  if (dados?.tipo === 'financeiro') {
+    try {
+      const { data, error } = await client.rpc('can_manage_finance', { p_clinic: clinicId, p_user: userId });
+      if (error || data !== true) return null;
+    } catch { return null; }
+  }
+  return dados;
+}
+// Fim FIN-1.

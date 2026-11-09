@@ -438,14 +438,16 @@ test('a consulta roda no aparelho com o login da pessoa, pela mesma conta da Age
   const util = await read('src/utils/clinicAssistant.js');
   assert.match(util, /freeSlotsOfDay\(\{ date, professionalId, schedules, appointments, holidays, fallback, now \}\)/, 'mesma conta do "Copiar horários vagos"');
   assert.match(tools, /freeSlotsForAssistant\(\{/, 'mesma conta da Agenda de uma pessoa');
-  assert.doesNotMatch(tools, /patient|paciente_nome|full_session/, 'nada de paciente vai para a IA');
+  assert.doesNotMatch(tools, /full_session|clinical_records|patient_evolutions/, 'nenhuma leitura clínica');
+  assert.doesNotMatch(tools.slice(0, tools.indexOf('async function runFinanceConsulta')), /listClinicPatients\(|paciente_nome/, 'nome de paciente só no ramo financeiro autorizado');
   const service = await read('src/services/clinicAssistantService.js');
   assert.match(service, /export async function askAssistantWithTools/);
   assert.match(service, /if \(second\.consulta \|\| !second\.answer\)/, 'uma volta só');
   const edge = await read(functionsDir + '/clinic-assistant/index.ts');
   assert.match(edge, /const consulta = dados \? null : readConsulta\(parsed\?\.consulta\);/);
   assert.match(edge, /Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte/, 'pedido de 01/11/2026: só os horários');
-  assert.match(edge, /readConsultaResult\(requestBody\.dados\)/, 'o que vem do aparelho é limpo antes de ir à IA');
+  assert.match(edge, /readAuthorizedConsultaResult\(requestBody\.dados, supabaseAdmin, clinicId, caller\.user\.id\)/, 'FIN-1 usa identidades autenticadas para autorizar dados limpos');
+  assert.match(edge, /const dados = raw === undefined \? null : readConsultaResult\(raw\)/, 'o helper limpa o dado antes de ir à IA');
 });
 
 test('SuperAdm vê o gasto de cada pessoa e cada ação em real', async () => {

@@ -90,3 +90,10 @@ test('ajuda FIN-5/LGPD e UI: nota-only, aviso, sem Aprovar financeiro, regra e e
   assert.match(component,/<ScreenHelp topic=\{ASSISTANT_HELP\}/);assert.match(component,/contextSnapshot=\{message.financeiro \? \{ financeiro: true \}/);assert.match(store,/reply.financeiro === true \? \{ financeiro: true \}/);
   assert.match(agents,/FIN-6: correção financeira fica pendente/);assert.doesNotMatch(agents,/A assistente ainda NÃO lê o financeiro/);
 });
+
+// QA (review da ACUP-017): a nota financeira também não pode ser levada à base curada global pelo painel.
+test('QA: painel do SuperAdm não oferece "Promover para base curada" para correção financeira', async () => {
+  const panel = await readFile(new URL('../../src/components/panels/AICorrectionsPanel.jsx', import.meta.url), 'utf8');
+  assert.match(panel, /\{!isFinancialCorrection\(selected\) && <button className="quiet-button" type="button" onClick=\{\(\) => promote\(selected\)\}>\r?\n\s+Promover para base curada/);
+  assert.equal((panel.match(/Promover para base curada/g) || []).length, 1, 'um único botão de promover, e ele é condicionado');
+});

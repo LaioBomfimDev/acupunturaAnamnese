@@ -422,9 +422,10 @@ export function AICorrectionsPanel() {
                     Repor em revisão
                   </button>
                 )}
-                <button className="quiet-button" type="button" onClick={() => promote(selected)}>
+                {/* FIN-3/6: nota financeira nunca vai para base curada global. */}
+                {!isFinancialCorrection(selected) && <button className="quiet-button" type="button" onClick={() => promote(selected)}>
                   Promover para base curada
-                </button>
+                </button>}
               </div>
             </>
           )}

@@ -64,7 +64,8 @@ test('os envios por wa.me que já existiam continuam: link de conversa aberto pe
     'src/components/panels/agenda/ShareAgendaPanel.jsx': /https:\/\/wa\.me\/\?text=/, // compartilhar agenda
     'src/components/patientForms/PortalShareBox.jsx': /buildWhatsAppLink\(/, // formulários e código da Área do Paciente
     'src/components/interviews/InterviewLinkBox.jsx': /whatsappShareUrl\(/, // link de entrevista
-    'src/components/panels/RelatoriosGestao.jsx': /buildWhatsAppLink\(/, // pesquisa de satisfação
+    // Gestão → Retornos ("Chamar no WhatsApp"). A pesquisa de satisfação só copia o link, nunca teve wa.me (QA, 09/11/2026).
+    'src/components/panels/RelatoriosGestao.jsx': /buildWhatsAppLink\(\{ phone, message: `Oi, \$\{name\.split/,
     'src/components/online/OnlineRoomPage.jsx': /buildWhatsAppLink\(/, // sala online
   };
   for (const [file, pattern] of Object.entries(senders)) assert.match(read(file), pattern, file);

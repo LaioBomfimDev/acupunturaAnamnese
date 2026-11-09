@@ -118,11 +118,11 @@ Regras de toda task com SQL (além do aceite próprio):
 
 ## ACUP-007 — Tela da biblioteca + AbaPrograms lendo o catálogo mesclado
 - Arquivos de propriedade: `frontend/src/components/aba/AbaLibrary.jsx` (novo), `frontend/src/utils/abaLibraryMerge.js` (novo), `AbaPrograms.jsx` (só a fonte do catálogo), teste novo. `data/abaLibrary.js` não muda.
-- Critério de aceite: sem rede, cai no catálogo do sistema e avisa; ocultos somem; aviso "ponto de partida, não decisão clínica" mantido. Prints (rotina do board): o dev tira com `mesa/ferramentas/print.mjs ACUP-007 …` computador + `--celular` dos estados principais (vazio, preenchido, erro, só leitura) e cita na ENTREGA; o QA confere/refaz com sufixo `-qa` e diz no REVIEW quais conferiu.
+- Critério de aceite: sem rede, cai no catálogo do sistema e avisa; ocultos somem; aviso "ponto de partida, não decisão clínica" mantido. Prints (rotina do board): o dev tira com `mesa/ferramentas/print.mjs ACUP-007 …` no computador e, no celular, com `mesa/ferramentas/harness-telas/print-cdp.mjs` (o `--celular` do print.mjs sai cortado) dos estados principais (vazio, preenchido, erro, só leitura) e cita na ENTREGA; o QA confere/refaz com sufixo `-qa` e diz no REVIEW quais conferiu.
 - Depende de: ACUP-006.
 
 ## ACUP-008 — Registro formal de supervisão
-- Objetivo: item 4a, `aba_supervision_records` (B4) com RPCs e tela. Prints (rotina do board): o dev tira com `mesa/ferramentas/print.mjs ACUP-008 …` computador + `--celular` dos estados principais (vazio, preenchido, erro, só leitura) e cita na ENTREGA; o QA confere/refaz com sufixo `-qa` e diz no REVIEW quais conferiu.
+- Objetivo: item 4a, `aba_supervision_records` (B4) com RPCs e tela. Prints (rotina do board): o dev tira com `mesa/ferramentas/print.mjs ACUP-008 …` no computador e, no celular, com `mesa/ferramentas/harness-telas/print-cdp.mjs` (o `--celular` do print.mjs sai cortado) dos estados principais (vazio, preenchido, erro, só leitura) e cita na ENTREGA; o QA confere/refaz com sufixo `-qa` e diz no REVIEW quais conferiu.
 - Arquivos de propriedade: migration `20261108d_aba_supervisao_formal.sql`, `frontend/src/components/aba/AbaSupervision.jsx` (novo), funções novas em `abaService.js`, registro em `AbaWorkspace.jsx`, teste novo.
 - Decisões (D4): grava o supervisor do time do supervisionado ou a administração; o supervisionado lê os próprios registros e marca ciência (`supervisee_ack_at`); assinado não se edita, anula com motivo; `duration_minutes` permite somar horas; sem fluxo de certificação.
 - Depende de: ACUP-007 (a exclusão parte da versão da 004).

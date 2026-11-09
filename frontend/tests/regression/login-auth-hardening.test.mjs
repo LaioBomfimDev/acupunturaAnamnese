@@ -205,7 +205,23 @@ test('configuração versionada libera JWT só para as functions deliberadamente
     config,
     /\[functions\.online-consultation\][\s\S]*?verify_jwt\s*=\s*false/,
   );
-  assert.equal(publicFunctionOverrides.length, 7);
+  // KEYS-1 (ACUP-022, 09/11/2026): com a chave publishable nova (não é JWT)
+  // o gateway barraria antes do código, então TODA função publicada tem
+  // verify_jwt = false e a porta é o handler. O alarme de "superfície sem
+  // autenticação nova" mudou para edge-supabase-keys.test.mjs: lá cada função
+  // sem verify_jwt precisa conferir a sessão no código ou estar na lista
+  // fechada de públicas, com motivo. A lista de lá é exatamente estas sete.
+
+  const functionsDir = new URL('../../../supabase/functions/', import.meta.url);
+  const published = (await fs.readdir(functionsDir, { withFileTypes: true }))
+    .filter(entry => entry.isDirectory() && entry.name !== '_shared');
+  assert.equal(publicFunctionOverrides.length, published.length);
+  const keysTest = await fs.readFile(new URL('./edge-supabase-keys.test.mjs', import.meta.url), 'utf8');
+  const publicList = keysTest.match(/const PUBLIC_FUNCTIONS = \{([\s\S]*?)\r?\n\};/)?.[1] || '';
+  assert.deepEqual(
+    [...publicList.matchAll(/^ {2}'([a-z-]+)': \{/gm)].map(m => m[1]).sort(),
+    ['confirm-appointment', 'interview-link', 'login-with-identifier', 'online-consultation', 'patient-portal', 'public-agenda', 'satisfaction-survey'],
+  );
 });
 
 test('fonte visual registra somente eventos operacionais sanitizados', async () => {

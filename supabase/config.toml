@@ -36,3 +36,56 @@ verify_jwt = false
 # handler (online-consultation/index.ts).
 [functions.online-consultation]
 verify_jwt = false
+
+# Funções com login (ACUP-022, KEYS-1, 09/11/2026): com a chave publishable
+# nova (sb_publishable_, não é JWT) o gateway com verify_jwt barraria antes
+# do código. A sessão continua conferida DENTRO de cada handler
+# (getCallerProfile + assertEdgeAccess); edge-supabase-keys.test.mjs falha
+# se uma função sem verify_jwt não conferir a sessão nem for pública da lista.
+[functions.analyze-tongue]
+verify_jwt = false
+
+[functions.clinic-assistant]
+verify_jwt = false
+
+[functions.clinical-reasoning]
+verify_jwt = false
+
+[functions.complete-first-login]
+verify_jwt = false
+
+[functions.create-record-share]
+verify_jwt = false
+
+[functions.draft-narrative]
+verify_jwt = false
+
+[functions.food-research]
+verify_jwt = false
+
+[functions.knowledge-source-asset-url]
+verify_jwt = false
+
+[functions.library-qa]
+verify_jwt = false
+
+[functions.log-logout]
+verify_jwt = false
+
+[functions.psych-reading]
+verify_jwt = false
+
+[functions.psych-report]
+verify_jwt = false
+
+[functions.psych-suggest-marks]
+verify_jwt = false
+
+[functions.super-admin-create-user]
+verify_jwt = false
+
+[functions.super-admin-reset-mfa]
+verify_jwt = false
+
+[functions.super-admin-reset-password]
+verify_jwt = false

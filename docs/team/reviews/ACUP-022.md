@@ -1,7 +1,7 @@
 ## ACUP-022 — entrega do QA (Edge Functions preferem as chaves novas do Supabase)
 
-- Veredito: **APROVADO** (feita pelo QA, sem dev livre). Commit: `f69b11f` em `qa/ACUP-022`, criada de `qa/ACUP-021` `04222c7`, **nunca do integracao**. A branch leva junto a 021 (main `1ea4172` + `c1bab7b` + `7d60b56` + review), para sair na mesma publicação (PUB-2).
-- Gate: `npm run quality` verde, rodado sozinho: **1456 testes (1455 ok, 1 pulado, 0 falhas)**, mais os 6 do teste novo. Lint, invariantes e build ok.
+- Veredito: **APROVADO** (feita pelo QA, sem dev livre). Commits: `f69b11f` (ordem das chaves) e a ampliação KEYS-1 (`verify_jwt` + teste da porta; ver a seção KEYS-1 e o REVIEW) em `qa/ACUP-022`, criada de `qa/ACUP-021` `04222c7`, **nunca do integracao**. A branch leva junto a 021 (main `1ea4172` + `c1bab7b` + `7d60b56` + review), para sair na mesma publicação (PUB-2).
+- Gate: `npm run quality` verde, rodado sozinho. Com a ordem das chaves: **1456 testes (1455 ok, 1 pulado)**. Com a KEYS-1: **1459 (1458 ok, 1 pulado, 0 falhas)**. Na primeira rodada da KEYS-1, um teste que sobe o Vite (`area-menu-attention`) travou com a máquina sem memória; sozinho passou 5/5, e a rodada seguinte inteira ficou verde. Lint, invariantes e build ok.
 - SQL: não há. PROD-2 ok.
 - **Nenhum valor de chave** no código, no teste, nos logs ou neste review. O teste usa só marcadores fictícios. A varredura por `sb_secret_…`, `sb_publishable_…` e `eyJhbGciOi` nos dois arquivos não achou nada.
 
@@ -33,16 +33,52 @@ Têm `verify_jwt = false` (7): `login-with-identifier`, `satisfaction-survey`, `
 
 - As 16 conferem a sessão no próprio código (`getCallerProfile` → `auth.getUser`, ou `assertEdgeAccess`), de 2 a 5 checagens em cada uma. Ligar `verify_jwt = false` nelas **não abre** nada: o código continua barrando sem sessão.
 - Risco se ficarem como estão: o gateway com `verify_jwt` só aceita JWT. Chamada com sessão (o app manda o token do usuário) segue passando. Chamada só com a chave nova (`sb_publishable_`, que não é JWT) é barrada. O mesmo acontece se depois o projeto trocar a assinatura dos JWT ("JWT signing keys").
-- **Recomendação:** antes de desligar as Legacy API keys, acrescentar um bloco `[functions.<nome>]` com `verify_jwt = false` para cada uma das 16 (é mudança de config, fora dos arquivos desta task; decisão do Orquestrador/humano), ou publicar com `--no-verify-jwt`.
+- Recomendei acrescentar o `verify_jwt = false` nas 16. **Decisão KEYS-1 do Orquestrador: feito** (seção abaixo).
+
+### KEYS-1: `verify_jwt = false` nas 16 + teste da porta no handler (commit da ampliação no fim)
+- `supabase/config.toml`: 16 blocos novos `[functions.<nome>]` com `verify_jwt = false`, com o comentário do motivo. Agora **as 23 funções** têm bloco próprio. **Nenhuma linha de código de função mudou.**
+- Teste novo em `edge-supabase-keys.test.mjs`:
+  - **Toda função publicada** tem bloco no `config.toml` com `verify_jwt = false`. São 23; se o número mudar, o teste avisa para conferir a lista de republicar.
+  - **Toda função sem `verify_jwt` precisa de uma destas:**
+    - Conferir a sessão no código: `const caller = await getCallerProfile(req, …)` seguido na hora de `if ('error' in caller) return …`, e mais `assertEdgeAccess(caller.profile, caller.claims)` (conta ativa, troca de senha, MFA). Ficam sem `assertEdgeAccess` só duas, de propósito e com motivo: `complete-first-login` (é a troca obrigatória de senha; o gate barraria justamente quem precisa trocar) e `log-logout` (só registra a saída; sem sessão responde ok sem gravar nada).
+    - Ou estar na **lista fechada de públicas**, com motivo, com o limite de tentativas (`enforceEdgeRateLimit(`) e com a própria conferência dela no fonte:
+
+| Pública | Motivo | O que o teste exige no fonte |
+|---|---|---|
+| `login-with-identifier` | é o próprio login, antes de existir sessão | `signInWithPassword` |
+| `satisfaction-survey` | paciente responde a pesquisa pelo link, sem conta | token do link |
+| `confirm-appointment` | paciente confirma pelo link pessoal, sem conta | token do link |
+| `public-agenda` | agenda só leitura compartilhada por link | token do link |
+| `patient-portal` | código + data de nascimento, sem conta no Auth | `portal_login` e `portal_resolve_session` |
+| `interview-link` | quem convive com o paciente responde pelo link | `interview_link_open` |
+| `online-consultation` | paciente entra pelo link do agendamento; o lado de quem atende confere sessão | token e `getCallerProfile` |
+
+  - **Função sem conferência de sessão e fora da lista = falha.** As listas não apodrecem: nome que sumiu falha, e quem está na lista "sem gate" precisa ao menos conferir a sessão.
+- Teste antigo `login-auth-hardening.test.mjs`:
+  - **Antes:** "exatamente 7 funções com `verify_jwt = false`".
+  - **Agora:** continua conferindo as 7 públicas uma a uma. A contagem passa a ser "uma por função publicada", e o teste exige que a lista de públicas do teste novo seja **exatamente** essas 7.
+  - O alarme de "superfície sem login nova" não sumiu: mudou para o teste novo, que é mais forte, porque olha o código e não só o número.
+- **Mutações (9/9 pegas):**
+  - `analyze-tongue` sem conferir sessão;
+  - `psych-report` sem `assertEdgeAccess`;
+  - `library-qa` com `verify_jwt = true`;
+  - bloco da `clinic-assistant` apagado;
+  - `patient-portal` sem `portal_resolve_session`;
+  - `satisfaction-survey` sem limite de tentativas;
+  - `log-logout` sem conferir sessão;
+  - ordem antiga das chaves;
+  - função nova `funcao-nova-qa` sem sessão e fora da lista, com `verify_jwt = false`.
+- **Para registrar:**
+  - `docs/auditoria-seguranca-2026-08-11.md` diz que só o login tinha `verify_jwt=false`. É registro datado, não mexi.
+  - Sugiro uma linha no AGENTS §9 ("toda Edge Function publicada tem `verify_jwt = false`; a porta é o handler: `getCallerProfile` + `assertEdgeAccess`, ou pública da lista de `edge-supabase-keys.test.mjs`"). Fica para quem cuida do manual: está fora dos arquivos desta task.
 
 ### Funções a republicar (todas, menos `_shared`): 23
-Todas importam `_shared/security.ts`, então todas precisam subir com a mudança. Na raiz do repositório, logado no CLI do Supabase e com o projeto ligado (`supabase link`). Nada de chave na linha de comando:
+Todas importam `_shared/security.ts`, e o `config.toml` (lido no deploy) mudou para 16 delas. Por isso todas sobem. Rodar **de uma pasta com a branch `qa/ACUP-022` em checkout** (nunca do `integracao`), na raiz do repositório, logado no CLI do Supabase. Nada de chave na linha de comando:
 
 ```bash
-supabase functions deploy analyze-tongue clinic-assistant clinical-reasoning complete-first-login confirm-appointment create-record-share draft-narrative food-research interview-link knowledge-source-asset-url library-qa log-logout login-with-identifier online-consultation patient-portal psych-reading psych-report psych-suggest-marks public-agenda satisfaction-survey super-admin-create-user super-admin-reset-mfa super-admin-reset-password
+git branch --show-current   # tem que dizer qa/ACUP-022
+supabase functions deploy analyze-tongue clinic-assistant clinical-reasoning complete-first-login confirm-appointment create-record-share draft-narrative food-research interview-link knowledge-source-asset-url library-qa log-logout login-with-identifier online-consultation patient-portal psych-reading psych-report psych-suggest-marks public-agenda satisfaction-survey super-admin-create-user super-admin-reset-mfa super-admin-reset-password --project-ref hoyznqffprojawxvkfcd
 ```
-
-(O `config.toml` é lido no deploy: as 7 com `verify_jwt = false` sobem assim. Para as outras 16 vale a recomendação acima.)
 
 **Atenção, PUB-1:** publicar a partir desta branch (main + 021 + 022), **nunca do integracao**: lá a `clinic-assistant` já tem a 016/017, que só vão ao ar depois da 018 e do RIPD.
 

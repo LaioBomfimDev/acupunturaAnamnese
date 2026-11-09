@@ -355,12 +355,12 @@ test('ACUP-014: seletores de técnica usam rótulos do catálogo, preservando va
       prompt_fading: 'Esvanecimento', time_measure: 'Tempo', procedure: 'Procedimento', goal_direction: 'Direção' },
     onChange() {},
   }));
-  assert.equal((html.match(/<select/g) || []).length, 11);
-  assert.equal((html.match(/multiple=""/g) || []).length, 3);
+  assert.equal((html.match(/<select/g) || []).length, 8);
+  assert.equal((html.match(/multiple=""/g) || []).length, 0);
   assert.doesNotMatch(html, /textarea/);
   for (const label of ['Formatos de ensino','Ensinar a se comunicar','Fuga / esquiva da demanda','Percentual de independência','DTT (tentativas discretas)','Contínuo','Ajuda visual','Ajuda física parcial','Latência da resposta']) assert.ok(html.includes(label), label);
-  assert.match(html, /value="comunicar" selected=""/);
-  assert.match(html, /value="ajuda_visual" selected=""/);
+  assert.match(html, /checked="" value="comunicar"/);
+  assert.match(html, /checked="" value="ajuda_visual"/);
   const legacy = renderToStaticMarkup(React.createElement(screen.LibraryContentFields, { technique: true, content: { category: 'categoria_antiga' }, fields: { category: 'Categoria' }, onChange() {} }));
   assert.match(legacy, /fora do catálogo atual/);
   assert.doesNotMatch(legacy, />categoria_antiga</);

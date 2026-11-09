@@ -1,3 +1,4 @@
+import { useAbaUnsaved } from './AbaUnsavedContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getPatientProfile, savePatientProfile, profileDraftIssue, profileErrorMessage, profileToday,
@@ -53,6 +54,7 @@ export function AbaProfileEditor({ initial, patientId, onSaved, onCancel }) {
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  useAbaUnsaved(() => JSON.stringify(draft) !== original.current, busy);
   const set = patch => setDraft(current => ({ ...current, ...patch }));
   const setDiagnosis = patch => setDraft(current => ({ ...current, diagnosis: { ...current.diagnosis, ...patch } }));
 
@@ -88,7 +90,7 @@ export function AbaProfileEditor({ initial, patientId, onSaved, onCancel }) {
               <input type="checkbox" checked={draft.communication_mode.includes(code)} onChange={event => set({ communication_mode: event.target.checked ? [...draft.communication_mode, code] : draft.communication_mode.filter(value => value !== code) })} />{label}
             </label>)}
           </div>
-          <label>Nível de suporte<select value={draft.support_level} onChange={event => set({ support_level: event.target.value })}>
+          <label className="aba-field">Nível de suporte<select value={draft.support_level} onChange={event => set({ support_level: event.target.value })}>
             {Object.entries(PROFILE_SUPPORT).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
           </select></label>
         </fieldset>

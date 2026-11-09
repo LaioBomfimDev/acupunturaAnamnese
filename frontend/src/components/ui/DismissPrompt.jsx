@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 // Pergunta que aparece quando Esc/clique fora tentam fechar um formulário
 // com algo já digitado (useDismiss com guardUnsaved). Nunca descarta
 // sozinho: o foco vai para "Continuar editando".
-export function DismissPrompt({ dismiss }) {
+export function DismissPrompt({ dismiss, discardLabel = 'Descartar e fechar' }) {
   const keepRef = useRef(null);
   const visible = Boolean(dismiss?.confirmingDiscard);
 
@@ -24,7 +24,7 @@ export function DismissPrompt({ dismiss }) {
           Continuar editando
         </button>
         <button type="button" className="dismiss-prompt-discard" onClick={dismiss.discard}>
-          Descartar e fechar
+          {discardLabel}
         </button>
       </div>
     </div>

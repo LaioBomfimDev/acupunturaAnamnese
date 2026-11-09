@@ -239,6 +239,71 @@ export const manageAlert = (alert, action, note = null) =>
 
 // ---------- times ----------
 
+// ---------- supervisão formal (ACUP-013) ----------
+export const listSupervisions = (superviseeId = null) =>
+  call('aba_list_supervisions', { p_supervisee_id: superviseeId }, 'Não foi possível carregar as supervisões.');
+
+export function saveSupervisionDraft(draft, eventId) {
+  return call('aba_save_supervision_draft', { p_record: {
+    id: draft.id, revision: draft.revision, client_event_id: eventId,
+    supervisee_id: draft.supervisee_id, patient_id: draft.patient_id || null,
+    held_on: draft.held_on, duration_minutes: Number(draft.duration_minutes),
+    modality: draft.modality, format: draft.format,
+    agenda: draft.agenda?.trim() ? draft.agenda : null,
+    decisions: draft.decisions?.trim() ? draft.decisions : null,
+  } }, 'Não foi possível salvar o rascunho de supervisão.');
+}
+
+export const signSupervision = (record, eventId) => call('aba_sign_supervision', {
+  p_id: record.id, p_revision: record.revision, p_client_event_id: eventId,
+}, 'Não foi possível assinar a supervisão.');
+
+export const ackSupervision = (record, eventId) => call('aba_ack_supervision', {
+  p_id: record.id, p_client_event_id: eventId,
+}, 'Não foi possível marcar ciência.');
+
+export const voidSupervision = (record, reason, eventId) => call('aba_void_supervision', {
+  p_id: record.id, p_revision: record.revision, p_reason: reason.trim(), p_client_event_id: eventId,
+}, 'Não foi possível anular a supervisão.');
+
+export function supervisionHours(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const hourText = `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  const minuteText = `${rest} ${rest === 1 ? 'minuto' : 'minutos'}`;
+  return rest ? (hours ? `${hourText} e ${minuteText}` : minuteText) : hourText;
+}
+
+export function supervisionTotals(records) {
+  const totals = new Map();
+  for (const record of records) {
+    if (record.status === 'assinado') totals.set(record.supervisee_id,
+      (totals.get(record.supervisee_id) || 0) + Number(record.duration_minutes));
+  }
+  return [...totals].map(([supervisee_id, duration_minutes]) => ({ supervisee_id, duration_minutes }));
+}
+
+export function supervisionDraftIssue(draft, today = profileToday()) {
+  if (!draft.supervisee_id) return 'Escolha o profissional supervisionado.';
+  const parsed = new Date(`${draft.held_on}T12:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.held_on || '') || Number.isNaN(parsed.getTime())
+      || parsed.toISOString().slice(0, 10) !== draft.held_on) return 'Informe uma data válida.';
+  if (draft.held_on > today) return 'A data da supervisão não pode ser futura.';
+  const minutes = Number(draft.duration_minutes);
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 600) return 'Informe duração inteira de 1 a 600 minutos.';
+  if (!['individual', 'grupo'].includes(draft.modality) || !['presencial', 'online'].includes(draft.format)) return 'Escolha modalidade e formato válidos.';
+  if ((draft.agenda || '').length > 12000 || (draft.decisions || '').length > 12000) return 'Pauta e decisões aceitam até 12000 caracteres cada.';
+  return '';
+}
+
+export function supervisionErrorMessage(error) {
+  if (error instanceof AbaConflictError || error?.code === '40001') return 'Este registro foi alterado por outra pessoa. Recarregue antes de salvar; seu texto foi mantido.';
+  if (/^Paciente arquivado/u.test(error?.message || '')) return 'Paciente arquivado: aguarde a decisão da exclusão. Esta ação está bloqueada até a decisão.';
+  if (error instanceof AbaAccessError || error?.code === '42501') return 'Você não tem permissão para esta ação. Confira o time, a autoria e o acesso ao paciente.';
+  if (/^(?:Informe |Escolha |Só |Ciência |A ciência |Registro |Data |Pauta |Use |Este evento |Evento )/u.test(error?.message || '')) return error.message;
+  return 'Não foi possível concluir a ação. Confira os dados e tente de novo.';
+}
+
 export const listLibrary = () =>
   call('aba_list_library', {}, 'Não foi possível carregar a biblioteca da clínica.');
 

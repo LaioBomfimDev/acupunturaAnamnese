@@ -3126,3 +3126,29 @@
   .aba-library-page .aba-library-filters { grid-template-columns: minmax(0, 1fr); }
   .aba-library-page .aba-card, .aba-library-editor .aba-dialog-body { padding: 12px; }
 }
+/* ---------- Supervisão formal (ACUP-013) ---------- */
+.aba-supervision-page, .aba-supervision-dialog { min-width: 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+.aba-supervision-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.aba-supervision-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+.aba-supervision-head h3 { margin: 8px 0; }
+.aba-supervision-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.aba-supervision-meta > *, .aba-supervision-form > *, .aba-supervision-fields > * { min-width: 0; }
+.aba-supervision-meta dt { font-size: 0.85rem; color: var(--r1-text-muted); }
+.aba-supervision-meta dd { margin: 4px 0 0; }
+.aba-supervision-summary dl { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 0; }
+.aba-supervision-summary dt { color: var(--r1-text-muted); }
+.aba-supervision-summary dd { font-weight: 700; margin: 6px 0 0; }
+.aba-supervision-filter { max-width: 440px; }
+.aba-supervision-content summary { cursor: pointer; font-weight: 600; }
+.aba-supervision-content p { white-space: pre-wrap; }
+.aba-supervision-form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.aba-supervision-form fieldset { min-width: 0; border: 1px solid var(--r1-border); border-radius: var(--r1-radius-md); padding: 12px; }
+.aba-supervision-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.aba-supervision-form label { display: flex; flex-direction: column; gap: 6px; }
+.aba-supervision-page select, .aba-supervision-form input, .aba-supervision-form select, .aba-supervision-form textarea { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+@media (max-width: 1024px) {
+  .aba-supervision-meta, .aba-supervision-fields { grid-template-columns: minmax(0, 1fr); }
+  .aba-supervision-page .aba-page-head, .aba-supervision-page .aba-button-row, .aba-supervision-dialog .aba-form-actions { flex-direction: column; align-items: stretch; }
+  .aba-supervision-page .aba-page-head > *, .aba-supervision-page button, .aba-supervision-dialog button { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .aba-supervision-page .aba-card, .aba-supervision-dialog .aba-dialog-body { padding: 12px; }
+}

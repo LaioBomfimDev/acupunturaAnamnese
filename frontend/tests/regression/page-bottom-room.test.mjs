@@ -3,9 +3,9 @@
 // uma faixa em branco embaixo e a lateral escura terminando antes do fim
 // (o espaço do botão da assistente ficava no #root, por fora do fundo das
 // telas). Rolar além do topo também mostrava o fundo da página.
-// Verificado no Chromium com o CSS do build (tela inicial, hub, área e
-// WhatsApp, curto e comprido, 1440 e 390 px): sem sobra abaixo da tela,
-// lateral até o fim e o último item acima do botão.
+// Verificado no Chromium com o CSS do build (tela inicial, hub e área,
+// curto e comprido, 1440 e 390 px): sem sobra abaixo da tela, lateral
+// até o fim e o último item acima do botão.
 // ============================================================
 
 import assert from 'node:assert/strict';
@@ -19,7 +19,7 @@ const read = file => readFile(path.join(root, file), 'utf8');
 
 test('espaço do botão da assistente mora dentro da coluna de conteúdo, não no #root', async () => {
   const css = await read('src/styles/assistant.css');
-  assert.match(css, /body:has\(\.ca-launcher\) \.hc-main::after,\s*\r?\nbody:has\(\.ca-launcher\) \.hub-body:not\(:has\(> \.wa-screen\)\)::after,\s*\r?\nbody:has\(\.ca-launcher\) \.main::after \{\s*\r?\n\s*content: '';\s*\r?\n\s*display: block;\s*\r?\n\s*height: var\(--ca-launcher-room\);/);
+  assert.match(css, /body:has\(\.ca-launcher\) \.hc-main::after,\s*\r?\nbody:has\(\.ca-launcher\) \.hub-body::after,\s*\r?\nbody:has\(\.ca-launcher\) \.main::after \{\s*\r?\n\s*content: '';\s*\r?\n\s*display: block;\s*\r?\n\s*height: var\(--ca-launcher-room\);/);
   // O #root só ganha o espaço quando a tela não tem nenhuma dessas colunas.
   assert.match(css, /body:has\(\.ca-launcher\):not\(:has\(\.hc-main, \.hub-body, \.main\)\) #root \{/);
   assert.doesNotMatch(css, /^body:has\(\.ca-launcher\) #root \{/m);

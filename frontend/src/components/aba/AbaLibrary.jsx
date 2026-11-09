@@ -14,8 +14,9 @@ const OBJECTIVE_FIELDS = {
   title: 'Título', category: 'Área', level: 'Nível', objective: 'Objetivo', target: 'Alvo', skill: 'Habilidade',
   suggestedFormat: 'Formato sugerido', suggestedPrompt: 'Ajuda sugerida', suggestedProcedure: 'Procedimento sugerido',
 };
+// `code` é identificador interno do catálogo: fica guardado no conteúdo, mas nunca aparece nem se edita (código cru).
 const TECHNIQUE_FIELDS = {
-  name: 'Nome', code: 'Código', category: 'Categoria', whenToUse: 'Quando usar', howToApply: 'Como aplicar',
+  name: 'Nome', category: 'Categoria', whenToUse: 'Quando usar', howToApply: 'Como aplicar',
   example: 'Exemplo', caution: 'Cautelas', restricted: 'Restrito', goals: 'Objetivos',
   behaviorFunctions: 'Funções do comportamento', sortOrder: 'Ordem',
 };

@@ -401,3 +401,20 @@ test('ACUP-014: arquivados próprios só na gestão autorizada; reativar preserv
   assert.match(source, /entry\.status !== 'ativo' \? 'Reativar'/);
   assert.match(source, /<AbaDialog title=\{confirming\.status/);
 });
+
+// QA (review da ACUP-014): o identificador interno da técnica não aparece nem se edita.
+test('QA: editor e "Ver modelo" da técnica não mostram o código cru do catálogo', () => {
+  const fields = source.match(/const TECHNIQUE_FIELDS = \{([\s\S]*?)\};/)?.[1];
+  assert.ok(fields, 'TECHNIQUE_FIELDS presente');
+  assert.doesNotMatch(fields, /\bcode\s*:/, 'campo Código fora do editor e da leitura');
+  assert.doesNotMatch(source, /'Código'/);
+});
+
+test('QA: 23505 liga o Recarregar no editor, arquivado só reativa e item do sistema nunca entra em Arquivados', () => {
+  const save = source.slice(source.indexOf('async function save(event)'), source.indexOf('return <div className="aba-dialog-overlay"'));
+  assert.match(save, /const exists = isLibraryDuplicate\(failure, entry\);\r?\n\s+setDuplicate\(exists\);\r?\n\s+setConflict\(failure instanceof AbaConflictError \|\| failure\.code === '40001' \|\| exists\);/);
+  assert.ok(source.includes("{entry.status !== 'arquivado' && <button type=\"button\" className=\"quiet-button\" onClick={() => setEditor(entry)}>"), 'arquivado não abre o editor');
+  const archivedSystem = [{ ...own, id: 'sistema-arquivado', system_key: obj.key, status: 'arquivado', content: { title: 'Sistema arquivado' } }];
+  const listed = mergeAbaLibrary(archivedSystem, { ...options, canWrite: true, includeArchived: true });
+  assert.ok(!listed.entries.some(item => item.system && item.status === 'arquivado'), 'item do sistema nunca aparece como arquivado');
+});

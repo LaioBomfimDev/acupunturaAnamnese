@@ -29,7 +29,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Codex LK | codex/lk | FAZENDO | ver abaixo |
 | ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (texto aprovado 09/11) | ver abaixo |
 | ACUP-020 | Remover a tela de integração com o WhatsApp | Codex LK | — | TODO (após 018) | ver abaixo |
-| ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | FAZENDO | ver abaixo |
+| ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | PRONTO (04222c7; no integracao em cbc2aa0; publicar) | ver abaixo |
+| ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | FAZENDO | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
@@ -235,6 +236,14 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - Depois do APROVADO: o Orquestrador prepara o pacote de publicação da main (o humano publica) e junta a main de volta no `integracao` (conflito esperado no AGENTS.md e no corpus: resolver mantendo os dois bullets e regenerar o corpus pelo script).
 - Depende de: nada. Dono: QA.
 
+## ACUP-022 — Edge Functions preferem as chaves novas do Supabase (antes de desligar as antigas)
+- Origem: troca da `service_role` vazada (SEGURANCA.md). Chave antiga (JWT) não se troca: cria-se `sb_publishable_`/`sb_secret_` e desliga-se "Legacy API keys", o que mata também a anon antiga. Hoje `supabase/functions/_shared/security.ts` (`createServiceClient`, `createAnonClient`) usa primeiro `SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_ANON_KEY` e só cai em `SUPABASE_SECRET_KEYS`/`SUPABASE_PUBLISHABLE_KEYS` se a antiga faltar; a plataforma segue injetando a antiga, então depois de desligada todas as funções quebrariam.
+- Fazer: inverter a ordem (nova primeiro, antiga só como reserva), mesma mensagem de erro sem valor de chave; conferir que nenhuma outra função lê chave do Supabase por fora de `security.ts`; conferir em `supabase/config.toml` que toda função publicada tem `verify_jwt = false` (senão o gateway barra com a chave nova) e listar as que não têm.
+- Base: `qa/ACUP-021` (04222c7), para sair na mesma publicação da main (PUB-2). NUNCA do `integracao` (lá a `clinic-assistant` já tem a 016/017).
+- Arquivos: `supabase/functions/_shared/security.ts`; teste novo `frontend/tests/regression/edge-supabase-keys.test.mjs` (lê o fonte: nova antes da antiga nos dois clientes, regex com `\r?\n`).
+- Critério de aceite: quality verde; teste falha com a ordem antiga; nenhum valor de chave em código, teste, log ou review; lista das funções a republicar (todas as de `supabase/functions/` menos `_shared`) com o comando exato para o humano.
+- Dono: QA (pequena, sem dev livre). Depende de: ACUP-021.
+
 ## ACUP-015 — Detalhes do aviso de texto não salvo (observações do review da 012)
 - Objetivo: (1) editores dentro de `AbaDialog` também ligam o aviso ao fechar a aba do navegador (`beforeunload`) enquanto houver texto pendente; (2) clique em sair durante a gravação mostra "Salvando…" em vez de não fazer nada calado; (3) trocar o texto "Fechar agora" da pergunta de saída por um que diga o que acontece.
 - Arquivos de propriedade: a definir na abertura.
@@ -321,3 +330,4 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - 2026-11-09 — ACUP-017 PRONTO: QA aprovou com correção (o painel do SuperAdm ainda oferecia 'Promover para base curada' para a nota financeira; escondido + teste; corrections.ts real testado com aprovação forçada: outra pessoa nunca vê; 20/23 mutações, 3 equivalentes), merge em `integracao` (9b871b7), quality verde (1461, 1460 ok, 1 pulado). CONDIÇÃO do QA aceita (PUB-1): a 017 não vai para o ar sem a 018, porque o texto já diz 'primeiro nome e idade' e os dados da 016 ainda levam nome completo. ACUP-018 distribuída.
 - 2026-11-09 — Humana pediu pressa para produção. ACUP-021: o commit `ac30abe` (Documentos timbrados, PR #16) entra por hotfix sobre a `main`, revisado pelo QA, sem esperar a rodada da assistente (PUB-2). PR #16 fecha sem merge; WhatsApp segue como ACUP-020.
 - 2026-11-09 — ACUP-019 PRONTO: humana aprovou o texto do RIPD ("aprovo o ripd, pode liberar a assistente", via sessão Documentos). PUB-1 fica só esperando a ACUP-018. Base legal/transferência [preencher], aviso ao responsável e registro de operações seguem com ela e o jurídico.
+- 2026-11-09 — ACUP-021 APROVADA pelo QA (04222c7, 2 correções: limpeza do colado e pílula a 360px), juntada no integracao (cbc2aa0, quality 1467: 1466 ok, 1 pulado). ACUP-022 aberta para o QA: Edge Functions preferirem as chaves novas antes de a humana desligar as Legacy API keys; sai junto da 021 na main.

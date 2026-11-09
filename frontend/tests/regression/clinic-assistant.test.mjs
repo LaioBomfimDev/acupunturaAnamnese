@@ -443,9 +443,10 @@ test('a consulta roda no aparelho com o login da pessoa, pela mesma conta da Age
   assert.doesNotMatch(tools.slice(0, tools.indexOf('async function runFinanceConsulta')), /listClinicPatients\(|paciente_nome/, 'nome de paciente só no ramo financeiro autorizado');
   const service = await read('src/services/clinicAssistantService.js');
   assert.match(service, /export async function askAssistantWithTools/);
-  assert.match(service, /if \(second\.consulta \|\| !second\.answer\)/, 'uma volta só');
+  // ACUP-024 (AG-6): era "uma volta só"; agora até 3 voltas, contadas nos dois lados.
+  assert.match(service, /if \(results\.length >= ASSISTANT_MAX_ROUNDS\) throw new Error\(ASSISTANT_ROUNDS_MESSAGE\);/, 'até 3 voltas');
   const edge = await read(functionsDir + '/clinic-assistant/index.ts');
-  assert.match(edge, /const consulta = dados \? null : readConsulta\(parsed\?\.consulta\);/);
+  assert.match(edge, /const consulta = rounds\.voltas >= ASSISTANT_MAX_ROUNDS \? null : readConsulta\(reply\.parsed\?\.consulta\);/);
   assert.match(edge, /Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte/, 'pedido de 01/11/2026: só os horários');
   assert.match(edge, /readAuthorizedConsultaResult\(requestBody\.dados, supabaseAdmin, clinicId, caller\.user\.id\)/, 'FIN-1 usa identidades autenticadas para autorizar dados limpos');
   assert.match(edge, /const dados = raw === undefined \? null : readConsultaResult\(raw\)/, 'o helper limpa o dado antes de ir à IA');

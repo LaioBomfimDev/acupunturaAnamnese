@@ -25,6 +25,8 @@ let state = {
   sending: false,
   // 'thinking' ou 'agenda' (consultando horários vagos), para a tela.
   sendingStep: 'thinking',
+  // ACUP-024: volta da consulta (1 a 3), para "Consultando… 2 de 3".
+  sendingRound: 0,
   error: '',
   attention: EMPTY_ATTENTION,
   attentionCollapsed: false,
@@ -111,14 +113,14 @@ export async function sendAssistantMessage(text) {
   const question = String(text ?? state.draft).trim();
   if (!question || state.sending) return;
   const messages = [...state.messages, { role: 'user', text: question }];
-  setState({ messages, draft: '', sending: true, sendingStep: 'thinking', error: '' });
+  setState({ messages, draft: '', sending: true, sendingStep: 'thinking', sendingRound: 0, error: '' });
   try {
     const { askAssistantWithTools } = await loadService();
     const reply = await askAssistantWithTools({
       messages,
       screen: state.screen,
       profile: currentProfile,
-      onStep: step => setState({ sendingStep: step }),
+      onStep: (step, round = 0) => setState({ sendingStep: step, sendingRound: round }),
     });
     setState(current => ({
       messages: [...current.messages, { role: 'assistant', text: reply.answer, links: reply.links, ...(reply.financeiro === true ? { financeiro: true } : {}) }],

@@ -68,3 +68,13 @@ test('ACUP-012: três grupos de caixas preservam códigos, removem vazio e mant�
     assert.doesNotMatch(html, /multiple|>legado</);
   }
 });
+
+// QA (review da ACUP-012): nenhuma rota do Workspace troca de aba por fora do guarda.
+test('QA: atalhos do painel e da coleta trocam de aba pelo guarda; setActiveTab só dentro de navigate ou depois da seleção guardada', () => {
+  for (const [prop, tab] of [['onCollect', 'COLETA'], ['onPrograms', 'PROGRAMAS'], ['onResults', 'RESULTADOS'], ['onSessions', 'SESSOES'], ['onAllAlerts', 'ALERTAS'], ['onOpenSessions', 'SESSOES']]) {
+    assert.ok(workspace.includes(`${prop}={() => handleTabChange(TABS.${tab})}`), `${prop} passa por handleTabChange`);
+  }
+  assert.doesNotMatch(workspace, /on[A-Z]\w*=\{\(\) => setActiveTab\((?!TABS\.PAINEL\))/, 'nenhum atalho chama setActiveTab direto');
+  assert.equal((workspace.match(/onSelectPatient=\{\(\) => setActiveTab\(TABS\.PAINEL\)\}/g) || []).length, 1, 'só o retorno da seleção já guardada');
+  assert.ok(workspace.includes('beforeSelectPatient={unsaved.navigate}'));
+});

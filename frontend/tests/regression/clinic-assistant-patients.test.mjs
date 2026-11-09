@@ -251,4 +251,8 @@ test('AG-8 fonte que falha vira aviso; prompt, ajuda e AGENTS dizem primeiro nom
   const agents = await readFile(new URL('../../../AGENTS.md', import.meta.url), 'utf8');
   assert.match(agents, /Agenda com paciente \(ACUP-025, AG-2\/AG-8\)/);
   assert.match(agents, /clinic-assistant-patients\.test\.mjs/);
+  // Abertura do painel (autorizada na 025): não promete o que não existe.
+  const panel = await readFile(new URL('../../src/components/assistant/ClinicAssistant.jsx', import.meta.url), 'utf8');
+  assert.match(panel, /Nas perguntas de agenda, cito o paciente só pelo primeiro nome e a idade\. Nunca leio prontuário, evolução, escalas ou anamnese\./);
+  assert.doesNotMatch(panel, /Ainda não vejo pacientes/);
 });

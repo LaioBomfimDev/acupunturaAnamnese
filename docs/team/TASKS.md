@@ -32,8 +32,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | PRONTO (04222c7; publicado 09/11) | ver abaixo |
 | ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | PRONTO (f2dd32c; publicado 09/11) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
-| ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | claude/dev2 | FAZENDO (sobre 79c260f) | ver abaixo |
-| ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | claude/dev2 | TODO (após 023) | ver abaixo |
+| ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | claude/dev2 | REVIEW (0dac1c4) | ver abaixo |
+| ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | claude/dev2 | FAZENDO (sobre 0dac1c4) | ver abaixo |
 | ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | TODO (após 024; publicar só com 026 aprovado) | ver abaixo |
 | ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
 | ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | TODO (após 025) | ver abaixo |

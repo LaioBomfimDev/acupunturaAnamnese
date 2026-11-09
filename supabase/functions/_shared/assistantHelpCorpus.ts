@@ -130,7 +130,7 @@ export const ASSISTANT_HELP_TOPICS: AssistantHelpTopic[] = [
   {
     "id": "GESTAO_HELP.documentos",
     "title": "Gestão → Documentos timbrados",
-    "text": "O que é: Coloca um documento do Word (.docx) no papel timbrado da instituição.\nO que dá pra fazer: Arrastar o arquivo .docx para a área indicada, ou clicar em “Escolher arquivo”. Dar um título ao documento — ele sai no cabeçalho. Imprimir ou salvar em PDF, ou baixar de volta em Word (.docx), já timbrado.\nBom saber: O arquivo é convertido no próprio computador e não é enviado para nenhum servidor. O logo e a cor do papel timbrado vêm da aba Personalizar."
+    "text": "O que é: Coloca um documento no papel timbrado da instituição: um arquivo do Word (.docx) ou um texto colado.\nO que dá pra fazer: Em “Enviar arquivo Word”: arrastar o arquivo .docx para a área indicada, ou clicar em “Escolher arquivo”. Em “Colar conteúdo”: colar (do Word, do Google Docs, de um e-mail) ou digitar o texto e clicar em “Ver no papel timbrado”. “Editar conteúdo” volta ao texto. Dar um título ao documento — ele sai no cabeçalho. Imprimir ou salvar em PDF, ou baixar em Word (.docx), já timbrado: logo, faixas, rodapé de contato e marca d’água em toda página.\nBom saber: Negrito, listas e tabelas vêm junto ao colar; cor, fonte e formato das tabelas saem no padrão da instituição. O conteúdo é convertido no próprio computador e não é enviado para nenhum servidor. O logo e a cor do papel timbrado vêm da aba Personalizar."
   },
   {
     "id": "GESTAO_HELP.personalizar",

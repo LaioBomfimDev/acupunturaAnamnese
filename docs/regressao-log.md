@@ -418,3 +418,12 @@ Modelo de entrada:
 - Regra nova: espaço reservado no fim mora dentro da coluna de conteúdo da tela, nunca em `#root` ou `body`.
 - Teste ou verificação obrigatória: `page-bottom-room.test.mjs` e `whatsapp-screen.test.mjs`.
 - Regra destilada em: `AGENTS.md` §7 (Escala da tela).
+
+### 2026-11-09 - Documentos timbrados: PDF com páginas em branco intercaladas e Word sem timbrado
+
+- Sintoma: na Gestão → Documentos timbrados, "Imprimir / PDF" saía com uma primeira página só com o topo da Gestão, páginas em branco no meio e no fim e folhas deslocadas para a direita. "Baixar Word (.docx)" saía em papel Carta, sem logo, faixas nem marca d'água; com qualquer imagem a exportação caía com "Buffer is not defined". A marca d'água aparecia listrada atrás das tabelas.
+- Causa: as folhas (`.rpage`) ficavam dentro do layout da tela (topo e `hub-body` com recuo), então o navegador imprimia o topo, não aplicava bem a página A4 sem margem e a folha de 296,5 mm sobrava para a página seguinte. No Word, o conversor recebia só texto no cabeçalho, sem tamanho de papel, e usa `Buffer.from` do Node ao embutir imagem. Na tabela, só a linha par tinha fundo.
+- Correção: folhas num portal direto no `<body>` com `pq-printing` (mesmo padrão do recibo de compra e das entrevistas); Word em A4 com o desenho do PDF (logo ou monograma, faixas e ícones desenhados em PNG, rodapé de contato, marca d'água ancorada atrás do texto, cabeçalho de tabela repetido), polyfill `buffer` carregado só ao exportar; toda célula da tabela com fundo próprio. Conferido: PDF pelo Chrome headless (antes 11 páginas para 8 folhas, depois 8) e .docx aberto no Microsoft Word e exportado em PDF.
+- Regra nova: folha timbrada que imprime mora num portal no `<body>` com `pq-printing`, nunca dentro do layout da tela.
+- Teste ou verificação obrigatória: `documentos-timbrados.test.mjs`.
+- Regra destilada em: `AGENTS.md` §7 (Documentos timbrados).

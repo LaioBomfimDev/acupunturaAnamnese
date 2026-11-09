@@ -18,7 +18,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-011 | Ajustes do perfil no banco (pendências do review da 004) | Codex LK | integracao (d614058) | PRONTO |
 | ACUP-005 | Tela do perfil ABA | Codex LK | integracao (0729ff3) | PRONTO (prints do QA pendentes) | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | integracao (c452e87) | PRONTO | ver abaixo |
-| ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk (107e5d9) | REVIEW | ver abaixo |
 | ACUP-008 | Registro formal de supervisão (SQL + RPC + tela) | Codex LK | codex/lk | TODO (após 007) | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 008) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
@@ -184,3 +184,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — ACUP-006 entregue (47b1cc9; lint, 1400 testes com 1399 ok e 1 pulado, build verdes; roteiro SQL da sessão anterior, não reexecutado na retomada). REVIEW mandado ao QA pedindo a validação SQL completa.
 - 2026-11-08 — ACUP-006 PRONTO: QA aprovou sem correção (SQL refeito do zero no acup-qa-pg: migration 2x COMMIT, roteiro do dev 9 OK, 10 cenários próprios, 161 modelos aceitos e devolvidos idênticos, concorrência em 2 sessões, 14/14 mutações mordem), merge em `integracao` (c452e87), quality verde (1400, 1399 ok, 1 pulado). ACUP-007 aberta com os dois achados do QA no aceite: `restricted` do sistema vence o ajuste da clínica; objetivo ganha `key` explícito em `abaLibrary.js` (decisão do Orquestrador: chave escrita no arquivo, com lista fechada no teste, em vez de título ou posição).
 - 2026-11-08 — ACUP-007: dev autorizado a mexer em `aba-library-items.test.mjs` (teste da 006) só para tirar `key` dos metadados de objetivo na comparação com as chaves SQL, acrescentando a asserção de que `key` NÃO está na lista de chaves permitidas do `content` no SQL; demais asserções intactas.
+- 2026-11-09 — ACUP-007 entregue (107e5d9; lint, 1410 testes com 1409 ok e 1 pulado, build verdes; 14 prints no board). REVIEW mandado ao QA.

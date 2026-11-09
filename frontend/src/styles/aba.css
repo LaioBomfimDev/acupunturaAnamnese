@@ -3048,7 +3048,7 @@
 .aba-plan-version.is-current { border-color: var(--r1-accent); border-inline-start: 5px solid var(--r1-accent); }
 .aba-plan-version-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
 .aba-plan-version-head h3 { margin: 0; }
-.aba-plan-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.aba-plan-meta { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; }
 .aba-plan-meta dt { color: var(--r1-text-muted); font-size: 0.82rem; }
 .aba-plan-meta dd { margin: 3px 0 0; }
 .aba-plan-page p, .aba-plan-page dd, .aba-plan-page h3, .aba-plan-reading { overflow-wrap: anywhere; }
@@ -3082,4 +3082,25 @@
   .aba-plan-dialog .aba-button-row { flex-direction: column; align-items: stretch; }
   .aba-plan-dialog .aba-plan-choice label { flex: 1 1 auto; }
   .aba-plan-dialog button.hub-back.hub-back--nested { position: static; width: 100%; margin-top: 8px; box-sizing: border-box; }
+}
+
+/* ---------- Perfil do paciente (ACUP-005) ---------- */
+.aba-profile { min-width: 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+.aba-profile-head, .aba-profile-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.aba-profile-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+.aba-profile-meta > *, .aba-profile-form > * { min-width: 0; }
+.aba-profile-meta dt { color: var(--r1-text-muted); }
+.aba-profile-meta dd { margin: 4px 0 0; }
+.aba-profile-text { white-space: pre-wrap; }
+.aba-profile-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.aba-profile-form fieldset { min-width: 0; border: 1px solid var(--r1-border); border-radius: var(--r1-radius-md); padding: 12px; }
+.aba-profile-form label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.aba-profile-form input, .aba-profile-form textarea, .aba-profile-form select { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+.aba-profile-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.aba-profile-choices label { flex-direction: row; align-items: flex-start; }
+.forms-scope .aba-profile-choices input[type='checkbox'] { width: 18px; height: 18px; flex: 0 0 auto; margin: 2px 0; }
+@media (max-width: 1024px) {
+  .aba-profile-meta, .aba-profile-choices { grid-template-columns: minmax(0, 1fr); }
+  .aba-profile-head, .aba-profile-actions { flex-direction: column; align-items: stretch; }
+  .aba-profile button { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 }

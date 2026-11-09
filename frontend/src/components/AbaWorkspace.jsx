@@ -13,6 +13,7 @@ import { AbaCollection } from './aba/AbaCollection';
 import { AbaPatientPanel } from './aba/AbaPatientPanel';
 import { AbaPrograms } from './aba/AbaPrograms';
 import { AbaPlan } from './aba/AbaPlan';
+import { AbaProfile } from './aba/AbaProfile';
 import { AbaQuality } from './aba/AbaQuality';
 import { AbaRepertoire } from './aba/AbaRepertoire';
 import { AbaResults } from './aba/AbaResults';
@@ -43,6 +44,7 @@ const TABS = {
   QUALIDADE: 'Qualidade',
   PROGRAMAS: 'Programas',
   PLANO: 'Plano terapêutico',
+  PERFIL: 'Perfil',
   REPERTORIO: 'Repertório',
   TIMES: 'Times',
   REVISAO: 'Revisão',
@@ -52,7 +54,7 @@ const TABS = {
 const NAV_GROUPS = [
   { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
   { title: 'Atendimento', tabs: [TABS.COLETA, TABS.SESSOES, TABS.RESULTADOS, TABS.QUALIDADE] },
-  { title: 'Plano', tabs: [TABS.PROGRAMAS, TABS.PLANO, TABS.REPERTORIO] },
+  { title: 'Plano', tabs: [TABS.PERFIL, TABS.PROGRAMAS, TABS.PLANO, TABS.REPERTORIO] },
   { title: 'Equipe', tabs: [TABS.TIMES, TABS.REVISAO, TABS.ALERTAS] },
 ];
 
@@ -66,6 +68,7 @@ const HELP_BY_TAB = {
   [TABS.QUALIDADE]: 'qualidade',
   [TABS.PROGRAMAS]: 'programas',
   [TABS.PLANO]: 'plano',
+  [TABS.PERFIL]: 'perfil',
   [TABS.REPERTORIO]: 'repertorio',
   [TABS.TIMES]: 'times',
   [TABS.REVISAO]: 'revisao',
@@ -199,6 +202,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
     if (effectiveTab === TABS.RESULTADOS) return <AbaResults data={data} onChanged={reload} patient={selectedPatient} profile={profile} />;
     if (effectiveTab === TABS.QUALIDADE) return <AbaQuality data={data} patientId={selectedPatient.id} onChanged={reload} />;
     if (effectiveTab === TABS.PLANO) return <AbaPlan key={selectedPatient.id} patient={selectedPatient} data={data} profile={profile} />;
+    if (effectiveTab === TABS.PERFIL) return <AbaProfile key={selectedPatient.id} patient={selectedPatient} data={data} />;
     if (effectiveTab === TABS.PROGRAMAS) return <AbaPrograms data={data} onChanged={reload} />;
     if (effectiveTab === TABS.REPERTORIO) return <AbaRepertoire data={data} onChanged={reload} />;
     return (

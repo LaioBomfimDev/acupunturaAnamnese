@@ -392,3 +392,57 @@ export function approvePlan(patientId, plan, eventId) {
 export function voidPlan(patientId, plan, eventId, reason) {
   return call('aba_void_plan', { p_patient_id: patientId, p_plan_id: plan.id, p_revision: plan.revision, p_client_event_id: eventId, p_reason: reason.trim() }, 'Não foi possível anular o plano.');
 }
+
+// ---------- perfil do paciente (ACUP-005) ----------
+export const PROFILE_COMMUNICATION = {
+  vocal: 'Fala vocal', pecs: 'PECS', caa_alta: 'CAA de alta tecnologia',
+  caa_baixa: 'CAA de baixa tecnologia', sinais: 'Sinais', gestos: 'Gestos', misto: 'Misto',
+};
+export const PROFILE_SUPPORT = { '1': 'Nível 1', '2': 'Nível 2', '3': 'Nível 3', nao_informado: 'Não informado' };
+
+export function profileToday(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+  const part = type => parts.find(item => item.type === type).value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+export function profileDraftIssue(draft, today = profileToday()) {
+  const diagnosis = draft.diagnosis;
+  if (diagnosis && Object.values(diagnosis).some(value => String(value).trim())) {
+    if (!diagnosis.text?.trim() || !diagnosis.source?.trim() || !diagnosis.issued_on) return 'Laudo exige texto, fonte e data.';
+    if (diagnosis.text.length > 6000 || diagnosis.source.length > 1000) return 'Laudo exige texto (até 6000 caracteres), fonte (até 1000) e data.';
+    const issued = diagnosis.issued_on;
+    const parsed = new Date(`${issued}T12:00:00Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(issued) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== issued) return 'Data do laudo inválida.';
+    if (issued > today) return 'Data do laudo não pode ser futura.';
+  }
+  if ((draft.details || '').length > 12000) return 'Detalhes precisam ser texto de até 12000 caracteres.';
+  return '';
+}
+
+export function profileErrorMessage(error) {
+  if (error instanceof AbaConflictError || error?.code === '40001') return 'Este perfil foi alterado por outra pessoa. Recarregue antes de salvar.';
+  if (error instanceof AbaAccessError || error?.code === '42501') return 'Você não tem permissão para realizar esta ação neste paciente.';
+  if (error?.code === '22023' && /^(?:Perfil |Informe |Paciente |Comunicação |Diagnóstico |Laudo |Data |Detalhes )/u.test(error.message || '')) return error.message;
+  return 'Não foi possível concluir. Confira os dados do perfil e tente novamente. Se persistir, peça ajuda à administração.';
+}
+
+export function getPatientProfile(patientId) {
+  return call('aba_get_profile', { p_patient_id: patientId }, 'Não foi possível carregar o perfil.');
+}
+
+export function savePatientProfile(patientId, draft, eventId) {
+  const diagnosis = draft.diagnosis;
+  return call('aba_save_profile', {
+    p_patient_id: patientId,
+    p_profile: {
+      revision: draft.revision,
+      client_event_id: eventId,
+      communication_mode: [...draft.communication_mode],
+      support_level: draft.support_level,
+      diagnosis: diagnosis && Object.values(diagnosis).some(value => String(value).trim())
+        ? { text: diagnosis.text, source: diagnosis.source, issued_on: diagnosis.issued_on } : null,
+      details: draft.details?.trim() ? draft.details : null,
+    },
+  }, 'Não foi possível salvar o perfil.');
+}

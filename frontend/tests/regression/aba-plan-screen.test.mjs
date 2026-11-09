@@ -172,7 +172,7 @@ test('impressão: timbrado, paginação e mesma tipografia no palco invisível, 
 test('navegação: grupo Plano, paciente como key e celular/tablet até 1024px sem larguras fixas', async () => {
   const workspace = await readFile(path.join(root, 'src/components/AbaWorkspace.jsx'), 'utf8');
   assert.match(workspace, /PLANO: 'Plano terapêutico'/);
-  assert.match(workspace, /title: 'Plano', tabs: \[TABS\.PROGRAMAS, TABS\.PLANO, TABS\.REPERTORIO\]/);
+  assert.match(workspace, /title: 'Plano', tabs: \[TABS\.PERFIL, TABS\.PROGRAMAS, TABS\.PLANO, TABS\.REPERTORIO\]/);
   assert.match(workspace, /\[TABS\.PLANO\]: 'plano'/);
   assert.match(workspace, /<AbaPlan key=\{selectedPatient\.id\}/);
   assert.match(source, /<HubBackButton nested label="Voltar aos planos"/);

@@ -9,8 +9,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versão | 1.0 |
-| Data | 2026-06-30 |
+| Versão | 1.1 (rascunho da assistente financeira, aguardando aprovação da clínica) |
+| Data | 2026-06-30 · atualizado em 2026-11-09 |
 | Responsável pela elaboração | Equipe Reability — [definir responsável técnico] |
 | Encarregado (DPO) | Ainda não formalmente nomeado — contato institucional interino: (71) 99970-3912 |
 | Controlador | Reability – Núcleo de Desenvolvimento Neurológico LTDA — CNPJ 53.351.769/0001-10 — Rua Simões Filho, 350, Boa Vista, Catu – BA, CEP 48110-000. Responsável técnica: Denise Neves (CRP 03/10696) |
@@ -45,6 +45,7 @@ toda saída exige **revisão humana**.
 | Imagens | fotografias da língua (e sublingual) | **Sensível (saúde)** |
 | Profissional | nome, e-mail, login, registro profissional, especialidade, clínica, perfil | Pessoal |
 | Operacional | logs de auditoria administrativa, status de usuário | Pessoal |
+| Financeiro (assistente) | primeiro nome e idade em anos do paciente, área de atendimento, nome do profissional, valores, datas de vencimento e pagamento, situação (pago, a receber, atrasado, da operadora) | Pessoal (financeiro); a área de atendimento indica que a pessoa é paciente da clínica |
 
 **Base legal (saúde):** tutela da saúde por profissional/serviço de saúde (art. 11, II, "f") e/ou
 consentimento específico e destacado do titular (art. 11, I), conforme o caso. **Validar com jurídico.**
@@ -63,6 +64,9 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
    (ver seção 4: o modelo atual não é oferecido em São Paulo). Antes de enviar,
    o **texto é anonimizado no cliente** (mascara nome, CPF, telefone, e-mail, datas, CEP — `utils/anonymize.js`)
    e o **nome do paciente não é enviado**. As funções **não registram** o conteúdo do paciente em log.
+   **Exceção (assistente financeira, §4.1):** quando a administração pergunta à assistente sobre o
+   financeiro, vão ao Vertex o **primeiro nome e a idade** do paciente junto de área, profissional,
+   valores, datas e situação, só das linhas da pergunta.
 4. **Retenção:** [preencher: prazo de guarda — em regra ≥ 20 anos para prontuário; confirmar com o conselho].
 5. **Eliminação/anonimização:** ao fim da finalidade e dos prazos legais.
 
@@ -86,7 +90,39 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 - **Superfícies:** língua (visão), anamnese→marcações, raciocínio clínico, rascunho de relatório/evolução,
   consulta à Biblioteca (RAG). Todas **sob demanda** (botão), nunca "ao vivo".
 - **Revisão humana obrigatória:** nenhuma sugestão entra no prontuário sem aceite da profissional.
-- **Minimização:** anonimização na origem + nome do paciente não enviado + only-on-demand.
+- **Minimização:** anonimização na origem + nome do paciente não enviado + only-on-demand
+  (exceção da assistente financeira em §4.1, com minimização própria).
+
+### 4.1 Assistente da clínica — perguntas sobre o financeiro (novo tratamento, 2026-11)
+
+- **Finalidade:** a administração pergunta à assistente sobre recebimentos e pendências da clínica
+  (ex.: "quanto recebi em outubro?", "quais pacientes faltam pagar?") e recebe totais por área e a
+  lista de quem deve ou está em dia, para lembrar a profissional de qual paciente se trata.
+- **Quem pode:** só quem já vê o Financeiro no sistema (administração da clínica). A permissão é
+  conferida no aparelho e de novo no servidor, pelo login de quem perguntou; recepção e profissionais
+  não recebem esses dados.
+- **Dados enviados à IA:** **primeiro nome** do paciente e **idade em anos** (calculada no aparelho;
+  a data de nascimento não sai), área de atendimento, nome do profissional, valores, datas de
+  vencimento e pagamento e situação. **Nunca:** sobrenome, data de nascimento, CPF, telefone, e-mail,
+  endereço, carteirinha do convênio, diagnóstico, prontuário, evolução ou qualquer dado clínico.
+- **Recorte:** só as linhas que respondem à pergunta, no máximo **93 dias** e **50 linhas** por
+  pergunta; nunca a base inteira. A busca é feita no aparelho de quem perguntou, com as regras de
+  acesso do banco (RLS).
+- **Operador e local:** Google Cloud Vertex AI (Gemini), **multirregião dos EUA (`us`)**: há
+  **transferência internacional** de dado pessoal **identificável** (primeiro nome + idade + valores),
+  diferente das outras superfícies, que enviam texto anonimizado. Amparo: cláusulas do CDPA do Google
+  (LGPD art. 33). [preencher: confirmar com o jurídico a base da transferência para este dado.]
+- **Base legal:** [preencher com o jurídico] — candidata: legítimo interesse do controlador na gestão
+  financeira dos serviços prestados (art. 7º, IX) e/ou execução de contrato com o paciente/responsável
+  (art. 7º, V), com teste de balanceamento registrado. Não é tratamento de dado de saúde para fins
+  clínicos; a área de atendimento, porém, revela que a pessoa é paciente da clínica.
+- **Retenção:** nada fica no Google além do processamento da resposta (CDPA: sem treino, sem revisão
+  humana do provedor). A conversa vive só na memória da aba do navegador. O uso fica registrado em
+  `ai_usage_events` **sem conteúdo** (só tokens, ação e quem usou). Nada financeiro em log.
+- **"Corrigir":** numa resposta com dado financeiro, a correção guarda só a nota de quem corrige (sem a
+  resposta original nem os dados) e **nunca** vira correção compartilhada com outras clínicas.
+- **Crianças e adolescentes:** ver §9 — este fluxo envia primeiro nome + idade de **criança** para
+  fora do Brasil.
 
 ---
 
@@ -111,6 +147,7 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 | 5 | Dados de menores sem consentimento adequado | Média | Alto | §9; consentimento do responsável; minimização | Médio (reduzir com fluxo formal de consentimento) |
 | 6 | Credencial de serviço (GCP) exposta | Baixa | Alto | Secret no Supabase (servidor), nunca no frontend; rotação em incidente | Baixo |
 | 7 | Uso do fallback local em dispositivo compartilhado | Baixa | Médio | Aviso no termo; orientar não usar em produção/dispositivo público | Baixo |
+| 8 | Primeiro nome + idade de paciente (inclui criança) e valores enviados ao Vertex nos EUA pela assistente financeira | Média | Médio | §4.1: só administração (conferida no servidor), sem sobrenome/nascimento/contato/dado clínico, recorte de 93 dias e 50 linhas, CDPA não-treino, uso registrado sem conteúdo, Corrigir sem dados | Baixo/Médio (depende da base legal e do aviso ao responsável, §9) |
 
 > Reavaliar probabilidades/impactos com o DPO. Itens [preencher] exigem decisão da clínica.
 
@@ -145,6 +182,12 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
   responsável legal; quais dados do responsável serão registrados.]
 - Enquanto não houver fluxo formal e documentado de consentimento do responsável, o risco "dados de
   menores sem consentimento adequado" NÃO deve ser classificado como baixo (ver §6, item 5).
+- **Assistente financeira (§4.1):** este fluxo manda **primeiro nome + idade de criança ou adolescente**,
+  com valores e datas, para processamento **fora do Brasil** (Vertex, EUA). Medidas: sem sobrenome, sem
+  data de nascimento, sem contato, sem dado clínico; só a administração; recorte limitado; sem retenção
+  no provedor. O aviso de privacidade ao responsável legal deve citar esse uso (IA de apoio à gestão
+  financeira, processada nos EUA). [preencher: confirmar com o jurídico se o melhor interesse da criança
+  está atendido ou se este fluxo deve excluir menores.]
 
 ---
 
@@ -162,6 +205,10 @@ pendências abaixo.
 - [ ] Consentimento/aviso de privacidade do **PACIENTE** ao nível da clínica (papel/PDF, fora do sistema — o termo do app é só do profissional).
 - [ ] Arquivar o **CDPA do Google** (PDF pt-BR) e o **DPA do Supabase**; registrar a região dos backups.
 - [ ] Definir política de segurança operacional: **MFA**, backup (frequência/retenção/responsável), revisão e desligamento de acessos, treinamento LGPD da equipe.
+- [ ] **Assistente financeira (§4.1, 2026-11):** aprovação da clínica deste texto; base legal e base
+  da transferência internacional de dado identificável com o jurídico; aviso ao responsável legal sobre
+  o envio de primeiro nome + idade de criança aos EUA (§9); atualizar o registro das operações de
+  tratamento com esta finalidade.
 - [ ] **Revisão jurídica/DPO final** deste RIPD e do termo do profissional.
 
 **Aprovações:**

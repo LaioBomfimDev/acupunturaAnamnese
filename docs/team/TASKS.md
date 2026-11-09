@@ -68,8 +68,7 @@ Regras de toda task com SQL (além do aceite próprio):
   4. Erros do banco viram mensagem pt-BR: 40001 "foi alterado por outra pessoa, recarregue", 42501 sem permissão, 23505/22023 pela mensagem do banco ou texto próprio; nunca código cru nem inglês.
   5. Imprimir o aprovado no papel timbrado com `PrintLetterhead` + `paginateReportBody` (como `AbaReport.jsx`), preto/cinza/branco, sem cor do app; mostra os programas pela cópia congelada (`program_snapshots`), nunca pelo programa atual.
   6. Celular e tablet (≤1024px): nada mais largo que 360px, lista vira cartão, botões com `HubBackButton` quando aninhado; pt-BR com plural certo ("1 programa", "2 programas").
-  7. Teste de regressão cobre 1–6 por leitura de fonte (regex com `?
-`) e pelas funções puras que a tela usar.
+  7. Teste de regressão cobre 1–6 por leitura de fonte (regex com `\r?\n`) e pelas funções puras que a tela usar.
 - Comandos que precisam passar: `cd frontend && npm run lint && npm test && npm run build` (build com `.env.local` público copiado).
 - Depende de: ACUP-002 (PRONTO).
 
@@ -130,8 +129,7 @@ Regras de toda task com SQL (além do aceite próprio):
   6. Aviso "ponto de partida, não decisão clínica" mantido na tela de Programas e presente na Biblioteca; técnica restrita mostra "Restrito" e o modelo nunca dispensa a revisão nominal do programa.
   7. "Como funciona" da aba (seções fixas, pelos rótulos reais) + espelho regenerado. pt-BR com plural certo ("1 modelo", "2 modelos"). ≤1024px: nada mais largo que 360px, lista vira cartão, sem rolagem lateral.
   8. Prints (rotina do board): o dev tira com `mesa/ferramentas/print.mjs ACUP-007 …` no computador e, no celular, com `mesa/ferramentas/harness-telas/print-cdp.mjs` (o `--celular` do print.mjs sai cortado), dos estados: lista mesclada, item oculto, edição, erro de leitura (Programas com aviso), só leitura; cita na ENTREGA. O QA confere/refaz com sufixo `-qa` e diz no REVIEW quais conferiu.
-  9. Teste de regressão cobre 1–7 pelas funções puras e por leitura de fonte (regex com `?
-`).
+  9. Teste de regressão cobre 1–7 pelas funções puras e por leitura de fonte (regex com `\r?\n`).
 - Comandos que precisam passar: `cd frontend && npm run lint && npm test && npm run build`.
 - Depende de: ACUP-006 (PRONTO).
 

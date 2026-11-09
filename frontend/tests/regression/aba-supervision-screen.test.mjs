@@ -166,3 +166,14 @@ test('navegação/ajuda/privacidade: Equipe sem paciente, nada da reunião no t�
   const { ABA_HELP } = await import('../../src/data/screenHelp.js');
   for (const key of ['title','summary','actions','reading','access','notes']) assert.ok(ABA_HELP.supervisao[key]);
 });
+
+// QA (review da ACUP-013): mutações que passavam sem o teste notar.
+test('QA: assinar e anular só pela confirmação, motivo mínimo no botão e trava de clique na ação', () => {
+  assert.ok(source.includes("if (action === 'ack') void runAction(record, action, '', eventId);"), 'só a ciência dispara direto');
+  assert.ok(source.includes('else { setRowErrors(current => ({ ...current, [record.id]: \'\' })); setConfirming({ record, action, eventId }); }'), 'assinar e anular abrem a confirmação com o evento da ação');
+  assert.ok(source.includes('disabled={busy || archived(error) || (isVoid && reason.trim().length < 10)}'), 'Confirmar anulação travado com motivo curto');
+  const action = source.slice(source.indexOf('async function runAction'), source.indexOf('function act(record, action)'));
+  assert.match(action, /^async function runAction\(record, action, reason, eventId\) \{\r?\n\s+if \(lock\.current\) return;/);
+  assert.match(action, /lock\.current = true; setBusy\(true\)/);
+  assert.match(action, /finally \{ lock\.current = false; setBusy\(false\); \}/);
+});

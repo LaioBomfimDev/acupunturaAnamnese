@@ -19,7 +19,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-005 | Tela do perfil ABA | Codex LK | integracao (0729ff3) | PRONTO | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | integracao (c452e87) | PRONTO | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | integracao (7c8d6f5) | PRONTO | ver abaixo |
-| ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | codex/lk (452d683) | REVIEW | ver abaixo |
 | ACUP-013 | Tela da supervisão formal | Codex LK | — | TODO (após 008) | ver abaixo |
 | ACUP-014 | Ajustes da biblioteca (pendências do review da 007) | Codex LK | — | TODO (após 013) | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 014) | ver abaixo |
@@ -216,3 +216,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-09 — ACUP-008, leitura (SUP-3): opção A do dev. A lista devolve os dados do registro (data, duração, modalidade, formato, status, quem registrou, assinou e anulou, ciência) a quem pode ler o registro; pauta, decisões e o paciente vinculado só saem se quem lê passa em `aba_can_access_patient` desse paciente (ou se não há paciente). Sem acesso: `patient_id` NULL e textos NULL na resposta, com sinal de conteúdo restrito; nunca nome do paciente. Em `patient-erasure.test.mjs`, a exceção fechada da supervisão exige snapshot + UPDATE (não ausência do snapshot), só para essa tabela; a regra de `KEPT_ON_PURPOSE` das demais continua.
 - 2026-11-09 — ACUP-008: opção A do dev aprovada. O UPDATE de anonimização da exclusão sobe `revision = revision + 1` (CAS antigo dá 40001, ninguém regrava pauta do paciente removido), sem mexer em datas, atores, status e horas; `client_event_id` fica, e o replay do último evento continua sem regravar texto. Teste e roteiro SQL: CAS antigo depois da exclusão recusa; replay não traz o texto de volta.
 - 2026-11-09 — ACUP-008: autorizada mais uma linha na exclusão de paciente, antes do snapshot: `PERFORM 1 FROM public.patients WHERE id = v_req.patient_id FOR UPDATE`. As escritas da supervisão com paciente travam o mesmo paciente (`FOR NO KEY UPDATE`, como na 010) antes de gravar e revalidam se ele foi excluído ou arquivado. Teste de concorrência em 2 sessões no banco local (exclusão × rascunho com o mesmo paciente) no roteiro. Diff da exclusão = 20261108b + as linhas da tabela + essa trava.
+- 2026-11-09 — ACUP-008 entregue (452d683; lint, 1421 testes com 1420 ok e 1 pulado, build verdes; roteiro SQL 12 OK + ROLLBACK, concorrência com controle negativo, 4 mutações mordem). REVIEW mandado ao QA.

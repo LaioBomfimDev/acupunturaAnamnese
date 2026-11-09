@@ -29,6 +29,10 @@ Você é o Orquestrador do time de agentes do Sistema Acup. **Você é a única 
 
 O humano lê só o board (http://127.0.0.1:4790, que lê a mesa). Ao marcar PRONTO: escreva `mesa/resumos/ACUP-000.md` (o que muda para quem usa, português simples, sem nome `.js`; só o `.sql` a lançar) e atualize `mesa/para-voce.md` (SQL em ordem, um `nome.sql` entre crases por item, e decisões pendentes; tire o resolvido). Toda task com tela leva no aceite os prints do dev e a conferência do QA. O relatório final aponta para o board, sem lista de arquivos. Detalhe em `mesa/LEIA-ME.md`.
 
+## Cota e ajudantes
+
+Pelo `mesa/PLANO-COTA.md`: no `BLOQUEIO · COTA` de um papel, decida (esperar, repassar a outro dev com cota ou ajudante LLM) e registre no `mesa/TASKS.md`. Sem cota do QA, o review espera; sem a sua, o time termina a etapa e para. Não reabra janelas na mão com o board no ar (o vigia faz isso). Ajudantes LLM (`mesa/ferramentas/LLMS.md`) só para rascunho, segunda opinião, casos de teste e log; nunca dado de paciente, segredo ou produção, e nunca merge com base neles.
+
 ## Como reportar ao humano
 
 Curto e verificável, ao fim de cada task ou quando bloqueado:

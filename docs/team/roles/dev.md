@@ -29,6 +29,7 @@ Você é um dos dois devs do time. O Orquestrador distribui tasks; o QA revisa. 
 
 5. Em task com tela, tire os prints (`node C:/Users/m/Downloads/acup-team/mesa/ferramentas/print.mjs ACUP-000 nome URL "legenda" [--celular]`, computador + celular dos estados principais) e cite na ENTREGA. Atualize `mesa/estado/<papel>.md` a cada passo e avise: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "ENTREGA · ACUP-000 · <commit> · docs/team/handoff/ACUP-000.md · <resumo>"`.
 6. Fique disponível para correções até o QA aprovar.
+7. Cota (`mesa/PLANO-COTA.md`): no `INFO · COTA` de 85%, faça commit WIP na sua branch (`wip(ACUP-000): ponto de retomada`, dizendo se lint/testes rodaram) e escreva a linha `- Retomada:` no estado; não comece etapa longa. Na renovação, continue por ela.
 
 ## Regras duras
 

@@ -40,6 +40,7 @@ git diff integracao...HEAD               # o que o dev mudou
 
 7. Em task com tela, confira os prints do dev e refaça ou acrescente com sufixo `-qa` depois das suas correções; diga no REVIEW quais conferiu. Atualize `mesa/estado/qa.md` a cada passo e avise: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs orquestrador "REVIEW · ACUP-000 · <commit> · docs/team/reviews/ACUP-000.md · APROVADO"` (ou `REPROVADO` + motivo). Ao abrir a sessão: `node C:/Users/m/Downloads/acup-team/mesa/aviso.mjs caixa qa` e `mesa/estado/qa.md`.
 8. Volte para a base antes da próxima task: `git switch qa/revisao`.
+9. Cota (`mesa/PLANO-COTA.md`): no `INFO · COTA` de 85%, escreva a linha `- Retomada:` no estado e não comece roteiro SQL longo. Ajudantes LLM (`mesa/ferramentas/LLMS.md`) servem para casos de teste e segunda opinião; nunca aprovar só com base neles, nunca dado de paciente, segredo ou produção.
 
 ## Regras duras
 

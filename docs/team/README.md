@@ -56,6 +56,11 @@ O humano acompanha só pelo board (http://127.0.0.1:4790, lê a mesa); não lê 
 - QA: confere ou refaz os prints com sufixo `-qa` e diz no REVIEW quais conferiu;
 - Orquestrador: ao marcar PRONTO, `mesa/resumos/ACUP-000.md` (o que muda para quem usa, português simples, sem nome `.js`, só o `.sql` a lançar) e `mesa/para-voce.md` (SQL em ordem, um `nome.sql` entre crases por item, e decisões pendentes, tirando o que foi resolvido). Relatório ao humano aponta para o board.
 
+### Cota e ajudantes LLM
+
+- `mesa/PLANO-COTA.md`: o vigia do board avisa em 85% da janela de 5 h (cada papel salva o ponto de retomada: commit WIP do dev e a linha `- Retomada:` no estado), avisa o Orquestrador em 100% (esperar, repassar ou ajudante, registrado no quadro) e retoma sozinho na renovação. Com o board no ar, ninguém reabre janela na mão.
+- `mesa/ferramentas/LLMS.md`: ajudantes por API (Gemini e outros), chamados só pelo Orquestrador e pelo QA, para rascunho, segunda opinião, casos de teste e leitura de log. Só devolvem texto; um Claude confere e aplica. Nunca dado de paciente, segredo ou produção, e nunca merge ou aprovação com base neles.
+
 ## Barramento antigo (até a ACUP-002, não usar)
 
 O Habblaud entrega mensagens às sessões abertas em `http://127.0.0.1:4747`.

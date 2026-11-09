@@ -9951,6 +9951,22 @@ textarea { min-height: 95px; resize: vertical; }
   box-shadow: 0 0 0 3px var(--r1-focus-ring, rgba(14, 42, 74, .25));
 }
 
+/* Celular: as duas opções dividem a largura numa linha só (com o
+   recuo de 16px a pílula quebrava em duas linhas a 360px; QA 021). */
+@media (max-width: 520px) {
+  .doc-source-toggle {
+    display: flex;
+    align-self: stretch;
+    flex-wrap: nowrap;
+  }
+
+  .doc-source-toggle button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+}
+
 .doc-paste {
   display: flex;
   flex-direction: column;

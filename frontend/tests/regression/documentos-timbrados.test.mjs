@@ -156,3 +156,16 @@ test('colar conteúdo: só texto vira parágrafos, sem HTML cru', () => {
   assert.match(docxHelpers, /b\[id\^="docs-internal-guid"\]/);
   assert.match(docxHelpers, /file:\/\//);
 });
+
+// QA ACUP-021 (09/11/2026): "Colar conteúdo" recebe HTML de qualquer página,
+// não só do mammoth. Na prévia sobravam links "java<TAB>script:", "data:text/html"
+// e <svg><set attributeName="href" to="javascript:…"> (troca o href depois da
+// limpeza). A CSP de produção segura o script, mas a limpeza não pode depender dela.
+test('QA: limpeza do colado barra javascript: com tab/quebra, data: fora de imagem e svg/math', () => {
+  assert.match(docxHelpers, /querySelectorAll\('[^']*\bbase\b[^']*\bsvg,math'\)\.forEach\(el => el\.remove\(\)\)/);
+  // compara o esquema sem os caracteres que o navegador ignora
+  assert.match(docxHelpers, /const scheme = \[\.\.\.attr\.value\]\.filter\(c => c\.charCodeAt\(0\) > 0x20 && c\.charCodeAt\(0\) !== 0x7f\)\.join\(''\)\.toLowerCase\(\);/);
+  assert.match(docxHelpers, /\/\^\(javascript\|vbscript\):\/\.test\(scheme\)/);
+  assert.match(docxHelpers, /scheme\.startsWith\('data:'\) && !\(el\.tagName === 'IMG' && name === 'src' && scheme\.startsWith\('data:image\/'\)\)/);
+  assert.doesNotMatch(docxHelpers, /\/\^\s\*javascript:\/i\.test\(attr\.value\)/, 'o teste antigo do esquema era burlado por tab');
+});

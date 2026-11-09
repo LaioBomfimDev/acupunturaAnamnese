@@ -42,7 +42,9 @@ const STRIP_ATTRIBUTES = [
 export function normalizeImportedHtml(rawHtml) {
   const doc = new DOMParser().parseFromString(`<div>${rawHtml || ''}</div>`, 'text/html');
 
-  doc.querySelectorAll('script,style,iframe,object,embed,link,meta,title,form,input,button,select,textarea').forEach(el => el.remove());
+  // svg/math: o colado de uma página pode trazer <set>/<animate> que
+  // troca o href por javascript: depois da limpeza (QA, 09/11/2026).
+  doc.querySelectorAll('script,style,iframe,object,embed,link,meta,title,base,form,input,button,select,textarea,svg,math').forEach(el => el.remove());
   removeComments(doc.body);
 
   // Conteúdo colado (Word, Google Docs, navegador) marca negrito e
@@ -71,8 +73,12 @@ export function normalizeImportedHtml(rawHtml) {
     [...el.attributes].forEach(attr => {
       const name = attr.name.toLowerCase();
       const isEventHandler = name.startsWith('on');
+      // O navegador ignora tab, quebra de linha e controles no esquema
+      // ("java\tscript:" roda); compara sem eles. data: só em imagem.
+      const scheme = [...attr.value].filter(c => c.charCodeAt(0) > 0x20 && c.charCodeAt(0) !== 0x7f).join('').toLowerCase();
       const isScriptUrl = ['href', 'src', 'xlink:href'].includes(name)
-        && /^\s*javascript:/i.test(attr.value);
+        && (/^(javascript|vbscript):/.test(scheme)
+          || (scheme.startsWith('data:') && !(el.tagName === 'IMG' && name === 'src' && scheme.startsWith('data:image/'))));
       if (isEventHandler || isScriptUrl) el.removeAttribute(attr.name);
     });
     STRIP_ATTRIBUTES.forEach(name => el.removeAttribute(name));

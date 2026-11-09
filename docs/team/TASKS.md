@@ -28,10 +28,16 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-017 | Assistente: postura no financeiro, Corrigir protegido, regra no AGENTS.md | Codex LK | integracao (9b871b7) | PRONTO | ver abaixo |
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Claude dev2 (sessão Documentos) | integracao (f7be8bc) | PRONTO | ver abaixo |
 | ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (texto aprovado 09/11) | ver abaixo |
-| ACUP-020 | Remover a tela de integração com o WhatsApp | Codex LK | — | TODO (após 018) | ver abaixo |
+| ACUP-020 | Remover a tela de integração com o WhatsApp | dev2 | claude/dev2 | FAZENDO (DEV2-2) | ver abaixo |
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | PRONTO (04222c7; publicado 09/11) | ver abaixo |
 | ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | PRONTO (f2dd32c; publicado 09/11) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
+| ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | claude/dev2 | TODO (após 020) | ver abaixo |
+| ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | claude/dev2 | TODO (após 023) | ver abaixo |
+| ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | TODO (após 024; publicar só com 026 aprovado) | ver abaixo |
+| ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | FAZENDO | ver abaixo |
+| ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | TODO (após 025) | ver abaixo |
+| ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
 
@@ -244,6 +250,56 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - Critério de aceite: quality verde; teste falha com a ordem antiga; nenhum valor de chave em código, teste, log ou review; lista das funções a republicar (todas as de `supabase/functions/` menos `_shared`) com o comando exato para o humano.
 - Dono: QA (pequena, sem dev livre). Depende de: ACUP-021.
 
+## Rodada "Assistente ciente de tudo" (09/11, fases 1, 2 e 3 aprovadas pela humana)
+Pedido literal: "sim quero a fase 1 / 2 ok pode / fase 3 isso mesmo". Fora em todas as fases: prontuário, texto de evolução, respostas de escala e de anamnese. Tudo pelas mesmas funções das telas, consultado no aparelho com o login de quem pergunta (como a 016), limpo na Edge por lista fechada (`_shared/assistantConsulta.ts`), nada em log ou `ai_usage_events` além de tokens, orçamento (`enforceAiBudget`) e uso (`usageContextFor`) mantidos. Regras da rodada: AG-1 a AG-4 em DECISOES. As tasks são em sequência porque mexem nos mesmos arquivos da assistente.
+
+## ACUP-023 — Assistente, fase 1: agenda e operação sem paciente
+- Objetivo: a assistente responde sobre a agenda e a operação da clínica sem citar paciente. Exemplos: "como está a agenda da Denise na semana que vem?", "quantas faltas tivemos em outubro?", "quais confirmações estão pendentes amanhã?".
+- Consultas novas, cada uma com a mesma regra de perfil da tela de origem (recepção sem clínico; financeiro e convênio só da administração, `can_manage_finance`):
+  - agenda por período (dia, semana, mês; até 93 dias) e por profissional: horário, tipo (`appointmentTypeLabel`), área e status, sem paciente;
+  - faltas e cancelamentos por período e profissional (contagens e lista sem paciente);
+  - confirmações pendentes (contagem e horários);
+  - pacotes perto do fim (contagem por profissional/área, pela regra de `utils/agendaPackageSessions.js`);
+  - aniversários do mês (só a contagem nesta fase);
+  - pesquisas de satisfação no período (contagem e média, sem comentário do paciente);
+  - formulários pendentes da Área do Paciente (contagem);
+  - convênio: guias sem lote, lotes não enviados e notas fiscais pendentes (contagens e valores, só administração).
+- Arquivos de propriedade: `frontend/src/services/assistantTools.js`, `frontend/src/utils/clinicAssistant.js`, `supabase/functions/_shared/assistantConsulta.ts`, `supabase/functions/clinic-assistant/index.ts` (schema do pedido/resposta e o trecho do prompt das consultas novas), `frontend/src/data/screenHelp.js` (só o tópico da Assistente) + espelho pelo script, teste novo `frontend/tests/regression/clinic-assistant-agenda.test.mjs`, `AGENTS.md` (só o bullet da assistente).
+- Critério de aceite: lista fechada de chaves por consulta, no teste e na Edge; nenhuma consulta devolve nome, nascimento, contato ou dado clínico; cada consulta recusada para o perfil que não vê a tela (teste por perfil: administração, recepção, profissional); fonte que falha vira aviso, nunca zero; números batem com a tela de origem num caso fictício; limite de 93 dias e 50 linhas como no financeiro; horários vagos e financeiro continuam iguais.
+- Comandos: `cd frontend && npm run lint && npm test && npm run build`.
+- Depende de: ACUP-020.
+
+## ACUP-024 — Assistente, fase 1: até 3 consultas por pergunta
+- Objetivo: trocar "uma volta só" por até 3 consultas por pergunta (`clinicAssistantService.askAssistantWithTools`), para perguntas como "quem tem mais faltas e como está a agenda dele amanhã?".
+- Regras: no máximo 3 voltas, contadas no servidor também (pedido com mais vira erro claro); cada volta passa por `enforceAiBudget` e grava uso por `usageContextFor`; se uma consulta falha, a resposta diz o que faltou; o marcador `financeiro: true` (FIN-3/6) segue a conversa se qualquer volta for financeira; `maxOutputTokens` e nível de pensamento explícitos em cada chamada.
+- Arquivos de propriedade: `frontend/src/services/clinicAssistantService.js`, `frontend/src/components/assistant/assistantStore.js` (só o laço de voltas), `supabase/functions/clinic-assistant/index.ts`, testes `clinic-assistant*.test.mjs` (só acrescentar; asserção de "uma volta só" troca para "até 3", nada mais).
+- Critério de aceite: teste com 1, 2, 3 e 4 voltas (a 4ª recusada nos dois lados); orçamento estourado no meio para na hora; uso gravado por volta; FIN-1 a FIN-6 continuam.
+- Depende de: ACUP-023.
+
+## ACUP-025 — Assistente, fase 2: agenda com paciente (primeiro nome + idade)
+- Objetivo: "quem eu atendo amanhã?", "quando é a próxima sessão da Vitória?", "quem faltou 2 vezes no mês?", "aniversariantes da semana".
+- Contrato (AG-2): paciente = só primeiro nome + idade, como no FIN-5/FIN-7 (mesmo `firstNameOf`, `ageOn` e `FINANCE_FIRST_NAME` da Edge, reusados); nunca sobrenome, nascimento, contato, carteirinha ou dado clínico; homônimo pela idade e pelo profissional. Só o que a pessoa já vê na Agenda com o próprio login. Recepção vê agenda (é dela), sem nada clínico.
+- Corrigir (AG-3): resposta com paciente segue a regra do Corrigir financeiro (só a nota, só da autora, nunca aprovada), com o mesmo marcador ampliado para "com paciente".
+- Arquivos de propriedade: os da ACUP-023 + `frontend/src/services/clinicAssistantService.js` e `supabase/functions/_shared/corrections.ts` só para o marcador ampliado.
+- Critério de aceite: lista fechada no teste e na Edge; resposta forjada com nome completo derruba a resposta inteira; teste por perfil; homônimo; "próxima sessão" pela mesma regra da Agenda (`listSeriesSessions`/status); Corrigir protegido com teste.
+- Publicação: só com o RIPD da ACUP-026 aprovado pela humana (PUB-3).
+- Depende de: ACUP-024.
+
+## ACUP-026 — RIPD: assistente com paciente na agenda
+- Dono: Orquestrador (só documento). Atualizar `docs/ripd-sistema-acup.md`: primeiro nome + idade do paciente também na agenda e para recepção e profissionais (não só administração), finalidade, quem vê, o que nunca vai, EUA, crianças, Corrigir. A humana aprova antes de publicar a 025.
+- Depende de: nada.
+
+## ACUP-027 — Assistente, fase 3: ações com confirmação humana
+- Objetivo: a assistente prepara, a pessoa decide. (1) Mensagem de confirmação ou de falta pronta, aberta por `wa.me` no aparelho de quem pediu, com a pessoa tocando em Enviar; (2) "Novo agendamento" aberto já preenchido (paciente, profissional, dia, hora, tipo), com a pessoa conferindo e salvando.
+- Regras (AG-4): nunca envia, salva, agenda, cancela ou cobra sozinha; nada em lote; o botão diz o que vai acontecer; mensagem usa os mesmos textos dos envios por `wa.me` que já existem; a ação só aparece para quem pode fazer a mesma coisa na tela.
+- Arquivos: definidos na TASK, depois da 025 (Agenda e componentes da assistente).
+- Critério de aceite: teste que nada é gravado sem o clique da pessoa; prints no computador e no celular 360px.
+- Depende de: ACUP-025.
+
+## ACUP-028 — Modelo da assistente
+- A humana pediu "3.8 flash-lite". Pela documentação do Google só existe `gemini-3.8-flash-lite-tts` (voz, não serve para chat); para texto há `gemini-3.5-flash-lite` (atual) e `gemini-3.8-flash` (mais caro). Espera a escolha dela. Quando vier: modelo só em `_shared/aiModels.ts`, preço em `_shared/aiUsage.ts` ↔ `utils/aiUsage.js`, conferir que roda na região `us` antes.
+- Depende de: decisão da humana.
+
 ## ACUP-015 — Detalhes do aviso de texto não salvo (observações do review da 012)
 - Objetivo: (1) editores dentro de `AbaDialog` também ligam o aviso ao fechar a aba do navegador (`beforeunload`) enquanto houver texto pendente; (2) clique em sair durante a gravação mostra "Salvando…" em vez de não fazer nada calado; (3) trocar o texto "Fechar agora" da pergunta de saída por um que diga o que acontece.
 - Arquivos de propriedade: a definir na abertura.
@@ -331,3 +387,4 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - 2026-11-09 — Humana pediu pressa para produção. ACUP-021: o commit `ac30abe` (Documentos timbrados, PR #16) entra por hotfix sobre a `main`, revisado pelo QA, sem esperar a rodada da assistente (PUB-2). PR #16 fecha sem merge; WhatsApp segue como ACUP-020.
 - 2026-11-09 — ACUP-019 PRONTO: humana aprovou o texto do RIPD ("aprovo o ripd, pode liberar a assistente", via sessão Documentos). PUB-1 fica só esperando a ACUP-018. Base legal/transferência [preencher], aviso ao responsável e registro de operações seguem com ela e o jurídico.
 - 2026-11-09 — ACUP-021 APROVADA pelo QA (04222c7, 2 correções: limpeza do colado e pílula a 360px), juntada no integracao (cbc2aa0, quality 1467: 1466 ok, 1 pulado). ACUP-022 aberta para o QA: Edge Functions preferirem as chaves novas antes de a humana desligar as Legacy API keys; sai junto da 021 na main.- 2026-11-09 — ACUP-018 PRONTO: QA aprovou (eb59f68), juntada no integracao f7be8bc, quality 1487 (1486 ok, 1 pulado). PUB-1 completo; pacote em mesa/publicacao.md. Próxima: ACUP-020.
+- 2026-11-09 — Rodada "Assistente ciente de tudo" (humana: fases 1, 2 e 3 aprovadas). ACUP-023 a 028 abertas, em sequência por mexerem nos mesmos arquivos; AG-1 a AG-4 em DECISOES. Com o Codex LK fechado, dev2 faz a 020 e depois a rodada (DEV2-2). Modelo espera a escolha da humana (ACUP-028).

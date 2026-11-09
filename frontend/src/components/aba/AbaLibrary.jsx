@@ -1,24 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AbaConflictError, listLibrary, loadTeams, saveLibraryItem } from '../../services/abaService';
-import { canWriteLibrary, libraryErrorMessage, librarySavePayload, mergeAbaLibrary } from '../../utils/abaLibraryMerge';
+import { canWriteLibrary, findLibraryItem, isLibraryDuplicate, libraryErrorMessage, librarySavePayload, mergeAbaLibrary } from '../../utils/abaLibraryMerge';
 import { useDismiss } from '../../hooks/useDismiss';
 import { DismissPrompt } from '../ui/DismissPrompt';
 import { AbaDialog } from './AbaDialog';
 import { behaviorFunctionLabel, techniqueCategoryLabel, techniqueGoalLabel } from '../../utils/aba/catalog.js';
+import {
+  BEHAVIOR_FUNCTIONS, BEHAVIOR_PROCEDURES, COLLECTION_TYPES, PROMPT_FADING_STRATEGIES, PROMPT_LEVELS,
+  REINFORCEMENT_SCHEDULES, TEACHING_STRATEGIES, TECHNIQUE_CATEGORIES, TECHNIQUE_GOALS, TIME_MEASURES,
+} from '../../utils/aba/catalog.js';
 
 const OBJECTIVE_FIELDS = {
   title: 'Título', category: 'Área', level: 'Nível', objective: 'Objetivo', target: 'Alvo', skill: 'Habilidade',
   suggestedFormat: 'Formato sugerido', suggestedPrompt: 'Ajuda sugerida', suggestedProcedure: 'Procedimento sugerido',
 };
+// `code` é identificador interno do catálogo: fica guardado no conteúdo, mas nunca aparece nem se edita (código cru).
 const TECHNIQUE_FIELDS = {
-  name: 'Nome', code: 'Código', category: 'Categoria', whenToUse: 'Quando usar', howToApply: 'Como aplicar',
-  example: 'Exemplo', caution: 'Cautelas', restricted: 'Restrito', goals: 'Objetivos (um por linha)',
-  behaviorFunctions: 'Funções do comportamento (uma por linha)', sortOrder: 'Ordem',
+  name: 'Nome', category: 'Categoria', whenToUse: 'Quando usar', howToApply: 'Como aplicar',
+  example: 'Exemplo', caution: 'Cautelas', restricted: 'Restrito', goals: 'Objetivos',
+  behaviorFunctions: 'Funções do comportamento', sortOrder: 'Ordem',
 };
 const CONFIG_FIELDS = {
   collection_type: 'Forma de coleta', teaching_format: 'Formato de ensino', reinforcement_schedule: 'Esquema de reforço',
-  prompt_hierarchy: 'Hierarquia de ajuda (uma por linha)', prompt_fading: 'Esvanecimento de ajuda',
+  prompt_hierarchy: 'Hierarquia de ajuda', prompt_fading: 'Esvanecimento de ajuda',
   time_measure: 'Medida de tempo', procedure: 'Procedimento', token_economy: 'Economia de fichas', goal_direction: 'Direção do objetivo',
+};
+const SELECT_FIELDS = {
+  goals: TECHNIQUE_GOALS, behaviorFunctions: BEHAVIOR_FUNCTIONS, collection_type: COLLECTION_TYPES,
+  teaching_format: TEACHING_STRATEGIES, reinforcement_schedule: REINFORCEMENT_SCHEDULES,
+  prompt_hierarchy: PROMPT_LEVELS.map(level => ({ value: level.response, label: level.label })),
+  prompt_fading: PROMPT_FADING_STRATEGIES.map(value => ({ value, label: value })),
+  time_measure: TIME_MEASURES, procedure: BEHAVIOR_PROCEDURES,
+  goal_direction: [{ value: 'reduzir', label: 'Reduzir — o comportamento deve diminuir' },
+    { value: 'aumentar', label: 'Aumentar — a resposta deve ficar mais frequente (DRH)' }],
 };
 const titleOf = entry => entry.content.title || entry.content.name;
 // Códigos do catálogo (categoria, objetivos e funções da técnica) aparecem pelo rótulo pt-BR, como em Programas.
@@ -32,14 +46,24 @@ function shownValue(entry, key) {
 }
 const advice = 'Ponto de partida, não decisão clínica. Individualize o modelo e peça revisão da supervisão. Técnicas restritas nunca dispensam a revisão nominal do programa.';
 
-function ContentFields({ content, fields, onChange, systemTechnique = false }) {
+export function LibraryContentFields({ content, fields, onChange, systemTechnique = false, technique = false }) {
   return Object.entries(fields).map(([key, label]) => {
     const value = content[key];
     const boolean = ['restricted', 'token_economy'].includes(key);
     const list = ['goals', 'behaviorFunctions', 'prompt_hierarchy'].includes(key);
     const number = ['level', 'sortOrder'].includes(key);
+    const choices = key === 'category' && technique ? TECHNIQUE_CATEGORIES : SELECT_FIELDS[key];
+    const unknown = choices ? (list ? value || [] : value == null ? [] : [value]).filter(item => !choices.some(choice => choice.value === item)) : [];
     return <label className="aba-field" key={key}>{label}
-      {boolean ? <select value={value === undefined ? '' : String(value)} disabled={key === 'restricted' && systemTechnique}
+      {choices ? <select multiple={list} size={list ? 4 : undefined} value={list ? value || [] : value ?? ''}
+        onChange={event => {
+          const next = list ? [...event.target.selectedOptions].map(option => option.value) : event.target.value;
+          onChange(key, next.length ? next : undefined);
+        }}>
+        {!list && <option value="">Não informado</option>}
+        {choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+        {unknown.map((item, index) => <option key={item} value={item}>Valor anterior {index + 1} (fora do catálogo atual)</option>)}
+      </select> : boolean ? <select value={value === undefined ? '' : String(value)} disabled={key === 'restricted' && systemTechnique}
         onChange={event => onChange(key, event.target.value === '' ? undefined : event.target.value === 'true')}>
         <option value="">Não informado</option><option value="true">Sim</option><option value="false">Não</option>
       </select> : number ? <input type="number" min="0" max="999999999" step="1" value={value ?? ''}
@@ -58,8 +82,11 @@ function LibraryEditor({ initial, onClose, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
   const [note, setNote] = useState('');
   const inFlight = useRef(false);
+  const errorRef = useRef(null);
+  useEffect(() => { errorRef.current?.focus(); }, [error]);
   const dirty = JSON.stringify(content) !== JSON.stringify(initial.content);
   const dismiss = useDismiss({ onClose, busy, guardUnsaved: true, unsaved: dirty });
   const change = (key, value) => setContent(current => {
@@ -72,10 +99,10 @@ function LibraryEditor({ initial, onClose, onSaved }) {
     inFlight.current = true; setBusy(true);
     try {
       const rows = await listLibrary();
-      const latest = rows.find(row => row.id === entry.row?.id);
+      const latest = findLibraryItem(entry, rows);
       if (!latest) throw new Error('Modelo indisponível. Feche o editor e confira a biblioteca.');
       setEntry(current => ({ ...current, row: latest, status: latest.status }));
-      setConflict(false); setError('');
+      setConflict(false); setDuplicate(false); setError('');
       setNote('Revisão recarregada. Seu texto foi mantido; confira antes de salvar sobre a versão atual.');
     } catch (failure) { setError(libraryErrorMessage(failure)); }
     finally { inFlight.current = false; setBusy(false); }
@@ -89,7 +116,9 @@ function LibraryEditor({ initial, onClose, onSaved }) {
       await onSaved();
     } catch (failure) {
       setError(libraryErrorMessage(failure));
-      setConflict(failure instanceof AbaConflictError || failure.code === '40001');
+      const exists = isLibraryDuplicate(failure, entry);
+      setDuplicate(exists);
+      setConflict(failure instanceof AbaConflictError || failure.code === '40001' || exists);
     } finally { inFlight.current = false; setBusy(false); }
   }
   return <div className="aba-dialog-overlay" {...dismiss.backdropProps}>
@@ -101,19 +130,19 @@ function LibraryEditor({ initial, onClose, onSaved }) {
         <p className="aba-note">Só modelos institucionais. Não escreva nomes, diagnósticos ou dados de pacientes.</p>
         {entry.system && entry.kind === 'tecnica' && <p>A marca “Restrito” é definida pelo sistema e não pode ser alterada pela clínica.</p>}
         <form className="aba-library-form" onSubmit={save}>
-          <ContentFields content={content} fields={entry.kind === 'objetivo' ? OBJECTIVE_FIELDS : TECHNIQUE_FIELDS}
-            onChange={change} systemTechnique={entry.system && entry.kind === 'tecnica'} />
+          <LibraryContentFields content={content} fields={entry.kind === 'objetivo' ? OBJECTIVE_FIELDS : TECHNIQUE_FIELDS}
+            onChange={change} technique={entry.kind === 'tecnica'} systemTechnique={entry.system && entry.kind === 'tecnica'} />
           {entry.kind === 'tecnica' && <fieldset className="is-full"><legend>Configuração sugerida (opcional)</legend>
-            <div className="aba-library-form"><ContentFields content={content.suggestedConfig || {}} fields={CONFIG_FIELDS}
+            <div className="aba-library-form"><LibraryContentFields content={content.suggestedConfig || {}} fields={CONFIG_FIELDS}
               onChange={(key, value) => {
                 const next = { ...content.suggestedConfig };
                 if (value === undefined) delete next[key]; else next[key] = value;
                 change('suggestedConfig', Object.keys(next).length ? next : undefined);
               }} /></div></fieldset>}
           {note && <p className="aba-note is-full" role="status">{note}</p>}
-          {error && <p className="aba-error is-full" role="alert">{error}</p>}
+          {error && <p className="aba-error is-full" role="alert" tabIndex={-1} ref={errorRef}>{error}</p>}
           <div className="aba-form-actions is-full">
-            {conflict && <button type="button" className="quiet-button" disabled={busy} onClick={() => void reloadRevision()}>Recarregar revisão</button>}
+            {conflict && <button type="button" className="quiet-button" disabled={busy} onClick={() => void reloadRevision()}>{duplicate ? 'Recarregar' : 'Recarregar revisão'}</button>}
             <button type="button" className="quiet-button" disabled={busy} onClick={dismiss.requestDismiss}>Cancelar</button>
             <button type="submit" className="primary-button" disabled={busy || conflict}>{busy ? 'Salvando…' : 'Salvar modelo'}</button>
           </div>
@@ -132,6 +161,7 @@ export function AbaLibrary() {
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('objetivo');
+  const [statusFilter, setStatusFilter] = useState('disponiveis');
   const [limit, setLimit] = useState(12);
   const [editor, setEditor] = useState(null);
   const [confirming, setConfirming] = useState(null);
@@ -150,9 +180,11 @@ export function AbaLibrary() {
   }, []);
   useEffect(() => { void refresh(); return () => { request.current += 1; }; }, [refresh]);
   const canWrite = canWriteLibrary(teams);
-  const catalog = mergeAbaLibrary(rows, { canWrite });
+  const showArchived = canWrite && statusFilter === 'arquivados';
+  const catalog = mergeAbaLibrary(rows, { canWrite, includeArchived: showArchived });
   const entries = catalog.entries.filter(entry => entry.kind === kind
-    && `${titleOf(entry)} ${entry.content.category || ''}`.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR')));
+    && (showArchived ? entry.status === 'arquivado' : entry.status !== 'arquivado')
+    && `${titleOf(entry)} ${categoryOf(entry) || ''}`.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR')));
   async function saved() {
     setEditor(null); setConfirming(null); setMessage('Modelo salvo.');
     setLoading(true);
@@ -171,7 +203,7 @@ export function AbaLibrary() {
   }
   return <div className="aba-page aba-library-page">
     <header className="aba-page-head"><div><p className="aba-eyebrow">Equipe</p><h2>Biblioteca da clínica</h2></div>
-      {canWrite && !error && !loading && <button type="button" className="primary-button" onClick={() => setEditor({ kind, system: false, systemKey: null, status: 'ativo', row: null, content: {} })}>Novo {kind === 'objetivo' ? 'objetivo' : 'modelo de técnica'}</button>}
+      {canWrite && !showArchived && !error && !loading && <button type="button" className="primary-button" onClick={() => setEditor({ kind, system: false, systemKey: null, status: 'ativo', row: null, content: {} })}>Novo {kind === 'objetivo' ? 'objetivo' : 'modelo de técnica'}</button>}
     </header>
     <p className="aba-note">{advice}</p>
     {permissionError && <p className="aba-error" role="alert">{permissionError} <button type="button" className="quiet-button" onClick={() => { setLoading(true); void refresh(); }}>Tentar de novo</button></p>}
@@ -181,11 +213,13 @@ export function AbaLibrary() {
       <div className="aba-library-filters">
         <label className="aba-field">Buscar modelo<input value={query} onChange={event => { setQuery(event.target.value); setLimit(12); }} /></label>
         <label className="aba-field">Tipo<select value={kind} onChange={event => { setKind(event.target.value); setLimit(12); }}><option value="objetivo">Objetivos</option><option value="tecnica">Técnicas</option></select></label>
+        {canWrite && <label className="aba-field">Mostrar<select value={statusFilter} onChange={event => { setStatusFilter(event.target.value); setLimit(12); }}><option value="disponiveis">Disponíveis</option><option value="arquivados">Arquivados</option></select></label>}
       </div>
       <p className="aba-muted">{entries.length} {entries.length === 1 ? 'modelo' : 'modelos'}</p>
       <div className="aba-library-grid">{entries.slice(0, limit).map(entry => <article className="aba-card" key={entry.key}>
         <div className="aba-chip-row"><span className="aba-tag">{entry.system ? 'Sistema' : 'Da clínica'}</span>
           {entry.status === 'oculto' && <span className="aba-tag">Oculto</span>}
+          {entry.status === 'arquivado' && <span className="aba-tag">Arquivado</span>}
           {entry.content.restricted && <span className="aba-tag is-warn">Restrito</span>}
           {entry.row && entry.system && <span className="aba-tag">Ajustado pela clínica</span>}</div>
         <h3>{titleOf(entry)}</h3><p className="aba-muted">{categoryOf(entry)}</p>
@@ -193,8 +227,8 @@ export function AbaLibrary() {
         <details><summary>Ver modelo</summary><dl className="aba-library-details">{Object.entries(entry.kind === 'objetivo' ? OBJECTIVE_FIELDS : TECHNIQUE_FIELDS)
           .filter(([key]) => key !== 'restricted' && entry.content[key] != null).map(([key, label]) => <div key={key}><dt>{label.replace(/ \(uma? por linha\)$/, '')}</dt><dd>{shownValue(entry, key)}</dd></div>)}</dl></details>
         {canWrite && <div className="aba-button-row">
-          <button type="button" className="quiet-button" onClick={() => setEditor(entry)}>{entry.system ? 'Ajustar' : 'Editar'}</button>
-          <button type="button" className="quiet-button" onClick={() => { setError(''); setConfirming({ entry, id: entry.row?.id || crypto.randomUUID(), eventId: crypto.randomUUID(), status: entry.status === 'oculto' ? 'ativo' : entry.system ? 'oculto' : 'arquivado' }); }}>{entry.status === 'oculto' ? 'Reativar' : entry.system ? 'Ocultar' : 'Arquivar'}</button>
+          {entry.status !== 'arquivado' && <button type="button" className="quiet-button" onClick={() => setEditor(entry)}>{entry.system ? 'Ajustar' : 'Editar'}</button>}
+          <button type="button" className="quiet-button" onClick={() => { setError(''); setConfirming({ entry, id: entry.row?.id || crypto.randomUUID(), eventId: crypto.randomUUID(), status: entry.status !== 'ativo' ? 'ativo' : entry.system ? 'oculto' : 'arquivado' }); }}>{entry.status !== 'ativo' ? 'Reativar' : entry.system ? 'Ocultar' : 'Arquivar'}</button>
         </div>}
       </article>)}</div>
       {!entries.length && <p className="aba-empty">Nenhum modelo com esse filtro.</p>}

@@ -13,7 +13,7 @@ export function canWriteLibrary(teams) {
   return Boolean(teams && (teams.isAdmin || (teams.userId && teams.supervisedTeamId)));
 }
 
-export function mergeAbaLibrary(rows = [], { canWrite = false, objectives = ABA_OBJECTIVES, techniques = ABA_TECHNIQUES } = {}) {
+export function mergeAbaLibrary(rows = [], { canWrite = false, includeArchived = false, objectives = ABA_OBJECTIVES, techniques = ABA_TECHNIQUES } = {}) {
   const entries = [];
   for (const [kind, models] of [['objetivo', objectives], ['tecnica', techniques]]) {
     for (const model of models) {
@@ -27,18 +27,29 @@ export function mergeAbaLibrary(rows = [], { canWrite = false, objectives = ABA_
     }
   }
   for (const row of rows) {
-    if (row.system_key == null && ['ativo', 'oculto'].includes(row.status) && ['objetivo', 'tecnica'].includes(row.kind)) {
+    if (row.system_key == null && (['ativo', 'oculto'].includes(row.status) || (canWrite && includeArchived && row.status === 'arquivado')) && ['objetivo', 'tecnica'].includes(row.kind)) {
       entries.push({ key: `${row.kind}:clinica:${row.id}`, kind: row.kind, systemKey: null,
         content: structuredClone(row.content), status: row.status, row, system: false });
     }
   }
   const active = entries.filter(item => item.status === 'ativo');
   return {
-    entries: entries.filter(item => item.status === 'ativo' || (canWrite && item.status === 'oculto')),
+    entries: entries.filter(item => item.status === 'ativo' || (canWrite && (item.status === 'oculto' || (includeArchived && item.status === 'arquivado' && !item.system)))),
     objectives: active.filter(item => item.kind === 'objetivo').map(item => ({ ...item.content, key: item.key })),
     techniques: active.filter(item => item.kind === 'tecnica').map(item => ({ goals: [], behaviorFunctions: [],
       ...item.content, code: item.key })),
   };
+}
+
+// Recarregar troca só os metadados. Conteúdo digitado não é substituído.
+export function findLibraryItem(entry, rows) {
+  return rows.find(row => row.id === entry.row?.id || (entry.system
+    && row.kind === entry.kind && row.system_key === entry.systemKey)) || null;
+}
+
+export function isLibraryDuplicate(error, entry) {
+  return entry.system && (error?.code === '23505'
+    || /^Esta referência do sistema ou este evento já foi registrado na biblioteca\./u.test(error?.message || ''));
 }
 
 export function librarySavePayload(entry, content, { id, eventId, status = entry.status }) {

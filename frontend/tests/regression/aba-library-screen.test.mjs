@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { createServer } from 'vite';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { ABA_OBJECTIVES, ABA_TECHNIQUES } from '../../src/data/abaLibrary.js';
-import { canWriteLibrary, libraryContent, libraryErrorMessage, librarySavePayload, LIBRARY_FALLBACK_NOTICE, mergeAbaLibrary } from '../../src/utils/abaLibraryMerge.js';
+import { canWriteLibrary, findLibraryItem, isLibraryDuplicate, libraryContent, libraryErrorMessage, librarySavePayload, LIBRARY_FALLBACK_NOTICE, mergeAbaLibrary } from '../../src/utils/abaLibraryMerge.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const source = await readFile(path.join(root, 'src/components/aba/AbaLibrary.jsx'), 'utf8');
@@ -294,10 +296,11 @@ test('navegação, ajuda e responsividade: Equipe, sem paciente, cards e corte �
   assert.match(css, /@media \(max-width: 1024px\) \{\r?\n\s+\.aba-library-grid, \.aba-library-form \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
-let server, api, db, originalRpc;
+let server, api, db, originalRpc, screen;
 before(async () => {
   server = await createServer({ root, logLevel: 'silent', server: { middlewareMode: true }, appType: 'custom' });
   api = await server.ssrLoadModule('/src/services/abaService.js');
+  screen = await server.ssrLoadModule('/src/components/aba/AbaLibrary.jsx');
   db = (await server.ssrLoadModule('/src/lib/supabase.js')).supabase;
   originalRpc = db.rpc;
 });
@@ -339,4 +342,79 @@ test('QA: categoria, objetivos e funções da técnica aparecem pelo rótulo pt-
 
 test('QA: leitura do modelo não mostra a instrução de digitação do editor', () => {
   assert.ok(source.includes("<dt>{label.replace(/ \\(uma? por linha\\)$/, '')}</dt>"));
+});
+
+test('ACUP-014: seletores de técnica usam rótulos do catálogo, preservando valores opcionais e históricos', () => {
+  const html = renderToStaticMarkup(React.createElement(screen.LibraryContentFields, {
+    technique: true, content: { category: 'formato_ensino', goals: ['comunicar'], behaviorFunctions: ['fuga'],
+      collection_type: 'percentual_independencia', teaching_format: 'DTT', reinforcement_schedule: 'continuo',
+      prompt_hierarchy: ['ajuda_visual','fisica_parcial'], prompt_fading: 'Atraso de ajuda', time_measure: 'latencia',
+      procedure: 'DRA', goal_direction: 'reduzir' },
+    fields: { category: 'Categoria', goals: 'Objetivos', behaviorFunctions: 'Funções', collection_type: 'Coleta',
+      teaching_format: 'Ensino', reinforcement_schedule: 'Reforço', prompt_hierarchy: 'Hierarquia',
+      prompt_fading: 'Esvanecimento', time_measure: 'Tempo', procedure: 'Procedimento', goal_direction: 'Direção' },
+    onChange() {},
+  }));
+  assert.equal((html.match(/<select/g) || []).length, 11);
+  assert.equal((html.match(/multiple=""/g) || []).length, 3);
+  assert.doesNotMatch(html, /textarea/);
+  for (const label of ['Formatos de ensino','Ensinar a se comunicar','Fuga / esquiva da demanda','Percentual de independência','DTT (tentativas discretas)','Contínuo','Ajuda visual','Ajuda física parcial','Latência da resposta']) assert.ok(html.includes(label), label);
+  assert.match(html, /value="comunicar" selected=""/);
+  assert.match(html, /value="ajuda_visual" selected=""/);
+  const legacy = renderToStaticMarkup(React.createElement(screen.LibraryContentFields, { technique: true, content: { category: 'categoria_antiga' }, fields: { category: 'Categoria' }, onChange() {} }));
+  assert.match(legacy, /fora do catálogo atual/);
+  assert.doesNotMatch(legacy, />categoria_antiga</);
+});
+
+test('ACUP-014: 23505 em ajuste do sistema recarrega por tipo/chave e salva id/revisão do existente sem perder texto', () => {
+  const entry = { kind: 'objetivo', system: true, systemKey: obj.key, status: 'ativo', row: null };
+  const row = { ...own, id: 'ajuste-concorrente', revision: 8, system_key: obj.key, content: { title: 'Outro texto' } };
+  assert.equal(isLibraryDuplicate({ code: '23505' }, entry), true);
+  assert.equal(isLibraryDuplicate({ message: 'Esta referência do sistema ou este evento já foi registrado na biblioteca. Recarregue antes de continuar.' }, entry), true);
+  assert.equal(isLibraryDuplicate({ code: '23505' }, { ...entry, system: false }), false);
+  assert.equal(findLibraryItem(entry, [{ ...row, kind: 'tecnica' }]), null);
+  const existing = findLibraryItem(entry, [row]);
+  const payload = librarySavePayload({ ...entry, row: existing }, { title: 'Meu texto preservado' }, { id: 'uuid-inicial', eventId: 'novo-evento' });
+  assert.equal(payload.id, 'ajuste-concorrente');
+  assert.equal(payload.revision, 8);
+  assert.deepEqual(payload.content, { title: 'Meu texto preservado' });
+  assert.match(source, /const latest = findLibraryItem\(entry, rows\)/);
+  assert.match(source, /setEntry\(current => \(\{ \.\.\.current, row: latest, status: latest\.status \}\)\)/);
+  assert.match(source, /duplicate \? 'Recarregar' : 'Recarregar revisão'/);
+});
+
+test('ACUP-014: arquivados próprios só na gestão autorizada; reativar preserva conteúdo/CAS e nunca entra em Programas arquivado', () => {
+  const row = { ...own, status: 'arquivado' };
+  const reader = mergeAbaLibrary([row], { ...options, includeArchived: true });
+  assert.ok(!reader.entries.some(entry => entry.row?.id === own.id));
+  const writer = mergeAbaLibrary([row], { ...options, canWrite: true, includeArchived: true });
+  const entry = writer.entries.find(entry => entry.row?.id === own.id);
+  assert.equal(entry.status, 'arquivado');
+  assert.ok(!writer.objectives.some(item => item.title === 'Da clínica'));
+  assert.ok(!mergeAbaLibrary([row], { ...options, canWrite: true }).entries.some(entry => entry.row?.id === own.id));
+  const payload = librarySavePayload(entry, entry.content, { id: 'ignorado', eventId: 'reativar', status: 'ativo' });
+  assert.equal(payload.id, own.id); assert.equal(payload.revision, own.revision); assert.equal(payload.status, 'ativo');
+  assert.deepEqual(payload.content, own.content);
+  assert.match(source, /const showArchived = canWrite && statusFilter === 'arquivados'/);
+  assert.match(source, /canWrite && <label className="aba-field">Mostrar/);
+  assert.match(source, /entry\.status !== 'ativo' \? 'ativo' : entry\.system \? 'oculto' : 'arquivado'/);
+  assert.match(source, /entry\.status !== 'ativo' \? 'Reativar'/);
+  assert.match(source, /<AbaDialog title=\{confirming\.status/);
+});
+
+// QA (review da ACUP-014): o identificador interno da técnica não aparece nem se edita.
+test('QA: editor e "Ver modelo" da técnica não mostram o código cru do catálogo', () => {
+  const fields = source.match(/const TECHNIQUE_FIELDS = \{([\s\S]*?)\};/)?.[1];
+  assert.ok(fields, 'TECHNIQUE_FIELDS presente');
+  assert.doesNotMatch(fields, /\bcode\s*:/, 'campo Código fora do editor e da leitura');
+  assert.doesNotMatch(source, /'Código'/);
+});
+
+test('QA: 23505 liga o Recarregar no editor, arquivado só reativa e item do sistema nunca entra em Arquivados', () => {
+  const save = source.slice(source.indexOf('async function save(event)'), source.indexOf('return <div className="aba-dialog-overlay"'));
+  assert.match(save, /const exists = isLibraryDuplicate\(failure, entry\);\r?\n\s+setDuplicate\(exists\);\r?\n\s+setConflict\(failure instanceof AbaConflictError \|\| failure\.code === '40001' \|\| exists\);/);
+  assert.ok(source.includes("{entry.status !== 'arquivado' && <button type=\"button\" className=\"quiet-button\" onClick={() => setEditor(entry)}>"), 'arquivado não abre o editor');
+  const archivedSystem = [{ ...own, id: 'sistema-arquivado', system_key: obj.key, status: 'arquivado', content: { title: 'Sistema arquivado' } }];
+  const listed = mergeAbaLibrary(archivedSystem, { ...options, canWrite: true, includeArchived: true });
+  assert.ok(!listed.entries.some(item => item.system && item.status === 'arquivado'), 'item do sistema nunca aparece como arquivado');
 });

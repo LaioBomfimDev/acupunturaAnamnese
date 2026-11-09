@@ -1044,7 +1044,7 @@ export const ABA_HELP = {
       'Data futura não é aceita; o dia segue o horário de São Paulo. Duração de 1 a 600 minutos.',
       'Paciente arquivado bloqueia escrita até a decisão da exclusão. Se o banco recusar, a explicação aparece junto da ação; use “Atualizar” após a decisão.',
       'Exclusão de paciente retira o vínculo e os textos do encontro, mas preserva as horas e o histórico profissional.',
-      'Se outra pessoa alterar o registro, seu texto fica no editor. Atualizar a lista não substitui o rascunho aberto nem força uma gravação sobre a nova versão.',
+      'Se outra pessoa alterar o registro, use “Recarregar revisão”: o texto digitado fica e só a revisão é atualizada. Se o vínculo com paciente ou supervisionado, o estado ou o acesso mudar, a gravação continua bloqueada.',
       'Este registro não é certificação e não substitui a evolução do atendimento.',
     ],
   },
@@ -1055,10 +1055,13 @@ export const ABA_HELP = {
       'Use “Buscar modelo” e “Tipo” para encontrar objetivos ou técnicas; “Ver modelo” abre os detalhes.',
       'Quem pode gravar usa “Ajustar” nos modelos do sistema e “Novo objetivo” ou “Novo modelo de técnica” para criar um modelo da clínica.',
       '“Ocultar” retira um modelo do sistema das opções de Programas; “Reativar” o devolve. “Arquivar” retira um modelo próprio. Essas ações pedem confirmação.',
+      'Quem pode gravar escolhe “Arquivados” em “Mostrar” para encontrar modelos próprios arquivados e “Reativar” para trazê-los de volta, com confirmação; nada é apagado.',
+      'No editor de técnica, escolha categoria, objetivos, funções e configuração sugerida pelos seletores. Objetivos, funções e hierarquia de ajuda permitem várias escolhas.',
+      'Se outra pessoa já criou um ajuste do mesmo modelo do sistema, “Recarregar” abre os metadados do item existente e mantém o texto que você digitou; confira antes de salvar.',
     ],
     reading: [
       '“Sistema” e “Da clínica” indicam a origem; “Ajustado pela clínica” indica uma versão institucional de um modelo do sistema.',
-      '“Oculto” só aparece para quem pode gravar. Modelos arquivados saem da biblioteca. Programas já gravados não mudam.',
+      '“Oculto” só aparece para quem pode gravar. Modelos próprios arquivados aparecem somente no filtro “Arquivados”, para quem pode reativá-los; ficam fora de Programas. Programas já gravados não mudam.',
       '“Restrito” exige atenção e nunca dispensa a revisão nominal do programa. A clínica não pode mudar essa marca numa técnica do sistema.',
     ],
     access: [

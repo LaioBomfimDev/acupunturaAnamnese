@@ -52,6 +52,16 @@ import {
 } from '../_shared/observability.ts';
 
 const FUNCTION_NAME = 'clinic-assistant';
+// ACUP-024 (AG-6): até 3 consultas por pergunta, contadas aqui também.
+// Espelho de ASSISTANT_MAX_ROUNDS em frontend/src/services/clinicAssistantService.js.
+const ASSISTANT_MAX_ROUNDS = 3;
+const ASSISTANT_ROUNDS_MESSAGE = 'A assistente faz no máximo 3 consultas por pergunta. Divida a pergunta em partes menores.';
+// Teto do que as voltas trazem ao prompt (JSON dos dados aceitos): 3 consultas de
+// até 50 linhas cabem com folga; acima disso, recusa antes do Gemini, nunca corta.
+const ASSISTANT_MAX_DADOS_CHARS = 64_000;
+// Corpo do pedido: 12 mensagens de até 1500 caracteres + até 3 resultados.
+const ASSISTANT_MAX_BODY_BYTES = 128_000;
+const ASSISTANT_TOO_LARGE_MESSAGE = 'As consultas trouxeram dados demais para uma resposta só. Pergunte por partes ou estreite o período.';
 const MODEL_ID = GEMINI_MODEL;
 
 const SCREEN_LABELS: Record<string, string> = {
@@ -85,6 +95,9 @@ type PromptContext = {
   dados: ReturnType<typeof readConsultaResult>;
   scales: boolean;
   consultationAttempted?: boolean;
+  // ACUP-024: resultados das voltas anteriores (já pela porta) e quantas voltas houve.
+  anteriores?: Array<NonNullable<ReturnType<typeof readConsultaResult>>>;
+  voltas?: number;
 };
 
 // O que ela sabe fazer hoje: para "o que você faz?" ela responde com
@@ -148,6 +161,7 @@ Limites que não mudam:
 Contexto:
 - Quem pergunta: ${context.callerName || 'alguém da equipe'} (${ROLE_LABELS[role]}).
 - Consulta já tentada: ${context.consultationAttempted ? 'sim' : 'não'}.
+- Consultas feitas nesta pergunta: ${context.voltas || 0} de 3. Peça UMA consulta por vez e só quando faltar dado para responder; não repita uma consulta igual (mesmo tipo e mesmos filtros) a uma já em DADOS_CONSULTADOS; na 3ª, responda com o que já tem, sem pedir outra.
 - A pessoa está em: ${SCREEN_LABELS[screen] || 'Tela inicial'}.
 - Formato: texto simples, sem markdown de negrito ou título; listas com "- " no começo da linha quando ajudar. Seja direta: até 8 frases, ou uma lista curta.
 - Em links, ponha até 2 destinos que ajudem a pessoa a seguir, só desta lista (id = nome no sistema): ${links.map(link => `${link} = ${ASSISTANT_SECTION_LINKS[link]?.label || SCREEN_LABELS[link]}`).join('; ') || 'nenhuma'}. Use sempre o destino mais específico: se a resposta fala de uma aba, ponha a aba, nunca a tela em volta dela (fala de Documentos timbrados: documentos, não gestao).
@@ -162,9 +176,9 @@ ${upcomingDays().join('\n')}
 
 EQUIPE (quem atende, JSON):
 ${JSON.stringify(context.team)}
-${context.dados ? `
-DADOS_CONSULTADOS (JSON):
-${JSON.stringify(context.dados)}
+${context.dados || context.anteriores?.length ? `
+DADOS_CONSULTADOS (JSON, lista das consultas desta pergunta, a última é a mais nova):
+${JSON.stringify([...(context.anteriores || []), ...(context.dados ? [context.dados] : [])])}
 ` : ''}${context.scales ? `
 CATALOGO_DE_ESCALAS (JSON):
 ${JSON.stringify(ASSISTANT_SCALE_CATALOG)}
@@ -198,7 +212,7 @@ const OUTPUT_SCHEMA = {
     consulta: {
       type: 'OBJECT',
       nullable: true,
-      description: 'pedido de consulta à agenda, só quando ainda não há DADOS_CONSULTADOS',
+      description: 'pedido de UMA consulta, só quando faltar dado para responder (até 3 por pergunta; nunca repetir uma já feita)',
       properties: {
         tipo: { type: 'STRING', enum: ASSISTANT_CONSULTAS },
         profissional: { type: 'STRING', description: 'nome como está na EQUIPE, "eu" ou "equipe"' },
@@ -254,7 +268,12 @@ Deno.serve(async (req) => {
     });
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await readClinicalJsonBody(req, 48_000).catch(() => ({}));
+    let bodyTooLarge = false;
+    const body = await readClinicalJsonBody(req, ASSISTANT_MAX_BODY_BYTES).catch((error: { code?: string }) => {
+      bodyTooLarge = error?.code === 'payload_too_large';
+      return {};
+    });
+    if (bodyTooLarge) return jsonResponse({ error: ASSISTANT_TOO_LARGE_MESSAGE }, 413);
     if (isDeployHealthSmoke(body)) {
       if (!assertSuperAdmin(caller.profile)) {
         return jsonResponse({ error: 'Acesso restrito ao SuperAdm ativo.' }, 403);
@@ -288,11 +307,22 @@ Deno.serve(async (req) => {
 
     const links = linksForRole(role);
     const requestBody = body as Record<string, unknown>;
+    const rounds = readRounds(requestBody, ASSISTANT_MAX_ROUNDS);
+    if (!rounds.ok) return jsonResponse({ error: ASSISTANT_ROUNDS_MESSAGE }, 400);
     const dados = await readAuthorizedConsultaResult(requestBody.dados, supabaseAdmin, clinicId, caller.user.id);
+    // Cada resultado anterior passa pela MESMA porta em toda chamada; o recusado sai calado
+    // do prompt, mas a volta conta (forjar menos itens não dá voltas a mais).
+    const anteriores = (await Promise.all(rounds.anteriores.map(item => readAuthorizedConsultaResult(item, supabaseAdmin, clinicId, caller.user.id))))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    if (JSON.stringify([...anteriores, dados]).length > ASSISTANT_MAX_DADOS_CHARS) {
+      return jsonResponse({ error: ASSISTANT_TOO_LARGE_MESSAGE }, 413);
+    }
     const context: PromptContext = {
       callerName: String(caller.profile.full_name || '').split(/\s+/)[0] || '',
       team: readTeam(requestBody.equipe),
       dados,
+      anteriores,
+      voltas: rounds.voltas,
       consultationAttempted: requestBody.dados !== undefined,
       scales: needsScaleCatalog(messages.filter(message => message.role === 'user').map(message => message.text), screen),
     };
@@ -306,64 +336,82 @@ Deno.serve(async (req) => {
       relevanceQuery: userQuestions[userQuestions.length - 1] || '',
       totalBudgetChars: 60_000,
     });
-    const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
-    if (budgetResponse) return budgetResponse;
-    failure = 'conexao_google';
-    const geminiResponse = await vertexGenerateContent(MODEL_ID, {
-      systemInstruction: { parts: [{ text: systemText }] },
-      contents: messages.map(message => ({ role: message.role, parts: [{ text: message.text }] })),
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 1500,
-        responseMimeType: 'application/json',
-        responseSchema: OUTPUT_SCHEMA,
-        // Raciocínio leve: responde melhor perguntas abertas, por pouco a mais.
-        thinkingConfig: THINKING_LOW,
-      },
-    }, usageContextFor(supabaseAdmin, 'clinic-assistant', caller));
+    // Uma chamada ao Gemini: sempre pelo limite do mês (enforceAiBudget), com
+    // uso gravado (usageContextFor), maxOutputTokens e raciocínio explícitos.
+    // ACUP-024: vale para cada volta, inclusive a resposta forçada da 3ª.
+    const generate = async (instruction: string) => {
+      const budgetResponse = await enforceAiBudget(supabaseAdmin, caller, jsonResponse);
+      if (budgetResponse) return budgetResponse;
+      failure = 'conexao_google';
+      const geminiResponse = await vertexGenerateContent(MODEL_ID, {
+        systemInstruction: { parts: [{ text: instruction }] },
+        contents: messages.map(message => ({ role: message.role, parts: [{ text: message.text }] })),
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1500,
+          responseMimeType: 'application/json',
+          responseSchema: OUTPUT_SCHEMA,
+          // Raciocínio leve: responde melhor perguntas abertas, por pouco a mais.
+          thinkingConfig: THINKING_LOW,
+        },
+      }, usageContextFor(supabaseAdmin, 'clinic-assistant', caller));
 
-    if (!geminiResponse.ok) {
-      // Só o código do erro do Google (ex.: NOT_FOUND, INVALID_ARGUMENT),
-      // nunca a pergunta: ajuda a achar a causa sem expor conteúdo.
-      // O "reason" (ex.: SERVICE_DISABLED, IAM_PERMISSION_DENIED) diz a
-      // causa sem trazer o texto do Google, que pode ter o e-mail da conta.
-      const googleError = await geminiResponse.json().then(data => data?.error).catch(() => null);
-      const clean = (value: unknown) => String(value || '').replace(/[^A-Z_]/g, '').slice(0, 40);
-      const googleStatus = clean(googleError?.status);
-      const googleReason = clean(
-        (Array.isArray(googleError?.details) ? googleError.details : [])
-          .map((detail: { reason?: string }) => detail?.reason)
-          .find(Boolean),
-      );
-      failure = ['google', geminiResponse.status, googleStatus, googleReason].filter(Boolean).join('_');
-      throw new Error(failure);
-    }
+      if (!geminiResponse.ok) {
+        // Só o código do erro do Google (ex.: NOT_FOUND, INVALID_ARGUMENT),
+        // nunca a pergunta: ajuda a achar a causa sem expor conteúdo.
+        // O "reason" (ex.: SERVICE_DISABLED, IAM_PERMISSION_DENIED) diz a
+        // causa sem trazer o texto do Google, que pode ter o e-mail da conta.
+        const googleError = await geminiResponse.json().then(data => data?.error).catch(() => null);
+        const clean = (value: unknown) => String(value || '').replace(/[^A-Z_]/g, '').slice(0, 40);
+        const googleStatus = clean(googleError?.status);
+        const googleReason = clean(
+          (Array.isArray(googleError?.details) ? googleError.details : [])
+            .map((detail: { reason?: string }) => detail?.reason)
+            .find(Boolean),
+        );
+        failure = ['google', geminiResponse.status, googleStatus, googleReason].filter(Boolean).join('_');
+        throw new Error(failure);
+      }
 
-    failure = 'resposta_invalida';
-    const geminiData = await geminiResponse.json();
-    const out = geminiData?.candidates?.[0]?.content?.parts
-      ?.map((part: { text?: string }) => part.text || '')
-      .join('')
-      .trim();
-    const parsed = out ? JSON.parse(out) : null;
-    const answer = typeof parsed?.answer === 'string' ? parsed.answer.trim().slice(0, 4000) : '';
-    // Pedido de consulta: o aparelho busca e pergunta de novo, com os
-    // dados. Só uma volta: com dados já em mãos, não pede outra.
-    const consulta = dados ? null : readConsulta(parsed?.consulta);
+      failure = 'resposta_invalida';
+      const geminiData = await geminiResponse.json();
+      const out = geminiData?.candidates?.[0]?.content?.parts
+        ?.map((part: { text?: string }) => part.text || '')
+        .join('')
+        .trim();
+      return { parsed: out ? JSON.parse(out) : null, geminiData };
+    };
+
+    // Limite do mês estourado: generate devolve a resposta do limite e tudo para aqui.
+    let reply = await generate(systemText);
+    if (reply instanceof Response) return reply;
+    let answer = typeof reply.parsed?.answer === 'string' ? reply.parsed.answer.trim().slice(0, 4000) : '';
+    // Pedido de consulta: o aparelho busca e pergunta de novo, com os dados.
+    // Até 3 voltas (antes era uma volta só): na 3ª, nenhuma consulta nova.
+    const consulta = rounds.voltas >= ASSISTANT_MAX_ROUNDS ? null : readConsulta(reply.parsed?.consulta);
     if (consulta && !answer) {
       return jsonResponse({ consulta, modelVersion: MODEL_ID });
     }
+    if (!answer && rounds.voltas >= ASSISTANT_MAX_ROUNDS && reply.parsed?.consulta) {
+      // Pediu uma 4ª consulta: UMA chamada a mais pedindo só a resposta com o
+      // que já tem (passa pelo limite e grava uso). Se insistir, recusa claro.
+      reply = await generate(`${systemText}\n\nAGORA: já foram feitas ${ASSISTANT_MAX_ROUNDS} consultas. Não peça consulta. Responda em answer só com os DADOS_CONSULTADOS que já tem e diga o que ficou de fora.`);
+      if (reply instanceof Response) return reply;
+      answer = typeof reply.parsed?.answer === 'string' ? reply.parsed.answer.trim().slice(0, 4000) : '';
+      if (!answer) return jsonResponse({ error: ASSISTANT_ROUNDS_MESSAGE }, 422);
+    }
     if (!answer) {
-      failure = `resposta_vazia_${String(geminiData?.candidates?.[0]?.finishReason || 'sem_motivo').replace(/[^A-Z_a-z]/g, '').slice(0, 30)}`;
+      failure = `resposta_vazia_${String(reply.geminiData?.candidates?.[0]?.finishReason || 'sem_motivo').replace(/[^A-Z_a-z]/g, '').slice(0, 30)}`;
       throw new Error(failure);
     }
 
-    const suggested = Array.isArray(parsed?.links) ? parsed.links : [];
+    const suggested = Array.isArray(reply.parsed?.links) ? reply.parsed.links : [];
     return jsonResponse({
       answer,
       links: [...new Set(suggested.filter((link: unknown) => typeof link === 'string' && links.includes(link)))].slice(0, 2),
       modelVersion: MODEL_ID,
-      ...(dados?.tipo === 'financeiro' || requestBody.financeiroContexto === true ? { financeiro: true } : {}),
+      // FIN-3/6: o marcador segue se QUALQUER volta aceita foi financeira.
+      ...(dados?.tipo === 'financeiro' || requestBody.financeiroContexto === true || anteriores.some(item => item.tipo === 'financeiro') ? { financeiro: true } : {}),
     });
   } catch {
     logOperationalEvent('error', 'clinic_assistant_failed', {
@@ -380,6 +428,18 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// ACUP-024 (AG-6): voltas contadas pelo que veio no pedido, antes da porta
+// (item recusado depois também conta). `dadosAnteriores` só com `dados`, em
+// lista de no máximo 2: o pedido nunca passa de 3 voltas.
+function readRounds(requestBody: Record<string, unknown>, maxRounds: number) {
+  const raw = requestBody.dadosAnteriores;
+  const hasDados = requestBody.dados !== undefined;
+  if (raw === undefined) return { ok: true, voltas: hasDados ? 1 : 0, anteriores: [] as unknown[] };
+  if (!Array.isArray(raw) || !hasDados || raw.length > maxRounds - 1) return { ok: false, voltas: 0, anteriores: [] as unknown[] };
+  return { ok: true, voltas: raw.length + 1, anteriores: raw as unknown[] };
+}
+// Fim das voltas.
 
 // FIN-1: o aparelho não concede acesso. Identidades vêm exclusivamente do caller autenticado.
 async function readAuthorizedConsultaResult(raw: unknown, client: ReturnType<typeof createServiceClient>, clinicId: string, userId: string) {

@@ -30,7 +30,7 @@ import {
  * Pergunta à assistente. `messages` = [{ role: 'user'|'assistant', text }],
  * a última da pessoa. Devolve { answer, links }.
  */
-export async function askAssistant({ messages, screen, equipe = [], dados = undefined, invoke = (...args) => supabase.functions.invoke(...args) }) {
+export async function askAssistant({ messages, screen, equipe = [], dados = undefined, dadosAnteriores = [], invoke = (...args) => supabase.functions.invoke(...args) }) {
   const recent = (messages || [])
     .filter(message => message?.text?.trim())
     .slice(-ASSISTANT_MAX_MESSAGES)
@@ -51,6 +51,8 @@ export async function askAssistant({ messages, screen, equipe = [], dados = unde
       equipe,
       ...((messages || []).some(message => message.financeiro === true) ? { financeiroContexto: true } : {}),
       ...(dados === undefined ? {} : { dados }),
+      // ACUP-024: resultados das voltas anteriores, já limpos aqui; a Edge limpa de novo.
+      ...(dados !== undefined && dadosAnteriores.length ? { dadosAnteriores } : {}),
     },
   });
   if (error) {
@@ -63,30 +65,59 @@ export async function askAssistant({ messages, screen, equipe = [], dados = unde
     throw new Error('A assistente respondeu num formato inesperado.');
   }
   return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null,
-    ...(dados?.tipo === 'financeiro' || data.financeiro === true || (messages || []).some(message => message.financeiro === true) ? { financeiro: true } : {}) };
+    ...(dados?.tipo === 'financeiro' || dadosAnteriores.some(item => item?.tipo === 'financeiro') || data.financeiro === true || (messages || []).some(message => message.financeiro === true) ? { financeiro: true } : {}) };
 }
 
 let teamCache = null;
 
+// ACUP-024 (AG-6): até 3 consultas por pergunta. Espelho de
+// ASSISTANT_MAX_ROUNDS em supabase/functions/clinic-assistant/index.ts.
+export const ASSISTANT_MAX_ROUNDS = 3;
+export const ASSISTANT_ROUNDS_MESSAGE = 'A assistente faz no máximo 3 consultas por pergunta. Divida a pergunta em partes menores.';
+
+// Mesmo tipo e mesmos filtros = mesma consulta (a ordem das chaves não importa).
+function consultaKey(consulta) {
+  const item = consulta && typeof consulta === 'object' ? consulta : {};
+  return JSON.stringify(Object.keys(item).sort().map(key => [key, item[key]]));
+}
+
 /**
- * Pergunta à assistente e, se ela pedir uma consulta (horários vagos),
- * faz a consulta neste aparelho e pergunta de novo com o resultado. Uma
- * volta só. `onStep` avisa a tela ("Consultando a agenda…").
+ * Pergunta à assistente. Quem decide se precisa de mais um dado é a IA,
+ * uma `consulta` por vez; este aparelho busca com o login de quem
+ * perguntou e pergunta de novo com os resultados (o mais novo em `dados`,
+ * os anteriores em `dadosAnteriores`). Até ASSISTANT_MAX_ROUNDS voltas
+ * (antes era uma volta só); a 4ª nunca é pedida. Consulta repetida reusa
+ * o resultado já obtido, sem buscar de novo, e conta a volta. Consulta
+ * que falha vira resultado com motivo, e as outras seguem.
+ * `onStep(etapa, volta)` avisa a tela ("Consultando…").
  */
-export async function askAssistantWithTools({ messages, screen, profile, onStep = () => {} }) {
-  const { loadAssistantTeam, runAssistantConsulta } = await import('./assistantTools');
+export async function askAssistantWithTools({ messages, screen, profile, onStep = () => {}, invoke = undefined, tools = null }) {
+  const { loadAssistantTeam, runAssistantConsulta } = tools || await import('./assistantTools');
   if (!teamCache) teamCache = await loadAssistantTeam().catch(() => []);
   const equipe = teamCache.map(member => shortName(member.full_name));
+  const ask = extra => askAssistant({ messages, screen, equipe, ...(invoke ? { invoke } : {}), ...extra });
 
-  const first = await askAssistant({ messages, screen, equipe });
-  if (!first.consulta) return first;
-
-  onStep('agenda');
-  const dados = await runAssistantConsulta(first.consulta, { profile, team: teamCache });
-  onStep('thinking');
-  const second = await askAssistant({ messages, screen, equipe, dados });
-  if (second.consulta || !second.answer) throw new Error('A assistente não conseguiu responder com a agenda agora.');
-  return second;
+  const results = [];
+  const seen = new Map();
+  let reply = await ask({});
+  while (reply.consulta) {
+    if (results.length >= ASSISTANT_MAX_ROUNDS) throw new Error(ASSISTANT_ROUNDS_MESSAGE);
+    onStep('agenda', results.length + 1);
+    const key = consultaKey(reply.consulta);
+    let dados = seen.get(key);
+    if (!dados) {
+      const pedido = reply.consulta;
+      dados = await Promise.resolve()
+        .then(() => runAssistantConsulta(pedido, { profile, team: teamCache }))
+        .catch(() => ({ tipo: pedido.tipo, motivo: 'erro' }));
+      seen.set(key, dados);
+    }
+    results.push(dados);
+    onStep('thinking', results.length);
+    reply = await ask({ dados: results[results.length - 1], dadosAnteriores: results.slice(0, -1) });
+  }
+  if (!reply.answer) throw new Error('A assistente não conseguiu responder com os dados da clínica agora.');
+  return results.some(item => item?.tipo === 'financeiro') ? { ...reply, financeiro: true } : reply;
 }
 
 /** Troca de conta: a equipe da próxima pessoa pode ser outra. */

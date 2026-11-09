@@ -138,3 +138,19 @@ test('autorização 2a66b20: horários vagos seguem para terapeuta e recepção 
     assert.deepEqual(result.linhas,[]);assert.equal(result.total,null);assert.ok(!('paciente' in result));
   }
 });
+
+// QA (review da ACUP-016): FIN-1 só aceita o booleano true do servidor, nunca valor "parecido".
+test('QA: FIN-1 descarta resposta não booleana do servidor (string, número, objeto) e tipo forjado com espaço invisível', async () => {
+  const raw = { ...query, linhas: [row] };
+  for (const data of ['true', 1, 'sim', {}, [true]]) {
+    assert.equal(await authorize(raw, { rpc: async () => ({ data, error: null }) }, 'c', 'u'), null, `data=${JSON.stringify(data)} não autoriza`);
+  }
+  for (const tipo of [' financeiro', 'financeiro\t', ' financeiro ']) {
+    assert.equal(await authorize({ ...raw, tipo }, { rpc: async () => ({ data: false, error: null }) }, 'c', 'u'), null, `tipo ${JSON.stringify(tipo)} passa pela conferência`);
+  }
+  for (const tipo of ['FINANCEIRO', 'financeirо', 'finan​ceiro']) {
+    let called = false;
+    assert.equal(await authorize({ ...raw, tipo }, { rpc: async () => { called = true; return { data: true, error: null }; } }, 'c', 'u'), null, `tipo ${JSON.stringify(tipo)} não vira financeiro`);
+    assert.equal(called, false);
+  }
+});

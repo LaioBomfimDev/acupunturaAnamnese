@@ -239,6 +239,12 @@ export const manageAlert = (alert, action, note = null) =>
 
 // ---------- times ----------
 
+export const listLibrary = () =>
+  call('aba_list_library', {}, 'Não foi possível carregar a biblioteca da clínica.');
+
+export const saveLibraryItem = item =>
+  call('aba_save_library_item', { p_item: item }, 'Não foi possível salvar o modelo da biblioteca.');
+
 export async function loadTeams() {
   const data = await call('aba_get_teams', {}, 'Não foi possível carregar os times.');
   return {

@@ -1022,6 +1022,28 @@ export const FINANCEIRO_HELP = {
 
 /** Área ABA (components/AbaWorkspace.jsx) — uma ajuda por aba. */
 export const ABA_HELP = {
+  biblioteca: {
+    title: 'Biblioteca da clínica',
+    summary: 'Modelos institucionais de objetivos e técnicas, reunindo os modelos do sistema e os da clínica. Não é prontuário.',
+    actions: [
+      'Use “Buscar modelo” e “Tipo” para encontrar objetivos ou técnicas; “Ver modelo” abre os detalhes.',
+      'Quem pode gravar usa “Ajustar” nos modelos do sistema e “Novo objetivo” ou “Novo modelo de técnica” para criar um modelo da clínica.',
+      '“Ocultar” retira um modelo do sistema das opções de Programas; “Reativar” o devolve. “Arquivar” retira um modelo próprio. Essas ações pedem confirmação.',
+    ],
+    reading: [
+      '“Sistema” e “Da clínica” indicam a origem; “Ajustado pela clínica” indica uma versão institucional de um modelo do sistema.',
+      '“Oculto” só aparece para quem pode gravar. Modelos arquivados saem da biblioteca. Programas já gravados não mudam.',
+      '“Restrito” exige atenção e nunca dispensa a revisão nominal do programa. A clínica não pode mudar essa marca numa técnica do sistema.',
+    ],
+    access: [
+      'Profissionais ABA e a administração leem a biblioteca da própria clínica. Apenas a administração e a supervisão de time ativo podem alterar; o banco confere a permissão.',
+    ],
+    notes: [
+      'Ponto de partida, não decisão clínica. Individualize e peça revisão da supervisão. Não escreva dados de pacientes nestes modelos.',
+      'Se outra pessoa alterar o modelo, seu texto é mantido. Use “Recarregar revisão”, confira e só então salve.',
+      'Se a biblioteca estiver indisponível, use “Tentar de novo”. Em Programas, o catálogo do sistema continua disponível com um aviso.',
+    ],
+  },
   painel: {
     title: 'Painel do paciente',
     summary: 'A visão rápida da criança na área ABA: independência geral, um anel por programa e a última sessão.',

@@ -20,6 +20,7 @@ import { AbaResults } from './aba/AbaResults';
 import { AbaReviewQueue } from './aba/AbaReviewQueue';
 import { AbaSessions } from './aba/AbaSessions';
 import { AbaTeams } from './aba/AbaTeams';
+import { AbaLibrary } from './aba/AbaLibrary';
 import '../styles/aba.css';
 
 // ============================================================
@@ -47,6 +48,7 @@ const TABS = {
   PERFIL: 'Perfil',
   REPERTORIO: 'Repertório',
   TIMES: 'Times',
+  BIBLIOTECA: 'Biblioteca',
   REVISAO: 'Revisão',
   ALERTAS: 'Alertas',
 };
@@ -55,10 +57,10 @@ const NAV_GROUPS = [
   { title: null, tabs: [TABS.HOME, TABS.PAINEL] },
   { title: 'Atendimento', tabs: [TABS.COLETA, TABS.SESSOES, TABS.RESULTADOS, TABS.QUALIDADE] },
   { title: 'Plano', tabs: [TABS.PERFIL, TABS.PROGRAMAS, TABS.PLANO, TABS.REPERTORIO] },
-  { title: 'Equipe', tabs: [TABS.TIMES, TABS.REVISAO, TABS.ALERTAS] },
+  { title: 'Equipe', tabs: [TABS.TIMES, TABS.BIBLIOTECA, TABS.REVISAO, TABS.ALERTAS] },
 ];
 
-const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.TIMES, TABS.REVISAO, TABS.ALERTAS];
+const TABS_WITHOUT_PATIENT = [TABS.HOME, TABS.TIMES, TABS.BIBLIOTECA, TABS.REVISAO, TABS.ALERTAS];
 
 const HELP_BY_TAB = {
   [TABS.PAINEL]: 'painel',
@@ -71,6 +73,7 @@ const HELP_BY_TAB = {
   [TABS.PERFIL]: 'perfil',
   [TABS.REPERTORIO]: 'repertorio',
   [TABS.TIMES]: 'times',
+  [TABS.BIBLIOTECA]: 'biblioteca',
   [TABS.REVISAO]: 'revisao',
   [TABS.ALERTAS]: 'alertas',
 };
@@ -180,6 +183,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
       );
     }
     if (effectiveTab === TABS.TIMES) return <AbaTeams />;
+    if (effectiveTab === TABS.BIBLIOTECA) return <AbaLibrary />;
     if (effectiveTab === TABS.REVISAO) return <AbaReviewQueue onOpenPatient={openPatientSession} />;
     if (effectiveTab === TABS.ALERTAS) return <AbaAlerts userId={profile?.id} onOpenAlert={openFromAlert} />;
 

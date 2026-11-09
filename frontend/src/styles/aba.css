@@ -3104,3 +3104,25 @@
   .aba-profile-head, .aba-profile-actions { flex-direction: column; align-items: stretch; }
   .aba-profile button { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 }
+/* ---------- Biblioteca da clínica (ACUP-007) ---------- */
+.aba-library-page, .aba-library-editor { min-width: 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+.aba-library-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.aba-library-grid > article { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.aba-library-grid h3, .aba-library-grid p { margin: 0; }
+.aba-library-grid details { flex: 1; }
+.aba-library-grid summary { cursor: pointer; font-weight: 600; }
+.aba-library-details { display: grid; gap: 10px; }
+.aba-library-details dt { font-weight: 600; }
+.aba-library-details dd { margin: 4px 0 0; white-space: pre-wrap; }
+.aba-library-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.aba-library-form > *, .aba-library-form fieldset { min-width: 0; }
+.aba-library-form .is-full { grid-column: 1 / -1; }
+.aba-library-form fieldset { border: 1px solid var(--r1-border); border-radius: var(--r1-radius-md); padding: 12px; }
+.aba-library-form input, .aba-library-form select, .aba-library-form textarea, .aba-library-page input, .aba-library-page select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+@media (max-width: 1024px) {
+  .aba-library-grid, .aba-library-form { grid-template-columns: minmax(0, 1fr); }
+  .aba-library-page .aba-page-head, .aba-library-page .aba-button-row, .aba-library-editor .aba-form-actions { flex-direction: column; align-items: stretch; }
+  .aba-library-page .aba-page-head > *, .aba-library-page button, .aba-library-editor button { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .aba-library-page .aba-library-filters { grid-template-columns: minmax(0, 1fr); }
+  .aba-library-page .aba-card, .aba-library-editor .aba-dialog-body { padding: 12px; }
+}

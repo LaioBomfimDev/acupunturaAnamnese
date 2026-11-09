@@ -1142,6 +1142,25 @@ export const ABA_HELP = {
       'Nos envios anteriores ao registro do remetente, “Enviado por” foi preenchido com a autoria do plano; o sistema não tinha registrado quem fez aquele envio.',
     ],
   },
+  perfil: {
+    title: 'Perfil ABA',
+    summary: 'O perfil ABA do paciente reúne comunicação, nível de suporte, diagnóstico transcrito do laudo e detalhes informados pela supervisão.',
+    actions: [
+      'Sem perfil, “Preencher perfil” abre o formulário. Depois, use “Editar perfil” e “Salvar perfil” para atualizar.',
+      'Marque os modos de comunicação e escolha o nível de suporte. O diagnóstico é digitado manualmente a partir do laudo, com fonte e data; a data não pode ser futura.',
+      'Para retirar um laudo, limpe texto, fonte e data. “Cancelar” pergunta antes de descartar alterações não salvas.',
+    ],
+    reading: [
+      '“Não informado” indica que o dado ainda não foi registrado. A tela mostra quem atualizou, quando e a revisão atual.',
+    ],
+    access: [
+      'Quem acessa o paciente em ABA pode ler o perfil. Somente a supervisão do paciente ou a administração pode preencher e editar. Paciente arquivado não recebe perfil.',
+    ],
+    notes: [
+      'O sistema não sugere nem completa diagnósticos ou nível de suporte. Registre somente o que foi informado pela pessoa responsável e pelo laudo.',
+      'Diagnóstico, fonte, data do laudo e detalhes ficam cifrados no banco. Se outra pessoa alterar o perfil, o texto digitado permanece no editor; descarte e recarregue antes de salvar novamente.',
+    ],
+  },
   repertorio: {
     title: 'Repertório',
     summary: 'Os reforçadores e os comportamentos interferentes da criança — são os botões da coleta.',

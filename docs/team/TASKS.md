@@ -22,7 +22,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | integracao (40019b9) | PRONTO | ver abaixo |
 | ACUP-013 | Tela da supervisão formal | Codex LK | integracao (3c54d5d) | PRONTO | ver abaixo |
 | ACUP-014 | Ajustes da biblioteca e da supervisão (pendências dos reviews da 007 e da 013) | Codex LK | integracao (e504ca3) | PRONTO | ver abaixo |
-| ACUP-012 | Aviso de texto não salvo na área ABA + estilo dos seletores | Codex LK | codex/lk (775881e) | REVIEW | ver abaixo |
+| ACUP-012 | Aviso de texto não salvo na área ABA + estilo dos seletores | Codex LK | integracao (e22517b) | PRONTO |
+| ACUP-015 | Detalhes do aviso de texto não salvo (observações do review da 012) | — | — | TODO (aguarda o humano) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
@@ -173,6 +174,11 @@ Regras de toda task com SQL (além do aceite próprio):
 - Comandos que precisam passar: `cd frontend && npm run lint && npm test && npm run build`.
 - Depende de: ACUP-014 (PRONTO).
 
+## ACUP-015 — Detalhes do aviso de texto não salvo (observações do review da 012)
+- Objetivo: (1) editores dentro de `AbaDialog` também ligam o aviso ao fechar a aba do navegador (`beforeunload`) enquanto houver texto pendente; (2) clique em sair durante a gravação mostra "Salvando…" em vez de não fazer nada calado; (3) trocar o texto "Fechar agora" da pergunta de saída por um que diga o que acontece.
+- Arquivos de propriedade: a definir na abertura.
+- Depende de: decisão do humano (rodada ABA fechada; nada bloqueia a publicação).
+
 ## ACUP-009 — Avaliações formais do paciente
 - Objetivo: item 4b, `aba_assessments` (B4) + catálogo de instrumentos em código (só nome, domínio e escore para instrumento com direito autoral).
 - Depende de: D4 — ADIADA. Volta quando a clínica mandar a lista de instrumentos e licenças.
@@ -238,3 +244,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-09 — PROD-3: o humano rodou a conferência só leitura em produção e todas as linhas deram true (tabelas, colunas e funções dos 6 SQL; exclusão de paciente da 20261108d, uma versão só). Banco do ABA conferido; falta só a decisão de publicar o site.
 - 2026-11-09 — ACUP-012 entregue (775881e; lint, 1443 testes com 1442 ok e 1 pulado, build verdes; 12 prints no board). REVIEW mandado ao QA.
 - 2026-11-09 — Publicação: o humano tentou a seção 3 do pacote às 09:48; a `clinic-assistant` NÃO foi republicada (segue na versão 14 de 06/11) e o site segue em `origin/main` cdb181e. Nada saiu errado. `mesa/publicacao.md` agora diz para publicar a função de dentro de `acup-team/integracao` com árvore limpa, nunca da pasta `Sistema Acup` (3 arquivos da assistente com mudança sem commit lá). Ordem mantida: ACUP-012 aprovada → "publica o site" → assistente.
+- 2026-11-09 — ACUP-012 PRONTO: QA aprovou (AbaWorkspace real no navegador: as 5 saídas perguntam, Continuar e Esc mantêm tudo, Descartar segue a saída pedida, zero window.confirm; PatientStart e DismissPrompt iguais nas outras áreas; nenhum editor solto fora do guarda; corrigiu teste que deixava atalho do painel pular o guarda, 24/25 mutações e a restante equivalente), merge em `integracao` (e22517b), quality verde (1444, 1443 ok, 1 pulado). **Rodada ABA fechada** (001–008, 010–014). Observações menores viraram a ACUP-015, sem distribuir. 009 segue adiada. `integracao` 96 commits à frente de `origin/main`, 0 atrás.

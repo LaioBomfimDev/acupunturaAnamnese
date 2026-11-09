@@ -109,7 +109,9 @@ export async function askAssistantWithTools({ messages, screen, profile, onStep 
       const pedido = reply.consulta;
       dados = await Promise.resolve()
         .then(() => runAssistantConsulta(pedido, { profile, team: teamCache }))
-        .catch(() => ({ tipo: pedido.tipo, motivo: 'erro' }));
+        // Mantém os filtros do pedido (já limpos pela Edge): sem de/ate, o leitor
+        // trocava o "erro" por "período inválido" e a IA pedia outro período (QA, 09/11/2026).
+        .catch(() => ({ ...pedido, motivo: 'erro' }));
       seen.set(key, dados);
     }
     results.push(dados);

@@ -131,7 +131,15 @@ test('AG-6 aparelho: consulta repetida reusa o resultado (sem buscar de novo) e 
 test('AG-6 aparelho: consulta que falha vira aviso e não para as outras; orçamento estourado para na hora', async () => {
   const failing = askRounds([{ consulta: consultas[0] }, { consulta: consultas[1] }, answer('faltou faltas')], { fail: 'faltas' });
   assert.equal((await failing.promise).answer, 'faltou faltas');
-  assert.deepEqual(failing.bodies[1].dados, { tipo: 'faltas', motivo: 'erro' }, 'falha vira resultado com motivo, sem a mensagem da fonte');
+  assert.deepEqual(failing.bodies[1].dados, { ...consultas[0], motivo: 'erro' }, 'falha vira resultado com motivo, sem a mensagem da fonte');
+  // QA 09/11/2026: com os filtros do pedido, a Edge lê "erro", nunca "período inválido".
+  for (const tipo of ['faltas', 'agenda', 'pesquisas', 'financeiro']) {
+    const pedido = tipo === 'financeiro' ? { tipo, de: '2026-11-01', ate: '2026-11-08', status: 'recebidos', paciente: '', idade: null, profissional: 'equipe' }
+      : { tipo, de: '2026-11-01', ate: '2026-11-08', profissional: 'equipe' };
+    const failed = askRounds([{ consulta: pedido }, answer('sem dado')], { fail: tipo });
+    await failed.promise;
+    assert.equal(edge.readConsultaResult(failed.bodies[1].dados).motivo, 'erro', tipo);
+  }
   assert.doesNotMatch(JSON.stringify(failing.bodies), /SEGREDO/);
   assert.equal(failing.runs.length, 2, 'a 2ª consulta seguiu');
   const limit = Object.assign(new Error('fallback'), { context: { json: async () => ({ error: 'O limite de IA do mês da instituição acabou.' }) } });

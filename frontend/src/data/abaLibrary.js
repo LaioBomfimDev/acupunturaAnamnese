@@ -9,6 +9,7 @@
 
 export const ABA_OBJECTIVES = [
   {
+    key: 'atencao-compartilhada-acompanhar-apontar-nivel-1',
     category: 'Atenção compartilhada',
     level: 1,
     title: 'Acompanhar apontar',
@@ -20,6 +21,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'atencao-compartilhada-alternar-olhar-nivel-1',
     category: 'Atenção compartilhada',
     level: 1,
     title: 'Alternar olhar',
@@ -31,6 +33,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'atencao-compartilhada-alternar-olhar-entre-pessoa-e-objeto-nivel-2',
     category: 'Atenção compartilhada',
     level: 2,
     title: 'Alternar olhar entre pessoa e objeto',
@@ -42,6 +45,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'atencao-compartilhada-mostrar-objeto-de-interesse-nivel-3',
     category: 'Atenção compartilhada',
     level: 3,
     title: 'Mostrar objeto de interesse',
@@ -53,6 +57,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'atencao-compartilhada-compartilhar-reacao-a-evento-nivel-4',
     category: 'Atenção compartilhada',
     level: 4,
     title: 'Compartilhar reação a evento',
@@ -64,6 +69,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'atencao-compartilhada-seguir-direcao-do-olhar-nivel-5',
     category: 'Atenção compartilhada',
     level: 5,
     title: 'Seguir direção do olhar',
@@ -75,6 +81,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'atencao-compartilhada-iniciar-atencao-compartilhada-espontanea-nivel-6',
     category: 'Atenção compartilhada',
     level: 6,
     title: 'Iniciar atenção compartilhada espontânea',
@@ -86,6 +93,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'autonomia-lavar-as-maos-nivel-1',
     category: 'Autonomia',
     level: 1,
     title: 'Lavar as mãos',
@@ -97,6 +105,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Análise de tarefas, encadeamento e esvanecimento de ajuda',
   },
   {
+    key: 'autonomia-vestir-se-nivel-1',
     category: 'Autonomia',
     level: 1,
     title: 'Vestir-se',
@@ -108,6 +117,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'autonomia-escovar-os-dentes-nivel-2',
     category: 'Autonomia',
     level: 2,
     title: 'Escovar os dentes',
@@ -119,6 +129,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Análise de tarefas, encadeamento e esvanecimento de ajuda',
   },
   {
+    key: 'autonomia-vestir-peca-de-roupa-nivel-3',
     category: 'Autonomia',
     level: 3,
     title: 'Vestir peça de roupa',
@@ -130,6 +141,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Análise de tarefas, encadeamento e esvanecimento de ajuda',
   },
   {
+    key: 'autonomia-usar-utensilios-na-alimentacao-nivel-4',
     category: 'Autonomia',
     level: 4,
     title: 'Usar utensílios na alimentação',
@@ -141,6 +153,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Análise de tarefas, encadeamento e esvanecimento de ajuda',
   },
   {
+    key: 'autonomia-organizar-pertences-nivel-5',
     category: 'Autonomia',
     level: 5,
     title: 'Organizar pertences',
@@ -152,6 +165,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Análise de tarefas, encadeamento e esvanecimento de ajuda',
   },
   {
+    key: 'autonomia-seguir-rotina-de-banheiro-nivel-6',
     category: 'Autonomia',
     level: 6,
     title: 'Seguir rotina de banheiro',
@@ -163,6 +177,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Análise de tarefas, encadeamento e esvanecimento de ajuda',
   },
   {
+    key: 'brincadeira-brincar-funcionalmente-nivel-1',
     category: 'Brincadeira',
     level: 1,
     title: 'Brincar funcionalmente',
@@ -174,6 +189,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'brincadeira-explorar-brinquedo-de-forma-funcional-nivel-1',
     category: 'Brincadeira',
     level: 1,
     title: 'Explorar brinquedo de forma funcional',
@@ -185,6 +201,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'brincadeira-variar-acoes-na-brincadeira-nivel-2',
     category: 'Brincadeira',
     level: 2,
     title: 'Variar ações na brincadeira',
@@ -196,6 +213,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'brincadeira-realizar-brincadeira-simbolica-simples-nivel-3',
     category: 'Brincadeira',
     level: 3,
     title: 'Realizar brincadeira simbólica simples',
@@ -207,6 +225,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'brincadeira-construir-sequencia-de-brincadeira-nivel-4',
     category: 'Brincadeira',
     level: 4,
     title: 'Construir sequência de brincadeira',
@@ -218,6 +237,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'brincadeira-brincar-paralelamente-com-pares-nivel-5',
     category: 'Brincadeira',
     level: 5,
     title: 'Brincar paralelamente com pares',
@@ -229,6 +249,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'brincadeira-participar-de-brincadeira-cooperativa-nivel-6',
     category: 'Brincadeira',
     level: 6,
     title: 'Participar de brincadeira cooperativa',
@@ -240,6 +261,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-parar-diante-de-comando-de-seguranca-nivel-1',
     category: 'Comportamento adaptativo',
     level: 1,
     title: 'Parar diante de comando de segurança',
@@ -251,6 +273,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-realizar-transicao-nivel-1',
     category: 'Comportamento adaptativo',
     level: 1,
     title: 'Realizar transição',
@@ -262,6 +285,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-permanecer-proximo-ao-adulto-responsavel-nivel-2',
     category: 'Comportamento adaptativo',
     level: 2,
     title: 'Permanecer próximo ao adulto responsável',
@@ -273,6 +297,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-identificar-situacao-de-risco-nivel-3',
     category: 'Comportamento adaptativo',
     level: 3,
     title: 'Identificar situação de risco',
@@ -284,6 +309,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-comunicar-dor-ou-desconforto-nivel-4',
     category: 'Comportamento adaptativo',
     level: 4,
     title: 'Comunicar dor ou desconforto',
@@ -295,6 +321,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-pedir-autorizacao-antes-de-sair-nivel-5',
     category: 'Comportamento adaptativo',
     level: 5,
     title: 'Pedir autorização antes de sair',
@@ -306,6 +333,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comportamento-adaptativo-seguir-regra-em-ambiente-comunitario-nivel-6',
     category: 'Comportamento adaptativo',
     level: 6,
     title: 'Seguir regra em ambiente comunitário',
@@ -317,6 +345,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-1-nivel-1',
     category: 'Comunicação',
     level: 1,
     title: 'Solicitar objeto — nível 1',
@@ -328,6 +357,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-2-nivel-2',
     category: 'Comunicação',
     level: 2,
     title: 'Solicitar objeto — nível 2',
@@ -339,6 +369,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-3-nivel-3',
     category: 'Comunicação',
     level: 3,
     title: 'Solicitar objeto — nível 3',
@@ -350,6 +381,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-4-nivel-4',
     category: 'Comunicação',
     level: 4,
     title: 'Solicitar objeto — nível 4',
@@ -361,6 +393,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-5-nivel-5',
     category: 'Comunicação',
     level: 5,
     title: 'Solicitar objeto — nível 5',
@@ -372,6 +405,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-6-nivel-6',
     category: 'Comunicação',
     level: 6,
     title: 'Solicitar objeto — nível 6',
@@ -383,6 +417,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-7-nivel-7',
     category: 'Comunicação',
     level: 7,
     title: 'Solicitar objeto — nível 7',
@@ -394,6 +429,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-8-nivel-8',
     category: 'Comunicação',
     level: 8,
     title: 'Solicitar objeto — nível 8',
@@ -405,6 +441,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-9-nivel-9',
     category: 'Comunicação',
     level: 9,
     title: 'Solicitar objeto — nível 9',
@@ -416,6 +453,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-solicitar-objeto-nivel-10-nivel-10',
     category: 'Comunicação',
     level: 10,
     title: 'Solicitar objeto — nível 10',
@@ -427,6 +465,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional',
   },
   {
+    key: 'comunicacao-funcional-solicitar-item-preferido-nivel-1',
     category: 'Comunicação funcional',
     level: 1,
     title: 'Solicitar item preferido',
@@ -438,6 +477,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional e reforço diferencial',
   },
   {
+    key: 'comunicacao-funcional-solicitar-ajuda-nivel-2',
     category: 'Comunicação funcional',
     level: 2,
     title: 'Solicitar ajuda',
@@ -449,6 +489,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional e reforço diferencial',
   },
   {
+    key: 'comunicacao-funcional-solicitar-pausa-nivel-3',
     category: 'Comunicação funcional',
     level: 3,
     title: 'Solicitar pausa',
@@ -460,6 +501,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional e reforço diferencial',
   },
   {
+    key: 'comunicacao-funcional-recusar-adequadamente-nivel-4',
     category: 'Comunicação funcional',
     level: 4,
     title: 'Recusar adequadamente',
@@ -471,6 +513,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional e reforço diferencial',
   },
   {
+    key: 'comunicacao-funcional-fazer-escolhas-nivel-5',
     category: 'Comunicação funcional',
     level: 5,
     title: 'Fazer escolhas',
@@ -482,6 +525,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional e reforço diferencial',
   },
   {
+    key: 'comunicacao-funcional-generalizar-comunicacao-espontanea-nivel-6',
     category: 'Comunicação funcional',
     level: 6,
     title: 'Generalizar comunicação espontânea',
@@ -493,6 +537,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Treino de comunicação funcional e reforço diferencial',
   },
   {
+    key: 'espera-aguardar-acesso-nivel-1',
     category: 'Espera',
     level: 1,
     title: 'Aguardar acesso',
@@ -504,6 +549,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-concluir-sequencia-nivel-1',
     category: 'Funções executivas',
     level: 1,
     title: 'Concluir sequência',
@@ -515,6 +561,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-orientar-se-para-a-tarefa-nivel-1',
     category: 'Funções executivas',
     level: 1,
     title: 'Orientar-se para a tarefa',
@@ -526,6 +573,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-manter-se-em-atividade-nivel-2',
     category: 'Funções executivas',
     level: 2,
     title: 'Manter-se em atividade',
@@ -537,6 +585,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-seguir-sequencia-visual-nivel-3',
     category: 'Funções executivas',
     level: 3,
     title: 'Seguir sequência visual',
@@ -548,6 +597,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-alternar-entre-regras-nivel-4',
     category: 'Funções executivas',
     level: 4,
     title: 'Alternar entre regras',
@@ -559,6 +609,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-monitorar-conclusao-da-tarefa-nivel-5',
     category: 'Funções executivas',
     level: 5,
     title: 'Monitorar conclusão da tarefa',
@@ -570,6 +621,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'funcoes-executivas-corrigir-erro-com-orientacao-nivel-6',
     category: 'Funções executivas',
     level: 6,
     title: 'Corrigir erro com orientação',
@@ -581,6 +633,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-parear-estimulos-identicos-nivel-1',
     category: 'Habilidades acadêmicas',
     level: 1,
     title: 'Parear estímulos idênticos',
@@ -592,6 +645,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-parear-letras-nivel-1',
     category: 'Habilidades acadêmicas',
     level: 1,
     title: 'Parear letras',
@@ -603,6 +657,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-classificar-por-categoria-nivel-2',
     category: 'Habilidades acadêmicas',
     level: 2,
     title: 'Classificar por categoria',
@@ -614,6 +669,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-reconhecer-letras-nivel-3',
     category: 'Habilidades acadêmicas',
     level: 3,
     title: 'Reconhecer letras',
@@ -625,6 +681,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-relacionar-numero-e-quantidade-nivel-4',
     category: 'Habilidades acadêmicas',
     level: 4,
     title: 'Relacionar número e quantidade',
@@ -636,6 +693,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-copiar-tracados-funcionais-nivel-5',
     category: 'Habilidades acadêmicas',
     level: 5,
     title: 'Copiar traçados funcionais',
@@ -647,6 +705,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-academicas-concluir-atividade-estruturada-nivel-6',
     category: 'Habilidades acadêmicas',
     level: 6,
     title: 'Concluir atividade estruturada',
@@ -658,6 +717,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-cumprimentar-e-despedir-se-nivel-1',
     category: 'Habilidades sociais',
     level: 1,
     title: 'Cumprimentar e despedir-se',
@@ -669,6 +729,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-iniciar-interacao-nivel-1',
     category: 'Habilidades sociais',
     level: 1,
     title: 'Iniciar interação',
@@ -680,6 +741,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-responder-a-aproximacao-de-outra-pessoa-nivel-2',
     category: 'Habilidades sociais',
     level: 2,
     title: 'Responder à aproximação de outra pessoa',
@@ -691,6 +753,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-iniciar-interacao-nivel-3',
     category: 'Habilidades sociais',
     level: 3,
     title: 'Iniciar interação',
@@ -702,6 +765,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-aguardar-e-alternar-turnos-nivel-4',
     category: 'Habilidades sociais',
     level: 4,
     title: 'Aguardar e alternar turnos',
@@ -713,6 +777,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-manter-topico-de-interacao-nivel-5',
     category: 'Habilidades sociais',
     level: 5,
     title: 'Manter tópico de interação',
@@ -724,6 +789,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'habilidades-sociais-reconhecer-pistas-emocionais-nivel-6',
     category: 'Habilidades sociais',
     level: 6,
     title: 'Reconhecer pistas emocionais',
@@ -735,6 +801,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-movimento-motor-amplo-nivel-1',
     category: 'Imitação',
     level: 1,
     title: 'Imitar movimento motor amplo',
@@ -746,6 +813,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-movimentos-nivel-1',
     category: 'Imitação',
     level: 1,
     title: 'Imitar movimentos',
@@ -757,6 +825,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-movimento-motor-fino-nivel-2',
     category: 'Imitação',
     level: 2,
     title: 'Imitar movimento motor fino',
@@ -768,6 +837,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-acao-com-objeto-nivel-3',
     category: 'Imitação',
     level: 3,
     title: 'Imitar ação com objeto',
@@ -779,6 +849,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-sequencia-de-movimentos-nivel-4',
     category: 'Imitação',
     level: 4,
     title: 'Imitar sequência de movimentos',
@@ -790,6 +861,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-movimento-orofacial-nivel-5',
     category: 'Imitação',
     level: 5,
     title: 'Imitar movimento orofacial',
@@ -801,6 +873,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'imitacao-imitar-espontaneamente-em-contexto-natural-nivel-6',
     category: 'Imitação',
     level: 6,
     title: 'Imitar espontaneamente em contexto natural',
@@ -812,6 +885,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-nomear-acoes-nivel-1',
     category: 'Linguagem expressiva',
     level: 1,
     title: 'Nomear ações',
@@ -823,6 +897,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-nomear-objetos-nivel-1',
     category: 'Linguagem expressiva',
     level: 1,
     title: 'Nomear objetos',
@@ -834,6 +909,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-nomear-acoes-nivel-2',
     category: 'Linguagem expressiva',
     level: 2,
     title: 'Nomear ações',
@@ -845,6 +921,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-descrever-atributos-nivel-3',
     category: 'Linguagem expressiva',
     level: 3,
     title: 'Descrever atributos',
@@ -856,6 +933,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-construir-frases-funcionais-nivel-4',
     category: 'Linguagem expressiva',
     level: 4,
     title: 'Construir frases funcionais',
@@ -867,6 +945,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-responder-perguntas-pessoais-nivel-5',
     category: 'Linguagem expressiva',
     level: 5,
     title: 'Responder perguntas pessoais',
@@ -878,6 +957,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-expressiva-relatar-evento-recente-nivel-6',
     category: 'Linguagem expressiva',
     level: 6,
     title: 'Relatar evento recente',
@@ -889,6 +969,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-responder-ao-proprio-nome-nivel-1',
     category: 'Linguagem receptiva',
     level: 1,
     title: 'Responder ao próprio nome',
@@ -900,6 +981,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-seguir-instrucoes-nivel-1',
     category: 'Linguagem receptiva',
     level: 1,
     title: 'Seguir instruções',
@@ -911,6 +993,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-seguir-instrucao-de-uma-etapa-nivel-2',
     category: 'Linguagem receptiva',
     level: 2,
     title: 'Seguir instrução de uma etapa',
@@ -922,6 +1005,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-identificar-objetos-conhecidos-nivel-3',
     category: 'Linguagem receptiva',
     level: 3,
     title: 'Identificar objetos conhecidos',
@@ -933,6 +1017,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-identificar-acoes-nivel-4',
     category: 'Linguagem receptiva',
     level: 4,
     title: 'Identificar ações',
@@ -944,6 +1029,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-seguir-instrucao-de-duas-etapas-nivel-5',
     category: 'Linguagem receptiva',
     level: 5,
     title: 'Seguir instrução de duas etapas',
@@ -955,6 +1041,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'linguagem-receptiva-compreender-relacoes-espaciais-nivel-6',
     category: 'Linguagem receptiva',
     level: 6,
     title: 'Compreender relações espaciais',
@@ -966,6 +1053,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Ensino sem erro, reforço diferencial e esvanecimento de dicas',
   },
   {
+    key: 'regulacao-emocional-esperar-por-curto-periodo-nivel-1',
     category: 'Regulação emocional',
     level: 1,
     title: 'Esperar por curto período',
@@ -977,6 +1065,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Antecipação, ensino de resposta alternativa e reforço diferencial',
   },
   {
+    key: 'regulacao-emocional-usar-apoio-visual-para-esperar-nivel-2',
     category: 'Regulação emocional',
     level: 2,
     title: 'Usar apoio visual para esperar',
@@ -988,6 +1077,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Antecipação, ensino de resposta alternativa e reforço diferencial',
   },
   {
+    key: 'regulacao-emocional-aceitar-indisponibilidade-nivel-3',
     category: 'Regulação emocional',
     level: 3,
     title: 'Aceitar indisponibilidade',
@@ -999,6 +1089,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Antecipação, ensino de resposta alternativa e reforço diferencial',
   },
   {
+    key: 'regulacao-emocional-realizar-transicao-entre-atividades-nivel-4',
     category: 'Regulação emocional',
     level: 4,
     title: 'Realizar transição entre atividades',
@@ -1010,6 +1101,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Antecipação, ensino de resposta alternativa e reforço diferencial',
   },
   {
+    key: 'regulacao-emocional-tolerar-mudanca-planejada-nivel-5',
     category: 'Regulação emocional',
     level: 5,
     title: 'Tolerar mudança planejada',
@@ -1021,6 +1113,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Antecipação, ensino de resposta alternativa e reforço diferencial',
   },
   {
+    key: 'regulacao-emocional-selecionar-estrategia-de-regulacao-nivel-6',
     category: 'Regulação emocional',
     level: 6,
     title: 'Selecionar estratégia de regulação',
@@ -1032,6 +1125,7 @@ export const ABA_OBJECTIVES = [
     suggestedProcedure: 'Antecipação, ensino de resposta alternativa e reforço diferencial',
   },
   {
+    key: 'tolerancia-a-frustracao-aceitar-indisponibilidade-nivel-1',
     category: 'Tolerância à frustração',
     level: 1,
     title: 'Aceitar indisponibilidade',

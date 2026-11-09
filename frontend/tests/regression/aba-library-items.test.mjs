@@ -77,7 +77,8 @@ test('biblioteca: conteúdo fechado coincide com todas as chaves do catálogo', 
   const match = save.match(/v_keys := CASE WHEN v_kind = 'objetivo'\r?\n\s+THEN ARRAY\[([^\]]+)\]\r?\n\s+ELSE ARRAY\[([^\]]+)\] END;/);
   assert.ok(match);
   const actual = items => [...new Set(items.flatMap(Object.keys))].sort();
-  assert.deepEqual(strings(match[1]).sort(), actual(ABA_OBJECTIVES));
+  assert.deepEqual(strings(match[1]).sort(), actual(ABA_OBJECTIVES.map(({ key: _key, ...content }) => content)));
+  assert.ok(!strings(match[1]).includes('key'), 'key é metadado do catálogo, nunca content no SQL');
   assert.deepEqual(strings(match[2]).sort(), actual(ABA_TECHNIQUES));
   assert.match(save, /\(v_content - v_keys\) <> '\{\}'::JSONB/);
   const config = save.match(/v_value - ARRAY\[([^\]]+)\]/);

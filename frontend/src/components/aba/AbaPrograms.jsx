@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   BEHAVIOR_INTENSITIES, BEHAVIOR_PROCEDURES, PROGRAM_PRESETS, PROMPT_FADING_STRATEGIES,
   PROMPT_LEVELS, REINFORCEMENT_SCHEDULES, TARGET_SKILLS, TEACHING_STRATEGIES, TECHNIQUE_CATEGORIES,
@@ -8,8 +8,8 @@ import {
 } from '../../utils/aba/catalog.js';
 import { programDirection } from '../../utils/aba/calculations.js';
 import { PROGRAM_STATUSES, newId } from '../../utils/aba/mapping.js';
-import { ABA_OBJECTIVES, ABA_TECHNIQUES } from '../../data/abaLibrary';
-import { AbaConflictError, saveProgram, updateProgramStatus } from '../../services/abaService';
+import { LIBRARY_FALLBACK_NOTICE, mergeAbaLibrary } from '../../utils/abaLibraryMerge';
+import { AbaConflictError, listLibrary, saveProgram, updateProgramStatus } from '../../services/abaService';
 import { AbaDialog } from './AbaDialog';
 import { AbaIcon } from './AbaIcon';
 
@@ -114,12 +114,12 @@ function programFromPreset(preset, settings, reinforcers) {
 
 const criterionText = criteria => `≥${criteria.minimumPercentage}% por ${criteria.requiredSessions} sessões${criteria.sessionsMustBeConsecutive ? ' consecutivas' : ''}${criteria.minimumSeconds ? ` e ${criteria.minimumSeconds}s` : ''}`;
 
-function TechniquePicker({ onApply, onClose }) {
+function TechniquePicker({ techniques, onApply, onClose }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [goal, setGoal] = useState('');
   const [open, setOpen] = useState(null);
-  const results = ABA_TECHNIQUES.filter(technique => (!category || technique.category === category)
+  const results = techniques.filter(technique => (!category || technique.category === category)
     && (!goal || technique.goals.includes(goal))
     && `${technique.name} ${technique.whenToUse} ${technique.howToApply}`.toLowerCase().includes(query.trim().toLowerCase()));
 
@@ -166,7 +166,7 @@ function TechniquePicker({ onApply, onClose }) {
   );
 }
 
-function ProgramEditor({ initial, isNew, data, onClose, onSaved }) {
+function ProgramEditor({ initial, isNew, data, techniques, onClose, onSaved }) {
   const [program, setProgram] = useState(() => ({
     ...initial,
     criteria: { ...DEFAULT_CRITERIA, ...(initial.criteria || {}) },
@@ -517,12 +517,24 @@ function ProgramEditor({ initial, isNew, data, onClose, onSaved }) {
         <button type="button" className="quiet-button" disabled={saving} onClick={onClose}>Cancelar</button>
         <button type="button" className="primary-button" disabled={saving} onClick={() => void submit()}>{saving ? 'Salvando...' : (isNew ? 'Adicionar programa' : 'Salvar programa')}</button>
       </div>
-      {picker && <TechniquePicker onApply={applyTechnique} onClose={() => setPicker(false)} />}
+      {picker && <TechniquePicker techniques={techniques} onApply={applyTechnique} onClose={() => setPicker(false)} />}
     </AbaDialog>
   );
 }
 
 export function AbaPrograms({ data, onChanged }) {
+  const [libraryRows, setLibraryRows] = useState([]);
+  const [libraryUnavailable, setLibraryUnavailable] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    listLibrary().then(rows => {
+      if (!cancelled) { setLibraryRows(rows); setLibraryUnavailable(false); }
+    }).catch(() => {
+      if (!cancelled) { setLibraryRows([]); setLibraryUnavailable(true); }
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const library = useMemo(() => mergeAbaLibrary(libraryRows), [libraryRows]);
   const canEdit = data.permissions.canSupervise;
   const [editing, setEditing] = useState(null);
   const [category, setCategory] = useState('Todas');
@@ -535,8 +547,8 @@ export function AbaPrograms({ data, onChanged }) {
 
   const programs = data.programs.filter(program => showArchived || !program.archivedAt);
   const activeReinforcers = data.reinforcers.filter(reinforcer => reinforcer.active);
-  const categories = useMemo(() => ['Todas', ...new Set(ABA_OBJECTIVES.map(objective => objective.category))], []);
-  const templates = ABA_OBJECTIVES.filter(objective => (category === 'Todas' || objective.category === category)
+  const categories = useMemo(() => ['Todas', ...new Set(library.objectives.map(objective => objective.category))], [library]);
+  const templates = library.objectives.filter(objective => (category === 'Todas' || objective.category === category)
     && `${objective.title} ${objective.objective} ${objective.target}`.toLowerCase().includes(query.trim().toLowerCase()));
 
   const addDirect = async program => {
@@ -588,6 +600,8 @@ export function AbaPrograms({ data, onChanged }) {
         )}
       </div>
       {error && <p className="aba-error" role="alert">{error}</p>}
+      {libraryUnavailable && <p className="aba-note" role="status">{LIBRARY_FALLBACK_NOTICE}</p>}
+      <p className="aba-note">Modelos são ponto de partida, não decisão clínica. Individualize e peça revisão da supervisão; técnicas restritas exigem revisão nominal do programa.</p>
 
       <section className="aba-card">
         <div className="aba-section-head">
@@ -657,7 +671,7 @@ export function AbaPrograms({ data, onChanged }) {
             </div>
             <div className="aba-objective-list">
               {templates.slice(0, limit).map(template => (
-                <article key={`${template.category}-${template.title}`}>
+                <article key={template.key}>
                   <div>
                     <span className="aba-tag">{template.category} · nível {template.level}</span>
                     <h4>{template.title}</h4>
@@ -684,6 +698,7 @@ export function AbaPrograms({ data, onChanged }) {
           initial={editing.program}
           isNew={editing.isNew}
           data={data}
+          techniques={library.techniques}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); onChanged?.(); }}
         />

@@ -30,7 +30,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (texto aprovado 09/11) | ver abaixo |
 | ACUP-020 | Remover a tela de integração com o WhatsApp | Codex LK | — | TODO (após 018) | ver abaixo |
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | PRONTO (04222c7; no integracao em cbc2aa0; publicar) | ver abaixo |
-| ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | FAZENDO | ver abaixo |
+| ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | FAZENDO (ordem aprovada em e76aca3; falta verify_jwt, KEYS-1) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.

@@ -20,7 +20,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | integracao (c452e87) | PRONTO | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | integracao (7c8d6f5) | PRONTO | ver abaixo |
 | ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | integracao (40019b9) | PRONTO | ver abaixo |
-| ACUP-013 | Tela da supervisão formal | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-013 | Tela da supervisão formal | Codex LK | codex/lk (8f545d5) | REVIEW | ver abaixo |
 | ACUP-014 | Ajustes da biblioteca (pendências do review da 007) | Codex LK | — | TODO (após 013) | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 014) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
@@ -220,3 +220,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-09 — ACUP-008 PRONTO: QA aprovou (SQL refeito no acup-qa-pg: migration 2x COMMIT, roteiro do dev 12 OK, 13 cenários próprios, concorrência em 2 sessões nas 3 ordens, diff da exclusão = 20261108b + trava + snapshot + UPDATE; exceções fechadas quebram com tabela falsa; corrigiu teste que deixava passar assinado editável e GRANT para anon, 28/28 mutações), merge em `integracao` (40019b9), quality verde (1422, 1421 ok, 1 pulado). ACUP-013 distribuída, com o aviso de paciente arquivado no aceite.
 - 2026-11-09 — ACUP-013: autorizado acrescentar só `TABS.SUPERVISAO` na lista fechada do grupo Equipe em `aba-library-screen.test.mjs`; demais asserções intactas. Permissão de criação pela `loadTeams` (aceito). Paciente arquivado: a tela explica pelo 22023 que o banco devolve, junto da ação, sem flag nova na RPC (aceito).
 - 2026-11-09 — ACUP-013: autorizado também acrescentar só `TABS.SUPERVISAO` na lista fechada de `TABS_WITHOUT_PATIENT` (mesmo bloco de `aba-library-screen.test.mjs`); são as duas únicas asserções que mudam.
+- 2026-11-09 — ACUP-013 entregue (8f545d5; lint, 1432 testes com 1431 ok e 1 pulado, build verdes; 14 prints no board). REVIEW mandado ao QA.

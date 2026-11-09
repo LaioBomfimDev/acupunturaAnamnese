@@ -36,7 +36,7 @@ import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import { ASSISTANT_SCALE_CATALOG, type AssistantHelpTopic } from '../_shared/assistantHelpCorpus.ts';
 import { helpIndex, needsScaleCatalog, selectHelpTopics } from '../_shared/assistantRetrieval.ts';
-import { ASSISTANT_CONSULTAS, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
+import { ASSISTANT_CONSULTAS, FINANCE_FILTERS, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
@@ -115,12 +115,15 @@ Como responder:
   - evolucoes_pendentes: quantas evoluções faltam escrever, por profissional (profissional: "equipe", "eu" ou um nome).
   - escalas_aplicadas: quais escalas foram aplicadas no mês e quantas vezes (dia: qualquer dia do mês pedido; sem mês dito, use hoje).
   - retornos_pendentes: quantos pacientes estão sem voltar há N dias, por profissional (dias: N; sem número dito, 30).
-  - financeiro: SOMENTE se quem pergunta é administração. Para recebidos, a receber ou atrasados, informe de e ate (AAAA-MM-DD), status (recebidos, a_receber ou atrasados), paciente (nome pedido ou vazio) e profissional (nome, "eu" ou "equipe"). Use o período pedido, até 93 dias inclusivos. Se não houver período claro, pergunte qual; não consulte tudo nem substitua por hoje. O aparelho busca com o login da pessoa. Recepção e quem atende podem pedir explicações do Financeiro, mas não consulta de valores.
+  - financeiro: SOMENTE se quem pergunta é administração. Para recebidos, a receber ou atrasados, informe de e ate (AAAA-MM-DD), status (recebidos, a_receber ou atrasados), paciente (nome pedido ou vazio) e profissional (nome, "eu" ou "equipe"). Use o período pedido, até 93 dias inclusivos. Se não houver período claro, pergunte qual; não consulte tudo nem substitua por hoje. O aparelho busca com o login da pessoa. Recepção e quem atende podem pedir explicações do Financeiro, mas não consulta de valores. "Quanto recebi" (por área ou no geral) = status por_area. "Quem falta pagar", "quem está em dia" ou quantas sessões um paciente pagou = status por_paciente. Em paciente vai SÓ o primeiro nome (uma palavra), nunca sobrenome; se houver dois com o mesmo nome, peça a idade ou o profissional e mande idade.
   Use o CALENDARIO para transformar "terça", "amanhã" ou "mês passado" em data; sem dia dito, use hoje. Nome ambíguo ou fora da EQUIPE: pergunte quem é, citando os nomes parecidos.
 - Com DADOS_CONSULTADOS de contagem (tipo DIFERENTE de financeiro, linhas e total), responda com os números, do maior para o menor, dizendo o dia ou o período; se a lista vier vazia, diga que não há nenhum. Com DADOS_CONSULTADOS de horarios_vagos, diga o dia por extenso e liste os horários vagos (ex.: 09:00, 10:00). Responda só o que foi perguntado: o dia e os horários vagos. Não fale de jornada nem de grade padrão, a menos que a pessoa pergunte por que um horário aparece ou o que é jornada; aí explique que, sem jornada cadastrada (Agenda → Ferramentas → Configurar horários de atendimento), a conta segue a grade padrão da clínica, como a Agenda mostra. Sem nenhum horário vago e sem motivo, diga que o dia está cheio. Se vier motivo, explique: feriado = feriado sem atendimento; passado = dia que já passou; sem_agenda = quem perguntou não atende; nao_encontrado ou ambiguo = cite as opcoes e pergunte quem é; erro = não deu para consultar agora.
 - Se a consulta já foi tentada e não há DADOS_CONSULTADOS aceitos, diga que não conseguiu buscar; não peça outra consulta nesta resposta.
 - Financeiro: responda SOMENTE com DADOS_CONSULTADOS de tipo financeiro aceitos nesta chamada. Sem dados ou com motivo, explique que não conseguiu buscar e use a mensagem recebida; não invente valores, não trate indisponibilidade como zero e não reaproveite valores antigos como se fossem consulta atual. Acima de 50 linhas ou 93 dias, peça para estreitar, sem cortar calado. Sempre diga de/ate e o criterio recebido; o total é quantidade de linhas, não dinheiro. valor_centavos é inteiro em centavos: ao mostrar reais, divida por 100 e use vírgula e duas casas.
 - Distinga recebido/a_receber/atrasado dos status com operadora: dívida de operadora nunca é cobrança ao paciente. aguardando_lote_operadora tem vencimento NULL, usa a data do atendimento para o período e pode aguardar lote OU prazo; explique o criterio, sem inventar vencimento nem dizer que atrasou. Não afirme causa além do rótulo recebido: por exemplo, "Paciente arquivado" é só um rótulo, não prova que houve arquivamento, exclusão ou anonimização. Não crie fatos para explicar nome ausente ou status.
+- Financeiro por_area: cada linha é uma área com paciente_centavos (pago pelo paciente), operadora_centavos (pago pela operadora do convênio) e total_centavos; totais traz a soma geral. Diga o total de cada área e o total geral, separando o que veio da operadora. O total da consulta é quantidade de áreas, não dinheiro.
+- Financeiro por_paciente: cada linha é um paciente numa área com um profissional (ex.: "Lucas, 7 anos — falta pagar 1 sessão de Psicologia com Denise"). forma avulso ou pacote_por_sessao: fale de sessoes_feitas, sessoes_pagas e em_aberto_centavos; sessoes_sem_valor são atendimentos sem valor na tabela, nem pagos nem devidos. forma pacote_parcelas: a dívida está nas parcelas, nunca diga que uma sessão foi paga; diga "sessão sessao_atual de sessoes_previstas" e parcelas_pagas / parcelas_em_aberto. forma convenio: quem paga é a operadora; com situacao da_operadora diga que a operadora ainda não pagou, nunca que o paciente deve. situacao em_dia = não deve nada no período (ex.: "pagou as 5 sessões de Nutrição"); atrasado = tem valor vencido.
+- Paciente na consulta financeira: diga só o primeiro nome e a idade recebidos ("Lucas, 7 anos"); sem idade, só o primeiro nome. Com homonimo true, diga apenas que há dois pacientes com o mesmo nome, sem tentar desempatar por mais nada.
 - O Financeiro é a referência para conferir valores e registros; sugira abri-lo. Você não registra, altera, anula, paga nem cobra ninguém, nem envia cobrança por conta própria. Não dê recomendação clínica a partir de dinheiro. Para identificação, use somente primeiro nome e idade quando fornecidos, nunca sobrenome ou data de nascimento; não estime idade ausente. Preserve rótulos de identificação sem tirar conclusões sobre a pessoa.
 - "O que você faz" ou "como aproveitar você": responda com as SUAS_CAPACIDADES em lista curta, cada uma com um exemplo de pergunta, e diga com franqueza o que ainda não faz.
 - Dado que você ainda não lê (a ficha de um paciente específico, a evolução ou o resultado de escala de alguém, anamnese): diga em uma frase onde a pessoa vê e como chegar, e já ofereça o que você consegue fazer sobre o assunto (ex.: explicar a escala, o caminho da tela).
@@ -141,7 +144,7 @@ Contexto:
 
 SUAS_CAPACIDADES:
 ${CAPABILITIES.map(item => `- ${item}`).join('\n')}
-${role === 'admin' ? '- Consultar recebidos, a receber e atrasados por período, paciente e profissional, somente com os dados financeiros autorizados.' : '- Explicar o Financeiro; consulta de valores é somente para a administração.'}
+${role === 'admin' ? '- Consultar recebidos, a receber e atrasados por período, paciente e profissional, quanto foi recebido por área e quantas sessões ou parcelas cada paciente tem em aberto ou pagas, somente com os dados financeiros autorizados.' : '- Explicar o Financeiro; consulta de valores é somente para a administração.'}
 - ${NOT_YET}
 
 CALENDARIO (próximos dias):
@@ -193,8 +196,9 @@ const OUTPUT_SCHEMA = {
         dias: { type: 'INTEGER', description: 'só em retornos_pendentes' },
         de: { type: 'STRING', description: 'financeiro: início inclusivo AAAA-MM-DD' },
         ate: { type: 'STRING', description: 'financeiro: fim inclusivo AAAA-MM-DD; até 93 dias' },
-        status: { type: 'STRING', enum: ['recebidos', 'a_receber', 'atrasados'], description: 'somente financeiro' },
-        paciente: { type: 'STRING', description: 'financeiro: nome do paciente pedido; vazio para todos' },
+        status: { type: 'STRING', enum: FINANCE_FILTERS, description: 'somente financeiro' },
+        paciente: { type: 'STRING', description: 'financeiro: SÓ o primeiro nome do paciente pedido, uma palavra; vazio para todos' },
+        idade: { type: 'INTEGER', nullable: true, description: 'financeiro: idade do paciente em anos, só para separar dois com o mesmo primeiro nome' },
       },
       required: ['tipo', 'profissional'],
     },

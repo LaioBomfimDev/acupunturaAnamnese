@@ -13,7 +13,8 @@
 // ============================================================
 
 import { freeSlotsOfDay } from './agendaFreeSlots.js';
-import { buildReceivables } from './finance.js';
+import { buildReceivables, isConvenioCharge } from './finance.js';
+import { DISCIPLINES } from '../data/disciplines.js';
 import { operatorReceiptsFrom } from './tissXml.js';
 import { schedulesOfDay } from './agendaTimeline.js';
 
@@ -353,22 +354,75 @@ export function buildAttentionItems({ role, riskAlerts = null, pendingEvolutions
 }
 
 
+// FIN-5 (ACUP-018): o paciente sai do aparelho só como primeira palavra do
+// nome e idade em anos. A data de nascimento fica aqui: só a idade sai.
+export const FINANCE_MAX_AGE = 130;
+
+/** Só a primeira palavra do nome (nunca sobrenome). */
+export function firstNameOf(name) {
+  const clean = typeof name === 'string' ? name.normalize('NFC') : '';
+  // Corta em tudo que não é letra: ponto, sublinhado, número e espaço invisível também separam.
+  const word = clean.split(/[^\p{L}\p{M}'’-]+/u).map(part => part.replace(/^[\p{M}'’-]+|['’-]+$/gu, '')).find(Boolean) || '';
+  return word.slice(0, 40);
+}
+
+/**
+ * Idade em anos no dia `today` (AAAA-MM-DD, já no fuso da clínica). Sem data
+ * válida, data no futuro ou acima de 130 anos: null, nunca idade inventada.
+ * Quem nasceu em 29/02 completa ano em 01/03 nos anos não bissextos.
+ */
+export function ageOn(birthDate, today) {
+  const birth = typeof birthDate === 'string' ? birthDate.slice(0, 10) : '';
+  if (!financeDay(birth) || !financeDay(today) || birth > today) return null;
+  const age = Number(today.slice(0, 4)) - Number(birth.slice(0, 4)) - (today.slice(5) < birth.slice(5) ? 1 : 0);
+  return age >= 0 && age <= FINANCE_MAX_AGE ? age : null;
+}
+
 // FIN-4: limite inclusivo, sem truncar linhas ou corrigir datas inválidas.
 export const FINANCE_MAX_DAYS = 93;
 export const FINANCE_MAX_ROWS = 50;
-export const FINANCE_FILTERS = ['recebidos', 'a_receber', 'atrasados'];
+// ACUP-018 (FIN-7): por_area = recebido no período por área; por_paciente =
+// sessões e parcelas por paciente, área e profissional.
+export const FINANCE_FILTERS = ['recebidos', 'a_receber', 'atrasados', 'por_area', 'por_paciente'];
 export const FINANCE_ROW_STATUS = ['recebido', 'a_receber', 'atrasado', 'recebido_operadora', 'a_receber_operadora', 'atrasado_operadora', 'aguardando_lote_operadora'];
+export const FINANCE_FORMS = ['avulso', 'pacote_por_sessao', 'pacote_parcelas', 'convenio'];
+export const FINANCE_SITUATIONS = ['atrasado', 'em_aberto', 'da_operadora', 'em_dia'];
+export const FINANCE_NO_AREA = 'Sem área';
+export const FINANCE_AREAS = [...DISCIPLINES.map(item => item.label), FINANCE_NO_AREA];
+// Linha cujo paciente não está mais no cadastro: rótulo fixo, sem idade.
+export const FINANCE_ARCHIVED = 'Paciente arquivado';
+// Primeiro nome = uma palavra só de letras (acento, apóstrofo ou hífen valem).
+// QA 09/11/2026: só "sem espaço" deixava passar "Lúcia.Souza", "Lúcia_Souza",
+// sobrenome colado por espaço invisível, CPF, e-mail e data.
+export const FINANCE_FIRST_NAME = /^\p{L}[\p{L}\p{M}'’-]{0,39}$/u;
+// Contagens que cada forma nunca traz (vão null).
+export const FINANCE_NULL_BY_FORM = {
+  avulso: ['sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto'],
+  convenio: ['sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto'],
+  pacote_por_sessao: ['parcelas_pagas', 'parcelas_em_aberto'],
+  pacote_parcelas: ['sessoes_feitas', 'sessoes_pagas', 'sessoes_sem_valor'],
+};
+// Chaves de cada recorte (lista fechada: o teste e a Edge conferem).
+export const FINANCE_KEYS = {
+  linha: ['paciente', 'idade', 'homonimo', 'area', 'profissional', 'valor_centavos', 'vencimento', 'pagamento', 'status'],
+  area: ['area', 'paciente_centavos', 'operadora_centavos', 'total_centavos'],
+  paciente: ['paciente', 'idade', 'homonimo', 'area', 'profissional', 'forma', 'sessoes_feitas', 'sessoes_pagas', 'sessoes_sem_valor',
+    'sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto', 'em_aberto_centavos', 'situacao'],
+  totais: ['paciente_centavos', 'operadora_centavos', 'total_centavos'],
+};
 export const FINANCE_CRITERIA = {
   pagamento: 'Data de pagamento no período informado.',
   vencimento: 'Data de vencimento no período informado.',
   misto: 'Data de vencimento; convênio aguardando lote ou prazo usa a data do atendimento e não é cobrança ao paciente.',
+  area: 'Data de pagamento no período informado, somada por área; o que a operadora pagou fica separado do que o paciente pagou.',
+  paciente: 'Atendimentos com data no período informado e parcelas de pacote que vencem até o fim do período, por paciente, área e profissional.',
 };
 export const FINANCE_REASONS = {
   sem_permissao: 'Esta consulta está disponível somente para a administração da sua instituição.',
   periodo_invalido: 'Informe início e fim válidos no formato AAAA-MM-DD, em ordem.',
   limite_periodo: 'Escolha um período de até 93 dias para consultar o financeiro.',
   limite_linhas: 'Há mais de 50 itens. Estreite o período, o paciente ou o profissional.',
-  filtro_invalido: 'Escolha recebidos, a receber ou atrasados para consultar o financeiro.',
+  filtro_invalido: 'Escolha recebidos, a receber, atrasados, por área ou por paciente, e use só o primeiro nome do paciente.',
   ambiguo: 'Há mais de uma pessoa com esse nome. Informe o nome completo.',
   nao_encontrado: 'Não encontrei essa pessoa nas fontes disponíveis do Financeiro.',
   erro: 'Não foi possível consultar o financeiro agora. Confira a tela Financeiro e tente novamente.',
@@ -384,15 +438,33 @@ function financeDay(value) {
   const time = Date.parse(value + 'T00:00:00Z');
   return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value ? value : '';
 }
+function financeCount(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+function financeAge(value) {
+  return value === null || value === undefined ? null : (Number.isInteger(value) && value >= 0 && value <= FINANCE_MAX_AGE ? value : undefined);
+}
+// FIN-7: paciente é uma palavra só (primeiro nome); com espaço, só o rótulo fixo de arquivado.
+function financePatientLabel(value, age) {
+  const name = financeName(value);
+  if (!name) return '';
+  if (name === FINANCE_ARCHIVED) return age === null ? name : '';
+  return FINANCE_FIRST_NAME.test(name) ? name : '';
+}
 export function readFinanceConsulta(raw) {
   const item = financeRecord(raw);
   const invalidFilter = ['paciente', 'profissional'].some(key => {
     const value = item[key];
     return value !== undefined && (typeof value !== 'string' || value.length > 120);
   });
+  const age = financeAge(item.idade);
+  const patient = financeName(item.paciente);
+  // Pedido com nome completo nunca é atendido nem devolvido: vira filtro inválido.
+  const fullName = patient !== '' && !FINANCE_FIRST_NAME.test(patient);
   return { tipo: 'financeiro', de: financeDay(item.de), ate: financeDay(item.ate),
-    status: !invalidFilter && FINANCE_FILTERS.includes(item.status) ? item.status : '',
-    paciente: financeName(item.paciente), profissional: financeName(item.profissional) || 'equipe' };
+    status: !invalidFilter && !fullName && age !== undefined && FINANCE_FILTERS.includes(item.status) ? item.status : '',
+    paciente: fullName ? '' : patient, idade: age === undefined ? null : age,
+    profissional: financeName(item.profissional) || 'equipe' };
 }
 export function financeConsultaIssue(raw) {
   const query = readFinanceConsulta(raw);
@@ -404,9 +476,54 @@ export function financeConsultaIssue(raw) {
 export function financeConsultaFailure(raw, reason) {
   const query = readFinanceConsulta(raw);
   const motivo = typeof reason === 'string' && Object.hasOwn(FINANCE_REASONS, reason) ? reason : 'erro';
-  return { ...query, motivo, mensagem: FINANCE_REASONS[motivo], criterio: null, linhas: [], total: null };
+  return { ...query, motivo, mensagem: FINANCE_REASONS[motivo], criterio: null, linhas: [], totais: null, total: null };
 }
-// Lista fechada T2: nenhum identificador, documento, contato ou texto livre atravessa.
+function readPatientFields(line) {
+  const idade = financeAge(line.idade);
+  const paciente = idade === undefined ? '' : financePatientLabel(line.paciente, idade);
+  const area = financeName(line.area);
+  if (!paciente || typeof line.homonimo !== 'boolean' || !FINANCE_AREAS.includes(area) || typeof line.profissional !== 'string') return null;
+  return { paciente, idade, homonimo: line.homonimo, area, profissional: financeName(line.profissional) };
+}
+function readMoneyLine(line, query) {
+  const who = readPatientFields(line);
+  const vencimento = line.vencimento === null ? null : financeDay(line.vencimento);
+  const pagamento = line.pagamento === null ? null : financeDay(line.pagamento);
+  if (!who || financeCount(line.valor_centavos) === null || !FINANCE_ROW_STATUS.includes(line.status) || vencimento === '' || pagamento === '') return null;
+  const paid = line.status === 'recebido' || line.status === 'recebido_operadora';
+  const date = paid ? pagamento : vencimento;
+  const waiting = line.status === 'aguardando_lote_operadora';
+  if ((waiting && (vencimento !== null || pagamento !== null || query.status !== 'a_receber'))
+      || (!waiting && (!date || date < query.de || date > query.ate)) || (query.status === 'recebidos') !== paid
+      || (query.status === 'atrasados' && !line.status.startsWith('atrasado'))) return null;
+  return { ...who, valor_centavos: line.valor_centavos, vencimento, pagamento, status: line.status };
+}
+function readAreaLine(line) {
+  const area = financeName(line.area);
+  const own = financeCount(line.paciente_centavos);
+  const operator = financeCount(line.operadora_centavos);
+  if (!FINANCE_AREAS.includes(area) || own === null || operator === null || line.total_centavos !== own + operator) return null;
+  return { area, paciente_centavos: own, operadora_centavos: operator, total_centavos: own + operator };
+}
+function readPatientLine(line) {
+  const who = readPatientFields(line);
+  if (!who || !FINANCE_FORMS.includes(line.forma) || !FINANCE_SITUATIONS.includes(line.situacao)) return null;
+  const counts = {};
+  for (const key of ['sessoes_feitas', 'sessoes_pagas', 'sessoes_sem_valor', 'sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto']) {
+    counts[key] = line[key] === null ? null : financeCount(line[key]);
+    if (counts[key] === null && line[key] !== null) return null;
+  }
+  // Pacote à vista ou parcelado conta parcela, nunca sessão paga; avulso e
+  // convênio não têm parcela nem "sessão N de M" (QA, 09/11/2026).
+  if (FINANCE_NULL_BY_FORM[line.forma].some(key => counts[key] !== null)) return null;
+  const open = financeCount(line.em_aberto_centavos);
+  if (open === null || (open === 0) !== (line.situacao === 'em_dia')
+      || (line.situacao === 'da_operadora') !== (line.forma === 'convenio' && open > 0)) return null;
+  return { ...who, forma: line.forma, ...counts, em_aberto_centavos: open, situacao: line.situacao };
+}
+// Lista fechada T2/FIN-7: cada objeto é remontado só com as chaves do recorte;
+// uma linha fora do contrato (nome completo, idade inventada, campo a mais
+// que não cabe) derruba a resposta inteira, nunca chega ao modelo.
 export function readFinanceResult(raw) {
   const item = financeRecord(raw);
   const query = readFinanceConsulta(item);
@@ -415,72 +532,216 @@ export function readFinanceResult(raw) {
   if (item.motivo) return financeConsultaFailure(query, item.motivo);
   if (!Array.isArray(item.linhas)) return financeConsultaFailure(query, 'erro');
   if (item.linhas.length > FINANCE_MAX_ROWS) return financeConsultaFailure(query, 'limite_linhas');
+  const reader = query.status === 'por_area' ? readAreaLine : query.status === 'por_paciente' ? readPatientLine : readMoneyLine;
   const linhas = [];
   for (const rawLine of item.linhas) {
-    const line = financeRecord(rawLine);
-    const paciente = financeName(line.paciente);
-    const profissional = financeName(line.profissional);
-    const vencimento = line.vencimento === null ? null : financeDay(line.vencimento);
-    const pagamento = line.pagamento === null ? null : financeDay(line.pagamento);
-    if (!paciente || typeof line.profissional !== 'string' || !Number.isSafeInteger(line.valor_centavos) || line.valor_centavos < 0
-        || !FINANCE_ROW_STATUS.includes(line.status) || vencimento === '' || pagamento === '') return financeConsultaFailure(query, 'erro');
-    const paid = line.status === 'recebido' || line.status === 'recebido_operadora';
-    const date = paid ? pagamento : vencimento;
-    const waiting = line.status === 'aguardando_lote_operadora';
-    if ((waiting && (vencimento !== null || pagamento !== null || query.status !== 'a_receber'))
-        || (!waiting && (!date || date < query.de || date > query.ate)) || (query.status === 'recebidos') !== paid
-        || (query.status === 'atrasados' && !line.status.startsWith('atrasado'))) return financeConsultaFailure(query, 'erro');
-    linhas.push({ paciente, profissional, valor_centavos: line.valor_centavos, vencimento, pagamento, status: line.status });
+    const line = reader(financeRecord(rawLine), query);
+    if (!line) return financeConsultaFailure(query, 'erro');
+    linhas.push(line);
   }
-  return { ...query, motivo: null, mensagem: '',
-    criterio: query.status === 'recebidos' ? FINANCE_CRITERIA.pagamento
-      : linhas.some(line => line.status === 'aguardando_lote_operadora') ? FINANCE_CRITERIA.misto : FINANCE_CRITERIA.vencimento,
-    linhas, total: linhas.length };
+  let totais = null;
+  if (query.status === 'por_area') {
+    const sum = key => linhas.reduce((total, line) => total + line[key], 0);
+    totais = { paciente_centavos: sum('paciente_centavos'), operadora_centavos: sum('operadora_centavos'), total_centavos: sum('total_centavos') };
+    if (!Number.isSafeInteger(totais.total_centavos)) return financeConsultaFailure(query, 'erro');
+  }
+  const criterio = query.status === 'por_area' ? FINANCE_CRITERIA.area
+    : query.status === 'por_paciente' ? FINANCE_CRITERIA.paciente
+      : query.status === 'recebidos' ? FINANCE_CRITERIA.pagamento
+        : linhas.some(line => line.status === 'aguardando_lote_operadora') ? FINANCE_CRITERIA.misto : FINANCE_CRITERIA.vencimento;
+  return { ...query, motivo: null, mensagem: '', criterio, linhas, totais, total: linhas.length };
 }
 
-/** Mesmas contas da tela. O chamador fornece só nomes a partir das fontes do Financeiro. */
+const plainName = value => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('pt-BR').trim();
+const areaLabel = discipline => DISCIPLINES.find(item => item.id === discipline)?.label || FINANCE_NO_AREA;
+
+/** Recebido no período, por área (paciente × operadora), sem nome de paciente. */
+function receivedByArea({ money, query, chargeById, packageById, keep }) {
+  const byArea = new Map();
+  const receipts = [...(money.receipts || []), ...operatorReceiptsFrom(money.tissPaid)];
+  for (const row of receipts) {
+    if (row.voided_at || row.received_on < query.de || row.received_on > query.ate) continue;
+    const charge = chargeById.get(row.charge_id);
+    const pkg = packageById.get(row.package_id);
+    if (!keep(row.patient_id || charge?.patient_id || pkg?.patient_id, charge?.professional_id || pkg?.professional_id)) continue;
+    const area = areaLabel(charge?.discipline || pkg?.discipline);
+    const line = byArea.get(area) || { area, paciente_centavos: 0, operadora_centavos: 0, total_centavos: 0 };
+    line[row.source === 'operadora' ? 'operadora_centavos' : 'paciente_centavos'] += row.amount_cents;
+    line.total_centavos += row.amount_cents;
+    byArea.set(area, line);
+  }
+  return [...byArea.values()].sort((a, b) => b.total_centavos - a.total_centavos || a.area.localeCompare(b.area, 'pt-BR'));
+}
+
+/**
+ * Sessões e parcelas por paciente, área e profissional, a partir dos itens de
+ * buildReceivables (o mesmo "A receber" da tela): o que aparece lá está em
+ * aberto; o que não aparece está pago. Pacote à vista ou parcelado: a dívida
+ * está nas parcelas, nunca vira "sessão paga".
+ */
+function situationByPatient({ money, query, items, keep }) {
+  const openByCharge = new Map();
+  const openInstallments = new Map();
+  for (const item of items) {
+    // Avulso e convênio trazem chargeId; sessão de pacote "a cada sessão" vem
+    // só na chave do item (buildReceivables: package:<pacote>:session:<cobrança>).
+    const sessionCharge = item.kind === 'session' ? String(item.key || '').split(':')[3] : null;
+    if (item.chargeId || sessionCharge) openByCharge.set(item.chargeId || sessionCharge, item);
+    if (item.kind === 'installment') {
+      const list = openInstallments.get(item.packageId) || [];
+      list.push(item);
+      openInstallments.set(item.packageId, list);
+    }
+  }
+  const packageById = new Map((money.packages || []).filter(pkg => pkg.status !== 'voided').map(pkg => [pkg.id, pkg]));
+  const groups = new Map();
+  const groupOf = (patientId, professionalId, discipline, forma, extra = {}) => {
+    const key = [patientId, professionalId, discipline, forma, extra.packageId || ''].join('|');
+    const group = groups.get(key) || { patientId, professionalId, area: areaLabel(discipline), forma, sessoes_feitas: 0, sessoes_pagas: 0,
+      sessoes_sem_valor: 0, sessao_atual: null, sessoes_previstas: null, parcelas_pagas: null, parcelas_em_aberto: null, open: 0, late: false };
+    groups.set(key, group);
+    return group;
+  };
+  const addOpen = (group, item) => {
+    if (!item) return;
+    group.open += item.openCents;
+    group.late = group.late || Boolean(item.late);
+  };
+
+  for (const charge of money.charges || []) {
+    if (charge.voided_at || charge.source !== 'appointment' || charge.service_on < query.de || charge.service_on > query.ate) continue;
+    const pkg = charge.package_id ? packageById.get(charge.package_id) : null;
+    if (charge.package_id && (!pkg || pkg.payment_plan !== 'per_session')) continue;
+    const forma = pkg ? 'pacote_por_sessao' : isConvenioCharge(charge) ? 'convenio' : 'avulso';
+    if (!keep(charge.patient_id || pkg?.patient_id, charge.professional_id)) continue;
+    const group = groupOf(charge.patient_id || pkg?.patient_id, charge.professional_id, charge.discipline || pkg?.discipline, forma, { packageId: pkg?.id });
+    group.sessoes_feitas += 1;
+    const open = openByCharge.get(charge.id);
+    if (charge.price_cents == null) group.sessoes_sem_valor += 1;
+    else if (!open) group.sessoes_pagas += 1;
+    addOpen(group, open);
+    if (pkg) {
+      group.sessao_atual = (money.charges || []).filter(row => row.package_id === pkg.id && row.source === 'appointment' && !row.voided_at).length;
+      group.sessoes_previstas = pkg.sessions_planned ?? null;
+    }
+  }
+
+  // Resto do encerramento de pacote "a cada sessão": entra no aberto, sem contar sessão.
+  for (const item of items) {
+    const pkg = item.kind === 'rest' ? packageById.get(item.packageId) : null;
+    if (!pkg || item.dueOn < query.de || item.dueOn > query.ate || !keep(pkg.patient_id, item.professionalId)) continue;
+    addOpen(groupOf(pkg.patient_id, item.professionalId, pkg.discipline, 'pacote_por_sessao', { packageId: pkg.id }), item);
+  }
+
+  for (const pkg of packageById.values()) {
+    if (pkg.payment_plan === 'per_session' || !keep(pkg.patient_id, pkg.professional_id)) continue;
+    const dueSoFar = (money.installments || []).filter(row => row.package_id === pkg.id && row.due_on <= query.ate);
+    const sessions = (money.charges || []).filter(row => row.package_id === pkg.id && row.source === 'appointment' && !row.voided_at);
+    const inPeriod = sessions.some(row => row.service_on >= query.de && row.service_on <= query.ate)
+      || dueSoFar.some(row => row.due_on >= query.de);
+    if (!inPeriod) continue;
+    const open = (openInstallments.get(pkg.id) || []).filter(item => item.dueOn <= query.ate);
+    const group = groupOf(pkg.patient_id, pkg.professional_id, pkg.discipline, 'pacote_parcelas', { packageId: pkg.id });
+    group.sessoes_feitas = null;
+    group.sessoes_pagas = null;
+    group.sessoes_sem_valor = null;
+    group.sessao_atual = sessions.length;
+    group.sessoes_previstas = pkg.sessions_planned ?? null;
+    group.parcelas_em_aberto = open.length;
+    group.parcelas_pagas = Math.max(0, dueSoFar.length - open.length);
+    open.forEach(item => addOpen(group, item));
+  }
+
+  return [...groups.values()].map(group => ({
+    ...group,
+    situacao: group.open === 0 ? 'em_dia' : group.forma === 'convenio' ? 'da_operadora' : group.late ? 'atrasado' : 'em_aberto',
+  }));
+}
+
+/** Mesmas contas da tela. O paciente sai só com primeiro nome e idade (FIN-5). */
 export function summarizeFinance({ consulta, money, patients, members, shortName, today, selfId }) {
   const query = readFinanceConsulta(consulta);
   const issue = financeConsultaIssue(query);
   if (issue) return financeConsultaFailure(query, issue);
-  const plainName = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
-  function resolveName(needle, rows, nameOf) {
-    const term = plainName(needle);
-    if (!term) return { id: null };
-    const exact = rows.filter(row => plainName(nameOf(row)) === term);
-    const hits = exact.length ? exact : rows.filter(row => plainName(nameOf(row)).includes(term));
-    return hits.length === 1 ? { id: hits[0].id } : { motivo: hits.length ? 'ambiguo' : 'nao_encontrado' };
+  const people = new Map(patients.map(row => [row.id, { first: firstNameOf(row.name), age: ageOn(row.birth_date, today) }]));
+  let patientIds = null;
+  if (query.paciente) {
+    const term = plainName(query.paciente);
+    patientIds = new Set(patients.filter(row => plainName(people.get(row.id).first) === term
+      && (query.idade === null || people.get(row.id).age === query.idade)).map(row => row.id));
+    if (!patientIds.size) return financeConsultaFailure(query, 'nao_encontrado');
   }
-  const patient = resolveName(query.paciente, patients, row => row.name);
   const matched = query.profissional === 'equipe' ? null : matchTeamMember(query.profissional, members, selfId);
-  const professional = matched ? { id: matched.member?.id, motivo: matched.motivo } : { id: null };
-  if (patient.motivo || professional.motivo) return financeConsultaFailure(query, patient.motivo || professional.motivo);
-  const patientById = new Map(patients.map(row => [row.id, row.name]));
+  if (matched?.motivo) return financeConsultaFailure(query, matched.motivo);
+  const professionalId = matched?.member?.id || null;
+  const keep = (patientId, proId) => (!patientIds || patientIds.has(patientId)) && (!professionalId || proId === professionalId);
   const memberById = new Map(members.map(row => [row.id, shortName(row.full_name)]));
   const chargeById = new Map(money.charges.map(row => [row.id, row]));
   const packageById = new Map(money.packages.map(row => [row.id, row]));
+
+  if (query.status === 'por_area') {
+    const linhas = receivedByArea({ money, query, chargeById, packageById, keep });
+    if (linhas.length > FINANCE_MAX_ROWS) return financeConsultaFailure(query, 'limite_linhas');
+    return readFinanceResult({ ...query, linhas });
+  }
+
   const receipts = [...money.receipts, ...operatorReceiptsFrom(money.tissPaid)];
+  const items = buildReceivables({ ...money, receipts, today }).items;
+  // Quem é quem sem sobrenome: homônimo = mesmo primeiro nome, idade e profissional, pessoas diferentes.
+  const label = rows => {
+    const owners = new Map();
+    for (const row of rows) {
+      const person = people.get(row.patientId);
+      const key = person ? [plainName(person.first), person.age, row.professionalId].join('|') : '';
+      if (!key) continue;
+      owners.set(key, (owners.get(key) || new Set()).add(row.patientId));
+    }
+    return row => {
+      const person = people.get(row.patientId);
+      const key = person ? [plainName(person.first), person.age, row.professionalId].join('|') : '';
+      return {
+        paciente: person ? person.first : FINANCE_ARCHIVED,
+        idade: person ? person.age : null,
+        homonimo: Boolean(key) && owners.get(key).size > 1,
+        area: areaLabel(row.discipline),
+        profissional: memberById.get(row.professionalId) || '',
+      };
+    };
+  };
+
+  if (query.status === 'por_paciente') {
+    const groups = situationByPatient({ money, query, items, keep });
+    if (groups.length > FINANCE_MAX_ROWS) return financeConsultaFailure(query, 'limite_linhas');
+    const who = label(groups);
+    const order = FINANCE_SITUATIONS;
+    const linhas = groups.map(group => ({ ...who({ ...group, discipline: null }), area: group.area,
+      forma: group.forma, sessoes_feitas: group.sessoes_feitas, sessoes_pagas: group.sessoes_pagas, sessoes_sem_valor: group.sessoes_sem_valor,
+      sessao_atual: group.sessao_atual, sessoes_previstas: group.sessoes_previstas, parcelas_pagas: group.parcelas_pagas,
+      parcelas_em_aberto: group.parcelas_em_aberto, em_aberto_centavos: group.open, situacao: group.situacao }))
+      .sort((a, b) => order.indexOf(a.situacao) - order.indexOf(b.situacao) || b.em_aberto_centavos - a.em_aberto_centavos
+        || a.paciente.localeCompare(b.paciente, 'pt-BR'));
+    return readFinanceResult({ ...query, linhas });
+  }
+
   const entries = query.status === 'recebidos'
     ? receipts.filter(row => !row.voided_at).map(row => {
       const charge = chargeById.get(row.charge_id);
       const pkg = packageById.get(row.package_id);
       return { patientId: row.patient_id || charge?.patient_id || pkg?.patient_id,
-        professionalId: charge?.professional_id || pkg?.professional_id, value: row.amount_cents,
-        date: row.received_on, due: null, paid: row.received_on,
+        professionalId: charge?.professional_id || pkg?.professional_id, discipline: charge?.discipline || pkg?.discipline,
+        value: row.amount_cents, date: row.received_on, due: null, paid: row.received_on,
         status: row.source === 'operadora' ? 'recebido_operadora' : 'recebido' };
     })
-    : buildReceivables({ ...money, receipts, today }).items
+    : items
       .filter(row => query.status !== 'atrasados' || row.late)
-      .map(row => ({ patientId: row.patientId, professionalId: row.professionalId, value: row.openCents,
+      .map(row => ({ patientId: row.patientId, professionalId: row.professionalId, discipline: row.discipline, value: row.openCents,
         date: row.dueOn, due: row.hasDue === false ? null : row.dueOn, paid: null,
         status: row.hasDue === false && row.payer === 'convenio' ? 'aguardando_lote_operadora'
           : (row.late ? 'atrasado' : 'a_receber') + (row.payer === 'convenio' ? '_operadora' : '') }));
-  const matches = entries.filter(row => (!patient.id || row.patientId === patient.id)
-    && (!professional.id || row.professionalId === professional.id) && row.date >= query.de && row.date <= query.ate);
+  const matches = entries.filter(row => keep(row.patientId, row.professionalId) && row.date >= query.de && row.date <= query.ate);
   if (matches.length > FINANCE_MAX_ROWS) return financeConsultaFailure(query, 'limite_linhas');
+  const who = label(matches);
   return readFinanceResult({ ...query, linhas: matches.map(row => ({
-    paciente: patientById.get(row.patientId) || 'Paciente arquivado',
-    profissional: memberById.get(row.professionalId) || '',
-    valor_centavos: row.value, vencimento: row.due, pagamento: row.paid, status: row.status,
+    ...who(row), valor_centavos: row.value, vencimento: row.due, pagamento: row.paid, status: row.status,
   })) });
 }

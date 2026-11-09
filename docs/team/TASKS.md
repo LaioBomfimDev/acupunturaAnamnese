@@ -21,7 +21,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | integracao (7c8d6f5) | PRONTO | ver abaixo |
 | ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | integracao (40019b9) | PRONTO | ver abaixo |
 | ACUP-013 | Tela da supervisão formal | Codex LK | integracao (3c54d5d) | PRONTO | ver abaixo |
-| ACUP-014 | Ajustes da biblioteca e da supervisão (pendências dos reviews da 007 e da 013) | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-014 | Ajustes da biblioteca e da supervisão (pendências dos reviews da 007 e da 013) | Codex LK | codex/lk (7a7ce58) | REVIEW | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 014) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
 
@@ -225,3 +225,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-09 — PROD-2: o humano aplicou em produção os 6 SQL da rodada (20261108, 20261108a, 20261108b, 20261108ba, 20261108c, 20261108d). Regra daqui em diante: esses arquivos não se editam mais; correção é migration nova, e quem recriar `admin_decide_patient_deletion` parte da `20261108d`. Pacote de publicação do site + assistente em `mesa/publicacao.md`, à espera da decisão do humano. Site ainda não publicado (`main` 78 commits atrás de `integracao`).
 - 2026-11-09 — ACUP-014: autorizado mexer também em `ABA_HELP.supervisao` (só a nota do conflito e do "Recarregar revisão") + espelho regenerado. Regra do Recarregar aceita: mantém o texto digitado e só atualiza a revisão; recusa continuar (e explica) se mudaram paciente, supervisionado, status ou acesso, para nunca devolver texto expurgado na exclusão de paciente.
 - 2026-11-09 — ACUP-014: autorizado em `aba-supervision-screen.test.mjs` trocar só a asserção do botão "Atualizar lista" pela exigência de "Recarregar revisão" (revisão nova, texto mantido, contexto protegido); na Biblioteca, a asserção do Reativar passa a cobrir oculto e arquivado. Confirmação, CAS e evento continuam exigidos; nenhuma outra asserção muda.
+- 2026-11-09 — ACUP-014 entregue (7a7ce58; lint, 1437 testes com 1436 ok e 1 pulado, build verdes; 14 prints no board). REVIEW mandado ao QA.

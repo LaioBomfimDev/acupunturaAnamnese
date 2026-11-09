@@ -85,7 +85,7 @@ export function SupervisionCard({ record, teams, personName, onEdit, onAction, b
   </article>;
 }
 
-function SupervisionEditor({ initial, people, patients, onClose, onSaved, onRefresh }) {
+function SupervisionEditor({ initial, people, patients, onClose, onSaved }) {
   const [draft, setDraft] = useState(() => initial || {
     id: crypto.randomUUID(), revision: 0, supervisee_id: '', patient_id: null,
     held_on: profileToday(), duration_minutes: 60, modality: 'individual', format: 'presencial', agenda: '', decisions: '',
@@ -94,8 +94,28 @@ function SupervisionEditor({ initial, people, patients, onClose, onSaved, onRefr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
+  const [notice, setNotice] = useState('');
   const lock = useRef(false);
   const set = patch => setDraft(current => ({ ...current, ...patch }));
+  async function reloadRevision() {
+    if (lock.current) return;
+    lock.current = true; setBusy(true);
+    try {
+      const current = await listSupervisions();
+      const latest = current.records.find(record => record.id === draft.id);
+      // Não rebasear texto sobre um vínculo removido/trocado pelo expurgo (SUP-1/3).
+      const context = initial || draft;
+      if (!latest || latest.status !== 'rascunho' || latest.content_restricted
+          || (latest.patient_id || null) !== (context.patient_id || null)
+          || latest.supervisee_id !== context.supervisee_id) {
+        throw new Error('Registro mudou de estado, vínculo ou acesso. O texto foi mantido, mas não pode ser salvo sobre esse contexto.');
+      }
+      setDraft(value => ({ ...value, revision: latest.revision }));
+      setConflict(false); setError('');
+      setNotice('Revisão recarregada. Seu texto foi mantido; confira antes de salvar sobre a versão atual.');
+    } catch (failure) { setError(supervisionErrorMessage(failure)); }
+    finally { lock.current = false; setBusy(false); }
+  }
   async function save(event) {
     event.preventDefault();
     if (lock.current || conflict || archived(error)) return;
@@ -128,7 +148,8 @@ function SupervisionEditor({ initial, people, patients, onClose, onSaved, onRefr
       <label className="aba-field">Pauta<textarea rows={5} maxLength={12000} value={draft.agenda || ''} disabled={busy} onChange={event => set({ agenda: event.target.value })} /></label>
       <label className="aba-field">Decisões<textarea rows={5} maxLength={12000} value={draft.decisions || ''} disabled={busy} onChange={event => set({ decisions: event.target.value })} /></label>
       {error && <SupervisionError message={error} />}
-      {conflict && <div className="aba-note"><p>O texto digitado permanece neste editor. Atualize a lista para conferir a versão atual; feche e reabra o registro quando decidir descartar este rascunho.</p><button type="button" className="quiet-button" onClick={() => void onRefresh()}>Atualizar lista</button></div>}
+      {notice && <p className="aba-note" role="status">{notice}</p>}
+      {conflict && <div className="aba-note"><p>Recarregue a revisão para conferir e salvar a versão digitada. O texto será mantido; vínculos e acesso precisam continuar os mesmos.</p><button type="button" className="quiet-button" disabled={busy} onClick={() => void reloadRevision()}>Recarregar revisão</button></div>}
       <div className="aba-form-actions"><button type="button" className="quiet-button" disabled={busy} onClick={close}>Cancelar</button>
         <button type="submit" className="primary-button" disabled={busy || conflict || archived(error)}>{busy ? 'Salvando…' : 'Salvar rascunho'}</button></div>
     </form>}
@@ -214,7 +235,7 @@ export function AbaSupervision() {
       <div className="aba-supervision-list">{records.map(record => <SupervisionCard key={record.id} record={record} teams={teams} personName={personName} onEdit={value => setEditor({ initial: value })} onAction={act} busy={busy} error={rowErrors[record.id]} />)}</div>
       {!records.length && <p className="aba-empty">Nenhum registro de supervisão neste filtro.</p>}
     </>}
-    {editor && <SupervisionEditor initial={editor.initial} people={people} patients={patients} onClose={() => setEditor(null)} onSaved={saved} onRefresh={load} />}
+    {editor && <SupervisionEditor initial={editor.initial} people={people} patients={patients} onClose={() => setEditor(null)} onSaved={saved} />}
     {confirming && <SupervisionConfirmation action={confirming.action} record={confirming.record} busy={busy} error={rowErrors[confirming.record.id]}
       onClose={() => setConfirming(null)} onConfirm={reason => runAction(confirming.record, confirming.action, reason, confirming.eventId)} />}
   </div>;

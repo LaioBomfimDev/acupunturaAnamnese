@@ -136,9 +136,24 @@ test('erros: conflito não fecha/limpa editor e não rebaseia revisão antiga; e
   const failure = save.slice(save.indexOf('catch (failure)'));
   assert.doesNotMatch(failure, /onClose|onSaved|setDraft/);
   assert.match(source, /disabled=\{busy \|\| conflict \|\| archived\(error\)\}/);
-  assert.match(source, /onClick=\{\(\) => void onRefresh\(\)\}/);
+  assert.match(source, /onClick=\{\(\) => void reloadRevision\(\)\}>Recarregar revisão/);
   assert.match(source, /useEffect\(\(\) => \{ target\.current\?\.focus\(\); \}, \[message\]\)/, 'erro do formulário recebe foco e não fica abaixo da parte visível');
   assert.match(source, /role="alert" tabIndex=\{-1\} ref=\{target\}/);
+});
+
+test('ACUP-014: recarrega apenas revisão com texto mantido; contexto expurgado/trocado não é rebaseado', () => {
+  const reload = source.slice(source.indexOf('async function reloadRevision()'), source.indexOf('async function save(event)'));
+  assert.match(reload, /await listSupervisions\(\)/);
+  assert.match(reload, /current\.records\.find\(record => record\.id === draft\.id\)/);
+  assert.match(reload, /setDraft\(value => \(\{ \.\.\.value, revision: latest\.revision \}\)\)/);
+  assert.match(reload, /setConflict\(false\); setError\(''\)/);
+  assert.match(reload, /const context = initial \|\| draft/);
+  assert.match(reload, /latest\.status !== 'rascunho' \|\| latest\.content_restricted/);
+  assert.match(reload, /\(latest\.patient_id \|\| null\) !== \(context\.patient_id \|\| null\)/);
+  assert.match(reload, /latest\.supervisee_id !== context\.supervisee_id/);
+  assert.doesNotMatch(reload, /agenda:|decisions:|setDraft\(latest\)/);
+  assert.ok(reload.indexOf('throw new Error') < reload.indexOf('setDraft('));
+  assert.match(reload, /if \(lock\.current\) return/);
 });
 
 test('escritas: trava síncrona, UUID uma vez por registro/evento por ação, sucesso relê lista, confirmar assinatura/anulação', () => {

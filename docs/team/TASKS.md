@@ -17,7 +17,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-004 | Perfil ABA do paciente (SQL + RPC) | Codex LK | integracao (1b3144a) | PRONTO | ver abaixo |
 | ACUP-011 | Ajustes do perfil no banco (pendências do review da 004) | Codex LK | integracao (d614058) | PRONTO |
 | ACUP-005 | Tela do perfil ABA | Codex LK | integracao (0729ff3) | PRONTO (prints do QA pendentes) | ver abaixo |
-| ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | codex/lk | FAZENDO | ver abaixo |
+| ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | codex/lk (47b1cc9) | REVIEW | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | codex/lk | TODO (após 006) | ver abaixo |
 | ACUP-008 | Registro formal de supervisão (SQL + RPC + tela) | Codex LK | codex/lk | TODO (após 007) | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 008) | ver abaixo |
@@ -169,3 +169,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-08 — ACUP-005 PRONTO: QA aprovou (navegador real em 360/768/1024/1280; nenhuma sugestão de diagnóstico, nada do laudo no console ou no título; membro só leitura; corrigiu teste que não pegava autocomplete, diagnóstico no título e revision fixa, 19/19 mutações), merge em `integracao` (0729ff3), quality verde (1393, 1392 ok, 1 pulado). Prints pedidos ao QA (não vieram no review). Pendências viraram a ACUP-012. ACUP-006 distribuída.
 - 2026-11-08 — Quadro corrompido por mim (um `$` seguido de crase no texto da regex foi lido como padrão de substituição e copiou o quadro para dentro da ACUP-006); reparado no `mesa/TASKS.md` e no retrato, o dev avisou. ACUP-006: técnica exige `content.name`, objetivo `content.title`.
 - 2026-11-08 — Cota (PLANO-COTA): Codex LK ficou sem cota às 22:15 com a ACUP-006 quase pronta; decisão **esperar** (renovava em menos de 1 h, falta pouco da task). Vigia retomou às 22:37; a sessão nova (22:42) continua pela linha Retomada do estado, agora protegida (rede bloqueada; se o Docker falhar, vira BLOQUEIO e aviso o humano). Rotina de cota e ajudantes LLM levada para `docs/team/roles/*.md` e README.
+- 2026-11-08 — ACUP-006 entregue (47b1cc9; lint, 1400 testes com 1399 ok e 1 pulado, build verdes; roteiro SQL da sessão anterior, não reexecutado na retomada). REVIEW mandado ao QA pedindo a validação SQL completa.

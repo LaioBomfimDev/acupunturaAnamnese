@@ -19,8 +19,8 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-005 | Tela do perfil ABA | Codex LK | integracao (0729ff3) | PRONTO | ver abaixo |
 | ACUP-006 | Biblioteca da clínica (SQL + RPC) | Codex LK | integracao (c452e87) | PRONTO | ver abaixo |
 | ACUP-007 | Tela da biblioteca + AbaPrograms lendo catálogo mesclado | Codex LK | integracao (7c8d6f5) | PRONTO | ver abaixo |
-| ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | codex/lk (452d683) | REVIEW | ver abaixo |
-| ACUP-013 | Tela da supervisão formal | Codex LK | — | TODO (após 008) | ver abaixo |
+| ACUP-008 | Registro formal de supervisão (SQL + RPC) | Codex LK | integracao (40019b9) | PRONTO | ver abaixo |
+| ACUP-013 | Tela da supervisão formal | Codex LK | codex/lk | FAZENDO | ver abaixo |
 | ACUP-014 | Ajustes da biblioteca (pendências do review da 007) | Codex LK | — | TODO (após 013) | ver abaixo |
 | ACUP-012 | Aviso de texto não salvo na área ABA + estilo do seletor de suporte | Codex LK | — | TODO (após 014) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
@@ -152,7 +152,7 @@ Regras de toda task com SQL (além do aceite próprio):
 
 ## ACUP-013 — Tela da supervisão formal
 - Objetivo: aba "Supervisão" no grupo "Equipe" do `AbaWorkspace` (sem paciente): quem registra lista, cria rascunho, assina e anula; o supervisionado vê os próprios assinados e marca ciência; total de horas assinadas por supervisionado.
-- Contrato do banco: seção "API para ACUP-013" do handoff da 008. Não muda SQL.
+- Contrato do banco: seção "API para ACUP-013" de `docs/team/handoff/ACUP-008.md` + decisões SUP-1/2/3. Não muda SQL. Conteúdo restrito (sem acesso ao paciente): mostrar os dados e as horas e dizer que a pauta é restrita, sem paciente. Paciente arquivado (exclusão em curso) bloqueia assinar, anular e ciência com 22023 até a decisão: a tela explica isso em pt-BR, junto do botão (achado do QA na 008).
 - Arquivos de propriedade: `frontend/src/components/aba/AbaSupervision.jsx` (novo), `frontend/src/services/abaService.js` (só funções novas), `frontend/src/components/AbaWorkspace.jsx` (só registrar a aba), `frontend/src/styles/aba.css` (acréscimos), `frontend/src/data/screenHelp.js` (só `ABA_HELP.supervisao`) + espelho pelo script, `frontend/tests/regression/aba-supervision-screen.test.mjs` (novo).
 - Critério de aceite: horas somando só assinados, com plural certo ("1 hora", "2 horas"); data no futuro barrada na tela; assinar e anular pedem confirmação (anular pede motivo); assinado só leitura; erros pt-BR (40001 sem perder o digitado); `client_event_id` novo por ação, clique repetido = 1 chamada; nada do texto da reunião no console ou no título; até 1024px sem rolagem lateral, lista vira cartão. Prints: computador com `mesa/ferramentas/print.mjs ACUP-013 …` e celular com `mesa/ferramentas/harness-telas/print-cdp.mjs` (vazio, rascunho, assinado, visão do supervisionado com ciência, erro); QA confere com `-qa`.
 - Depende de: ACUP-008.
@@ -217,3 +217,4 @@ Regras de toda task com SQL (além do aceite próprio):
 - 2026-11-09 — ACUP-008: opção A do dev aprovada. O UPDATE de anonimização da exclusão sobe `revision = revision + 1` (CAS antigo dá 40001, ninguém regrava pauta do paciente removido), sem mexer em datas, atores, status e horas; `client_event_id` fica, e o replay do último evento continua sem regravar texto. Teste e roteiro SQL: CAS antigo depois da exclusão recusa; replay não traz o texto de volta.
 - 2026-11-09 — ACUP-008: autorizada mais uma linha na exclusão de paciente, antes do snapshot: `PERFORM 1 FROM public.patients WHERE id = v_req.patient_id FOR UPDATE`. As escritas da supervisão com paciente travam o mesmo paciente (`FOR NO KEY UPDATE`, como na 010) antes de gravar e revalidam se ele foi excluído ou arquivado. Teste de concorrência em 2 sessões no banco local (exclusão × rascunho com o mesmo paciente) no roteiro. Diff da exclusão = 20261108b + as linhas da tabela + essa trava.
 - 2026-11-09 — ACUP-008 entregue (452d683; lint, 1421 testes com 1420 ok e 1 pulado, build verdes; roteiro SQL 12 OK + ROLLBACK, concorrência com controle negativo, 4 mutações mordem). REVIEW mandado ao QA.
+- 2026-11-09 — ACUP-008 PRONTO: QA aprovou (SQL refeito no acup-qa-pg: migration 2x COMMIT, roteiro do dev 12 OK, 13 cenários próprios, concorrência em 2 sessões nas 3 ordens, diff da exclusão = 20261108b + trava + snapshot + UPDATE; exceções fechadas quebram com tabela falsa; corrigiu teste que deixava passar assinado editável e GRANT para anon, 28/28 mutações), merge em `integracao` (40019b9), quality verde (1422, 1421 ok, 1 pulado). ACUP-013 distribuída, com o aviso de paciente arquivado no aceite.

@@ -61,6 +61,21 @@ test('códigos fechados, todos com rótulo pt-BR, sem preencher diagnóstico por
   assert.match(html, /autoComplete="off"/);
   assert.match(html, /value="nao_informado" selected/);
   assert.doesNotMatch(source, /datalist|placeholder=|gemini|generateContent|suggest|localStorage|sessionStorage|console\.|dangerouslySetInnerHTML/i);
+  // QA (ACUP-005): cada campo de texto livre sem preenchimento automático do navegador (que
+  // sugeriria laudos digitados antes, de outros pacientes), e o diagnóstico nunca no título da aba.
+  const filled = render(screen.AbaProfileEditor, { patientId: 'fictício', initial: profile });
+  const freeText = [...filled.matchAll(/<(?:textarea|input)\b(?![^>]*type="(?:checkbox|date)")[^>]*>/g)].map(match => match[0]);
+  assert.ok(freeText.length >= 3, 'texto do laudo, fonte e detalhes');
+  // Campo sem o atributo herda o "off" do <form> (HTML); nenhum pode declarar outro valor.
+  assert.match(filled, /<form[^>]*autoComplete="off"/i);
+  for (const tag of freeText) assert.doesNotMatch(tag, /autoComplete="(?!off")[^"]*"/i, tag);
+  assert.doesNotMatch(source, /document\.title|\.title\s*=/);
+});
+
+test('editar parte da revisão gravada (CAS), criar parte de 0', () => {
+  // QA (ACUP-005): com "revision: 0" fixo a edição de um perfil existente sempre cairia em 40001.
+  assert.match(source, /revision: initial\?\.revision \?\? 0,/);
+  assert.match(source, /await savePatientProfile\(patientId, draft, newId\(\)\);/);
 });
 
 test('data máxima é o dia em São Paulo, inclusive na virada UTC', () => {

@@ -6,9 +6,11 @@
 // devolve o pedido e é este aparelho, com o login de quem perguntou (a
 // mesma permissão da tela), que faz a conta pelas mesmas funções das
 // telas. Volta para a IA só o resultado: horários, números e nomes da
-// equipe, nunca paciente.
+// equipe. Exceção ACUP-016: financeiro só para administração, campos T2 e FIN-1–4.
 // ============================================================
 
+import { loadReceivablesData } from './financeiroService';
+import { listClinicPatients } from './clinicPatientsService';
 import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn } from './appointmentService';
 import { listClinicMembers, shortName } from './clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from './agendaScheduleService';
@@ -20,6 +22,7 @@ import { onlyEvolutionDisciplines } from '../utils/evolutionQueue';
 import { todayInClinic } from '../utils/finance';
 import {
   freeSlotsForAssistant,
+  readFinanceConsulta, financeConsultaIssue, financeConsultaFailure, summarizeFinance,
   matchTeamMember,
   summarizeDayAppointments,
   summarizePendingEvolutions,
@@ -94,6 +97,7 @@ async function scaleApplications(dia) {
  * em `dados` (_shared/assistantConsulta.ts).
  */
 export async function runAssistantConsulta(consulta, { profile, team = null, now = new Date() }) {
+  if (consulta.tipo === 'financeiro') return runFinanceConsulta(consulta, profile, now);
   const dia = consulta.dia || todayInClinic(now);
   const base = {
     tipo: consulta.tipo, profissional: consulta.profissional, dia, horarios: [], motivo: null, opcoes: [], linhas: [], total: null,
@@ -133,5 +137,22 @@ export async function runAssistantConsulta(consulta, { profile, team = null, now
     return { ...base, motivo: 'erro' };
   } catch {
     return { ...base, motivo: 'erro' };
+  }
+}
+
+// T1: nenhuma fonte de nomes ou dinheiro é chamada antes da permissão do login.
+async function runFinanceConsulta(raw, profile, now) {
+  const query = readFinanceConsulta(raw);
+  if (!profile?.id || !profile?.clinic_id || profile.role !== 'clinic_admin') return financeConsultaFailure(query, 'sem_permissao');
+  try {
+    const { data: allowed, error } = await supabase.rpc('can_manage_finance', { p_clinic: profile.clinic_id });
+    if (error || allowed !== true) return financeConsultaFailure(query, 'sem_permissao');
+    const issue = financeConsultaIssue(query);
+    if (issue) return financeConsultaFailure(query, issue);
+    const [money, patients, members] = await Promise.all([loadReceivablesData(), listClinicPatients(), listClinicMembers()]);
+    if (money.tissReady === false) return financeConsultaFailure(query, 'erro');
+    return summarizeFinance({ consulta: query, money, patients, members, shortName, today: todayInClinic(now), selfId: profile.id });
+  } catch {
+    return financeConsultaFailure(query, 'erro');
   }
 }

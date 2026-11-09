@@ -40,6 +40,7 @@ const NEW_LINES = [
 // Tabelas com patient_id ligado a patients que ficam fora da exclusão.
 // Entrar aqui exige motivo; tabela nova de paciente entra na exclusão.
 const KEPT_ON_PURPOSE = {
+  aba_supervision_records: 'SUP-1/2: anonimiza vínculo e textos, preserva horas e carimbos do profissional',
   patient_deletion_requests:
     'é a própria solicitação: append-only, FK RESTRICT, registro de que a exclusão aconteceu',
   satisfaction_surveys:
@@ -123,6 +124,13 @@ test('toda tabela com patient_id ligado a patients entra no snapshot e no DELETE
   for (const table of tables) {
     const inSnapshot = body.includes(`'${table}', (SELECT`);
     const deleted = body.includes(`DELETE FROM public.${table} WHERE patient_id = v_req.patient_id;`);
+    if (table === 'aba_supervision_records') {
+      assert.ok(inSnapshot && !deleted, 'SUP-1: supervisão entra no snapshot, nunca no DELETE');
+      assert.match(body, /UPDATE public\.aba_supervision_records SET patient_id = NULL, agenda_encrypted = NULL, decisions_encrypted = NULL,/);
+      assert.match(body, /void_reason_encrypted = CASE WHEN status = 'anulado' THEN public\.aba_encrypt\('Motivo removido na exclusão do paciente\.'\) ELSE NULL END,/);
+      assert.match(body, /revision = revision \+ 1 WHERE patient_id = v_req\.patient_id;/);
+      continue;
+    }
     if (table in KEPT_ON_PURPOSE) {
       assert.ok(!inSnapshot && !deleted, `${table} já entra na exclusão: tire de KEPT_ON_PURPOSE`);
       continue;

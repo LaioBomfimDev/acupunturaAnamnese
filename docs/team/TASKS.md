@@ -28,7 +28,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-017 | Assistente: postura no financeiro, Corrigir protegido, regra no AGENTS.md | Codex LK | integracao (9b871b7) | PRONTO | ver abaixo |
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Claude dev2 (sessão Documentos) | integracao (f7be8bc) | PRONTO | ver abaixo |
 | ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (texto aprovado 09/11) | ver abaixo |
-| ACUP-020 | Remover a tela de integração com o WhatsApp | dev2 | claude/dev2 | REVIEW (79c260f) | ver abaixo |
+| ACUP-020 | Remover a tela de integração com o WhatsApp | dev2 | integracao (ca4235d) | PRONTO (publicar) | ver abaixo |
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | PRONTO (04222c7; publicado 09/11) | ver abaixo |
 | ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | PRONTO (f2dd32c; publicado 09/11) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
@@ -388,3 +388,4 @@ Pedido literal: "sim quero a fase 1 / 2 ok pode / fase 3 isso mesmo". Fora em to
 - 2026-11-09 — ACUP-019 PRONTO: humana aprovou o texto do RIPD ("aprovo o ripd, pode liberar a assistente", via sessão Documentos). PUB-1 fica só esperando a ACUP-018. Base legal/transferência [preencher], aviso ao responsável e registro de operações seguem com ela e o jurídico.
 - 2026-11-09 — ACUP-021 APROVADA pelo QA (04222c7, 2 correções: limpeza do colado e pílula a 360px), juntada no integracao (cbc2aa0, quality 1467: 1466 ok, 1 pulado). ACUP-022 aberta para o QA: Edge Functions preferirem as chaves novas antes de a humana desligar as Legacy API keys; sai junto da 021 na main.- 2026-11-09 — ACUP-018 PRONTO: QA aprovou (eb59f68), juntada no integracao f7be8bc, quality 1487 (1486 ok, 1 pulado). PUB-1 completo; pacote em mesa/publicacao.md. Próxima: ACUP-020.
 - 2026-11-09 — Rodada "Assistente ciente de tudo" (humana: fases 1, 2 e 3 aprovadas). ACUP-023 a 028 abertas, em sequência por mexerem nos mesmos arquivos; AG-1 a AG-4 em DECISOES. Com o Codex LK fechado, dev2 faz a 020 e depois a rodada (DEV2-2). Modelo espera a escolha da humana (ACUP-028).
+- 2026-11-09 — ACUP-020 PRONTO: QA aprovou (7e15dbe), juntada no integracao ca4235d, quality 1484 (1483 ok, 1 pulado; cobre o pendente do QA). Pacote em mesa/publicacao.md (site + clinic-assistant).

@@ -1,3 +1,4 @@
+import { useAbaUnsaved } from './AbaUnsavedContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AbaConflictError, listLibrary, loadTeams, saveLibraryItem } from '../../services/abaService';
 import { canWriteLibrary, findLibraryItem, isLibraryDuplicate, libraryErrorMessage, librarySavePayload, mergeAbaLibrary } from '../../utils/abaLibraryMerge';
@@ -54,10 +55,25 @@ export function LibraryContentFields({ content, fields, onChange, systemTechniqu
     const number = ['level', 'sortOrder'].includes(key);
     const choices = key === 'category' && technique ? TECHNIQUE_CATEGORIES : SELECT_FIELDS[key];
     const unknown = choices ? (list ? value || [] : value == null ? [] : [value]).filter(item => !choices.some(choice => choice.value === item)) : [];
+    if (choices && list) {
+      const options = [...choices, ...unknown.map((item, index) => ({ value: item, label: `Valor anterior ${index + 1} (fora do catálogo atual)` }))];
+      return <fieldset className="aba-library-checks" key={key}>
+        <legend>{label}</legend>
+        {options.map(choice => <label key={choice.value}>
+          <input type="checkbox" value={choice.value} checked={(value || []).includes(choice.value)}
+            onChange={event => {
+              const selected = new Set(value || []);
+              if (event.target.checked) selected.add(choice.value); else selected.delete(choice.value);
+              const next = options.filter(option => selected.has(option.value)).map(option => option.value);
+              onChange(key, next.length ? next : undefined);
+            }} />{choice.label}
+        </label>)}
+      </fieldset>;
+    }
     return <label className="aba-field" key={key}>{label}
-      {choices ? <select multiple={list} size={list ? 4 : undefined} value={list ? value || [] : value ?? ''}
+      {choices ? <select value={value ?? ''}
         onChange={event => {
-          const next = list ? [...event.target.selectedOptions].map(option => option.value) : event.target.value;
+          const next = event.target.value;
           onChange(key, next.length ? next : undefined);
         }}>
         {!list && <option value="">Não informado</option>}
@@ -88,6 +104,7 @@ function LibraryEditor({ initial, onClose, onSaved }) {
   const errorRef = useRef(null);
   useEffect(() => { errorRef.current?.focus(); }, [error]);
   const dirty = JSON.stringify(content) !== JSON.stringify(initial.content);
+  useAbaUnsaved(dirty, busy);
   const dismiss = useDismiss({ onClose, busy, guardUnsaved: true, unsaved: dirty });
   const change = (key, value) => setContent(current => {
     const next = { ...current };

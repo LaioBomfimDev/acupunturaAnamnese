@@ -3158,3 +3158,10 @@
 @media (max-width: 1024px) {
   .aba-library-page .aba-library-filters { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ACUP-012: escolhas múltiplas por toque, com os códigos do catálogo. */
+.aba-library-checks { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--r1-border); border-radius: 10px; }
+.aba-library-checks legend { padding: 0 4px; font-weight: 600; }
+.aba-library-checks label { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; overflow-wrap: anywhere; }
+.aba-library-checks input[type="checkbox"] { flex: 0 0 auto; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--r1-accent); }
+.aba-profile-form .aba-field select { width: 100%; min-width: 0; }

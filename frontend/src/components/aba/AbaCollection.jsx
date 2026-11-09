@@ -1,3 +1,4 @@
+import { useAbaUnsaved } from './AbaUnsavedContext';
 import { useEffect, useRef, useState } from 'react';
 import { recordPhase, sessionNarrative, sessionProgramAvailability, summarizeSession } from '../../utils/aba/calculations.js';
 import {
@@ -307,6 +308,7 @@ export function AbaCollection({ patient, data, userId, onChanged, onOpenSessions
   const autosavePromiseRef = useRef(null);
   const lastSavedFingerprintRef = useRef('');
   const draftRef = useRef(null);
+  useAbaUnsaved(() => Boolean(draft && draft.status === 'em_andamento' && fingerprint(draft) !== lastSavedFingerprintRef.current), savingSession || autosaveStatus === 'salvando');
   useEffect(() => { draftRef.current = draft; }, [draft]);
 
   useEffect(() => {

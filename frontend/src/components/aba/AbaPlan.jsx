@@ -1,3 +1,4 @@
+import { useAbaUnsaved } from './AbaUnsavedContext';
 import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import {
@@ -19,6 +20,7 @@ const instant = value => value ? new Date(value).toLocaleString('pt-BR', { dateS
 const signature = plan => JSON.stringify([plan.programs, plan.summary, plan.review_due_on]);
 
 function PlanOverlay({ title, onClose, busy, dirty = false, savedRevision = 0, children }) {
+  useAbaUnsaved(dirty, busy);
   const titleId = useId();
   const panel = useRef(null);
   useEffect(() => {
@@ -65,6 +67,7 @@ function PlanEditor({ initial, patientId, data, onClose, onChanged }) {
   const [notice, setNotice] = useState('');
   const lock = useRef(false);
   const dirty = signature(draft) !== saved;
+  useAbaUnsaved(dirty, busy);
   const available = data.programs.filter(program => !program.archivedAt || draft.programs.some(item => item.program_id === program.id));
   const missing = draft.programs.filter(item => !data.programs.some(program => program.id === item.program_id));
   const set = patch => { setDraft(current => ({ ...current, ...patch })); setNotice(''); };

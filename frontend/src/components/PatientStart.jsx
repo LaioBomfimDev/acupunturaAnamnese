@@ -30,7 +30,7 @@ function PencilIcon() {
 // nesta disciplina (pode nunca ter passado por aqui — o cadastro é da
 // clínica inteira), a matrícula é criada aqui, best-effort, antes de
 // abrir a anamnese.
-export function PatientStart({ onSelectPatient, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline, profile, isClinicAdmin = false }) {
+export function PatientStart({ onSelectPatient, therapistName, initialDiscipline = 'acupuntura', hasMultipleDisciplines = false, onSwitchDiscipline, profile, isClinicAdmin = false, beforeSelectPatient }) {
   const { patients, selectedPatient, loading, error, selectPatient, refreshPatients } = usePatient();
   const [query, setQuery] = useState('');
   const [sortOrder, setSortOrder] = useState(DEFAULT_PATIENT_SORT);
@@ -45,20 +45,23 @@ export function PatientStart({ onSelectPatient, therapistName, initialDiscipline
     return sortPatients(found, sortOrder);
   }, [patients, query, sortOrder]);
 
-  async function handleSelect(patient) {
-    selectPatient(patient);
-    const alreadyEnrolled = (patient.enrollments || []).some(e => e.discipline === initialDiscipline);
-    if (!alreadyEnrolled) {
-      await enrollPatientInitial(patient.id, initialDiscipline);
-    }
-    onSelectPatient?.(patient);
+  function handleSelect(patient) {
+    const select = async () => {
+      selectPatient(patient);
+      const alreadyEnrolled = (patient.enrollments || []).some(e => e.discipline === initialDiscipline);
+      if (!alreadyEnrolled) {
+        await enrollPatientInitial(patient.id, initialDiscipline);
+      }
+      onSelectPatient?.(patient);
+    };
+    return beforeSelectPatient ? beforeSelectPatient(select) : select();
   }
 
   async function handleCreated({ patient }) {
     setCreating(false);
     await refreshPatients?.();
-    selectPatient(patient);
-    onSelectPatient?.(patient);
+    const select = () => { selectPatient(patient); onSelectPatient?.(patient); };
+    return beforeSelectPatient ? beforeSelectPatient(select) : select();
   }
 
   function handleEditRequest(patient) {
@@ -110,7 +113,7 @@ export function PatientStart({ onSelectPatient, therapistName, initialDiscipline
             <button
               type="button"
               className="active-patient-banner"
-              onClick={() => onSelectPatient?.(selectedPatient)}
+              onClick={() => beforeSelectPatient ? beforeSelectPatient(() => onSelectPatient?.(selectedPatient)) : onSelectPatient?.(selectedPatient)}
             >
               <span className="active-patient-avatar">{getInitials(selectedPatient.name)}</span>
               <span className="active-patient-info">

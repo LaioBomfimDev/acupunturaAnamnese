@@ -1,3 +1,4 @@
+import { AbaUnsavedContext, useAbaUnsavedGuard } from './aba/AbaUnsavedContext';
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePatient } from '../hooks/PatientContext';
@@ -83,6 +84,7 @@ const HELP_BY_TAB = {
 
 export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSignOut }) {
   const { selectedPatient, patients, selectPatient } = usePatient();
+  const unsaved = useAbaUnsavedGuard();
   const clinicName = profile?.clinic?.name || profile?.clinic_name || 'Clínica';
   const hasMultipleDisciplines = resolveUserDisciplines(profile).length > 1;
 
@@ -122,30 +124,37 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
   }, [selectedPatient?.id, reload]);
 
   function handleTabChange(tab) {
-    if (!selectedPatient && !TABS_WITHOUT_PATIENT.includes(tab)) {
-      setActiveTab(TABS.HOME);
-      return;
-    }
-    setOpenSessionId(null);
-    setActiveTab(tab);
+    if (tab === activeTab) return;
+    unsaved.navigate(() => {
+      if (!selectedPatient && !TABS_WITHOUT_PATIENT.includes(tab)) {
+        setActiveTab(TABS.HOME);
+        return;
+      }
+      setOpenSessionId(null);
+      setActiveTab(tab);
+    });
   }
 
   function openPatientSession(patientId, sessionId) {
     const patient = patients.find(item => item.id === patientId);
     if (!patient) return;
-    selectPatient(patient);
-    setOpenSessionId(sessionId);
-    setActiveTab(TABS.SESSOES);
+    unsaved.navigate(() => {
+      selectPatient(patient);
+      setOpenSessionId(sessionId);
+      setActiveTab(TABS.SESSOES);
+    });
   }
 
   // Alerta → tela onde ele se resolve, já no paciente (e na sessão).
   function openFromAlert(patientId, tab, sessionId) {
     const patient = patients.find(item => item.id === patientId) || (selectedPatient?.id === patientId ? selectedPatient : null);
     if (!patient) return;
-    if (selectedPatient?.id !== patientId) selectPatient(patient);
-    const target = Object.values(TABS).includes(tab) ? tab : TABS.PAINEL;
-    setOpenSessionId(target === TABS.SESSOES ? sessionId || null : null);
-    setActiveTab(target);
+    unsaved.navigate(() => {
+      if (selectedPatient?.id !== patientId) selectPatient(patient);
+      const target = Object.values(TABS).includes(tab) ? tab : TABS.PAINEL;
+      setOpenSessionId(target === TABS.SESSOES ? sessionId || null : null);
+      setActiveTab(target);
+    });
   }
 
   const effectiveTab = !selectedPatient && !TABS_WITHOUT_PATIENT.includes(activeTab) ? TABS.HOME : activeTab;
@@ -181,6 +190,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
           initialDiscipline="aba"
           therapistName={therapistName}
           profile={profile}
+          beforeSelectPatient={unsaved.navigate}
           onSelectPatient={() => setActiveTab(TABS.PAINEL)}
         />
       );
@@ -202,7 +212,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
           data={data}
           userId={data.permissions.userId}
           onChanged={reload}
-          onOpenSessions={() => setActiveTab(TABS.SESSOES)}
+          onOpenSessions={() => handleTabChange(TABS.SESSOES)}
         />
       );
     }
@@ -217,12 +227,12 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
       <AbaPatientPanel
         patient={selectedPatient}
         data={data}
-        onCollect={() => setActiveTab(TABS.COLETA)}
-        onPrograms={() => setActiveTab(TABS.PROGRAMAS)}
-        onResults={() => setActiveTab(TABS.RESULTADOS)}
-        onSessions={() => setActiveTab(TABS.SESSOES)}
+        onCollect={() => handleTabChange(TABS.COLETA)}
+        onPrograms={() => handleTabChange(TABS.PROGRAMAS)}
+        onResults={() => handleTabChange(TABS.RESULTADOS)}
+        onSessions={() => handleTabChange(TABS.SESSOES)}
         onOpenAlert={openFromAlert}
-        onAllAlerts={() => setActiveTab(TABS.ALERTAS)}
+        onAllAlerts={() => handleTabChange(TABS.ALERTAS)}
       />
     );
   }
@@ -230,6 +240,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
   const helpTopic = ABA_HELP[HELP_BY_TAB[effectiveTab]];
 
   return (
+    <AbaUnsavedContext.Provider value={unsaved.register}>
     <div className="app psi-app aba-app">
       <Sidebar
         activeTab={effectiveTab}
@@ -238,7 +249,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
         profileRole={profile?.role}
         disciplineLabel="ABA"
         clinicName={profile?.clinic?.name || profile?.clinic_name}
-        onSwitchDiscipline={onSwitchDiscipline}
+        onSwitchDiscipline={() => unsaved.navigate(onSwitchDiscipline)}
         selectedPatient={selectedPatient}
         patientAge={getPatientAge(selectedPatient)}
         sessionCount={finishedSessions.length}
@@ -247,7 +258,7 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
         navGroups={NAV_GROUPS}
         patientTab={TABS.PAINEL}
         tabsWithoutPatient={TABS_WITHOUT_PATIENT}
-        onSignOut={onSignOut}
+        onSignOut={() => unsaved.navigate(onSignOut)}
       />
 
       <main className="main psi-main forms-scope aba-main">
@@ -272,7 +283,9 @@ export function AbaWorkspace({ profile, therapistName, onSwitchDiscipline, onSig
           <section>{renderPanel()}</section>
         </div>
       </main>
+      {unsaved.prompt}
     </div>
+    </AbaUnsavedContext.Provider>
   );
 }
 

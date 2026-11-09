@@ -1,3 +1,4 @@
+import { useAbaUnsaved } from './AbaUnsavedContext';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   ackSupervision, listSupervisions, loadTeams, profileToday, saveSupervisionDraft, signSupervision,
@@ -18,6 +19,7 @@ function SupervisionError({ message }) {
 }
 
 function SupervisionOverlay({ title, onClose, busy, dirty = false, children }) {
+  useAbaUnsaved(dirty, busy);
   const id = useId();
   const panel = useRef(null);
   const dismiss = useDismiss({ onClose, busy, guardUnsaved: true, unsaved: dirty });
@@ -95,6 +97,7 @@ function SupervisionEditor({ initial, people, patients, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState('');
+  useAbaUnsaved(JSON.stringify(draft) !== original, busy);
   const lock = useRef(false);
   const set = patch => setDraft(current => ({ ...current, ...patch }));
   async function reloadRevision() {

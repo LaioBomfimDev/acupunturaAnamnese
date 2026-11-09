@@ -196,7 +196,7 @@ test('AG-6 Edge: cada item anterior passa pela mesma porta em toda chamada; o re
 
 test('AG-6 Edge: teto de tamanho recusa antes do Gemini e do orçamento, com mensagem clara (nunca corta)', () => {
   const maxChars = constant('ASSISTANT_MAX_DADOS_CHARS');
-  assert.equal(maxChars, 64_000);
+  assert.equal(maxChars, 80_000, 'AG-9: era 64.000; o máximo do contrato (74.122) caía em 413');
   assert.equal(constant('ASSISTANT_MAX_BODY_BYTES'), 128_000);
   const order = name => indexSource.indexOf(name);
   assert.ok(order('if (JSON.stringify([...anteriores, dados]).length > ASSISTANT_MAX_DADOS_CHARS)') < order('const generate = async'));
@@ -208,6 +208,23 @@ test('AG-6 Edge: teto de tamanho recusa antes do Gemini e do orçamento, com men
   const biggest = { tipo: 'financeiro', de: '2026-10-01', ate: '2026-10-31', status: 'por_paciente', paciente: '', idade: null, profissional: 'equipe', motivo: null, mensagem: '',
     criterio: front.FINANCE_CRITERIA.paciente, linhas: Array(50).fill(line), totais: null, total: 50 };
   assert.ok(JSON.stringify([biggest, biggest, biggest]).length <= maxChars, 'o teto não recusa 3 consultas legítimas no limite de 50 linhas');
+  // AG-9: o máximo do CONTRATO (paciente com 40 letras, profissional com 120) passa pela Edge e cabe.
+  const longName = 'Á'.repeat(40);
+  const contractLine = { ...line, paciente: longName, profissional: 'P'.repeat(120) };
+  const contractMax = { ...biggest, profissional: 'P'.repeat(120), linhas: Array(50).fill(contractLine) };
+  assert.deepEqual(edge.readConsultaResult(contractMax).linhas[0], contractLine, 'a Edge aceita a linha no máximo do contrato');
+  const contractSize = JSON.stringify([contractMax, contractMax, contractMax]).length;
+  assert.ok(contractSize > 64_000 && contractSize <= maxChars, `máximo do contrato (${contractSize}) cabe no teto`);
+  // Tipos com paciente da ACUP-025: os maiores ficam abaixo do financeiro.
+  if (front.PATIENT_KEYS) {
+    const longest = list => list.reduce((a, b) => (b.length > a.length ? b : a), '');
+    const agendaLine = { dia: '2026-10-01', inicio: '09:00', fim: '09:50', paciente: longName, idade: 130, homonimo: false, profissional: 'P'.repeat(80),
+      area: longest(front.FINANCE_AREAS), tipo_atendimento: longest(front.AGENDA_TYPE_LABELS), modalidade: longest(front.AGENDA_MODALITIES), status: longest(front.AGENDA_STATUS_LABELS) };
+    const agendaMax = { tipo: 'agenda_pacientes', de: '2026-10-01', ate: '2026-12-31', profissional: 'P'.repeat(80), paciente: longName, idade: 130, minimo: 20, motivo: null, mensagem: '',
+      criterio: front.PATIENT_CRITERIA.agenda_pacientes, linhas: Array(50).fill(agendaLine), total: 50, resumo: { agendados: 99999, atendidos: 99999, faltas: 99999, cancelamentos: 99999, bloqueios: 99999 } };
+    assert.equal(edge.readConsultaResult(agendaMax).motivo, null);
+    assert.ok(JSON.stringify([agendaMax, agendaMax, agendaMax]).length < contractSize, 'agenda_pacientes no máximo fica abaixo do financeiro');
+  }
 });
 
 test('AG-6 Edge: na 3ª volta, pedido de consulta vira UMA chamada a mais só pela resposta (orçamento e uso), e só então 422', () => {

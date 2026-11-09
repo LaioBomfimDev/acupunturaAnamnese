@@ -50,9 +50,12 @@ export interface CorrectionLesson {
   author_id: string;
 }
 
-// FIN-3/6: somente marcador, nunca conteúdo financeiro no contexto da lição.
+// FIN-3/6 e AG-3 (ACUP-025): o marcador de resposta PROTEGIDA vale para "resposta com
+// dinheiro OU com paciente". O nome 'financeiro' fica por compatibilidade com as notas
+// já gravadas. Somente marcador, nunca conteúdo no contexto da lição.
+export const PROTECTED_CORRECTION_KEY = 'financeiro';
 function isFinancialLesson(lesson: CorrectionLesson) {
-  return lesson.context_snapshot?.financeiro === true;
+  return lesson.context_snapshot?.[PROTECTED_CORRECTION_KEY] === true;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

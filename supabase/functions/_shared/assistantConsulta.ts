@@ -18,6 +18,8 @@ export const ASSISTANT_CONSULTAS = [
   'horarios_vagos', 'atendimentos_dia', 'evolucoes_pendentes', 'escalas_aplicadas', 'retornos_pendentes', 'financeiro',
   // ACUP-023: agenda e operação sem paciente.
   'agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim', 'aniversarios', 'pesquisas', 'formularios_pendentes', 'convenio',
+  // ACUP-025: agenda com paciente (primeiro nome + idade).
+  'agenda_pacientes', 'proxima_sessao', 'faltosos', 'aniversariantes',
 ];
 
 export const CONSULTA_MOTIVOS = [
@@ -42,6 +44,7 @@ export function readConsulta(raw: unknown) {
   if (!ASSISTANT_CONSULTAS.includes(tipo)) return null;
   if (tipo === 'financeiro') return readFinanceConsulta(item);
   if (AGENDA_CONSULTAS.includes(tipo)) return readAgendaConsulta(item);
+  if (PATIENT_CONSULTAS.includes(tipo)) return readPatientRequest(item);
   // Horários vagos são sempre de uma pessoa num dia certo.
   if (tipo === 'horarios_vagos' && (profissional === 'equipe' || !DAY.test(dia))) return null;
   return {
@@ -60,6 +63,7 @@ export function readConsultaResult(raw: unknown) {
   if (!ASSISTANT_CONSULTAS.includes(tipo)) return null;
   if (tipo === 'financeiro') return readFinanceResult(item);
   if (AGENDA_CONSULTAS.includes(tipo)) return readAgendaResult(item);
+  if (PATIENT_CONSULTAS.includes(tipo)) return readPatientResult(item);
   const motivo = text(item.motivo, 30);
   return {
     tipo,
@@ -294,6 +298,8 @@ export const AGENDA_CONSULTAS = ['agenda', 'faltas', 'confirmacoes_pendentes', '
 export const AGENDA_ACCESS: Record<string, string> = {
   agenda: 'equipe', faltas: 'equipe', confirmacoes_pendentes: 'equipe', pacotes_fim: 'equipe',
   aniversarios: 'admin_recepcao', pesquisas: 'admin', formularios_pendentes: 'portal', convenio: 'financeiro',
+  // ACUP-025 (AG-8): com paciente; faltosos e aniversariantes só administração e recepção.
+  agenda_pacientes: 'equipe', proxima_sessao: 'equipe', faltosos: 'admin_recepcao', aniversariantes: 'admin_recepcao',
 };
 export const AGENDA_PERIOD_REQUIRED = ['agenda', 'faltas', 'pesquisas'];
 export const AGENDA_PERIOD_OPTIONAL = ['confirmacoes_pendentes'];
@@ -423,4 +429,133 @@ export function readAgendaResult(raw: unknown) {
     linhas.push(line);
   }
   return { ...query, motivo: null, mensagem: '', criterio: AGENDA_CRITERIA[query.tipo], linhas, total: linhas.length, resumo };
+}
+
+// ============================================================
+// ACUP-025 (AG-2, AG-8): agenda COM paciente, só primeiro nome + idade.
+// Espelho de frontend/src/utils/clinicAssistant.js (tipos, chaves,
+// critérios, motivos e a limpeza); mesma trava FINANCE_FIRST_NAME do FIN-7.
+// ============================================================
+
+export const PATIENT_CONSULTAS = ['agenda_pacientes', 'proxima_sessao', 'faltosos', 'aniversariantes'];
+export const PATIENT_OUTSIDE = 'Paciente fora da sua lista';
+export const PATIENT_NEXT_MAX = 5;
+export const PATIENT_BIRTHDAY_MAX_DAYS = 31;
+export const PATIENT_KEYS: Record<string, { linha: string[]; resumo: string[] }> = {
+  agenda_pacientes: { linha: ['dia', 'inicio', 'fim', 'paciente', 'idade', 'homonimo', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
+  proxima_sessao: { linha: ['paciente', 'idade', 'homonimo', 'dia', 'inicio', 'profissional', 'area', 'tipo_atendimento', 'sessao_numero', 'sessoes_total'], resumo: ['total'] },
+  faltosos: { linha: ['paciente', 'idade', 'homonimo', 'profissional', 'area', 'nao_compareceu', 'cancelado_paciente'], resumo: ['total'] },
+  aniversariantes: { linha: ['paciente', 'idade', 'homonimo'], resumo: ['total'] },
+};
+export const PATIENT_CRITERIA: Record<string, string> = {
+  agenda_pacientes: 'Atendimentos com início no período, como a Agenda mostra para o seu login; paciente só pelo primeiro nome e idade.',
+  proxima_sessao: 'Próximo atendimento agendado (até 180 dias); em pacote, o número da sessão segue "Sessões do pacote" (cancelado não conta).',
+  faltosos: 'Pacientes com o mínimo de faltas (não compareceu + cancelado pelo paciente) no período, por profissional e área.',
+  aniversariantes: 'Pacientes que fazem aniversário no período (como a Agenda: 29/02 em 28/02 no ano comum); idade = a que vai fazer; sem a data.',
+};
+export const PATIENT_REASONS = {
+  ...AGENDA_REASONS,
+  ambiguo: 'Há mais de 5 pacientes com esse nome. Diga a idade ou o profissional.',
+  nao_encontrado: 'Não encontrei esse paciente nem essa pessoa da equipe na sua lista.',
+  filtro_invalido: 'Use só o primeiro nome do paciente, a idade em anos e um período válido.',
+  limite_periodo: 'Escolha um período de até 93 dias (aniversariantes: até 31).',
+};
+const PATIENT_TOP_KEYS = ['tipo', 'de', 'ate', 'profissional', 'paciente', 'idade', 'minimo', 'motivo', 'mensagem', 'criterio', 'linhas', 'total', 'resumo'];
+
+export function readPatientConsulta(raw: unknown) {
+  const item = agendaRecord(raw);
+  const tipo = typeof item.tipo === 'string' && PATIENT_CONSULTAS.includes(item.tipo) ? item.tipo : '';
+  const patient = typeof item.paciente === 'string' ? financeName(item.paciente) : '';
+  const age = financeAge(item.idade);
+  const minimo = item.minimo === undefined || item.minimo === null ? 2
+    : (typeof item.minimo === 'number' && Number.isInteger(item.minimo) && item.minimo >= 1 && item.minimo <= 20 ? item.minimo : 0);
+  const invalid = (patient && !FINANCE_FIRST_NAME.test(patient)) || age === undefined || !minimo
+    || (item.paciente !== undefined && typeof item.paciente !== 'string') || (tipo === 'proxima_sessao' && !patient);
+  return {
+    tipo: invalid ? '' : tipo,
+    pedido: tipo,
+    de: tipo === 'proxima_sessao' ? '' : financeDay(item.de),
+    ate: tipo === 'proxima_sessao' ? '' : financeDay(item.ate),
+    profissional: typeof item.profissional === 'string' ? financeName(item.profissional).slice(0, 80) || 'equipe' : 'equipe',
+    paciente: invalid ? '' : patient,
+    idade: age === undefined ? null : age,
+    minimo: minimo || 2,
+  };
+}
+function patientQuery(query: ReturnType<typeof readPatientConsulta>) {
+  const { pedido, ...rest } = query;
+  return { ...rest, tipo: rest.tipo || pedido };
+}
+/** Pedido que volta ao aparelho: o mesmo formato do resultado, sem campo interno. */
+export function readPatientRequest(raw: unknown) {
+  return patientQuery(readPatientConsulta(raw));
+}
+export function patientConsultaIssue(raw: unknown) {
+  const query = readPatientConsulta(raw);
+  if (!query.pedido) return 'erro';
+  if (!query.tipo) return 'filtro_invalido';
+  if (query.tipo === 'proxima_sessao') return null;
+  if (query.tipo === 'aniversariantes' && !query.de && !query.ate) return null;
+  if (!query.de || !query.ate || query.de > query.ate) return 'periodo_invalido';
+  const days = (Date.parse(query.ate) - Date.parse(query.de)) / 86400000 + 1;
+  if (days > (query.tipo === 'aniversariantes' ? PATIENT_BIRTHDAY_MAX_DAYS : FINANCE_MAX_DAYS)) return 'limite_periodo';
+  return null;
+}
+export function patientConsultaFailure(raw: unknown, reason: unknown, resumo: Row | null = null) {
+  const query = patientQuery(readPatientConsulta(raw));
+  const motivo = typeof reason === 'string' && Object.hasOwn(PATIENT_REASONS, reason) ? reason as keyof typeof PATIENT_REASONS : 'erro';
+  return { ...query, motivo, mensagem: PATIENT_REASONS[motivo], criterio: null, linhas: [] as Row[], total: null as number | null, resumo };
+}
+
+function readPatientLineFor(tipo: string, raw: unknown) {
+  const line = agendaRecord(raw);
+  const keys = PATIENT_KEYS[tipo].linha;
+  if (!sameKeys(line, keys)) return null;
+  const idade = financeAge(line.idade);
+  const fixed = line.paciente === FINANCE_ARCHIVED || line.paciente === PATIENT_OUTSIDE;
+  if (idade === undefined || typeof line.paciente !== 'string' || (fixed ? idade !== null : !FINANCE_FIRST_NAME.test(line.paciente))
+      || typeof line.homonimo !== 'boolean') return null;
+  const clean: Row = { paciente: line.paciente, idade, homonimo: line.homonimo };
+  for (const key of keys) {
+    if (key in clean) continue;
+    const value = line[key];
+    // Campos da agenda: a mesma validação de readAgendaLine (valores fechados).
+    const ok = key === 'sessao_numero' || key === 'sessoes_total'
+      ? value === null || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 1)
+      : readAgendaLine('agenda', { dia: '2026-01-01', inicio: '00:00', fim: '00:00', profissional: '', area: FINANCE_NO_AREA, tipo_atendimento: 'Sem tipo', modalidade: 'Não informada', status: 'Agendado', [key]: value }) !== null
+        || (['nao_compareceu', 'cancelado_paciente'].includes(key) && typeof value === 'number' && Number.isSafeInteger(value) && value >= 0);
+    if (!ok) return null;
+    clean[key] = value;
+  }
+  return Object.fromEntries(keys.map(key => [key, clean[key]]));
+}
+/** Lista fechada por tipo; nome completo ou chave a mais derruba a resposta inteira. */
+export function readPatientResult(raw: unknown) {
+  const item = agendaRecord(raw);
+  const parsed = readPatientConsulta(item);
+  const query = patientQuery(parsed);
+  if (!parsed.tipo || Object.keys(item).some(key => !PATIENT_TOP_KEYS.includes(key))) return patientConsultaFailure(item, parsed.pedido && !parsed.tipo ? 'filtro_invalido' : 'erro');
+  const issue = patientConsultaIssue(item);
+  if (issue) return patientConsultaFailure(item, issue);
+  const summaryKeys = PATIENT_KEYS[parsed.tipo].resumo;
+  const readSummary = (value: unknown) => {
+    const resumo = agendaRecord(value);
+    if (!sameKeys(resumo, summaryKeys) || summaryKeys.some(key => typeof resumo[key] !== 'number' || !Number.isSafeInteger(resumo[key]) || (resumo[key] as number) < 0)) return null;
+    return Object.fromEntries(summaryKeys.map(key => [key, resumo[key]])) as Row;
+  };
+  if (item.motivo === 'limite_linhas') {
+    const resumo = readSummary(item.resumo);
+    return patientConsultaFailure(item, resumo ? 'limite_linhas' : 'erro', resumo);
+  }
+  if (item.motivo) return patientConsultaFailure(item, item.motivo);
+  const resumo = readSummary(item.resumo);
+  if (!resumo || !Array.isArray(item.linhas)) return patientConsultaFailure(item, 'erro');
+  if (item.linhas.length > FINANCE_MAX_ROWS) return patientConsultaFailure(item, 'limite_linhas', resumo);
+  const linhas: Row[] = [];
+  for (const rawLine of item.linhas) {
+    const line = readPatientLineFor(parsed.tipo, rawLine);
+    if (!line) return patientConsultaFailure(item, 'erro');
+    linhas.push(line);
+  }
+  return { ...query, motivo: null, mensagem: '', criterio: PATIENT_CRITERIA[parsed.tipo], linhas, total: linhas.length, resumo };
 }

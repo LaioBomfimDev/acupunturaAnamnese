@@ -22,9 +22,17 @@ import {
   ASSISTANT_MAX_MESSAGE_CHARS,
   ASSISTANT_MAX_MESSAGES,
   ASSISTANT_SCREENS,
+  PATIENT_CONSULTAS,
   buildAttentionItems,
   packagesNearEnd,
 } from '../utils/clinicAssistant';
+
+// FIN-3/6 e AG-3 (ACUP-025): marcador de resposta PROTEGIDA = "com dinheiro OU com
+// paciente". O nome 'financeiro' fica por compatibilidade com as notas já gravadas
+// (Corrigir guarda só a nota, só da autora, nunca aprovada).
+export const PROTECTED_CORRECTION_KEY = 'financeiro';
+const PROTECTED_TIPOS = ['financeiro', ...PATIENT_CONSULTAS];
+const isProtected = item => PROTECTED_TIPOS.includes(item?.tipo);
 
 /**
  * Pergunta à assistente. `messages` = [{ role: 'user'|'assistant', text }],
@@ -65,7 +73,7 @@ export async function askAssistant({ messages, screen, equipe = [], dados = unde
     throw new Error('A assistente respondeu num formato inesperado.');
   }
   return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null,
-    ...(dados?.tipo === 'financeiro' || dadosAnteriores.some(item => item?.tipo === 'financeiro') || data.financeiro === true || (messages || []).some(message => message.financeiro === true) ? { financeiro: true } : {}) };
+    ...(dados?.tipo === 'financeiro' || isProtected(dados) || dadosAnteriores.some(isProtected) || data.financeiro === true || (messages || []).some(message => message.financeiro === true) ? { financeiro: true } : {}) };
 }
 
 let teamCache = null;
@@ -119,7 +127,7 @@ export async function askAssistantWithTools({ messages, screen, profile, onStep 
     reply = await ask({ dados: results[results.length - 1], dadosAnteriores: results.slice(0, -1) });
   }
   if (!reply.answer) throw new Error('A assistente não conseguiu responder com os dados da clínica agora.');
-  return results.some(item => item?.tipo === 'financeiro') ? { ...reply, financeiro: true } : reply;
+  return results.some(isProtected) ? { ...reply, [PROTECTED_CORRECTION_KEY]: true } : reply;
 }
 
 /** Troca de conta: a equipe da próxima pessoa pode ser outra. */

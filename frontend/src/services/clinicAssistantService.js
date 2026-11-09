@@ -49,6 +49,7 @@ export async function askAssistant({ messages, screen, equipe = [], dados = unde
       messages: recent,
       screen: ASSISTANT_SCREENS.includes(screen) ? screen : 'inicio',
       equipe,
+      ...((messages || []).some(message => message.financeiro === true) ? { financeiroContexto: true } : {}),
       ...(dados === undefined ? {} : { dados }),
     },
   });
@@ -61,7 +62,8 @@ export async function askAssistant({ messages, screen, equipe = [], dados = unde
   if (!data || typeof data.answer !== 'string') {
     throw new Error('A assistente respondeu num formato inesperado.');
   }
-  return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null };
+  return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null,
+    ...(dados?.tipo === 'financeiro' || data.financeiro === true || (messages || []).some(message => message.financeiro === true) ? { financeiro: true } : {}) };
 }
 
 let teamCache = null;

@@ -16,6 +16,7 @@ import { CLINICAL_INSTRUMENTS, INSTRUMENT_REVIEW_STATUS } from '../data/clinical
 // entra aqui, senão o teste avisa.
 export const HELP_GROUP_PLACES = {
   HOME_HELP: 'Tela inicial',
+  ASSISTANT_HELP: 'Assistente',
   AGENDA_HELP: 'Agenda',
   EVOLUCOES_HELP: 'Evoluções',
   EVOLUCOES_REVIEW_HELP: 'Evoluções',

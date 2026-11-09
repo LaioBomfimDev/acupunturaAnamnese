@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import {
   AI_SURFACE_LABELS,
+  AI_SURFACES,
   submitAiCorrection,
   looksLikeContainsPII,
 } from '../../services/aiCorrectionService';
@@ -38,6 +39,7 @@ export function AiCorrectionButton({
   label = '✎ Corrigir',
   className = 'btn-mini',
   onSaved,
+  financial = false,
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
@@ -46,7 +48,8 @@ export function AiCorrectionButton({
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
 
-  const saidText = summary || summarizeAiOutput(aiOutput);
+  const privateFinancial = surface === AI_SURFACES.CLINIC_ASSISTANT && (financial || contextSnapshot?.financeiro === true);
+  const saidText = privateFinancial ? '' : summary || summarizeAiOutput(aiOutput);
 
   function reset() {
     setText('');
@@ -77,10 +80,11 @@ export function AiCorrectionButton({
         {
           surface,
           modelVersion,
-          contextSnapshot,
-          aiOutput,
+          financial: privateFinancial,
+          contextSnapshot: privateFinancial ? { financeiro: true } : contextSnapshot,
+          aiOutput: privateFinancial ? {} : aiOutput,
           correctionText: text,
-          reason: reason.trim() || undefined,
+          reason: privateFinancial ? undefined : reason.trim() || undefined,
         },
         { patientName },
       );
@@ -130,8 +134,10 @@ export function AiCorrectionButton({
 
             {done ? (
               <div className="inline-success" style={{ margin: 0 }}>
-                Correção registrada. A IA já vai considerá-la nas suas próximas análises;
-                passará a valer para todas após a aprovação da SuperAdm.
+                {privateFinancial ? 'Sua nota foi registrada e vale somente para você, sem aprovação global.' : <>
+                  Correção registrada. A IA já vai considerá-la nas suas próximas análises;
+                  passará a valer para todas após a aprovação da SuperAdm.
+                </>}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="ai-correction-form" {...dismiss.panelProps}>
@@ -143,17 +149,17 @@ export function AiCorrectionButton({
                 )}
 
                 <label className="ai-correction-field">
-                  <span>Como deveria ser (o correto):</span>
+                  <span>{privateFinancial ? 'Sua nota (sem dados do paciente):' : 'Como deveria ser (o correto):'}</span>
                   <textarea
                     value={text}
                     autoFocus
                     rows={4}
-                    placeholder="Ex.: a saburra é amarela e gordurosa, não branca — padrão de Umidade-Calor no Aquecedor Médio."
+                    placeholder={privateFinancial ? 'Ex.: explique o critério do período sem concluir o motivo do status.' : 'Ex.: a saburra é amarela e gordurosa, não branca — padrão de Umidade-Calor no Aquecedor Médio.'}
                     onChange={event => setText(event.target.value)}
                   />
                 </label>
 
-                <label className="ai-correction-field">
+                {!privateFinancial && <label className="ai-correction-field">
                   <span>Por quê / regra (opcional):</span>
                   <textarea
                     value={reason}
@@ -161,11 +167,13 @@ export function AiCorrectionButton({
                     placeholder="O sinal que decide, a fonte, ou a regra a seguir da próxima vez."
                     onChange={event => setReason(event.target.value)}
                   />
-                </label>
+                </label>}
 
                 <p className="small ai-correction-note">
-                  O texto é anonimizado (nome, CPF, telefone, datas) antes de sair. Não escreva
-                  dados que identifiquem o paciente — a correção é conhecimento clínico, não prontuário.
+                  {privateFinancial ? 'Não escreva nome de paciente, valores, datas ou outros dados financeiros nesta nota. A resposta original, a pergunta e os dados não serão salvos. A correção fica só para você e nunca é aprovada para uso global.' : <>
+                    O texto é anonimizado (nome, CPF, telefone, datas) antes de sair. Não escreva
+                    dados que identifiquem o paciente — a correção é conhecimento clínico, não prontuário.
+                  </>}
                 </p>
                 {piiWarning && (
                   <div className="alert" style={{ marginTop: 4 }}>

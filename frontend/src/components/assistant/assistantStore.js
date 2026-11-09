@@ -121,7 +121,7 @@ export async function sendAssistantMessage(text) {
       onStep: step => setState({ sendingStep: step }),
     });
     setState(current => ({
-      messages: [...current.messages, { role: 'assistant', text: reply.answer, links: reply.links }],
+      messages: [...current.messages, { role: 'assistant', text: reply.answer, links: reply.links, ...(reply.financeiro === true ? { financeiro: true } : {}) }],
       sending: false,
     }));
   } catch (error) {

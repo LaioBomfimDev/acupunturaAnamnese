@@ -94,6 +94,11 @@ function authorLabelFromUser(user) {
   );
 }
 
+// FIN-3/6: marcador fechado, sem conteúdo financeiro no contexto.
+export function isFinancialCorrection(row) {
+  return row?.surface === AI_SURFACES.CLINIC_ASSISTANT && row?.context_snapshot?.financeiro === true;
+}
+
 /**
  * Registra uma correção da profissional sobre uma saída de IA.
  * Anonimiza o texto antes de sair. Login local → localStorage; real → Supabase.
@@ -107,24 +112,25 @@ export async function submitAiCorrection(input, context = {}) {
   if (!VALID_SURFACES.has(surface)) {
     throw new Error('Superfície de IA inválida para correção.');
   }
+  const financial = surface === AI_SURFACES.CLINIC_ASSISTANT && (input.financial === true || input.contextSnapshot?.financeiro === true);
   const correctionText = anonymizeClinicalText(clampText(input.correctionText), {
     patientName: context.patientName,
   });
   if (!correctionText) {
     throw new Error('Escreva a versão correta para ensinar a IA.');
   }
-  const reason = input.reason
+  const reason = !financial && input.reason
     ? anonymizeClinicalText(clampText(input.reason), { patientName: context.patientName })
     : null;
 
   const user = await getAuthenticatedUser();
   const base = {
     surface,
-    model_version: input.modelVersion || null,
-    context_snapshot: input.contextSnapshot || {},
-    ai_output: input.aiOutput || {},
+    model_version: financial ? null : input.modelVersion || null,
+    context_snapshot: financial ? { financeiro: true } : input.contextSnapshot || {},
+    ai_output: financial ? {} : input.aiOutput || {},
     correction_text: correctionText,
-    correction_structured: input.correctionStructured || null,
+    correction_structured: financial ? null : input.correctionStructured || null,
     reason,
   };
 
@@ -210,11 +216,19 @@ export async function setCorrectionStatus(id, status) {
 
   if (user?._isLocal) {
     const list = getLocalCorrections();
+    if (status === 'approved' && isFinancialCorrection(list.find(row => row.id === id))) throw new Error('Correção financeira fica somente com a autora e não pode ser aprovada.');
     const next = list.map(row => (row.id === id
       ? { ...row, approval_status: status, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }
       : row));
     setLocalCorrections(next);
     return next.find(row => row.id === id) || null;
+  }
+
+  if (status === 'approved') {
+    const { data: current, error: readError } = await supabase.from('ai_corrections')
+      .select('surface,context_snapshot').eq('id', id).single();
+    if (readError || !current) throw new Error('Não foi possível conferir a correção para aprovação.');
+    if (isFinancialCorrection(current)) throw new Error('Correção financeira fica somente com a autora e não pode ser aprovada.');
   }
 
   const { data, error } = await supabase

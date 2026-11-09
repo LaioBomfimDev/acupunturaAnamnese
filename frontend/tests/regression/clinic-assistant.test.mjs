@@ -289,7 +289,8 @@ test('Edge Function da assistente: acesso, teto antes da IA, só ajuda do sistem
   assert.match(source, /enforceEdgeRateLimit\(/);
   assert.match(source, /scrubClinicalText\(text\)/, 'mensagens passam pela limpeza de identificadores');
   assert.match(source, /Nunca dê diagnóstico, conduta, prescrição/);
-  assert.match(source, /Ainda não leio dados de pacientes \(fichas, evoluções, resultados de escalas, anamneses\) nem o financeiro\./);
+  assert.match(source, /Ainda não leio fichas, textos de evoluções, respostas ou resultados de escalas e anamneses de pacientes\./);
+  assert.match(source, /financeiro: SOMENTE se quem pergunta é administração/);
   assert.match(source, /Nunca diga que a pessoa "não tem acesso" a algo que o perfil dela tem/, 'não recusa o que o perfil pode fazer');
   assert.match(source, /helpIndex\(\)/);
   assert.doesNotMatch(source, /\.from\('(patients|patient_|clinical_records|appointments|finance_|appointment_charges)/, 'etapa 1 não lê dado de paciente nem financeiro');

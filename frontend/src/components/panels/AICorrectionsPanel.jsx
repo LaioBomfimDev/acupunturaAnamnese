@@ -13,6 +13,7 @@ import {
   CORRECTION_STATUS_LABELS,
   listCorrectionsForReview,
   setCorrectionStatus,
+  isFinancialCorrection,
 } from '../../services/aiCorrectionService';
 
 const STATUS_FILTERS = [
@@ -395,14 +396,14 @@ export function AICorrectionsPanel() {
               </div>
 
               <div className="anamnese-editor-actions">
-                <button
+                {!isFinancialCorrection(selected) && <button
                   className="primary-button"
                   type="button"
                   disabled={busyId === selected.id || selected.approval_status === 'approved'}
                   onClick={() => applyStatus(selected, 'approved')}
                 >
                   Aprovar (vale para todas)
-                </button>
+                </button>}
                 <button
                   className="danger-button"
                   type="button"
@@ -421,9 +422,10 @@ export function AICorrectionsPanel() {
                     Repor em revisão
                   </button>
                 )}
-                <button className="quiet-button" type="button" onClick={() => promote(selected)}>
+                {/* FIN-3/6: nota financeira nunca vai para base curada global. */}
+                {!isFinancialCorrection(selected) && <button className="quiet-button" type="button" onClick={() => promote(selected)}>
                   Promover para base curada
-                </button>
+                </button>}
               </div>
             </>
           )}

@@ -27,7 +27,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-016 | Assistente: consulta financeira no aparelho + contrato | Codex LK | integracao (fc3f3a9) | PRONTO | ver abaixo |
 | ACUP-017 | Assistente: postura no financeiro, Corrigir protegido, regra no AGENTS.md | Codex LK | integracao (9b871b7) | PRONTO | ver abaixo |
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Codex LK | codex/lk | FAZENDO | ver abaixo |
-| ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | REVIEW (rascunho aguardando aprovação do humano) | ver abaixo |
+| ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (rascunho aguardando aprovação do humano) | ver abaixo |
 | ACUP-020 | Remover a tela de integração com o WhatsApp | Codex LK | — | TODO (após 018) | ver abaixo |
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | FAZENDO | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
@@ -320,3 +320,4 @@ Ordem: 016 → 017, só depois de o humano avisar que terminou a publicação do
 - 2026-11-09 — ACUP-017 entregue (d5b80ef; lint, 1460 testes com 1459 ok e 1 pulado, build verdes; 9/9 mutações; 10 prints). REVIEW mandado ao QA.
 - 2026-11-09 — ACUP-017 PRONTO: QA aprovou com correção (o painel do SuperAdm ainda oferecia 'Promover para base curada' para a nota financeira; escondido + teste; corrections.ts real testado com aprovação forçada: outra pessoa nunca vê; 20/23 mutações, 3 equivalentes), merge em `integracao` (9b871b7), quality verde (1461, 1460 ok, 1 pulado). CONDIÇÃO do QA aceita (PUB-1): a 017 não vai para o ar sem a 018, porque o texto já diz 'primeiro nome e idade' e os dados da 016 ainda levam nome completo. ACUP-018 distribuída.
 - 2026-11-09 — Humana pediu pressa para produção. ACUP-021: o commit `ac30abe` (Documentos timbrados, PR #16) entra por hotfix sobre a `main`, revisado pelo QA, sem esperar a rodada da assistente (PUB-2). PR #16 fecha sem merge; WhatsApp segue como ACUP-020.
+- 2026-11-09 — ACUP-019 PRONTO: humana aprovou o texto do RIPD ("aprovo o ripd, pode liberar a assistente", via sessão Documentos). PUB-1 fica só esperando a ACUP-018. Base legal/transferência [preencher], aviso ao responsável e registro de operações seguem com ela e o jurídico.

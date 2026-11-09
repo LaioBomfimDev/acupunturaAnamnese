@@ -1290,3 +1290,27 @@ export const ABA_HELP = {
     ],
   },
 };
+
+// ACUP-017: explicação da própria assistente, sem dados de paciente no texto de ajuda.
+export const ASSISTANT_HELP = {
+  title: 'Assistente',
+  summary: 'Uma ajuda para entender o sistema e consultar dados permitidos, sem decidir por você.',
+  actions: [
+    'Perguntar sobre telas, horários vagos e contagens da clínica; abrir o destino sugerido em “Abrir …”.',
+    'A administração pode perguntar sobre recebidos, a receber e atrasados por período, paciente e profissional.',
+    '“Corrigir” registra sua orientação. Em resposta financeira, salva somente sua nota: não escreva nome de paciente, valores, datas ou dados financeiros. A pergunta, a resposta original e os dados não são gravados nessa correção.',
+  ],
+  reading: [
+    'A resposta financeira diz o período e o critério. Valores de operadora não são cobrança ao paciente. Sem lote ou prazo, o vencimento fica sem data e o recorte considera a data do atendimento.',
+    'Se a consulta falhar, não significa zero. Pedidos acima de 93 dias ou 50 linhas precisam de um recorte menor. Confira os registros na tela Financeiro, que é a referência.',
+  ],
+  access: [
+    'Apenas a administração com permissão no Financeiro pode consultar seus valores. Recepção e terapeutas podem usar as outras ajudas, sem receber dados financeiros.',
+    'No recorte financeiro, a identificação é primeiro nome e idade: nunca sobrenome, data de nascimento ou dado clínico. A assistente não lê prontuário, textos de evolução nem respostas de escalas.',
+    'Correção financeira fica somente para sua autora, pendente e sem aprovação para uso global; nas demais correções, a regra de curadoria continua.',
+  ],
+  notes: [
+    'Primeiro nome, idade e dinheiro saem do Brasil e são enviados ao serviço de IA Gemini/Vertex na região us, nos Estados Unidos. O RIPD é tratado pela instituição.',
+    'A assistente lembra e explica; não altera dinheiro, não envia cobranças e não decide conduta clínica. O limite mensal de IA e o registro de uso continuam valendo, sem dados financeiros nos registros técnicos.',
+  ],
+};

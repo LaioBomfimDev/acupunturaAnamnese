@@ -10,6 +10,8 @@
 // Regra de propagação (decidida com o usuário):
 //  * a autora usa as PRÓPRIAS correções na hora (mesmo em revisão);
 //  * para todas, só as APROVADAS pela SuperAdm.
+//  * FIN-3/6: nota financeira nunca global, mesmo com aprovação forçada;
+//    só a autora usa, sem saída original ou motivo na lição.
 // A Edge Function usa service role (bypassa RLS), então a regra é aplicada
 // aqui na query: surface = X AND status != rejected AND (status = approved
 // OR author = caller).
@@ -48,6 +50,11 @@ export interface CorrectionLesson {
   author_id: string;
 }
 
+// FIN-3/6: somente marcador, nunca conteúdo financeiro no contexto da lição.
+function isFinancialLesson(lesson: CorrectionLesson) {
+  return lesson.context_snapshot?.financeiro === true;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -81,7 +88,8 @@ export async function fetchCorrectionLessons(
       });
       return [];
     }
-    return Array.isArray(data) ? (data as CorrectionLesson[]) : [];
+    return Array.isArray(data) ? (data as CorrectionLesson[]).filter(lesson =>
+      !isFinancialLesson(lesson) || (UUID_RE.test(callerId) && lesson.author_id === callerId)) : [];
   } catch {
     logOperationalEvent('warn', 'correction_lessons_unavailable', {
       operation: 'fetch_correction_lessons',
@@ -108,9 +116,9 @@ function summarizeOutput(aiOutput: Record<string, unknown> | null): string {
 }
 
 function renderItem(lesson: CorrectionLesson): string {
-  const said = summarizeOutput(lesson.ai_output);
+  const said = isFinancialLesson(lesson) ? '' : summarizeOutput(lesson.ai_output);
   const correct = String(lesson.correction_text || '').slice(0, 600).trim();
-  const why = lesson.reason ? ` Motivo: ${String(lesson.reason).slice(0, 300).trim()}` : '';
+  const why = !isFinancialLesson(lesson) && lesson.reason ? ` Motivo: ${String(lesson.reason).slice(0, 300).trim()}` : '';
   const saidPart = said ? `Quando a IA tenderia a dizer "${said}", ` : '';
   return `- ${saidPart}o correto é: ${correct}.${why}`;
 }
@@ -129,13 +137,14 @@ const PENDING_HEADER =
  */
 export function renderCorrectionBlock(
   lessons: CorrectionLesson[],
-  { relevanceQuery = '', budgetChars = MAX_CORRECTION_CHARS }: { relevanceQuery?: string; budgetChars?: number } = {},
+  { relevanceQuery = '', budgetChars = MAX_CORRECTION_CHARS, callerId = '' }: { relevanceQuery?: string; budgetChars?: number; callerId?: string } = {},
 ): string {
   if (!Array.isArray(lessons) || lessons.length === 0 || budgetChars <= 0) return '';
 
   // Deduplica por texto de correção (a mesma lição pode aparecer repetida).
   const seen = new Set<string>();
   const unique = lessons.filter((lesson) => {
+    if (isFinancialLesson(lesson) && (!UUID_RE.test(callerId) || lesson.author_id !== callerId)) return false;
     const key = String(lesson.correction_text || '').trim().toLowerCase();
     if (!key || seen.has(key)) return false;
     seen.add(key);
@@ -144,8 +153,8 @@ export function renderCorrectionBlock(
 
   // Mais relevantes ao caso primeiro (recência se não houver query).
   const ranked = rankLessonsByRelevance(unique, relevanceQuery);
-  const approvedItems = ranked.filter((l) => l.approval_status === 'approved').map(renderItem);
-  const pendingItems = ranked.filter((l) => l.approval_status !== 'approved').map(renderItem);
+  const approvedItems = ranked.filter((l) => l.approval_status === 'approved' && !isFinancialLesson(l)).map(renderItem);
+  const pendingItems = ranked.filter((l) => l.approval_status !== 'approved' || isFinancialLesson(l)).map(renderItem);
 
   const sections: string[] = [];
   let remaining = budgetChars;
@@ -186,5 +195,5 @@ export async function withCorrectionLessons(
   const lessons = await fetchCorrectionLessons(supabaseAdmin, params);
   const total = params.totalBudgetChars ?? DEFAULT_TOTAL_SYSTEM_CHARS;
   const budgetChars = Math.max(0, Math.min(MAX_CORRECTION_CHARS, total - systemPrompt.length));
-  return systemPrompt + renderCorrectionBlock(lessons, { relevanceQuery: params.relevanceQuery, budgetChars });
+  return systemPrompt + renderCorrectionBlock(lessons, { relevanceQuery: params.relevanceQuery, budgetChars, callerId: params.callerId });
 }

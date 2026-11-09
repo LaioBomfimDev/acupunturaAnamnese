@@ -1,3 +1,5 @@
+import { ScreenHelp } from '../ui/ScreenHelp';
+import { ASSISTANT_HELP } from '../../data/screenHelp';
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDismiss } from '../../hooks/useDismiss';
@@ -176,8 +178,9 @@ function Conversation({ state, allowed, role, inputRef }) {
               // a autora; para todos depois da aprovação do SuperAdm).
               <AiCorrectionButton
                 surface={AI_SURFACES.CLINIC_ASSISTANT}
-                aiOutput={{ answer: message.text }}
-                contextSnapshot={{ question: state.messages[index - 1]?.text || '' }}
+                financial={message.financeiro === true}
+                aiOutput={message.financeiro ? {} : { answer: message.text }}
+                contextSnapshot={message.financeiro ? { financeiro: true } : { question: state.messages[index - 1]?.text || '' }}
                 label="Corrigir"
               />
             )}
@@ -269,6 +272,7 @@ export function ClinicAssistantLauncher({ profile }) {
               <div>
                 <h2 id={titleId} className="ca-name">Assistente</h2>
                 <p className="ca-sub">Nesta tela: {ASSISTANT_SCREEN_LABELS[state.screen] || 'Tela inicial'}</p>
+                <ScreenHelp topic={ASSISTANT_HELP} />
               </div>
               <button type="button" className="ca-minimize" onClick={minimize} aria-label="Minimizar a assistente">–</button>
             </header>

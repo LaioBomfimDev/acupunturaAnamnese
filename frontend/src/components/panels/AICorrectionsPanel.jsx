@@ -13,6 +13,7 @@ import {
   CORRECTION_STATUS_LABELS,
   listCorrectionsForReview,
   setCorrectionStatus,
+  isFinancialCorrection,
 } from '../../services/aiCorrectionService';
 
 const STATUS_FILTERS = [
@@ -395,14 +396,14 @@ export function AICorrectionsPanel() {
               </div>
 
               <div className="anamnese-editor-actions">
-                <button
+                {!isFinancialCorrection(selected) && <button
                   className="primary-button"
                   type="button"
                   disabled={busyId === selected.id || selected.approval_status === 'approved'}
                   onClick={() => applyStatus(selected, 'approved')}
                 >
                   Aprovar (vale para todas)
-                </button>
+                </button>}
                 <button
                   className="danger-button"
                   type="button"

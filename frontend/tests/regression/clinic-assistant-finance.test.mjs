@@ -152,7 +152,7 @@ test('QA: FIN-1 descarta resposta não booleana do servidor (string, número, ob
   for (const tipo of [' financeiro', 'financeiro\t', ' financeiro ']) {
     assert.equal(await authorize({ ...raw, tipo }, { rpc: async () => ({ data: false, error: null }) }, 'c', 'u'), null, `tipo ${JSON.stringify(tipo)} passa pela conferência`);
   }
-  for (const tipo of ['FINANCEIRO', 'financeirо', 'finan​ceiro']) {
+  for (const tipo of ['FINANCEIRO', 'financeirо', 'finan\u200bceiro']) {
     let called = false;
     assert.equal(await authorize({ ...raw, tipo }, { rpc: async () => { called = true; return { data: true, error: null }; } }, 'c', 'u'), null, `tipo ${JSON.stringify(tipo)} não vira financeiro`);
     assert.equal(called, false);
@@ -227,7 +227,7 @@ const keysDeep = value => (Array.isArray(value) ? value.flatMap(keysDeep)
   : value && typeof value === 'object' ? Object.entries(value).flatMap(([key, inner]) => [key, ...keysDeep(inner)]) : []);
 
 test('ACUP-018 espelho: recortes, chaves, áreas e limites iguais no aparelho e na Edge', async () => {
-  for (const key of ['FINANCE_FILTERS', 'FINANCE_FORMS', 'FINANCE_SITUATIONS', 'FINANCE_AREAS', 'FINANCE_KEYS', 'FINANCE_ARCHIVED', 'FINANCE_MAX_AGE', 'FINANCE_CRITERIA', 'FINANCE_REASONS']) {
+  for (const key of ['FINANCE_FILTERS', 'FINANCE_FORMS', 'FINANCE_SITUATIONS', 'FINANCE_AREAS', 'FINANCE_KEYS', 'FINANCE_ARCHIVED', 'FINANCE_MAX_AGE', 'FINANCE_CRITERIA', 'FINANCE_REASONS', 'FINANCE_FIRST_NAME', 'FINANCE_NULL_BY_FORM']) {
     assert.deepEqual(edge[key], front[key], key);
   }
   const { DISCIPLINES } = await import('../../src/data/disciplines.js');
@@ -420,4 +420,40 @@ test('Edge: resposta forjada com nome completo não chega ao modelo, mesmo autor
   assert.match(prompt, /nunca diga que uma sessão foi paga/);
   assert.match(prompt, /nunca que o paciente deve/);
   assert.match(prompt, /dois pacientes com o mesmo nome/);
+});
+
+test('QA 09/11/2026: sobrenome colado sem espaço, CPF, e-mail e data não passam como primeiro nome; parcelado nunca traz sessão paga', async () => {
+  const glued = ['Lúcia.Sobrenome', 'Lúcia_Sobrenome', 'Lúcia\u200bSobrenome', 'Lúcia\u2060Sobrenome', 'Lúcia,Sobrenome', '123.456.789-09', 'lucia@exemplo.invalid', '2019-03-10', '71999998888'];
+  const patientLine = { ...row, forma: 'avulso', sessoes_feitas: 2, sessoes_pagas: 1, sessoes_sem_valor: 0, sessao_atual: null, sessoes_previstas: null,
+    parcelas_pagas: null, parcelas_em_aberto: null, em_aberto_centavos: 100, situacao: 'em_aberto' };
+  const installments = { ...patientLine, forma: 'pacote_parcelas', sessoes_feitas: null, sessoes_pagas: null, sessoes_sem_valor: null,
+    sessao_atual: 2, sessoes_previstas: 8, parcelas_pagas: 1, parcelas_em_aberto: 1 };
+  for (const parse of [front.readFinanceResult, edge.readFinanceResult]) {
+    for (const paciente of glued) {
+      for (const [status, line] of [['a_receber', row], ['por_paciente', patientLine]]) {
+        const result = parse({ ...query, status, linhas: [{ ...line, paciente }] });
+        assert.equal(result.motivo, 'erro', `${status}: ${JSON.stringify(paciente)}`);
+        assert.doesNotMatch(JSON.stringify(result), /Sobrenome|exemplo|789|2019|7199/);
+      }
+      const request = parse === front.readFinanceResult ? front.readFinanceConsulta : edge.readFinanceConsulta;
+      assert.deepEqual([request({ ...query, paciente }).status, request({ ...query, paciente }).paciente], ['', ''], `pedido ${JSON.stringify(paciente)}`);
+    }
+    for (const ok of ['Lúcia', 'Maria-Clara', "D'Ávila", 'Lúcia']) assert.equal(parse({ ...query, linhas: [{ ...row, paciente: ok }] }).motivo, null, ok);
+    assert.equal(parse({ ...query, status: 'por_paciente', linhas: [installments] }).motivo, null);
+    for (const key of ['sessoes_feitas', 'sessoes_pagas', 'sessoes_sem_valor']) {
+      assert.equal(parse({ ...query, status: 'por_paciente', linhas: [{ ...installments, [key]: 3 }] }).motivo, 'erro', `parcelado com ${key}`);
+    }
+    for (const key of ['parcelas_pagas', 'parcelas_em_aberto', 'sessao_atual']) {
+      assert.equal(parse({ ...query, status: 'por_paciente', linhas: [{ ...patientLine, [key]: 1 }] }).motivo, 'erro', `avulso com ${key}`);
+    }
+  }
+  // Cadastro com o nome colado: o aparelho manda só a primeira palavra.
+  for (const name of ['Lúcia.Sobrenome', 'Lúcia_Sobrenome', 'Lúcia\u200bSobrenome', '  -Lúcia- Sobrenome', '(Lúcia) Sobrenome']) assert.equal(front.firstNameOf(name), 'Lúcia', JSON.stringify(name));
+  resetCase();
+  state.patients = people.map(person => ({ ...person, name: person.name.replace(/ /g, '.') }));
+  for (const status of ['a_receber', 'por_paciente']) {
+    const result = await caseRun({ status });
+    assert.equal(result.motivo, null, status);
+    assert.doesNotMatch(JSON.stringify(result), SURNAMES, status);
+  }
 });

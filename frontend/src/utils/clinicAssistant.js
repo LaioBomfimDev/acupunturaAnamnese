@@ -360,8 +360,10 @@ export const FINANCE_MAX_AGE = 130;
 
 /** Só a primeira palavra do nome (nunca sobrenome). */
 export function firstNameOf(name) {
-  const clean = typeof name === 'string' ? name.replace(/\p{Cc}/gu, ' ').trim() : '';
-  return clean.split(/\s+/u)[0].slice(0, 40);
+  const clean = typeof name === 'string' ? name.normalize('NFC') : '';
+  // Corta em tudo que não é letra: ponto, sublinhado, número e espaço invisível também separam.
+  const word = clean.split(/[^\p{L}\p{M}'’-]+/u).map(part => part.replace(/^[\p{M}'’-]+|['’-]+$/gu, '')).find(Boolean) || '';
+  return word.slice(0, 40);
 }
 
 /**
@@ -389,6 +391,17 @@ export const FINANCE_NO_AREA = 'Sem área';
 export const FINANCE_AREAS = [...DISCIPLINES.map(item => item.label), FINANCE_NO_AREA];
 // Linha cujo paciente não está mais no cadastro: rótulo fixo, sem idade.
 export const FINANCE_ARCHIVED = 'Paciente arquivado';
+// Primeiro nome = uma palavra só de letras (acento, apóstrofo ou hífen valem).
+// QA 09/11/2026: só "sem espaço" deixava passar "Lúcia.Souza", "Lúcia_Souza",
+// sobrenome colado por espaço invisível, CPF, e-mail e data.
+export const FINANCE_FIRST_NAME = /^\p{L}[\p{L}\p{M}'’-]{0,39}$/u;
+// Contagens que cada forma nunca traz (vão null).
+export const FINANCE_NULL_BY_FORM = {
+  avulso: ['sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto'],
+  convenio: ['sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto'],
+  pacote_por_sessao: ['parcelas_pagas', 'parcelas_em_aberto'],
+  pacote_parcelas: ['sessoes_feitas', 'sessoes_pagas', 'sessoes_sem_valor'],
+};
 // Chaves de cada recorte (lista fechada: o teste e a Edge conferem).
 export const FINANCE_KEYS = {
   linha: ['paciente', 'idade', 'homonimo', 'area', 'profissional', 'valor_centavos', 'vencimento', 'pagamento', 'status'],
@@ -436,7 +449,7 @@ function financePatientLabel(value, age) {
   const name = financeName(value);
   if (!name) return '';
   if (name === FINANCE_ARCHIVED) return age === null ? name : '';
-  return /\s/u.test(name) ? '' : name;
+  return FINANCE_FIRST_NAME.test(name) ? name : '';
 }
 export function readFinanceConsulta(raw) {
   const item = financeRecord(raw);
@@ -447,7 +460,7 @@ export function readFinanceConsulta(raw) {
   const age = financeAge(item.idade);
   const patient = financeName(item.paciente);
   // Pedido com nome completo nunca é atendido nem devolvido: vira filtro inválido.
-  const fullName = /\s/u.test(patient);
+  const fullName = patient !== '' && !FINANCE_FIRST_NAME.test(patient);
   return { tipo: 'financeiro', de: financeDay(item.de), ate: financeDay(item.ate),
     status: !invalidFilter && !fullName && age !== undefined && FINANCE_FILTERS.includes(item.status) ? item.status : '',
     paciente: fullName ? '' : patient, idade: age === undefined ? null : age,
@@ -500,6 +513,9 @@ function readPatientLine(line) {
     counts[key] = line[key] === null ? null : financeCount(line[key]);
     if (counts[key] === null && line[key] !== null) return null;
   }
+  // Pacote à vista ou parcelado conta parcela, nunca sessão paga; avulso e
+  // convênio não têm parcela nem "sessão N de M" (QA, 09/11/2026).
+  if (FINANCE_NULL_BY_FORM[line.forma].some(key => counts[key] !== null)) return null;
   const open = financeCount(line.em_aberto_centavos);
   if (open === null || (open === 0) !== (line.situacao === 'em_dia')
       || (line.situacao === 'da_operadora') !== (line.forma === 'convenio' && open > 0)) return null;

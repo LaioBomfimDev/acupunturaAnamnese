@@ -112,6 +112,17 @@ export const FINANCE_NO_AREA = 'Sem área';
 // Rótulos de frontend/src/data/disciplines.js (o teste confere).
 export const FINANCE_AREAS = ['Acupuntura', 'Fisioterapia', 'Psicologia', 'Nutrição', 'Neuropsicologia', 'ABA', FINANCE_NO_AREA];
 export const FINANCE_ARCHIVED = 'Paciente arquivado';
+// Primeiro nome = uma palavra só de letras (acento, apóstrofo ou hífen valem).
+// QA 09/11/2026: só "sem espaço" deixava passar "Lúcia.Souza", "Lúcia_Souza",
+// sobrenome colado por espaço invisível, CPF, e-mail e data.
+export const FINANCE_FIRST_NAME = /^\p{L}[\p{L}\p{M}'’-]{0,39}$/u;
+// Contagens que cada forma nunca traz (vão null).
+export const FINANCE_NULL_BY_FORM: Record<string, string[]> = {
+  avulso: ['sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto'],
+  convenio: ['sessao_atual', 'sessoes_previstas', 'parcelas_pagas', 'parcelas_em_aberto'],
+  pacote_por_sessao: ['parcelas_pagas', 'parcelas_em_aberto'],
+  pacote_parcelas: ['sessoes_feitas', 'sessoes_pagas', 'sessoes_sem_valor'],
+};
 export const FINANCE_KEYS = {
   linha: ['paciente', 'idade', 'homonimo', 'area', 'profissional', 'valor_centavos', 'vencimento', 'pagamento', 'status'],
   area: ['area', 'paciente_centavos', 'operadora_centavos', 'total_centavos'],
@@ -160,7 +171,7 @@ function financePatientLabel(value: unknown, age: number | null) {
   const name = financeName(value);
   if (!name) return '';
   if (name === FINANCE_ARCHIVED) return age === null ? name : '';
-  return /\s/u.test(name) ? '' : name;
+  return FINANCE_FIRST_NAME.test(name) ? name : '';
 }
 export function readFinanceConsulta(raw: unknown) {
   const item = financeRecord(raw);
@@ -171,7 +182,7 @@ export function readFinanceConsulta(raw: unknown) {
   const age = financeAge(item.idade);
   const patient = financeName(item.paciente);
   // Pedido com nome completo nunca é atendido nem devolvido: vira filtro inválido.
-  const fullName = /\s/u.test(patient);
+  const fullName = patient !== '' && !FINANCE_FIRST_NAME.test(patient);
   return { tipo: 'financeiro', de: financeDay(item.de), ate: financeDay(item.ate),
     status: !invalidFilter && !fullName && age !== undefined && typeof item.status === 'string' && FINANCE_FILTERS.includes(item.status) ? item.status : '',
     paciente: fullName ? '' : patient, idade: age === undefined ? null : age,
@@ -227,6 +238,9 @@ function readPatientLine(line: Row) {
     counts[key] = line[key] === null ? null : financeCount(line[key]);
     if (counts[key] === null && line[key] !== null) return null;
   }
+  // Pacote à vista ou parcelado conta parcela, nunca sessão paga; avulso e
+  // convênio não têm parcela nem "sessão N de M" (QA, 09/11/2026).
+  if (FINANCE_NULL_BY_FORM[forma].some(key => counts[key] !== null)) return null;
   const open = financeCount(line.em_aberto_centavos);
   if (open === null || (open === 0) !== (situacao === 'em_dia')
       || (situacao === 'da_operadora') !== (forma === 'convenio' && open > 0)) return null;

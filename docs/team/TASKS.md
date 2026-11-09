@@ -27,7 +27,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-016 | Assistente: consulta financeira no aparelho + contrato | Codex LK | integracao (fc3f3a9) | PRONTO | ver abaixo |
 | ACUP-017 | Assistente: postura no financeiro, Corrigir protegido, regra no AGENTS.md | Codex LK | integracao (9b871b7) | PRONTO | ver abaixo |
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Codex LK | codex/lk | FAZENDO | ver abaixo |
-| ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (rascunho aguardando aprovação do humano) | ver abaixo |
+| ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (texto aprovado 09/11) | ver abaixo |
 | ACUP-020 | Remover a tela de integração com o WhatsApp | Codex LK | — | TODO (após 018) | ver abaixo |
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | FAZENDO | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |

@@ -141,3 +141,13 @@ test('regra durável explica ciência, restrição de conteúdo e preservação 
   assert.match(bullet, /SUP-1\/2/);
   assert.match(bullet, /sobe a revisão para barrar texto antigo/);
 });
+
+// QA (review da ACUP-008): mutações que passavam sem o teste notar.
+test('QA: rascunho é o único editável e nenhuma RPC da supervisão vai para anon', () => {
+  assert.match(save, /IF v_existing\.status <> 'rascunho' THEN RAISE EXCEPTION 'Só o rascunho pode ser editado; registro assinado ou anulado não muda\.' USING ERRCODE = '22023';/);
+  for (const signature of ['aba_save_supervision_draft(JSONB)', 'aba_sign_supervision(UUID,BIGINT,UUID)', 'aba_ack_supervision(UUID,UUID)', 'aba_void_supervision(UUID,BIGINT,TEXT,UUID)', 'aba_list_supervisions(UUID)']) {
+    assert.ok(sql.includes(`REVOKE ALL ON FUNCTION public.${signature} FROM PUBLIC, anon;`), `${signature}: REVOKE de PUBLIC e anon`);
+    assert.ok(sql.includes(`GRANT EXECUTE ON FUNCTION public.${signature} TO authenticated;`), `${signature}: GRANT só para authenticated`);
+  }
+  assert.doesNotMatch(sql, /^GRANT [^;]*\b(?:anon|PUBLIC)\b[^;]*;/m);
+});

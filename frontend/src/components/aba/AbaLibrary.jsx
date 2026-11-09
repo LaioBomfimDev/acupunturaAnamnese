@@ -4,6 +4,7 @@ import { canWriteLibrary, libraryErrorMessage, librarySavePayload, mergeAbaLibra
 import { useDismiss } from '../../hooks/useDismiss';
 import { DismissPrompt } from '../ui/DismissPrompt';
 import { AbaDialog } from './AbaDialog';
+import { behaviorFunctionLabel, techniqueCategoryLabel, techniqueGoalLabel } from '../../utils/aba/catalog.js';
 
 const OBJECTIVE_FIELDS = {
   title: 'Título', category: 'Área', level: 'Nível', objective: 'Objetivo', target: 'Alvo', skill: 'Habilidade',
@@ -20,6 +21,15 @@ const CONFIG_FIELDS = {
   time_measure: 'Medida de tempo', procedure: 'Procedimento', token_economy: 'Economia de fichas', goal_direction: 'Direção do objetivo',
 };
 const titleOf = entry => entry.content.title || entry.content.name;
+// Códigos do catálogo (categoria, objetivos e funções da técnica) aparecem pelo rótulo pt-BR, como em Programas.
+const categoryOf = entry => (entry.kind === 'tecnica' ? techniqueCategoryLabel(entry.content.category) : entry.content.category);
+function shownValue(entry, key) {
+  const value = entry.content[key];
+  if (entry.kind === 'tecnica' && key === 'category') return techniqueCategoryLabel(value);
+  if (entry.kind === 'tecnica' && key === 'goals') return value.map(techniqueGoalLabel).join(', ');
+  if (entry.kind === 'tecnica' && key === 'behaviorFunctions') return value.map(behaviorFunctionLabel).join(', ');
+  return Array.isArray(value) ? value.join(', ') : String(value);
+}
 const advice = 'Ponto de partida, não decisão clínica. Individualize o modelo e peça revisão da supervisão. Técnicas restritas nunca dispensam a revisão nominal do programa.';
 
 function ContentFields({ content, fields, onChange, systemTechnique = false }) {
@@ -178,10 +188,10 @@ export function AbaLibrary() {
           {entry.status === 'oculto' && <span className="aba-tag">Oculto</span>}
           {entry.content.restricted && <span className="aba-tag is-warn">Restrito</span>}
           {entry.row && entry.system && <span className="aba-tag">Ajustado pela clínica</span>}</div>
-        <h3>{titleOf(entry)}</h3><p className="aba-muted">{entry.content.category}</p>
+        <h3>{titleOf(entry)}</h3><p className="aba-muted">{categoryOf(entry)}</p>
         <p>{entry.content.objective || entry.content.whenToUse}</p>
         <details><summary>Ver modelo</summary><dl className="aba-library-details">{Object.entries(entry.kind === 'objetivo' ? OBJECTIVE_FIELDS : TECHNIQUE_FIELDS)
-          .filter(([key]) => key !== 'restricted' && entry.content[key] != null).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{Array.isArray(entry.content[key]) ? entry.content[key].join(', ') : String(entry.content[key])}</dd></div>)}</dl></details>
+          .filter(([key]) => key !== 'restricted' && entry.content[key] != null).map(([key, label]) => <div key={key}><dt>{label.replace(/ \(uma? por linha\)$/, '')}</dt><dd>{shownValue(entry, key)}</dd></div>)}</dl></details>
         {canWrite && <div className="aba-button-row">
           <button type="button" className="quiet-button" onClick={() => setEditor(entry)}>{entry.system ? 'Ajustar' : 'Editar'}</button>
           <button type="button" className="quiet-button" onClick={() => { setError(''); setConfirming({ entry, id: entry.row?.id || crypto.randomUUID(), eventId: crypto.randomUUID(), status: entry.status === 'oculto' ? 'ativo' : entry.system ? 'oculto' : 'arquivado' }); }}>{entry.status === 'oculto' ? 'Reativar' : entry.system ? 'Ocultar' : 'Arquivar'}</button>

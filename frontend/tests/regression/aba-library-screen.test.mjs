@@ -315,3 +315,28 @@ test('serviço: RPCs novas pelo call existente, parâmetros intactos e erros rea
     await assert.rejects(api.saveLibraryItem(payload), error => code === '40001' ? error instanceof api.AbaConflictError : code === '42501' ? error instanceof api.AbaAccessError : error.message === message);
   }
 });
+
+// QA (review da ACUP-007): mutações que passavam sem o teste notar.
+test('QA: id fixo por editor, evento novo por ação, Restrito travado no sistema e aviso nas duas telas', () => {
+  const editorSave = source.slice(source.indexOf('async function save(event)'), source.indexOf('return <div className="aba-dialog-overlay"'));
+  assert.match(editorSave, /librarySavePayload\(entry, content, \{ id, eventId: crypto\.randomUUID\(\) \}\)/);
+  assert.match(source, /setConfirming\(\{ entry, id: entry\.row\?\.id \|\| crypto\.randomUUID\(\), eventId: crypto\.randomUUID\(\),/);
+  assert.match(source, /id: confirming\.id, eventId: confirming\.eventId, status: confirming\.status/);
+  assert.match(source, /disabled=\{key === 'restricted' && systemTechnique\}/);
+  assert.match(source, /systemTechnique=\{entry\.system && entry\.kind === 'tecnica'\}/);
+  assert.match(programs, /<p className="aba-note">Modelos são ponto de partida, não decisão clínica\./);
+  assert.match(source, /const advice = 'Ponto de partida, não decisão clínica\./);
+});
+
+test('QA: categoria, objetivos e funções da técnica aparecem pelo rótulo pt-BR, nunca pelo código', () => {
+  assert.match(source, /import \{ behaviorFunctionLabel, techniqueCategoryLabel, techniqueGoalLabel \} from '\.\.\/\.\.\/utils\/aba\/catalog\.js';/);
+  assert.match(source, /<p className="aba-muted">\{categoryOf\(entry\)\}<\/p>/);
+  assert.match(source, /<dd>\{shownValue\(entry, key\)\}<\/dd>/);
+  assert.match(source, /key === 'goals'\) return value\.map\(techniqueGoalLabel\)/);
+  assert.match(source, /key === 'behaviorFunctions'\) return value\.map\(behaviorFunctionLabel\)/);
+  assert.doesNotMatch(source, /<p className="aba-muted">\{entry\.content\.category\}<\/p>/);
+});
+
+test('QA: leitura do modelo não mostra a instrução de digitação do editor', () => {
+  assert.ok(source.includes("<dt>{label.replace(/ \\(uma? por linha\\)$/, '')}</dt>"));
+});

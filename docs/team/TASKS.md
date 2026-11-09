@@ -28,16 +28,17 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-017 | Assistente: postura no financeiro, Corrigir protegido, regra no AGENTS.md | Codex LK | integracao (9b871b7) | PRONTO | ver abaixo |
 | ACUP-018 | Contrato financeiro v2: primeiro nome + idade, sessões e totais por área | Claude dev2 (sessão Documentos) | integracao (f7be8bc) | PRONTO | ver abaixo |
 | ACUP-019 | RIPD: assistente financeira | Orquestrador | integracao | PRONTO (texto aprovado 09/11) | ver abaixo |
-| ACUP-020 | Remover a tela de integração com o WhatsApp | dev2 | integracao (ca4235d) | PRONTO (publicar) | ver abaixo |
+| ACUP-020 | Remover a tela de integração com o WhatsApp | dev2 | integracao (ca4235d) | PRONTO (publicado 09/11, main e99c896) | ver abaixo |
 | ACUP-021 | Documentos timbrados: PDF e Word (hotfix sobre a main) | QA | qa/ACUP-021 | PRONTO (04222c7; publicado 09/11) | ver abaixo |
 | ACUP-022 | Edge Functions preferem as chaves novas do Supabase | QA | qa/ACUP-022 | PRONTO (f2dd32c; publicado 09/11) | ver abaixo |
 | ACUP-009 | Avaliações formais do paciente | — | — | BLOQUEADO (adiada por D4: falta a lista de instrumentos e licenças da clínica) | ver abaixo |
-| ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | claude/dev2 | REVIEW (0dac1c4) | ver abaixo |
+| ACUP-023 | Assistente fase 1: agenda e operação sem paciente | dev2 | integracao (f227800) | PRONTO (publicar) | ver abaixo |
 | ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | claude/dev2 | FAZENDO (sobre 0dac1c4) | ver abaixo |
 | ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | claude/dev2 | TODO (após 024; publicar só com 026 aprovado) | ver abaixo |
 | ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
 | ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | TODO (após 025) | ver abaixo |
 | ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |
+| ACUP-029 | Assistente: pacotes perto do fim e período grande demais | dev2 | claude/dev2 | TODO (após 024) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
 
@@ -300,6 +301,13 @@ Pedido literal: "sim quero a fase 1 / 2 ok pode / fase 3 isso mesmo". Fora em to
 - A humana pediu "3.8 flash-lite". Pela documentação do Google só existe `gemini-3.8-flash-lite-tts` (voz, não serve para chat); para texto há `gemini-3.5-flash-lite` (atual) e `gemini-3.8-flash` (mais caro). Espera a escolha dela. Quando vier: modelo só em `_shared/aiModels.ts`, preço em `_shared/aiUsage.ts` ↔ `utils/aiUsage.js`, conferir que roda na região `us` antes.
 - Depende de: decisão da humana.
 
+## ACUP-029 — Assistente: pacotes perto do fim que funcionem numa clínica real, e "período grande demais"
+- Origem: review da 023 (AG-7). `pacotes_fim` lê ±180 dias da clínica inteira com teto de 2000 atendimentos; numa clínica com ~15 atendimentos por dia sempre bate o teto e responde "erro" (nunca número errado, mas inútil). Agenda e faltas com período grande também dão "erro".
+- Fazer: (1) `pacotes_fim` lê só as séries da Agenda (por `recurrence_group_id`), sem varrer a clínica inteira, usando a mesma regra de `utils/agendaPackageSessions.js`; se precisar de SQL/RPC, PARE e pergunte (3 alternativas). (2) Motivo novo `limite_fonte` ("estreite o período ou escolha um profissional") no lugar de `erro` quando a fonte bate o teto, nos dois lados (mudança de contrato aprovada aqui), mantendo "nunca subcontar".
+- Arquivos: os da 023 (`assistantTools.js`, `utils/clinicAssistant.js`, `_shared/assistantConsulta.ts`, `clinic-assistant/index.ts` só o prompt, `clinic-assistant-agenda.test.mjs`).
+- Critério de aceite: caso fictício com 5000 atendimentos no período: `pacotes_fim` responde número certo; agenda de 93 dias da clínica inteira responde `limite_fonte`, e por profissional responde normal; testes que falham no código de hoje.
+- Depende de: ACUP-024.
+
 ## ACUP-015 — Detalhes do aviso de texto não salvo (observações do review da 012)
 - Objetivo: (1) editores dentro de `AbaDialog` também ligam o aviso ao fechar a aba do navegador (`beforeunload`) enquanto houver texto pendente; (2) clique em sair durante a gravação mostra "Salvando…" em vez de não fazer nada calado; (3) trocar o texto "Fechar agora" da pergunta de saída por um que diga o que acontece.
 - Arquivos de propriedade: a definir na abertura.
@@ -389,3 +397,4 @@ Pedido literal: "sim quero a fase 1 / 2 ok pode / fase 3 isso mesmo". Fora em to
 - 2026-11-09 — ACUP-021 APROVADA pelo QA (04222c7, 2 correções: limpeza do colado e pílula a 360px), juntada no integracao (cbc2aa0, quality 1467: 1466 ok, 1 pulado). ACUP-022 aberta para o QA: Edge Functions preferirem as chaves novas antes de a humana desligar as Legacy API keys; sai junto da 021 na main.- 2026-11-09 — ACUP-018 PRONTO: QA aprovou (eb59f68), juntada no integracao f7be8bc, quality 1487 (1486 ok, 1 pulado). PUB-1 completo; pacote em mesa/publicacao.md. Próxima: ACUP-020.
 - 2026-11-09 — Rodada "Assistente ciente de tudo" (humana: fases 1, 2 e 3 aprovadas). ACUP-023 a 028 abertas, em sequência por mexerem nos mesmos arquivos; AG-1 a AG-4 em DECISOES. Com o Codex LK fechado, dev2 faz a 020 e depois a rodada (DEV2-2). Modelo espera a escolha da humana (ACUP-028).
 - 2026-11-09 — ACUP-020 PRONTO: QA aprovou (7e15dbe), juntada no integracao ca4235d, quality 1484 (1483 ok, 1 pulado; cobre o pendente do QA). Pacote em mesa/publicacao.md (site + clinic-assistant).
+- 2026-11-09 — ACUP-020 publicada (main e99c896). ACUP-023 PRONTO: QA aprovou (fc881ac, corrigiu confirmações/aniversários no teto viram erro e o texto de pacotes_fim), juntada no integracao f227800, quality 1493 (1492 ok, 1 pulado); pacote em mesa/publicacao.md. ACUP-029 aberta (AG-7). ACUP-024: desenho aprovado (AG-6).

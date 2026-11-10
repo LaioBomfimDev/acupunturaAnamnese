@@ -393,7 +393,11 @@ test('Agenda: "Entrar na sala online" só onde a regra deixa, em aba própria', 
 });
 
 test('mensagem do WhatsApp avisa da sala só no atendimento com sala online', async () => {
-  const source = await read('src/components/panels/agenda/PendingConfirmationView.jsx');
+  // ACUP-027 (AG-10): o texto da confirmação saiu IGUAL para utils/agendaMessages.js,
+  // usado pela fila da Agenda e pela assistente; a regex abaixo é a mesma.
+  const view = await read('src/components/panels/agenda/PendingConfirmationView.jsx');
+  assert.match(view, /buildConfirmationMessage\(\{/);
+  const source = await read('src/utils/agendaMessages.js');
   assert.match(source, /if \(isOnlineRoomAppointment\(appointment, agendaSettings\)\) \{\r?\n\s*paragrafos\.push\('Sua consulta é online, por vídeo\. No horário, abra este mesmo link e toque em “Entrar na consulta”\.'\);/);
 
   const page = await read('src/ConfirmAppointmentPage.jsx');

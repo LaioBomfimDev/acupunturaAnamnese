@@ -145,7 +145,8 @@ test('Edge Function devolve modalidade, término e endereço só pra presencial'
 
 test('mensagem de WhatsApp não manda endereço pra consulta online', async () => {
   const source = await readFile(
-    path.resolve(root, 'src/components/panels/agenda/PendingConfirmationView.jsx'),
+    // ACUP-027: o texto saiu da PendingConfirmationView para utils/agendaMessages.js (mesma função na Agenda e na assistente).
+    path.resolve(root, 'src/utils/agendaMessages.js'),
     'utf8',
   );
   assert.match(source, /if \(clinicAddress && appointment\.modality !== 'online'\) paragrafos\.push\(`Nosso endereço/);

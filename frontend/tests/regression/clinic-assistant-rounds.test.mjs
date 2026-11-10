@@ -218,7 +218,7 @@ test('AG-6 Edge: teto de tamanho recusa antes do Gemini e do orçamento, com men
   // Tipos com paciente da ACUP-025: os maiores ficam abaixo do financeiro.
   if (front.PATIENT_KEYS) {
     const longest = list => list.reduce((a, b) => (b.length > a.length ? b : a), '');
-    const agendaLine = { dia: '2026-10-01', inicio: '09:00', fim: '09:50', paciente: longName, idade: 130, homonimo: false, profissional: 'P'.repeat(80),
+    const agendaLine = { ref: 'r000', dia: '2026-10-01', inicio: '09:00', fim: '09:50', paciente: longName, idade: 130, homonimo: false, profissional: 'P'.repeat(80),
       area: longest(front.FINANCE_AREAS), tipo_atendimento: longest(front.AGENDA_TYPE_LABELS), modalidade: longest(front.AGENDA_MODALITIES), status: longest(front.AGENDA_STATUS_LABELS) };
     const agendaMax = { tipo: 'agenda_pacientes', de: '2026-10-01', ate: '2026-12-31', profissional: 'P'.repeat(80), paciente: longName, idade: 130, minimo: 20, motivo: null, mensagem: '',
       criterio: front.PATIENT_CRITERIA.agenda_pacientes, linhas: Array(50).fill(agendaLine), total: 50, resumo: { agendados: 99999, atendidos: 99999, faltas: 99999, cancelamentos: 99999, bloqueios: 99999 } };

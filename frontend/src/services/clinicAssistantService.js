@@ -24,6 +24,10 @@ import {
   ASSISTANT_SCREENS,
   PATIENT_CONSULTAS,
   buildAttentionItems,
+  createRefRegistry,
+  firstNameOf,
+  readAssistantAction,
+  AGENDA_TYPE_LABELS,
   packagesNearEnd,
 } from '../utils/clinicAssistant';
 
@@ -72,11 +76,15 @@ export async function askAssistant({ messages, screen, equipe = [], dados = unde
   if (!data || typeof data.answer !== 'string') {
     throw new Error('A assistente respondeu num formato inesperado.');
   }
-  return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null,
+  // ACUP-027: no máximo uma ação, limpa de novo aqui (lista fechada).
+  const acao = readAssistantAction(data.acao, { team: equipe });
+  return { answer: data.answer, links: Array.isArray(data.links) ? data.links : [], consulta: null, ...(acao ? { acao } : {}),
     ...(dados?.tipo === 'financeiro' || isProtected(dados) || dadosAnteriores.some(isProtected) || data.financeiro === true || (messages || []).some(message => message.financeiro === true) ? { financeiro: true } : {}) };
 }
 
 let teamCache = null;
+// ACUP-027: ref → atendimento desta conversa, só na memória da aba (nunca vai ao prompt como id).
+let conversationRefs = createRefRegistry();
 
 // ACUP-024 (AG-6): até 3 consultas por pergunta. Espelho de
 // ASSISTANT_MAX_ROUNDS em supabase/functions/clinic-assistant/index.ts.
@@ -99,7 +107,7 @@ function consultaKey(consulta) {
  * que falha vira resultado com motivo, e as outras seguem.
  * `onStep(etapa, volta)` avisa a tela ("Consultando…").
  */
-export async function askAssistantWithTools({ messages, screen, profile, onStep = () => {}, invoke = undefined, tools = null }) {
+export async function askAssistantWithTools({ messages, screen, profile, onStep = () => {}, invoke = undefined, tools = null, refs = conversationRefs }) {
   const { loadAssistantTeam, runAssistantConsulta } = tools || await import('./assistantTools');
   if (!teamCache) teamCache = await loadAssistantTeam().catch(() => []);
   const equipe = teamCache.map(member => shortName(member.full_name));
@@ -116,7 +124,7 @@ export async function askAssistantWithTools({ messages, screen, profile, onStep 
     if (!dados) {
       const pedido = reply.consulta;
       dados = await Promise.resolve()
-        .then(() => runAssistantConsulta(pedido, { profile, team: teamCache }))
+        .then(() => runAssistantConsulta(pedido, { profile, team: teamCache, refs }))
         // Mantém os filtros do pedido (já limpos pela Edge): sem de/ate, o leitor
         // trocava o "erro" por "período inválido" e a IA pedia outro período (QA, 09/11/2026).
         .catch(() => ({ ...pedido, motivo: 'erro' }));
@@ -130,9 +138,10 @@ export async function askAssistantWithTools({ messages, screen, profile, onStep 
   return results.some(isProtected) ? { ...reply, [PROTECTED_CORRECTION_KEY]: true } : reply;
 }
 
-/** Troca de conta: a equipe da próxima pessoa pode ser outra. */
+/** Troca de conta: a equipe da próxima pessoa pode ser outra; os refs da conversa somem. */
 export function resetAssistantTeam() {
   teamCache = null;
+  conversationRefs = createRefRegistry();
 }
 
 function settledValue(result) {
@@ -200,4 +209,90 @@ export async function saveClinicAiLimit(clinicId, usd) {
   const { data, error } = await supabase.rpc('superadmin_set_ai_limit', { p_clinic: clinicId, p_usd: usd });
   if (error) throw new Error(error.message || 'Não foi possível salvar o teto.');
   return data;
+}
+
+// ============================================================
+// ACUP-027 (AG-4, AG-10): prepara a ação no aparelho, a partir da tabela da
+// conversa e do login, nunca do texto da IA. Nada é enviado nem gravado:
+// devolve um link wa.me (a pessoa toca em Enviar) ou um rascunho para o
+// "Novo agendamento" (a pessoa confere e salva).
+// ============================================================
+const ACTION_MISSING = 'Não encontrei esse atendimento nesta conversa. Peça de novo a agenda e a ação.';
+
+function dayBounds(startsAt) {
+  const date = new Date(startsAt);
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return { from: start.toISOString(), to: new Date(start.getTime() + 86_400_000 - 1).toISOString() };
+}
+
+export async function prepareAssistantAction(acao, { profile, refs = conversationRefs, deps = null } = {}) {
+  const entry = refs.resolve(acao?.ref);
+  if (!acao || !entry) return { kind: 'motivo', text: ACTION_MISSING };
+  const load = deps || await (async () => {
+    const [appointments, patientsService, members, settings, messages, whatsapp, types] = await Promise.all([
+      import('./appointmentService'), import('./clinicPatientsService'), import('./clinicMembersService'),
+      import('./agendaSettingsService'), import('../utils/agendaMessages'), import('../utils/whatsapp'), import('../utils/appointmentTypes'),
+    ]);
+    return {
+      listPendingConfirmations: appointments.listPendingConfirmations,
+      listClinicPatients: patientsService.listClinicPatients,
+      listClinicMembers: members.listClinicMembers,
+      loadAgendaSettings: settings.loadAgendaSettings,
+      buildConfirmationMessage: messages.buildConfirmationMessage,
+      buildWhatsAppLink: whatsapp.buildWhatsAppLink,
+      isLikelyValidWhatsAppPhone: whatsapp.isLikelyValidWhatsAppPhone,
+      appointmentTypes: types,
+      origin: window.location.origin,
+    };
+  })();
+  try {
+    const patients = await load.listClinicPatients();
+    const patient = patients.find(row => row.id === entry.patientId);
+    if (!patient) return { kind: 'motivo', text: ACTION_MISSING };
+    const first = firstNameOf(patient.name);
+
+    if (acao.tipo === 'confirmacao') {
+      const { from, to } = dayBounds(entry.startsAt);
+      const pending = (await load.listPendingConfirmations({ from, to, professionalId: entry.professionalId }))
+        .find(row => row.id === entry.appointmentId);
+      if (!pending) return { kind: 'motivo', text: 'Este atendimento não está esperando confirmação.' };
+      if (!pending.confirmation_token) return { kind: 'motivo', text: 'Este atendimento ainda não tem link de confirmação.' };
+      if (!load.isLikelyValidWhatsAppPhone(patient.phone)) return { kind: 'motivo', text: `O cadastro de ${first} não tem um WhatsApp válido.` };
+      const members = await load.listClinicMembers();
+      const member = members.find(row => row.id === pending.professional_id);
+      const settings = await load.loadAgendaSettings(profile?.clinic_id).catch(() => null);
+      const message = load.buildConfirmationMessage({
+        appointment: pending,
+        patientName: patient.name,
+        professionalName: member ? shortName(member.full_name) : 'o profissional',
+        clinicName: profile?.clinic?.name || profile?.clinic_name || '',
+        clinicAddress: profile?.clinic?.address || '',
+        agendaSettings: settings?.settings || null,
+        origin: load.origin,
+      });
+      return { kind: 'whatsapp', href: load.buildWhatsAppLink({ phone: patient.phone, message }), label: `Abrir o WhatsApp com a confirmação para ${first} (você toca em Enviar)` };
+    }
+
+    if (acao.tipo === 'novo_agendamento') {
+      const members = await load.listClinicMembers();
+      const member = acao.profissional ? members.find(row => shortName(row.full_name) === acao.profissional) : null;
+      const { SERVICES_BY_AREA, APPOINTMENT_TYPES, isTypeAllowedInArea } = load.appointmentTypes;
+      const byLabel = [...(SERVICES_BY_AREA[entry.discipline] || []), ...APPOINTMENT_TYPES].find(item => item.label === acao.tipo_atendimento);
+      const type = byLabel && isTypeAllowedInArea(entry.discipline, byLabel.id) && AGENDA_TYPE_LABELS.includes(acao.tipo_atendimento) ? byLabel.id : '';
+      const draft = {
+        patientId: patient.id,
+        // O campo Paciente mostra o texto da busca: o nome vai junto (fica no aparelho).
+        patientName: patient.name,
+        discipline: entry.discipline || '',
+        professionalId: member?.id || '',
+        date: acao.dia || '',
+        time: acao.hora || '',
+        appointmentType: type,
+      };
+      return { kind: 'agenda', draft, label: `Abrir Novo agendamento preenchido para ${first} (você confere e salva)` };
+    }
+    return { kind: 'motivo', text: ACTION_MISSING };
+  } catch {
+    return { kind: 'motivo', text: 'Não foi possível preparar a ação agora. Faça pela Agenda.' };
+  }
 }

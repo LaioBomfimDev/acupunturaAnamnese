@@ -1080,8 +1080,9 @@ export const PATIENT_OUTSIDE = 'Paciente fora da sua lista';
 export const PATIENT_NEXT_MAX = 5;
 export const PATIENT_BIRTHDAY_MAX_DAYS = 31;
 export const PATIENT_KEYS = {
-  agenda_pacientes: { linha: ['dia', 'inicio', 'fim', 'paciente', 'idade', 'homonimo', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
-  proxima_sessao: { linha: ['paciente', 'idade', 'homonimo', 'dia', 'inicio', 'profissional', 'area', 'tipo_atendimento', 'sessao_numero', 'sessoes_total'], resumo: ['total'] },
+  // ACUP-027 (AG-10): `ref` = código curto da conversa (nunca id), para a IA apontar o atendimento numa ação.
+  agenda_pacientes: { linha: ['ref', 'dia', 'inicio', 'fim', 'paciente', 'idade', 'homonimo', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
+  proxima_sessao: { linha: ['ref', 'paciente', 'idade', 'homonimo', 'dia', 'inicio', 'profissional', 'area', 'tipo_atendimento', 'sessao_numero', 'sessoes_total'], resumo: ['total'] },
   faltosos: { linha: ['paciente', 'idade', 'homonimo', 'profissional', 'area', 'nao_compareceu', 'cancelado_paciente'], resumo: ['total'] },
   aniversariantes: { linha: ['paciente', 'idade', 'homonimo'], resumo: ['total'] },
 };
@@ -1150,7 +1151,8 @@ function readPatientLineFor(tipo, raw) {
   // FIN-7: primeiro nome só de letras; rótulo fixo só sem idade.
   if (idade === undefined || typeof line.paciente !== 'string' || (fixed ? idade !== null : !FINANCE_FIRST_NAME.test(line.paciente))
       || typeof line.homonimo !== 'boolean') return null;
-  const clean = { paciente: line.paciente, idade, homonimo: line.homonimo };
+  if (keys.includes('ref') && !(typeof line.ref === 'string' && ASSISTANT_REF.test(line.ref))) return null;
+  const clean = { paciente: line.paciente, idade, homonimo: line.homonimo, ...(keys.includes('ref') ? { ref: line.ref } : {}) };
   for (const key of keys) {
     if (key in clean) continue;
     const value = line[key];
@@ -1233,7 +1235,7 @@ function patientLimit(query, linhas, resumo) {
 }
 
 /** Agenda do período com paciente (só o que a Agenda do login mostra). */
-export function summarizeAgendaWithPatients({ consulta, appointments = [], patients = [], nameOf = () => '', today, patientIds = null }) {
+export function summarizeAgendaWithPatients({ consulta, appointments = [], patients = [], nameOf = () => '', today, patientIds = null, refOf = createRefRegistry().refFor }) {
   const query = patientQuery(readPatientConsulta(consulta));
   const visits = appointments.filter(item => item?.kind !== 'block' && (!patientIds || patientIds.has(item.patient_id)));
   const people = peopleOf(patients, today);
@@ -1248,6 +1250,7 @@ export function summarizeAgendaWithPatients({ consulta, appointments = [], patie
     bloqueios: patientIds ? 0 : appointments.length - visits.length,
   };
   const linhas = rows.map(row => ({
+    ref: refOf(row.item),
     dia: localDay(row.item.starts_at), inicio: localHour(row.item.starts_at), fim: localHour(row.item.ends_at || row.item.starts_at),
     ...who(row), profissional: nameOf(row.item.professional_id), area: areaOf(row.item.discipline),
     tipo_atendimento: appointmentTypeLabel(row.item.appointment_type, row.item.discipline), modalidade: modalityLabel(row.item.modality), status: statusLabel(row.item.status),
@@ -1256,7 +1259,7 @@ export function summarizeAgendaWithPatients({ consulta, appointments = [], patie
 }
 
 /** Próxima sessão: o primeiro atendimento Agendado de cada paciente; número pela regra de "Sessões do pacote". */
-export function summarizeNextSessions({ consulta, nexts = [], patients = [], nameOf = () => '', today }) {
+export function summarizeNextSessions({ consulta, nexts = [], patients = [], nameOf = () => '', today, refOf = createRefRegistry().refFor }) {
   const query = patientQuery(readPatientConsulta(consulta));
   const people = peopleOf(patients, today);
   const rows = nexts.map(next => ({ ...next, patientId: next.appointment.patient_id, professionalId: next.appointment.professional_id }));
@@ -1264,7 +1267,7 @@ export function summarizeNextSessions({ consulta, nexts = [], patients = [], nam
   const linhas = rows.map(row => {
     const summary = row.series ? summarizePackageSessions(row.series, { currentId: row.appointment.id, now: new Date(`${today}T00:00:00`) }) : null;
     return {
-      ...who(row), dia: localDay(row.appointment.starts_at), inicio: localHour(row.appointment.starts_at), profissional: nameOf(row.appointment.professional_id),
+      ref: refOf(row.appointment), ...who(row), dia: localDay(row.appointment.starts_at), inicio: localHour(row.appointment.starts_at), profissional: nameOf(row.appointment.professional_id),
       area: areaOf(row.appointment.discipline), tipo_atendimento: appointmentTypeLabel(row.appointment.appointment_type, row.appointment.discipline),
       sessao_numero: summary?.currentNumber ?? null, sessoes_total: summary ? summary.total || null : null,
     };
@@ -1314,4 +1317,68 @@ export function summarizeBirthdayPeople({ consulta, patients = [], today }) {
   const who = labelPatients(rows, people);
   const linhas = rows.map(row => who(row));
   return patientLimit(query, linhas, { total: linhas.length });
+}
+
+// ============================================================
+// ACUP-027 (AG-4, AG-10): ações que a assistente PREPARA e a pessoa decide.
+// A IA aponta o atendimento por `ref` (código curto da conversa, só na
+// memória da aba, nunca id); o aparelho resolve pelo próprio login. Uma
+// ação por resposta; nada é enviado, salvo, agendado ou cobrado sozinho.
+// ============================================================
+export const ASSISTANT_REF = /^r[0-9a-z]{3}$/;
+export const ASSISTANT_ACTIONS = ['confirmacao', 'novo_agendamento'];
+
+/**
+ * Ação pedida pela IA, limpa por lista fechada. `refs` (Edge) = os refs dos
+ * dados aceitos nesta chamada; ref fora deles, nenhuma ação. Profissional fora
+ * da EQUIPE, tipo fora da lista, dia ou hora inválidos ficam vazios: a pessoa
+ * escolhe, nunca um palpite. Lista (várias ações) = nenhuma.
+ */
+export function readAssistantAction(raw, { team = null, refs = null } = {}) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  if (!ASSISTANT_ACTIONS.includes(raw.tipo) || typeof raw.ref !== 'string' || !ASSISTANT_REF.test(raw.ref)) return null;
+  if (refs && !refs.includes(raw.ref)) return null;
+  if (raw.tipo === 'confirmacao') return { tipo: 'confirmacao', ref: raw.ref };
+  const profissional = typeof raw.profissional === 'string' ? financeName(raw.profissional).slice(0, 80) : '';
+  return {
+    tipo: 'novo_agendamento',
+    ref: raw.ref,
+    profissional: team && !team.includes(profissional) ? '' : profissional,
+    dia: financeDay(raw.dia),
+    hora: typeof raw.hora === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(raw.hora) ? raw.hora : '',
+    tipo_atendimento: AGENDA_TYPE_LABELS.includes(raw.tipo_atendimento) && raw.tipo_atendimento !== 'Sem tipo' ? raw.tipo_atendimento : '',
+  };
+}
+
+/** Refs dos dados aceitos (linhas de agenda_pacientes e proxima_sessao). */
+export function refsOf(consultados = []) {
+  return consultados.flatMap(item => (Array.isArray(item?.linhas) ? item.linhas : []))
+    .map(line => line?.ref).filter(ref => typeof ref === 'string' && ASSISTANT_REF.test(ref));
+}
+
+/**
+ * Tabela da conversa: ref → atendimento, só na memória da aba. Os códigos não
+ * significam nada fora dela e são recriados a cada conversa.
+ */
+export function createRefRegistry(random = Math.random) {
+  const byRef = new Map();
+  const byAppointment = new Map();
+  return {
+    refFor(appointment) {
+      if (byAppointment.has(appointment.id)) return byAppointment.get(appointment.id);
+      let ref;
+      do {
+        ref = `r${Math.floor(random() * 46656).toString(36).padStart(3, '0')}`;
+      } while (byRef.has(ref));
+      byRef.set(ref, {
+        appointmentId: appointment.id, patientId: appointment.patient_id, professionalId: appointment.professional_id,
+        discipline: appointment.discipline, startsAt: appointment.starts_at,
+      });
+      byAppointment.set(appointment.id, ref);
+      return ref;
+    },
+    resolve(ref) {
+      return typeof ref === 'string' && ASSISTANT_REF.test(ref) ? byRef.get(ref) || null : null;
+    },
+  };
 }

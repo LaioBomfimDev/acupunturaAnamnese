@@ -79,11 +79,20 @@ export function registerAssistantNavigator(handler) {
   };
 }
 
-/** Abre a tela (e, na Gestão ou no Financeiro, a aba `section`) pedida por um atalho. */
-export function openScreenFromAssistant(target, section = null) {
+/**
+ * Abre a tela (e, na Gestão ou no Financeiro, a aba `section`) pedida por um atalho.
+ * ACUP-027: `agendaDraft` abre o Novo agendamento preenchido (a pessoa confere e salva).
+ */
+export function openScreenFromAssistant(target, section = null, agendaDraft = null) {
   if (!navigator) return;
   setState({ open: false });
-  navigator(target, section);
+  navigator(target, section, agendaDraft);
+}
+
+/** ACUP-027: prepara a ação da resposta no aparelho (nada é enviado nem salvo). */
+export async function prepareActionFromAssistant(acao) {
+  const service = await loadService();
+  return service.prepareAssistantAction(acao, { profile: currentProfile });
 }
 
 let attentionLoadedAt = 0;
@@ -123,7 +132,7 @@ export async function sendAssistantMessage(text) {
       onStep: (step, round = 0) => setState({ sendingStep: step, sendingRound: round }),
     });
     setState(current => ({
-      messages: [...current.messages, { role: 'assistant', text: reply.answer, links: reply.links, ...(reply.financeiro === true ? { financeiro: true } : {}) }],
+      messages: [...current.messages, { role: 'assistant', text: reply.answer, links: reply.links, ...(reply.financeiro === true ? { financeiro: true } : {}), ...(reply.acao ? { acao: reply.acao } : {}) }],
       sending: false,
     }));
   } catch (error) {

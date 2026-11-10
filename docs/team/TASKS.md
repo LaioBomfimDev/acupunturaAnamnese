@@ -38,7 +38,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
 | ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | REVIEW no QA (38ebe07; vai ao ar com a 025) | ver abaixo |
 | ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |
-| ACUP-029 | Assistente: pacotes perto do fim e período grande demais | Codex LK | codex/lk | TODO (TASK na caixa; LK precisa abrir) | ver abaixo |
+| ACUP-029 | Assistente: pacotes perto do fim e período grande demais | Codex LK | codex/lk | BLOQUEADO (LK aberto sem escrita no .git; humana escolhe A/B no para-voce) | ver abaixo |
 
 Ordem: uma task por vez, 001 → 002 → 003 → 010 → 004 → 011 → 005 → 006 → 007 → 008 → 013 → 014 → 012; cada uma só começa depois do merge da anterior em `integracao` (antes de começar, o dev faz `git merge integracao` em `codex/lk` — autorizado). As migrations com `patient_id` (002, 004, 008) recriam `admin_decide_patient_deletion` em série, sempre a partir da versão de maior nome de arquivo (hoje `20261108d_aba_supervisao_formal.sql`, já em produção; esses 6 arquivos não se editam mais). Nomes: 002 `20261108_aba_plano_versionado.sql`, 010 `20261108a_aba_plano_ajustes.sql`, 011 `20261108ba_aba_perfil_ajustes.sql`, 004 `20261108b_aba_perfil_paciente.sql`, 006 `20261108c_aba_biblioteca_clinica.sql`, 008 `20261108d_aba_supervisao_formal.sql`.
 

@@ -260,11 +260,14 @@ export function resolvePrice(prices, { discipline, type = null, professionalId =
  * Parte de uma sessão de pacote: o que falta do valor ÷ as sessões que
  * faltam na previsão; a última prevista leva o resto. Passou do previsto:
  * 0 quando o pacote "não cobra", null quando a sessão vira avulsa.
+ * Avaliação neuropsicológica (kind 'assessment', 10/11/2026): o primeiro
+ * atendimento leva o valor inteiro, os outros saem sem valor.
  */
-export function packageShare({ totalCents, discountCents = 0, usedCents, done, planned, overPlan = 'free' }) {
+export function packageShare({ totalCents, discountCents = 0, usedCents, done, planned, overPlan = 'free', kind = 'closed' }) {
   if (done >= planned) return overPlan === 'free' ? 0 : null;
   const remaining = totalCents - discountCents - usedCents;
   if (remaining <= 0) return 0;
+  if (kind === 'assessment') return remaining;
   const left = planned - done;
   if (left <= 1) return remaining;
   return Math.floor(remaining / left);
@@ -290,6 +293,14 @@ export function simulateClosedPackage({ totalCents, planned, changeAfter = null,
  */
 export function packageSessionLabel(info) {
   if (!info) return '';
+  if (info.kind === 'assessment') {
+    // Anamnese + sessões liberadas + devolutiva, todos já pagos.
+    if (info.session != null) {
+      if (info.session > info.planned) return `${info.name}: atendimento ${info.session} (passou dos ${info.planned} liberados, sem cobrança)`;
+      return `${info.name}: atendimento ${info.session} de ${info.planned} liberados`;
+    }
+    return `${info.name}: ${info.done} de ${info.planned} ${info.planned === 1 ? 'atendimento liberado já feito' : 'atendimentos liberados já feitos'}`;
+  }
   const closed = info.kind === 'closed';
   if (info.session != null) {
     if (closed && info.session > info.planned) return `${info.name}: sessão ${info.session} (passou das ${info.planned} previstas)`;

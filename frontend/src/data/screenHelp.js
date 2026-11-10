@@ -825,23 +825,23 @@ export const FINANCEIRO_HELP = {
   },
   valores: {
     title: 'Valores dos atendimentos',
-    summary: 'Quanto custa cada atendimento, por área e pelos serviços daquela área: cada área mostra só os campos dos serviços dela (na Acupuntura, avaliação inicial, acupuntura, auriculoterapia, laserpuntura e ventosa; na Fisioterapia e na Psicologia, também Neuromodulação, Biomodulação vascular e e-ILIB; na ABA, visitas domiciliar e escolar).',
+    summary: 'Quanto custa cada atendimento: um cartão por área, com o valor padrão da sessão em destaque e, embaixo, só os serviços que têm valor próprio (na Acupuntura, auriculoterapia, laserpuntura e ventosa; na Fisioterapia e na Psicologia, neuromodulação e biomodulação vascular (e-ILIB); na ABA, visitas domiciliar e escolar). A Neuropsicologia tem um valor só para a avaliação completa.',
     actions: [
-      'Em “Valores da instituição”, preencher o valor padrão de cada área e só os serviços que custam diferente.',
+      'Em “Valores da instituição”, preencher o valor padrão da sessão de cada área e só os serviços que custam diferente.',
       'Escolher um profissional para dar a ele valores próprios: preencher só o que muda.',
       'Gravar em “Salvar valores”.',
     ],
     reading: [
-      'Campo vazio usa o valor padrão (o texto cinza diz qual). R$ 0 = aquele serviço não é cobrado.',
-      'Ordem de quem vale: tipo do profissional, tipo da instituição, padrão do profissional, padrão da instituição.',
-      '“Tipo anterior cadastrado”: um tipo que já tinha valor antes da lista por área. Continua valendo e pode ser editado ou apagado.',
-      'A linha “Pacotes” lembra a regra de cada área: “5% de desconto nos pacotes” na Acupuntura, “Pacotes sem desconto” na Psicologia e “Pacotes disponíveis” na Fisioterapia (total digitado, sem percentual definido).',
+      'Anamnese, avaliação, retorno e devolutiva não têm campo: usam o valor padrão da sessão da área.',
+      'Serviço vazio usa o valor da sessão (o texto cinza diz qual). R$ 0 = aquele serviço não é cobrado.',
+      'Ordem de quem vale: serviço do profissional, serviço da instituição, sessão do profissional, sessão da instituição.',
+      'Neuropsicologia: o primeiro atendimento (a anamnese) abre a avaliação e cobra o valor inteiro; as sessões liberadas (10 por padrão) já ficam pagas e a devolutiva Atendida encerra. Passou das liberadas: não cobra. Para liberar mais, Entradas → Pacotes → “Liberar sessões”.',
     ],
     access: ['Só a administração.'],
     notes: [
       'Valor novo vale para os atendimentos que virarem Atendido daqui para frente: o que já foi cobrado não muda.',
-      'Salvar grava todos os valores do escopo de uma vez, inclusive os de áreas que não estão na tela: se algum for recusado, nada muda.',
-      'O mesmo serviço aparece no campo “Tipo” da Agenda, com o nome da área.',
+      'Salvar grava os valores do escopo de uma vez: se algum for recusado, nada muda. Valor de um tipo que não aparece mais na tela é apagado.',
+      'Pacotes ficam em “Modelos de pacote”.',
     ],
   },
   modelos: {

@@ -315,7 +315,7 @@ export const AGENDA_KEYS: Record<string, { linha: string[]; resumo: string[] }> 
 };
 // Rótulos de frontend/src/utils/agenda.js e utils/appointmentTypes.js (o teste confere).
 export const AGENDA_STATUS_LABELS = ['Agendado', 'Atendido', 'Cancelado', 'Não compareceu', 'Cancelado pelo paciente'];
-export const AGENDA_TYPE_LABELS = ['Anamnese', 'Auriculoterapia', 'Avaliação', 'Avaliação inicial (anamnese)', 'Avaliação neuropsicológica', 'Avaliação psicológica', 'Biomodulação vascular', 'Devolutiva', 'e-ILIB', 'Entrevista', 'Laserpuntura', 'Neuromodulação', 'Primeira vez', 'Retorno', 'Sem tipo', 'Sessão', 'Sessão de acupuntura', 'Sessão de auriculoterapia', 'Sessão de laserpuntura', 'Sessão de ventosa', 'Ventosa', 'Visita domiciliar', 'Visita escolar'];
+export const AGENDA_TYPE_LABELS = ['Anamnese', 'Auriculoterapia', 'Avaliação', 'Avaliação inicial (anamnese)', 'Avaliação neuropsicológica', 'Avaliação psicológica', 'Biomodulação vascular', 'Biomodulação vascular (e-ILIB)', 'Devolutiva', 'e-ILIB', 'Entrevista', 'Laserpuntura', 'Neuromodulação', 'Primeira vez', 'Retorno', 'Sem tipo', 'Sessão', 'Sessão de acupuntura', 'Sessão de auriculoterapia', 'Sessão de laserpuntura', 'Sessão de ventosa', 'Ventosa', 'Visita domiciliar', 'Visita escolar'];
 export const AGENDA_MODALITIES = ['Presencial', 'Online', 'Não informada'];
 export const AGENDA_CRITERIA: Record<string, string> = {
   agenda: 'Atendimentos com início no período informado; bloqueios só entram na contagem.',

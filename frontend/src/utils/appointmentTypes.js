@@ -32,10 +32,13 @@ export const APPOINTMENT_TYPE_IDS = APPOINTMENT_TYPES.map(item => item.id);
 /** Tipos anteriores a 04/11/2026: seguem válidos em qualquer área. */
 export const GENERAL_APPOINTMENT_TYPE_IDS = ['first_visit', 'return', 'evaluation', 'anamnesis', 'session', 'feedback', 'interview'];
 
+// e-ILIB é a mesma biomodulação vascular (decisão da administradora,
+// 10/11/2026): um nome só, "Biomodulação vascular (e-ILIB)". O tipo
+// e_ilib segue aceito no banco (histórico), mas não é mais oferecido.
 const ADJUNCT_SERVICES = [
   { id: 'neuromodulation', label: 'Neuromodulação' },
-  { id: 'vascular_biomodulation', label: 'Biomodulação vascular' },
-  { id: 'e_ilib', label: 'e-ILIB' },
+  { id: 'vascular_biomodulation', label: 'Biomodulação vascular (e-ILIB)' },
+  { id: 'e_ilib', label: 'e-ILIB', retired: true },
 ];
 
 /** Serviços de cada área, com o nome daquela área ("anamnesis" e
@@ -93,8 +96,9 @@ export function appointmentTypeLabel(type, discipline = null) {
 /** Opções do campo "Tipo" da Agenda: os serviços da área primeiro, depois
  * os tipos gerais que a área ainda aceita. O tipo já gravado nunca some. */
 export function appointmentTypeGroups(discipline, current = '') {
-  const own = SERVICES_BY_AREA[discipline] || [];
-  const ownIds = new Set(own.map(service => service.id));
+  const all = SERVICES_BY_AREA[discipline] || [];
+  const ownIds = new Set(all.map(service => service.id));
+  const own = all.filter(service => !service.retired);
   const others = APPOINTMENT_TYPES
     .filter(item => !ownIds.has(item.id) && isTypeAllowedInArea(discipline, item.id))
     .map(item => ({ id: item.id, label: item.label }));

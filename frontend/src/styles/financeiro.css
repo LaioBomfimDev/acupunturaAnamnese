@@ -723,45 +723,142 @@
   color: var(--r1-text-subtle);
 }
 
-.fin-prices {
-  min-width: 720px;
+/* Valores (prévia B, 10/11/2026): um cartão por área. */
+.fin-value-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 14px;
 }
 
-.fin-area-pick {
-  display: none;
+.fin-value-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-lg);
+  background: var(--r1-surface);
 }
 
-@media (max-width: 1024px) {
-  .fin-area-pick {
-    display: flex;
-  }
+.fin-value-card--single {
+  border-color: var(--r1-accent-line);
 }
 
-.fin-prices td {
-  min-width: 132px;
+.fin-value-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.fin-prices .fin-money-input > span {
+.fin-value-tag {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.fin-value-main {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface-sunken);
+}
+
+.fin-value-card--single .fin-value-main {
+  background: var(--r1-accent-wash);
+}
+
+.fin-value-main-label,
+.fin-value-extras-title {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--r1-text-subtle);
+}
+
+.fin-value-extras-title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+
+.fin-value-extras {
+  display: grid;
+  gap: 0;
+}
+
+.fin-value-extra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 150px);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--r1-border-subtle);
+  font-size: 13.5px;
+}
+
+.fin-value-extras-title + .fin-value-extra {
+  margin-top: 6px;
+}
+
+.fin-value-card .fin-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fin-value-extra label {
+  display: grid;
+  gap: 2px;
+}
+
+.fin-value-extra-note {
+  font-size: 12px;
+  color: var(--r1-text-subtle);
+}
+
+.fin-value-single .fin-small-input {
+  justify-self: end;
+  width: 72px;
+  text-align: center;
+}
+
+.fin-cell--big input {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.fin-value-card .fin-money-input > span {
   flex: 0 0 auto;
   white-space: nowrap;
 }
 
-.fin-service-name {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 12.5px;
-  font-weight: 650;
-  line-height: 1.4;
-}
-
-.fin-cell-unavailable {
+.fin-value-empty,
+.fin-value-flow {
+  margin: 0;
+  font-size: 13px;
   color: var(--r1-text-subtle);
 }
 
-.fin-package-policy {
-  font-size: 12.5px;
+.fin-value-flow b {
+  color: var(--r1-text);
   font-weight: 650;
-  line-height: 1.5;
+}
+
+.fin-value-single {
+  display: grid;
+  gap: 8px;
+}
+
+.fin-value-single .fin-hint {
+  margin: 0;
 }
 
 .fin-package-pricing {
@@ -1025,27 +1122,10 @@
     display: none;
   }
 
-  /* Valores: no celular, uma área por vez (escolhida acima da tabela). */
-  .fin-prices {
-    min-width: 0;
-  }
-
-  .fin-prices .is-other-area,
-  .fin-prices .is-other-service {
-    display: none;
-  }
-
-  .fin-prices th,
-  .fin-prices td {
-    overflow-wrap: anywhere;
-  }
-
-  .fin-prices tbody th {
-    width: 40%;
-  }
-
-  .fin-prices td {
-    min-width: 0;
+  /* Valores: no celular o serviço fica em cima do campo. */
+  .fin-value-extra {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
   }
 
   .fin-dialog-overlay {

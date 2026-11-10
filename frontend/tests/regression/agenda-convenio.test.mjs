@@ -78,8 +78,10 @@ test('cobrança: recriada da versão mais nova, e nenhuma migration depois a rec
     const text = await readFile(path.join(MIGRATIONS, name), 'utf8');
     if (/CREATE OR REPLACE FUNCTION public\.finance_charge_appointment\(/.test(text)) recreating.push(name);
   }
-  assert.equal(recreating.at(-1), MIGRATION, 'a versão em vigor é a desta migration');
-  assert.deepEqual(recreating.slice(-2), ['20261023_financeiro_etapa1.sql', MIGRATION], 'parte de 20261023, a anterior');
+  // 10/11/2026: a avaliação neuropsicológica recria a partir desta
+  // (conferido em neuro-avaliacao-valor-unico.test.mjs).
+  assert.deepEqual(recreating.slice(-3), ['20261023_financeiro_etapa1.sql', MIGRATION, '20261110_neuro_avaliacao_valor_unico.sql'],
+    'parte de 20261023, a anterior; só a avaliação neuropsicológica veio depois');
 });
 
 test('cobrança: particular segue com todas as regras de 20261023', () => {

@@ -359,6 +359,11 @@ export async function sellPackage(input) {
   }, 'Não foi possível vender o pacote.');
 }
 
+/** Sessões liberadas por padrão na avaliação neuropsicológica (só administração). */
+export async function setNeuroSessions(sessions) {
+  return rpc('finance_set_neuro_sessions', { p_sessions: sessions }, 'Não foi possível salvar as sessões liberadas.');
+}
+
 export async function updatePackagePlan(packageId, sessionsPlanned) {
   return rpc('finance_update_package_plan', { p_package: packageId, p_sessions_planned: sessionsPlanned }, 'Não foi possível mudar a previsão.');
 }

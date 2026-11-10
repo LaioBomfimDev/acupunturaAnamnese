@@ -9,6 +9,7 @@ import {
   savePerson,
   savePrices,
   saveRecurring,
+  setNeuroSessions,
 } from '../../services/financeiroService';
 import {
   PAYOUT_BASIS,
@@ -29,14 +30,14 @@ import {
   simulateClosedPackage,
 } from '../../utils/finance';
 import {
-  FINANCE_PACKAGE_RULES,
   financePriceCells,
   financePriceKey as priceKey,
   financePricePayload,
-  financePriceRows,
   financePriceSignature,
   financeServiceLabel,
   financeServicesForArea,
+  financeValueCards,
+  financeVisiblePriceKeys,
 } from '../../utils/financeServices';
 import { typeAfterAreaChange } from '../../utils/appointmentTypes.js';
 import { AreaTag, EmptyNote, MoneyInput } from './FinanceFields';
@@ -134,6 +135,13 @@ function SettingsStrip({ fin }) {
 
 // ---------- Valores dos atendimentos ----------
 
+// Tela Valores (prévia B, 10/11/2026): um cartão por área. Cada cartão tem
+// o valor padrão da sessão em destaque (vale também para anamnese,
+// avaliação, retorno e devolutiva) e só os serviços com valor próprio.
+const ALL_AREA_IDS = DISCIPLINES.map(area => area.id);
+const NEURO_SESSIONS_DEFAULT = 10;
+const VISIBLE_PRICE_KEYS = financeVisiblePriceKeys(ALL_AREA_IDS);
+
 function PriceGrid({ fin, professional }) {
   const scopeId = professional?.id || null;
   const areas = professional
@@ -141,22 +149,30 @@ function PriceGrid({ fin, professional }) {
     : DISCIPLINES;
   const own = fin.data.prices.filter(row => (row.professional_id || null) === scopeId);
   const [cells, setCells] = useState(() => financePriceCells(own));
-  // Celular e tablet: uma área por vez (o CSS esconde as outras colunas).
-  const [mobileArea, setMobileArea] = useState(areas[0]?.id || '');
-  const otherArea = id => (areas.length > 1 && id !== mobileArea ? 'is-other-area' : undefined);
   const { busy, error, run } = useSaver(fin);
   const others = fin.data.prices.filter(row => (row.professional_id || null) !== scopeId);
+  // Sessões liberadas da avaliação neuropsicológica: da instituição.
+  const savedNeuroSessions = fin.data.settings?.neuro_sessions_included ?? NEURO_SESSIONS_DEFAULT;
+  const [neuroSessions, setNeuroSessionsInput] = useState(String(savedNeuroSessions));
+  const neuroNumber = Number.parseInt(neuroSessions, 10);
+  const neuroInvalid = !professional && !(neuroNumber >= 1 && neuroNumber <= 98);
+  const neuroDirty = !professional && !neuroInvalid && neuroNumber !== savedNeuroSessions;
 
-  const rows = financePriceRows(areas.map(area => area.id), fin.data.prices.filter(row => !row.professional_id || row.professional_id === scopeId));
-  const invalid = Object.entries(cells).filter(([, text]) => text.trim() && parseBRLInput(text) == null).map(([key]) => key);
-  const dirty = financePriceSignature(cells) !== financePriceSignature(financePriceCells(own));
+  const cards = financeValueCards(areas.map(area => area.id));
+  const invalid = Object.entries(cells)
+    .filter(([key, text]) => VISIBLE_PRICE_KEYS.has(key) && text.trim() && parseBRLInput(text) == null)
+    .map(([key]) => key);
+  // Valor gravado em tipo que saiu da tela também conta como mudança:
+  // salvar é o que o apaga.
+  const pricesDirty = financePriceSignature(cells, VISIBLE_PRICE_KEYS) !== financePriceSignature(financePriceCells(own));
+  const dirty = pricesDirty || neuroDirty;
 
   function inherited(discipline, type) {
     // O que valeria sem esta célula: o resto da tabela, sem ela.
     const withoutCell = [
       ...others,
       ...Object.entries(cells)
-        .filter(([key, text]) => key !== priceKey(discipline, type) && parseBRLInput(text) != null)
+        .filter(([key, text]) => key !== priceKey(discipline, type) && VISIBLE_PRICE_KEYS.has(key) && parseBRLInput(text) != null)
         .map(([key, text]) => {
           const [area, rowType] = key.split(':');
           return { discipline: area, appointment_type: rowType || null, professional_id: scopeId, price_cents: parseBRLInput(text) };
@@ -166,8 +182,34 @@ function PriceGrid({ fin, professional }) {
   }
 
   function save() {
-    const payload = financePricePayload(cells);
-    run(() => savePrices(scopeId, payload), professional ? `Valores de ${professional.full_name} salvos.` : 'Valores da instituição salvos.');
+    const payload = financePricePayload(cells, VISIBLE_PRICE_KEYS);
+    run(async () => {
+      if (pricesDirty) await savePrices(scopeId, payload);
+      if (neuroDirty) await setNeuroSessions(neuroNumber);
+    }, professional ? `Valores de ${professional.full_name} salvos.` : 'Valores da instituição salvos.');
+  }
+
+  function priceField(area, type, label, { big = false, disabled = false } = {}) {
+    const key = priceKey(area, type);
+    const text = cells[key] ?? '';
+    const fallback = inherited(area, type || null);
+    const fromInstitution = professional && fallback.source?.startsWith('inst');
+    const placeholder = fallback.cents == null
+      ? (type ? 'valor da sessão' : 'sem valor')
+      : `${fromInstitution ? 'instituição' : 'sessão'} ${formatBRL(fallback.cents)}`;
+    return (
+      <span className={`fin-cell${big ? ' fin-cell--big' : ''}${text.trim() ? ' fin-cell--set' : ''}${professional && text.trim() ? ' fin-cell--own' : ''}${invalid.includes(key) ? ' fin-cell--invalid' : ''}`}>
+        <MoneyInput
+          id={`fin-price-${scopeId || 'inst'}-${key}`}
+          value={text}
+          placeholder={placeholder}
+          ariaLabel={`${label}, ${getDiscipline(area)?.label || area}`}
+          disabled={busy || disabled}
+          onChange={value => setCells(current => ({ ...current, [key]: value }))}
+        />
+        {text.trim() && parseBRLInput(text) === 0 && <small className="fin-cell-note">não cobra</small>}
+      </span>
+    );
   }
 
   if (professional && areas.length === 0) {
@@ -176,69 +218,63 @@ function PriceGrid({ fin, professional }) {
 
   return (
     <div className="fin-card">
-      {areas.length > 1 && (
-        <div className="fin-choices fin-area-pick" role="group" aria-label="Área">
-          {areas.map(area => (
-            <button key={area.id} type="button" className="fin-choice" aria-pressed={mobileArea === area.id} onClick={() => setMobileArea(area.id)}>{area.label}</button>
-          ))}
-        </div>
-      )}
-      <div className="fin-table-scroll">
-        <table className="fin-table fin-prices">
-          <thead>
-            <tr>
-              <th scope="col">Tipo</th>
-              {areas.map(area => <th key={area.id} scope="col" className={otherArea(area.id)}><AreaTag discipline={area.id} /></th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(row => (
-              <tr key={row.id || 'padrao'} className={!row.services[mobileArea] ? 'is-other-service' : undefined}>
-                <th scope="row">{row.label}</th>
-                {areas.map(area => {
-                  const service = row.services[area.id];
-                  if (!service) return <td key={area.id} className={otherArea(area.id)}><span className="fin-cell-unavailable" aria-label={`Não se aplica a ${area.label}`}>—</span></td>;
-                  const key = priceKey(area.id, row.id);
-                  const text = cells[key] ?? '';
-                  const fallback = inherited(area.id, row.id || null);
-                  const placeholder = fallback.cents == null
-                    ? (row.id ? 'padrão' : 'sem valor')
-                    : `${fallback.source?.startsWith('inst') && professional ? 'instituição' : 'padrão'} ${formatBRL(fallback.cents)}`;
-                  return (
-                    <td key={area.id} className={otherArea(area.id)}>
-                      {service.label !== row.label && <span className="fin-service-name">{service.label}</span>}
-                      {service.legacy && <small className="fin-cell-note">Tipo anterior cadastrado</small>}
-                      <span className={`fin-cell${text.trim() ? ' fin-cell--set' : ''}${professional && text.trim() ? ' fin-cell--own' : ''}${invalid.includes(key) ? ' fin-cell--invalid' : ''}`}>
-                        <MoneyInput
-                          id={`fin-price-${scopeId || 'inst'}-${key}`}
-                          value={text}
-                          placeholder={placeholder}
-                          ariaLabel={`${service.label}, ${area.label}`}
-                          disabled={busy}
-                          onChange={value => setCells(current => ({ ...current, [key]: value }))}
-                        />
-                      </span>
-                      {text.trim() && parseBRLInput(text) === 0 && <small className="fin-cell-note">não cobra</small>}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-            <tr className={!FINANCE_PACKAGE_RULES[mobileArea] ? 'is-other-service' : undefined}>
-              <th scope="row">Pacotes</th>
-              {areas.map(area => <td key={area.id} className={otherArea(area.id)}><span className="fin-package-policy">{FINANCE_PACKAGE_RULES[area.id]?.label || '—'}</span></td>)}
-            </tr>
-          </tbody>
-        </table>
+      <div className="fin-value-cards">
+        {cards.map(card => (
+          <article key={card.area} className={`fin-value-card${card.single ? ' fin-value-card--single' : ''}`} aria-labelledby={`fin-vc-${card.area}`}>
+            <header className="fin-value-card-head" id={`fin-vc-${card.area}`}>
+              <AreaTag discipline={card.area} />
+              {card.single && <span className="fin-value-tag">Valor único</span>}
+            </header>
+            <div className="fin-value-main">
+              <span className="fin-value-main-label">{card.mainLabel}</span>
+              {priceField(card.area, '', card.mainLabel, { big: true })}
+            </div>
+            {card.single ? (
+              <div className="fin-value-single">
+                <div className="fin-value-extra">
+                  <label htmlFor={`fin-neuro-sessions-${scopeId || 'inst'}`}>
+                    Sessões liberadas
+                    <small className="fin-value-extra-note">entre a anamnese e a devolutiva{professional ? ', da instituição' : ''}</small>
+                  </label>
+                  <input
+                    id={`fin-neuro-sessions-${scopeId || 'inst'}`}
+                    className={`gt-select fin-small-input${neuroInvalid ? ' fin-cell--invalid' : ''}`}
+                    inputMode="numeric"
+                    value={professional ? String(savedNeuroSessions) : neuroSessions}
+                    disabled={busy || Boolean(professional)}
+                    onChange={event => setNeuroSessionsInput(event.target.value.replace(/\D/g, ''))}
+                  />
+                </div>
+                <p className="fin-value-flow">
+                  <b>Anamnese</b> cobra o valor todo <span aria-hidden="true">→</span> <b>sessões</b> já pagas <span aria-hidden="true">→</span> <b>devolutiva</b> finaliza
+                </p>
+                <p className="fin-hint">Precisou de mais sessões? Em Entradas → Pacotes, na avaliação do paciente, use “Liberar sessões”: continuam pagas.</p>
+              </div>
+            ) : card.extras.length > 0 ? (
+              <div className="fin-value-extras">
+                <span className="fin-value-extras-title">Serviços com valor próprio</span>
+                {card.extras.map(service => (
+                  <div key={service.id} className="fin-value-extra">
+                    <span>{service.label.replace(/^Sessão de /, '').replace(/^./, letter => letter.toUpperCase())}</span>
+                    {priceField(card.area, service.id, service.label)}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="fin-value-empty">Sem outros serviços: todo atendimento usa o valor da sessão.</p>
+            )}
+          </article>
+        ))}
       </div>
       <p className="fin-hint">
-        Campo vazio usa o valor padrão da área{professional ? ' (o da pessoa, se tiver; senão, o da instituição)' : ''}. R$ 0 quer dizer que aquele tipo não é cobrado.
-        {professional ? ' Preencha só o que é diferente da instituição.' : ''} Valor novo vale para os atendimentos que virarem Atendido daqui para frente.
+        Anamnese, avaliação, retorno e devolutiva usam o valor padrão da sessão. Serviço vazio também usa o valor da sessão{professional ? '; o da pessoa, se tiver, senão o da instituição' : ''}. R$ 0 quer dizer que não é cobrado.
+        {professional ? ' Preencha só o que é diferente da instituição.' : ''} Valor novo vale para os atendimentos que virarem Atendido daqui para frente. Pacotes ficam em Modelos de pacote.
       </p>
       {invalid.length > 0 && <p className="fin-hint fin-hint--warn">Algum valor não está no formato certo (ex.: 150 ou 133,33).</p>}
+      {neuroInvalid && <p className="fin-hint fin-hint--warn">Sessões liberadas: de 1 a 98.</p>}
       <ErrorLine error={error} />
       <div className="fin-actions">
-        <button type="button" className="gt-btn gt-btn--primary" disabled={busy || invalid.length > 0 || !dirty} onClick={save}>
+        <button type="button" className="gt-btn gt-btn--primary" disabled={busy || invalid.length > 0 || neuroInvalid || !dirty} onClick={save}>
           {busy ? 'Salvando…' : 'Salvar valores'}
         </button>
       </div>

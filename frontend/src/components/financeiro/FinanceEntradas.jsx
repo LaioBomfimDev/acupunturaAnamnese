@@ -499,6 +499,9 @@ function PackageCard({ fin, pkg, onVoid }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const progress = Math.min(100, Math.round((sessions.length / pkg.sessions_planned) * 100));
+  // Avaliação neuropsicológica: anamnese + sessões liberadas + devolutiva.
+  const assessment = pkg.kind === 'assessment';
+  const unit = assessment ? 'atendimentos' : 'sessões';
   const planLabel = pkg.payment_plan === 'installments'
     ? `Parcelado em ${pkg.installments} vezes`
     : labelOf(PAYMENT_PLANS, pkg.payment_plan);
@@ -529,11 +532,13 @@ function PackageCard({ fin, pkg, onVoid }) {
           {pkg.status === 'active' ? 'Ativo' : pkg.status === 'completed' ? 'Encerrado' : 'Anulado'}
         </span>
       </header>
-      <div className="fin-progress" role="img" aria-label={`${sessions.length} de ${pkg.sessions_planned} sessões`}>
+      <div className="fin-progress" role="img" aria-label={`${sessions.length} de ${pkg.sessions_planned} ${unit}`}>
         <i style={{ width: `${progress}%` }} />
       </div>
       <dl className="fin-package-facts">
-        <div><dt>Sessões</dt><dd>{sessions.length} de {pkg.sessions_planned}{pkg.kind === 'closed' ? ' previstas' : ''}</dd></div>
+        {assessment
+          ? <div><dt>Atendimentos</dt><dd>{sessions.length} de {pkg.sessions_planned} liberados <small>(anamnese + {Math.max(pkg.sessions_planned - 2, 0)} sessões + devolutiva)</small></dd></div>
+          : <div><dt>Sessões</dt><dd>{sessions.length} de {pkg.sessions_planned}{pkg.kind === 'closed' ? ' previstas' : ''}</dd></div>}
         <div><dt>Valor</dt><dd className="fin-num">{formatBRL(total)}{pkg.discount_cents > 0 && <small> (desconto {formatBRL(pkg.discount_cents)})</small>}</dd></div>
         <div><dt>Pago</dt><dd className="fin-num">{formatBRL(paid)}</dd></div>
         <div><dt>Pagamento</dt><dd>{planLabel}</dd></div>
@@ -542,22 +547,27 @@ function PackageCard({ fin, pkg, onVoid }) {
       {pkg.status === 'voided' && <p className="fin-void-reason">Anulado: {pkg.void_reason}</p>}
       {pkg.status === 'active' && (
         <div className="fin-package-actions">
-          {pkg.kind === 'closed' && (
+          {(pkg.kind === 'closed' || assessment) && (
             <span className="fin-inline">
-              <label htmlFor={`fin-plan-${pkg.id}`}>Previstas</label>
+              <label htmlFor={`fin-plan-${pkg.id}`}>{assessment ? 'Liberados' : 'Previstas'}</label>
               <input id={`fin-plan-${pkg.id}`} className="gt-select fin-small-input" inputMode="numeric" value={planInput} onChange={event => setPlanInput(event.target.value.replace(/\D/g, ''))} />
               <button
                 type="button"
                 className="gt-btn gt-btn--sm"
                 disabled={busy || Number(planInput) === pkg.sessions_planned || !Number(planInput)}
-                onClick={() => run(() => updatePackagePlan(pkg.id, Number(planInput)), `Previsão mudou para ${planInput} sessões. As próximas sessões já usam a conta nova.`)}
+                onClick={() => run(
+                  () => updatePackagePlan(pkg.id, Number(planInput)),
+                  assessment
+                    ? `Avaliação com ${planInput} atendimentos liberados, todos já pagos.`
+                    : `Previsão mudou para ${planInput} sessões. As próximas sessões já usam a conta nova.`,
+                )}
               >
-                Mudar previsão
+                {assessment ? 'Liberar sessões' : 'Mudar previsão'}
               </button>
             </span>
           )}
           {!closing ? (
-            <button type="button" className="gt-btn gt-btn--sm" onClick={() => setClosing(true)} disabled={busy}>Encerrar pacote</button>
+            <button type="button" className="gt-btn gt-btn--sm" onClick={() => setClosing(true)} disabled={busy}>{assessment ? 'Encerrar avaliação' : 'Encerrar pacote'}</button>
           ) : (
             <span className="fin-inline fin-closing">
               {rest > 0 ? <span>Faltam {formatBRL(rest)} do valor:</span> : <span>O valor já foi todo usado.</span>}
@@ -609,7 +619,7 @@ export function Pacotes({ fin }) {
         </div>
         <button type="button" className="gt-btn gt-btn--primary" onClick={() => setSelling(true)}>+ Vender pacote</button>
       </div>
-      <p className="fin-hint">A sessão entra no pacote sozinha: mesmo paciente, mesma área e um tipo que o pacote cobre. Falta não gasta sessão.</p>
+      <p className="fin-hint">A sessão entra no pacote sozinha: mesmo paciente, mesma área e um tipo que o pacote cobre. Falta não gasta sessão. A avaliação neuropsicológica abre sozinha no primeiro atendimento, quando há valor da avaliação em Valores.</p>
       {list.length === 0 ? <EmptyNote>{PACKAGE_FILTERS.find(option => option.id === filter).empty}</EmptyNote> : (
         <div className="fin-packages">
           {list.map(pkg => <PackageCard key={pkg.id} fin={fin} pkg={pkg} onVoid={setVoiding} />)}

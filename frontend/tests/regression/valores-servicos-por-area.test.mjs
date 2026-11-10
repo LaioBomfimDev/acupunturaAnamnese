@@ -198,9 +198,9 @@ test('validação SQL em transação com ROLLBACK cobre os cenários pedidos', a
 
 test('ajuda e assistente explicam os serviços por área', async () => {
   const text = JSON.stringify([FINANCEIRO_HELP.valores, FINANCEIRO_HELP.modelos]);
-  for (const piece of ['Tipo anterior cadastrado', 'auriculoterapia', 'e-ILIB', 'Calcular com 5% de desconto', 'nada muda']) {
+  for (const piece of ['valor padrão da sessão', 'auriculoterapia', 'biomodulação vascular (e-ILIB)', 'Calcular com 5% de desconto', 'nada muda']) {
     assert.ok(text.includes(piece), `ajuda sem "${piece}"`);
   }
   const corpus = await read('../supabase/functions/_shared/assistantHelpCorpus.ts');
-  assert.ok(corpus.includes('Tipo anterior cadastrado'), 'rode node frontend/scripts/sync-assistant-help.mjs');
+  assert.ok(corpus.includes('Anamnese, avaliação, retorno e devolutiva não têm campo'), 'rode node frontend/scripts/sync-assistant-help.mjs');
 });

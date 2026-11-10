@@ -425,6 +425,39 @@ export async function settleRecurring({ recurringId, occurrenceOn, skip = false,
   }, 'Não foi possível registrar o pagamento.');
 }
 
+// ---------- gasto rápido (20261110b): administração e recepção ----------
+
+/** Lança o gasto já pago; o banco dá o número do comprovante. */
+export async function registerQuickExpense({ description, amountCents, paidOn, method, paidBy = null }) {
+  return rpc('finance_register_quick_expense', {
+    p_description: description,
+    p_amount_cents: amountCents,
+    p_paid_on: paidOn,
+    p_method: method,
+    p_paid_by: paidBy || null,
+  }, 'Não foi possível lançar o gasto.');
+}
+
+/** Gastos rápidos de todos no período, com o nome de quem pagou e de quem lançou. */
+export async function listQuickExpenses(from, to) {
+  const rows = await rpc('finance_list_quick_expenses', { p_from: from, p_to: to }, 'Não foi possível carregar os gastos rápidos.');
+  return (rows || []).map(row => ({
+    id: row.expense_id,
+    paid_on: row.paid_on,
+    description: row.description,
+    amount_cents: row.amount_cents,
+    method: row.method,
+    receipt_number: row.receipt_number,
+    paid_by: row.paid_by,
+    paid_by_name: row.paid_by_name,
+    recorded_by_name: row.recorded_by_name,
+    created_at: row.created_at,
+    voided_at: row.voided_at,
+    void_reason: row.void_reason,
+    is_quick: true,
+  }));
+}
+
 export async function voidExpense(expenseId, reason) {
   return rpc('finance_void_expense', { p_expense: expenseId, p_reason: reason }, 'Não foi possível anular a saída.');
 }

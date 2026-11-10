@@ -178,6 +178,7 @@ export function HomeConsole({
   onOpenAgenda, onOpenPendingEvolutions, onOpenGestao, onOpenClinicPatients, onOpenDocuments, onOpenBirthdays,
   onOpenScales = null,
   onOpenFinance = null,
+  onOpenQuickExpenses = null,
   pendingEvolutionsCount = 0,
   onOpenInstrumentAlert = null,
 }) {
@@ -252,6 +253,12 @@ export function HomeConsole({
   }, [variant, profile?.id, isFrontDeskView]);
 
   const mobileShortcuts = [
+    onOpenQuickExpenses && {
+      id: 'gastos',
+      title: 'Gastos rápidos',
+      text: 'Água, lanche, almoço do time, conserto: lance o gasto e imprima o comprovante.',
+      onClick: onOpenQuickExpenses,
+    },
     onOpenFinance && {
       id: 'financeiro',
       title: 'Financeiro',
@@ -343,6 +350,14 @@ export function HomeConsole({
                 title="Financeiro"
                 description="A receber, recebidos, pacotes, a pagar e repasses da equipe."
                 onClick={onOpenFinance}
+              />
+            )}
+            {onOpenQuickExpenses && (
+              <NavItem
+                icon="financeiro"
+                title="Gastos rápidos"
+                description="Água, lanche, almoço do time, conserto: lance o gasto e imprima o comprovante."
+                onClick={onOpenQuickExpenses}
               />
             )}
             {onOpenClinicPatients && (

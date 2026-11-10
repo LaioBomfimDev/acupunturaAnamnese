@@ -35,6 +35,18 @@ export const PAYMENT_METHODS = [
   { id: 'outro', label: 'Outro' },
 ];
 
+// Saída (conta, gasto rápido, compra) aceita também Transferência e Boleto
+// (20261110b, CHECK finance_expenses_method_check). Mudou um, muda o outro.
+export const EXPENSE_METHODS = [
+  { id: 'pix', label: 'Pix' },
+  { id: 'dinheiro', label: 'Dinheiro' },
+  { id: 'transferencia', label: 'Transferência' },
+  { id: 'boleto', label: 'Boleto' },
+  { id: 'cartao_debito', label: 'Cartão de débito' },
+  { id: 'cartao_credito', label: 'Cartão de crédito' },
+  { id: 'outro', label: 'Outro' },
+];
+
 // Catálogo único em utils/appointmentTypes.js (Agenda, Financeiro e
 // Convênios leem o mesmo).
 export const FINANCE_APPOINTMENT_TYPES = APPOINTMENT_TYPES;
@@ -73,8 +85,10 @@ export function labelOf(list, id) {
 
 export function methodLabel(id) {
   const convenio = CONVENIO_PAYMENT_METHODS.find(row => row.id === id);
-  if (convenio && !PAYMENT_METHODS.some(row => row.id === id)) return `${convenio.label} da operadora`;
-  return labelOf(PAYMENT_METHODS, id) || 'Outro';
+  // Boleto da saída não é o da operadora: só o que a saída não tem (TED,
+  // depósito) leva "da operadora".
+  if (convenio && !EXPENSE_METHODS.some(row => row.id === id)) return `${convenio.label} da operadora`;
+  return labelOf(EXPENSE_METHODS, id) || 'Outro';
 }
 
 /** Com a área, o nome daquela área ("Avaliação psicológica"). */
@@ -752,6 +766,142 @@ export function buildPayables({ recurring = [], expenses = [], startsOn, until, 
   for (const item of items) item.late = item.kind !== 'payout' && Boolean(today) && item.dueOn < today;
   items.sort((a, b) => (a.late === b.late ? 0 : a.late ? -1 : 1) || a.dueOn.localeCompare(b.dueOn));
   return items;
+}
+
+// ---------- Contas do mês (20261110b, opção A) ----------
+
+/**
+ * Lista de partida da planilha da clínica (10/11/2026), na ordem dela,
+ * com a categoria padrão mais próxima (finance_ensure_defaults). Nada de
+ * valor nem dia: quem preenche é a administração.
+ */
+export const FIXED_BILL_TEMPLATE = [
+  { name: 'Aluguel', category: 'Aluguel' },
+  { name: 'Energia elétrica', category: 'Contas de consumo', varies: true },
+  { name: 'Água', category: 'Contas de consumo', varies: true },
+  { name: 'Internet', category: 'Contas de consumo' },
+  { name: 'Telefone', category: 'Contas de consumo' },
+  { name: 'Sistema de gestão', category: 'Outros' },
+  { name: 'Contabilidade', category: 'Outros' },
+  { name: 'Salários e encargos', category: 'Salários e diárias' },
+  { name: 'Pagamento dos terapeutas', category: 'Salários e diárias', off: true },
+  { name: 'Materiais de escritório', category: 'Material', varies: true },
+  { name: 'Materiais terapêuticos', category: 'Material', varies: true },
+  { name: 'Produtos de limpeza', category: 'Material', varies: true },
+  { name: 'Manutenção de equipamentos', category: 'Manutenção', varies: true },
+  { name: 'Marketing e publicidade', category: 'Outros' },
+  { name: 'Impostos e taxas', category: 'Impostos e taxas', varies: true },
+  { name: 'Outras despesas', category: 'Outros', varies: true },
+];
+
+/** Saída fixa cujo valor muda (com previsão ou sem valor). */
+export function recurringVaries(rec) {
+  return Boolean(rec?.amount_varies) || rec?.amount_cents == null;
+}
+
+const BILL_GROUPS = ['late', 'today', 'upcoming', 'paid', 'skipped'];
+
+/**
+ * Contas do mês: cada vencimento de saída fixa do mês (pago, "não houve"
+ * ou em aberto) e cada saída lançada "a pagar" que vence no mês, em
+ * grupos por situação. Conta pela data do serviço: o vencimento da conta
+ * fixa é o mês dela, mesmo paga em outro mês. Gasto rápido e compra
+ * contam pelo dia em que foram pagos.
+ */
+export function buildMonthBills({ recurring = [], expenses = [], month, today, startsOn = null }) {
+  const live = expenses.filter(row => !row.voided_at);
+  const settled = new Map(live.filter(row => row.recurring_id).map(row => [`${row.recurring_id}:${row.occurrence_on}`, row]));
+  const items = [];
+  const seen = new Set();
+
+  for (const rec of recurring) {
+    const from = [month.from, startsOn, rec.starts_on].filter(Boolean).sort().pop();
+    for (const day of recurringOccurrences({ ...rec, active: true }, from, month.to)) {
+      const key = `${rec.id}:${day}`;
+      const expense = settled.get(key) || null;
+      // Saída fixa desativada só aparece no que já foi pago ou marcado.
+      if (rec.active === false && !expense) continue;
+      seen.add(key);
+      items.push(billItem({ rec, day, expense, today }));
+    }
+  }
+  // Vencimento pago numa data que o cadastro não gera mais (dia mudou).
+  for (const [key, expense] of settled) {
+    if (seen.has(key) || !inRange(expense.occurrence_on, month)) continue;
+    const rec = recurring.find(row => row.id === expense.recurring_id) || null;
+    items.push(billItem({ rec, day: expense.occurrence_on, expense, today }));
+  }
+  for (const row of live) {
+    if (row.recurring_id || row.paid_on || row.skipped || !row.due_on || !inRange(row.due_on, month)) continue;
+    items.push({
+      key: `pending:${row.id}`,
+      kind: 'pending',
+      expenseId: row.id,
+      dueOn: row.due_on,
+      description: row.description,
+      categoryId: row.category_id,
+      plannedCents: row.amount_cents,
+      amountCents: row.amount_cents,
+      varies: false,
+      status: dueStatus(row.due_on, today),
+      expense: null,
+    });
+  }
+
+  items.sort((a, b) => a.dueOn.localeCompare(b.dueOn) || a.description.localeCompare(b.description, 'pt-BR'));
+  const groups = Object.fromEntries(BILL_GROUPS.map(id => [id, items.filter(item => item.status === id)]));
+  const sum = list => list.reduce((total, item) => total + (item.amountCents || 0), 0);
+  const open = [...groups.late, ...groups.today, ...groups.upcoming];
+
+  const oneOff = live.filter(row => !row.recurring_id && !row.skipped && row.paid_on && inRange(row.paid_on, month));
+  const quick = expenses
+    .filter(row => (row.is_quick || row.is_purchase) && row.paid_on && inRange(row.paid_on, month))
+    .sort((a, b) => b.paid_on.localeCompare(a.paid_on) || String(b.created_at).localeCompare(String(a.created_at)));
+  const quickCents = quick.filter(row => !row.voided_at).reduce((total, row) => total + row.amount_cents, 0);
+
+  const fixedCents = sum(items.filter(item => item.kind === 'recurring' && item.status !== 'skipped'));
+  const paidCents = sum(groups.paid) + oneOff.reduce((total, row) => total + row.amount_cents, 0);
+  const openCents = sum(open);
+  return {
+    items,
+    groups,
+    groupCents: Object.fromEntries(BILL_GROUPS.map(id => [id, sum(groups[id])])),
+    quick,
+    fixedCents,
+    quickCents,
+    paidCents,
+    openCents,
+    openWithoutAmount: open.filter(item => item.amountCents == null).length,
+    paidPercent: paidCents + openCents > 0 ? Math.round((paidCents / (paidCents + openCents)) * 100) : 0,
+  };
+}
+
+function dueStatus(dueOn, today) {
+  if (!today) return 'upcoming';
+  if (dueOn < today) return 'late';
+  return dueOn === today ? 'today' : 'upcoming';
+}
+
+function billItem({ rec, day, expense, today }) {
+  const status = expense ? (expense.skipped ? 'skipped' : 'paid') : dueStatus(day, today);
+  const plannedCents = rec?.amount_cents ?? null;
+  return {
+    key: `recurring:${rec?.id || expense?.recurring_id}:${day}`,
+    kind: 'recurring',
+    recurringId: rec?.id || expense?.recurring_id,
+    occurrenceOn: day,
+    dueOn: day,
+    description: rec?.description || expense?.description || 'Saída fixa',
+    categoryId: rec?.category_id || expense?.category_id,
+    professionalId: rec?.professional_id || null,
+    personId: rec?.person_id || null,
+    plannedCents,
+    // Pago: o que saiu de verdade. Em aberto: a previsão (ou nada).
+    amountCents: expense ? (expense.skipped ? 0 : expense.amount_cents) : plannedCents,
+    varies: recurringVaries(rec),
+    status,
+    expense,
+  };
 }
 
 // ---------- resumo do mês ----------

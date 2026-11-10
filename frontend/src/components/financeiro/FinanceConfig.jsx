@@ -860,12 +860,12 @@ export function RecebimentoConfig({ fin }) {
 const EMPTY_RECURRING = { description: '', category_id: '', amount: '', varies: false, frequency: 'monthly', day: '5', weekday: '5', starts_on: '' };
 
 function RecurringForm({ fin, rec, onDone }) {
-  const categories = fin.data.categories.filter(row => row.active);
+  const categories = fin.data.categories.filter(row => row.active && row.system_key !== 'avulsa');
   const [form, setForm] = useState(() => (rec ? {
     description: rec.description,
     category_id: rec.category_id,
     amount: centsToInput(rec.amount_cents),
-    varies: rec.amount_cents == null,
+    varies: Boolean(rec.amount_varies) || rec.amount_cents == null,
     frequency: rec.frequency,
     day: rec.day_of_month != null ? String(rec.day_of_month) : '5',
     weekday: rec.weekday != null ? String(rec.weekday) : '5',
@@ -873,8 +873,11 @@ function RecurringForm({ fin, rec, onDone }) {
   } : { ...EMPTY_RECURRING, category_id: categories.find(row => !row.system_key)?.id || '', starts_on: fin.data.settings?.starts_on || fin.today }));
   const { busy, error, run } = useSaver(fin);
   const set = patch => setForm(value => ({ ...value, ...patch }));
-  const cents = form.varies ? null : parseBRLInput(form.amount);
-  const valid = form.description.trim() && form.category_id && (form.varies || cents > 0) && form.starts_on
+  // Valor que muda (luz, água): o valor, se houver, é a previsão (20261110b).
+  const typed = parseBRLInput(form.amount);
+  const cents = form.varies ? (typed > 0 ? typed : null) : typed;
+  const amountOk = form.varies ? (!form.amount.trim() || typed > 0) : cents > 0;
+  const valid = form.description.trim() && form.category_id && amountOk && form.starts_on
     && (form.frequency !== 'monthly' || (Number(form.day) >= 1 && Number(form.day) <= 31));
 
   function save() {
@@ -883,6 +886,7 @@ function RecurringForm({ fin, rec, onDone }) {
       description: form.description.trim(),
       category_id: form.category_id,
       amount_cents: cents,
+      amount_varies: form.varies,
       frequency: form.frequency,
       day_of_month: form.frequency === 'monthly' ? Number(form.day) : null,
       weekday: form.frequency === 'monthly' ? null : Number(form.weekday),
@@ -905,8 +909,8 @@ function RecurringForm({ fin, rec, onDone }) {
           </select>
         </label>
         <label className="gt-field" htmlFor="fin-rec-amount">
-          Valor
-          <MoneyInput id="fin-rec-amount" value={form.amount} onChange={amount => set({ amount })} disabled={form.varies} placeholder={form.varies ? 'muda todo mês' : '0'} />
+          {form.varies ? 'Valor previsto (opcional)' : 'Valor'}
+          <MoneyInput id="fin-rec-amount" value={form.amount} onChange={amount => set({ amount })} placeholder={form.varies ? 'previsão' : '0'} />
         </label>
         <label className="gt-field" htmlFor="fin-rec-frequency">
           Quando
@@ -934,7 +938,7 @@ function RecurringForm({ fin, rec, onDone }) {
       </div>
       <label className="fin-toggle" htmlFor="fin-rec-varies">
         <input id="fin-rec-varies" type="checkbox" checked={form.varies} onChange={event => set({ varies: event.target.checked })} />
-        O valor muda todo mês (luz, água): escrevo quando pagar
+        O valor muda todo mês (luz, água): o valor acima é só a previsão, e o certo entra quando pagar
       </label>
       <ErrorLine error={error} />
       <div className="fin-actions">
@@ -958,7 +962,7 @@ export function SaidasFixasConfig({ fin }) {
       <SettingsStrip fin={fin} />
       <h3 className="fin-subtitle">Categorias de saída</h3>
       <div className="fin-choices" role="group" aria-label="Categorias">
-        {fin.data.categories.map(row => (
+        {fin.data.categories.filter(row => row.system_key !== 'avulsa').map(row => (
           <button
             key={row.id}
             type="button"
@@ -1005,7 +1009,7 @@ export function SaidasFixasConfig({ fin }) {
                   <b>{rec.description}</b>
                   <span>{fin.categoriesById.get(rec.category_id)?.name} · {describeRecurring(rec)} · desde {formatDay(rec.starts_on)}{rec.active ? '' : ' · desativada'}</span>
                 </div>
-                <b className="fin-num fin-amount">{rec.amount_cents != null ? formatBRL(rec.amount_cents) : 'muda todo mês'}</b>
+                <b className="fin-num fin-amount">{rec.amount_cents == null ? 'muda todo mês' : rec.amount_varies ? `${formatBRL(rec.amount_cents)} previsto` : formatBRL(rec.amount_cents)}</b>
                 <span className="fin-row-actions">
                   {fromPayroll(rec) ? (
                     <button type="button" className="fin-link" onClick={() => fin.open('recebimento')}>Mudar em Como cada um recebe</button>

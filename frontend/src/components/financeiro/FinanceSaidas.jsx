@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { payExpense, settleRecurring, voidExpense } from '../../services/financeiroService';
 import {
+  EXPENSE_METHODS,
   baseRuleOf,
   centsToInput,
   describeRule,
@@ -27,7 +28,7 @@ function categoryName(fin, id) {
 }
 
 /** Pagar um vencimento de saída fixa ou uma conta lançada "a pagar". */
-function PayForm({ fin, item, onDone }) {
+export function PayForm({ fin, item, onDone }) {
   const [amount, setAmount] = useState(centsToInput(item.amountCents));
   const [paidOn, setPaidOn] = useState(fin.today);
   const [method, setMethod] = useState('pix');
@@ -67,7 +68,7 @@ function PayForm({ fin, item, onDone }) {
         Paga em
         <input id={`fin-pay-date-${item.key}`} type="date" className="gt-select" value={paidOn} max={fin.today} onChange={event => setPaidOn(event.target.value)} />
       </label>
-      <MethodPicker value={method} onChange={setMethod} />
+      <MethodPicker value={method} onChange={setMethod} methods={EXPENSE_METHODS} />
       {error && <p className="gt-notice gt-notice-error" role="alert">{error}</p>}
       <div className="fin-actions">
         {item.kind === 'recurring' && (

@@ -11,6 +11,7 @@ import { loadConvenioData } from '../../services/convenioService';
 import {
   addDays,
   buildConfigStatus,
+  buildMonthBills,
   buildMonthSummary,
   buildPayables,
   buildPayouts,
@@ -23,6 +24,7 @@ import {
   todayInClinic,
 } from '../../utils/finance';
 import { APagar, Equipe, Pagas } from './FinanceSaidas';
+import { ContasDoMes } from './ContasDoMes';
 import { AReceber, Pacotes, Recebidos } from './FinanceEntradas';
 import { ModelosConfig, RecebimentoConfig, SaidasFixasConfig, StartCard, ValoresConfig } from './FinanceConfig';
 import { Faturamento, Operadoras, Solicitantes } from './FinanceConvenios';
@@ -50,6 +52,7 @@ const SECTIONS = [
   { id: 'recebidos', label: 'Recebidos' },
   { id: 'notas', label: 'Notas fiscais' },
   { id: 'pacotes', label: 'Pacotes' },
+  { id: 'contas', label: 'Contas do mês' },
   { id: 'apagar', label: 'A pagar' },
   { id: 'pagas', label: 'Pagas' },
   { id: 'equipe', label: 'Equipe e repasses' },
@@ -68,7 +71,7 @@ const SECTIONS = [
 const SECTION_GROUPS = [
   { label: 'Visão geral', ids: ['resumo'] },
   { label: 'Entradas', ids: ['areceber', 'recebidos', 'notas', 'pacotes'] },
-  { label: 'Saídas', ids: ['apagar', 'pagas', 'equipe'] },
+  { label: 'Saídas', ids: ['contas', 'apagar', 'pagas', 'equipe'] },
   { label: 'Configuração', ids: ['valores', 'modelos', 'recebimento', 'saidasfixas'] },
   { label: 'Convênios', ids: ['guias', 'lotes', 'pagamentos', 'operadoras', 'solicitantes', 'faturamento'] },
 ];
@@ -79,6 +82,7 @@ const TAB_ICONS = {
   recebidos: <><path d="m5 12.5 4.5 4.5L19 7.5" /></>,
   notas: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   pacotes: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" /></>,
+  contas: <><rect x="3" y="4" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="4" width="7.5" height="7.5" rx="1.5" /><rect x="3" y="14.5" width="7.5" height="6.5" rx="1.5" /><path d="m14.5 17.5 2 2 3.5-4" /></>,
   apagar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
   pagas: <><path d="M4 7h16M4 12h16M4 17h10" /></>,
   equipe: <><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 9.5a3 3 0 1 0 0-6M15 14.5c2.8.4 4.8 1.9 5.5 4" /></>,
@@ -138,6 +142,13 @@ function buildTiles({ data, derived, month }) {
         ? `${activePackages.length === 1 ? 'pacote ativo' : 'pacotes ativos'}${dueSoon ? ` · ${plural(dueSoon, 'cobrança vence', 'cobranças vencem')} nesta semana` : ''}`
         : 'nenhum pacote ativo',
     },
+    contas: {
+      display: formatBRL(derived.bills.openCents),
+      line: derived.bills.items.length || derived.bills.quick.length
+        ? `${derived.bills.paidPercent}% do mês pago${derived.bills.groups.late.length ? ` · ${plural(derived.bills.groups.late.length, 'conta vencida', 'contas vencidas')}` : ''}`
+        : 'nenhuma conta neste mês',
+      tone: derived.bills.groups.late.length ? 'warning' : undefined,
+    },
     apagar: {
       display: formatBRL(summary.payableCents),
       line: summary.payableCount
@@ -161,11 +172,13 @@ function buildTiles({ data, derived, month }) {
 }
 
 // Mesmo número do quadro, curto, ao lado do nome no menu.
-function navCountsFrom(tiles, { summary, config }) {
+function navCountsFrom(tiles, derived) {
+  const { summary, config } = derived;
   const money = (cents, tone) => ({ text: cents > 0 ? formatShortBRL(cents) : '', tone });
   const check = step => ({ text: step.ok ? '✓' : 'falta', tone: step.ok ? undefined : 'warning' });
   return {
     areceber: money(summary.receivableCents, tiles.areceber.tone),
+    contas: money(derived.bills.openCents, tiles.contas.tone),
     apagar: money(summary.payableCents, tiles.apagar.tone),
     pacotes: { text: tiles.pacotes.display === '0' ? '' : tiles.pacotes.display },
     valores: check(config.valores),
@@ -287,6 +300,7 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
       payouts,
     });
     const summary = buildMonthSummary({ ...money, receivables, payables, month, today });
+    const bills = buildMonthBills({ recurring: data.recurring, expenses: data.expenses, month, today, startsOn: settings?.starts_on || null });
     const config = buildConfigStatus(data);
     return {
       today,
@@ -295,6 +309,7 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
       payouts,
       payables,
       summary,
+      bills,
       config,
       repasseCategory,
       salaryCategory,
@@ -391,6 +406,7 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
         {fin && section === 'recebidos' && <Recebidos fin={fin} />}
         {fin && section === 'notas' && <NotasFiscais fin={fin} />}
         {fin && section === 'pacotes' && <Pacotes fin={fin} />}
+        {fin && section === 'contas' && <ContasDoMes fin={fin} />}
         {fin && section === 'apagar' && <APagar fin={fin} />}
         {fin && section === 'pagas' && <Pagas fin={fin} />}
         {fin && section === 'equipe' && <Equipe fin={fin} />}

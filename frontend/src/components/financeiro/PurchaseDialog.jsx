@@ -33,7 +33,7 @@ function parsedItem(item) {
 }
 
 export function PurchaseDialog({ fin, onClose }) {
-  const categories = fin.data.categories.filter(row => row.active);
+  const categories = fin.data.categories.filter(row => row.active && row.system_key !== 'avulsa');
   const [categoryId, setCategoryId] = useState(() => (categories.find(row => !row.system_key) || categories[0])?.id || '');
   const [paidOn, setPaidOn] = useState(fin.today);
   const [method, setMethod] = useState('pix');

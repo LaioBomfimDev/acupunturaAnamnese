@@ -37,6 +37,7 @@ export const ASSISTANT_SECTION_LINKS: Record<string, { screen: string; label: st
   recebidos: { screen: 'financeiro', label: 'Recebidos' },
   notas: { screen: 'financeiro', label: 'Notas fiscais' },
   pacotes: { screen: 'financeiro', label: 'Pacotes' },
+  contas: { screen: 'financeiro', label: 'Contas do mês' },
   apagar: { screen: 'financeiro', label: 'A pagar' },
   pagas: { screen: 'financeiro', label: 'Pagas' },
   equipe: { screen: 'financeiro', label: 'Equipe e repasses' },

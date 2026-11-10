@@ -9,6 +9,7 @@ import {
   sellPackage,
 } from '../../services/financeiroService';
 import {
+  EXPENSE_METHODS,
   PAYMENT_PLANS,
   addDays,
   centsToInput,
@@ -395,7 +396,7 @@ function addMonths(day, amount) {
 
 /** Lançar saída avulsa: já paga ou a pagar. */
 export function ExpenseDialog({ fin, onClose, preset = null }) {
-  const categories = fin.data.categories.filter(row => row.active);
+  const categories = fin.data.categories.filter(row => row.active && row.system_key !== 'avulsa');
   const [categoryId, setCategoryId] = useState(preset?.categoryId || categories[0]?.id || '');
   const [description, setDescription] = useState(preset?.description || '');
   const [payee, setPayee] = useState(preset?.professionalId ? `p:${preset.professionalId}` : preset?.personId ? `x:${preset.personId}` : '');
@@ -487,7 +488,7 @@ export function ExpenseDialog({ fin, onClose, preset = null }) {
             Paga em
             <input id="fin-exp-paid" type="date" className="gt-select" value={paidOn} max={fin.today} onChange={event => setPaidOn(event.target.value)} />
           </label>
-          <MethodPicker value={method} onChange={setMethod} />
+          <MethodPicker value={method} onChange={setMethod} methods={EXPENSE_METHODS} />
         </>
       ) : (
         <label className="gt-field" htmlFor="fin-exp-due">

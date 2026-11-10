@@ -16,11 +16,15 @@ import { DialogShell } from './FinanceDialogs';
 import '../../styles/patientForms.css';
 
 // ============================================================
-// Recibo interno de uma compra (06/11/2026): comprovante da própria
-// instituição, numerado, no papel timbrado. Sem valor fiscal, e o
-// papel diz isso. Compra anulada continua existindo, marcada ANULADO.
+// Recibo interno de uma compra (06/11/2026) e comprovante de despesa de
+// qualquer saída paga (conta do mês, gasto rápido, 20261110b): da própria
+// instituição, numerado, no papel timbrado. Sem valor fiscal, e o papel
+// diz isso. Saída anulada continua existindo, marcada ANULADO.
 // Mesmo desenho de impressão das entrevistas (palco invisível, fonte do
 // corpo medida e paginada, portal no <body>).
+//
+// `fin` pode ser só { profile } (recepção, sem o resto do financeiro):
+// categoria e quem pagou caem no que vier na própria linha.
 // ============================================================
 
 const DEFAULT_ACCENT = '#0E2A4A';
@@ -38,7 +42,7 @@ function itemRows(items) {
   }));
 }
 
-export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
+export function PurchaseReceiptDialog({ fin, expense, items = [], onClose }) {
   const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
   const sourceRef = useRef(null);
   const measureRef = useRef(null);
@@ -59,19 +63,36 @@ export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
     '--clinic-accent-soft': accentPalette.soft,
   };
 
-  const rows = itemRows(items);
+  const isPurchase = Boolean(expense.is_purchase);
+  const kindLabel = isPurchase ? 'Recibo de compra' : 'Comprovante de despesa';
+  const rows = items?.length ? itemRows(items) : [{
+    key: 'unico',
+    description: expense.description,
+    quantity: '1',
+    unit: formatBRL(expense.amount_cents),
+    total: formatBRL(expense.amount_cents),
+  }];
   const voided = Boolean(expense.voided_at);
-  const category = fin.categoriesById.get(expense.category_id)?.name || 'Sem categoria';
-  const buyer = payeeName({ professionalId: expense.professional_id, personId: expense.person_id }, { membersById: fin.membersById, peopleById: fin.peopleById });
+  const categoryRow = fin.categoriesById?.get(expense.category_id);
+  // Gasto rápido não tem categoria escolhida (a interna não aparece).
+  const category = expense.is_quick || categoryRow?.system_key === 'avulsa' ? '' : (categoryRow?.name || '');
+  const lookups = { membersById: fin.membersById || new Map(), peopleById: fin.peopleById || new Map() };
+  const payee = payeeName({ professionalId: expense.professional_id, personId: expense.person_id }, lookups);
+  const paidBy = expense.paid_by_name || (expense.paid_by ? lookups.membersById.get(expense.paid_by)?.full_name : '') || '';
   const registeredOn = expense.created_at ? formatDay(todayInClinic(new Date(expense.created_at))) : '';
   const details = [
-    { label: 'Data da compra', value: formatDay(expense.paid_on) },
+    { label: isPurchase ? 'Data da compra' : 'Data do pagamento', value: formatDay(expense.paid_on) },
+    { label: 'Referente ao vencimento', value: expense.occurrence_on ? formatDay(expense.occurrence_on) : '' },
     { label: 'Categoria', value: category },
     { label: 'Forma de pagamento', value: methodLabel(expense.method) },
-    { label: 'Comprado por', value: buyer },
+    isPurchase
+      ? { label: 'Comprado por', value: payee }
+      : { label: 'Pago a', value: payee },
+    isPurchase ? { label: '', value: '' } : { label: 'Pago por', value: paidBy },
+    { label: 'Lançado por', value: expense.recorded_by_name || '' },
     { label: 'Registrado em', value: registeredOn },
     { label: 'Observação', value: expense.note || '' },
-  ].filter(item => item.value);
+  ].filter(item => item.label && item.value);
 
   const letterheadProps = {
     clinicLogo,
@@ -79,7 +100,7 @@ export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
     clinicName,
     clinicDetails,
     dateLabel: formatDay(expense.paid_on),
-    sessaoLabel: `Recibo ${expense.receipt_number}`,
+    sessaoLabel: `${kindLabel} ${expense.receipt_number}`,
     terapeuta: 'Comprovante interno',
   };
 
@@ -102,10 +123,10 @@ export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
   const cell = { padding: '5px 6px', borderBottom: `1px solid ${LINE}`, verticalAlign: 'top' };
   const printBody = (
     <>
-      <h2 style={{ margin: '0 0 10px', color: TEXT, fontSize: 17, lineHeight: 1.3 }}>Recibo de compra Nº {expense.receipt_number}</h2>
+      <h2 style={{ margin: '0 0 10px', color: TEXT, fontSize: 17, lineHeight: 1.3 }}>{kindLabel} Nº {expense.receipt_number}</h2>
       {voided && (
         <p style={{ margin: '0 0 10px', padding: '6px 10px', border: `1px solid ${TEXT}`, color: TEXT, fontSize: 12.5 }}>
-          <b>RECIBO ANULADO</b> em {formatDay(todayInClinic(new Date(expense.voided_at)))}. Motivo: {expense.void_reason}
+          <b>{isPurchase ? 'RECIBO ANULADO' : 'COMPROVANTE ANULADO'}</b> em {formatDay(todayInClinic(new Date(expense.voided_at)))}. Motivo: {expense.void_reason}
         </p>
       )}
       <table style={{ width: '100%', borderCollapse: 'collapse', margin: '0 0 12px', fontSize: 12.5 }}>
@@ -149,7 +170,7 @@ export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
 
   return (
     <DialogShell
-      title={`Recibo Nº ${expense.receipt_number}`}
+      title={`${kindLabel} Nº ${expense.receipt_number}`}
       onClose={onClose}
       guard={false}
       footer={(
@@ -159,7 +180,7 @@ export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
         </>
       )}
     >
-      {voided && <p className="gt-notice gt-notice-error" role="status">Recibo anulado: {expense.void_reason}</p>}
+      {voided && <p className="gt-notice gt-notice-error" role="status">{isPurchase ? 'Recibo anulado' : 'Comprovante anulado'}: {expense.void_reason}</p>}
       <dl className="fin-receipt-details">
         {details.map(item => (
           <div key={item.label}>
@@ -214,3 +235,6 @@ export function PurchaseReceiptDialog({ fin, expense, items, onClose }) {
     </DialogShell>
   );
 }
+
+/** Mesmo comprovante, nome de quem não é compra. */
+export const ExpenseReceiptDialog = PurchaseReceiptDialog;

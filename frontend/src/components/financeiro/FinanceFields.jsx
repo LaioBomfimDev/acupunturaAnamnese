@@ -3,10 +3,11 @@ import { PAYMENT_METHODS, daysBetween, formatShortDay } from '../../utils/financ
 
 // Peças pequenas repetidas nas partes do Financeiro.
 
-export function MethodPicker({ value, onChange, label = 'Forma de pagamento' }) {
+/** methods: PAYMENT_METHODS (recebimento) ou EXPENSE_METHODS (saída). */
+export function MethodPicker({ value, onChange, label = 'Forma de pagamento', methods = PAYMENT_METHODS }) {
   return (
     <div className="fin-choices" role="group" aria-label={label}>
-      {PAYMENT_METHODS.map(method => (
+      {methods.map(method => (
         <button
           key={method.id}
           type="button"

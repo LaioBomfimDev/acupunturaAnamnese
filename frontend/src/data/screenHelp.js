@@ -773,6 +773,28 @@ export const FINANCEIRO_HELP = {
     access: ['Só a administração.'],
     notes: ['Sessão da mesma área já atendida no dia da venda, sem pagamento, entra no pacote.'],
   },
+  contas: {
+    title: 'Contas do mês',
+    summary: 'As contas fixas do mês em cartões, separadas por situação, e o gasto rápido (água, lanche, almoço do time, conserto) sempre à mão. Toda saída paga ganha comprovante de despesa numerado.',
+    actions: [
+      '“Pagar”, no cartão: valor que veio na conta, data e forma (Pix, Dinheiro, Transferência, Boleto, Cartão). Ao pagar, o cartão vai para Pagas com o número do comprovante.',
+      '“Comprovante”, num cartão pago, abre o comprovante de despesa no papel timbrado para imprimir ou salvar em PDF.',
+      'Gasto rápido, à direita: escreva o que foi, o valor, o dia, quem pagou e como. Não tem categoria. Ao lançar, sai o comprovante com número.',
+      '“Usar a lista da planilha” cria as contas da planilha da clínica de uma vez: marque as que valem, o dia do vencimento e, se quiser, o valor.',
+      '“Anular”, num gasto rápido: com motivo; o comprovante continua guardado, marcado como anulado.',
+    ],
+    reading: [
+      'Vencida (âmbar) = passou do dia e não foi paga. Vence hoje, A vencer, Pagas e Não houve este mês vêm em seguida.',
+      '“previsto” = conta que muda todo mês (luz, água): o valor é a previsão até você pagar. “valor muda” = sem previsão.',
+      'Em teste: conta pela data do serviço. A conta fixa entra no mês do vencimento, mesmo paga em outro mês; gasto rápido e compra, no dia em que foram pagos.',
+      'Repasse da equipe não entra nas contas: aparece só o total, com o atalho para Equipe e repasses.',
+    ],
+    access: ['A administração vê e paga tudo. A recepção lança gasto rápido e vê os gastos rápidos de todos pela tela Gastos rápidos, sem o resto do Financeiro.'],
+    notes: [
+      'O comprovante é controle interno da clínica e não substitui o boleto pago nem a nota fiscal do fornecedor.',
+      'Saída paga antes dos comprovantes (10/11/2026) fica sem número: dinheiro lançado não se reescreve.',
+    ],
+  },
   apagar: {
     title: 'A pagar',
     summary: 'O que a clínica tem a pagar até o fim do mês: saídas fixas, contas lançadas “a pagar” e o repasse de cada profissional.',

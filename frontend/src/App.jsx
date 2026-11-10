@@ -54,6 +54,7 @@ const GestaoProfissional = lazyPanel(() => import('./components/panels/GestaoPro
 const EvolutionsScreen = lazyPanel(() => import('./components/evolutions/EvolutionsScreen'), 'EvolutionsScreen');
 const ScalesScreen = lazyPanel(() => import('./components/instruments/ScalesScreen'), 'ScalesScreen');
 const FinanceiroScreen = lazyPanel(() => import('./components/financeiro/FinanceiroScreen'), 'FinanceiroScreen');
+const QuickExpensesScreen = lazyPanel(() => import('./components/financeiro/QuickExpensesScreen'), 'QuickExpensesScreen');
 const ClinicAssistantLauncher = lazyPanel(() => import('./components/assistant/ClinicAssistant'), 'ClinicAssistantLauncher');
 
 // Disciplina escolhida no hub sobrevive ao F5 (sessionStorage), mas não
@@ -444,6 +445,8 @@ function AppScreens() {
             onOpenScales={canSeeScales(profile) ? () => { setHubScalesPatient(null); setShowHubScales(true); } : undefined}
             // Financeiro: só a administração (a RLS do banco também barra o resto).
             onOpenFinance={isClinicAdmin ? () => setShowHubFinance(true) : undefined}
+            // Recepção (10/11/2026): só o gasto rápido, sem o resto do Financeiro.
+            onOpenQuickExpenses={isReceptionist ? () => setShowHubFinance(true) : undefined}
             pendingEvolutionsCount={pendingEvolutionsCount}
             onOpenInstrumentAlert={openInstrumentAlert}
           />
@@ -582,6 +585,27 @@ function AppScreens() {
           <main className="hub-body">
             <Suspense fallback={<PanelLoading />}>
               <FinanceiroScreen key={hubSectionRequest} profile={profile} initialSection={hubFinanceInitialSection} />
+            </Suspense>
+          </main>
+          {renderHubDock('financeiro')}
+        </div>
+      );
+    }
+    // Gastos rápidos da recepção (20261110b): mesma porta do Financeiro,
+    // tela própria, sem nada além do gasto rápido.
+    if (showHubFinance && isReceptionist) {
+      return (
+        <div className="hub-screen">
+          <header className="hub-topbar">
+            <div className="hub-brand">
+              <h1>{profile?.clinic?.name || profile?.clinic_name || 'Vitalis'}</h1>
+              <p>Gastos rápidos</p>
+            </div>
+            <HubBackButton label="Voltar às áreas" onClick={() => setShowHubFinance(false)} />
+          </header>
+          <main className="hub-body">
+            <Suspense fallback={<PanelLoading />}>
+              <QuickExpensesScreen profile={profile} />
             </Suspense>
           </main>
           {renderHubDock('financeiro')}

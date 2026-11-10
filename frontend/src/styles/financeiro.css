@@ -1897,3 +1897,404 @@
     grid-column: auto;
   }
 }
+
+/* ============================================================
+   Contas do mês (20261110b, opção A de 10/11/2026) e Gastos rápidos
+   da recepção. Cartões por situação; âmbar só em vencida; pago em verde
+   discreto; ação na cor da clínica.
+   ============================================================ */
+
+.fin-basis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0;
+  color: var(--r1-text-muted);
+  font-size: 13px;
+}
+
+.fin-basis-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+  color: var(--r1-text);
+  font-weight: 650;
+  font-size: 12px;
+}
+
+.fin-bill-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fin-bill-tile {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.fin-bill-tile small {
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+}
+
+.fin-bill-tile b {
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.fin-bill-tile span {
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+}
+
+.fin-bill-tile--main {
+  border-color: var(--r1-accent-line);
+  background: var(--r1-accent-wash);
+}
+
+.fin-bill-progress {
+  display: grid;
+  gap: 6px;
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+}
+
+.fin-bill-progress .fin-progress {
+  height: 10px;
+  border-radius: 99px;
+}
+
+.fin-bill-progress .fin-progress i {
+  border-radius: 99px;
+}
+
+.fin-bills-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 20px;
+  align-items: start;
+}
+
+.fin-bills-groups {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.fin-bills-side {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding-left: 20px;
+  border-left: 1px solid var(--r1-border-subtle);
+}
+
+.fin-bill-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fin-bill-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--r1-text-muted);
+}
+
+.fin-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.fin-pill--late {
+  background: var(--r1-warning-bg);
+  border: 1px solid var(--r1-warning-border);
+  color: var(--r1-warning);
+}
+
+.fin-pill--today {
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+}
+
+.fin-pill--next {
+  background: var(--r1-surface-sunken);
+  border: 1px solid var(--r1-border-subtle);
+  color: var(--r1-text);
+}
+
+.fin-pill--ok {
+  background: color-mix(in srgb, var(--r1-success) 12%, var(--r1-surface));
+  color: var(--r1-success);
+}
+
+.fin-pill--none {
+  border: 1px dashed var(--r1-border);
+  color: var(--r1-text-muted);
+}
+
+.fin-bill-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.fin-bill {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.fin-bill--late {
+  border-color: var(--r1-warning-border);
+  background: var(--r1-warning-bg);
+}
+
+.fin-bill--today {
+  border-color: var(--r1-accent-line);
+}
+
+.fin-bill--paid {
+  background: var(--r1-surface-sunken);
+}
+
+.fin-bill-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.fin-bill-value {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.fin-bill--paid .fin-bill-value {
+  color: var(--r1-text-muted);
+}
+
+.fin-bill-line {
+  margin: 0;
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+}
+
+.fin-bill-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.fin-bill-receipt {
+  color: var(--r1-text-muted);
+  font-size: 12px;
+}
+
+.fin-quick {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--r1-accent-line);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+}
+
+.fin-quick-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fin-quick-title .fin-num {
+  color: var(--r1-text-muted);
+  font-weight: 600;
+}
+
+.fin-quick-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.fin-quick .gt-select,
+.fin-quick .fin-money-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.fin-quick-feed {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fin-quick-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-quick-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.fin-quick-item b {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.fin-quick-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+.fin-quick-meta {
+  grid-column: 1 / -1;
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+}
+
+.fin-quick-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.fin-quick-item--void b,
+.fin-quick-item--void .fin-quick-value {
+  text-decoration: line-through;
+  color: var(--r1-text-muted);
+}
+
+.fin-template {
+  display: grid;
+  gap: 6px;
+}
+
+.fin-template-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 64px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--r1-border-subtle);
+}
+
+.fin-template-row .fin-small-input,
+.fin-template-row .fin-money-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.fin-template-row .fin-toggle {
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.fin-template-row--off b {
+  color: var(--r1-text-muted);
+  font-weight: 500;
+}
+
+.fin-template-note {
+  grid-column: 1 / -1;
+  color: var(--r1-text-muted);
+  font-size: 12px;
+}
+
+.fin-quick-screen {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.fin-quick-screen-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fin-quick-screen-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+@media (max-width: 1024px) {
+  .fin-bill-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fin-bills-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fin-bills-side {
+    padding-left: 0;
+    padding-top: 14px;
+    border-left: 0;
+    border-top: 1px solid var(--r1-border-subtle);
+  }
+
+  .fin-bill-cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  }
+
+  .fin-template-row {
+    grid-template-columns: minmax(0, 1fr) 72px;
+  }
+
+  .fin-template-row > .fin-toggle:first-child,
+  .fin-template-row > .fin-toggle:last-of-type {
+    grid-column: 1 / -1;
+  }
+  /* Recepção: lançar é o principal, o formulário vem antes da lista. */
+  .fin-quick-screen .fin-bills-side {
+    order: -1;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .fin-bill-tile b {
+    font-size: 17px;
+  }
+
+  .fin-quick-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

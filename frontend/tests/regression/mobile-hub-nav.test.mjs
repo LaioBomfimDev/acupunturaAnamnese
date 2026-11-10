@@ -117,8 +117,9 @@ test('todas as telas do hub usam o botão compartilhado e a barra de baixo', asy
     assert.match(app, new RegExp(`renderHubDock\\('${screen}'\\)`), `tela ${screen} sem a barra de baixo`);
   }
   assert.doesNotMatch(app, /← Voltar/, 'voltar escrito à mão no App');
-  // Agenda, Evoluções, Documentos, Gestão, Escalas (13/10/2026) e Financeiro (23/10/2026).
-  assert.equal((app.match(/<HubBackButton\s+label="Voltar às áreas"/g) || []).length, 6);
+  // Agenda, Evoluções, Documentos, Gestão, Escalas (13/10/2026), Financeiro
+  // (23/10/2026) e Gastos rápidos da recepção (10/11/2026).
+  assert.equal((app.match(/<HubBackButton\s+label="Voltar às áreas"/g) || []).length, 7);
   // "Abrir agenda" de Evoluções some no celular: a Agenda já está na barra.
   assert.match(app, /className="topbar-button hub-topbar-extra"[\s\S]{0,200}?\}>\s*Abrir agenda/);
   assert.match(app, /className="hub-topbar hub-topbar--titled"/);

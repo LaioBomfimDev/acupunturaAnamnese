@@ -36,7 +36,7 @@ Contexto da rodada ABA: `docs/team/propostas/aba-auditoria-2026-11-08.md` (audit
 | ACUP-024 | Assistente fase 1: até 3 consultas por pergunta | dev2 | integracao (a391aef) | PRONTO (publicado 09/11, main a391aef) | ver abaixo |
 | ACUP-025 | Assistente fase 2: agenda com paciente (primeiro nome + idade) | dev2 | qa/ACUP-025 (7b82b83) | APROVADA, fora do integracao até o RIPD (PUB-4) | ver abaixo |
 | ACUP-026 | RIPD: assistente com paciente na agenda | Orquestrador | integracao | REVIEW (rascunho §4.2, aguardando a humana) | ver abaixo |
-| ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | FAZENDO (codando, AG-10; vai ao ar com a 025) | ver abaixo |
+| ACUP-027 | Assistente fase 3: ações com confirmação humana | dev2 | claude/dev2 | REVIEW pelo LK (38ebe07; LK fechado, na caixa; vai ao ar com a 025) | ver abaixo |
 | ACUP-028 | Modelo da assistente | — | — | BLOQUEADO (escolha da humana) | ver abaixo |
 | ACUP-029 | Assistente: pacotes perto do fim e período grande demais | dev2 | claude/dev2 | TODO (após 024) | ver abaixo |
 

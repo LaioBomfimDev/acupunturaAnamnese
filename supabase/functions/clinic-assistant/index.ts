@@ -36,7 +36,7 @@ import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import { ASSISTANT_SCALE_CATALOG, type AssistantHelpTopic } from '../_shared/assistantHelpCorpus.ts';
 import { helpIndex, needsScaleCatalog, selectHelpTopics } from '../_shared/assistantRetrieval.ts';
-import { ASSISTANT_CONSULTAS, FINANCE_FILTERS, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
+import { ASSISTANT_CONSULTAS, FINANCE_FILTERS, PATIENT_CONSULTAS, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
@@ -56,9 +56,10 @@ const FUNCTION_NAME = 'clinic-assistant';
 // Espelho de ASSISTANT_MAX_ROUNDS em frontend/src/services/clinicAssistantService.js.
 const ASSISTANT_MAX_ROUNDS = 3;
 const ASSISTANT_ROUNDS_MESSAGE = 'A assistente faz no máximo 3 consultas por pergunta. Divida a pergunta em partes menores.';
-// Teto do que as voltas trazem ao prompt (JSON dos dados aceitos): 3 consultas de
-// até 50 linhas cabem com folga; acima disso, recusa antes do Gemini, nunca corta.
-const ASSISTANT_MAX_DADOS_CHARS = 64_000;
+// Teto do que as voltas trazem ao prompt (JSON dos dados aceitos). AG-9: o máximo do
+// contrato (3 financeiros por_paciente de 50 linhas, paciente com 40 letras e
+// profissional com 120) dá 74.122 e cabe; acima disso, recusa antes do Gemini, nunca corta.
+const ASSISTANT_MAX_DADOS_CHARS = 80_000;
 // Corpo do pedido: 12 mensagens de até 1500 caracteres + até 3 resultados.
 const ASSISTANT_MAX_BODY_BYTES = 128_000;
 const ASSISTANT_TOO_LARGE_MESSAGE = 'As consultas trouxeram dados demais para uma resposta só. Pergunte por partes ou estreite o período.';
@@ -106,6 +107,7 @@ const CAPABILITIES = [
   'Explicar qualquer tela do sistema, com o passo a passo e os nomes exatos dos botões.',
   'Consultar os horários vagos de qualquer pessoa da equipe em qualquer dia (ex.: "horários vagos da Denise na terça").',
   'Contar o movimento da clínica sem abrir paciente: atendimentos do dia, evoluções faltando, escalas aplicadas no mês e pacientes sem retorno (ex.: "quantas evoluções faltam na equipe?").',
+  'Ver a agenda com paciente (primeiro nome e idade): quem a pessoa atende num dia, a próxima sessão de um paciente e, para administração e recepção, faltosos e aniversariantes.',
   'Ver a agenda e a operação sem abrir paciente: agenda de um período por pessoa ou equipe, faltas e cancelamentos, confirmações pendentes e pacotes perto do fim; para a administração, também pesquisas, formulários da Área do Paciente, aniversários do mês (contagem) e convênio e notas (ex.: "como está a agenda da Denise na semana que vem?").',
   'Explicar e comparar as escalas do sistema: o que cada uma mede, para quem, quantas perguntas, faixas e quando reaplicar.',
   'Ajudar com dúvidas gerais de gestão da clínica, organização da agenda, comunicação com pacientes e escrita de textos.',
@@ -135,6 +137,10 @@ Como responder:
   - confirmacoes_pendentes: atendimentos ainda sem confirmação num período (de/ate; sem período, amanhã).
   - pacotes_fim: pacotes da Agenda com 1 sessão agendada ou menos, por profissional e área (sem período). Não é o pacote do Financeiro da "Sua atenção hoje": não diga que os números são os mesmos.
   - aniversarios: quantos pacientes fazem aniversário no mês atual (só administração e recepção; só o número).
+  - agenda_pacientes: a agenda de um período (de/ate) COM paciente (primeiro nome e idade), de uma pessoa ("eu" = quem pergunta) ou da equipe; paciente opcional (só o primeiro nome). Use para "quem eu atendo amanhã?".
+  - proxima_sessao: a próxima sessão agendada de um paciente (paciente obrigatório, só o primeiro nome; idade ou profissional para separar homônimos).
+  - faltosos: pacientes com pelo menos minimo faltas (padrão 2) num período (de/ate), por profissional e área (só administração e recepção).
+  - aniversariantes: quem faz aniversário num período de até 31 dias (sem período, o mês atual), com primeiro nome e a idade que vai fazer (só administração e recepção).
   - pesquisas: pesquisas de satisfação num período (de/ate): respondidas, nota média e aguardando (só administração).
   - formularios_pendentes: formulários da Área do Paciente enviados, respondidos e aguardando (só administração).
   - convenio: situação de agora de guias, lotes e notas fiscais (só administração com acesso ao Financeiro).
@@ -146,6 +152,7 @@ Como responder:
 - Agenda e operação (agenda, faltas, confirmacoes_pendentes, pacotes_fim, aniversarios, pesquisas, formularios_pendentes, convenio): responda SOMENTE com os DADOS_CONSULTADOS desse tipo aceitos nesta chamada; sem dados ou com motivo, diga que não conseguiu buscar e use a mensagem; nunca trate indisponibilidade como zero. Diga o período (de/ate) e o criterio. Estas consultas NÃO trazem paciente: nunca invente nome, quem é o paciente nem quantos pacientes diferentes são. resumo traz os números; linhas detalham (agenda: dia, início, fim, profissional, área, tipo_atendimento, modalidade e status). Com motivo limite_linhas, os números do resumo valem e a lista não veio: diga os números e peça para estreitar se a pessoa quiser a lista. pesquisas.media é a nota média de 1 a 5 (use vírgula); null = nenhuma respondida. convenio: valores em centavos (divida por 100 e use vírgula); guias da operadora nunca são cobrança ao paciente. O total é quantidade de linhas, não dinheiro.
 - Financeiro por_area: cada linha é uma área com paciente_centavos (pago pelo paciente), operadora_centavos (pago pela operadora do convênio) e total_centavos; totais traz a soma geral. Diga o total de cada área e o total geral, separando o que veio da operadora. O total da consulta é quantidade de áreas, não dinheiro.
 - Financeiro por_paciente: cada linha é um paciente numa área com um profissional (ex.: "Lucas, 7 anos — falta pagar 1 sessão de Psicologia com Denise"). forma avulso ou pacote_por_sessao: fale de sessoes_feitas, sessoes_pagas e em_aberto_centavos; sessoes_sem_valor são atendimentos sem valor na tabela, nem pagos nem devidos. forma pacote_parcelas: a dívida está nas parcelas, nunca diga que uma sessão foi paga; diga "sessão sessao_atual de sessoes_previstas" e parcelas_pagas / parcelas_em_aberto. forma convenio: quem paga é a operadora; com situacao da_operadora diga que a operadora ainda não pagou, nunca que o paciente deve. situacao em_dia = não deve nada no período (ex.: "pagou as 5 sessões de Nutrição"); atrasado = tem valor vencido.
+- Consultas com paciente (agenda_pacientes, proxima_sessao, faltosos, aniversariantes): use SOMENTE os DADOS_CONSULTADOS aceitos. Diga o paciente só como primeiro nome e idade ("Lucas, 7 anos"); "Paciente fora da sua lista" e "Paciente arquivado" são rótulos, não invente quem é. Com homonimo true, diga apenas que há dois pacientes com o mesmo nome. Em aniversariantes, idade é a que vai fazer e a data não vem: não invente o dia. Em proxima_sessao, sessao_numero de sessoes_total vem do pacote ("sessão 4 de 10"); null = fora de pacote; total 0 = sem próxima sessão agendada. Nunca dê dado clínico, contato ou sobrenome.
 - Paciente na consulta financeira: diga só o primeiro nome e a idade recebidos ("Lucas, 7 anos"); sem idade, só o primeiro nome. Com homonimo true, diga apenas que há dois pacientes com o mesmo nome, sem tentar desempatar por mais nada.
 - O Financeiro é a referência para conferir valores e registros; sugira abri-lo. Você não registra, altera, anula, paga nem cobra ninguém, nem envia cobrança por conta própria. Não dê recomendação clínica a partir de dinheiro. Para identificação, use somente primeiro nome e idade quando fornecidos, nunca sobrenome ou data de nascimento; não estime idade ausente. Preserve rótulos de identificação sem tirar conclusões sobre a pessoa.
 - "O que você faz" ou "como aproveitar você": responda com as SUAS_CAPACIDADES em lista curta, cada uma com um exemplo de pergunta, e diga com franqueza o que ainda não faz.
@@ -221,8 +228,9 @@ const OUTPUT_SCHEMA = {
         de: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes e pesquisas: início inclusivo AAAA-MM-DD' },
         ate: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes e pesquisas: fim inclusivo AAAA-MM-DD; até 93 dias' },
         status: { type: 'STRING', enum: FINANCE_FILTERS, description: 'somente financeiro' },
-        paciente: { type: 'STRING', description: 'financeiro: SÓ o primeiro nome do paciente pedido, uma palavra; vazio para todos' },
-        idade: { type: 'INTEGER', nullable: true, description: 'financeiro: idade do paciente em anos, só para separar dois com o mesmo primeiro nome' },
+        paciente: { type: 'STRING', description: 'financeiro, agenda_pacientes, proxima_sessao e faltosos: SÓ o primeiro nome do paciente pedido, uma palavra; vazio para todos' },
+        minimo: { type: 'INTEGER', nullable: true, description: 'faltosos: mínimo de faltas no período (padrão 2)' },
+        idade: { type: 'INTEGER', nullable: true, description: 'financeiro e consultas com paciente: idade do paciente em anos, só para separar dois com o mesmo primeiro nome' },
       },
       required: ['tipo', 'profissional'],
     },
@@ -411,7 +419,9 @@ Deno.serve(async (req) => {
       links: [...new Set(suggested.filter((link: unknown) => typeof link === 'string' && links.includes(link)))].slice(0, 2),
       modelVersion: MODEL_ID,
       // FIN-3/6: o marcador segue se QUALQUER volta aceita foi financeira.
-      ...(dados?.tipo === 'financeiro' || requestBody.financeiroContexto === true || anteriores.some(item => item.tipo === 'financeiro') ? { financeiro: true } : {}),
+      // AG-3 (ACUP-025): o mesmo marcador cobre resposta com paciente (só a nota, só da autora).
+      ...(dados?.tipo === 'financeiro' || requestBody.financeiroContexto === true || anteriores.some(item => item.tipo === 'financeiro')
+        || [dados, ...anteriores].some(item => PATIENT_CONSULTAS.includes(String(item?.tipo))) ? { financeiro: true } : {}),
     });
   } catch {
     logOperationalEvent('error', 'clinic_assistant_failed', {
@@ -457,6 +467,7 @@ async function readAuthorizedConsultaResult(raw: unknown, client: ReturnType<typ
   const SERVER_ACCESS: Record<string, string> = {
     agenda: 'equipe', faltas: 'equipe', confirmacoes_pendentes: 'equipe', pacotes_fim: 'equipe',
     aniversarios: 'admin_recepcao', pesquisas: 'admin', formularios_pendentes: 'portal', convenio: 'financeiro',
+    agenda_pacientes: 'equipe', proxima_sessao: 'equipe', faltosos: 'admin_recepcao', aniversariantes: 'admin_recepcao',
   };
   const ROLES: Record<string, string[]> = { admin_recepcao: ['clinic_admin', 'receptionist'], admin: ['clinic_admin'] };
   const access = dados ? SERVER_ACCESS[dados.tipo] : undefined;

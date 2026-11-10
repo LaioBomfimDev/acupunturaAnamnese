@@ -16,7 +16,7 @@ import { freeSlotsOfDay } from './agendaFreeSlots.js';
 import { buildReceivables, isConvenioCharge } from './finance.js';
 import { DISCIPLINES } from '../data/disciplines.js';
 import { buildTissTiles, operatorReceiptsFrom } from './tissXml.js';
-import { APPOINTMENT_STATUSES } from './agenda.js';
+import { APPOINTMENT_STATUSES, birthdaysByDay } from './agenda.js';
 import { APPOINTMENT_TYPES, SERVICES_BY_AREA, appointmentTypeLabel } from './appointmentTypes.js';
 import { currentMonthBirthdays, isAbsence } from './gestaoDashboard.js';
 import { summarizePackageSessions } from './agendaPackageSessions.js';
@@ -90,6 +90,8 @@ export const ASSISTANT_CONSULTAS = [
   'horarios_vagos', 'atendimentos_dia', 'evolucoes_pendentes', 'escalas_aplicadas', 'retornos_pendentes', 'financeiro',
   // ACUP-023: agenda e operação sem paciente.
   'agenda', 'faltas', 'confirmacoes_pendentes', 'pacotes_fim', 'aniversarios', 'pesquisas', 'formularios_pendentes', 'convenio',
+  // ACUP-025: agenda com paciente (primeiro nome + idade).
+  'agenda_pacientes', 'proxima_sessao', 'faltosos', 'aniversariantes',
 ];
 export const CONSULTA_MOTIVOS = [
   'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro', 'sem_permissao', 'periodo_invalido', 'limite_periodo', 'limite_linhas', 'filtro_invalido',
@@ -773,6 +775,8 @@ export const AGENDA_CONSULTAS = ['agenda', 'faltas', 'confirmacoes_pendentes', '
 export const AGENDA_ACCESS = {
   agenda: 'equipe', faltas: 'equipe', confirmacoes_pendentes: 'equipe', pacotes_fim: 'equipe',
   aniversarios: 'admin_recepcao', pesquisas: 'admin', formularios_pendentes: 'portal', convenio: 'financeiro',
+  // ACUP-025 (AG-8): com paciente; faltosos e aniversariantes só administração e recepção.
+  agenda_pacientes: 'equipe', proxima_sessao: 'equipe', faltosos: 'admin_recepcao', aniversariantes: 'admin_recepcao',
 };
 // Com período obrigatório; confirmações usam amanhã quando não vier período.
 export const AGENDA_PERIOD_REQUIRED = ['agenda', 'faltas', 'pesquisas'];
@@ -1061,4 +1065,253 @@ export function summarizeConvenioState({ consulta, tiss, fiscal, today }) {
     notas_a_cancelar: queue.toCancel.length,
     valor_notas_pendentes_centavos: queue.pending.reduce((sum, row) => sum + row.amount_cents, 0),
   });
+}
+
+// ============================================================
+// ACUP-025 (AG-2, AG-8): agenda COM paciente, só primeiro nome + idade
+// (mesmos firstNameOf, ageOn e FINANCE_FIRST_NAME do financeiro), só o que
+// o login já vê na Agenda. Quatro tipos novos; os da fase 1 (ACUP-023)
+// seguem sem paciente. Espelho em supabase/functions/_shared/assistantConsulta.ts.
+// ============================================================
+
+export const PATIENT_CONSULTAS = ['agenda_pacientes', 'proxima_sessao', 'faltosos', 'aniversariantes'];
+// Paciente que a Agenda mostra mas que não está na lista do login: rótulo fixo, sem idade.
+export const PATIENT_OUTSIDE = 'Paciente fora da sua lista';
+export const PATIENT_NEXT_MAX = 5;
+export const PATIENT_BIRTHDAY_MAX_DAYS = 31;
+export const PATIENT_KEYS = {
+  agenda_pacientes: { linha: ['dia', 'inicio', 'fim', 'paciente', 'idade', 'homonimo', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
+  proxima_sessao: { linha: ['paciente', 'idade', 'homonimo', 'dia', 'inicio', 'profissional', 'area', 'tipo_atendimento', 'sessao_numero', 'sessoes_total'], resumo: ['total'] },
+  faltosos: { linha: ['paciente', 'idade', 'homonimo', 'profissional', 'area', 'nao_compareceu', 'cancelado_paciente'], resumo: ['total'] },
+  aniversariantes: { linha: ['paciente', 'idade', 'homonimo'], resumo: ['total'] },
+};
+export const PATIENT_CRITERIA = {
+  agenda_pacientes: 'Atendimentos com início no período, como a Agenda mostra para o seu login; paciente só pelo primeiro nome e idade.',
+  proxima_sessao: 'Próximo atendimento agendado (até 180 dias); em pacote, o número da sessão segue "Sessões do pacote" (cancelado não conta).',
+  faltosos: 'Pacientes com o mínimo de faltas (não compareceu + cancelado pelo paciente) no período, por profissional e área.',
+  aniversariantes: 'Pacientes que fazem aniversário no período (como a Agenda: 29/02 em 28/02 no ano comum); idade = a que vai fazer; sem a data.',
+};
+export const PATIENT_REASONS = {
+  ...AGENDA_REASONS,
+  ambiguo: 'Há mais de 5 pacientes com esse nome. Diga a idade ou o profissional.',
+  nao_encontrado: 'Não encontrei esse paciente nem essa pessoa da equipe na sua lista.',
+  filtro_invalido: 'Use só o primeiro nome do paciente, a idade em anos e um período válido.',
+  limite_periodo: 'Escolha um período de até 93 dias (aniversariantes: até 31).',
+};
+const PATIENT_TOP_KEYS = ['tipo', 'de', 'ate', 'profissional', 'paciente', 'idade', 'minimo', 'motivo', 'mensagem', 'criterio', 'linhas', 'total', 'resumo'];
+
+export function readPatientConsulta(raw) {
+  const item = agendaRecord(raw);
+  const tipo = PATIENT_CONSULTAS.includes(item.tipo) ? item.tipo : '';
+  const patient = typeof item.paciente === 'string' ? financeName(item.paciente) : '';
+  const age = financeAge(item.idade);
+  const minimo = item.minimo === undefined || item.minimo === null ? 2 : (Number.isInteger(item.minimo) && item.minimo >= 1 && item.minimo <= 20 ? item.minimo : 0);
+  const invalid = (patient && !FINANCE_FIRST_NAME.test(patient)) || age === undefined || !minimo
+    || (item.paciente !== undefined && typeof item.paciente !== 'string') || (tipo === 'proxima_sessao' && !patient);
+  return {
+    tipo: invalid ? '' : tipo,
+    pedido: tipo,
+    de: tipo === 'proxima_sessao' ? '' : financeDay(item.de),
+    ate: tipo === 'proxima_sessao' ? '' : financeDay(item.ate),
+    profissional: typeof item.profissional === 'string' ? financeName(item.profissional).slice(0, 80) || 'equipe' : 'equipe',
+    paciente: invalid ? '' : patient,
+    idade: age === undefined ? null : age,
+    minimo: minimo || 2,
+  };
+}
+function patientQuery(query) {
+  // O pedido devolvido: sem o campo interno `pedido`; tipo inválido volta como o pedido para a mensagem.
+  const { pedido, ...rest } = query;
+  return { ...rest, tipo: rest.tipo || pedido };
+}
+export function patientConsultaIssue(raw) {
+  const query = readPatientConsulta(raw);
+  if (!query.pedido) return 'erro';
+  if (!query.tipo) return 'filtro_invalido';
+  if (query.tipo === 'proxima_sessao') return null;
+  if (query.tipo === 'aniversariantes' && !query.de && !query.ate) return null;
+  if (!query.de || !query.ate || query.de > query.ate) return 'periodo_invalido';
+  const days = (Date.parse(query.ate) - Date.parse(query.de)) / 86400000 + 1;
+  if (days > (query.tipo === 'aniversariantes' ? PATIENT_BIRTHDAY_MAX_DAYS : FINANCE_MAX_DAYS)) return 'limite_periodo';
+  return null;
+}
+export function patientConsultaFailure(raw, reason, resumo = null) {
+  const query = patientQuery(readPatientConsulta(raw));
+  const motivo = typeof reason === 'string' && Object.hasOwn(PATIENT_REASONS, reason) ? reason : 'erro';
+  return { ...query, motivo, mensagem: PATIENT_REASONS[motivo], criterio: null, linhas: [], total: null, resumo };
+}
+
+function readPatientLineFor(tipo, raw) {
+  const line = agendaRecord(raw);
+  const keys = PATIENT_KEYS[tipo].linha;
+  if (!sameKeys(line, keys)) return null;
+  const idade = financeAge(line.idade);
+  const fixed = line.paciente === FINANCE_ARCHIVED || line.paciente === PATIENT_OUTSIDE;
+  // FIN-7: primeiro nome só de letras; rótulo fixo só sem idade.
+  if (idade === undefined || typeof line.paciente !== 'string' || (fixed ? idade !== null : !FINANCE_FIRST_NAME.test(line.paciente))
+      || typeof line.homonimo !== 'boolean') return null;
+  const clean = { paciente: line.paciente, idade, homonimo: line.homonimo };
+  for (const key of keys) {
+    if (key in clean) continue;
+    const value = line[key];
+    // Campos da agenda: a mesma validação de readAgendaLine (valores fechados).
+    const ok = key === 'sessao_numero' || key === 'sessoes_total'
+      ? value === null || (Number.isSafeInteger(value) && value >= 1)
+      : readAgendaLine('agenda', { dia: '2026-01-01', inicio: '00:00', fim: '00:00', profissional: '', area: FINANCE_NO_AREA, tipo_atendimento: 'Sem tipo', modalidade: 'Não informada', status: 'Agendado', [key]: value }) !== null
+        || (['nao_compareceu', 'cancelado_paciente'].includes(key) && Number.isSafeInteger(value) && value >= 0);
+    if (!ok) return null;
+    clean[key] = value;
+  }
+  return Object.fromEntries(keys.map(key => [key, clean[key]]));
+}
+/** Lista fechada por tipo; nome completo ou chave a mais derruba a resposta inteira. */
+export function readPatientResult(raw) {
+  const item = agendaRecord(raw);
+  const parsed = readPatientConsulta(item);
+  const query = patientQuery(parsed);
+  if (!parsed.tipo || Object.keys(item).some(key => !PATIENT_TOP_KEYS.includes(key))) return patientConsultaFailure(item, parsed.pedido && !parsed.tipo ? 'filtro_invalido' : 'erro');
+  const issue = patientConsultaIssue(item);
+  if (issue) return patientConsultaFailure(item, issue);
+  const summaryKeys = PATIENT_KEYS[parsed.tipo].resumo;
+  const readSummary = value => {
+    const resumo = agendaRecord(value);
+    if (!sameKeys(resumo, summaryKeys) || summaryKeys.some(key => !Number.isSafeInteger(resumo[key]) || resumo[key] < 0)) return null;
+    return Object.fromEntries(summaryKeys.map(key => [key, resumo[key]]));
+  };
+  if (item.motivo === 'limite_linhas') {
+    const resumo = readSummary(item.resumo);
+    return patientConsultaFailure(item, resumo ? 'limite_linhas' : 'erro', resumo);
+  }
+  if (item.motivo) return patientConsultaFailure(item, item.motivo);
+  const resumo = readSummary(item.resumo);
+  if (!resumo || !Array.isArray(item.linhas)) return patientConsultaFailure(item, 'erro');
+  if (item.linhas.length > FINANCE_MAX_ROWS) return patientConsultaFailure(item, 'limite_linhas', resumo);
+  const linhas = [];
+  for (const rawLine of item.linhas) {
+    const line = readPatientLineFor(parsed.tipo, rawLine);
+    if (!line) return patientConsultaFailure(item, 'erro');
+    linhas.push(line);
+  }
+  return { ...query, motivo: null, mensagem: '', criterio: PATIENT_CRITERIA[parsed.tipo], linhas, total: linhas.length, resumo };
+}
+
+// ---------- contas (aparelho) ----------
+
+/** Quem é quem sem sobrenome: homônimo = mesmo primeiro nome, idade e profissional, pessoas diferentes. */
+function labelPatients(rows, people) {
+  const owners = new Map();
+  const keyOf = row => {
+    const person = people.get(row.patientId);
+    return person ? [plainName(person.first), person.age, row.professionalId || ''].join('|') : '';
+  };
+  for (const row of rows) {
+    const key = keyOf(row);
+    if (key) owners.set(key, (owners.get(key) || new Set()).add(row.patientId));
+  }
+  return row => {
+    const person = people.get(row.patientId);
+    const key = keyOf(row);
+    return {
+      paciente: person ? person.first : PATIENT_OUTSIDE,
+      idade: person ? person.age : null,
+      homonimo: Boolean(key) && owners.get(key).size > 1,
+    };
+  };
+}
+function peopleOf(patients, today) {
+  return new Map(patients.filter(row => FINANCE_FIRST_NAME.test(firstNameOf(row.name)))
+    .map(row => [row.id, { first: firstNameOf(row.name), age: ageOn(row.birth_date, today) }]));
+}
+/** Pacientes do login que casam com o primeiro nome (e a idade, se veio). */
+export function matchPatients({ patients = [], paciente, idade = null, today }) {
+  const term = plainName(paciente);
+  return patients.filter(row => plainName(firstNameOf(row.name)) === term && (idade === null || ageOn(row.birth_date, today) === idade));
+}
+function patientLimit(query, linhas, resumo) {
+  if (linhas.length > FINANCE_MAX_ROWS) return readPatientResult({ ...query, motivo: 'limite_linhas', linhas: [], total: null, resumo });
+  return readPatientResult({ ...query, motivo: null, mensagem: '', criterio: '', linhas, total: linhas.length, resumo });
+}
+
+/** Agenda do período com paciente (só o que a Agenda do login mostra). */
+export function summarizeAgendaWithPatients({ consulta, appointments = [], patients = [], nameOf = () => '', today, patientIds = null }) {
+  const query = patientQuery(readPatientConsulta(consulta));
+  const visits = appointments.filter(item => item?.kind !== 'block' && (!patientIds || patientIds.has(item.patient_id)));
+  const people = peopleOf(patients, today);
+  const rows = visits.slice().sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at)))
+    .map(item => ({ item, patientId: item.patient_id, professionalId: item.professional_id }));
+  const who = labelPatients(rows, people);
+  const resumo = {
+    agendados: visits.filter(item => item.status === 'scheduled' || item.status === 'ready').length,
+    atendidos: visits.filter(item => item.status === 'attended').length,
+    faltas: visits.filter(item => item.status === 'no_show').length,
+    cancelamentos: visits.filter(item => item.status === 'excused' || item.status === 'cancelled').length,
+    bloqueios: patientIds ? 0 : appointments.length - visits.length,
+  };
+  const linhas = rows.map(row => ({
+    dia: localDay(row.item.starts_at), inicio: localHour(row.item.starts_at), fim: localHour(row.item.ends_at || row.item.starts_at),
+    ...who(row), profissional: nameOf(row.item.professional_id), area: areaOf(row.item.discipline),
+    tipo_atendimento: appointmentTypeLabel(row.item.appointment_type, row.item.discipline), modalidade: modalityLabel(row.item.modality), status: statusLabel(row.item.status),
+  }));
+  return patientLimit(query, linhas, resumo);
+}
+
+/** Próxima sessão: o primeiro atendimento Agendado de cada paciente; número pela regra de "Sessões do pacote". */
+export function summarizeNextSessions({ consulta, nexts = [], patients = [], nameOf = () => '', today }) {
+  const query = patientQuery(readPatientConsulta(consulta));
+  const people = peopleOf(patients, today);
+  const rows = nexts.map(next => ({ ...next, patientId: next.appointment.patient_id, professionalId: next.appointment.professional_id }));
+  const who = labelPatients(rows, people);
+  const linhas = rows.map(row => {
+    const summary = row.series ? summarizePackageSessions(row.series, { currentId: row.appointment.id, now: new Date(`${today}T00:00:00`) }) : null;
+    return {
+      ...who(row), dia: localDay(row.appointment.starts_at), inicio: localHour(row.appointment.starts_at), profissional: nameOf(row.appointment.professional_id),
+      area: areaOf(row.appointment.discipline), tipo_atendimento: appointmentTypeLabel(row.appointment.appointment_type, row.appointment.discipline),
+      sessao_numero: summary?.currentNumber ?? null, sessoes_total: summary ? summary.total || null : null,
+    };
+  });
+  return patientLimit(query, linhas, { total: linhas.length });
+}
+
+/** Faltosos: não compareceu + cancelado pelo paciente, por paciente × profissional × área, a partir do mínimo. */
+export function summarizeFrequentAbsences({ consulta, appointments = [], patients = [], nameOf = () => '', today }) {
+  const query = patientQuery(readPatientConsulta(consulta));
+  const groups = new Map();
+  for (const item of appointments) {
+    if (!isAbsence(item) || item.status === 'cancelled') continue;
+    const key = `${item.patient_id}|${item.professional_id}|${item.discipline}`;
+    const group = groups.get(key) || { patientId: item.patient_id, professionalId: item.professional_id, discipline: item.discipline, nao_compareceu: 0, cancelado_paciente: 0 };
+    if (item.status === 'no_show') group.nao_compareceu += 1;
+    else group.cancelado_paciente += 1;
+    groups.set(key, group);
+  }
+  const rows = [...groups.values()].filter(group => group.nao_compareceu + group.cancelado_paciente >= query.minimo)
+    .sort((a, b) => (b.nao_compareceu + b.cancelado_paciente) - (a.nao_compareceu + a.cancelado_paciente));
+  const who = labelPatients(rows, peopleOf(patients, today));
+  const linhas = rows.map(row => ({ ...who(row), profissional: nameOf(row.professionalId), area: areaOf(row.discipline), nao_compareceu: row.nao_compareceu, cancelado_paciente: row.cancelado_paciente }));
+  return patientLimit(query, linhas, { total: linhas.length });
+}
+
+/** Aniversariantes do período (até 31 dias), pela mesma regra da Agenda (birthdaysByDay); sem a data. */
+export function summarizeBirthdayPeople({ consulta, patients = [], today }) {
+  let query = patientQuery(readPatientConsulta(consulta));
+  if (!query.de && !query.ate) {
+    const [year, month] = today.split('-').map(Number);
+    query = { ...query, de: `${year}-${pad2(month)}-01`, ate: `${year}-${pad2(month)}-${pad2(new Date(year, month, 0).getDate())}` };
+  }
+  const found = [];
+  const start = new Date(`${query.de}T00:00:00`);
+  const end = new Date(`${query.ate}T00:00:00`);
+  for (let cursor = new Date(start.getFullYear(), start.getMonth(), 1); cursor <= end; cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)) {
+    for (const [day, list] of birthdaysByDay(patients, cursor.getFullYear(), cursor.getMonth() + 1)) {
+      if (day < query.de || day > query.ate) continue;
+      for (const person of list) found.push({ day, id: person.id, name: person.name, age: person.age });
+    }
+  }
+  found.sort((a, b) => a.day.localeCompare(b.day));
+  const valid = found.filter(person => FINANCE_FIRST_NAME.test(firstNameOf(person.name)));
+  const people = new Map(valid.map(person => [person.id, { first: firstNameOf(person.name), age: person.age }]));
+  const rows = valid.map(person => ({ patientId: person.id, professionalId: '' }));
+  const who = labelPatients(rows, people);
+  const linhas = rows.map(row => who(row));
+  return patientLimit(query, linhas, { total: linhas.length });
 }

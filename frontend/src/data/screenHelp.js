@@ -1287,6 +1287,7 @@ export const ASSISTANT_HELP = {
   reading: [
     'A resposta financeira diz o período e o critério. Valores de operadora não são cobrança ao paciente. Sem lote ou prazo, o vencimento fica sem data e o recorte considera a data do atendimento.',
     'Se a consulta falhar, não significa zero. Pedidos acima de 93 dias ou 50 linhas precisam de um recorte menor. Confira os registros na tela Financeiro, que é a referência.',
+    'Quem vê a Agenda também pode perguntar quem atende num dia e a próxima sessão de um paciente; administração e recepção, por faltosos e aniversariantes. Nessas respostas, o paciente aparece só pelo primeiro nome e a idade, nunca sobrenome, data de nascimento, contato ou dado clínico, e só o que o seu login já vê na Agenda. Primeiro nome e idade saem do Brasil para o serviço de IA nos Estados Unidos.',
     'As consultas de agenda e operação não trazem paciente: só horários, profissional, área, tipo, status e números. Com mais de 50 itens, vêm só os números do resumo; estreite o período para ver a lista. A tela de origem (Agenda, Gestão ou Financeiro) é a referência.',
   ],
   access: [

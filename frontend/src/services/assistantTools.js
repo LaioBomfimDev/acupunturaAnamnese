@@ -15,7 +15,7 @@ import { loadFiscalData, loadTissData } from './financeiroService';
 import { listSatisfactionSurveys } from './satisfactionSurveyService';
 import { listAssignments } from './patientPortalService';
 import { listClinicPatients } from './clinicPatientsService';
-import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn, listPendingConfirmations } from './appointmentService';
+import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn, listPendingConfirmations, listSeriesSessions } from './appointmentService';
 import { listClinicMembers, shortName } from './clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from './agendaScheduleService';
 import { loadAgendaSettings } from './agendaSettingsService';
@@ -28,6 +28,8 @@ import {
   freeSlotsForAssistant,
   readFinanceConsulta, financeConsultaIssue, financeConsultaFailure, summarizeFinance,
   AGENDA_CONSULTAS, AGENDA_ACCESS, AGENDA_SOURCE_LIMIT, PACKAGE_WINDOW_DAYS,
+  PATIENT_CONSULTAS, PATIENT_NEXT_MAX, readPatientConsulta, patientConsultaIssue, patientConsultaFailure, matchPatients,
+  summarizeAgendaWithPatients, summarizeNextSessions, summarizeFrequentAbsences, summarizeBirthdayPeople,
   readAgendaConsulta, agendaConsultaIssue, agendaConsultaFailure,
   summarizeAgendaPeriod, summarizeAbsencesPeriod, summarizePendingConfirmationsPeriod, summarizePackagesNearEndAgenda,
   summarizeBirthdaysCount, summarizeSurveysPeriod, summarizePortalForms, summarizeConvenioState,
@@ -107,6 +109,7 @@ async function scaleApplications(dia) {
 export async function runAssistantConsulta(consulta, { profile, team = null, now = new Date() }) {
   if (consulta.tipo === 'financeiro') return runFinanceConsulta(consulta, profile, now);
   if (AGENDA_CONSULTAS.includes(consulta.tipo)) return runAgendaConsulta(consulta, profile, team, now);
+  if (PATIENT_CONSULTAS.includes(consulta.tipo)) return runPatientConsulta(consulta, profile, team, now);
   const dia = consulta.dia || todayInClinic(now);
   const base = {
     tipo: consulta.tipo, profissional: consulta.profissional, dia, horarios: [], motivo: null, opcoes: [], linhas: [], total: null,
@@ -260,5 +263,70 @@ async function runAgendaConsulta(raw, profile, team, now) {
     return agendaConsultaFailure(query, 'erro');
   } catch {
     return agendaConsultaFailure(query, 'erro');
+  }
+}
+
+// ============================================================
+// ACUP-025 (AG-2, AG-8): agenda COM paciente (primeiro nome + idade). Mesma
+// porta de perfil, antes de qualquer fonte. Os nomes vêm de listClinicPatients
+// com o login de quem perguntou (só o que ele já vê); "eu" vira a pessoa aqui,
+// pelo login, nunca pelo nome que vem no pedido.
+// ============================================================
+async function runPatientConsulta(raw, profile, team, now) {
+  const parsed = readPatientConsulta(raw);
+  const access = AGENDA_ACCESS[parsed.pedido];
+  try {
+    if (!access || !(await agendaAllowed(access, profile))) return patientConsultaFailure(raw, 'sem_permissao');
+    const issue = patientConsultaIssue(raw);
+    if (issue) return patientConsultaFailure(raw, issue);
+    const today = todayInClinic(now);
+    let query = { tipo: parsed.tipo, de: parsed.de, ate: parsed.ate, profissional: parsed.profissional, paciente: parsed.paciente, idade: parsed.idade, minimo: parsed.minimo };
+    let person = null;
+    let nameOf = () => '';
+    if (parsed.tipo !== 'aniversariantes') {
+      const people = team || await loadAssistantTeam();
+      const match = resolvePerson(parsed.profissional, people, profile.id);
+      if (match.motivo) return patientConsultaFailure(query, match.motivo);
+      person = match.member;
+      if (person) query = { ...query, profissional: shortName(person.full_name) };
+      nameOf = nameOfFor(await listClinicMembers().catch(() => people));
+    }
+    // listClinicPatients corta em 2000 (QA, 09/11/2026): cheia vira erro; senão
+    // aniversariantes contaria menos e paciente real viraria "fora da sua lista".
+    const patients = full(await listClinicPatients());
+    const matched = parsed.paciente ? matchPatients({ patients, paciente: parsed.paciente, idade: parsed.idade, today }) : null;
+    if (matched && !matched.length) return patientConsultaFailure(query, 'nao_encontrado');
+
+    if (parsed.tipo === 'agenda_pacientes' || parsed.tipo === 'faltosos') {
+      const { from, to } = periodRange(parsed.de, parsed.ate);
+      const appointments = full(await listAppointments({ from, to, professionalId: person?.id || null }));
+      const ids = matched ? new Set(matched.map(row => row.id)) : null;
+      return parsed.tipo === 'agenda_pacientes'
+        ? summarizeAgendaWithPatients({ consulta: query, appointments, patients, nameOf, today, patientIds: ids })
+        : summarizeFrequentAbsences({ consulta: query, appointments: ids ? appointments.filter(item => ids.has(item.patient_id)) : appointments, patients, nameOf, today });
+    }
+    if (parsed.tipo === 'proxima_sessao') {
+      // Mais de PATIENT_NEXT_MAX pacientes com o mesmo nome: pergunta de volta, nunca escolhe calado.
+      if (matched.length > PATIENT_NEXT_MAX) return patientConsultaFailure(query, 'ambiguo');
+      const from = now.toISOString();
+      const to = new Date(now.getTime() + PACKAGE_WINDOW_DAYS * 86_400_000).toISOString();
+      const nexts = [];
+      for (const patient of matched) {
+        const upcoming = (await listAppointments({ from, to, patientId: patient.id }))
+          .filter(item => item.kind !== 'block' && (item.status === 'scheduled' || item.status === 'ready') && (!person || item.professional_id === person.id))
+          .sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at)));
+        const next = upcoming[0];
+        if (!next) continue;
+        const series = next.recurrence_group_id ? await listSeriesSessions(next.recurrence_group_id) : null;
+        nexts.push({ appointment: next, series });
+      }
+      return summarizeNextSessions({ consulta: query, nexts, patients, nameOf, today });
+    }
+    if (parsed.tipo === 'aniversariantes') {
+      return summarizeBirthdayPeople({ consulta: query, patients, today });
+    }
+    return patientConsultaFailure(query, 'erro');
+  } catch {
+    return patientConsultaFailure(raw, 'erro');
   }
 }

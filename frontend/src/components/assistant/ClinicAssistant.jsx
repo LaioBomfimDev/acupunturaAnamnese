@@ -152,7 +152,7 @@ function Conversation({ state, allowed, role, inputRef }) {
       <div className="ca-messages" ref={listRef} aria-live="polite">
         {state.messages.length === 0 && (
           <div className="ca-starters">
-            <p>Pergunte sobre o sistema, sobre esta tela ou sobre horários vagos da equipe. Ainda não vejo pacientes nem o financeiro.</p>
+            <p>Pergunte sobre o sistema, sobre esta tela, sobre a agenda e os números da clínica. Nas perguntas de agenda, cito o paciente só pelo primeiro nome e a idade. Nunca leio prontuário, evolução, escalas ou anamnese.</p>
             <div className="ca-chips">
               {(STARTERS[role] || STARTERS.professional).map(text => (
                 <button key={text} type="button" className="ca-chip" onClick={() => sendAssistantMessage(text)} disabled={state.sending}>

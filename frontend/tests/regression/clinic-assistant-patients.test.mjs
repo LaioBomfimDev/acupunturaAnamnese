@@ -256,3 +256,16 @@ test('AG-8 fonte que falha vira aviso; prompt, ajuda e AGENTS dizem primeiro nom
   assert.match(panel, /Nas perguntas de agenda, cito o paciente só pelo primeiro nome e a idade\. Nunca leio prontuário, evolução, escalas ou anamnese\./);
   assert.doesNotMatch(panel, /Ainda não vejo pacientes/);
 });
+
+test('QA 09/11/2026: cadastro no limite do serviço (2000) vira erro nos 4 tipos; nunca subconta nem rotula paciente real como "fora da sua lista"', async () => {
+  for (const tipo of ['agenda_pacientes', 'proxima_sessao', 'faltosos', 'aniversariantes']) {
+    reset();
+    state.patients = [...patients(), ...Array.from({ length: 2000 - patients().length }, (_, i) => ({ id: 'cheio-' + i, name: 'Nome' + i, birth_date: '1990-11-20' }))];
+    const result = await run(ask(tipo));
+    assert.equal(result.motivo, 'erro', tipo);
+    assert.equal(result.resumo, null, tipo);
+    assert.deepEqual(result.linhas, [], tipo);
+  }
+  reset();
+  assert.notEqual((await run(ask('aniversariantes'))).motivo, 'erro', 'abaixo do limite segue normal');
+});

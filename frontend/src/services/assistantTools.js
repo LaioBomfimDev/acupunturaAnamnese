@@ -291,7 +291,9 @@ async function runPatientConsulta(raw, profile, team, now) {
       if (person) query = { ...query, profissional: shortName(person.full_name) };
       nameOf = nameOfFor(await listClinicMembers().catch(() => people));
     }
-    const patients = await listClinicPatients();
+    // listClinicPatients corta em 2000 (QA, 09/11/2026): cheia vira erro; senão
+    // aniversariantes contaria menos e paciente real viraria "fora da sua lista".
+    const patients = full(await listClinicPatients());
     const matched = parsed.paciente ? matchPatients({ patients, paciente: parsed.paciente, idade: parsed.idade, today }) : null;
     if (matched && !matched.length) return patientConsultaFailure(query, 'nao_encontrado');
 

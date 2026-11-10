@@ -9,8 +9,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versão | 1.2 (1.1 da assistente financeira aprovada em 09/11/2026; §4.2 da assistente na agenda em rascunho, aguardando aprovação da clínica) |
-| Data | 2026-06-30 · atualizado em 2026-11-09 |
+| Versão | 1.2 (1.1 da assistente financeira aprovada em 09/11/2026; §4.2 da assistente na agenda aprovada em 10/11/2026) |
+| Data | 2026-06-30 · atualizado em 2026-11-10 |
 | Responsável pela elaboração | Equipe Reability — [definir responsável técnico] |
 | Encarregado (DPO) | Ainda não formalmente nomeado — contato institucional interino: (71) 99970-3912 |
 | Controlador | Reability – Núcleo de Desenvolvimento Neurológico LTDA — CNPJ 53.351.769/0001-10 — Rua Simões Filho, 350, Boa Vista, Catu – BA, CEP 48110-000. Responsável técnica: Denise Neves (CRP 03/10696) |
@@ -129,7 +129,7 @@ consentimento específico e destacado do titular (art. 11, I), conforme o caso. 
 - **Crianças e adolescentes:** ver §9 — este fluxo envia primeiro nome + idade de **criança** para
   fora do Brasil.
 
-### 4.2 Assistente da clínica — perguntas sobre a agenda com paciente (rascunho, 2026-11)
+### 4.2 Assistente da clínica — perguntas sobre a agenda com paciente (novo tratamento, 2026-11)
 
 - **Finalidade:** quem trabalha na clínica pergunta à assistente sobre a agenda (ex.: "quem eu atendo
   amanhã?", "quando é a próxima sessão da Vitória?", "quem faltou duas vezes no mês?",
@@ -253,8 +253,7 @@ pendências abaixo.
 - [ ] Consentimento/aviso de privacidade do **PACIENTE** ao nível da clínica (papel/PDF, fora do sistema — o termo do app é só do profissional).
 - [ ] Arquivar o **CDPA do Google** (PDF pt-BR) e o **DPA do Supabase**; registrar a região dos backups.
 - [ ] Definir política de segurança operacional: **MFA**, backup (frequência/retenção/responsável), revisão e desligamento de acessos, treinamento LGPD da equipe.
-- [ ] **Assistente na agenda (§4.2, 2026-11):** aprovação da clínica deste texto antes de a função ir ao
-  ar; base legal (e se a área de atendimento puxa o art. 11) e base da transferência internacional com o
+- [ ] **Assistente na agenda (§4.2, 2026-11):** texto aprovado pela clínica em 10/11/2026; base legal (e se a área de atendimento puxa o art. 11) e base da transferência internacional com o
   jurídico; incluir no aviso ao responsável legal e no registro das operações de tratamento.
 - [ ] **Assistente financeira (§4.1, 2026-11):** texto aprovado pela clínica em 09/11/2026; base legal e base
   da transferência internacional de dado identificável com o jurídico; aviso ao responsável legal sobre

@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { createPortal, flushSync } from 'react-dom';
 import { DISCIPLINES, getDiscipline } from '../../data/disciplines';
 import {
   cancelFiscalDocument,
@@ -8,7 +7,7 @@ import {
   saveFiscalDocument,
   saveFiscalSettings,
 } from '../../services/financeiroService';
-import { formatBRL, formatShortDay, methodLabel } from '../../utils/finance';
+import { formatBRL, formatShortDay } from '../../utils/finance';
 import {
   DEFAULT_EMITTER_URL,
   FISCAL_MISSING_LABELS,
@@ -19,10 +18,10 @@ import {
   formatTakerDocument,
   moneyForEmitter,
 } from '../../utils/fiscal';
-import { buildReportAccentPalette, buildReportContactItems, getClinicLetterheadColor } from '../../utils/reportUtils';
-import { PrintFooter, PrintLetterhead } from '../report/reportPrint';
 import { VoidDialog } from './FinanceDialogs';
 import { EmptyNote } from './FinanceFields';
+import { usePrintSheet } from './usePrintSheet';
+import { clientSheetProps } from '../../utils/financeReceipts';
 
 // ============================================================
 // Notas fiscais e comprovante (04/11/2026, banco A + tela A).
@@ -428,77 +427,23 @@ export function FiscalChip({ doc }) {
   return null;
 }
 
-// ---------- comprovante ----------
+// ---------- recibo do cliente (modelo 08 da clínica, 10/11/2026) ----------
 
-function VoucherSheet({ fin, number, group, doc }) {
-  const clinic = fin.profile?.clinic || null;
-  const clinicName = clinic?.name || fin.profile?.clinic_name || 'Clínica';
-  const palette = buildReportAccentPalette(getClinicLetterheadColor(clinic) || '#0E2A4A', '#0E2A4A');
-  const details = [clinic?.legal_name, clinic?.cnpj ? `CNPJ ${formatTakerDocument(clinic.cnpj)}` : null].filter(Boolean).join(' • ');
-  const total = group.rows.reduce((sum, row) => sum + row.amount_cents, 0);
-  const methods = [...new Set(group.rows.map(row => methodLabel(row.method)))].join(' + ');
-  return (
-    <div className="report-print-pages" style={{ '--clinic-accent': palette.accent, '--clinic-accent-shade': palette.shade, '--clinic-accent-soft': palette.soft }}>
-      <section className="rpage">
-        <PrintLetterhead
-          clinicLogo={clinic?.logo_url || ''}
-          clinicMonogram={clinicName.trim().charAt(0).toUpperCase() || 'C'}
-          clinicName={clinicName}
-          clinicDetails={details}
-          dateLabel={formatShortDay(group.receivedOn)}
-          sessaoLabel={`Comprovante nº ${String(number).padStart(4, '0')}`}
-          terapeuta=""
-        />
-        <div className="rpage-body doc-body fin-voucher">
-          <h2>Comprovante de pagamento nº {String(number).padStart(4, '0')}</h2>
-          <p>
-            Recebemos de <b>{doc?.taker_name || 'paciente'}</b>
-            {doc?.taker_document ? <> (CPF/CNPJ {formatTakerDocument(doc.taker_document)})</> : null} a quantia de{' '}
-            <b>{formatBRL(total)}</b>, em {formatShortDay(group.receivedOn)}, por {methods.toLocaleLowerCase('pt-BR')}.
-          </p>
-          <p>Referente a: {doc?.description || 'atendimento'}.</p>
-          <p className="fin-voucher-nfse">
-            {doc?.status === 'issued'
-              ? <>Nota fiscal de serviço (NFS-e) nº {doc.nfse_number}{doc.access_key ? `, chave ${doc.access_key}` : ''}.</>
-              : 'Este comprovante não substitui a nota fiscal de serviço (NFS-e).'}
-          </p>
-        </div>
-        <div className="rpage-footer">
-          <PrintFooter items={buildReportContactItems({ clinic, therapistProfile: fin.profile })} clinicName={clinicName} />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/** Numera (uma vez) e imprime o comprovante de um recebimento. */
-export function VoucherButton({ fin, group }) {
-  const [printing, setPrinting] = useState(null);
-  const [error, setError] = useState('');
+/** Numera (uma vez, na mesma sequência de antes) e imprime o recibo do cliente. */
+export function VoucherButton({ fin, group, what = '', serviceDays = [], patient = '' }) {
   const doc = useMemo(() => fin.fiscalBySource?.byGroup.get(group.id) || null, [fin.fiscalBySource, group.id]);
-  async function print() {
-    setError('');
-    try {
+  const sheet = usePrintSheet();
+  function print() {
+    sheet.print(async () => {
       const number = await receiptVoucherNumber(group.id);
-      flushSync(() => setPrinting({ number }));
-      document.body.classList.add('fin-printing');
-      const done = () => {
-        document.body.classList.remove('fin-printing');
-        setPrinting(null);
-        window.removeEventListener('afterprint', done);
-        fin.fiscalReload();
-      };
-      window.addEventListener('afterprint', done);
-      window.print();
-    } catch (err) {
-      setError(err.message);
-    }
+      return clientSheetProps({ fin, number, group, doc, what, serviceDays, patient });
+    }, () => fin.fiscalReload());
   }
   return (
     <>
-      <button type="button" className="gt-btn gt-btn--sm" onClick={print} title={error || undefined}>Comprovante</button>
-      {error && <span className="fin-hint fin-hint--warn" role="alert">{error}</span>}
-      {printing && createPortal(<div className="fin-print-root"><VoucherSheet fin={fin} number={printing.number} group={group} doc={doc} /></div>, document.body)}
+      <button type="button" className="gt-btn gt-btn--sm" onClick={print} title={sheet.error || undefined}>Recibo</button>
+      {sheet.error && <span className="fin-hint fin-hint--warn" role="alert">{sheet.error}</span>}
+      {sheet.portal}
     </>
   );
 }

@@ -433,7 +433,15 @@ export function Recebidos({ fin }) {
                 <FiscalChip doc={fin.fiscalBySource?.byGroup.get(group.id)} />
                 {!group.voided && (
                   <div className="fin-row-actions">
-                    {fin.fiscal && <VoucherButton fin={fin} group={group} />}
+                    {fin.fiscal && (
+                      <VoucherButton
+                        fin={fin}
+                        group={group}
+                        what={what}
+                        patient={patientName(fin, group.patientId)}
+                        serviceDays={group.rows.map(row => (row.charge_id ? chargeById.get(row.charge_id)?.service_on : null))}
+                      />
+                    )}
                     <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding({ id: group.id, total, patientId: group.patientId })}>Anular</button>
                   </div>
                 )}

@@ -2298,3 +2298,50 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- recibos no desenho dos modelos 07 e 08 (10/11/2026) ---------- */
+
+.fin-receipt-model p {
+  margin: 0 0 9px;
+  line-height: 1.55;
+}
+
+.fin-receipt-model h2 {
+  margin: 0 0 16px;
+  font-size: 13pt;
+  color: #0f172a;
+}
+
+/* Preenchido em preto, como no modelo; cor da clínica só no timbrado. */
+.fin-receipt-model b {
+  color: #0f172a;
+}
+
+.fin-receipt-model-clinic {
+  font-weight: 700;
+}
+
+.fin-receipt-model-void {
+  padding: 6px 10px;
+  border: 1px solid currentColor;
+}
+
+.fin-receipt-model-sign {
+  display: grid;
+  gap: 6px;
+  margin: 34px 0 12px;
+}
+
+.fin-receipt-model-sign span {
+  display: block;
+  width: min(100%, 360px);
+  border-top: 1px solid currentColor;
+}
+
+.fin-receipt-model-sign p {
+  margin: 0;
+}
+
+.fin-receipt-span {
+  grid-column: 1 / -1;
+}

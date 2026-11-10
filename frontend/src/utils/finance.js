@@ -108,6 +108,12 @@ export function formatBRL(cents) {
   return (value % 100 === 0 ? BRL_WHOLE : BRL).format(value / 100).replace(/[\u00a0\u202f]/g, ' ');
 }
 
+/** Sempre com centavos, como se escreve em recibo: "R$ 320,00". */
+export function formatBRLWithCents(cents) {
+  if (cents == null || !Number.isFinite(Number(cents))) return '–';
+  return BRL.format(Number(cents) / 100).replace(/\s/g, ' ');
+}
+
 /** "150", "150,5", "1.234,56", "R$ 90" → centavos. Vazio ou inválido → null. */
 export function parseBRLInput(text) {
   const raw = String(text ?? '').replace(/R\$/i, '').replace(/\s/g, '');
@@ -127,6 +133,91 @@ export function centsToInput(cents) {
   const value = Number(cents);
   if (value % 100 === 0) return String(value / 100);
   return (value / 100).toFixed(2).replace('.', ',');
+}
+
+// ---------- valor por extenso (recibos, 10/11/2026) ----------
+
+const UNITS = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez',
+  'onze', 'doze', 'treze', 'catorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+const TENS = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+const HUNDREDS = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+function wordsBelowThousand(value) {
+  if (value === 100) return 'cem';
+  const hundred = Math.floor(value / 100);
+  const rest = value % 100;
+  const parts = [];
+  if (hundred) parts.push(HUNDREDS[hundred]);
+  if (rest) {
+    if (rest < 20) parts.push(UNITS[rest]);
+    else parts.push(rest % 10 ? `${TENS[Math.floor(rest / 10)]} e ${UNITS[rest % 10]}` : TENS[Math.floor(rest / 10)]);
+  }
+  return parts.join(' e ');
+}
+
+/** Inteiro de 0 a 999.999.999 por extenso ("mil e duzentos", "dois milhões e cinquenta"). */
+export function integerInWords(value) {
+  const number = Math.floor(Number(value));
+  if (!Number.isFinite(number) || number < 0 || number > 999999999) return '';
+  if (number === 0) return 'zero';
+  const millions = Math.floor(number / 1000000);
+  const thousands = Math.floor((number % 1000000) / 1000);
+  const rest = number % 1000;
+  const groups = [];
+  if (millions) groups.push({ value: millions, text: millions === 1 ? 'um milhão' : `${wordsBelowThousand(millions)} milhões` });
+  if (thousands) groups.push({ value: thousands, text: thousands === 1 ? 'mil' : `${wordsBelowThousand(thousands)} mil` });
+  if (rest) groups.push({ value: rest, text: wordsBelowThousand(rest) });
+  // "e" antes do último grupo quando ele é menor que cem ou centena redonda
+  // ("mil e cinquenta", "mil e duzentos", "um milhão e mil"); senão, só
+  // espaço ("mil duzentos e um").
+  return groups.reduce((text, group, index) => {
+    if (index === 0) return group.text;
+    const isLast = index === groups.length - 1;
+    const joinWithE = isLast && (group.value < 100 || group.value % 100 === 0);
+    return `${text}${joinWithE ? ' e ' : ' '}${group.text}`;
+  }, '');
+}
+
+/** Centavos por extenso: "duzentos e oitenta reais e cinquenta centavos". */
+export function amountInWords(cents) {
+  const value = Math.round(Number(cents));
+  if (!Number.isFinite(value) || value < 0) return '';
+  const reais = Math.floor(value / 100);
+  const centavos = value % 100;
+  const parts = [];
+  if (reais) {
+    const words = integerInWords(reais);
+    // "um milhão de reais", "dois milhões de reais"
+    const de = reais % 1000000 === 0 ? ' de' : '';
+    parts.push(`${words}${de} ${reais === 1 ? 'real' : 'reais'}`);
+  }
+  if (centavos) parts.push(`${integerInWords(centavos)} ${centavos === 1 ? 'centavo' : 'centavos'}`);
+  return parts.length ? parts.join(' e ') : 'zero real';
+}
+
+/** "Catu/BA" a partir do endereço da clínica ("…, Catu – BA, CEP …"); vazio se não achar. */
+export function placeFromAddress(address) {
+  const match = String(address || '').match(/([A-Za-zÀ-ÿ' .]+?)\s*[–—/-]\s*([A-Z]{2})\b/);
+  if (!match) return '';
+  const city = match[1].split(',').pop().trim();
+  return city ? `${city}/${match[2]}` : '';
+}
+
+const LONG_MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+/** "Catu/BA, 10 de novembro de 2026." (sem local, só a data). */
+export function placeAndDate(place, day) {
+  const [year, month, date] = String(day).split('-').map(Number);
+  const when = `${date} de ${LONG_MONTHS[month - 1]} de ${year}`;
+  return place ? `${place}, ${when}.` : `${when[0].toUpperCase()}${when.slice(1)}.`;
+}
+
+/** CPF 000.000.000-00 ou CNPJ 00.000.000/0000-00 (também alfanumérico). */
+export function formatPersonDocument(value) {
+  const raw = String(value || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+  if (/^\d{11}$/.test(raw)) return raw.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  if (/^[0-9A-Z]{12}\d{2}$/.test(raw)) return raw.replace(/^(.{2})(.{3})(.{3})(.{4})(.{2})$/, '$1.$2.$3/$4-$5');
+  return value || '';
 }
 
 // ---------- compras (itens e recibo) ----------

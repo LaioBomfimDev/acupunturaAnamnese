@@ -102,6 +102,7 @@ export async function loadFinanceData() {
     members,
     patients,
     purchaseItems,
+    providerReceipts,
   ] = await Promise.all([
     supabase.from('clinic_finance_settings').select('*').maybeSingle(),
     fetchAll('procedure_prices', 'id,discipline,appointment_type,professional_id,price_cents,active', 'discipline'),
@@ -118,6 +119,7 @@ export async function loadFinanceData() {
     listClinicMembers(),
     listClinicPatients(),
     fetchAll('finance_purchase_items', '*', 'position'),
+    fetchAll('finance_provider_receipts', '*', 'number'),
   ]);
 
   if (settingsResult.error) fail(settingsResult.error, 'Não foi possível carregar a configuração do financeiro.');
@@ -141,6 +143,7 @@ export async function loadFinanceData() {
     members,
     patients,
     purchaseItems,
+    providerReceipts,
   };
 }
 
@@ -456,6 +459,27 @@ export async function listQuickExpenses(from, to) {
     void_reason: row.void_reason,
     is_quick: true,
   }));
+}
+
+// ---------- recibo do prestador (20261110c): só a administração ----------
+
+export async function issueProviderReceipt({ expenseId, providerName, providerDocument = '', services, period = '', place = '' }) {
+  return rpc('finance_issue_provider_receipt', {
+    p_expense: expenseId,
+    p_provider_name: providerName,
+    p_provider_document: providerDocument || null,
+    p_services: services,
+    p_period: period || null,
+    p_place: place || null,
+  }, 'Não foi possível emitir o recibo.');
+}
+
+export async function signProviderReceipt(receiptId) {
+  return rpc('finance_sign_provider_receipt', { p_receipt: receiptId }, 'Não foi possível marcar como assinado.');
+}
+
+export async function voidProviderReceipt(receiptId, reason) {
+  return rpc('finance_void_provider_receipt', { p_receipt: receiptId, p_reason: reason }, 'Não foi possível anular o recibo.');
 }
 
 export async function voidExpense(expenseId, reason) {

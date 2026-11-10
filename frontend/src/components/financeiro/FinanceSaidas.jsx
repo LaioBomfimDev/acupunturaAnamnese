@@ -18,6 +18,8 @@ import { DueTag, EmptyNote, MethodPicker, MoneyInput } from './FinanceFields';
 import { ExpenseDialog, VoidDialog } from './FinanceDialogs';
 import { PurchaseDialog } from './PurchaseDialog';
 import { PurchaseReceiptDialog } from './PurchaseReceipt';
+import { ProviderReceiptDialog } from './ProviderReceipt';
+import { liveProviderReceipt, providerNumber } from '../../utils/financeReceipts';
 
 // ============================================================
 // Saídas: A pagar, Pagas e Equipe e repasses.
@@ -169,10 +171,19 @@ export function APagar({ fin }) {
   );
 }
 
+/** "Prestador Nº 0003: falta assinar" na linha da saída paga. */
+function ProviderChip({ receipt }) {
+  if (!receipt) return null;
+  return receipt.signed_at
+    ? <span className="gt-badge gt-badge-success">Prestador Nº {providerNumber(receipt.number)} assinado</span>
+    : <span className="gt-badge gt-badge-pending">Prestador Nº {providerNumber(receipt.number)}: falta assinar</span>;
+}
+
 export function Pagas({ fin }) {
   const [showVoided, setShowVoided] = useState(false);
   const [voiding, setVoiding] = useState(null);
   const [receipt, setReceipt] = useState(null);
+  const [provider, setProvider] = useState(null);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const lookups = { membersById: fin.membersById, peopleById: fin.peopleById };
   const list = fin.data.expenses
@@ -217,8 +228,16 @@ export function Pagas({ fin }) {
                 {row.voided_at && <span className="fin-void-reason">Anulada: {row.void_reason}</span>}
               </div>
               <b className="fin-num fin-amount">{formatBRL(row.amount_cents)}</b>
-              {row.receipt_number && <button type="button" className="gt-btn gt-btn--sm" onClick={() => setReceipt(row)}>Recibo</button>}
-              {!row.voided_at && <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding(row)}>Anular</button>}
+              <div className="fin-row-actions">
+                {!row.voided_at && <ProviderChip receipt={liveProviderReceipt(fin, row.id)} />}
+                {row.receipt_number && <button type="button" className="gt-btn gt-btn--sm" onClick={() => setReceipt(row)}>Comprovante</button>}
+                {!row.voided_at && (
+                  <button type="button" className="gt-btn gt-btn--sm" onClick={() => setProvider(row)}>
+                    {liveProviderReceipt(fin, row.id) ? 'Recibo do prestador' : 'Recibo de prestador'}
+                  </button>
+                )}
+                {!row.voided_at && <button type="button" className="gt-btn gt-btn--sm" onClick={() => setVoiding(row)}>Anular</button>}
+              </div>
             </div>
           ))}
         </div>
@@ -237,6 +256,7 @@ export function Pagas({ fin }) {
         />
       )}
       {receipt && <PurchaseReceiptDialog fin={fin} expense={receipt} items={itemsOfPurchase(fin.data.purchaseItems, receipt.id)} onClose={() => setReceipt(null)} />}
+      {provider && <ProviderReceiptDialog fin={fin} expense={fin.data.expenses.find(row => row.id === provider.id) || provider} onClose={() => setProvider(null)} />}
       {purchaseOpen && <PurchaseDialog fin={fin} onClose={() => setPurchaseOpen(false)} />}
     </section>
   );

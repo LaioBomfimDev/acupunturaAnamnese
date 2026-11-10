@@ -1,6 +1,6 @@
 import { ScreenHelp } from '../ui/ScreenHelp';
 import { ASSISTANT_HELP } from '../../data/screenHelp';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDismiss } from '../../hooks/useDismiss';
 import { canSeeScales } from '../../utils/instrumentAccess';
@@ -17,6 +17,7 @@ import {
 } from '../../utils/clinicAssistant';
 import {
   openScreenFromAssistant,
+  prepareActionFromAssistant,
   refreshAttention,
   sendAssistantMessage,
   setAssistantProfile,
@@ -173,6 +174,7 @@ function Conversation({ state, allowed, role, inputRef }) {
                 Abrir {assistantLinkLabel(link)} →
               </button>
             ))}
+            {message.role === 'assistant' && message.acao && <AssistantAction acao={message.acao} />}
             {message.role === 'assistant' && (
               // Caminho C: quem corrige ensina a assistente (vale na hora para
               // a autora; para todos depois da aprovação do SuperAdm).
@@ -289,4 +291,29 @@ export function ClinicAssistantLauncher({ profile }) {
       )}
     </>
   );
+}
+
+/**
+ * ACUP-027 (AG-4, AG-10): botão da ação que a assistente PREPAROU. O que ele
+ * mostra é refeito no aparelho (tabela da conversa + login), nunca pelo texto
+ * da IA. WhatsApp: link wa.me, a pessoa toca em Enviar. Agenda: abre o Novo
+ * agendamento preenchido, a pessoa confere e salva. Nada é enviado nem salvo aqui.
+ */
+function AssistantAction({ acao }) {
+  const [prepared, setPrepared] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    prepareActionFromAssistant(acao)
+      .then(result => { if (!cancelled) setPrepared(result); })
+      .catch(() => { if (!cancelled) setPrepared({ kind: 'motivo', text: 'Não foi possível preparar a ação agora. Faça pela Agenda.' }); });
+    return () => { cancelled = true; };
+  }, [acao]);
+  if (!prepared) return <p className="ca-action-note">Preparando…</p>;
+  if (prepared.kind === 'whatsapp') {
+    return <a className="ca-action" href={prepared.href} target="_blank" rel="noopener noreferrer">{prepared.label}</a>;
+  }
+  if (prepared.kind === 'agenda') {
+    return <button type="button" className="ca-action" onClick={() => openScreenFromAssistant('agenda', null, prepared.draft)}>{prepared.label}</button>;
+  }
+  return <p className="ca-action-note">{prepared.text}</p>;
 }

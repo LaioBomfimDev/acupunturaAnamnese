@@ -1282,6 +1282,7 @@ export const ASSISTANT_HELP = {
     'Perguntar sobre telas, horários vagos e contagens da clínica; abrir o destino sugerido em “Abrir …”.',
     'A administração pode perguntar sobre recebidos, a receber e atrasados por período, paciente e profissional.',
     'Toda a equipe pode perguntar pela agenda de um período (de uma pessoa ou da equipe), faltas e cancelamentos, confirmações pendentes e pacotes perto do fim. A administração também pergunta por pesquisas de satisfação, formulários da Área do Paciente, convênio e notas fiscais; administração e recepção, pelo número de aniversariantes do mês.',
+    'Pedir para preparar UMA ação de um atendimento que ela listou: a confirmação pelo WhatsApp (abre o WhatsApp com a mensagem pronta, a mesma da Agenda, e você toca em Enviar) ou um Novo agendamento para o paciente (abre a Agenda com o formulário preenchido e a faixa “Preenchido pela assistente: confira antes de salvar”; “Como paga” fica como sempre e você confere e salva). Uma ação por vez.',
     '“Corrigir” registra sua orientação. Em resposta financeira, salva somente sua nota: não escreva nome de paciente, valores, datas ou dados financeiros. A pergunta, a resposta original e os dados não são gravados nessa correção.',
   ],
   reading: [
@@ -1297,6 +1298,7 @@ export const ASSISTANT_HELP = {
   ],
   notes: [
     'Primeiro nome, idade e dinheiro saem do Brasil e são enviados ao serviço de IA Gemini/Vertex na região us, nos Estados Unidos. O RIPD é tratado pela instituição.',
+    'A assistente só prepara: nunca envia mensagem, salva, agenda, cancela nem cobra sozinha. O botão da ação é montado no seu aparelho a partir da agenda que você já vê; o telefone do paciente não vai para a IA.',
     'A assistente lembra e explica; não altera dinheiro, não envia cobranças e não decide conduta clínica. O limite mensal de IA e o registro de uso continuam valendo, sem dados financeiros nos registros técnicos.',
   ],
 };

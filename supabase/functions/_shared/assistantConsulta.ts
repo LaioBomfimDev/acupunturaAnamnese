@@ -442,8 +442,9 @@ export const PATIENT_OUTSIDE = 'Paciente fora da sua lista';
 export const PATIENT_NEXT_MAX = 5;
 export const PATIENT_BIRTHDAY_MAX_DAYS = 31;
 export const PATIENT_KEYS: Record<string, { linha: string[]; resumo: string[] }> = {
-  agenda_pacientes: { linha: ['dia', 'inicio', 'fim', 'paciente', 'idade', 'homonimo', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
-  proxima_sessao: { linha: ['paciente', 'idade', 'homonimo', 'dia', 'inicio', 'profissional', 'area', 'tipo_atendimento', 'sessao_numero', 'sessoes_total'], resumo: ['total'] },
+  // ACUP-027 (AG-10): `ref` = código curto da conversa (nunca id), para a IA apontar o atendimento numa ação.
+  agenda_pacientes: { linha: ['ref', 'dia', 'inicio', 'fim', 'paciente', 'idade', 'homonimo', 'profissional', 'area', 'tipo_atendimento', 'modalidade', 'status'], resumo: ['agendados', 'atendidos', 'faltas', 'cancelamentos', 'bloqueios'] },
+  proxima_sessao: { linha: ['ref', 'paciente', 'idade', 'homonimo', 'dia', 'inicio', 'profissional', 'area', 'tipo_atendimento', 'sessao_numero', 'sessoes_total'], resumo: ['total'] },
   faltosos: { linha: ['paciente', 'idade', 'homonimo', 'profissional', 'area', 'nao_compareceu', 'cancelado_paciente'], resumo: ['total'] },
   aniversariantes: { linha: ['paciente', 'idade', 'homonimo'], resumo: ['total'] },
 };
@@ -515,7 +516,8 @@ function readPatientLineFor(tipo: string, raw: unknown) {
   const fixed = line.paciente === FINANCE_ARCHIVED || line.paciente === PATIENT_OUTSIDE;
   if (idade === undefined || typeof line.paciente !== 'string' || (fixed ? idade !== null : !FINANCE_FIRST_NAME.test(line.paciente))
       || typeof line.homonimo !== 'boolean') return null;
-  const clean: Row = { paciente: line.paciente, idade, homonimo: line.homonimo };
+  if (keys.includes('ref') && !(typeof line.ref === 'string' && ASSISTANT_REF.test(line.ref))) return null;
+  const clean: Row = { paciente: line.paciente, idade, homonimo: line.homonimo, ...(keys.includes('ref') ? { ref: line.ref } : {}) };
   for (const key of keys) {
     if (key in clean) continue;
     const value = line[key];
@@ -558,4 +560,37 @@ export function readPatientResult(raw: unknown) {
     linhas.push(line);
   }
   return { ...query, motivo: null, mensagem: '', criterio: PATIENT_CRITERIA[parsed.tipo], linhas, total: linhas.length, resumo };
+}
+
+// ============================================================
+// ACUP-027 (AG-4, AG-10): ações que a assistente PREPARA e a pessoa decide.
+// A IA aponta o atendimento por `ref` (código curto da conversa, só na
+// memória da aba, nunca id); o aparelho resolve pelo próprio login. Uma
+// ação por resposta; nada é enviado, salvo, agendado ou cobrado sozinho.
+// ============================================================
+export const ASSISTANT_REF = /^r[0-9a-z]{3}$/;
+export const ASSISTANT_ACTIONS = ['confirmacao', 'novo_agendamento'];
+
+/** Ação pedida pela IA, limpa por lista fechada (espelho do aparelho). */
+export function readAssistantAction(raw: unknown, { team = null, refs = null }: { team?: string[] | null; refs?: string[] | null } = {}) {
+  const item = raw as Row | null;
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+  if (typeof item.tipo !== 'string' || !ASSISTANT_ACTIONS.includes(item.tipo) || typeof item.ref !== 'string' || !ASSISTANT_REF.test(item.ref)) return null;
+  if (refs && !refs.includes(item.ref)) return null;
+  if (item.tipo === 'confirmacao') return { tipo: 'confirmacao', ref: item.ref };
+  const profissional = typeof item.profissional === 'string' ? financeName(item.profissional).slice(0, 80) : '';
+  return {
+    tipo: 'novo_agendamento',
+    ref: item.ref,
+    profissional: team && !team.includes(profissional) ? '' : profissional,
+    dia: financeDay(item.dia),
+    hora: typeof item.hora === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(item.hora) ? item.hora : '',
+    tipo_atendimento: typeof item.tipo_atendimento === 'string' && AGENDA_TYPE_LABELS.includes(item.tipo_atendimento) && item.tipo_atendimento !== 'Sem tipo' ? item.tipo_atendimento : '',
+  };
+}
+
+/** Refs dos dados aceitos (linhas de agenda_pacientes e proxima_sessao). */
+export function refsOf(consultados: unknown[] = []) {
+  return consultados.flatMap(item => (Array.isArray((item as Row | null)?.linhas) ? (item as Row).linhas as Row[] : []))
+    .map(line => line?.ref).filter((ref): ref is string => typeof ref === 'string' && ASSISTANT_REF.test(ref));
 }

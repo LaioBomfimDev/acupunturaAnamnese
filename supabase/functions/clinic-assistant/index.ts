@@ -36,7 +36,7 @@ import { enforceAiBudget } from '../_shared/aiBudget.ts';
 import { isDeployHealthSmoke, runAiSmokeCheck } from '../_shared/aiSmoke.ts';
 import { ASSISTANT_SCALE_CATALOG, type AssistantHelpTopic } from '../_shared/assistantHelpCorpus.ts';
 import { helpIndex, needsScaleCatalog, selectHelpTopics } from '../_shared/assistantRetrieval.ts';
-import { ASSISTANT_CONSULTAS, FINANCE_FILTERS, PATIENT_CONSULTAS, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
+import { ASSISTANT_ACTIONS, ASSISTANT_CONSULTAS, FINANCE_FILTERS, PATIENT_CONSULTAS, readAssistantAction, refsOf, readConsulta, readConsultaResult, readTeam, upcomingDays } from '../_shared/assistantConsulta.ts';
 import { withCorrectionLessons } from '../_shared/corrections.ts';
 import {
   ASSISTANT_MAX_MESSAGE_CHARS,
@@ -154,6 +154,7 @@ Como responder:
 - Financeiro por_paciente: cada linha é um paciente numa área com um profissional (ex.: "Lucas, 7 anos — falta pagar 1 sessão de Psicologia com Denise"). forma avulso ou pacote_por_sessao: fale de sessoes_feitas, sessoes_pagas e em_aberto_centavos; sessoes_sem_valor são atendimentos sem valor na tabela, nem pagos nem devidos. forma pacote_parcelas: a dívida está nas parcelas, nunca diga que uma sessão foi paga; diga "sessão sessao_atual de sessoes_previstas" e parcelas_pagas / parcelas_em_aberto. forma convenio: quem paga é a operadora; com situacao da_operadora diga que a operadora ainda não pagou, nunca que o paciente deve. situacao em_dia = não deve nada no período (ex.: "pagou as 5 sessões de Nutrição"); atrasado = tem valor vencido.
 - Consultas com paciente (agenda_pacientes, proxima_sessao, faltosos, aniversariantes): use SOMENTE os DADOS_CONSULTADOS aceitos. Diga o paciente só como primeiro nome e idade ("Lucas, 7 anos"); "Paciente fora da sua lista" e "Paciente arquivado" são rótulos, não invente quem é. Com homonimo true, diga apenas que há dois pacientes com o mesmo nome. Em aniversariantes, idade é a que vai fazer e a data não vem: não invente o dia. Em proxima_sessao, sessao_numero de sessoes_total vem do pacote ("sessão 4 de 10"); null = fora de pacote; total 0 = sem próxima sessão agendada. Nunca dê dado clínico, contato ou sobrenome.
 - Paciente na consulta financeira: diga só o primeiro nome e a idade recebidos ("Lucas, 7 anos"); sem idade, só o primeiro nome. Com homonimo true, diga apenas que há dois pacientes com o mesmo nome, sem tentar desempatar por mais nada.
+- Ações (acao): você só PREPARA, a pessoa decide. Quando pedirem para mandar a confirmação de um atendimento, use acao { tipo: confirmacao, ref }; quando pedirem para marcar um novo atendimento para um paciente listado, use acao { tipo: novo_agendamento, ref, profissional, dia, hora, tipo_atendimento } (o que não souber, deixe vazio). O ref vem da linha em DADOS_CONSULTADOS (agenda_pacientes ou proxima_sessao): sem a linha, peça a consulta antes. Nunca escreva o ref no texto. No texto, diga o que o botão vai fazer: abrir o WhatsApp com a mensagem pronta para a pessoa tocar em Enviar, ou abrir o Novo agendamento preenchido para conferir e salvar. Você nunca envia, salva, agenda, cancela nem cobra. Uma ação por resposta: se pedirem várias, não ponha nenhuma e diga para pedir uma por vez. Não existe mensagem de falta pronta: se pedirem, diga que ainda não há modelo.
 - O Financeiro é a referência para conferir valores e registros; sugira abri-lo. Você não registra, altera, anula, paga nem cobra ninguém, nem envia cobrança por conta própria. Não dê recomendação clínica a partir de dinheiro. Para identificação, use somente primeiro nome e idade quando fornecidos, nunca sobrenome ou data de nascimento; não estime idade ausente. Preserve rótulos de identificação sem tirar conclusões sobre a pessoa.
 - "O que você faz" ou "como aproveitar você": responda com as SUAS_CAPACIDADES em lista curta, cada uma com um exemplo de pergunta, e diga com franqueza o que ainda não faz.
 - Dado que você ainda não lê (a ficha de um paciente específico, a evolução ou o resultado de escala de alguém, anamnese): diga em uma frase onde a pessoa vê e como chegar, e já ofereça o que você consegue fazer sobre o assunto (ex.: explicar a escala, o caminho da tela).
@@ -225,14 +226,29 @@ const OUTPUT_SCHEMA = {
         profissional: { type: 'STRING', description: 'nome como está na EQUIPE, "eu" ou "equipe"' },
         dia: { type: 'STRING', description: 'AAAA-MM-DD' },
         dias: { type: 'INTEGER', description: 'só em retornos_pendentes' },
-        de: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes e pesquisas: início inclusivo AAAA-MM-DD' },
-        ate: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes e pesquisas: fim inclusivo AAAA-MM-DD; até 93 dias' },
+        de: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes, pesquisas, agenda_pacientes e faltosos: início inclusivo AAAA-MM-DD; aniversariantes: opcional (sem de/ate, os próximos)' },
+        ate: { type: 'STRING', description: 'financeiro, agenda, faltas, confirmacoes_pendentes, pesquisas, agenda_pacientes e faltosos: fim inclusivo AAAA-MM-DD; até 93 dias (aniversariantes: até 31 dias). proxima_sessao não usa período' },
         status: { type: 'STRING', enum: FINANCE_FILTERS, description: 'somente financeiro' },
         paciente: { type: 'STRING', description: 'financeiro, agenda_pacientes, proxima_sessao e faltosos: SÓ o primeiro nome do paciente pedido, uma palavra; vazio para todos' },
         minimo: { type: 'INTEGER', nullable: true, description: 'faltosos: mínimo de faltas no período (padrão 2)' },
         idade: { type: 'INTEGER', nullable: true, description: 'financeiro e consultas com paciente: idade do paciente em anos, só para separar dois com o mesmo primeiro nome' },
       },
       required: ['tipo', 'profissional'],
+    },
+    // ACUP-027 (AG-4, AG-10): UMA ação que a pessoa confirma; nunca envia nem salva.
+    acao: {
+      type: 'OBJECT',
+      nullable: true,
+      description: 'só quando a pessoa pede para preparar UMA confirmação ou UM novo agendamento de um atendimento listado em DADOS_CONSULTADOS (use o ref da linha)',
+      properties: {
+        tipo: { type: 'STRING', enum: ASSISTANT_ACTIONS },
+        ref: { type: 'STRING', description: 'o ref da linha em DADOS_CONSULTADOS (nunca escreva o ref no texto)' },
+        profissional: { type: 'STRING', description: 'novo_agendamento: nome como está na EQUIPE' },
+        dia: { type: 'STRING', description: 'novo_agendamento: AAAA-MM-DD' },
+        hora: { type: 'STRING', description: 'novo_agendamento: HH:MM' },
+        tipo_atendimento: { type: 'STRING', description: 'novo_agendamento: tipo como aparece na agenda' },
+      },
+      required: ['tipo', 'ref'],
     },
     links: {
       type: 'ARRAY',
@@ -414,9 +430,12 @@ Deno.serve(async (req) => {
     }
 
     const suggested = Array.isArray(reply.parsed?.links) ? reply.parsed.links : [];
+    // ACUP-027: ação só com ref dos dados ACEITOS nesta chamada e profissional da EQUIPE; lista = nenhuma.
+    const acao = readAssistantAction(reply.parsed?.acao, { team: context.team, refs: refsOf([...anteriores, ...(dados ? [dados] : [])]) });
     return jsonResponse({
       answer,
       links: [...new Set(suggested.filter((link: unknown) => typeof link === 'string' && links.includes(link)))].slice(0, 2),
+      ...(acao ? { acao } : {}),
       modelVersion: MODEL_ID,
       // FIN-3/6: o marcador segue se QUALQUER volta aceita foi financeira.
       // AG-3 (ACUP-025): o mesmo marcador cobre resposta com paciente (só a nota, só da autora).

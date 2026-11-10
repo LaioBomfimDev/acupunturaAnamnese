@@ -926,3 +926,37 @@ body {
   font-weight: 400;
   color: var(--r1-text-subtle);
 }
+
+/* ACUP-027: botão da ação que a assistente preparou (a pessoa decide). */
+.ca-action {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--r1-accent);
+  color: var(--r1-text-on-inverse);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ca-action:hover {
+  background: var(--r1-accent-strong, var(--r1-accent));
+}
+
+.ca-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.ca-action-note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  opacity: .8;
+}

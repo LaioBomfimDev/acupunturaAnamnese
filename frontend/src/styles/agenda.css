@@ -4011,3 +4011,15 @@
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
+
+/* ACUP-027: faixa do Novo agendamento preenchido pela assistente. */
+.ag-draft-banner {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--r1-accent-line, var(--r1-border));
+  border-radius: 10px;
+  background: var(--r1-accent-wash, var(--r1-surface-sunken));
+  color: var(--r1-text);
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -167,7 +167,11 @@ test('AG-2 homônimos: separa por idade e profissional; empate total vira homoni
 test('AG-8 próxima sessão pela regra de "Sessões do pacote" (cancelado não conta); sem próxima = total 0', async () => {
   reset();
   const next = await run(ask('proxima_sessao'));
-  assert.deepEqual(next.linhas, [{ paciente: 'Vitória', idade: 8, homonimo: false, dia: '2026-11-15', inicio: '16:00', profissional: 'Dênis Prof T.', area: 'Psicologia', tipo_atendimento: 'Sessão', sessao_numero: 2, sessoes_total: 3 }]);
+  // ACUP-027: cada linha leva um ref curto e aleatório (a tabela da conversa resolve no aparelho).
+  assert.equal(next.linhas.length, 1);
+  assert.match(next.linhas[0].ref, /^r[0-9a-z]{3}$/);
+  const { ref: _ref, ...nextLine } = next.linhas[0];
+  assert.deepEqual([nextLine], [{ paciente: 'Vitória', idade: 8, homonimo: false, dia: '2026-11-15', inicio: '16:00', profissional: 'Dênis Prof T.', area: 'Psicologia', tipo_atendimento: 'Sessão', sessao_numero: 2, sessoes_total: 3 }]);
   assert.ok(state.reads.includes('series'), 'número da sessão pelo pacote do banco (listSeriesSessions)');
   const none = await run({ ...ask('proxima_sessao'), paciente: 'Bia' });
   assert.equal(none.total, 0);

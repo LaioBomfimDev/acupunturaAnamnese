@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toDayKey, relativeDayLabel } from '../../../utils/agenda';
+import { toDayKey } from '../../../utils/agenda';
 import {
   confirmAppointment,
   listPendingConfirmations,
 } from '../../../services/appointmentService';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../../utils/whatsapp';
 import { shortName } from '../../../services/clinicMembersService';
-import { isOnlineRoomAppointment } from '../../../utils/onlineConsultation';
+import { buildConfirmationMessage } from '../../../utils/agendaMessages';
 
 // ============================================================
 // Fila de confirmação
@@ -34,10 +34,6 @@ function diaLabel(iso) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'long' });
-}
-
-function diaHoraRelativo(iso) {
-  return `${relativeDayLabel(iso, new Date())} às ${hora(iso)}`;
 }
 
 export function PendingConfirmationView({
@@ -123,27 +119,17 @@ export function PendingConfirmationView({
     const phone = patientPhone?.(appointment.patient_id);
     if (!isLikelyValidWhatsAppPhone(phone)) return { href: null, reason: 'no-phone' };
 
-    const link = `${window.location.origin}/confirmar-agendamento?token=${appointment.confirmation_token}`;
-
-    // Parágrafos em vez de frase única — no WhatsApp um bloco só de texto
-    // vira parede ilegível; separado, o paciente lê "quando" e "o que fazer"
-    // como duas coisas distintas.
-    const saudacao = `Olá, ${patientName(appointment.patient_id)}!`
-      + (clinicName ? ` Aqui é da ${clinicName}.` : '')
-      + ` Você tem uma consulta com ${professionalRealName(appointment.professional_id)} `
-      + `agendada para ${diaHoraRelativo(appointment.starts_at)}.`;
-    const confirmacao = `Por favor, confirme sua presença aqui: ${link}`;
-
-    const paragrafos = [saudacao, confirmacao];
-    // Sala online do sistema: o mesmo link leva para a consulta no horário.
-    if (isOnlineRoomAppointment(appointment, agendaSettings)) {
-      paragrafos.push('Sua consulta é online, por vídeo. No horário, abra este mesmo link e toque em “Entrar na consulta”.');
-    }
-    // Online não vai até a clínica: mandar o endereço só confunde.
-    if (clinicAddress && appointment.modality !== 'online') paragrafos.push(`Nosso endereço: ${clinicAddress}.`);
-    paragrafos.push('Obrigado(a)!');
-
-    return { href: buildWhatsAppLink({ phone, message: paragrafos.join('\n\n') }), reason: 'ok' };
+    // ACUP-027: o texto mora em utils/agendaMessages.js (o mesmo que a assistente usa).
+    const message = buildConfirmationMessage({
+      appointment,
+      patientName: patientName(appointment.patient_id),
+      professionalName: professionalRealName(appointment.professional_id),
+      clinicName,
+      clinicAddress,
+      agendaSettings,
+      origin: window.location.origin,
+    });
+    return { href: buildWhatsAppLink({ phone, message }), reason: 'ok' };
   }
 
   async function handleConfirm(appointment) {

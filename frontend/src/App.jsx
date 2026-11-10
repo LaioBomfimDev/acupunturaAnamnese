@@ -120,6 +120,9 @@ function AppScreens() {
   // Gestão e Financeiro só leem a aba inicial ao montar: cada atalho para uma
   // aba troca a key, senão a tela já aberta ficaria onde estava.
   const [hubSectionRequest, setHubSectionRequest] = useState(0);
+  // ACUP-027: rascunho do Novo agendamento vindo da assistente (consumido ao abrir).
+  const [hubAgendaDraft, setHubAgendaDraft] = useState(null);
+  const [hubAgendaKey, setHubAgendaKey] = useState(0);
   // Por onde o workspace da área abre (null = tela de escolha do paciente).
   // 'escalas' = alerta de risco da tela inicial, com a paciente já escolhida.
   const [activeTab, setActiveTab] = useState('Tela inicial');
@@ -334,7 +337,7 @@ function AppScreens() {
   useEffect(() => {
     setAssistantScreen(assistantScreen);
   }, [assistantScreen]);
-  useEffect(() => registerAssistantNavigator((target, section) => {
+  useEffect(() => registerAssistantNavigator((target, section, agendaDraft = null) => {
     const current = bridgeStateRef.current;
     if (current.activeDiscipline) {
       if (current.hasPendingChanges && !window.confirm('Existem alterações ainda não salvas. Deseja trocar de tela mesmo assim?')) return;
@@ -343,6 +346,11 @@ function AppScreens() {
       setActiveTab('Tela inicial');
     }
     openHubScreen(target);
+    // ACUP-027: "Novo agendamento" preenchido pela assistente (a pessoa confere e salva).
+    if (target === 'agenda' && agendaDraft) {
+      setHubAgendaDraft(agendaDraft);
+      setHubAgendaKey(key => key + 1);
+    }
     // Atalho para uma aba da Gestão ou do Financeiro (ex.: IA do mês).
     if (!section) return;
     if (target === 'gestao') setHubGestaoInitialSection(section);
@@ -480,7 +488,10 @@ function AppScreens() {
                   sidebar — e perdia o vínculo com a data/hora real do
                   atendimento. */}
               <Agenda
+                key={hubAgendaKey}
                 profile={profile}
+                initialDraft={hubAgendaDraft}
+                onInitialDraftUsed={() => setHubAgendaDraft(null)}
                 initialAgendaOf={(isClinicAdmin || isReceptionist) ? 'all' : null}
                 initialShowBirthdays={hubAgendaShowBirthdays}
                 onStartAppointment={({ discipline }) => {

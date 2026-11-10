@@ -29,7 +29,7 @@ import {
   readFinanceConsulta, financeConsultaIssue, financeConsultaFailure, summarizeFinance,
   AGENDA_CONSULTAS, AGENDA_ACCESS, AGENDA_SOURCE_LIMIT, PACKAGE_WINDOW_DAYS,
   PATIENT_CONSULTAS, PATIENT_NEXT_MAX, readPatientConsulta, patientConsultaIssue, patientConsultaFailure, matchPatients,
-  summarizeAgendaWithPatients, summarizeNextSessions, summarizeFrequentAbsences, summarizeBirthdayPeople,
+  summarizeAgendaWithPatients, summarizeNextSessions, summarizeFrequentAbsences, summarizeBirthdayPeople, createRefRegistry,
   readAgendaConsulta, agendaConsultaIssue, agendaConsultaFailure,
   summarizeAgendaPeriod, summarizeAbsencesPeriod, summarizePendingConfirmationsPeriod, summarizePackagesNearEndAgenda,
   summarizeBirthdaysCount, summarizeSurveysPeriod, summarizePortalForms, summarizeConvenioState,
@@ -106,10 +106,10 @@ async function scaleApplications(dia) {
  * Faz a consulta pedida e devolve o formato que a Edge Function aceita
  * em `dados` (_shared/assistantConsulta.ts).
  */
-export async function runAssistantConsulta(consulta, { profile, team = null, now = new Date() }) {
+export async function runAssistantConsulta(consulta, { profile, team = null, now = new Date(), refs = null }) {
   if (consulta.tipo === 'financeiro') return runFinanceConsulta(consulta, profile, now);
   if (AGENDA_CONSULTAS.includes(consulta.tipo)) return runAgendaConsulta(consulta, profile, team, now);
-  if (PATIENT_CONSULTAS.includes(consulta.tipo)) return runPatientConsulta(consulta, profile, team, now);
+  if (PATIENT_CONSULTAS.includes(consulta.tipo)) return runPatientConsulta(consulta, profile, team, now, refs);
   const dia = consulta.dia || todayInClinic(now);
   const base = {
     tipo: consulta.tipo, profissional: consulta.profissional, dia, horarios: [], motivo: null, opcoes: [], linhas: [], total: null,
@@ -272,7 +272,9 @@ async function runAgendaConsulta(raw, profile, team, now) {
 // com o login de quem perguntou (só o que ele já vê); "eu" vira a pessoa aqui,
 // pelo login, nunca pelo nome que vem no pedido.
 // ============================================================
-async function runPatientConsulta(raw, profile, team, now) {
+async function runPatientConsulta(raw, profile, team, now, refs = null) {
+  // ACUP-027: refs da conversa (só na memória da aba); sem tabela, uma descartável.
+  const refOf = (refs || createRefRegistry()).refFor;
   const parsed = readPatientConsulta(raw);
   const access = AGENDA_ACCESS[parsed.pedido];
   try {
@@ -302,7 +304,7 @@ async function runPatientConsulta(raw, profile, team, now) {
       const appointments = full(await listAppointments({ from, to, professionalId: person?.id || null }));
       const ids = matched ? new Set(matched.map(row => row.id)) : null;
       return parsed.tipo === 'agenda_pacientes'
-        ? summarizeAgendaWithPatients({ consulta: query, appointments, patients, nameOf, today, patientIds: ids })
+        ? summarizeAgendaWithPatients({ consulta: query, appointments, patients, nameOf, today, patientIds: ids, refOf })
         : summarizeFrequentAbsences({ consulta: query, appointments: ids ? appointments.filter(item => ids.has(item.patient_id)) : appointments, patients, nameOf, today });
     }
     if (parsed.tipo === 'proxima_sessao') {
@@ -320,7 +322,7 @@ async function runPatientConsulta(raw, profile, team, now) {
         const series = next.recurrence_group_id ? await listSeriesSessions(next.recurrence_group_id) : null;
         nexts.push({ appointment: next, series });
       }
-      return summarizeNextSessions({ consulta: query, nexts, patients, nameOf, today });
+      return summarizeNextSessions({ consulta: query, nexts, patients, nameOf, today, refOf });
     }
     if (parsed.tipo === 'aniversariantes') {
       return summarizeBirthdayPeople({ consulta: query, patients, today });

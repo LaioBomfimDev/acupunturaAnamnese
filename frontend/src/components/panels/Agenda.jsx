@@ -189,7 +189,7 @@ function addMinutes(date, minutes) {
 // toque, porque o formulário fica no painel lateral em qualquer visão.
 const DEFAULT_VIEW = 'hoje';
 
-export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = null, initialView = null, initialAgendaOf = null, initialShowBirthdays = false }) {
+export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = null, initialView = null, initialAgendaOf = null, initialShowBirthdays = false, initialDraft = null, onInitialDraftUsed = null }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => ({
     year: today.getFullYear(),
@@ -346,6 +346,37 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   // um <select> simples, então o campo funciona como busca — texto livre
   // que filtra as opções, e só form.patientId conta de verdade.
   const [patientSearch, setPatientSearch] = useState('');
+  // ACUP-027 (AG-10): "Novo agendamento" aberto pela assistente, já preenchido. Nada
+  // é salvo aqui: a pessoa confere e salva pelo botão de sempre, com todas as
+  // validações. "Como paga" e valor nunca vêm do rascunho; o que não casou fica vazio.
+  const [draftBanner, setDraftBanner] = useState(false);
+  useEffect(() => {
+    if (!initialDraft) return;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(initialDraft.date || '') ? initialDraft.date : '';
+    if (date) {
+      const [year, month] = date.split('-').map(Number);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- só ao montar com o rascunho da assistente
+      setCursor({ year, month });
+      setSelectedKey(date);
+    }
+    setForm(prev => ({
+      ...prev,
+      kind: 'appointment',
+      patientId: initialDraft.patientId || '',
+      discipline: initialDraft.discipline || '',
+      professionalId: initialDraft.professionalId || '',
+      appointmentType: initialDraft.appointmentType || '',
+      time: /^\d{2}:\d{2}$/.test(initialDraft.time || '') ? initialDraft.time : prev.time,
+      repeat: false,
+    }));
+    setPatientSearch(initialDraft.patientId ? (initialDraft.patientName || '') : '');
+    setSelectedAppointment(null);
+    setSheetOpen(true);
+    setDraftBanner(true);
+    onInitialDraftUsed?.();
+    // Só ao montar com um rascunho novo (a App troca a key a cada pedido).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [patientMenuOpen, setPatientMenuOpen] = useState(false);
   const patientFieldRef = useRef(null);
 
@@ -795,6 +826,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setAppointments(prev => [...prev, created]);
       setForm(prev => ({ ...prev, patientId: '', note: '', billing: PARTICULAR }));
       setPatientSearch('');
+      setDraftBanner(false);
       setPendingException(null);
       setError('');
       setSheetOpen(false);
@@ -868,6 +900,7 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setSeriesPreview(null);
       setForm(prev => ({ ...prev, patientId: '', note: '', repeat: false, billing: PARTICULAR }));
       setPatientSearch('');
+      setDraftBanner(false);
       setSheetOpen(false);
 
       // Falha parcial precisa aparecer nomeada: "criei 8 de 10" sem
@@ -2155,6 +2188,9 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                   <p className="ag-form-title">{isBlock ? 'Novo bloqueio' : 'Novo agendamento'}</p>
                   {!isBlock && <ScreenHelp topic={AGENDA_HELP.agendamento} />}
                 </div>
+                {draftBanner && !isBlock && (
+                  <p className="ag-draft-banner" role="status">Preenchido pela assistente: confira antes de salvar.</p>
+                )}
 
                 <div className="ag-seg" role="group" aria-label="O que está sendo marcado">
                   <button

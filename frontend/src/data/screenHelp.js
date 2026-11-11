@@ -795,6 +795,44 @@ export const FINANCEIRO_HELP = {
       'Saída paga antes dos comprovantes (10/11/2026) fica sem número: dinheiro lançado não se reescreve.',
     ],
   },
+  relatorio: {
+    title: 'Relatório do contador',
+    summary: 'Tudo o que entrou e saiu na semana, no mês ou num período, com o número de cada recibo, para baixar em Excel ou PDF e conferir com o contador. No mês, é aqui que se fecha o mês.',
+    actions: [
+      '“Semana”, “Mês” ou “Período” escolhem o que entra. O mês é o do topo da tela.',
+      '“Data do serviço” ou “Data do pagamento” escolhem por qual data cada lançamento entra no período.',
+      '“Baixar Excel” gera a planilha com Resumo, Entradas e Saídas (valores e datas que somam e ordenam na planilha).',
+      '“Baixar PDF (timbrado)” gera o relatório no papel timbrado da instituição.',
+      '“Pacote de recibos” imprime num arquivo só todos os recibos do período: de cliente, comprovantes de despesa e recibos de prestador. Recibo de cliente sem número ganha o próximo número na hora, depois de você confirmar.',
+      '“Fechar o mês”, depois que o mês terminou e foi conferido: digite fechar para confirmar. “Reabrir o mês” pede o motivo.',
+    ],
+    reading: [
+      'Em teste: por data do serviço, o recebimento entra no dia do atendimento pago, a conta fixa no vencimento e o resto no dia do pagamento.',
+      'Anulado aparece riscado e fica fora dos totais. “depois do fechamento” = lançado ou anulado depois que o mês foi fechado.',
+      '“Para conferir” soma os recibos de prestador sem assinatura e as mudanças depois do fechamento.',
+    ],
+    access: ['Só a administração vê, baixa, fecha e reabre.'],
+    notes: [
+      'O fechamento trava pela data do pagamento: mês fechado não aceita recebimento, depósito de operadora nem saída paga com data nele. Pagamento atrasado de serviço de um mês fechado entra no mês em que o dinheiro entrou.',
+      'Ao fechar, os totais do mês ficam guardados; se algo for anulado depois, o relatório mostra os dois números.',
+      'Saída paga antes dos comprovantes (10/11/2026) não tem número: aparece no relatório e fica fora do pacote.',
+    ],
+  },
+  comparar: {
+    title: 'Comparar meses',
+    summary: 'Entradas, saídas e resultado dos últimos 6 ou 12 meses até o mês do topo, com a diferença para o mês anterior e as saídas por categoria.',
+    actions: [
+      '“Últimos 6 meses” ou “Últimos 12 meses” escolhem quantos meses entram.',
+      '“Data do serviço” ou “Data do pagamento” escolhem a base, como no Relatório do contador.',
+      '“Baixar Excel” e “Baixar PDF” levam a comparação para o contador.',
+    ],
+    reading: [
+      'As barras mostram entradas e saídas de cada mês na mesma escala.',
+      '“+12% sobre o mês anterior” compara com o mês de antes; sem mês anterior com valor, não aparece.',
+    ],
+    access: ['Só a administração.'],
+    notes: ['As contas são as mesmas do Relatório do contador: anulado fica fora.'],
+  },
   apagar: {
     title: 'A pagar',
     summary: 'O que a clínica tem a pagar até o fim do mês: saídas fixas, contas lançadas “a pagar” e o repasse de cada profissional.',

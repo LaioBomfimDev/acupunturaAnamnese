@@ -107,3 +107,36 @@ export function clientSheetProps({ fin, number, group, doc, what, serviceDays, p
   };
 }
 
+
+// ---------- comprovante de despesa no pacote do mês ----------
+
+/** Comprovante de despesa na mesma folha dos recibos (pacote do contador). */
+export function expenseSheetProps(profile, expense, { category = '', payee = '', paidBy = '', items = [] } = {}) {
+  const itemsText = items.length
+    ? items.map(item => `${String(Number(item.quantity)).replace('.', ',')} × ${item.description}`).join('; ')
+    : '';
+  return {
+    profile,
+    kindLabel: expense.is_purchase ? 'Recibo de compra' : 'Comprovante de despesa',
+    numberLabel: expense.is_purchase ? 'Recibo nº' : 'Comprovante nº',
+    amountLabel: 'Valor pago',
+    title: expense.is_purchase ? 'Recibo de compra' : 'Comprovante de despesa',
+    number: expense.receipt_number,
+    issuedOn: expense.paid_on,
+    fields: [
+      { label: 'Descrição', value: expense.description },
+      { label: 'Itens', value: itemsText },
+      { label: 'Referente ao vencimento', value: expense.occurrence_on ? formatDay(expense.occurrence_on) : '' },
+      { label: 'Categoria', value: category },
+      { label: 'Pago a', value: payee },
+      { label: 'Pago por', value: paidBy },
+    ],
+    amountCents: expense.amount_cents,
+    methodLine: methodLabel(expense.method),
+    paidOn: expense.paid_on,
+    declaration: 'Comprovante interno de controle de despesas da clínica. Não tem valor fiscal e não substitui o boleto pago nem a nota fiscal do fornecedor.',
+    place: placeFromAddress(profile?.clinic?.address),
+    signatureLabel: 'Assinatura / identificação do responsável pela clínica',
+    voided: expense.voided_at ? { on: todayInClinic(new Date(expense.voided_at)), reason: expense.void_reason } : null,
+  };
+}

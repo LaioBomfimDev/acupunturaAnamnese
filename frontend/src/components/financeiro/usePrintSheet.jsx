@@ -3,8 +3,9 @@ import { createPortal, flushSync } from 'react-dom';
 import { ClinicReceiptSheet } from './ClinicReceiptSheet';
 
 /**
- * Imprime uma folha: monta no portal, abre a impressão e desmonta depois.
- * prepare() pode pedir o número ao banco antes; devolve as props da folha.
+ * Imprime uma folha (ou várias, no pacote do mês): monta no portal, abre a
+ * impressão e desmonta depois. prepare() pode pedir o número ao banco
+ * antes; devolve as props da folha ou uma lista delas.
  */
 export function usePrintSheet() {
   const [sheet, setSheet] = useState(null);
@@ -27,6 +28,9 @@ export function usePrintSheet() {
       setError(err.message || 'Não foi possível imprimir.');
     }
   }
-  const portal = sheet ? createPortal(<div className="fin-print-root"><ClinicReceiptSheet {...sheet} /></div>, document.body) : null;
+  const sheets = sheet ? (Array.isArray(sheet) ? sheet : [sheet]) : [];
+  const portal = sheets.length
+    ? createPortal(<div className="fin-print-root">{sheets.map((props, index) => <ClinicReceiptSheet key={index} {...props} />)}</div>, document.body)
+    : null;
   return { print, portal, error };
 }

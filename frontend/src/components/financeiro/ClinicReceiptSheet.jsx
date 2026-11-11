@@ -29,6 +29,8 @@ export function ClinicReceiptSheet({
   signatureLabel,
   note = '',
   voided = null,
+  numberLabel = 'Recibo nº',
+  amountLabel = 'Valor recebido',
 }) {
   const clinic = profile?.clinic || null;
   const clinicName = clinic?.name || profile?.clinic_name || 'Clínica';
@@ -38,10 +40,10 @@ export function ClinicReceiptSheet({
   const logo = clinic?.logo_url || '';
   const watermark = Boolean(logo) && clinic?.logo_watermark !== false;
   const lines = [
-    { label: 'Recibo nº', value: number },
+    { label: numberLabel, value: number },
     { label: 'Data de emissão', value: formatDay(issuedOn) },
     ...fields,
-    { label: 'Valor recebido', value: `${formatBRLWithCents(amountCents)} (${amountInWords(amountCents)})` },
+    { label: amountLabel, value: `${formatBRLWithCents(amountCents)} (${amountInWords(amountCents)})` },
     { label: 'Forma de pagamento', value: methodLine },
     { label: 'Data do pagamento', value: formatDay(paidOn) },
   ].filter(line => line.value);

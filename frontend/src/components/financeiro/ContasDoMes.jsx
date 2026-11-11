@@ -227,6 +227,10 @@ export function ContasDoMes({ fin }) {
         <span className="fin-basis-tag">Em teste</span>
         Conta pela data do serviço: a conta fixa entra no mês do vencimento, mesmo paga em outro mês; gasto rápido e compra, no dia em que foram pagos.
       </p>
+      <div className="fin-actions">
+        <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open('relatorio')}>Baixar semana ou mês para o contador</button>
+        <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open('comparar')}>Comparar com outros meses</button>
+      </div>
 
       <div className="fin-bill-tiles">
         <div className="fin-bill-tile">

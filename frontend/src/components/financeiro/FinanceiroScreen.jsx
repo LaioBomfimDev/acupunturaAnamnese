@@ -25,6 +25,8 @@ import {
 } from '../../utils/finance';
 import { APagar, Equipe, Pagas } from './FinanceSaidas';
 import { ContasDoMes } from './ContasDoMes';
+import { AccountantReport } from './AccountantReport';
+import { MonthComparison } from './MonthComparison';
 import { AReceber, Pacotes, Recebidos } from './FinanceEntradas';
 import { ModelosConfig, RecebimentoConfig, SaidasFixasConfig, StartCard, ValoresConfig } from './FinanceConfig';
 import { Faturamento, Operadoras, Solicitantes } from './FinanceConvenios';
@@ -56,6 +58,8 @@ const SECTIONS = [
   { id: 'apagar', label: 'A pagar' },
   { id: 'pagas', label: 'Pagas' },
   { id: 'equipe', label: 'Equipe e repasses' },
+  { id: 'relatorio', label: 'Relatório do contador' },
+  { id: 'comparar', label: 'Comparar meses' },
   { id: 'valores', label: 'Valores dos atendimentos' },
   { id: 'modelos', label: 'Modelos de pacote' },
   { id: 'recebimento', label: 'Como cada um recebe' },
@@ -72,6 +76,7 @@ const SECTION_GROUPS = [
   { label: 'Visão geral', ids: ['resumo'] },
   { label: 'Entradas', ids: ['areceber', 'recebidos', 'notas', 'pacotes'] },
   { label: 'Saídas', ids: ['contas', 'apagar', 'pagas', 'equipe'] },
+  { label: 'Para o contador', ids: ['relatorio', 'comparar'] },
   { label: 'Configuração', ids: ['valores', 'modelos', 'recebimento', 'saidasfixas'] },
   { label: 'Convênios', ids: ['guias', 'lotes', 'pagamentos', 'operadoras', 'solicitantes', 'faturamento'] },
 ];
@@ -86,6 +91,8 @@ const TAB_ICONS = {
   apagar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
   pagas: <><path d="M4 7h16M4 12h16M4 17h10" /></>,
   equipe: <><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 9.5a3 3 0 1 0 0-6M15 14.5c2.8.4 4.8 1.9 5.5 4" /></>,
+  relatorio: <><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 13h6M9 17h6M9 9h2" /></>,
+  comparar: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>,
   valores: <><path d="M12 2v20M17 6.5c0-1.9-2.2-3-5-3s-5 1.2-5 3.3c0 4.6 10 2.4 10 7.2 0 2.1-2.2 3.5-5 3.5s-5-1.2-5-3.2" /></>,
   modelos: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 12h8M8 16h5" /></>,
   recebimento: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
@@ -163,6 +170,22 @@ function buildTiles({ data, derived, month }) {
     equipe: {
       display: formatBRL(toPay.reduce((total, row) => total + row.balanceCents, 0)),
       line: toPay.length ? `a repassar a ${plural(toPay.length, 'pessoa', 'pessoas')}` : 'nenhum repasse pendente',
+    },
+    relatorio: (() => {
+      const closed = (data.monthClosings || []).some(row => row.month === month.from && !row.reopened_at);
+      const previous = shiftMonth(month, -1);
+      const previousClosed = (data.monthClosings || []).some(row => row.month === previous.from && !row.reopened_at);
+      return {
+        display: closed ? 'Fechado' : 'Aberto',
+        line: closed
+          ? `${month.label} fechado para o contador`
+          : `${month.label} aberto${derived.today > previous.to && !previousClosed ? ` · ${previous.label} ainda não foi fechado` : ''}`,
+        tone: derived.today > previous.to && !previousClosed && !closed ? 'warning' : undefined,
+      };
+    })(),
+    comparar: {
+      display: formatBRL(summary.resultCents),
+      line: `resultado de ${month.label} · compare com os meses anteriores`,
     },
     valores: configTile(config.valores),
     modelos: configTile(config.pacotes),
@@ -410,6 +433,8 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
         {fin && section === 'apagar' && <APagar fin={fin} />}
         {fin && section === 'pagas' && <Pagas fin={fin} />}
         {fin && section === 'equipe' && <Equipe fin={fin} />}
+        {fin && section === 'relatorio' && <AccountantReport fin={fin} />}
+        {fin && section === 'comparar' && <MonthComparison fin={fin} />}
         {fin && section === 'valores' && <ValoresConfig fin={fin} />}
         {fin && section === 'modelos' && <ModelosConfig fin={fin} />}
         {fin && section === 'recebimento' && <RecebimentoConfig fin={fin} />}

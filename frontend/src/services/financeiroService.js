@@ -103,6 +103,7 @@ export async function loadFinanceData() {
     patients,
     purchaseItems,
     providerReceipts,
+    monthClosings,
   ] = await Promise.all([
     supabase.from('clinic_finance_settings').select('*').maybeSingle(),
     fetchAll('procedure_prices', 'id,discipline,appointment_type,professional_id,price_cents,active', 'discipline'),
@@ -120,6 +121,7 @@ export async function loadFinanceData() {
     listClinicPatients(),
     fetchAll('finance_purchase_items', '*', 'position'),
     fetchAll('finance_provider_receipts', '*', 'number'),
+    fetchAll('finance_month_closings', '*', 'closed_at'),
   ]);
 
   if (settingsResult.error) fail(settingsResult.error, 'Não foi possível carregar a configuração do financeiro.');
@@ -144,6 +146,7 @@ export async function loadFinanceData() {
     patients,
     purchaseItems,
     providerReceipts,
+    monthClosings,
   };
 }
 
@@ -480,6 +483,17 @@ export async function signProviderReceipt(receiptId) {
 
 export async function voidProviderReceipt(receiptId, reason) {
   return rpc('finance_void_provider_receipt', { p_receipt: receiptId, p_reason: reason }, 'Não foi possível anular o recibo.');
+}
+
+// ---------- fechamento do mês (20261111): só a administração ----------
+
+/** month: qualquer dia do mês ("AAAA-MM-DD"). */
+export async function closeMonth(month) {
+  return rpc('finance_close_month', { p_month: month }, 'Não foi possível fechar o mês.');
+}
+
+export async function reopenMonth(month, reason) {
+  return rpc('finance_reopen_month', { p_month: month, p_reason: reason }, 'Não foi possível reabrir o mês.');
 }
 
 export async function voidExpense(expenseId, reason) {

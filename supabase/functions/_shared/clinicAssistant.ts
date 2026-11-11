@@ -41,6 +41,8 @@ export const ASSISTANT_SECTION_LINKS: Record<string, { screen: string; label: st
   apagar: { screen: 'financeiro', label: 'A pagar' },
   pagas: { screen: 'financeiro', label: 'Pagas' },
   equipe: { screen: 'financeiro', label: 'Equipe e repasses' },
+  relatorio: { screen: 'financeiro', label: 'Relatório do contador' },
+  comparar: { screen: 'financeiro', label: 'Comparar meses' },
   valores: { screen: 'financeiro', label: 'Valores dos atendimentos' },
   modelos: { screen: 'financeiro', label: 'Modelos de pacote' },
   recebimento: { screen: 'financeiro', label: 'Como cada um recebe' },

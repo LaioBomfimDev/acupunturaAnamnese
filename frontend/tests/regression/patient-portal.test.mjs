@@ -244,7 +244,8 @@ test('telas ligadas: rota pública, entrada no login, aba da Gestão e aba só d
   assert.match(gestao, /section === 'importaveis'/);
 
   const profile = await read('frontend/src/components/ClinicPatientProfile.jsx');
-  assert.match(profile, /TABS\.filter\(tab => tab\.id !== 'portal' \|\| isClinicAdmin\)/);
+  // Área do Paciente e Valor combinado (12/11/2026) só para a administração.
+  assert.match(profile, /TABS\.filter\(tab => \(tab\.id !== 'portal' && tab\.id !== 'valores'\) \|\| isClinicAdmin\)/);
   assert.match(profile, /isClinicAdmin && activeTab === 'portal'/);
 
   // Senha/sessão do paciente nunca em localStorage.

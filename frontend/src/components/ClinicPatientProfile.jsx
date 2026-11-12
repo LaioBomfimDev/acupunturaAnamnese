@@ -103,6 +103,8 @@ const UF_OPTIONS = [
 
 const TABS = [
   { id: 'cadastro', label: 'Cadastro' },
+  // Só clinic_admin (12/11/2026): o valor que este paciente paga, fora do Cadastro.
+  { id: 'valores', label: 'Valor combinado' },
   { id: 'matriculas', label: 'Matrículas & compartilhamento' },
   { id: 'agenda', label: 'Agendamentos' },
   { id: 'evolucao', label: 'Evolução' },
@@ -142,6 +144,12 @@ const TAB_GLYPHS = {
     </>
   ),
   escalas: TOOL_GLYPHS.escalas,
+  valores: (
+    <>
+      <path d="M3.5 12.6V5a1.5 1.5 0 0 1 1.5-1.5h7.6l8.4 8.4a1.5 1.5 0 0 1 0 2.1l-7.5 7.5a1.5 1.5 0 0 1-2.1 0Z" />
+      <circle cx="8" cy="8" r="1.6" />
+    </>
+  ),
 };
 
 function buildEditForm(p) {
@@ -199,6 +207,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [activeTab, setActiveTab] = useState('cadastro');
   const [sectionOpen, setSectionOpen] = useState(false);
   const [portalStatus, setPortalStatus] = useState(null);
+  const [pricesState, setPricesState] = useState(null);
   // Resumo da aba Escalas: { status: 'loading' | 'ready' | 'denied' | 'error', applications }.
   const [scalesState, setScalesState] = useState({ status: 'loading', applications: [] });
   const scaleDisciplines = scaleDisciplinesFor(therapistProfile);
@@ -674,8 +683,9 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
     attachments,
     portalStatus,
     scales: scalesState,
+    prices: pricesState,
   });
-  const visibleTabs = TABS.filter(tab => tab.id !== 'portal' || isClinicAdmin)
+  const visibleTabs = TABS.filter(tab => (tab.id !== 'portal' && tab.id !== 'valores') || isClinicAdmin)
     .filter(tab => tab.id !== 'escalas' || scaleDisciplines.length > 0);
   const activeTabLabel = TABS.find(tab => tab.id === activeTab)?.label;
 
@@ -1091,9 +1101,16 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
               </section>
               {/* Convênio grava sozinho, fora do "Alterar dados cadastrais". */}
               <PatientCoverages patientId={patient.id} legacyName={full?.convenio_nome || ''} legacyCard={full?.convenio_carteirinha || ''} />
-              {/* Valor combinado (11/11/2026): preço é da administração, como o do convênio. */}
-              {isClinicAdmin && <PatientPrices patientId={patient.id} />}
             </section>
+
+            {/* ================= VALOR COMBINADO (só administração) =================
+                Preço é da administração, como o do convênio. Aba própria desde
+                12/11/2026; fica montada (escondida) para a aba ter número e resumo. */}
+            {isClinicAdmin && (
+              <section className="pf-panel" hidden={activeTab !== 'valores'}>
+                <PatientPrices patientId={patient.id} onStatusChange={setPricesState} />
+              </section>
+            )}
 
             {/* ================= MATRÍCULAS & COMPARTILHAMENTO ================= */}
             <section className="pf-panel" hidden={activeTab !== 'matriculas'}>

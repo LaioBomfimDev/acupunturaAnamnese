@@ -1,5 +1,6 @@
 import { getDiscipline } from '../data/disciplines';
 import { FREEING_STATUSES, WEEKDAY_LABELS } from './agenda';
+import { formatBRL } from './finance';
 
 // ============================================================
 // Ficha do paciente — o que cada aba diz antes de ser aberta
@@ -73,6 +74,22 @@ export function buildScalesTabSummary(scales) {
 }
 
 /**
+ * Resumo da aba Valor combinado (12/11/2026, só a administração vê).
+ * `prices` é o que o bloco PatientPrices leu: { status, rows }. O número
+ * é quantos combinados estão valendo (desativado não conta); sem nenhum,
+ * o paciente paga a tabela da instituição. Sem leitura, sem número.
+ */
+export function buildPricesTabSummary(prices) {
+  if (prices?.status !== 'ready') return { count: null, summary: 'Valor próprio por área', tone: null, dots: [] };
+  const live = (prices.rows || []).filter(row => row?.active);
+  if (live.length === 0) return { count: 0, summary: 'Paga a tabela da instituição', tone: null, dots: [] };
+  const summary = live.length === 1
+    ? `${formatBRL(live[0].price_cents)} em ${getDiscipline(live[0].discipline)?.label || live[0].discipline}`
+    : plural(live.length, 'valor valendo', 'valores valendo');
+  return { count: live.length, summary, tone: null, dots: [] };
+}
+
+/**
  * Número e resumo de cada aba. `tone` muda a cor da linha: 'alert' é
  * evolução atrasada (vermelho, a mesma bolinha pulsante de antes);
  * 'success' / 'warning' / 'neutral' é o estado do acesso do paciente.
@@ -87,6 +104,7 @@ export function buildProfileTabSummaries({
   attachments = [],
   portalStatus = null,
   scales = null,
+  prices = null,
   now = new Date(),
 } = {}) {
   const enrolledLabels = enrollments.map(e => getDiscipline(e.discipline)?.label || e.discipline);
@@ -138,5 +156,6 @@ export function buildProfileTabSummaries({
       dots: [],
     },
     escalas: buildScalesTabSummary(scales),
+    valores: buildPricesTabSummary(prices),
   };
 }

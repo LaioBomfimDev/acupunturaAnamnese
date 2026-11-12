@@ -1324,6 +1324,15 @@
       display: flex;
     }
   }
+
+  /* Com a oitava (Valor combinado, 12/11/2026, só a administração):
+     4 + 4 até as oito caberem numa faixa só (~1.760px). */
+  @container pf-tabs (min-width: 900px) and (max-width: 1759px) {
+    .pf-tabs:has(> .pf-tab:nth-child(8)) {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
 }
 
 .pf-tab {

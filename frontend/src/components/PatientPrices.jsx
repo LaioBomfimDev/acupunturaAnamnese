@@ -14,6 +14,10 @@ import { formatBRL, parseBRLInput, resolvePrice } from '../utils/finance';
 // preço de paciente não é dado de cadastro que a equipe inteira lê. A
 // ficha só monta o bloco quando isClinicAdmin.
 //
+// Aba própria na ficha (12/11/2026, pedido da administradora: no fim do
+// Cadastro pedia muito scroll). O bloco conta para a ficha o que leu
+// (`onStatusChange`), e é daí que sai o número e o resumo da aba.
+//
 // Não se apaga: o combinado que acabou fica desativado, com o histórico.
 // ============================================================
 
@@ -103,8 +107,12 @@ function PriceForm({ prices, patientId, onDone, onSaved }) {
   );
 }
 
-export function PatientPrices({ patientId }) {
+export function PatientPrices({ patientId, onStatusChange }) {
   const [state, setState] = useState({ status: 'loading', rows: [], prices: [], error: '' });
+
+  useEffect(() => {
+    onStatusChange?.({ status: state.status, rows: state.rows });
+  }, [onStatusChange, state.status, state.rows]);
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState('');
   const [rowError, setRowError] = useState('');

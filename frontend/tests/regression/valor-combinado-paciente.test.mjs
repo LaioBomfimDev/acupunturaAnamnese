@@ -85,7 +85,13 @@ test('preço de paciente é só da administração e não se apaga', () => {
 
 test('o bloco na ficha só aparece para a administração', async () => {
   const profile = await read('src/components/ClinicPatientProfile.jsx');
-  assert.match(profile, /\{isClinicAdmin && <PatientPrices patientId=\{patient\.id\} \/>\}/);
+  // Aba própria (12/11/2026): só a administração vê a aba e o bloco.
+  assert.match(profile, /\{ id: 'valores', label: 'Valor combinado' \}/);
+  assert.match(profile, /\(tab\.id !== 'portal' && tab\.id !== 'valores'\) \|\| isClinicAdmin/);
+  assert.match(profile, /\{isClinicAdmin && \(\r?\n\s+<section className="pf-panel" hidden=\{activeTab !== 'valores'\}>\r?\n\s+<PatientPrices patientId=\{patient\.id\} onStatusChange=\{setPricesState\} \/>/);
+  // Saiu do fim do Cadastro: não volta a pedir scroll.
+  const cadastro = profile.slice(profile.indexOf("hidden={activeTab !== 'cadastro'}"), profile.indexOf("hidden={activeTab !== 'valores'}"));
+  assert.equal((cadastro.match(/<PatientPrices/g) || []).length, 0);
   const block = await read('src/components/PatientPrices.jsx');
   assert.match(block, /Vale para o atendimento avulso, do próximo em diante/, 'a tela diz até onde o valor vale');
   assert.match(block, /Desativar/);

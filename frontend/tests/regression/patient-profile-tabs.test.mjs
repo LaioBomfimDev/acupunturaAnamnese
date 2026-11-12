@@ -173,3 +173,25 @@ test('Área do Paciente: o resumo acompanha o acesso, sem pesar na ficha de quem
   assert.match(profile, /onStatusChange=\{setPortalStatus\}/);
   assert.match(portalTab, /onStatusChange\?\.\(accessStatus\(access\)\)/);
 });
+
+test('Valor combinado (12/11/2026): aba própria da administração, com número e resumo', () => {
+  assert.equal(tabs.buildProfileTabSummaries({}).valores.summary, 'Valor próprio por área');
+  assert.equal(tabs.buildProfileTabSummaries({}).valores.count, null);
+  const none = tabs.buildPricesTabSummary({ status: 'ready', rows: [{ active: false, price_cents: 13000, discipline: 'psicologia' }] });
+  assert.equal(none.count, 0);
+  assert.equal(none.summary, 'Paga a tabela da instituição');
+  const one = tabs.buildPricesTabSummary({ status: 'ready', rows: [{ active: true, price_cents: 13000, discipline: 'psicologia' }] });
+  assert.equal(one.count, 1);
+  assert.equal(one.summary, 'R$ 130 em Psicologia');
+  const two = tabs.buildPricesTabSummary({ status: 'ready', rows: [
+    { active: true, price_cents: 13000, discipline: 'psicologia' },
+    { active: true, price_cents: 9000, discipline: 'fisioterapia' },
+  ] });
+  assert.equal(two.summary, '2 valores valendo');
+  assert.equal(tabs.buildPricesTabSummary({ status: 'error', rows: [] }).count, null, 'sem leitura, sem número');
+
+  assert.match(profile, /valores: \(\r?\n\s+<>/, 'ícone próprio em TAB_GLYPHS');
+  assert.match(profile, /prices: pricesState,/);
+  // Oito abas: 4 + 4 no computador até caberem numa faixa só.
+  assert.match(css, /@container pf-tabs \(min-width: 900px\) and \(max-width: 1759px\) \{\s+\.pf-tabs:has\(> \.pf-tab:nth-child\(8\)\) \{\s+display: grid;\s+grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+});

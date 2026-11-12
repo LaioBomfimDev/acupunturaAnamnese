@@ -465,7 +465,7 @@ export const PACIENTES_HELP = {
     '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço, observações e matrícula inicial.',
     '“Observações”: texto livre do cadastro, até 1000 caracteres, para o que a equipe precisa lembrar (horário preferido, quem acompanha, como avisar). Muda em “Alterar dados cadastrais”, na aba Cadastro da ficha.',
     'Na ficha, aba Cadastro, “+ Acrescentar convênio”: operadora, plano, número e validade da carteira e CNS. Convênio que acabou se desativa, não se apaga.',
-    'Na ficha, aba Cadastro, “Valor combinado” (só a administração): o que ESTE paciente paga por área e, se quiser, por serviço, quando é promoção ou acordo. O campo mostra o que a tabela cobra, para comparar. Combinado que acabou se desativa, não se apaga.',
+    'Na ficha, aba “Valor combinado”, logo depois de Cadastro (só a administração): o que ESTE paciente paga por área e, se quiser, por serviço, quando é promoção ou acordo. O campo mostra o que a tabela cobra, para comparar. Combinado que acabou se desativa, não se apaga.',
     '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha. Em “Situação”, escolher Ativos (abre assim), Inativos ou Todos.',
     'Na ficha, “Situação”: marcar o paciente como Inativo quando ele parou de vir, ou voltar para Ativo. Nada é apagado.',
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',

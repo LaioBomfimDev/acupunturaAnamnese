@@ -368,6 +368,21 @@ export function resolvePrice(prices, { discipline, type = null, professionalId =
  * Avaliação neuropsicológica (kind 'assessment', 10/11/2026): o primeiro
  * atendimento leva o valor inteiro, os outros saem sem valor.
  */
+/**
+ * Valor combinado deste paciente para a área e o serviço, ou null (aí
+ * vale a tabela da área). Espelho de finance_patient_price no banco
+ * (20261111b): mudou um, muda o outro. Serviço escolhido vence o
+ * combinado da área inteira; desativado não conta.
+ */
+export function patientPriceFor(patientPrices, { discipline, type = null }) {
+  const rows = (patientPrices || []).filter(row => row.active !== false
+    && row.discipline === discipline
+    && (row.appointment_type == null || row.appointment_type === type));
+  if (!rows.length) return null;
+  rows.sort((a, b) => (a.appointment_type == null ? 1 : 0) - (b.appointment_type == null ? 1 : 0));
+  return rows[0].price_cents;
+}
+
 export function packageShare({ totalCents, discountCents = 0, usedCents, done, planned, overPlan = 'free', kind = 'closed' }) {
   if (done >= planned) return overPlan === 'free' ? 0 : null;
   const remaining = totalCents - discountCents - usedCents;

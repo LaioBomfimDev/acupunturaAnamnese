@@ -29,6 +29,7 @@ import { getStatusLabel } from '../utils/agenda';
 import { buildProfileTabSummaries } from '../utils/patientProfileTabs';
 import { scaleDisciplinesFor } from '../utils/instrumentAccess';
 import { PatientCoverages } from './PatientCoverages';
+import { PatientPrices } from './PatientPrices';
 import { PatientNotesField } from './PatientNotesField';
 import { PATIENT_NOTES_LABEL } from '../utils/patientNotes';
 
@@ -1079,6 +1080,8 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
               </section>
               {/* Convênio grava sozinho, fora do "Alterar dados cadastrais". */}
               <PatientCoverages patientId={patient.id} legacyName={full?.convenio_nome || ''} legacyCard={full?.convenio_carteirinha || ''} />
+              {/* Valor combinado (11/11/2026): preço é da administração, como o do convênio. */}
+              {isClinicAdmin && <PatientPrices patientId={patient.id} />}
             </section>
 
             {/* ================= MATRÍCULAS & COMPARTILHAMENTO ================= */}

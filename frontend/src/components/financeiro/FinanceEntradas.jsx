@@ -22,6 +22,8 @@ import {
   splitReceivablesByPayer,
   typeLabel,
 } from '../../utils/finance';
+import { buildChargeReminderMessage } from '../../utils/financeMessages';
+import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../utils/whatsapp';
 import { AreaTag, DueTag, EmptyNote, MethodPicker, MoneyInput } from './FinanceFields';
 import { AdjustDialog, SellPackageDialog, VoidDialog } from './FinanceDialogs';
 import { FiscalChip, VoucherButton } from './FinanceFiscal';
@@ -170,6 +172,37 @@ function GuideTag({ item, today }) {
   return <span className="gt-badge gt-badge-neutral">guia {guide.number} · lote {guide.batch}{guide.sentOn ? '' : ' (falta enviar)'}</span>;
 }
 
+/**
+ * Link de cobrança no WhatsApp do paciente (11/11/2026). Só monta a
+ * mensagem com o que a tela está mostrando; quem envia é a pessoa, que
+ * ainda lê e pode editar no WhatsApp. Sem telefone no cadastro, não há
+ * link: o aviso aparece no lugar do botão.
+ */
+function ChargeReminderLink({ fin, group }) {
+  const patient = fin.patientsById.get(group.patientId);
+  if (!patient) return null;
+  if (!isLikelyValidWhatsAppPhone(patient.phone)) {
+    return <span className="fin-hint">sem telefone no cadastro</span>;
+  }
+  const message = buildChargeReminderMessage({
+    patientName: patient.name,
+    items: group.items,
+    clinicName: fin.profile?.clinic?.name || fin.profile?.clinic_name || '',
+  });
+  if (!message) return null;
+  return (
+    <a
+      className="gt-btn gt-btn--sm"
+      href={buildWhatsAppLink({ phone: patient.phone, message })}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Abre o WhatsApp com a mensagem pronta. Você confere e envia."
+    >
+      Cobrar ↗
+    </a>
+  );
+}
+
 function ReceivableGroup({ fin, group, title, payerLabel = '', operator = false, openKey, openPatient, setOpenPatient, chargeById, paidByCharge, onAdjust }) {
   const open = openPatient === openKey;
   return (
@@ -180,6 +213,7 @@ function ReceivableGroup({ fin, group, title, payerLabel = '', operator = false,
           <span>{group.items.length} {group.items.length === 1 ? 'item' : 'itens'}{group.lateCents > 0 ? ` · ${formatBRL(group.lateCents)} em atraso` : ''}</span>
         </div>
         <b className="fin-num fin-amount">{formatBRL(group.openCents)}</b>
+        {!operator && <ChargeReminderLink fin={fin} group={group} />}
         {operator ? (
           // Convênio (Fase 2): o dinheiro entra pelo pagamento da operadora.
           <button type="button" className="gt-btn gt-btn--sm" onClick={() => fin.open(group.items.some(item => item.guide?.status === 'open') ? 'guias' : 'pagamentos')}>

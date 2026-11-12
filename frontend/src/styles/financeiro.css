@@ -2486,3 +2486,10 @@
 .fin-compare-table td {
   white-space: nowrap;
 }
+
+/* Link com cara de botão no Financeiro ("Cobrar ↗", "Abrir emissor ↗"):
+   o <a> herda o sublinhado do navegador e destoa dos botões ao lado. */
+.fin a.gt-btn,
+.fin-section a.gt-btn {
+  text-decoration: none;
+}

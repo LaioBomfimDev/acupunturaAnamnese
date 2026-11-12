@@ -463,6 +463,7 @@ export const PACIENTES_HELP = {
     '“Cadastrar paciente”: ficha completa com identificação, filiação, responsável, endereço, observações e matrícula inicial.',
     '“Observações”: texto livre do cadastro, até 1000 caracteres, para o que a equipe precisa lembrar (horário preferido, quem acompanha, como avisar). Muda em “Alterar dados cadastrais”, na aba Cadastro da ficha.',
     'Na ficha, aba Cadastro, “+ Acrescentar convênio”: operadora, plano, número e validade da carteira e CNS. Convênio que acabou se desativa, não se apaga.',
+    'Na ficha, aba Cadastro, “Valor combinado” (só a administração): o que ESTE paciente paga por área e, se quiser, por serviço, quando é promoção ou acordo. O campo mostra o que a tabela cobra, para comparar. Combinado que acabou se desativa, não se apaga.',
     '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha.',
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
     '“Ver compartilhado”: ler o que já foi compartilhado daquele paciente.',
@@ -475,10 +476,12 @@ export const PACIENTES_HELP = {
     '“pendência” = marcado à mão na ficha do paciente. “inativo” = suspenso, uma pausa que pode ser desfeita na ficha.',
     '“Área → destino” = compartilhamento ativo.',
     '“Responsável” (ficha, aba Matrículas) = quem atende o paciente naquela área. Ele recebe as escalas e o alerta de risco, junto com quem tem atendimento na Agenda. Ao enviar o paciente para outra área, o profissional de destino já fica como responsável.',
+    '“Valor combinado” vale para o atendimento avulso, do próximo em diante: cobrança já gravada não muda. Pacote tem total próprio e convênio usa o preço da operadora. O repasse de quem atende segue sendo sobre o valor que o paciente pagou.',
   ],
   access: [
     'Quem recebe um compartilhamento só lê os itens enviados: nada é copiado, e o envio fica registrado.',
     'Excluir paciente de vez é só da administração. Os outros perfis solicitam a exclusão pela ficha: o paciente é arquivado na hora e a administração decide depois, em “Revisar”.',
+    'O valor combinado é só da administração: a recepção e quem atende não veem esse bloco, como acontece com o preço de convênio.',
   ],
   notes: [
     'Paciente menor de idade exige responsável no cadastro. Campos com * são obrigatórios.',
@@ -697,6 +700,7 @@ export const FINANCEIRO_HELP = {
       '“Receber” abre na própria linha: marcar o que está sendo pago, escolher a forma (Pix, Dinheiro, Cartão de débito, Cartão de crédito, Outro) e a data.',
       '“+ Dividir em outra forma” separa o pagamento, por exemplo parte no Pix e parte em dinheiro.',
       '“Mudar valor” muda só aquele atendimento (desconto combinado), com motivo. “Sem valor” lista o atendimento que a tabela não sabia cobrar: “Definir valor”.',
+      '“Cobrar ↗”, ao lado do nome do paciente, abre o WhatsApp dele com a mensagem pronta do que está em aberto (dia e valor, sem o nome do serviço). Você lê, pode mudar e só então envia: o sistema nunca manda sozinho. Sem telefone no cadastro, aparece o aviso no lugar do botão.',
       '“+ Vender pacote” vende um pacote sem sair daqui.',
     ],
     reading: [

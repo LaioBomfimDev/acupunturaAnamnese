@@ -79,9 +79,12 @@ test('cobrança: recriada da versão mais nova, e nenhuma migration depois a rec
     if (/CREATE OR REPLACE FUNCTION public\.finance_charge_appointment\(/.test(text)) recreating.push(name);
   }
   // 10/11/2026: a avaliação neuropsicológica recria a partir desta
-  // (conferido em neuro-avaliacao-valor-unico.test.mjs).
-  assert.deepEqual(recreating.slice(-3), ['20261023_financeiro_etapa1.sql', MIGRATION, '20261110_neuro_avaliacao_valor_unico.sql'],
-    'parte de 20261023, a anterior; só a avaliação neuropsicológica veio depois');
+  // (conferido em neuro-avaliacao-valor-unico.test.mjs); 11/11/2026: o
+  // valor combinado por paciente recria a partir daquela
+  // (valor-combinado-paciente.test.mjs confere que nada mais mudou).
+  assert.deepEqual(recreating.slice(-4), ['20261023_financeiro_etapa1.sql', MIGRATION,
+    '20261110_neuro_avaliacao_valor_unico.sql', '20261111b_valor_combinado_paciente.sql'],
+    'parte de 20261023, a anterior; depois só a avaliação neuropsicológica e o valor combinado');
 });
 
 test('cobrança: particular segue com todas as regras de 20261023', () => {

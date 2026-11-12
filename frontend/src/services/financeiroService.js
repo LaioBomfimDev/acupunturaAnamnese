@@ -431,6 +431,34 @@ export async function settleRecurring({ recurringId, occurrenceOn, skip = false,
   }, 'Não foi possível registrar o pagamento.');
 }
 
+// ---------- valor combinado por paciente (20261111b) ----------
+//
+// Configuração, como as outras do Financeiro: grava direto na tabela,
+// com a RLS da administração (can_manage_finance). Nada se apaga: o
+// combinado que acabou fica desativado.
+
+export async function listPatientPrices(patientId) {
+  const { data, error } = await supabase
+    .from('patient_prices')
+    .select('*')
+    .eq('patient_id', patientId)
+    .order('discipline')
+    .order('appointment_type', { nullsFirst: true });
+  if (error) fail(error, 'Não foi possível carregar os valores combinados.');
+  return data || [];
+}
+
+/** A tabela de valores da instituição, para mostrar o que o combinado substitui. */
+export async function listClinicPrices() {
+  const { data, error } = await supabase
+    .from('procedure_prices')
+    .select('discipline,appointment_type,professional_id,price_cents,active');
+  if (error) fail(error, 'Não foi possível carregar a tabela de valores.');
+  return data || [];
+}
+
+export const savePatientPrice = row => upsertRow('patient_prices', row, 'Não foi possível salvar o valor combinado.');
+
 // ---------- gasto rápido (20261110b): administração e recepção ----------
 
 /** Lança o gasto já pago; o banco dá o número do comprovante. */

@@ -2434,3 +2434,51 @@ button.pf-discipline-row:disabled {
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
+
+/* ---------- Valor combinado do paciente (11/11/2026) ---------- */
+
+.pf-price-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pf-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.pf-price-row > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pf-price-row b {
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-price-form {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.pf-price-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pf-price-note {
+  color: var(--r1-text-muted);
+}

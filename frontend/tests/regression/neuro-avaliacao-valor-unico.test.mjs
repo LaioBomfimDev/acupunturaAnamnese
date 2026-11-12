@@ -24,14 +24,17 @@ function sqlFunction(source, name) {
 }
 const codeLines = text => text.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('--'));
 
-test('cobrança parte da última versão (20261102) e é a versão em vigor', async () => {
+test('cobrança parte da última versão (20261102); depois dela, só o valor combinado', async () => {
   const dir = path.join(root, '../supabase/migrations');
   const files = (await readdir(dir)).filter(name => name.endsWith('.sql')).sort();
   const recreating = [];
   for (const name of files) {
     if (/CREATE OR REPLACE FUNCTION public\.finance_charge_appointment\(/.test(await readFile(path.join(dir, name), 'utf8'))) recreating.push(name);
   }
-  assert.equal(recreating.at(-1), MIGRATION);
+  // 11/11/2026: o valor combinado por paciente recria depois desta,
+  // mudando só as linhas do valor (valor-combinado-paciente.test.mjs
+  // compara as duas e não deixa passar mais nada).
+  assert.deepEqual(recreating.slice(-2), [MIGRATION, '20261111b_valor_combinado_paciente.sql']);
   const current = new Set(codeLines(sqlFunction(sql, 'finance_charge_appointment')));
   // Só mudam: o IF FOUND do pacote (agora v_found) e a regra de fechar.
   const changed = new Set(['IF FOUND THEN', "IF v_package_id IS NOT NULL AND v_package.kind = 'counted' AND v_session >= v_package.sessions_planned THEN"]);

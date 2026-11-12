@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { buildWhatsAppLink, normalizeWhatsAppPhone } from '../../src/utils/whatsapp.js';
 import { whatsappShareUrl } from '../../src/utils/clinicalInterviews.js';
+import { buildChargeReminderMessage } from '../../src/utils/financeMessages.js';
 
 // ACUP-020 (09/11/2026): a tela do WhatsApp no hub foi removida a pedido da
 // administradora. Ficam só os envios por link wa.me, abertos por uma pessoa;
@@ -67,6 +68,7 @@ test('os envios por wa.me que já existiam continuam: link de conversa aberto pe
     // Gestão → Retornos ("Chamar no WhatsApp"). A pesquisa de satisfação só copia o link, nunca teve wa.me (QA, 09/11/2026).
     'src/components/panels/RelatoriosGestao.jsx': /buildWhatsAppLink\(\{ phone, message: `Oi, \$\{name\.split/,
     'src/components/online/OnlineRoomPage.jsx': /buildWhatsAppLink\(/, // sala online
+    'src/components/financeiro/FinanceEntradas.jsx': /buildWhatsAppLink\(/, // A receber: cobrar o que está em aberto (11/11/2026)
   };
   for (const [file, pattern] of Object.entries(senders)) assert.match(read(file), pattern, file);
 });
@@ -81,4 +83,42 @@ test('envio automático continua proibido: sem provedor de API, sem disparo em l
     assert.doesNotMatch(text, /(setTimeout|setInterval|requestIdleCallback)\([^)]*wa\.me/, `${file}: sem envio por timer`);
     assert.doesNotMatch(text, /\.(forEach|map)\([^\r\n]*\r?\n?[^\r\n]*window\.open\([^\r\n]*(wa\.me|WhatsApp)/, `${file}: sem envio em lote`);
   }
+});
+
+test('cobrança no A receber: a mensagem leva dia e valor, sem o nome do serviço nem a área', () => {
+  const items = [
+    { kind: 'charge', dueOn: '2026-10-07', openCents: 18000, discipline: 'psicologia', appointmentType: 'evaluation' },
+    { kind: 'charge', dueOn: '2026-10-21', openCents: 18000, discipline: 'psicologia', appointmentType: 'session' },
+  ];
+  const message = buildChargeReminderMessage({ patientName: 'Ana Souza Pereira', items, clinicName: 'Clínica Reability' });
+  assert.match(message, /^Olá, Ana! Aqui é da Clínica Reability\./, 'primeiro nome, nunca o nome inteiro');
+  assert.match(message, /• Atendimento de 07\/10 — R\$ 180,00/);
+  assert.match(message, /Total: R\$ 360,00\./);
+  assert.match(message, /Se já tiver pago, por favor desconsidere\./);
+  // A especialidade não vai na mensagem: quem lê o celular do paciente não precisa saber.
+  assert.doesNotMatch(message, /psicolog|Avaliação|Sessão/i);
+
+  // Um item só não ganha linha de total.
+  const one = buildChargeReminderMessage({ patientName: 'Bruno', items: items.slice(0, 1), clinicName: '' });
+  assert.match(one, /um valor em aberto/);
+  assert.doesNotMatch(one, /Total:/);
+  assert.doesNotMatch(one, /Aqui é da/, 'sem nome da instituição, não inventa a frase');
+
+  // Parcela e sessão de pacote vão pelo nome que a clínica deu ao pacote.
+  const pacote = buildChargeReminderMessage({
+    patientName: 'Carla',
+    items: [{ kind: 'installment', packageName: 'Pacote 10 sessões', installmentNumber: 2, installments: 3, openCents: 15000 }],
+  });
+  assert.match(pacote, /• Pacote 10 sessões · parcela 2 de 3 — R\$ 150,00/);
+
+  // Sem item, não há mensagem (nem link).
+  assert.equal(buildChargeReminderMessage({ patientName: 'Ana', items: [] }), '');
+});
+
+test('cobrança só aparece para paciente, com telefone, e nunca para operadora', async () => {
+  const screen = read('src/components/financeiro/FinanceEntradas.jsx');
+  assert.match(screen, /\{!operator && <ChargeReminderLink/, 'operadora não recebe cobrança de paciente');
+  assert.match(screen, /isLikelyValidWhatsAppPhone\(patient\.phone\)/);
+  assert.match(screen, /sem telefone no cadastro/, 'sem telefone, o aviso fica no lugar do botão');
+  assert.match(screen, /target="_blank"[\s\S]{0,60}rel="noopener noreferrer"/);
 });

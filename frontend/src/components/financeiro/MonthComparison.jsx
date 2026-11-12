@@ -118,6 +118,11 @@ export function MonthComparison({ fin }) {
         </div>
       </div>
       <p className="fin-hint">Até {last.label}, o mês escolhido no topo. {basis === 'servico' ? 'Por data do serviço (em teste).' : 'Por data do pagamento.'}</p>
+      {fin.data.tissReady === false && (
+        <p className="gt-notice gt-notice-error" role="alert">
+          O dinheiro de convênio não carregou agora: a comparação mostra só o particular. Recarregue a tela antes de comparar.
+        </p>
+      )}
       {error && <p className="gt-notice gt-notice-error" role="alert">{error}</p>}
 
       <figure className="fin-compare-chart" aria-label="Entradas e saídas por mês">

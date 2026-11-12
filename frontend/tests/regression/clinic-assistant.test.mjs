@@ -149,7 +149,32 @@ test('pacote perto do fim conta só sessões que valeram', () => {
     { package_id: 'b', source: 'appointment', voided_at: '2026-10-01' },
     { package_id: 'b', source: 'appointment', voided_at: '2026-10-02' },
   ];
-  assert.deepEqual(assistant.packagesNearEnd({ packages, charges }).map(pkg => pkg.id), ['a', 'd']);
+  // Desde 11/11/2026 a função devolve o pacote com a contagem, para a
+  // tela e a assistente dizerem a mesma coisa.
+  assert.deepEqual(assistant.packagesNearEnd({ packages, charges }).map(row => row.pkg.id), ['a', 'd']);
+  assert.deepEqual(assistant.packagesNearEnd({ packages, charges }).map(row => row.state), ['ending', 'ending']);
+});
+
+test('pacote que passou do previsto vem antes e separado do que está acabando', () => {
+  const packages = [
+    { id: 'quase', status: 'active', sessions_planned: 4, over_plan: 'free' },
+    { id: 'passou', status: 'active', sessions_planned: 2, over_plan: 'free' },
+  ];
+  const charges = [
+    ...Array.from({ length: 3 }, () => ({ package_id: 'quase', source: 'appointment' })),
+    ...Array.from({ length: 5 }, () => ({ package_id: 'passou', source: 'appointment' })),
+  ];
+  const rows = assistant.packagesNearEnd({ packages, charges });
+  assert.deepEqual(rows.map(row => [row.pkg.id, row.state, row.extra]), [['passou', 'over', 3], ['quase', 'ending', 0]]);
+
+  const items = assistant.buildAttentionItems({
+    role: 'admin', riskAlerts: [], pendingEvolutions: [], receivables: [], nearEndPackages: rows,
+  }).items;
+  const packageItems = items.filter(item => item.id.startsWith('packages'));
+  assert.deepEqual(packageItems.map(item => [item.id, item.text]), [
+    ['packages', 'na última sessão prevista'],
+    ['packages-over', 'com sessão além do previsto'],
+  ]);
 });
 
 test('IA do mês: soma por função, custo estimado e teto', () => {

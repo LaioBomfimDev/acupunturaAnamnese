@@ -19,6 +19,7 @@ import {
   labelOf,
   methodLabel,
   parseBRLInput,
+  packageUsage,
   splitReceivablesByPayer,
   typeLabel,
 } from '../../utils/finance';
@@ -31,6 +32,10 @@ import { FiscalChip, VoucherButton } from './FinanceFiscal';
 // ============================================================
 // Entradas: A receber, Recebidos e Pacotes.
 // ============================================================
+
+function plural(count, one, many) {
+  return `${count} ${count === 1 ? one : many}`;
+}
 
 function patientName(fin, id) {
   return fin.patientsById.get(id)?.name || 'Paciente arquivado';
@@ -529,9 +534,38 @@ function OperatorPayments({ fin, showVoided }) {
   );
 }
 
-function PackageCard({ fin, pkg, onVoid }) {
+/**
+ * O que dizer sobre um pacote que pede atenção (11/11/2026). Só lembra:
+ * quem decide o que fazer é a administração.
+ */
+function packageAlertText(usage, assessment) {
+  const unit = assessment ? 'atendimento' : 'sessão';
+  const units = assessment ? 'atendimentos' : 'sessões';
+  if (usage.state === 'over') {
+    const extra = `${usage.extra} ${usage.extra === 1 ? `${unit} a mais` : `${units} a mais`}`;
+    return {
+      badge: `${usage.extra} a mais`,
+      text: usage.extraFree
+        ? `Passou do previsto: ${extra}, sem cobrar nada. Encerre o pacote ou venda outro, se o paciente continua.`
+        : `Passou do previsto: ${extra}, cobrada como avulsa pela tabela da área.`,
+    };
+  }
+  if (usage.state === 'ending') {
+    return {
+      badge: usage.left === 1 ? `Última ${unit}` : `Acabou`,
+      text: usage.left === 1
+        ? `Falta 1 ${unit} para acabar: combine com o paciente o que vem depois.`
+        : `Todas as ${usage.done} ${units} foram usadas e o pacote segue aberto: encerre ou acerte a continuação.`,
+    };
+  }
+  return null;
+}
+
+function PackageCard({ fin, pkg, usage, onVoid }) {
   const charges = fin.data.charges.filter(row => row.package_id === pkg.id && !row.voided_at);
-  const sessions = charges.filter(row => row.source === 'appointment');
+  // Sessões feitas vêm de packageUsage: uma conta só para a tela, o
+  // aviso e a assistente.
+  const sessions = { length: usage.done };
   const used = charges.reduce((total, row) => total + (row.price_cents || 0), 0);
   const paid = fin.data.receipts.filter(row => row.package_id === pkg.id && !row.voided_at).reduce((total, row) => total + row.amount_cents, 0);
   const total = pkg.total_cents - pkg.discount_cents;
@@ -541,6 +575,7 @@ function PackageCard({ fin, pkg, onVoid }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const progress = Math.min(100, Math.round((sessions.length / pkg.sessions_planned) * 100));
+  const alert = packageAlertText(usage, pkg.kind === 'assessment');
   // Avaliação neuropsicológica: anamnese + sessões liberadas + devolutiva.
   const assessment = pkg.kind === 'assessment';
   const unit = assessment ? 'atendimentos' : 'sessões';
@@ -570,9 +605,13 @@ function PackageCard({ fin, pkg, onVoid }) {
           <b>{patientName(fin, pkg.patient_id)}</b>
           <span><AreaTag discipline={pkg.discipline} /> · {pkg.name}{pkg.professional_id ? ` · ${professionalName(fin, pkg.professional_id)}` : ''}</span>
         </div>
-        <span className={`gt-badge ${pkg.status === 'active' ? 'gt-badge-success' : 'gt-badge-neutral'}`}>
-          {pkg.status === 'active' ? 'Ativo' : pkg.status === 'completed' ? 'Encerrado' : 'Anulado'}
-        </span>
+        {alert
+          ? <span className={`gt-badge ${usage.state === 'over' ? 'gt-badge-pending' : 'gt-badge-warning'}`}>{alert.badge}</span>
+          : (
+            <span className={`gt-badge ${pkg.status === 'active' ? 'gt-badge-success' : 'gt-badge-neutral'}`}>
+              {pkg.status === 'active' ? 'Ativo' : pkg.status === 'completed' ? 'Encerrado' : 'Anulado'}
+            </span>
+          )}
       </header>
       <div className="fin-progress" role="img" aria-label={`${sessions.length} de ${pkg.sessions_planned} ${unit}`}>
         <i style={{ width: `${progress}%` }} />
@@ -586,6 +625,7 @@ function PackageCard({ fin, pkg, onVoid }) {
         <div><dt>Pagamento</dt><dd>{planLabel}</dd></div>
         <div><dt>Vendido</dt><dd>{formatDay(pkg.sold_on)}</dd></div>
       </dl>
+      {alert && <p className="fin-package-alert">{alert.text}</p>}
       {pkg.status === 'voided' && <p className="fin-void-reason">Anulado: {pkg.void_reason}</p>}
       {pkg.status === 'active' && (
         <div className="fin-package-actions">
@@ -648,6 +688,10 @@ export function Pacotes({ fin }) {
   const list = fin.data.packages
     .filter(row => row.status === filter)
     .sort((a, b) => b.sold_on.localeCompare(a.sold_on));
+  // Uma conta só para o cartão, o aviso do topo e a assistente.
+  const usageById = new Map(packageUsage(fin.data).map(row => [row.pkg.id, row]));
+  const attention = [...usageById.values()].filter(row => row.state);
+  const over = attention.filter(row => row.state === 'over').length;
 
   return (
     <section className="fin-section">
@@ -661,10 +705,16 @@ export function Pacotes({ fin }) {
         </div>
         <button type="button" className="gt-btn gt-btn--primary" onClick={() => setSelling(true)}>+ Vender pacote</button>
       </div>
-      <p className="fin-hint">A sessão entra no pacote sozinha: mesmo paciente, mesma área e um tipo que o pacote cobre. Falta não gasta sessão. A avaliação neuropsicológica abre sozinha no primeiro atendimento, quando há valor da avaliação em Valores.</p>
+      <p className="fin-hint">A sessão entra no pacote sozinha: mesmo paciente, mesma área e um tipo que o pacote cobre, no dia em que acontecer — o paciente usa quando quiser, sem prazo. Falta não gasta sessão. A avaliação neuropsicológica abre sozinha no primeiro atendimento, quando há valor da avaliação em Valores.</p>
+      {attention.length > 0 && filter === 'active' && (
+        <p className="gt-notice fin-package-attention" role="status">
+          {plural(attention.length, 'pacote pede atenção', 'pacotes pedem atenção')}
+          {over ? `, ${plural(over, 'já passou do previsto', 'já passaram do previsto')}` : ''}: veja o selo em cada um.
+        </p>
+      )}
       {list.length === 0 ? <EmptyNote>{PACKAGE_FILTERS.find(option => option.id === filter).empty}</EmptyNote> : (
         <div className="fin-packages">
-          {list.map(pkg => <PackageCard key={pkg.id} fin={fin} pkg={pkg} onVoid={setVoiding} />)}
+          {list.map(pkg => <PackageCard key={pkg.id} fin={fin} pkg={pkg} usage={usageById.get(pkg.id) || { done: 0, left: pkg.sessions_planned, extra: 0, extraFree: true, state: null }} onVoid={setVoiding} />)}
         </div>
       )}
       {selling && <SellPackageDialog fin={fin} onClose={() => setSelling(false)} />}

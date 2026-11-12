@@ -20,6 +20,7 @@ import {
   formatShortBRL,
   methodLabel,
   monthOf,
+  packagesNeedingAttention,
   shiftMonth,
   todayInClinic,
 } from '../../utils/finance';
@@ -146,8 +147,9 @@ function buildTiles({ data, derived, month }) {
     pacotes: {
       display: String(activePackages.length),
       line: activePackages.length
-        ? `${activePackages.length === 1 ? 'pacote ativo' : 'pacotes ativos'}${dueSoon ? ` · ${plural(dueSoon, 'cobrança vence', 'cobranças vencem')} nesta semana` : ''}`
+        ? `${activePackages.length === 1 ? 'pacote ativo' : 'pacotes ativos'}${derived.packageAttention.length ? ` · ${plural(derived.packageAttention.length, 'pede atenção', 'pedem atenção')}` : ''}${dueSoon ? ` · ${plural(dueSoon, 'cobrança vence', 'cobranças vencem')} nesta semana` : ''}`
         : 'nenhum pacote ativo',
+      tone: derived.packageAttention.length ? 'warning' : undefined,
     },
     contas: {
       display: formatBRL(derived.bills.openCents),
@@ -218,7 +220,9 @@ function ResultBand({ summary, month }) {
       <div className="fin-result-main">
         <small>Resultado de {month.label}</small>
         <b>{formatBRL(summary.resultCents)}</b>
-        <span>entrou {formatBRL(summary.inCents)} · saiu {formatBRL(summary.outCents)}</span>
+        {/* Diz a base: o Relatório do contador abre por data do serviço, e
+            sem isto os dois números pareciam brigar (revisão de 11/11/2026). */}
+        <span>entrou {formatBRL(summary.inCents)} · saiu {formatBRL(summary.outCents)} · pela data do pagamento</span>
       </div>
       {summary.byArea.length > 0 ? (
         <ul className="fin-result-bars" aria-label="Entradas por área">
@@ -333,6 +337,7 @@ export function FinanceiroScreen({ profile, initialSection = null }) {
       payables,
       summary,
       bills,
+      packageAttention: packagesNeedingAttention(data),
       config,
       repasseCategory,
       salaryCategory,

@@ -13,7 +13,7 @@
 // ============================================================
 
 import { freeSlotsOfDay } from './agendaFreeSlots.js';
-import { buildReceivables, isConvenioCharge } from './finance.js';
+import { buildReceivables, isConvenioCharge, packagesNeedingAttention } from './finance.js';
 import { DISCIPLINES } from '../data/disciplines.js';
 import { buildTissTiles, operatorReceiptsFrom } from './tissXml.js';
 import { APPOINTMENT_STATUSES, birthdaysByDay } from './agenda.js';
@@ -267,17 +267,12 @@ function plural(count, one, many) {
 }
 
 /**
- * Pacotes ativos com uma sessão ou nenhuma para acabar. As sessões feitas
- * são as cobranças do pacote que valem (falta não gasta sessão).
+ * Pacotes ativos que pedem atenção: na última sessão prevista ou já
+ * passados dela (11/11/2026). A conta é a mesma da tela de Pacotes
+ * (packageUsage, utils/finance.js): falta não gasta sessão.
  */
-export function packagesNearEnd({ packages = [], charges = [] }) {
-  const used = new Map();
-  for (const charge of charges) {
-    if (!charge.package_id || charge.voided_at || charge.source !== 'appointment') continue;
-    used.set(charge.package_id, (used.get(charge.package_id) || 0) + 1);
-  }
-  return packages.filter(pkg => pkg.status === 'active'
-    && pkg.sessions_planned - (used.get(pkg.id) || 0) <= 1);
+export function packagesNearEnd(input) {
+  return packagesNeedingAttention(input);
 }
 
 /**
@@ -336,14 +331,29 @@ export function buildAttentionItems({ role, riskAlerts = null, pendingEvolutions
     }
     if (nearEndPackages === null) failed.push('pacotes');
     else if (nearEndPackages.length) {
-      items.push({
-        id: 'packages',
-        tone: 'info',
-        strong: plural(nearEndPackages.length, 'pacote', 'pacotes'),
-        text: 'com uma sessão ou nenhuma para acabar',
-        target: 'financeiro',
-        targetLabel: 'Pacotes',
-      });
+      // Passou do previsto é outra conversa de "está acabando": separa.
+      const over = nearEndPackages.filter(row => row.state === 'over').length;
+      const ending = nearEndPackages.length - over;
+      if (ending) {
+        items.push({
+          id: 'packages',
+          tone: 'info',
+          strong: plural(ending, 'pacote', 'pacotes'),
+          text: 'na última sessão prevista',
+          target: 'financeiro',
+          targetLabel: 'Pacotes',
+        });
+      }
+      if (over) {
+        items.push({
+          id: 'packages-over',
+          tone: 'warning',
+          strong: plural(over, 'pacote', 'pacotes'),
+          text: 'com sessão além do previsto',
+          target: 'financeiro',
+          targetLabel: 'Pacotes',
+        });
+      }
     }
     if (receivables === null) failed.push('a receber');
     else {

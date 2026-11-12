@@ -208,7 +208,9 @@ export async function loadTissMoney() {
   return {
     tissStatus: status.error ? [] : status.data || [],
     tissPaid: paid.error ? [] : paid.data || [],
-    tissReady: !status.error,
+    // As DUAS: se só a dos pagamentos falhar, o dinheiro da operadora
+    // sumia e virava zero calado (achado na revisão de 11/11/2026).
+    tissReady: !status.error && !paid.error,
   };
 }
 

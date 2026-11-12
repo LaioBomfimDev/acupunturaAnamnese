@@ -411,6 +411,11 @@ export function AccountantReport({ fin }) {
       </p>
 
       {invalid && <p className="gt-notice gt-notice-error" role="alert">{invalid}</p>}
+      {fin.data.tissReady === false && (
+        <p className="gt-notice gt-notice-error" role="alert">
+          O dinheiro de convênio não carregou agora: o que está abaixo mostra só o particular, e os totais ficam menores que o real. Recarregue a tela antes de levar ao contador.
+        </p>
+      )}
       {range.kind === 'mes' && <ClosingPanel fin={fin} range={range} closing={closing} history={history} />}
 
       {report && (

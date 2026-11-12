@@ -411,6 +411,51 @@ export function simulateClosedPackage({ totalCents, planned, changeAfter = null,
  * que ele gastou. Ainda por vir: quantas já foram feitas, porque o número
  * só existe depois que acontece (falta não gasta sessão).
  */
+/**
+ * Como está cada pacote ativo (11/11/2026, pedido da administradora:
+ * "tem que sempre checar com a administradora"). Sessão feita é a
+ * cobrança do pacote que vale — falta não gasta sessão, igual ao banco.
+ *
+ * state:
+ *   'over'   = passou do previsto; `extra` diz quantas a mais e
+ *              `extraFree` se elas saem R$ 0 (over_plan = 'free') ou
+ *              cobradas como avulsas;
+ *   'ending' = está na última prevista (left 1) ou já usou todas (0);
+ *   null     = seguindo, sem nada a decidir.
+ *
+ * Não existe aviso de "pacote parado": o paciente usa as sessões quando
+ * quer (decisão de 11/11/2026), então demora não é problema.
+ */
+export function packageUsage({ packages = [], charges = [] }) {
+  const done = new Map();
+  for (const charge of charges) {
+    if (!charge.package_id || charge.voided_at || charge.source !== 'appointment') continue;
+    done.set(charge.package_id, (done.get(charge.package_id) || 0) + 1);
+  }
+  return (packages || [])
+    .filter(pkg => pkg.status === 'active')
+    .map(pkg => {
+      const used = done.get(pkg.id) || 0;
+      const left = pkg.sessions_planned - used;
+      return {
+        pkg,
+        done: used,
+        left,
+        extra: left < 0 ? -left : 0,
+        extraFree: pkg.over_plan !== 'single',
+        state: left < 0 ? 'over' : left <= 1 ? 'ending' : null,
+      };
+    });
+}
+
+/** Só os pacotes que pedem atenção, os que passaram na frente. */
+export function packagesNeedingAttention(input) {
+  const order = { over: 0, ending: 1 };
+  return packageUsage(input)
+    .filter(row => row.state)
+    .sort((a, b) => order[a.state] - order[b.state] || a.left - b.left);
+}
+
 export function packageSessionLabel(info) {
   if (!info) return '';
   if (info.kind === 'assessment') {

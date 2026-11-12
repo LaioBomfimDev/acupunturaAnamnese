@@ -5,7 +5,7 @@ import { DISCIPLINES, getDiscipline } from '../data/disciplines';
 import {
   getPatient, updatePatient, deletePatient, formatCpf, isValidCpf, isValidEmail, isMinor,
 } from '../services/patientService';
-import { formatAge, formatBirthDate, getInitials, isDeleteConfirmationValid } from '../utils/patientUi';
+import { formatAge, formatBirthDate, formatInactiveSince, getInitials, isDeleteConfirmationValid, isPatientInactive } from '../utils/patientUi';
 import { listAppointments, listAppointmentsAwaitingEvolution } from '../services/appointmentService';
 import { listPatientEvolutions } from '../services/patientEvolutionService';
 import { listActiveSharesForPatients } from '../services/recordSharesService';
@@ -194,6 +194,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [printDoc, setPrintDoc] = useState({ pages: [''], bodyHeightPx: null });
   const [activeTab, setActiveTab] = useState('cadastro');
   const [sectionOpen, setSectionOpen] = useState(false);
@@ -409,21 +410,44 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
   }
 
   /**
-   * Suspender é uma pausa reversível e sem revisão: o paciente continua
-   * na lista da clínica, só marcado inativo. Diferente de "solicitar
-   * exclusão" (arquiva e entra numa fila que a administração decide).
+   * Situação Ativo/Inativo (antes "Suspender paciente"): pausa reversível
+   * e sem revisão. O paciente continua na clínica, com tudo o que foi
+   * gravado; só sai da lista de Ativos. Diferente de "solicitar exclusão"
+   * (arquiva e entra numa fila que a administração decide).
    */
-  async function handleToggleSuspended() {
-    const next = !full?.suspended_at;
+  async function handleStatusChange(value) {
+    const inactive = value === 'inactive';
+    if (inactive === isPatientInactive(full) || statusSaving) return;
     setNotice(null);
+    setStatusSaving(true);
     try {
-      await setPatientSuspended(full.id, next);
-      const updated = { ...full, suspended_at: next ? new Date().toISOString() : null };
+      await setPatientSuspended(full.id, inactive);
+      const updated = { ...full, suspended_at: inactive ? new Date().toISOString() : null };
       setFull(updated);
       onPatientUpdated?.(updated);
     } catch (err) {
-      setNotice({ type: 'error', text: err.message || 'Não foi possível alterar o status do paciente.' });
+      setNotice({ type: 'error', text: err.message || 'Não foi possível alterar a situação do paciente.' });
+    } finally {
+      setStatusSaving(false);
     }
+  }
+
+  function renderStatusSelect(id) {
+    return (
+      <label className="pf-status-select" htmlFor={id} title="Inativo sai da lista de Ativos, mas nada é apagado: dá para voltar a Ativo quando quiser">
+        <span>Situação</span>
+        <select
+          id={id}
+          value={isPatientInactive(full) ? 'inactive' : 'active'}
+          onChange={event => handleStatusChange(event.target.value)}
+          disabled={statusSaving || !full?.id}
+          data-status={isPatientInactive(full) ? 'inactive' : 'active'}
+        >
+          <option value="active">Ativo</option>
+          <option value="inactive">Inativo</option>
+        </select>
+      </label>
+    );
   }
 
   /**
@@ -768,7 +792,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                     {full?.phone && <span className="pf-meta-chip">{full.phone}</span>}
                     {full?.cpf && <span className="pf-meta-chip">CPF {formatCpf(full.cpf)}</span>}
                     {full?.has_pending && <span className="pf-meta-chip pf-meta-chip--pending">Pendência</span>}
-                    {full?.suspended_at && <span className="pf-meta-chip pf-meta-chip--suspended">Inativo</span>}
+                    {isPatientInactive(full) && <span className="pf-meta-chip pf-meta-chip--suspended">{formatInactiveSince(full)}</span>}
                   </div>
                 </div>
               </div>
@@ -782,14 +806,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
                   >
                     {full?.has_pending ? '✓ Pendência marcada' : 'Marcar pendência'}
                   </button>
-                  <button
-                    type="button"
-                    className={`cp-btn cp-btn--sm${full?.suspended_at ? ' cp-btn--pending-on' : ''}`}
-                    onClick={handleToggleSuspended}
-                    title="Pausa reversível: some da agenda de atendimento ativo, mas continua na lista da clínica, marcado como inativo"
-                  >
-                    {full?.suspended_at ? '✓ Suspenso — reativar' : 'Suspender paciente'}
-                  </button>
+                  {renderStatusSelect('pf-status-top')}
                   <button type="button" className="cp-btn cp-btn--sm" onClick={handlePrintCadastro}>🖨 Imprimir</button>
                   <button type="button" className="cp-btn cp-btn--sm" onClick={() => { openSection('cadastro'); startEdit(); }}>Editar cadastro</button>
                   <button
@@ -1055,13 +1072,7 @@ export function ClinicPatientProfile({ patient, therapistProfile, isClinicAdmin 
 
                       <div className="cps-actions cps-actions--split">
                         <div className="cps-actions-danger">
-                          <button
-                            type="button"
-                            className={`cp-btn cp-btn--sm${full?.suspended_at ? ' cp-btn--pending-on' : ''}`}
-                            onClick={handleToggleSuspended}
-                          >
-                            {full?.suspended_at ? '✓ Suspenso — reativar' : 'Suspender paciente'}
-                          </button>
+                          {renderStatusSelect('pf-status-edit')}
                           <button
                             type="button"
                             className="cp-btn cp-btn--sm cp-btn--danger"

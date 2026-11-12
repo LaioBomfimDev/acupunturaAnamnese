@@ -13,6 +13,37 @@ export const PATIENT_SORT_OPTIONS = [
 
 export const DEFAULT_PATIENT_SORT = 'name_asc';
 
+// Situação do paciente (12/11/2026, pedido da administradora; antes era
+// "Suspender paciente"). Inativo = `patients.suspended_at` preenchido: pausa
+// reversível, sem revisão e sem apagar nada. A lista de Pacientes da
+// instituição abre em Ativos.
+export const PATIENT_STATUS_OPTIONS = [
+  { value: 'active', label: 'Ativos' },
+  { value: 'inactive', label: 'Inativos' },
+  { value: 'all', label: 'Todos' },
+];
+
+export const DEFAULT_PATIENT_STATUS_FILTER = 'active';
+
+export function isPatientInactive(patient) {
+  return Boolean(patient?.suspended_at);
+}
+
+/** Cópia filtrada pela situação; valor desconhecido mostra todos. */
+export function filterPatientsByStatus(patients, status = DEFAULT_PATIENT_STATUS_FILTER) {
+  const list = patients || [];
+  if (status === 'active') return list.filter(patient => !isPatientInactive(patient));
+  if (status === 'inactive') return list.filter(isPatientInactive);
+  return [...list];
+}
+
+/** "Inativo desde 12/11/2026" ou só "Inativo" quando a data não vem. */
+export function formatInactiveSince(patient) {
+  const time = Date.parse(patient?.suspended_at || '');
+  if (Number.isNaN(time)) return 'Inativo';
+  return `Inativo desde ${new Date(time).toLocaleDateString('pt-BR')}`;
+}
+
 // "Ágata" junto de "Agata", maiúscula igual a minúscula, "Ana 2" antes de "Ana 10".
 const nameCollator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
 

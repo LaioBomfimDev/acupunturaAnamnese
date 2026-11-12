@@ -464,7 +464,8 @@ export const PACIENTES_HELP = {
     '“Observações”: texto livre do cadastro, até 1000 caracteres, para o que a equipe precisa lembrar (horário preferido, quem acompanha, como avisar). Muda em “Alterar dados cadastrais”, na aba Cadastro da ficha.',
     'Na ficha, aba Cadastro, “+ Acrescentar convênio”: operadora, plano, número e validade da carteira e CNS. Convênio que acabou se desativa, não se apaga.',
     'Na ficha, aba Cadastro, “Valor combinado” (só a administração): o que ESTE paciente paga por área e, se quiser, por serviço, quando é promoção ou acordo. O campo mostra o que a tabela cobra, para comparar. Combinado que acabou se desativa, não se apaga.',
-    '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha.',
+    '“Ver pacientes cadastrados”: buscar pelo nome e clicar no paciente para abrir a ficha. Em “Situação”, escolher Ativos (abre assim), Inativos ou Todos.',
+    'Na ficha, “Situação”: marcar o paciente como Inativo quando ele parou de vir, ou voltar para Ativo. Nada é apagado.',
     '“Enviar / compartilhar”: mandar para outro profissional só os itens que você marcar, confirmando com a sua senha.',
     '“Ver compartilhado”: ler o que já foi compartilhado daquele paciente.',
     'Revogar um compartilhamento no × ao lado dele.',
@@ -473,7 +474,7 @@ export const PACIENTES_HELP = {
   reading: [
     'Selos com o nome da área são as matrículas do paciente; passe o mouse para ver a situação: em atendimento, pausado ou alta.',
     '“sem matrícula” = cadastrado, mas ainda sem nenhuma área. O cartão “Ver pacientes cadastrados” mostra quantos estão assim.',
-    '“pendência” = marcado à mão na ficha do paciente. “inativo” = suspenso, uma pausa que pode ser desfeita na ficha.',
+    '“pendência” = marcado à mão na ficha do paciente. “inativo” = marcado como Inativo na ficha. Some da lista de Ativos, mas o cadastro e o prontuário continuam; volta para Ativo na mesma ficha. Ao buscar em Ativos, a tela avisa quando o nome procurado está entre os inativos.',
     '“Área → destino” = compartilhamento ativo.',
     '“Responsável” (ficha, aba Matrículas) = quem atende o paciente naquela área. Ele recebe as escalas e o alerta de risco, junto com quem tem atendimento na Agenda. Ao enviar o paciente para outra área, o profissional de destino já fica como responsável.',
     '“Valor combinado” vale para o atendimento avulso, do próximo em diante: cobrança já gravada não muda. Pacote tem total próprio e convênio usa o preço da operadora. O repasse de quem atende segue sendo sobre o valor que o paciente pagou.',

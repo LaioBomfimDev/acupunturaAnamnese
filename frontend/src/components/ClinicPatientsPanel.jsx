@@ -12,7 +12,10 @@ import {
 } from '../services/clinicPatientsService';
 import { listActiveSharesForPatients, revokeRecordShare } from '../services/recordSharesService';
 import { listClinicMembers, shortName } from '../services/clinicMembersService';
-import { DEFAULT_PATIENT_SORT, PATIENT_SORT_OPTIONS, formatAge, formatPatientCount, getInitials, sortPatients } from '../utils/patientUi';
+import {
+  DEFAULT_PATIENT_SORT, DEFAULT_PATIENT_STATUS_FILTER, PATIENT_SORT_OPTIONS, PATIENT_STATUS_OPTIONS,
+  filterPatientsByStatus, formatAge, formatPatientCount, getInitials, sortPatients,
+} from '../utils/patientUi';
 import { SharePatientDialog } from './SharePatientDialog';
 import { SharedSessionViewer } from './SharedSessionViewer';
 import { ClinicPatientProfile } from './ClinicPatientProfile';
@@ -74,6 +77,14 @@ function CpSearchIcon() {
   );
 }
 
+function emptyListMessage({ query, statusFilter, total }) {
+  if (query) return 'Nenhum paciente encontrado para esta busca.';
+  if (total === 0) return 'Nenhum paciente cadastrado ainda.';
+  if (statusFilter === 'inactive') return 'Nenhum paciente inativo.';
+  if (statusFilter === 'active') return 'Nenhum paciente ativo.';
+  return 'Nenhum paciente cadastrado ainda.';
+}
+
 export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) {
   // refreshPatients recarrega a lista que PatientStart.jsx usa dentro de
   // cada disciplina — sem isso, um paciente criado aqui só aparecia lá
@@ -91,6 +102,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
   const [notice, setNotice] = useState(null);
   const [query, setQuery] = useState('');
   const [sortOrder, setSortOrder] = useState(DEFAULT_PATIENT_SORT);
+  const [statusFilter, setStatusFilter] = useState(DEFAULT_PATIENT_STATUS_FILTER);
   const [sharesByPatient, setSharesByPatient] = useState({});
   const [members, setMembers] = useState([]);
   const [shareTarget, setShareTarget] = useState(null);
@@ -204,13 +216,24 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
     return person ? shortName(person.full_name) : getDiscipline(share.to_discipline)?.label;
   }
 
-  const filtered = useMemo(() => {
+  // Busca primeiro, situação depois: assim dá para avisar quando o nome
+  // procurado só existe na outra situação (inativo procurado em Ativos).
+  const searched = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const found = term
+    return term
       ? patients.filter(patient => (patient.name || '').toLowerCase().includes(term))
       : patients;
+  }, [patients, query]);
+
+  const filtered = useMemo(() => {
+    const found = filterPatientsByStatus(searched, statusFilter);
     return sortPatients(found, sortOrder);
-  }, [patients, query, sortOrder]);
+  }, [searched, statusFilter, sortOrder]);
+
+  // Em Inativos sem busca, "N ativos fora desta lista" seria só ruído.
+  const hiddenByStatus = statusFilter === 'active' || (statusFilter === 'inactive' && query.trim())
+    ? searched.length - filtered.length
+    : 0;
 
   // Só pra sinalizar no card "Ver lista" — cadastro sem matrícula fica
   // sem área nenhuma até alguém entrar e matricular pela ficha.
@@ -358,6 +381,14 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
               />
             </div>
             <label className="cp-sort">
+              <span>Situação</span>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} aria-label="Mostrar pacientes ativos, inativos ou todos">
+                {PATIENT_STATUS_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="cp-sort">
               <span>Ordenar por</span>
               <select value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
                 {PATIENT_SORT_OPTIONS.map(option => (
@@ -378,8 +409,17 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
           {!loading && !error && filtered.length === 0 && (
             <div className="cp-empty">
               <span className="cp-empty-icon"><CpPeopleIcon /></span>
-              <p>{query ? 'Nenhum paciente encontrado para esta busca.' : 'Nenhum paciente cadastrado ainda.'}</p>
+              <p>{emptyListMessage({ query, statusFilter, total: patients.length })}</p>
             </div>
+          )}
+
+          {!loading && !error && hiddenByStatus > 0 && (
+            <p className="cp-status-hint">
+              {hiddenByStatus === 1 ? '1 paciente' : `${hiddenByStatus} pacientes`}
+              {statusFilter === 'active' ? (hiddenByStatus === 1 ? ' inativo' : ' inativos') : (hiddenByStatus === 1 ? ' ativo' : ' ativos')}
+              {query ? ' com esse nome' : ''} fora desta lista.{' '}
+              <button type="button" className="cp-link-btn" onClick={() => setStatusFilter('all')}>Ver todos</button>
+            </p>
           )}
 
           <div className="cp-list">
@@ -411,7 +451,7 @@ export function ClinicPatientsPanel({ profile, onBack, isClinicAdmin = false }) 
                     </span>
                   )}
                   {patient.suspended_at && (
-                    <span className="cp-badge cp-badge-off" title="Suspenso — pausa reversível marcada na ficha do paciente">
+                    <span className="cp-badge cp-badge-off" title="Inativo: marcado na ficha do paciente, nada foi apagado">
                       inativo
                     </span>
                   )}

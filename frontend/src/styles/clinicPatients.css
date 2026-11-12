@@ -646,6 +646,30 @@
   }
 }
 
+/* "2 pacientes inativos fora desta lista. Ver todos" (12/11/2026). */
+.cp-status-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--r1-text-muted);
+}
+
+.cp-link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--r1-accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cp-link-btn:focus-visible {
+  outline: 2px solid var(--r1-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .cp-count {
   flex-shrink: 0;
   padding: 4px 10px;
@@ -1656,6 +1680,47 @@
   gap: 8px;
 }
 
+/* Situação Ativo/Inativo na ficha (12/11/2026, no lugar de "Suspender
+   paciente"): seletor do tamanho dos botões ao lado. */
+.pf-status-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--r1-text-muted);
+}
+
+.pf-status-select select {
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-field-bg);
+  color: var(--r1-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pf-status-select select[data-status="inactive"] {
+  background: var(--r1-surface-sunken);
+  color: var(--r1-text-subtle);
+}
+
+.pf-status-select select:focus-visible {
+  outline: none;
+  border-color: var(--r1-accent);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring);
+}
+
+.pf-status-select select:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 /* Celular e tablet (até 1024px): nome em cima e as ações embaixo,
    quebrando linha. Presas numa linha só (flex: 1 sem wrap), as cinco
    ações (Marcar pendência … Excluir paciente) mediam 459px num celular
@@ -2026,7 +2091,7 @@ button.pf-discipline-row:disabled {
   flex-shrink: 0;
   background: var(--r1-surface-sunken);
   border-color: var(--r1-border-subtle);
-  color: var(--r1-border);
+  color: var(--r1-text-subtle);
 }
 
 /* ---------- evolução: resumo + atalho, não mais lista crua ---------- */

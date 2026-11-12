@@ -145,7 +145,9 @@ function resolveCreateDisciplines(role, profession, selectedDisciplines = []) {
   }
   if (role !== 'knowledge_reviewer') return [];
   const mapped = PROFESSION_DISCIPLINE[profession];
-  return mapped ? [mapped] : ['acupuntura'];
+  // Sem profissão mapeada, sem área: a administração escolhe depois em
+  // Gestão → Equipe. Antes caía em ['acupuntura'] (12/11/2026).
+  return mapped ? [mapped] : [];
 }
 
 export function buildProfessionalCreatePayload(form, clinics = []) {

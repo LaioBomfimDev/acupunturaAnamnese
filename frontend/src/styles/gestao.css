@@ -1901,3 +1901,61 @@
     font-size: 13.5px;
   }
 }
+
+/* ------------------------------------------------------------
+   Áreas em que o profissional atende (Gestão → Equipe, 12/11/2026).
+   Linha própria dentro do cartão: .gt-card já é flex com wrap, então
+   flex-basis 100% quebra sem mexer no resto do cartão.
+   ------------------------------------------------------------ */
+.gt-card-areas {
+  flex: 0 0 100%;
+  display: grid;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--r1-border-subtle);
+}
+
+.gt-card-areas-label {
+  color: var(--r1-text-muted);
+  font-size: 12px;
+}
+
+.gt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--r1-border-subtle);
+  border-radius: 999px;
+  background: var(--r1-surface);
+  color: var(--r1-text-muted);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.gt-chip:disabled { cursor: progress; opacity: 0.6; }
+
+/* Selecionado segue a cor da instituição, como toda seleção do sistema. */
+.gt-chip-on {
+  border-color: var(--r1-accent-line);
+  background: var(--r1-accent-wash);
+  color: var(--r1-accent-strong);
+  font-weight: 600;
+}
+
+.gt-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.gt-card-areas-empty {
+  color: var(--r1-text-muted);
+  font-size: 12px;
+}

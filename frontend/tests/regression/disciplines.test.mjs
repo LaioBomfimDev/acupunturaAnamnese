@@ -41,14 +41,17 @@ test('resolveUserDisciplines: coluna do banco é a fonte da verdade e ids invál
   );
 });
 
-test('resolveUserDisciplines: fallback sem a coluna preserva acupuntura (ninguém perde acesso na virada)', () => {
-  assert.deepEqual(resolveUserDisciplines({}), ['acupuntura']);
-  assert.deepEqual(resolveUserDisciplines(null), ['acupuntura']);
-  assert.deepEqual(resolveUserDisciplines({ disciplines: [] }), ['acupuntura']);
-  assert.deepEqual(
-    resolveUserDisciplines({ profession: 'psicologo' }),
-    ['acupuntura', 'psicologia'],
-  );
+// Até 12/11/2026 este fallback injetava 'acupuntura' em todo mundo, para
+// ninguém perder acesso na virada MTC → multidisciplinar. A virada acabou,
+// e a herança gravava nutricionista e fisioterapeuta como acupunturistas
+// (pedido da administradora: ver areas-do-profissional.test.mjs). Agora o
+// fallback dá só a área da profissão — e nenhuma, quando não há mapa.
+test('resolveUserDisciplines: fallback sem a coluna dá só a área da profissão', () => {
+  assert.deepEqual(resolveUserDisciplines({}), []);
+  assert.deepEqual(resolveUserDisciplines(null), []);
+  assert.deepEqual(resolveUserDisciplines({ disciplines: [] }), []);
+  assert.deepEqual(resolveUserDisciplines({ profession: 'psicologo' }), ['psicologia']);
+  assert.deepEqual(resolveUserDisciplines({ profession: 'nutricionista' }), ['nutricao']);
   assert.deepEqual(resolveUserDisciplines({ profession: 'acupunturista' }), ['acupuntura']);
 });
 

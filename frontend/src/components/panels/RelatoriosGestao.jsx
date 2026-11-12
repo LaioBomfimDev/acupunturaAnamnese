@@ -17,7 +17,7 @@ import {
 } from '../../utils/gestaoSurveys';
 import { buildWhatsAppLink, isLikelyValidWhatsAppPhone } from '../../utils/whatsapp';
 import { listAppointments, listMissedAppointments, listPatientsAwaitingReturn } from '../../services/appointmentService';
-import { listClinicMembers, setMemberHasAgenda, shortName } from '../../services/clinicMembersService';
+import { listClinicMembers, setMemberDisciplines, setMemberHasAgenda, shortName } from '../../services/clinicMembersService';
 import { listClinicPatients } from '../../services/clinicPatientsService';
 import { listClinicAccessLogs } from '../../services/clinicAccessLogService';
 import { loadDashboardMetrics } from '../../services/gestaoDashboardService';
@@ -400,6 +400,7 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
   const [professionalsLoading, setProfessionalsLoading] = useState(true);
   const [professionalsError, setProfessionalsError] = useState('');
   const [savingAgendaFlagId, setSavingAgendaFlagId] = useState('');
+  const [savingDisciplinesId, setSavingDisciplinesId] = useState('');
   const [teamFilter, setTeamFilter] = useState(''); // '' | 'attending' | 'admin'
   const [showCreateProfessional, setShowCreateProfessional] = useState(false);
   const isClinicAdmin = profile?.role === 'clinic_admin';
@@ -439,6 +440,29 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
       setProfessionalsError(err.message || 'Não foi possível atualizar quem atende.');
     } finally {
       setSavingAgendaFlagId('');
+    }
+  }
+
+  // Áreas em que a pessoa atende (12/11/2026). Até aqui não havia como
+  // mudar depois do cadastro: a lista só existia na tela de criar, e o
+  // banco punha acupuntura em todo mundo. Quem limpa a lista é a RPC —
+  // a tela grava o que ela devolve, não o que mandou.
+  async function toggleMemberDiscipline(member, disciplineId) {
+    const current = Array.isArray(member.disciplines) ? member.disciplines : [];
+    const next = current.includes(disciplineId)
+      ? current.filter(id => id !== disciplineId)
+      : [...current, disciplineId];
+    setSavingDisciplinesId(member.id);
+    setProfessionalsError('');
+    try {
+      const saved = await setMemberDisciplines(member.id, next);
+      setMembers(prev => prev.map(item => (
+        item.id === member.id ? { ...item, disciplines: saved.disciplines } : item
+      )));
+    } catch (err) {
+      setProfessionalsError(err.message || 'Não foi possível atualizar as áreas.');
+    } finally {
+      setSavingDisciplinesId('');
     }
   }
 
@@ -1138,6 +1162,32 @@ export function RelatoriosGestao({ profile, initialSection = null, onOpenBirthda
                           <span className="gt-switch-thumb" />
                         </span>
                       </label>
+                    )}
+                    {isClinicAdmin && member.role !== 'receptionist' && (
+                      <div className="gt-card-areas">
+                        <span className="gt-card-areas-label" id={`areas-${member.id}`}>Áreas em que atende</span>
+                        <div className="gt-chips" role="group" aria-labelledby={`areas-${member.id}`}>
+                          {DISCIPLINES.map(discipline => {
+                            const on = Array.isArray(member.disciplines) && member.disciplines.includes(discipline.id);
+                            return (
+                              <button
+                                key={discipline.id}
+                                type="button"
+                                className={`gt-chip${on ? ' gt-chip-on' : ''}`}
+                                aria-pressed={on}
+                                disabled={savingDisciplinesId === member.id}
+                                onClick={() => toggleMemberDiscipline(member, discipline.id)}
+                              >
+                                <span className="gt-chip-dot" style={{ background: discipline.color }} aria-hidden="true" />
+                                {discipline.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {(!Array.isArray(member.disciplines) || member.disciplines.length === 0) && (
+                          <span className="gt-card-areas-empty">Sem área: não entra em nenhum atendimento.</span>
+                        )}
+                      </div>
                     )}
                   </li>
                 ))}

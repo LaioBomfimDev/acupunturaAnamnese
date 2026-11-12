@@ -109,6 +109,42 @@ export async function setMemberHasAgenda(profileId, hasAgenda, { runtime } = {})
 }
 
 /**
+ * Troca as áreas em que a pessoa atende (Gestão → Equipe).
+ *
+ * Só a administração da própria instituição (ou SuperAdm): `profiles` não
+ * tem policy de UPDATE cruzado, e `set_member_disciplines` (migration
+ * 20261112) é o único caminho. O banco é quem limpa a lista — tira o que
+ * não existe, tira repetido e devolve na ordem do catálogo —, então quem
+ * manda na tela é a resposta, nunca o array enviado.
+ */
+export async function setMemberDisciplines(profileId, disciplines, { runtime } = {}) {
+  if (!profileId) throw new Error('Profissional não informado.');
+
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    rpc: runtime?.rpc || ((fn, args) => supabase.rpc(fn, args)),
+  };
+
+  const wanted = Array.isArray(disciplines) ? disciplines.filter(Boolean) : [];
+  const user = await client.getAuthenticatedUser();
+
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    return { id: profileId, disciplines: wanted };
+  }
+
+  const { data, error } = await client.rpc('set_member_disciplines', {
+    p_profile_id: profileId,
+    p_disciplines: wanted,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Não foi possível atualizar as áreas.');
+  }
+
+  return { id: profileId, disciplines: Array.isArray(data) ? data : wanted };
+}
+
+/**
  * Coloca quem está logado no topo da lista. A pessoa procura a própria
  * agenda primeiro — em recepção com dez profissionais, rolar até achar o
  * próprio nome é atrito diário.

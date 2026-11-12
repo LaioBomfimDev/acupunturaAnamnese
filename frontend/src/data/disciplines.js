@@ -95,18 +95,19 @@ const PROFESSION_TO_DISCIPLINE = {
 /**
  * Disciplinas liberadas para um perfil.
  *
- * Fonte da verdade é a coluna `profiles.disciplines` (TEXT[]). Quando ela
- * está ausente/vazia (migração 20260707 não aplicada ou perfil antigo),
- * cai no fallback: acupuntura SEMPRE entra (todo o sistema era MTC até
- * aqui — ninguém pode perder acesso na virada) + a disciplina mapeada
- * da profissão, quando houver.
+ * Fonte da verdade é a coluna `profiles.disciplines` (TEXT[]). Vazia, cai
+ * na área da profissão — e, sem profissão mapeada, em NENHUMA área: a
+ * administração escolhe em Gestão → Equipe (`set_member_disciplines`).
+ *
+ * Até 12/11/2026 este fallback injetava 'acupuntura' em todo mundo (era a
+ * virada MTC → multidisciplinar, quando ninguém podia perder acesso).
+ * Isso deixava nutricionista e fisioterapeuta como acupunturistas; o
+ * gatilho do banco fazia o mesmo e gravava. Não repor: ver a migration
+ * 20261112_areas_do_profissional.sql.
  */
 export function resolveUserDisciplines(profile) {
-  // Recepção não atende: nunca cai no fallback de acupuntura, mesmo sem
-  // disciplines preenchido. Ela nunca deveria chegar a chamar isto (o
-  // gate real é canEnterDiscipline, abaixo), mas o fallback genérico
-  // desta função assumiria 'acupuntura' por padrão se não cortássemos
-  // aqui também.
+  // Recepção não atende: nunca recebe área, mesmo com a coluna
+  // preenchida por engano. O gate real é canEnterDiscipline, abaixo.
   if (profile?.role === 'receptionist') return [];
 
   const fromColumn = Array.isArray(profile?.disciplines)
@@ -115,7 +116,7 @@ export function resolveUserDisciplines(profile) {
   if (fromColumn.length > 0) return fromColumn;
 
   const mapped = PROFESSION_TO_DISCIPLINE[profile?.profession];
-  return mapped && mapped !== 'acupuntura' ? ['acupuntura', mapped] : ['acupuntura'];
+  return mapped ? [mapped] : [];
 }
 
 /**

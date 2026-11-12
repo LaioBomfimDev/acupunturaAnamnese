@@ -9987,13 +9987,86 @@ textarea { min-height: 95px; resize: vertical; }
   margin: 0;
 }
 
+/* Mini Word: barra colada em cima da caixa, as duas na mesma moldura. */
+.doc-editor {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.doc-editor:focus-within {
+  border-color: var(--r1-accent, #0e2a4a);
+  box-shadow: 0 0 0 3px var(--r1-focus-ring, rgba(14, 42, 74, .2));
+}
+
+.doc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  background: var(--r1-surface-sunken, #f8fafc);
+}
+
+.doc-tb-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.doc-tb-group + .doc-tb-group {
+  padding-left: 10px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.doc-tb-button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.doc-tb-button:hover {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+.doc-tb-button[aria-pressed='true'] {
+  background: var(--r1-accent, #0e2a4a);
+  border-color: var(--r1-accent, #0e2a4a);
+  color: var(--r1-accent-contrast, #fff);
+}
+
+.doc-tb-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--r1-focus-ring, rgba(14, 42, 74, .25));
+}
+
+.doc-tb-bold { font-weight: 800; }
+.doc-tb-italic { font-style: italic; font-family: Georgia, serif; }
+.doc-tb-underline { text-decoration: underline; }
+
+/* Celular: sem o traço entre grupos, a barra quebra linha sem sobrar. */
+@media (max-width: 520px) {
+  .doc-tb-group + .doc-tb-group {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
 .doc-paste-area {
   min-height: calc(32 * var(--vh));
   max-height: calc(60 * var(--vh));
   overflow: auto;
   padding: 14px 16px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
   background: #fff;
   color: #1f2937;
   cursor: text;
@@ -10001,8 +10074,6 @@ textarea { min-height: 95px; resize: vertical; }
 
 .doc-paste-area:focus {
   outline: none;
-  border-color: var(--r1-accent, #0e2a4a);
-  box-shadow: 0 0 0 3px var(--r1-focus-ring, rgba(14, 42, 74, .2));
 }
 
 .doc-paste-area[data-empty='true']::before {
@@ -10013,7 +10084,9 @@ textarea { min-height: 95px; resize: vertical; }
 
 .doc-paste-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .doc-note {

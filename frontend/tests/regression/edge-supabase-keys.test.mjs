@@ -84,7 +84,10 @@ test('Edge: nenhuma função lê chave do Supabase por fora de _shared/security.
     if (statSync(full).isDirectory()) walk(full);
     else if (/\.(ts|js|mjs)$/.test(name)) files.push(full);
   });
-  walk(root.pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+  // fileURLToPath, nunca .pathname: pasta com espaço ("Sistema Acup") vinha
+  // como "Sistema%20Acup" e o teste falhava sem achar as funções (12/11/2026).
+  const { fileURLToPath } = await import('node:url');
+  walk(fileURLToPath(root));
   const outside = files
     .filter(f => !/[\\/]_shared[\\/]security\.ts$/.test(f))
     .filter(f => /SUPABASE_(SERVICE_ROLE_KEY|ANON_KEY|SECRET_KEYS?|PUBLISHABLE_KEYS?)|@supabase\/supabase-js|\bcreateClient\(/.test(readFileSync(f, 'utf8')));

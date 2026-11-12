@@ -211,13 +211,15 @@ export const GESTAO_HELP = {
     title: 'Documentos timbrados',
     summary: 'Coloca um documento no papel timbrado da instituição: um arquivo do Word (.docx) ou um texto colado.',
     actions: [
-      'Em “Enviar arquivo Word”: arrastar o arquivo .docx para a área indicada, ou clicar em “Escolher arquivo”.',
-      'Em “Colar conteúdo”: colar (do Word, do Google Docs, de um e-mail) ou digitar o texto e clicar em “Ver no papel timbrado”. “Editar conteúdo” volta ao texto.',
+      'Em “Enviar arquivo Word”: arrastar o arquivo .docx para a área indicada, ou clicar em “Escolher arquivo”. Ele já abre no papel timbrado.',
+      'Em “Colar conteúdo”: colar (do Word, do Google Docs, de um e-mail) ou digitar o texto e clicar em “Ver no papel timbrado”.',
+      '“Editar conteúdo” volta à caixa de texto, também com o arquivo Word: a barra em cima dela tem negrito, itálico, sublinhado, título, subtítulo, lista com marcadores, lista numerada, desfazer, refazer e limpar formatação. Depois, “Ver no papel timbrado” de novo.',
       'Dar um título ao documento — ele sai no cabeçalho.',
       'Imprimir ou salvar em PDF, ou baixar em Word (.docx), já timbrado: logo, faixas, rodapé de contato e marca d’água em toda página.',
     ],
     notes: [
-      'Negrito, listas e tabelas vêm junto ao colar; cor, fonte e formato das tabelas saem no padrão da instituição.',
+      'Negrito, listas e tabelas vêm junto ao colar; cor, fonte, alinhamento e formato das tabelas saem no padrão da instituição, por isso a barra não tem esses botões.',
+      'Editar aqui muda só o documento timbrado: o arquivo Word no seu computador continua como estava.',
       'O conteúdo é convertido no próprio computador e não é enviado para nenhum servidor.',
       'O logo e a cor do papel timbrado vêm da aba Personalizar.',
     ],

@@ -157,6 +157,45 @@ test('colar conteúdo: só texto vira parágrafos, sem HTML cru', () => {
   assert.match(docxHelpers, /file:\/\//);
 });
 
+// 12/11/2026, pedido da administradora: "mini Word" na caixa de conteúdo,
+// só com o básico, e o Word enviado também editável na mesma caixa.
+test('barra de formatação básica, sem cor/fonte/alinhamento, e Word editável (12/11/2026)', () => {
+  const panel = read('../../src/components/panels/DocumentosTimbrados.jsx');
+  const toolbar = read('../../src/components/panels/DocEditorToolbar.jsx');
+
+  assert.match(panel, /<DocEditorToolbar editorRef=\{pasteRef\} onChange=\{syncPasteEmpty\} \/>/);
+  ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList', 'undo', 'redo', 'removeFormat']
+    .forEach(command => assert.match(toolbar, new RegExp(`'${command}'`), `falta o comando ${command}`));
+  assert.match(toolbar, /\{ tag: 'h2', label: 'Título'/);
+  assert.match(toolbar, /\{ tag: 'h3', label: 'Subtítulo'/);
+  // Padrão da instituição: nada de cor, fonte ou alinhamento.
+  assert.doesNotMatch(toolbar, /justify|foreColor|fontName|fontSize|hiliteColor|backColor/);
+  // Por tag, não por style (a limpeza tira style e o sublinhado sumiria).
+  assert.match(toolbar, /execCommand\('styleWithCSS', false, false\)/);
+  // Clicar no botão não pode tirar a seleção da caixa.
+  assert.match(toolbar, /onMouseDown=\{keepSelection\}/);
+
+  // Uma caixa só, sempre montada: o Word vai para ela e "Editar conteúdo"
+  // vale para as duas origens.
+  assert.doesNotMatch(panel, /\{source === 'colar' && \(\r?\n\s*<div className="doc-paste"/);
+  assert.match(panel, /<div className="doc-paste" hidden=\{editorHidden\}>/);
+  assert.match(panel, /setEditorContent\(html\);\r?\n\s*setDocHtml\(html\);/);
+  assert.match(panel, /<button className="tag" onClick=\{editContent\}>Editar conteúdo<\/button>\r?\n\s*\{isWordSource && <button className="tag" onClick=\{clearDocument\}>Trocar arquivo<\/button>\}/);
+
+  // Editando o Word, a área de arrastar arquivo não volta a aparecer.
+  assert.match(panel, /\{isWordSource && !docHtml && !fileName && \(/);
+  // Enter vira <p>; texto solto e <div> simples viram <p> na limpeza; lista
+  // do Chrome sai de dentro do <p> (senão sobram parágrafos vazios).
+  assert.match(panel, /onFocus=\{\(\) => document\.execCommand\('defaultParagraphSeparator', false, 'p'\)\}/);
+  assert.match(docxHelpers, /wrapLooseInline\(probe\.body\.firstChild\);/);
+  assert.match(toolbar, /editor\.querySelectorAll\('p > ul, p > ol'\)/);
+  // Estado dos botões lido por setTimeout: requestAnimationFrame para com a aba escondida.
+  assert.doesNotMatch(toolbar, /requestAnimationFrame\(/);
+
+  // O que a barra gera sobrevive à limpeza (só tira atributo, não a tag).
+  assert.doesNotMatch(docxHelpers, /querySelectorAll\('[^']*\b(u|b|i|h2|h3|ul|ol)\b[^']*'\)\.forEach\(el => el\.remove\(\)\)/);
+});
+
 // QA ACUP-021 (09/11/2026): "Colar conteúdo" recebe HTML de qualquer página,
 // não só do mammoth. Na prévia sobravam links "java<TAB>script:", "data:text/html"
 // e <svg><set attributeName="href" to="javascript:…"> (troca o href depois da

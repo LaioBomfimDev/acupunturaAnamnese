@@ -155,10 +155,50 @@ export function plainTextToHtml(text) {
 // Conteúdo colado ou digitado na área "Colar conteúdo": passa pela mesma
 // limpeza do .docx, para sair no mesmo padrão da casa.
 export function normalizePastedContent(html) {
-  const normalized = normalizeImportedHtml(html);
-  const probe = new DOMParser().parseFromString(`<div>${normalized}</div>`, 'text/html');
+  const probe = new DOMParser().parseFromString(`<div>${normalizeImportedHtml(html)}</div>`, 'text/html');
+  wrapLooseInline(probe.body.firstChild);
   const hasContent = probe.body.textContent.trim() || probe.body.querySelector('img,table');
-  return hasContent ? normalized : '';
+  return hasContent ? probe.body.firstChild.innerHTML : '';
+}
+
+// Na caixa de edição a primeira linha digitada fica como texto solto e o
+// Enter de alguns navegadores cria <div>: sem <p>, a folha perde o espaço
+// e o tamanho de parágrafo. Texto solto vira <p>; <div> só com texto, também.
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'TABLE', 'BLOCKQUOTE', 'PRE', 'HR', 'FIGURE']);
+
+export function wrapLooseInline(container) {
+  if (!container) return;
+  const doc = container.ownerDocument;
+  [...container.children].forEach(child => {
+    if (child.tagName === 'DIV' && ![...child.children].some(el => BLOCK_TAGS.has(el.tagName))) {
+      const p = doc.createElement('p');
+      while (child.firstChild) p.appendChild(child.firstChild);
+      child.replaceWith(p);
+    }
+  });
+  // <p></p> sem nada (nem <br>) nunca é linha em branco que a pessoa quis:
+  // sobra do navegador em volta de lista. <p><br></p> fica.
+  [...container.children].forEach(child => {
+    if (child.tagName === 'P' && !child.childNodes.length) child.remove();
+  });
+  let run = [];
+  const flush = () => {
+    const meaningful = run.some(node => node.nodeType !== 3 || node.textContent.trim());
+    if (meaningful) {
+      const p = doc.createElement('p');
+      run[0].before(p);
+      run.forEach(node => p.appendChild(node));
+    } else {
+      run.forEach(node => node.remove());
+    }
+    run = [];
+  };
+  [...container.childNodes].forEach(node => {
+    const isBlock = node.nodeType === 1 && BLOCK_TAGS.has(node.tagName);
+    if (isBlock) flush();
+    else run.push(node);
+  });
+  flush();
 }
 
 // Converte o ArrayBuffer de um .docx em HTML padronizado. Import

@@ -427,3 +427,12 @@ Modelo de entrada:
 - Regra nova: folha timbrada que imprime mora num portal no `<body>` com `pq-printing`, nunca dentro do layout da tela.
 - Teste ou verificação obrigatória: `documentos-timbrados.test.mjs`.
 - Regra destilada em: `AGENTS.md` §7 (Documentos timbrados).
+
+### 2026-11-12 - Teste das chaves do Supabase falhava em pasta com espaço no nome
+
+- Sintoma: `edge-supabase-keys.test.mjs` ("nenhuma função lê chave do Supabase por fora de _shared/security.ts") falhava com `ENOENT ... Sistema%20Acup\supabase\functions` no checkout em "Sistema Acup"; o resto da suíte passava.
+- Causa: o caminho da pasta saía de `new URL(...).pathname`, que mantém o espaço codificado como `%20`.
+- Correção: `fileURLToPath(root)` no lugar de `.pathname` com recorte da letra do disco.
+- Regra nova: caminho de arquivo tirado de `import.meta.url` usa `fileURLToPath`, nunca `.pathname`.
+- Teste ou verificação obrigatória: `edge-supabase-keys.test.mjs` rodando no checkout com espaço no nome.
+- Regra destilada em: `AGENTS.md` §4.

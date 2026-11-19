@@ -31,7 +31,7 @@ export const PACKAGE_SESSIONS_FINANCE_NOTE =
 const STATUS_LABELS = {
   scheduled: 'Agendado',
   attended: 'Atendido',
-  cancelled: 'Cancelado',
+  cancelled: 'Cancelado pela clínica',
   no_show: 'Não compareceu',
   excused: 'Cancelado pelo paciente',
 };

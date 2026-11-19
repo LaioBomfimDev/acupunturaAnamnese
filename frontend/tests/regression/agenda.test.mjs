@@ -634,8 +634,9 @@ test('Agenda oferece excluir o pacote de uma vez, com a lista do banco e confirm
   assert.match(handler[0], /listSeriesFrom\(/, 'a contagem vem do banco, não do período carregado na tela');
   assert.match(handler[0], /isDeleteConfirmationValid\(/, 'exclusão definitiva confirma por digitação');
   assert.doesNotMatch(handler[0], /window\.confirm\(/, 'nunca sim/não em exclusão definitiva');
-  assert.match(source, /onClick=\{\(\) => handleDeleteSeries\(selectedAppointment\)\}/);
-  assert.match(source, /Excluir esta e as próximas do pacote/);
+  // 20/11/2026: o botão solto saiu; o alcance é perguntado (SessionScopeDialog).
+  assert.match(source, /await handleDeleteSeries\(appointment\)/);
+  assert.match(source, /Esta e as próximas/);
 });
 
 // Incidente 2026-09-28: o aviso de "Cancelar esta e as próximas do

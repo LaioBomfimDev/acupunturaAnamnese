@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  CLINIC_CANCEL_STATUS,
   MONTH_LABELS,
   OUTCOME_STATUSES,
   SELECTABLE_STATUSES,
@@ -7,6 +8,7 @@ import {
   appointmentsByDay,
   birthdaysByDay,
   buildMonthGrid,
+  deleteBlockReason,
   getStatusLabel,
   toDayKey,
 } from '../../utils/agenda';
@@ -83,6 +85,7 @@ import RegisterCompletedDialog from './agenda/RegisterCompletedDialog';
 import AppointmentTypeOptions from './agenda/AppointmentTypeOptions';
 import { appointmentTypeLabel, typeAfterAreaChange } from '../../utils/appointmentTypes.js';
 import PackageSessionsDialog from './agenda/PackageSessionsDialog';
+import SessionScopeDialog from './agenda/SessionScopeDialog';
 import ScheduleEditor from './agenda/ScheduleEditor';
 import SeriesPreview from './agenda/SeriesPreview';
 import ShareAgendaPanel from './agenda/ShareAgendaPanel';
@@ -264,6 +267,8 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   // "Ver sessões do pacote": o atendimento de onde a janela abriu. A
   // lista em si vem do banco dentro da janela (listSeriesSessions).
   const [packageOf, setPackageOf] = useState(null);
+  // Alcance de cancelar/excluir numa sessão de pacote: { kind, appointment }.
+  const [scopeAsk, setScopeAsk] = useState(null);
   // Agendamento em modo "mover": o próximo toque num horário remarca.
   const [moving, setMoving] = useState(null);
 
@@ -290,7 +295,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   // clínica ou SuperAdm apaga de vez. Cancelar (mudar status) continua
   // liberado pra qualquer um com acesso à agenda — a diferença é que
   // excluir some do histórico/BI, então o corte é mais estrito.
-  const canDeleteAppointment = profile?.role === 'clinic_admin' || profile?.role === 'super_admin';
+  // A recepção também (20/11/2026): é ela quem digita errado; a RLS acompanha
+  // (20261119_agenda_recepcao_exclui.sql).
+  const canDeleteAppointment = profile?.role === 'clinic_admin'
+    || profile?.role === 'super_admin'
+    || profile?.role === 'receptionist';
   // Espelha clinic_admin_update_agenda_settings (20260928): a regra vale
   // para a equipe toda, então só o Admin da clínica altera.
   const canConfigureAgenda = profile?.role === 'clinic_admin';
@@ -979,6 +988,33 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
   }
 
   /**
+   * Cancelado pela clínica / Excluir numa sessão de pacote: pergunta o
+   * alcance antes (só esta × esta e as próximas). Fora de pacote não há o
+   * que perguntar e a ação vai direto.
+   */
+  function askScope(kind, appointment) {
+    if (!appointment.recurrence_group_id) {
+      if (kind === 'cancel') handleStatus(appointment, CLINIC_CANCEL_STATUS.id);
+      else handleDelete(appointment);
+      return;
+    }
+    setScopeAsk({ kind, appointment });
+  }
+
+  async function chooseScope(scope) {
+    const { kind, appointment } = scopeAsk;
+    setScopeAsk(null);
+    if (kind === 'cancel') {
+      if (scope === 'one') await handleStatus(appointment, CLINIC_CANCEL_STATUS.id);
+      else await handleCancelSeries(appointment);
+    } else if (scope === 'one') {
+      await handleDelete(appointment);
+    } else {
+      await handleDeleteSeries(appointment);
+    }
+  }
+
+  /**
    * A contagem do aviso vem do banco (`listSeriesFrom`), não de
    * `appointments`: a tela só carrega o período visível, e o aviso dizia
    * "e as 2 seguintes" enquanto `cancelSeriesFrom` cancelava as 9 do
@@ -1145,10 +1181,16 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
    * a palavra é mais difícil de disparar sem querer do que um clique.
    */
   async function handleDelete(appointment) {
+    const blocked = deleteBlockReason(appointment);
+    if (blocked) {
+      setError(blocked);
+      return;
+    }
     const confirmText = window.prompt(
       'Isso apaga o agendamento PRA SEMPRE — some da agenda e do histórico/relatórios, sem volta.\n\n'
       + 'Use só quando foi marcado errado (profissional ou paciente errado). Se o paciente cancelou '
-      + 'ou faltou, feche esta janela e use "Cancelado pelo paciente" ou "Não compareceu" em vez de excluir.\n\n'
+      + 'ou faltou, ou se a clínica não pôde atender, feche esta janela e use "Cancelado pelo paciente", '
+      + '"Cancelado pela clínica" ou "Não compareceu" em vez de excluir.\n\n'
       + 'Para confirmar, digite excluir:',
     );
     if (confirmText === null) return;
@@ -1192,8 +1234,15 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
       setSaving(false);
     }
 
+    // Sessão já atendida fica: excluir é para erro de cadastro, não para
+    // apagar o que aconteceu.
+    const keptCount = sessions.filter(item => deleteBlockReason(item)).length;
+    sessions = sessions.filter(item => !deleteBlockReason(item));
+
     if (sessions.length === 0) {
-      setError('Nenhuma sessão deste pacote encontrada a partir desta data.');
+      setError(keptCount > 0
+        ? 'As sessões deste pacote a partir desta data já foram atendidas e não podem ser excluídas.'
+        : 'Nenhuma sessão deste pacote encontrada a partir desta data.');
       return;
     }
 
@@ -1205,8 +1254,11 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
 
     const confirmText = window.prompt(
       `Isso apaga ${scope} PRA SEMPRE — somem da agenda e do histórico/relatórios, sem volta.\n\n`
-      + 'Use só quando o pacote foi marcado errado. Se o paciente desistiu do pacote, feche esta janela '
-      + 'e use "Cancelar esta e as próximas do pacote".\n\n'
+      + (keptCount > 0
+        ? `${keptCount === 1 ? '1 sessão já atendida fica' : `${keptCount} sessões já atendidas ficam`} no pacote.\n\n`
+        : '')
+      + 'Use só quando o pacote foi marcado errado. Se o paciente desistiu ou a clínica não pôde atender, '
+      + 'feche esta janela e use o cancelamento.\n\n'
       + 'Para confirmar, digite excluir:',
     );
     if (confirmText === null) return;
@@ -2033,6 +2085,19 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                     {selectedAppointment.confirmed_at && <IconCheck />}
                     Confirmado
                   </button>
+                  {(['scheduled', 'ready'].includes(selectedAppointment.status)
+                    || selectedAppointment.status === CLINIC_CANCEL_STATUS.id) && (
+                    <button
+                      type="button"
+                      className="ag-chip-btn"
+                      aria-pressed={selectedAppointment.status === CLINIC_CANCEL_STATUS.id}
+                      disabled={saving || selectedAppointment.status === CLINIC_CANCEL_STATUS.id}
+                      title="A clínica não pôde atender. Não entra na evolução, não cobra e não cria sessão nova."
+                      onClick={() => askScope('cancel', selectedAppointment)}
+                    >
+                      {CLINIC_CANCEL_STATUS.label}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -2087,40 +2152,29 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
                 </button>
               </div>
 
-              {selectedAppointment.recurrence_group_id
-                && selectedAppointment.status === 'scheduled' && (
-                <button
-                  type="button"
-                  className="ag-btn"
-                  onClick={() => handleCancelSeries(selectedAppointment)}
-                  disabled={saving}
-                >
-                  Cancelar esta e as próximas do pacote
-                </button>
-              )}
-
               {canDeleteAppointment && (
-                <button
-                  type="button"
-                  className="ag-btn ag-btn--danger"
-                  onClick={() => handleDelete(selectedAppointment)}
-                  disabled={saving}
-                  title="Some da agenda e do histórico pra sempre — use só se foi marcado errado"
-                >
-                  {selectedAppointment.recurrence_group_id ? 'Excluir só esta sessão' : 'Excluir agendamento'}
-                </button>
-              )}
-
-              {canDeleteAppointment && selectedAppointment.recurrence_group_id && (
-                <button
-                  type="button"
-                  className="ag-btn ag-btn--danger"
-                  onClick={() => handleDeleteSeries(selectedAppointment)}
-                  disabled={saving}
-                  title="Apaga esta sessão e todas as seguintes do pacote de uma vez — use só se o pacote foi marcado errado"
-                >
-                  Excluir esta e as próximas do pacote
-                </button>
+                <details className="ag-detail-fix">
+                  <summary>Corrigir cadastro</summary>
+                  {deleteBlockReason(selectedAppointment) ? (
+                    <p className="ag-note">{deleteBlockReason(selectedAppointment)}</p>
+                  ) : (
+                    <>
+                      <p className="ag-note">
+                        Só para erro de cadastro (paciente ou profissional errado). Se o paciente
+                        cancelou ou a clínica não pôde atender, use o cancelamento acima.
+                      </p>
+                      <button
+                        type="button"
+                        className="ag-btn ag-btn--danger"
+                        onClick={() => askScope('delete', selectedAppointment)}
+                        disabled={saving}
+                        title="Some da agenda e do histórico pra sempre — use só se foi marcado errado"
+                      >
+                        {selectedAppointment.recurrence_group_id ? 'Excluir sessão do pacote…' : 'Excluir agendamento'}
+                      </button>
+                    </>
+                  )}
+                </details>
               )}
             </div>
           ) : (
@@ -2676,6 +2730,32 @@ export function Agenda({ profile, onStartAppointment = null, onOpenEvolutions = 
           onClose={() => setShowRegisterCompleted(false)}
           onPatientCreated={created => setPatients(prev => [{ ...created, enrollments: [] }, ...prev])}
           onCreated={handleCompletedRegistered}
+        />
+      )}
+
+      {scopeAsk && (
+        <SessionScopeDialog
+          title={scopeAsk.kind === 'cancel' ? 'Cancelar pela clínica' : 'Excluir do pacote'}
+          text={scopeAsk.kind === 'cancel'
+            ? 'Esta sessão faz parte de um pacote. A clínica cancela só esta ou também as próximas? As sessões já atendidas não mudam e nenhuma sessão nova é criada.'
+            : 'Esta sessão faz parte de um pacote. Excluir apaga de vez, só para erro de cadastro. Sessões já atendidas ficam.'}
+          options={[
+            {
+              id: 'one',
+              label: 'Só esta sessão',
+              description: 'As outras do pacote continuam como estão.',
+              danger: scopeAsk.kind === 'delete',
+            },
+            {
+              id: 'from',
+              label: 'Esta e as próximas',
+              description: 'Você ainda confere a quantidade antes de confirmar.',
+              danger: scopeAsk.kind === 'delete',
+            },
+          ]}
+          busy={saving}
+          onChoose={chooseScope}
+          onClose={() => setScopeAsk(null)}
         />
       )}
 

@@ -530,7 +530,8 @@ export const AGENDA_HELP = {
       'Os três números do topo: quantas foram atendidas, quantas faltam e quantas tem o pacote.',
       'Atendido conta como feita. Agendado conta como falta, inclusive a que já passou sem resultado marcado (a linha avisa).',
       'Não compareceu e Cancelado pelo paciente aparecem na lista, mas não contam como feita nem como faltando.',
-      'Cancelado (pacote encerrado pela clínica) aparece riscado, sem número, e sai do total.',
+      'Cancelado pela clínica (a clínica não pôde atender) aparece riscado, sem número, e sai do total. Nenhuma sessão nova é criada no lugar.',
+      'No detalhe, “Cancelado pela clínica” pergunta se vale só para esta sessão ou para esta e as próximas. “Corrigir cadastro” (administração e recepção) exclui só quando foi marcado errado; sessão já atendida não se exclui.',
       'A linha em destaque é a sessão de onde a janela abriu. Sessão movida mostra o selo Eventual e o horário de antes.',
     ],
     access: [

@@ -30,7 +30,7 @@ export const APPOINTMENT_STATUSES = [
   { id: 'scheduled', label: 'Agendado', tone: 'neutral' },
   { id: 'ready', label: 'Agendado', tone: 'neutral', legacy: true },
   { id: 'attended', label: 'Atendido', tone: 'success' },
-  { id: 'cancelled', label: 'Cancelado', tone: 'muted' },
+  { id: 'cancelled', label: 'Cancelado pela clínica', tone: 'muted' },
   { id: 'no_show', label: 'Não compareceu', tone: 'danger' },
   { id: 'excused', label: 'Cancelado pelo paciente', tone: 'warning' },
 ];
@@ -43,6 +43,25 @@ export const SELECTABLE_STATUSES = APPOINTMENT_STATUSES.filter(item => !item.leg
 // Resultado do atendimento, na ordem dos botões do card.
 export const OUTCOME_STATUSES = ['attended', 'no_show', 'excused']
   .map(id => APPOINTMENT_STATUSES.find(item => item.id === id));
+
+// "Cancelado pela clínica" (20/11/2026): a clínica não pôde atender (feriado,
+// profissional ausente). Fica fora de OUTCOME_STATUSES porque numa sessão de
+// pacote a Agenda pergunta o alcance antes (só esta × esta e as próximas).
+// Não vira evolução, não cobra e não cria sessão nova no pacote.
+export const CLINIC_CANCEL_STATUS = APPOINTMENT_STATUSES.find(item => item.id === 'cancelled');
+
+/**
+ * Motivo para a Agenda NÃO oferecer "Excluir" nesta sessão, ou ''.
+ * Excluir é para erro de cadastro: sessão já Atendida é registro do que
+ * aconteceu. Evolução e pagamento o banco também barra (23503 e
+ * appointment_has_payment); aqui é o aviso antes do clique.
+ */
+export function deleteBlockReason(appointment) {
+  if (appointment?.status === 'attended') {
+    return 'Esta sessão já foi atendida e não pode ser excluída. Se o resultado foi marcado por engano, mude o resultado antes.';
+  }
+  return '';
+}
 
 // Estados que liberam o horário do profissional. Espelha o WHERE da
 // constraint appointments_no_overlap.

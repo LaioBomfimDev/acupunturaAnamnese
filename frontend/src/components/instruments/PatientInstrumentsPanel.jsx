@@ -10,6 +10,7 @@ import { riskMessages } from '../../utils/instrumentScoring';
 import { currentReceivers, receiversLabel } from '../../utils/instrumentRecipients';
 import { useInstrumentRecipients } from '../../hooks/useInstrumentRecipients';
 import { useCountUp } from '../../hooks/useCountUp';
+import { categoriesPresent, filterInstruments, instrumentKind } from '../../utils/instrumentCatalog';
 import { InstrumentApplyForm } from './InstrumentApplyForm';
 import { BandMeter, InstrumentApplicationDialog } from './InstrumentApplicationDialog';
 import { InstrumentPortalBox } from './InstrumentPortalBox';
@@ -234,7 +235,10 @@ export function InstrumentCard({
           onClick={onToggle}
         >
           <span className="instrument-acc-title">
-            <span className="instrument-acc-name" id={nameId}>{instrument.shortName}</span>
+            <span className="instrument-acc-name" id={nameId}>
+              {instrument.shortName}
+              {instrumentKind(instrument) && <span className="instrument-acc-kind"> ({instrumentKind(instrument)})</span>}
+            </span>
             {pending && (
               <span className="instrument-review-badge" title={instrument.review?.note}>Em conferência</span>
             )}
@@ -517,6 +521,9 @@ export function PatientInstrumentsPanel({
   const [reloadToken, setReloadToken] = useState(0);
   // Acordeão: tudo fechado de início (ids das escalas abertas).
   const [openIds, setOpenIds] = useState(() => new Set());
+  // Busca e filtro por categoria: só escondem cartões, nunca mudam os números do topo.
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('');
   const recipients = useInstrumentRecipients(patientId, discipline);
   const loadedRef = useRef(onApplicationsLoaded);
   useEffect(() => { loadedRef.current = onApplicationsLoaded; });
@@ -538,6 +545,8 @@ export function PatientInstrumentsPanel({
     setOpened(null);
     setNotice(null);
     setOpenIds(new Set());
+    setQuery('');
+    setCategory('');
   }
 
   useEffect(() => {
@@ -629,7 +638,14 @@ export function PatientInstrumentsPanel({
   const latestAt = validApplications(applications)
     .map(app => app.appliedAt)
     .sort((a, b) => new Date(b) - new Date(a))[0] || null;
-  const allOpen = instruments.length > 0 && instruments.every(instrument => openIds.has(instrument.id));
+  const categories = categoriesPresent(instruments);
+  const filtering = Boolean(query.trim() || category);
+  const visibleIds = new Set(filterInstruments(instruments, { query, category }).map(instrument => instrument.id));
+  const shownApplied = applied.filter(instrument => visibleIds.has(instrument.id));
+  const shownNotApplied = notApplied.filter(instrument => visibleIds.has(instrument.id));
+  const shownCount = shownApplied.length + shownNotApplied.length;
+  const shownInstruments = instruments.filter(instrument => visibleIds.has(instrument.id));
+  const allOpen = shownInstruments.length > 0 && shownInstruments.every(instrument => openIds.has(instrument.id));
 
   const renderCard = instrument => (
     <InstrumentCard
@@ -716,32 +732,79 @@ export function PatientInstrumentsPanel({
                   <dd className="is-date">{latestAt ? formatInstrumentDate(latestAt) : '—'}</dd>
                 </div>
               </dl>
-              {instruments.length > 0 && (
+              {shownInstruments.length > 0 && (
                 <button
                   type="button"
                   className="quiet-button instrument-toggle-all"
-                  onClick={() => setOpenIds(allOpen ? new Set() : new Set(instruments.map(instrument => instrument.id)))}
+                  onClick={() => setOpenIds(current => {
+                    const next = new Set(current);
+                    for (const instrument of shownInstruments) {
+                      if (allOpen) next.delete(instrument.id);
+                      else next.add(instrument.id);
+                    }
+                    return next;
+                  })}
                 >
                   {allOpen ? 'Fechar todas' : 'Abrir todas'}
                 </button>
               )}
             </div>
 
-            {applied.length > 0 && (
+            {instruments.length > 1 && (
+              <div className="instrument-filters" role="search">
+                <label className="instrument-search">
+                  <span className="sr-only">Buscar escala</span>
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={event => setQuery(event.target.value)}
+                    placeholder="Buscar escala por nome, sigla ou assunto"
+                    autoComplete="off"
+                  />
+                </label>
+                {categories.length > 1 && (
+                  <div className="instrument-chart-tabs instrument-category-tabs" role="group" aria-label="Filtrar por categoria">
+                    <button type="button" aria-pressed={!category} onClick={() => setCategory('')}>Todas</button>
+                    {categories.map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-pressed={category === item.id}
+                        onClick={() => setCategory(category === item.id ? '' : item.id)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {filtering && (
+                  <p className="small instrument-filter-count" role="status">
+                    {plural(shownCount, 'escala encontrada', 'escalas encontradas')} de {instruments.length}.{' '}
+                    <button type="button" className="quiet-button" onClick={() => { setQuery(''); setCategory(''); }}>Limpar filtros</button>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {filtering && shownCount === 0 && (
+              <p className="small area-empty">Nenhuma escala combina com a busca. Tente outra palavra ou limpe os filtros.</p>
+            )}
+
+            {shownApplied.length > 0 && (
               <section className="instrument-group" aria-label="Escalas aplicadas a este paciente">
                 <h4 className="instrument-group-title">
-                  Aplicadas a este paciente <span>{applied.length}</span>
+                  Aplicadas a este paciente <span>{shownApplied.length}</span>
                 </h4>
-                <div className="instrument-list">{applied.map(renderCard)}</div>
+                <div className="instrument-list">{shownApplied.map(renderCard)}</div>
               </section>
             )}
 
-            {notApplied.length > 0 && (
+            {shownNotApplied.length > 0 && (
               <section className="instrument-group" aria-label="Escalas ainda não aplicadas">
                 <h4 className="instrument-group-title">
-                  {applied.length ? 'Outras escalas disponíveis' : 'Escalas disponíveis'} <span>{notApplied.length}</span>
+                  {applied.length ? 'Outras escalas disponíveis' : 'Escalas disponíveis'} <span>{shownNotApplied.length}</span>
                 </h4>
-                <div className="instrument-list">{notApplied.map(renderCard)}</div>
+                <div className="instrument-list">{shownNotApplied.map(renderCard)}</div>
               </section>
             )}
           </>

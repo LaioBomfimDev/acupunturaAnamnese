@@ -15,7 +15,7 @@ import { loadFiscalData, loadTissData } from './financeiroService';
 import { listSatisfactionSurveys } from './satisfactionSurveyService';
 import { listAssignments } from './patientPortalService';
 import { listClinicPatients } from './clinicPatientsService';
-import { listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn, listPendingConfirmations, listSeriesSessions } from './appointmentService';
+import { SOURCE_LIMIT, listActiveSeriesGroupIds, listAppointments, listAppointmentsAwaitingEvolution, listPatientsAwaitingReturn, listPendingConfirmations, listSeriesSessions, listSeriesSessionsByGroups } from './appointmentService';
 import { listClinicMembers, shortName } from './clinicMembersService';
 import { listHolidays, listProfessionalSchedules } from './agendaScheduleService';
 import { loadAgendaSettings } from './agendaSettingsService';
@@ -27,7 +27,7 @@ import { todayInClinic } from '../utils/finance';
 import {
   freeSlotsForAssistant,
   readFinanceConsulta, financeConsultaIssue, financeConsultaFailure, summarizeFinance,
-  AGENDA_CONSULTAS, AGENDA_ACCESS, AGENDA_SOURCE_LIMIT, PACKAGE_WINDOW_DAYS,
+  AGENDA_CONSULTAS, AGENDA_ACCESS, AGENDA_SOURCE_LIMIT, PACKAGE_ACTIVE_DAYS, PACKAGE_WINDOW_DAYS,
   PATIENT_CONSULTAS, PATIENT_NEXT_MAX, readPatientConsulta, patientConsultaIssue, patientConsultaFailure, matchPatients,
   summarizeAgendaWithPatients, summarizeNextSessions, summarizeFrequentAbsences, summarizeBirthdayPeople, createRefRegistry,
   readAgendaConsulta, agendaConsultaIssue, agendaConsultaFailure,
@@ -195,11 +195,18 @@ function localKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-// Lista cheia até o limite do serviço pode estar cortada: vira erro, nunca subcontagem.
+// Lista cheia até o limite do serviço pode estar cortada: nunca subcontagem.
+// ACUP-029: vira 'limite_fonte' ("estreite o período ou escolha um profissional"), não 'erro'.
 function full(list, limit = AGENDA_SOURCE_LIMIT) {
-  if (list.length >= limit) throw new Error('fonte no limite');
+  if (list.length >= limit) {
+    const error = new Error('fonte no limite');
+    error.code = SOURCE_LIMIT;
+    throw error;
+  }
   return list;
 }
+
+const failureReason = error => (error?.code === SOURCE_LIMIT ? 'limite_fonte' : 'erro');
 
 async function runAgendaConsulta(raw, profile, team, now) {
   let query = readAgendaConsulta(raw);
@@ -239,9 +246,11 @@ async function runAgendaConsulta(raw, profile, team, now) {
       return summarizePendingConfirmationsPeriod({ consulta: query, pending, nameOf });
     }
     if (query.tipo === 'pacotes_fim') {
-      const from = new Date(now.getTime() - PACKAGE_WINDOW_DAYS * 86_400_000).toISOString();
-      const to = new Date(now.getTime() + PACKAGE_WINDOW_DAYS * 86_400_000).toISOString();
-      const appointments = full(await listAppointments({ from, to }));
+      // ACUP-029: só os pacotes com sessão recente, cada um inteiro (a mesma
+      // leitura de "Sessões do pacote"), nunca a clínica toda em ±180 dias.
+      const since = new Date(now.getTime() - PACKAGE_ACTIVE_DAYS * 86_400_000).toISOString();
+      const groups = await listActiveSeriesGroupIds({ since });
+      const appointments = await listSeriesSessionsByGroups(groups);
       return summarizePackagesNearEndAgenda({ consulta: query, appointments, nameOf, professionalId: person?.id || null, now });
     }
     if (query.tipo === 'aniversarios') {
@@ -261,8 +270,8 @@ async function runAgendaConsulta(raw, profile, team, now) {
       return summarizeConvenioState({ consulta: query, tiss, fiscal, today: todayInClinic(now) });
     }
     return agendaConsultaFailure(query, 'erro');
-  } catch {
-    return agendaConsultaFailure(query, 'erro');
+  } catch (error) {
+    return agendaConsultaFailure(query, failureReason(error));
   }
 }
 
@@ -328,7 +337,7 @@ async function runPatientConsulta(raw, profile, team, now, refs = null) {
       return summarizeBirthdayPeople({ consulta: query, patients, today });
     }
     return patientConsultaFailure(query, 'erro');
-  } catch {
-    return patientConsultaFailure(raw, 'erro');
+  } catch (error) {
+    return patientConsultaFailure(raw, failureReason(error));
   }
 }

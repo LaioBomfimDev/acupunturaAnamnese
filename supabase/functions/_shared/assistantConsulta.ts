@@ -23,7 +23,7 @@ export const ASSISTANT_CONSULTAS = [
 ];
 
 export const CONSULTA_MOTIVOS = [
-  'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro', 'sem_permissao', 'periodo_invalido', 'limite_periodo', 'limite_linhas', 'filtro_invalido',
+  'sem_jornada', 'feriado', 'passado', 'nao_encontrado', 'ambiguo', 'sem_agenda', 'erro', 'sem_permissao', 'periodo_invalido', 'limite_periodo', 'limite_linhas', 'filtro_invalido', 'limite_fonte',
 ];
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -332,6 +332,8 @@ export const AGENDA_REASONS = {
   periodo_invalido: 'Informe início e fim válidos no formato AAAA-MM-DD, em ordem.',
   limite_periodo: 'Escolha um período de até 93 dias.',
   limite_linhas: 'Há mais de 50 itens na lista. Os números do resumo valem; estreite o período ou o profissional para ver a lista.',
+  // ACUP-029: a fonte bateu o teto e a conta poderia sair menor; nenhum número.
+  limite_fonte: 'Há atendimentos demais para contar com segurança. Estreite o período ou escolha um profissional.',
   ambiguo: 'Há mais de uma pessoa da equipe com esse nome. Diga qual.',
   nao_encontrado: 'Não encontrei essa pessoa na equipe.',
   erro: 'Não foi possível consultar agora. Confira a tela de origem e tente novamente.',

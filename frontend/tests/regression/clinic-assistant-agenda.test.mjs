@@ -91,7 +91,8 @@ const server = await createServer({ root, server: { middlewareMode: true }, appT
     if (clean.endsWith('/src/services/appointmentService.js')) return `const inRange=(item,from,to,pro)=>(!from||item.starts_at>=from)&&(!to||item.starts_at<=to)&&(!pro||item.professional_id===pro);
       export async function listAppointments({from,to,professionalId}={}){${s}${read('appointments')}return s.appointments.filter(item=>inRange(item,from,to,professionalId));}
       export async function listPendingConfirmations({from,to,professionalId}={}){${s}${read('pending')}return s.appointments.filter(item=>item.kind==='appointment'&&item.status==='scheduled'&&!item.confirmed_at&&inRange(item,from,to,professionalId));}
-      export const listAppointmentsAwaitingEvolution=async()=>[];export const listPatientsAwaitingReturn=async()=>[];`;
+      export const listAppointmentsAwaitingEvolution=async()=>[];export const listPatientsAwaitingReturn=async()=>[];
+      export const SOURCE_LIMIT='source_limit';export async function listActiveSeriesGroupIds({since}={}){${s}${read('appointments')}s.reads.push('series-ids');const rows=s.appointments.filter(item=>item.recurrence_group_id&&item.status!=='cancelled'&&item.starts_at>=since);if(rows.length>=10000){const e=new Error('teto');e.code='source_limit';throw e;}return [...new Set(rows.map(item=>item.recurrence_group_id))];}export async function listSeriesSessionsByGroups(ids=[]){${s}s.reads.push('series-rows');const set=new Set(ids);return s.appointments.filter(item=>set.has(item.recurrence_group_id));}`;
     if (clean.endsWith('/src/services/agendaScheduleService.js')) return 'export const listHolidays=async()=>[];export const listProfessionalSchedules=async()=>[];';
     if (clean.endsWith('/src/services/agendaSettingsService.js')) return 'export const loadAgendaSettings=async()=>({settings:{}});';
     if (clean.endsWith('/src/services/financeiroService.js')) return `export async function loadReceivablesData(){throw Error('não usado')}
@@ -311,7 +312,12 @@ test('AG-5 fonte que falha vira aviso (nunca zero); fonte no limite e lista acim
   }
   reset(); state.fail = 'fiscal'; assert.equal((await run(ask('convenio'))).motivo, 'erro');
   reset(); state.appointments = Array.from({ length: 2000 }, (_, i) => ap('x' + i, 'den', 'psicologia', '2026-11-10', '09:00', 'scheduled'));
-  assert.equal((await run(ask('agenda'))).motivo, 'erro', 'fonte no limite de 2000 pode estar cortada');
+  // ACUP-029: fonte no teto vira limite_fonte ("estreite o período ou escolha um profissional"), nunca número.
+  const capped = await run(ask('agenda'));
+  assert.equal(capped.motivo, 'limite_fonte', 'fonte no limite de 2000 pode estar cortada');
+  assert.equal(capped.total, null); assert.equal(capped.resumo, null);
+  assert.match(capped.mensagem, /Estreite o período ou escolha um profissional/);
+  assert.deepEqual(edge.readConsultaResult(capped), capped, 'a Edge aceita o motivo novo');
   reset(); state.appointments = Array.from({ length: 51 }, (_, i) => ap('y' + i, 'den', 'psicologia', '2026-11-10', '09:00', 'scheduled'));
   const many = await run(ask('agenda'));
   assert.equal(many.motivo, 'limite_linhas'); assert.deepEqual(many.linhas, []);
@@ -336,18 +342,18 @@ test('AG-5 prompt, ajuda e AGENTS: consultas novas explicadas, sem paciente e co
   assert.doesNotMatch(tools, /console\.|\.from\(|\.insert\(|\.update\(|\.delete\(/);
 });
 
-test('QA 09/11/2026: confirmações e aniversários com a fonte no limite (2000) viram erro, nunca subcontagem', async () => {
+test('QA 09/11/2026: confirmações e aniversários com a fonte no limite (2000) viram limite_fonte (ACUP-029), nunca subcontagem', async () => {
   reset();
   state.appointments = Array.from({ length: 2000 }, (_, i) => ap('p' + i, 'den', 'psicologia', '2026-11-10', '09:00', 'scheduled'));
   const pending = await run(ask('confirmacoes_pendentes'));
-  assert.equal(pending.motivo, 'erro', 'fila de confirmação cheia pode estar cortada');
+  assert.equal(pending.motivo, 'limite_fonte', 'fila de confirmação cheia pode estar cortada');
   assert.equal(pending.resumo, null);
   state.appointments.pop();
   assert.equal((await run(ask('confirmacoes_pendentes'))).motivo, 'limite_linhas', '1999 cabem na fonte: resumo sem a lista');
   reset();
   state.patients = Array.from({ length: 2000 }, (_, i) => ({ id: 'q' + i, name: 'Nome ' + i, birth_date: '1990-11-03' }));
   const birthdays = await run(ask('aniversarios'));
-  assert.equal(birthdays.motivo, 'erro', 'cadastro cheio pode estar cortado');
+  assert.equal(birthdays.motivo, 'limite_fonte', 'cadastro cheio pode estar cortado');
   assert.equal(birthdays.resumo, null);
   state.patients.pop();
   assert.deepEqual((await run(ask('aniversarios'))).resumo, { total: 1999 });
@@ -357,4 +363,47 @@ test('QA 09/11/2026: confirmações e aniversários com a fonte no limite (2000)
     assert.doesNotMatch(criteria.pacotes_fim, /mesma regra/);
   }
   assert.match(edgeSource, /pacotes_fim: [^\r\n]*não diga que os números são os mesmos/);
+});
+
+// ACUP-029: clínica real (~15 atendimentos por dia). pacotes_fim lê só os
+// pacotes ativos da Agenda, cada um inteiro; agenda da clínica inteira em
+// 93 dias bate o teto e vira limite_fonte; por profissional responde normal.
+test('ACUP-029: com 5000 atendimentos, pacotes_fim conta certo; agenda da clínica em 93 dias = limite_fonte, por profissional normal', async () => {
+  reset();
+  const day = offset => {
+    const date = new Date(Date.UTC(2026, 7, 10 + offset));
+    return date.toISOString().slice(0, 10);
+  };
+  // 5000 avulsos da Nara espalhados em ~180 dias (antes e depois de hoje) + os pacotes de sempre (grp-a, grp-b).
+  const loose = Array.from({ length: 5000 }, (_, i) => ap('z' + i, 'nar', 'nutricao', day(i % 180), `${String(8 + (i % 10)).padStart(2, '0')}:00`, i % 7 === 0 ? 'no_show' : 'attended'));
+  // Pacote antigo (todas as sessões há mais de 30 dias): não está em uso, não entra.
+  const old = Array.from({ length: 5 }, (_, i) => ap('o' + i, 'den', 'psicologia', `2026-08-${String(10 + i).padStart(2, '0')}`, '10:00', 'attended', { recurrence_group_id: 'grp-old' }));
+  // Pacote do Dênis com sessões ANTIGAS (fora de ±180 dias) e recentes: conta o pacote inteiro (1 restante).
+  const long = [
+    ...Array.from({ length: 10 }, (_, i) => ap('l' + i, 'den', 'psicologia', `2026-0${1 + (i % 4)}-1${i % 9}`, '14:00', 'attended', { recurrence_group_id: 'grp-long' })),
+    ap('l10', 'den', 'psicologia', '2026-11-05', '14:00', 'attended', { recurrence_group_id: 'grp-long' }),
+    ap('l11', 'den', 'psicologia', '2026-11-19', '14:00', 'scheduled', { recurrence_group_id: 'grp-long' }),
+  ];
+  state.appointments = [...appointments(), ...loose, ...old, ...long];
+  assert.ok(state.appointments.length >= 5000, 'caso de 5000 atendimentos');
+
+  const packs = await run(ask('pacotes_fim'));
+  assert.equal(packs.motivo, null, 'responde, não dá erro nem limite');
+  assert.equal(packs.resumo.total, 2, 'grp-a (1 restante) e grp-long (1 restante); grp-b tem 3; grp-old parado');
+  assert.deepEqual(packs.linhas, [{ profissional: 'Dênis Prof T.', area: 'Psicologia', pacotes: 2, sessoes_restantes: 2 }]);
+  assert.ok(state.reads.includes('series-ids') && state.reads.includes('series-rows'), 'lê só os pacotes, pelas leituras de série');
+
+  // Motivo novo nos dois lados (contrato da 029), com a mesma mensagem.
+  assert.ok(front.CONSULTA_MOTIVOS.includes('limite_fonte') && edge.CONSULTA_MOTIVOS.includes('limite_fonte'));
+  assert.deepEqual(front.CONSULTA_MOTIVOS, edge.CONSULTA_MOTIVOS);
+  assert.equal(front.AGENDA_REASONS.limite_fonte, edge.AGENDA_REASONS.limite_fonte);
+  const wide = { tipo: 'agenda', profissional: 'equipe', de: '2026-08-10', ate: '2026-11-10' };
+  const clinic = await run(wide);
+  assert.equal(clinic.motivo, 'limite_fonte', 'clínica inteira em 93 dias passa do teto');
+  assert.equal(clinic.resumo, null);
+  const denis = await run({ ...wide, profissional: 'Dênis' });
+  assert.equal(denis.motivo, null, 'por profissional cabe na fonte e responde normal');
+  assert.ok(denis.resumo && denis.resumo.atendidos > 0 && denis.linhas.length > 0);
+  const nara = await run({ ...wide, profissional: 'Nara' });
+  assert.notEqual(nara.motivo, 'erro', 'quem tem muitos atendimentos recebe resumo ou limite claro, nunca erro');
 });

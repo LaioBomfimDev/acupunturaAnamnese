@@ -68,7 +68,8 @@ const server = await createServer({ root, server: { middlewareMode: true }, appT
     if (clean.endsWith('/src/services/appointmentService.js')) return `const inRange=(item,from,to,pro,pat)=>(!from||item.starts_at>=from)&&(!to||item.starts_at<=to)&&(!pro||item.professional_id===pro)&&(!pat||item.patient_id===pat);
       export async function listAppointments({from,to,professionalId,patientId}={}){${s}${read('appointments')}return s.appointments.filter(item=>inRange(item,from,to,professionalId,patientId));}
       export async function listSeriesSessions(group){${s}${read('series')}return s.appointments.filter(item=>item.recurrence_group_id===group);}
-      export const listPendingConfirmations=async()=>[];export const listAppointmentsAwaitingEvolution=async()=>[];export const listPatientsAwaitingReturn=async()=>[];`;
+      export const listPendingConfirmations=async()=>[];export const listAppointmentsAwaitingEvolution=async()=>[];export const listPatientsAwaitingReturn=async()=>[];
+      export const SOURCE_LIMIT='source_limit';export async function listActiveSeriesGroupIds({since}={}){${s}${read('appointments')}s.reads.push('series-ids');const rows=s.appointments.filter(item=>item.recurrence_group_id&&item.status!=='cancelled'&&item.starts_at>=since);if(rows.length>=10000){const e=new Error('teto');e.code='source_limit';throw e;}return [...new Set(rows.map(item=>item.recurrence_group_id))];}export async function listSeriesSessionsByGroups(ids=[]){${s}s.reads.push('series-rows');const set=new Set(ids);return s.appointments.filter(item=>set.has(item.recurrence_group_id));}`;
     if (clean.endsWith('/src/services/agendaScheduleService.js')) return 'export const listHolidays=async()=>[];export const listProfessionalSchedules=async()=>[];';
     if (clean.endsWith('/src/services/agendaSettingsService.js')) return 'export const loadAgendaSettings=async()=>({settings:{}});';
     if (clean.endsWith('/src/services/financeiroService.js')) return "export async function loadReceivablesData(){throw Error('não usado')}export async function loadTissData(){throw Error('não usado')}export async function loadFiscalData(){throw Error('não usado')}";
@@ -261,12 +262,12 @@ test('AG-8 fonte que falha vira aviso; prompt, ajuda e AGENTS dizem primeiro nom
   assert.doesNotMatch(panel, /Ainda não vejo pacientes/);
 });
 
-test('QA 09/11/2026: cadastro no limite do serviço (2000) vira erro nos 4 tipos; nunca subconta nem rotula paciente real como "fora da sua lista"', async () => {
+test('QA 09/11/2026 + ACUP-029: cadastro no limite do serviço (2000) vira limite_fonte nos 4 tipos; nunca subconta nem rotula paciente real como "fora da sua lista"', async () => {
   for (const tipo of ['agenda_pacientes', 'proxima_sessao', 'faltosos', 'aniversariantes']) {
     reset();
     state.patients = [...patients(), ...Array.from({ length: 2000 - patients().length }, (_, i) => ({ id: 'cheio-' + i, name: 'Nome' + i, birth_date: '1990-11-20' }))];
     const result = await run(ask(tipo));
-    assert.equal(result.motivo, 'erro', tipo);
+    assert.equal(result.motivo, 'limite_fonte', tipo);
     assert.equal(result.resumo, null, tipo);
     assert.deepEqual(result.linhas, [], tipo);
   }

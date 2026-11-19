@@ -1164,6 +1164,88 @@ export function listSeriesSessions(groupId, { runtime } = {}) {
   return listSeriesFrom(groupId, { fromIso: '1970-01-01T00:00:00.000Z', runtime });
 }
 
+// ============================================================
+// ACUP-029: pacotes da Agenda para a assistente, sem varrer a clínica.
+// Primeiro os pacotes com sessão não cancelada desde `since` (só o id da
+// série, paginado), depois todas as sessões desses pacotes, em lotes. Teto
+// estourado vira SOURCE_LIMIT, nunca lista cortada calada.
+// ============================================================
+export const SOURCE_LIMIT = 'source_limit';
+const SERIES_PAGE_SIZE = 1000;
+const SERIES_MAX_PAGES = 10;
+const SERIES_CHUNK = 50;
+const SERIES_ROWS_LIMIT = 2000;
+
+function sourceLimitError() {
+  const error = new Error('Dados demais para contar com segurança.');
+  error.code = SOURCE_LIMIT;
+  return error;
+}
+
+function seriesReadError(error) {
+  const billingMessage = billingErrorMessage(error);
+  if (billingMessage) return new Error(billingMessage);
+  if (isMissingAgendaSchemaError(error)) return new Error(AGENDA_MIGRATION_HINT);
+  return new Error(error.message || 'Não foi possível ler as sessões do pacote.');
+}
+
+export async function listActiveSeriesGroupIds({ since, runtime } = {}) {
+  const start = new Date(since);
+  if (Number.isNaN(start.getTime())) throw new Error('Data inicial inválida.');
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+  const user = await client.getAuthenticatedUser();
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    return [...new Set(getLocalAppointments()
+      .filter(item => item.recurrence_group_id && item.status !== 'cancelled' && new Date(item.starts_at) >= start)
+      .map(item => item.recurrence_group_id))];
+  }
+  const ids = new Set();
+  for (let page = 0; page < SERIES_MAX_PAGES; page += 1) {
+    const { data, error } = await client.from('appointments')
+      .select('recurrence_group_id')
+      .not('recurrence_group_id', 'is', null)
+      .neq('status', 'cancelled')
+      .gte('starts_at', start.toISOString())
+      .order('starts_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(page * SERIES_PAGE_SIZE, (page + 1) * SERIES_PAGE_SIZE - 1);
+    if (error) throw seriesReadError(error);
+    for (const row of data || []) ids.add(row.recurrence_group_id);
+    if ((data || []).length < SERIES_PAGE_SIZE) return [...ids];
+  }
+  throw sourceLimitError();
+}
+
+export async function listSeriesSessionsByGroups(groupIds = [], { runtime } = {}) {
+  const ids = [...new Set((groupIds || []).filter(Boolean))];
+  if (!ids.length) return [];
+  const client = {
+    getAuthenticatedUser: runtime?.getAuthenticatedUser || getAuthenticatedUser,
+    from: runtime?.from || ((table) => supabase.from(table)),
+  };
+  const user = await client.getAuthenticatedUser();
+  if (LOCAL_DEVELOPMENT_MODE && user?._isLocal) {
+    const wanted = new Set(ids);
+    return getLocalAppointments().filter(item => wanted.has(item.recurrence_group_id));
+  }
+  const rows = [];
+  for (let index = 0; index < ids.length; index += SERIES_CHUNK) {
+    const chunk = ids.slice(index, index + SERIES_CHUNK);
+    const { data, error } = await client.from('appointments')
+      .select(APPOINTMENT_COLUMNS)
+      .in('recurrence_group_id', chunk)
+      .order('starts_at', { ascending: true })
+      .limit(SERIES_ROWS_LIMIT);
+    if (error) throw seriesReadError(error);
+    if ((data || []).length >= SERIES_ROWS_LIMIT) throw sourceLimitError();
+    rows.push(...(data || []));
+  }
+  return rows;
+}
+
 /**
  * Exclui várias sessões de uma vez — pacote marcado errado.
  *

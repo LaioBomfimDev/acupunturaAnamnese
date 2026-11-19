@@ -50,7 +50,7 @@ const interview = () => catalog.getInterview('ecologica_adulto_heterorrelato');
 test('entrevista ecológica infantil: 52 de frequência + 8 abertas, alternativa NO e exemplo por parte', () => {
   const item = catalog.getInterview('ecologica_infantil_heterorrelato');
   assert.ok(item, 'entrevista infantil no catálogo');
-  assert.equal(item.slot, 'familiar_laboral');
+  assert.equal(item.slot, 'pais_professores');
   assert.equal(item.respondent, 'informante');
   assert.equal(catalog.interviewItemCount(item), 60);
   const questions = catalog.buildInterviewQuestions(item);
@@ -289,13 +289,17 @@ test('cada entrevista no seu lugar do menu da Psicologia (Infantil, Adulto, Aval
   assert.match(workspace, /\{ title: 'Infantil', tabs: \[PSYCHOLOGY_TABS\.ANAMNESE_INFANTIL, PSYCHOLOGY_TABS\.ENTREVISTA_PAIS\] \}/);
   assert.match(workspace, /\{ title: 'Adulto', tabs: \[PSYCHOLOGY_TABS\.ANAMNESE_ADULTO, PSYCHOLOGY_TABS\.ENTREVISTA_FAMILIAR\] \}/);
   assert.match(workspace, /const interviewSlot = PSYCHOLOGY_INTERVIEW_TABS\[effectiveTab\];[\s\S]*?<PatientInterviewsPanel[\s\S]*?slot=\{interviewSlot\}/);
-  // A entrevista ecológica entra em familiar / laboral; os outros lugares esperam o modelo.
+  // A entrevista ecológica entra em familiar / laboral; pais e professores tem a dos professores; rastreio espera o modelo.
   assert.equal(interview().slot, 'familiar_laboral');
   assert.deepEqual(Object.keys(catalog.INTERVIEW_SLOTS), ['pais_professores', 'familiar_laboral', 'rastreio']);
-  assert.equal(catalog.interviewsForSlot('psicologia', 'pais_professores').length, 0);
+  assert.deepEqual(
+    catalog.interviewsForSlot('psicologia', 'pais_professores').map(item => item.id),
+    ['ecologica_infantil_heterorrelato', 'entrevista_professores'],
+  );
+  assert.equal(catalog.interviewsForSlot('psicologia', 'rastreio').length, 0);
   assert.deepEqual(
     catalog.interviewsForSlot('psicologia', 'familiar_laboral').map(item => item.id),
-    ['ecologica_adulto_heterorrelato', 'ecologica_infantil_heterorrelato'],
+    ['ecologica_adulto_heterorrelato'],
   );
   const panel = await read('src/components/interviews/PatientInterviewsPanel.jsx');
   assert.match(panel, /Aguardando o modelo da clínica/);
@@ -328,4 +332,62 @@ test('tela nunca lê a tabela direto: tudo pelas RPCs', async () => {
   const page = await read('src/InterviewLinkPage.jsx');
   assert.match(page, /tokenFromHash\(window\.location\.hash\)/, 'token vem do "#", nunca da busca');
   assert.doesNotMatch(page, /localStorage|sessionStorage/, 'resposta nunca fica no aparelho');
+});
+
+// ---------- entrevista dirigida com professores (19/11/2026) ----------
+
+test('entrevista dos professores: 79 perguntas do modelo, tipos mistos e acompanhamento de texto', () => {
+  const item = catalog.getInterview('entrevista_professores');
+  assert.ok(item, 'entrevista no catálogo');
+  assert.equal(item.slot, 'pais_professores');
+  assert.equal(item.respondent, 'informante');
+  assert.equal(catalog.interviewItemCount(item), 79);
+  const questions = catalog.buildInterviewQuestions(item);
+  assert.equal(new Set(questions.map(question => question.id)).size, questions.length, 'ids únicos');
+  assert.ok(questions.length <= 250, 'cabe no limite do banco');
+  const numbered = questions.filter(question => question.number);
+  numbered.forEach((question, index) => assert.equal(question.number, index + 1));
+  assert.equal(numbered[0].label, 'Como você descreveria o desempenho geral do aluno (a) em sua disciplina?');
+  assert.equal(numbered[14].label, 'Essas dificuldades ocorrem há quanto tempo?');
+  assert.equal(numbered.at(-1).label, 'Conclusão da entrevista escolar:');
+  // Quem responde é identificado pelas mesmas chaves das outras entrevistas.
+  assert.deepEqual(
+    questions.filter(question => question.unnumbered && ['escola', 'informante', 'vinculo', 'convivencia'].includes(question.id)).map(question => question.label),
+    ['Escola', 'Professora entrevistada', 'Disciplina', 'Tempo que conhece o aluno'],
+  );
+  // Escala 0 a 3 do TDAH (desatenção): nove itens com as quatro alternativas do modelo.
+  const score = numbered.filter(question => question.options?.[0] === '0 — Não observado');
+  assert.equal(score.length, 9);
+  assert.deepEqual(score[0].options, ['0 — Não observado', '1 — Pouco observado', '2 — Moderado', '3 — Frequente']);
+  // "Outro" e "várias escolhas" do modelo.
+  const main = numbered.find(question => question.label.startsWith('A professora percebe que a dificuldade principal'));
+  assert.equal(main.allowOther, true);
+  const strategies = numbered.find(question => question.label === 'Quais estratégias já foram utilizadas com o aluno (a)?');
+  assert.equal(strategies.type, 'multiple');
+  assert.equal(strategies.allowOther, true);
+  assert.equal(strategies.options.length, 8);
+  // "Quais?" das adaptações só aparece com "Sim".
+  const adapt = numbered.find(question => question.label === 'O aluno (a) precisa de adaptações ou suporte frequente?');
+  const quais = questions.find(question => question.id === `${adapt.id}_texto`);
+  assert.deepEqual(quais.showIf, { questionId: adapt.id, values: ['Sim'] });
+  assert.equal(quais.type, 'multiple');
+  // Síntese para uso clínico é opcional; o resto de marcar é obrigatório.
+  const synthesis = numbered.slice(-7);
+  assert.ok(synthesis.every(question => question.required === false));
+  assert.ok(numbered.slice(0, 72).filter(question => question.type !== 'long_text').every(question => question.required));
+  assert.deepEqual(forms.validateForm({ title: item.title, description: '', questions }, { forPublish: true }), []);
+});
+
+test('professores: servidor e tela limpam igual, "Sempre" ganha destaque e a leitura traz o acompanhamento', () => {
+  const item = catalog.getInterview('entrevista_professores');
+  const questions = catalog.buildInterviewQuestions(item);
+  const raw = { informante: 'Rita', vinculo: 'Matemática', q01: 'Dentro do esperado', q01_texto: 'Participa.', q04: 'Sempre', q59: 'Não', q59_texto: ['Mais tempo em provas'], invasor: 'x' };
+  const front = forms.sanitizeAnswers(questions, raw);
+  assert.deepEqual(back.sanitizeAnswers(questions, raw), front);
+  assert.equal(front.q59_texto, undefined, 'o "Quais?" some com a resposta Não');
+  assert.equal(front.invasor, undefined);
+  const rows = utils.buildInterviewRows(questions, front).filter(row => row.kind === 'answer');
+  assert.equal(rows.find(row => row.id === 'q04').tone, 'frequent');
+  assert.equal(rows.find(row => row.id === 'q01_texto').value, 'Participa.');
+  assert.equal(utils.respondentLine({ answers: front }), 'Rita (Matemática)');
 });

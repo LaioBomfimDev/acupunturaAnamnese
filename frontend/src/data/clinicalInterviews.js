@@ -27,7 +27,7 @@ export const INTERVIEW_FREQUENCY_OPTIONS = [
 ];
 
 // Respostas que pedem atenção na leitura (destaque visual, nunca nota).
-export const INTERVIEW_FREQUENT_ANSWERS = ['Frequentemente', 'Quase sempre'];
+export const INTERVIEW_FREQUENT_ANSWERS = ['Frequentemente', 'Quase sempre', 'Sempre'];
 export const INTERVIEW_UNKNOWN_ANSWER = 'Não sei observar';
 // A infantil usa "NO" no lugar de "Não sei observar", como no modelo.
 export const INTERVIEW_NOT_OBSERVED_ANSWER = 'Não observado / não se aplica';
@@ -44,6 +44,7 @@ const ECOLOGICA_ADULTO_HETERORRELATO = {
   audience: 'adulto',
   respondent: 'informante',
   respondentLabel: 'Familiar ou pessoa próxima',
+  period: 'os últimos 12 meses',
   source: 'Modelo da clínica, recebido em 16/10/2026',
   purpose:
     'Instrumento de entrevista ecológica complementar e qualitativa para coleta de observações de familiares '
@@ -247,11 +248,12 @@ const ECOLOGICA_INFANTIL_HETERORRELATO = {
   discipline: 'psicologia',
   title: 'Entrevista Ecológica Infantil de Heterorrelato',
   shortName: 'Entrevista ecológica — crianças (heterorrelato)',
-  group: 'Familiar / laboral — criança',
-  slot: 'familiar_laboral',
+  group: 'Pais e professores — criança',
+  slot: 'pais_professores',
   audience: 'infantil',
   respondent: 'informante',
   respondentLabel: 'Pais, responsáveis, professores ou pessoa próxima',
+  period: 'preferencialmente os últimos seis meses',
   source: 'Modelo da clínica, recebido em 26/10/2026',
   frequencyOptions: ['Nunca', 'Raramente', 'Às vezes', 'Frequentemente', 'Quase sempre', INTERVIEW_NOT_OBSERVED_ANSWER],
   purpose:
@@ -419,7 +421,287 @@ const ECOLOGICA_INFANTIL_HETERORRELATO = {
   ],
 };
 
-export const CLINICAL_INTERVIEWS = [ECOLOGICA_ADULTO_HETERORRELATO, ECOLOGICA_INFANTIL_HETERORRELATO];
+// ------------------------------------------------------------
+// Roteiro dirigido com professores (19/11/2026, modelo da clínica).
+// Diferente das ecológicas: a mesma entrevista mistura perguntas de
+// frequência, de Sim/Parcialmente/Não, de marcar várias e abertas, e quase
+// toda pergunta tem um "Exemplo"/"Explique" ao lado. Por isso as perguntas
+// moram prontas em `questions` (buildInterviewQuestions só devolve a
+// cópia) e não há `sections` de frequência única.
+// Texto transcrito do PDF; a única mudança é o gênero neutro ("aluno (a)",
+// "Ele (a)"): o modelo alterna "aluno (a)" com "ela"/"aluna".
+// ------------------------------------------------------------
+const TEACHER_FREQ = ['Nunca', 'Às vezes', 'Frequentemente', 'Sempre'];
+const TEACHER_SCORE = ['0 — Não observado', '1 — Pouco observado', '2 — Moderado', '3 — Frequente'];
+const TEACHER_SNP = ['Sim', 'Parcialmente', 'Não'];
+const TEACHER_SNPARC = ['Sim', 'Não', 'Parcialmente'];
+const TEACHER_SNI = ['Sim', 'Não', 'Não sei informar'];
+const TEACHER_IMPACT = ['Não', 'Levemente', 'Moderadamente', 'Muito'];
+
+// Item: [pergunta, alternativas | null (aberta), acompanhamento?, extra?]
+// acompanhamento: texto ("Exemplo") ou { label, type, options, other, showIf }.
+const TEACHER_SECTIONS = [
+  {
+    id: 'funcionamento',
+    title: '1. Funcionamento geral em sala de aula',
+    items: [
+      ['Como você descreveria o desempenho geral do aluno (a) em sua disciplina?', ['Abaixo do esperado', 'Dentro do esperado', 'Acima do esperado'], 'Explique brevemente'],
+      ['Ele (a) acompanha o ritmo da turma?', TEACHER_SNP, 'Em quais situações apresenta maior dificuldade?'],
+      ['As dificuldades são constantes ou aparecem apenas em momentos específicos, como provas, apresentações, atividades longas ou conteúdos novos?', null],
+      ['O aluno (a) costuma precisar de mais tempo que os colegas para concluir atividades?', TEACHER_FREQ, 'Exemplo'],
+      ['Ele (a) necessita de repetição frequente das orientações?', TEACHER_FREQ, 'Exemplo'],
+    ],
+  },
+  {
+    id: 'desatencao',
+    title: '2. Indicadores de desatenção — TDAH',
+    subtitle: 'Assinale a frequência observada em sala: 0 = não observado | 1 = pouco observado | 2 = moderado | 3 = frequente',
+    items: [
+      ['Comete erros por descuido em atividades, provas ou cópias.', TEACHER_SCORE, 'Exemplo'],
+      ['Tem dificuldade para manter atenção em explicações ou atividades longas.', TEACHER_SCORE, 'Exemplo'],
+      ['Parece não escutar quando chamado (a) ou orientado (a) diretamente.', TEACHER_SCORE, 'Exemplo'],
+      ['Inicia atividades, mas não consegue finalizar sem ajuda ou redirecionamento.', TEACHER_SCORE, 'Exemplo'],
+      ['Apresenta dificuldade para organizar materiais, cadernos, tarefas ou prazos.', TEACHER_SCORE, 'Exemplo'],
+      ['Evita, adia ou demonstra resistência em tarefas que exigem esforço mental prolongado.', TEACHER_SCORE, 'Exemplo'],
+      ['Perde materiais escolares, esquece tarefas ou deixa de entregar atividades.', TEACHER_SCORE, 'Exemplo'],
+      ['Distrai-se facilmente com estímulos externos ou pensamentos próprios.', TEACHER_SCORE, 'Exemplo'],
+      ['Apresenta esquecimento em atividades diárias escolares.', TEACHER_SCORE, 'Exemplo'],
+      ['Essas dificuldades ocorrem há quanto tempo?', ['Menos de 3 meses', 'Entre 3 e 6 meses', 'Mais de 6 meses', 'Desde anos/séries anteriores, conforme relato escolar']],
+    ],
+  },
+  {
+    id: 'hiperatividade',
+    title: '3. Indicadores de hiperatividade e impulsividade — TDAH',
+    items: [
+      ['O aluno (a) se mexe excessivamente, balança pernas, mãos ou demonstra inquietação corporal?', TEACHER_FREQ, 'Exemplo'],
+      ['Levanta-se ou sai do lugar em momentos inadequados?', TEACHER_FREQ, 'Exemplo'],
+      ['Fala em excesso ou interrompe colegas/professores?', TEACHER_FREQ, 'Exemplo'],
+      ['Responde antes da pergunta ser concluída ou age sem pensar nas consequências?', TEACHER_FREQ, 'Exemplo'],
+      ['Tem dificuldade para esperar sua vez em atividades, filas, jogos ou discussões?', TEACHER_FREQ, 'Exemplo'],
+      ['Demonstra impulsividade emocional, como irritar-se facilmente, chorar, reagir de forma intensa ou ter baixa tolerância à frustração?', TEACHER_FREQ, 'Exemplo'],
+      ['Comparada (o) aos colegas da mesma idade, a inquietação ou impulsividade dele (a) é:', ['Menor que a média', 'Semelhante à média', 'Maior que a média', 'Muito maior que a média']],
+    ],
+  },
+  {
+    id: 'emocional',
+    title: '4. Indicadores emocionais e ansiedade no contexto escolar',
+    items: [
+      ['O aluno (a) demonstra preocupação excessiva com notas, desempenho, erros ou aprovação dos professores?', TEACHER_FREQ, 'Exemplo'],
+      ['Apresenta medo de errar, vergonha de responder ou evita participar oralmente?', TEACHER_FREQ, 'Exemplo'],
+      ['Fica muito nervoso (a) antes ou durante provas, apresentações ou atividades avaliativas?', TEACHER_FREQ, 'Exemplo'],
+      ['Apresenta sintomas físicos em situações escolares, como dor de barriga, dor de cabeça, náusea, tremor, falta de ar, choro ou tensão?', TEACHER_FREQ, 'Quais sintomas?'],
+      ['Evita atividades escolares por medo, insegurança ou ansiedade?', TEACHER_FREQ, 'Quais atividades?'],
+      ['A ansiedade interfere no desempenho dele (a)?', ['Não interfere', 'Interfere pouco', 'Interfere moderadamente', 'Interfere muito'], 'Como interfere?'],
+      ['Ele (a) demonstra perfeccionismo, necessidade excessiva de confirmação ou medo intenso de decepcionar?', TEACHER_FREQ, 'Exemplo'],
+      ['Em situações sociais, ele (a) tende a se isolar, evitar colegas ou demonstrar desconforto?', TEACHER_FREQ, 'Exemplo'],
+      ['A professora percebe diferença entre o que o aluno (a) sabe oralmente e o que consegue demonstrar em provas ou atividades escritas?', ['Sim', 'Não', 'Parcialmente'], 'Explique'],
+    ],
+  },
+  {
+    id: 'leitura',
+    title: '5.1 Transtorno Específico de Aprendizagem — Leitura',
+    items: [
+      ['A leitura do aluno (a) é adequada para a série escolar?', TEACHER_SNP],
+      ['Ele (a) apresenta leitura lenta, silabada, hesitante ou com esforço maior que os colegas?', TEACHER_FREQ, 'Exemplo'],
+      ['Comete trocas, omissões, inversões ou substituições de letras/palavras ao ler?', TEACHER_FREQ, 'Exemplo'],
+      ['Demonstra dificuldade para compreender o que lê, mesmo quando consegue decodificar as palavras?', TEACHER_FREQ, 'Exemplo'],
+      ['Evita leitura em voz alta ou atividades que envolvam leitura?', TEACHER_FREQ, 'Exemplo'],
+    ],
+  },
+  {
+    id: 'escrita',
+    title: '5.2 Transtorno Específico de Aprendizagem — Escrita',
+    items: [
+      ['A produção escrita está adequada para a idade/série?', TEACHER_SNP],
+      ['Apresenta muitos erros ortográficos, mesmo em palavras já trabalhadas?', TEACHER_FREQ, 'Exemplo'],
+      ['Tem dificuldade para organizar ideias em frases, parágrafos ou textos?', TEACHER_FREQ, 'Exemplo'],
+      ['A escrita é pobre em estrutura, coerência, pontuação ou sequência lógica?', TEACHER_FREQ, 'Exemplo'],
+      ['A letra, organização no caderno ou apresentação das atividades prejudica a compreensão do conteúdo?', TEACHER_FREQ, 'Exemplo'],
+      ['Ele (a) evita atividades escritas ou demora muito para iniciá-las/concluí-las?', TEACHER_FREQ, 'Exemplo'],
+    ],
+  },
+  {
+    id: 'matematica',
+    title: '5.3 Transtorno Específico de Aprendizagem — Matemática',
+    items: [
+      ['O desempenho em matemática/raciocínio lógico está adequado para a série?', [...TEACHER_SNP, 'Não se aplica à minha disciplina']],
+      ['Apresenta dificuldade para compreender conceitos numéricos, operações ou resolução de problemas?', TEACHER_FREQ, 'Exemplo'],
+      ['Tem dificuldade para memorizar fatos matemáticos, fórmulas, tabuada ou procedimentos?', TEACHER_FREQ, 'Exemplo'],
+      ['Consegue resolver exercícios mecânicos, mas tem dificuldade em problemas com interpretação?', TEACHER_SNPARC, 'Exemplo'],
+      ['Comete erros por não compreender o raciocínio ou por desatenção ao copiar/calcular?', ['Erros mais ligados à compreensão', 'Erros mais ligados à atenção', 'Ambos', 'Não observado']],
+    ],
+  },
+  {
+    id: 'diferenciacao',
+    title: '6. Diferenciação entre dificuldade de aprendizagem, desatenção e ansiedade',
+    items: [
+      ['Quando a atividade é curta, objetiva e supervisionada, o desempenho melhora?', TEACHER_SNPARC, 'Explique'],
+      ['Quando recebe mais tempo, o desempenho melhora?', TEACHER_SNPARC, 'Explique'],
+      ['Quando a atividade é oral, ele (a) apresenta melhor desempenho do que na escrita?', TEACHER_SNPARC, 'Explique'],
+      ['Quando está tranquilo (a) e seguro (a), consegue demonstrar melhor o conteúdo?', TEACHER_SNPARC, 'Explique'],
+      [
+        'As dificuldades aparecem em todas as disciplinas ou são mais evidentes em áreas específicas?',
+        ['Todas as disciplinas', 'Principalmente leitura/interpretação', 'Principalmente escrita', 'Principalmente matemática', 'Principalmente atividades avaliativas', 'Principalmente atividades longas'],
+        'Detalhar',
+      ],
+      [
+        'A professora percebe que a dificuldade principal parece estar mais relacionada a:',
+        ['Falta de atenção/concentração', 'Ansiedade/insegurança', 'Dificuldade específica de leitura', 'Dificuldade específica de escrita', 'Dificuldade específica de matemática', 'Organização/planejamento', 'Baixa motivação'],
+        null,
+        { other: true },
+      ],
+    ],
+  },
+  {
+    id: 'impacto',
+    title: '7. Impacto funcional no ambiente escolar',
+    items: [
+      ['As dificuldades prejudicam notas ou rendimento acadêmico?', TEACHER_IMPACT],
+      ['Prejudicam a participação em sala?', TEACHER_IMPACT],
+      ['Prejudicam a autonomia escolar?', TEACHER_IMPACT],
+      ['Prejudicam relações com colegas ou professores?', TEACHER_IMPACT],
+      ['Há prejuízo na entrega de tarefas, trabalhos ou cumprimento de prazos?', TEACHER_IMPACT],
+      [
+        'O aluno (a) precisa de adaptações ou suporte frequente?',
+        ['Não', 'Sim'],
+        {
+          label: 'Quais?',
+          type: 'multiple',
+          options: ['Mais tempo em provas', 'Leitura de enunciado', 'Explicação individual', 'Redução de estímulos', 'Divisão de tarefas em etapas', 'Mediação emocional', 'Organização de rotina/prazos'],
+          other: true,
+          showIf: ['Sim'],
+        },
+      ],
+    ],
+  },
+  {
+    id: 'historico',
+    title: '8. Histórico escolar observado pela instituição',
+    items: [
+      ['Essas dificuldades já foram observadas em anos anteriores?', TEACHER_SNI, 'Relatos disponíveis'],
+      ['Houve queda recente no desempenho?', TEACHER_SNI, 'Desde quando?'],
+      ['A dificuldade parece acompanhar o aluno (a) desde o início da escolarização ou surgiu mais recentemente?', ['Desde o início da escolarização', 'Surgiu recentemente', 'Não sei informar']],
+      ['Houve mudanças emocionais, familiares, escolares ou sociais associadas à piora do desempenho?', TEACHER_SNI, 'Quais?'],
+    ],
+  },
+  {
+    id: 'estrategias',
+    title: '9. Estratégias já utilizadas pela escola',
+    items: [
+      [
+        'Quais estratégias já foram utilizadas com o aluno (a)?',
+        ['Repetição de instruções', 'Lugar mais próximo da professora', 'Mais tempo em atividades/provas', 'Avaliação oral', 'Divisão de tarefas em etapas', 'Apoio individual', 'Comunicação com família', 'Encaminhamento para coordenação/orientação'],
+        null,
+        { type: 'multiple', other: true },
+      ],
+      ['Quais estratégias funcionaram melhor?', null],
+      ['Quais estratégias não apresentaram melhora significativa?', null],
+      ['O aluno (a) aceita ajuda ou resiste ao suporte?', ['Aceita bem', 'Aceita parcialmente', 'Resiste', 'Depende da situação'], 'Explique'],
+    ],
+  },
+  {
+    id: 'finais',
+    title: '10. Observações finais da professora',
+    items: [
+      ['Quais são as principais potencialidades do aluno (a)?', null],
+      ['Quais são as maiores dificuldades observadas atualmente?', null],
+      ['Há alguma situação específica que a professora considera importante para a avaliação neuropsicológica?', null],
+      ['Em comparação com colegas da mesma idade e série, a professora considera que as dificuldades são:', ['Dentro do esperado', 'Um pouco acima do esperado', 'Moderadamente acima do esperado', 'Muito acima do esperado']],
+      ['A professora considera necessário algum tipo de adaptação pedagógica ou acompanhamento específico?', ['Sim', 'Não'], 'Qual?'],
+    ],
+  },
+  {
+    id: 'sintese',
+    title: 'Síntese para uso clínico',
+    subtitle: 'Parte do modelo da clínica, para quem conduz a entrevista. Pode ficar em branco.',
+    optional: true,
+    items: [
+      ['Principais indicadores de desatenção observados:', null],
+      ['Principais indicadores de hiperatividade/impulsividade observados:', null],
+      ['Principais indicadores de ansiedade observados:', null],
+      ['Principais indicadores de dificuldade de aprendizagem observados:', null],
+      [
+        'Áreas acadêmicas mais prejudicadas:',
+        ['Leitura', 'Escrita', 'Matemática', 'Interpretação', 'Organização', 'Provas/avaliações', 'Participação oral', 'Relações sociais', 'Autonomia escolar'],
+        null,
+        { type: 'multiple' },
+      ],
+      ['Nível de prejuízo funcional escolar:', ['Ausente', 'Leve', 'Moderado', 'Grave']],
+      ['Conclusão da entrevista escolar:', null],
+    ],
+  },
+];
+
+function buildTeacherQuestions() {
+  const questions = [
+    { id: 'identificacao', type: 'section', label: 'Identificação', help: 'Investigação escolar — Avaliação Neuropsicológica.' },
+    { id: 'escola', type: 'short_text', label: 'Escola', help: '', required: false, showIf: null, unnumbered: true },
+    { id: 'informante', type: 'short_text', label: 'Professora entrevistada', help: '', required: true, showIf: null, unnumbered: true },
+    { id: 'vinculo', type: 'short_text', label: 'Disciplina', help: '', required: true, showIf: null, unnumbered: true },
+    { id: 'convivencia', type: 'short_text', label: 'Tempo que conhece o aluno', help: '', required: false, showIf: null, unnumbered: true },
+  ];
+  let number = 0;
+  for (const section of TEACHER_SECTIONS) {
+    questions.push({ id: `parte_${section.id}`, type: 'section', label: section.title, help: section.subtitle || '' });
+    for (const [label, options, follow, extra = {}] of section.items) {
+      number += 1;
+      const id = interviewItemId(number);
+      const type = options ? (extra.type || 'single') : 'long_text';
+      const question = {
+        id,
+        type,
+        label,
+        help: '',
+        required: !section.optional && type !== 'long_text',
+        showIf: null,
+        number,
+      };
+      if (options) Object.assign(question, { options: [...options], allowOther: Boolean(extra.other), lettered: type === 'single' });
+      questions.push(question);
+      if (!follow) continue;
+      const spec = typeof follow === 'string' ? { label: follow } : follow;
+      const followQuestion = {
+        id: `${id}_texto`,
+        type: spec.type || 'long_text',
+        label: spec.label,
+        help: '',
+        required: false,
+        showIf: spec.showIf ? { questionId: id, values: [...spec.showIf] } : null,
+        unnumbered: true,
+      };
+      if (spec.options) Object.assign(followQuestion, { options: [...spec.options], allowOther: Boolean(spec.other) });
+      questions.push(followQuestion);
+    }
+  }
+  return questions;
+}
+
+const ENTREVISTA_PROFESSORES = {
+  id: 'entrevista_professores',
+  version: 1,
+  discipline: 'psicologia',
+  title: 'Roteiro de Entrevista Dirigida com Professoras — Investigação escolar (Avaliação Neuropsicológica)',
+  shortName: 'Entrevista dirigida — professores',
+  group: 'Pais e professores — escola',
+  slot: 'pais_professores',
+  audience: 'infantil',
+  respondent: 'informante',
+  respondentLabel: 'Professor ou professora do aluno',
+  source: 'Modelo da clínica, recebido em 19/11/2026',
+  purpose: 'Investigação escolar para a avaliação neuropsicológica: funcionamento em sala, indicadores de desatenção, hiperatividade e impulsividade, ansiedade, aprendizagem (leitura, escrita e matemática), impacto funcional, histórico e estratégias da escola.',
+  technicalNote:
+    'Roteiro qualitativo de entrevista escolar, complementar à avaliação neuropsicológica. Não possui escore, ponto de corte '
+    + 'ou validação psicométrica neste sistema: a escala de 0 a 3 e as alternativas de frequência organizam o relato e não são '
+    + 'somadas. Deve ser interpretado em conjunto com as entrevistas, a observação clínica, a história do desenvolvimento e '
+    + 'os instrumentos padronizados. O relato escolar, isoladamente, não confirma nem exclui hipóteses diagnósticas.',
+  questions: buildTeacherQuestions(),
+};
+
+export const CLINICAL_INTERVIEWS = [
+  ECOLOGICA_ADULTO_HETERORRELATO,
+  ECOLOGICA_INFANTIL_HETERORRELATO,
+  ENTREVISTA_PROFESSORES,
+];
 
 // Lugar de cada entrevista no menu da Psicologia (16/10/2026). Lugar sem
 // entrevista ainda aparece vazio, esperando o modelo da clínica.
@@ -455,6 +737,8 @@ export function interviewItemId(number) {
  */
 export function buildInterviewQuestions(interview) {
   if (!interview) return [];
+  // Roteiro com perguntas de vários tipos (professores): já vem pronto.
+  if (Array.isArray(interview.questions)) return structuredClone(interview.questions);
   const questions = [
     { id: 'identificacao', type: 'section', label: 'Identificação', help: interview.instructions },
     ...interview.identification.map(field => ({
@@ -520,6 +804,7 @@ export function buildInterviewQuestions(interview) {
 
 /** Quantas perguntas do roteiro (as numeradas). */
 export function interviewItemCount(interview) {
+  if (Array.isArray(interview?.questions)) return interview.questions.filter(question => question.number).length;
   return (interview?.sections || [])
     .reduce((total, section) => total + (section.items || []).length + (section.openItems || []).length, 0);
 }

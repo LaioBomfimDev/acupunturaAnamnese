@@ -195,7 +195,7 @@ function InterviewCard({ interview, responses, patient, discipline, clinicName, 
               <details className="instrument-about">
                 <summary>Sobre a entrevista</summary>
                 <p className="small">{interview.purpose}</p>
-                <p className="small"><b>Quem responde:</b> {interview.respondentLabel}. <b>Período:</b> os últimos 12 meses.</p>
+                <p className="small"><b>Quem responde:</b> {interview.respondentLabel}.{interview.period ? <> <b>Período:</b> {interview.period}.</> : null}</p>
                 <p className="small"><b>Nota técnica:</b> {interview.technicalNote}</p>
                 <p className="small">{interview.source}.</p>
               </details>

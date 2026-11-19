@@ -3165,3 +3165,21 @@
 .aba-library-checks label { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; overflow-wrap: anywhere; }
 .aba-library-checks input[type="checkbox"] { flex: 0 0 auto; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--r1-accent); }
 .aba-profile-form .aba-field select { width: 100%; min-width: 0; }
+
+/* ACUP-015: aviso de "Salvando…" quando a pessoa tenta sair durante a gravação. */
+.aba-saving-notice {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + var(--r1-safe-bottom, 0px));
+  z-index: 59;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid var(--r1-border);
+  border-radius: var(--r1-radius-md);
+  background: var(--r1-surface);
+  color: var(--r1-text);
+  box-shadow: var(--r1-shadow-md);
+  font-size: 14px;
+  font-weight: 600;
+}

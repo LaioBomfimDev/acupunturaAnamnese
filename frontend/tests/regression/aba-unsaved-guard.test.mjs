@@ -24,7 +24,8 @@ test('ACUP-012: registro só sinalizadores, limpeza ao desmontar e beforeunload 
   assert.match(context, /register\?\.\(id, false, false, true\)/);
   assert.match(context, /if \(remove\) editors\.current\.delete\(id\)/);
   assert.match(context, /if \(!dirty\) return;[\s\S]*?addEventListener\('beforeunload', warn\)[\s\S]*?removeEventListener\('beforeunload', warn\)/);
-  assert.match(context, /entry\.busy\)\) return;[\s\S]*?entry\.dirty\)\) setPending\(\(\) => action\);\r?\n\s*else action\(\)/);
+  // ACUP-015: durante a gravação não sai, mas avisa "Salvando…" (antes voltava calado).
+  assert.match(context, /entry\.busy\)\) \{\r?\n\s*setBlockedWhileSaving\(true\);\r?\n\s*return;\r?\n\s*\}[\s\S]*?entry\.dirty\)\) setPending\(\(\) => action\);\r?\n\s*else action\(\)/);
   assert.match(context, /const keepEditing = \(\) => setPending\(null\)/);
   assert.match(context, /if \(busy \|\| !pending\) return;[\s\S]*?pending\(\)/);
   assert.match(context, /<AbaDialog title="Sair sem salvar\?" onClose=\{keepEditing\} busy=\{busy\}>/);
@@ -77,4 +78,22 @@ test('QA: atalhos do painel e da coleta trocam de aba pelo guarda; setActiveTab 
   assert.doesNotMatch(workspace, /on[A-Z]\w*=\{\(\) => setActiveTab\((?!TABS\.PAINEL\))/, 'nenhum atalho chama setActiveTab direto');
   assert.equal((workspace.match(/onSelectPatient=\{\(\) => setActiveTab\(TABS\.PAINEL\)\}/g) || []).length, 1, 'só o retorno da seleção já guardada');
   assert.ok(workspace.includes('beforeSelectPatient={unsaved.navigate}'));
+});
+
+test('ACUP-015: janela da ABA com algo digitado avisa ao fechar a aba do navegador; sair salvando diz Salvando…; a pergunta diz o que se perde', async () => {
+  const dialog = await read('aba/AbaDialog.jsx');
+  const prompt = await read('ui/DismissPrompt.jsx');
+  const css = await readFile(new URL('../../src/styles/aba.css', import.meta.url), 'utf8');
+  // (1) toda AbaDialog com guardUnsaved entra no mesmo registro: o beforeunload do guarda vale para ela.
+  assert.match(dialog, /useAbaUnsaved\(Boolean\(guardUnsaved\), busy\);/);
+  // (2) aviso visível enquanto salva, que some quando a gravação termina.
+  assert.match(context, /const savingNotice = blockedWhileSaving && busy\r?\n\s*\? <p className="aba-saving-notice" role="status">\{ABA_SAVING_NOTICE\}<\/p>/);
+  assert.match(context, /if \(!anySaving\) setBlockedWhileSaving\(false\);/);
+  assert.match(context, /ABA_SAVING_NOTICE = 'Salvando… Espere terminar para sair\.'/);
+  assert.match(css, /\.aba-saving-notice \{/);
+  // (3) a pergunta de saída diz o que acontece; as outras telas mantêm o texto delas.
+  assert.match(context, /consequence=\{ABA_LEAVE_CONSEQUENCE\}/);
+  assert.match(context, /ABA_LEAVE_CONSEQUENCE = 'Se sair agora, o que foi digitado e ainda não foi salvo se perde\./);
+  assert.match(prompt, /consequence = 'Fechar agora descarta o que foi digitado\.'/);
+  assert.match(prompt, /<span>\{consequence\}<\/span>/);
 });

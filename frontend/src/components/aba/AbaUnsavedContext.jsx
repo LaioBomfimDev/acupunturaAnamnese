@@ -12,21 +12,32 @@ export function useAbaUnsaved(dirty, busy = false) {
   useLayoutEffect(() => () => register?.(id, false, false, true), [register, id]);
 }
 
+// ACUP-015: texto da pergunta de saída que diz o que acontece.
+export const ABA_LEAVE_CONSEQUENCE = 'Se sair agora, o que foi digitado e ainda não foi salvo se perde. Para guardar, escolha Continuar editando e salve.';
+export const ABA_SAVING_NOTICE = 'Salvando… Espere terminar para sair.';
+
 export function useAbaUnsavedGuard() {
   const editors = useRef(new Map());
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState(null);
+  // ACUP-015: sair durante a gravação avisa "Salvando…" em vez de não fazer nada calado.
+  const [blockedWhileSaving, setBlockedWhileSaving] = useState(false);
   const register = useCallback((id, changed, saving, remove = false) => {
     if (remove) editors.current.delete(id);
     else editors.current.set(id, { dirty: Boolean(changed), busy: Boolean(saving) });
     const entries = [...editors.current.values()];
     setDirty(entries.some(entry => entry.dirty));
-    setBusy(entries.some(entry => entry.busy));
+    const anySaving = entries.some(entry => entry.busy);
+    setBusy(anySaving);
+    if (!anySaving) setBlockedWhileSaving(false);
   }, []);
   const navigate = useCallback(action => {
     const entries = [...editors.current.values()];
-    if (entries.some(entry => entry.busy)) return;
+    if (entries.some(entry => entry.busy)) {
+      setBlockedWhileSaving(true);
+      return;
+    }
     if (entries.some(entry => entry.dirty)) setPending(() => action);
     else action();
   }, []);
@@ -42,9 +53,12 @@ export function useAbaUnsavedGuard() {
     setPending(null);
     pending();
   };
+  const savingNotice = blockedWhileSaving && busy
+    ? <p className="aba-saving-notice" role="status">{ABA_SAVING_NOTICE}</p>
+    : null;
   return { register, navigate, prompt: pending ? (
     <AbaDialog title="Sair sem salvar?" onClose={keepEditing} busy={busy}>
-      <DismissPrompt discardLabel="Descartar e sair" dismiss={{ confirmingDiscard: true, keepEditing, discard }} />
+      <DismissPrompt discardLabel="Descartar e sair" consequence={ABA_LEAVE_CONSEQUENCE} dismiss={{ confirmingDiscard: true, keepEditing, discard }} />
     </AbaDialog>
-  ) : null };
+  ) : savingNotice };
 }

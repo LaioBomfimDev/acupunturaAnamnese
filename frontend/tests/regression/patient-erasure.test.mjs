@@ -7,6 +7,13 @@
 // acesso e sessões sem entrar nessa lista: depois da exclusão, tudo isso
 // ficaria no banco. 20261009 corrige partindo da versão de 20261008
 // (escalas), que era a última (AGENTS.md §7: parte da última versão).
+//
+// Pesquisa de satisfação e código de acesso (19/10/2026): a pesquisa
+// estava fora da exclusão desde 20260901; a administradora escolheu
+// manter só a nota e as datas (números da Gestão). E o snapshot não
+// guarda mais o código de acesso da Área do Paciente. Refeita em 19/11 como
+// 20261119, sobre 20261111b (a 20261019 de outubro nunca foi aplicada); a 20261010, feita antes e nunca aplicada,
+// partia de 20261009 e tiraria as entrevistas da exclusão.
 // ============================================================
 
 import assert from 'node:assert/strict';
@@ -19,6 +26,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const MIGRATIONS = path.resolve(root, '../supabase/migrations');
 const FIX = path.join(MIGRATIONS, '20261009_portal_patient_erasure.sql');
 const PREVIOUS = path.join(MIGRATIONS, '20261008_patient_instruments.sql');
+const SURVEY_FIX = path.join(MIGRATIONS, '20261119_patient_erasure_surveys_access_code.sql');
+const SURVEY_PREVIOUS = path.join(MIGRATIONS, '20261111b_valor_combinado_paciente.sql');
 
 function functionBody(sql, name) {
   const match = sql.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\$${name}\\$;`));
@@ -37,14 +46,28 @@ const NEW_LINES = [
   '  DELETE FROM public.patient_form_assignments WHERE patient_id = v_req.patient_id;',
 ];
 
+// As únicas linhas que 20261119 pode acrescentar à versão de 20261111b...
+const SURVEY_LINES = [
+  "    'satisfaction_surveys', (SELECT coalesce(jsonb_agg(to_jsonb(ss) - 'token'), '[]'::jsonb) FROM public.satisfaction_surveys ss WHERE ss.patient_id = v_req.patient_id),",
+  '  UPDATE public.satisfaction_surveys',
+  '  SET comment = NULL,',
+  '      token = pg_catalog.gen_random_uuid(),',
+  '      expires_at = LEAST(expires_at, pg_catalog.clock_timestamp())',
+  '  WHERE patient_id = v_req.patient_id;',
+];
+
+// ...e a única linha que ela troca (nova → antiga): o código de acesso sai do snapshot.
+const SURVEY_REPLACED = new Map([[
+  "    'patient_portal_access', (SELECT coalesce(jsonb_agg(to_jsonb(pa) - 'access_code'), '[]'::jsonb) FROM public.patient_portal_access pa WHERE pa.patient_id = v_req.patient_id),",
+  "    'patient_portal_access', (SELECT coalesce(jsonb_agg(to_jsonb(pa)), '[]'::jsonb) FROM public.patient_portal_access pa WHERE pa.patient_id = v_req.patient_id),",
+]]);
+
 // Tabelas com patient_id ligado a patients que ficam fora da exclusão.
 // Entrar aqui exige motivo; tabela nova de paciente entra na exclusão.
 const KEPT_ON_PURPOSE = {
   aba_supervision_records: 'SUP-1/2: anonimiza vínculo e textos, preserva horas e carimbos do profissional',
   patient_deletion_requests:
     'é a própria solicitação: append-only, FK RESTRICT, registro de que a exclusão aconteceu',
-  satisfaction_surveys:
-    'PENDENTE desde 20260901: decidir com a administradora (a nota entra nos números da Gestão; o comentário livre pode identificar o paciente)',
   // Financeiro (20261023): registro de dinheiro fica, a contabilidade
   // precisa do histórico; o cadastro do paciente é anonimizado pela
   // exclusão e o valor do atendimento guarda a própria cópia (o
@@ -58,6 +81,20 @@ const KEPT_ON_PURPOSE = {
   // Notas fiscais (20261104): documento fiscal, guarda legal.
   fiscal_documents: 'documento fiscal: a nota (e o CPF do tomador) fica pela guarda legal, com o paciente anonimizado',
 };
+
+// Tabelas que entram no snapshot mas são anonimizadas (UPDATE) em vez de
+// apagadas. Entrar aqui também exige motivo.
+const ANONYMIZED_ON_PURPOSE = {
+  satisfaction_surveys:
+    'decisão da administradora em 08/10/2026: nota e datas ficam nos números da Gestão; comentário e link saem',
+};
+
+// Credencial nunca entra no snapshot: numa restauração, gera-se outra.
+const SNAPSHOT_SECRETS_STRIPPED = [
+  "to_jsonb(pa) - 'access_code'",
+  "to_jsonb(ss) - 'token'",
+  "to_jsonb(ir) - 'link_token_hash' - 'link_token_encrypted'",
+];
 
 test('exclusão: parte da versão de 20261008 e só acrescenta a Área do Paciente', async () => {
   const previous = functionBody(await readFile(PREVIOUS, 'utf8'), 'admin_decide_patient_deletion');
@@ -102,13 +139,71 @@ test('exclusão: snapshot antes, sessões antes do acesso, tudo antes de limpar 
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.admin_decide_patient_deletion\(UUID, TEXT, TEXT\) TO authenticated;/);
 });
 
-test('toda tabela com patient_id ligado a patients entra no snapshot e no DELETE da versão mais nova', async () => {
+test('pesquisa e código: parte da versão de 20261111b e só muda o que foi decidido', async () => {
+  const previous = functionBody(await readFile(SURVEY_PREVIOUS, 'utf8'), 'admin_decide_patient_deletion');
+  const updated = functionBody(await readFile(SURVEY_FIX, 'utf8'), 'admin_decide_patient_deletion');
+  for (const line of [...SURVEY_LINES, ...SURVEY_REPLACED.keys()]) {
+    assert.equal(lines(updated).filter(item => item === line).length, 1, `uma vez: ${line.trim()}`);
+  }
+  assert.deepEqual(
+    lines(updated).filter(line => !SURVEY_LINES.includes(line)).map(line => SURVEY_REPLACED.get(line) ?? line),
+    lines(previous),
+    'o resto da função é idêntico à versão de 20261111b (valor combinado incluído)',
+  );
+});
+
+test('pesquisa: snapshot sem token, link morto e comentário fora; nota e datas ficam', async () => {
+  const sql = await readFile(SURVEY_FIX, 'utf8');
+  const body = functionBody(sql, 'admin_decide_patient_deletion');
+  const at = text => {
+    const index = body.indexOf(text);
+    assert.ok(index >= 0, text);
+    return index;
+  };
+
+  const snapshot = at('INSERT INTO patient_erasure_backup.snapshots');
+  const survey = at('UPDATE public.satisfaction_surveys');
+  const cadastro = at("SET name = '[Paciente removido]'");
+  assert.ok(snapshot < survey, 'snapshot antes de mexer na pesquisa');
+  assert.ok(survey < cadastro, 'pesquisa antes de limpar o cadastro');
+  assert.ok(at('DELETE FROM public.patient_form_assignments') < survey, 'Área do Paciente fecha primeiro');
+  assert.ok(at('DELETE FROM public.patient_interview_responses') < survey, 'entrevistas saem antes');
+
+  const snapshotBlock = body.slice(at('SELECT jsonb_build_object('), at(') INTO v_snapshot;'));
+  assert.match(snapshotBlock, /to_jsonb\(ss\) - 'token'/, 'token da pesquisa fora do snapshot');
+  assert.match(snapshotBlock, /to_jsonb\(pa\) - 'access_code'/, 'código de acesso fora do snapshot');
+
+  const update = body.slice(survey, body.indexOf('WHERE patient_id = v_req.patient_id;', survey));
+  assert.match(update, /comment = NULL/, 'comentário sai');
+  assert.match(update, /token = pg_catalog\.gen_random_uuid\(\)/, 'token novo: o link enviado morre');
+  assert.match(update, /expires_at = LEAST\(expires_at, pg_catalog\.clock_timestamp\(\)\)/, 'não respondida encerra');
+  assert.doesNotMatch(update, /\b(rating|responded_at|created_at|patient_id|clinic_id)\s*=/, 'nota, datas e vínculos ficam');
+  assert.doesNotMatch(body, /DELETE FROM public\.satisfaction_surveys/, 'pesquisa não é apagada');
+
+  // Fora de ordem a função seria criada e só quebraria na hora de excluir;
+  // uma versão antiga por cima tiraria as entrevistas da exclusão.
+  for (const table of ['satisfaction_surveys', 'patient_portal_access', 'patient_prices']) {
+    assert.match(sql, new RegExp(`to_regclass\\('public\\.${table}'\\) IS NULL`), `exige ${table}`);
+  }
+  assert.match(sql, /position\('patient_prices' IN pg_get_functiondef\(to_regprocedure\('public\.admin_decide_patient_deletion\(uuid,text,text\)'\)\)\)/, 'exige 20261111b aplicada');
+  assert.ok(sql.indexOf('DO $requires$') < sql.indexOf('CREATE OR REPLACE FUNCTION'), 'confere antes de recriar');
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.admin_decide_patient_deletion\(UUID, TEXT, TEXT\) FROM PUBLIC, anon;/);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.admin_decide_patient_deletion\(UUID, TEXT, TEXT\) TO authenticated;/);
+});
+
+test('toda tabela com patient_id ligado a patients entra na versão mais nova da exclusão, sem credencial no snapshot', async () => {
   const files = (await readdir(MIGRATIONS)).filter(name => name.endsWith('.sql')).sort();
   const sqls = await Promise.all(files.map(name => readFile(path.join(MIGRATIONS, name), 'utf8')));
 
   const latestIndex = sqls.findLastIndex(sql => sql.includes('FUNCTION public.admin_decide_patient_deletion('));
   assert.ok(latestIndex >= 0, 'alguma migration define a exclusão');
   const body = functionBody(sqls[latestIndex], 'admin_decide_patient_deletion');
+
+  const snapshotBlock = body.slice(body.indexOf('SELECT jsonb_build_object('), body.indexOf(') INTO v_snapshot;'));
+  for (const stripped of SNAPSHOT_SECRETS_STRIPPED) {
+    assert.ok(snapshotBlock.includes(stripped), `${files[latestIndex]}: snapshot com ${stripped}`);
+  }
+  assert.doesNotMatch(snapshotBlock, /patient_portal_sessions/, `${files[latestIndex]}: sessões fora do snapshot`);
 
   const tables = new Set();
   for (const sql of sqls) {
@@ -117,7 +212,7 @@ test('toda tabela com patient_id ligado a patients entra no snapshot e no DELETE
       if (/\bpatient_id\s+UUID\b[^,]*?\bREFERENCES\s+(?:public\.)?patients\s*\(/i.test(columns)) tables.add(name);
     }
   }
-  for (const known of ['clinical_records', 'appointments', 'patient_form_assignments', 'patient_portal_access', ...Object.keys(KEPT_ON_PURPOSE)]) {
+  for (const known of ['clinical_records', 'appointments', 'patient_form_assignments', 'patient_portal_access', ...Object.keys(KEPT_ON_PURPOSE), ...Object.keys(ANONYMIZED_ON_PURPOSE)]) {
     assert.ok(tables.has(known), `o leitor de migrations acha ${known}`);
   }
 
@@ -133,6 +228,12 @@ test('toda tabela com patient_id ligado a patients entra no snapshot e no DELETE
     }
     if (table in KEPT_ON_PURPOSE) {
       assert.ok(!inSnapshot && !deleted, `${table} já entra na exclusão: tire de KEPT_ON_PURPOSE`);
+      continue;
+    }
+    if (table in ANONYMIZED_ON_PURPOSE) {
+      assert.ok(inSnapshot, `${table} fora do snapshot de ${files[latestIndex]}`);
+      assert.ok(!deleted, `${table} passou a ser apagada: tire de ANONYMIZED_ON_PURPOSE`);
+      assert.match(body, new RegExp(`UPDATE public\\.${table}\\r?\\n[\\s\\S]*?WHERE patient_id = v_req\\.patient_id;`), `${table} anonimizada em ${files[latestIndex]}`);
       continue;
     }
     assert.ok(inSnapshot, `${table} fora do snapshot de ${files[latestIndex]}`);
